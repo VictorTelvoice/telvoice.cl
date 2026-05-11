@@ -575,7 +575,7 @@
 
   <main>
     <!-- Hero Section -->
-    <section class="relative w-full overflow-x-hidden pb-stack-xl pt-[calc(64px*0.12393)]" id="inicio">
+    <section class="relative w-full overflow-x-hidden py-[40px]" id="inicio">
       <div class="hero-atmosphere" aria-hidden="true">
         <div class="hero-bg-base"></div>
         <div class="hero-bg-skywash"></div>
@@ -712,23 +712,6 @@
           </li>
         </ul>
       </div>
-      </div>
-    </section>
-
-    <!-- Promesa comercial: igualación de tarifa -->
-    <section id="igualacion-tarifa" class="relative z-10 px-4 pb-stack-md sm:px-margin-page" aria-labelledby="promesa-tarifas-titulo">
-      <div class="mx-auto max-w-3xl">
-        <div class="flex items-start gap-4 rounded-2xl border border-outline-variant/60 bg-surface/95 p-4 shadow-sm sm:items-center sm:gap-5 sm:p-5">
-          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <span class="material-symbols-outlined text-[26px]" aria-hidden="true">handshake</span>
-          </div>
-          <div class="min-w-0">
-            <p id="promesa-tarifas-titulo" class="font-label-caps text-label-caps uppercase tracking-wider text-primary">Compromiso comercial</p>
-            <p class="mt-1.5 font-body-md text-body-md leading-snug text-on-surface-variant">
-              <strong class="text-on-background">Igualamos tu tarifa</strong> con otro proveedor y sumamos <strong class="text-on-background">10% de descuento</strong> adicional. Presenta cotización o factura reciente; condiciones según volumen y vigencia.
-            </p>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -909,6 +892,19 @@
             <button type="button" id="calc-request-quote" class="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3.5 font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint">Obtener cotización exacta →</button>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- Compromiso comercial (texto, debajo de calculadora) -->
+    <section id="igualacion-tarifa" class="border-t border-primary/[0.08] bg-surface-container-low/35 px-4 pb-stack-xl pt-stack-lg sm:px-margin-page" aria-labelledby="promesa-tarifas-titulo">
+      <div class="mx-auto max-w-3xl text-center">
+        <div class="mx-auto mb-5 h-[3px] w-14 rounded-full bg-gradient-to-r from-[#5b21b6] via-primary to-secondary opacity-90" aria-hidden="true"></div>
+        <p id="promesa-tarifas-titulo" class="font-label-caps text-label-caps uppercase tracking-[0.14em] text-primary">Compromiso comercial</p>
+        <p class="mt-5 font-body-lg text-body-lg leading-relaxed text-on-surface-variant sm:text-[1.0625rem] sm:leading-8">
+          <span class="font-semibold text-on-background">Igualamos tu tarifa</span> con otro proveedor y sumamos
+          <span class="hero-grad-text whitespace-nowrap font-bold">10% de descuento</span>
+          adicional. Presenta cotización o factura reciente; condiciones según volumen y vigencia.
+        </p>
       </div>
     </section>
 
