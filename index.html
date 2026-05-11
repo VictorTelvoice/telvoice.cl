@@ -120,88 +120,28 @@
     .message-anim {
       opacity: 0;
       transform: translateY(14px);
-      animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
-      animation-iteration-count: infinite;
-      animation-duration: 12s;
+      animation: heroMsgArrive 0.55s cubic-bezier(0.33, 1, 0.68, 1) forwards;
     }
     .message-anim:nth-child(2) {
-      animation-name: heroMsgLoop1;
+      animation-delay: 0.45s;
     }
     .message-anim:nth-child(3) {
-      animation-name: heroMsgLoop2;
+      animation-delay: 1.05s;
     }
     .message-anim:nth-child(4) {
-      animation-name: heroMsgLoop3;
+      animation-delay: 1.65s;
     }
     .message-anim:nth-child(5) {
-      animation-name: heroMsgLoop4;
+      animation-delay: 2.25s;
     }
-    @keyframes heroMsgLoop1 {
-      0%,
-      2% {
+    @keyframes heroMsgArrive {
+      from {
         opacity: 0;
         transform: translateY(14px);
       }
-      6%,
-      20% {
+      to {
         opacity: 1;
         transform: translateY(0);
-      }
-      24%,
-      100% {
-        opacity: 0;
-        transform: translateY(8px);
-      }
-    }
-    @keyframes heroMsgLoop2 {
-      0%,
-      26% {
-        opacity: 0;
-        transform: translateY(14px);
-      }
-      30%,
-      44% {
-        opacity: 1;
-        transform: translateY(0);
-      }
-      48%,
-      100% {
-        opacity: 0;
-        transform: translateY(8px);
-      }
-    }
-    @keyframes heroMsgLoop3 {
-      0%,
-      50% {
-        opacity: 0;
-        transform: translateY(14px);
-      }
-      54%,
-      68% {
-        opacity: 1;
-        transform: translateY(0);
-      }
-      72%,
-      100% {
-        opacity: 0;
-        transform: translateY(8px);
-      }
-    }
-    @keyframes heroMsgLoop4 {
-      0%,
-      74% {
-        opacity: 0;
-        transform: translateY(14px);
-      }
-      78%,
-      92% {
-        opacity: 1;
-        transform: translateY(0);
-      }
-      96%,
-      100% {
-        opacity: 0;
-        transform: translateY(8px);
       }
     }
     #mobile-panel:not(.hidden) {
@@ -1167,7 +1107,6 @@
           </p>
           <div class="mt-6 flex flex-wrap gap-3">
             <a href="#contacto" class="inline-flex items-center justify-center rounded-full bg-on-primary px-5 py-2.5 font-body-md text-body-md font-semibold text-primary shadow-sm transition hover:bg-primary-fixed hover:text-on-primary-fixed focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary">Solicitar demo</a>
-            <a href="mailto:ventas@telvoice.net" class="inline-flex items-center justify-center rounded-full border-2 border-on-primary/50 bg-transparent px-5 py-2.5 font-body-md text-body-md font-semibold text-on-primary transition hover:border-on-primary hover:bg-on-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary">ventas@telvoice.net</a>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-10 sm:grid-cols-3 md:col-span-2 lg:col-span-8 lg:grid-cols-3">
