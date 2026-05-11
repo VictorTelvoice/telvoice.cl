@@ -575,7 +575,7 @@
 
   <main>
     <!-- Hero Section -->
-    <section class="relative w-full overflow-x-hidden pb-[20px] pt-[10px]" id="inicio">
+    <section class="relative w-full overflow-x-hidden pb-[20px] pt-[2px]" id="inicio">
       <div class="hero-atmosphere" aria-hidden="true">
         <div class="hero-bg-base"></div>
         <div class="hero-bg-skywash"></div>
@@ -854,9 +854,9 @@
               <span id="calcVol" class="font-data-mono text-lg font-bold text-primary sm:text-xl" aria-live="polite">10.000</span>
             </div>
             <label for="calcSlider" class="sr-only">Cantidad de SMS por mes</label>
-            <input id="calcSlider" class="calc-range-input w-full" type="range" min="1000" max="500000" step="1000" value="10000" aria-valuemin="1000" aria-valuemax="500000" aria-valuenow="10000" />
+            <input id="calcSlider" class="calc-range-input w-full" type="range" min="3000" max="500000" step="1000" value="10000" aria-valuemin="3000" aria-valuemax="500000" aria-valuenow="10000" />
             <div class="mt-2 flex justify-between font-body-sm text-body-sm text-on-surface-variant">
-              <span>1.000</span>
+              <span>3.000</span>
               <span>500.000</span>
             </div>
           </div>
@@ -870,7 +870,7 @@
               <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Total mensual estimado</span>
             </div>
             <div class="rounded-xl border border-outline-variant/50 bg-surface/90 px-4 py-5 text-center shadow-sm">
-              <span id="calcPlan" class="font-h3 block text-xl font-bold leading-tight text-primary sm:text-2xl">Hasta 15k</span>
+              <span id="calcPlan" class="font-h3 block text-xl font-bold leading-tight text-primary sm:text-2xl">Bolsa 3k</span>
               <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Plan recomendado</span>
             </div>
           </div>
@@ -1353,13 +1353,13 @@
         });
       }
 
-      /* Rangos alineados a bolsas (3k→$8, 15k→$7, 100k→$6); volumen alto hasta $4 mín. */
+      /* Bolsa mínima 3k SMS; precios alineados a bolsas; plan = nombre mostrado en «Plan recomendado». */
       var PRECIOS = [
-        { min: 1000, max: 14999, pxSMS: 8, plan: "Hasta 15k" },
-        { min: 15000, max: 99999, pxSMS: 7, plan: "15k – 100k" },
-        { min: 100000, max: 199999, pxSMS: 6, plan: "100k – 200k" },
-        { min: 200000, max: 499999, pxSMS: 5, plan: "200k – 500k" },
-        { min: 500000, max: Infinity, pxSMS: 4, plan: "+500k" },
+        { min: 3000, max: 14999, pxSMS: 8, plan: "Bolsa 3k" },
+        { min: 15000, max: 99999, pxSMS: 7, plan: "Bolsa 15k" },
+        { min: 100000, max: 199999, pxSMS: 6, plan: "Bolsa 100k" },
+        { min: 200000, max: 499999, pxSMS: 5, plan: "Alto volumen" },
+        { min: 500000, max: Infinity, pxSMS: 4, plan: "Corporativo" },
       ];
 
       function fmtCalc(n) {
