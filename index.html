@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Telvoice — Comunicación directa para tu negocio: verificación, alertas y campañas SMS desde un solo lugar." />
+  <title>Telvoice — SMS y mensajería para tu negocio en Chile</title>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=JetBrains+Mono:wght@500&amp;family=Montserrat:wght@600;700&amp;display=swap" rel="stylesheet" />
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-variant": "#dae2fd",
+            "primary-container": "#0052cc",
+            "on-surface-variant": "#434654",
+            "on-tertiary": "#ffffff",
+            tertiary: "#7b2600",
+            "inverse-primary": "#b2c5ff",
+            "tertiary-fixed": "#ffdbcf",
+            "secondary-fixed": "#9cf0ff",
+            "on-tertiary-fixed": "#380d00",
+            "on-primary-fixed-variant": "#0040a2",
+            "on-error-container": "#93000a",
+            "tertiary-container": "#a33500",
+            "secondary-container": "#00e3fd",
+            "tertiary-fixed-dim": "#ffb59b",
+            "surface-container-lowest": "#ffffff",
+            "surface-bright": "#faf8ff",
+            "on-secondary-fixed-variant": "#004f58",
+            "on-tertiary-container": "#ffc6b2",
+            "surface-tint": "#0c56d0",
+            primary: "#0052cc",
+            "surface-container-low": "#f2f3ff",
+            "surface-container-high": "#e2e7ff",
+            "secondary-fixed-dim": "#00daf3",
+            "on-primary-fixed": "#001848",
+            "on-primary": "#ffffff",
+            "surface-dim": "#d2d9f4",
+            secondary: "#006875",
+            "on-background": "#131b2e",
+            "inverse-surface": "#283044",
+            "on-error": "#ffffff",
+            "on-secondary-container": "#00616d",
+            "primary-fixed-dim": "#b2c5ff",
+            "primary-fixed": "#dae2ff",
+            "surface-container": "#eaedff",
+            outline: "#737685",
+            background: "#faf8ff",
+            "error-container": "#ffdad6",
+            error: "#ba1a1a",
+            "surface-container-highest": "#dae2fd",
+            "on-secondary-fixed": "#001f24",
+            surface: "#faf8ff",
+            "on-surface": "#131b2e",
+            "on-tertiary-fixed-variant": "#812800",
+            "outline-variant": "#c3c6d6",
+            "on-primary-container": "#c4d2ff",
+            "inverse-on-surface": "#eef0ff",
+            "on-secondary": "#ffffff",
+          },
+          borderRadius: {
+            DEFAULT: "0.125rem",
+            lg: "0.25rem",
+            xl: "0.5rem",
+            "2xl": "1rem",
+            "3xl": "1.5rem",
+            "4xl": "2rem",
+            full: "9999px",
+          },
+          spacing: {
+            "margin-page": "40px",
+            "stack-md": "24px",
+            gutter: "24px",
+            "container-max": "1440px",
+            base: "8px",
+            "stack-lg": "48px",
+            "stack-xl": "64px",
+            "stack-sm": "12px",
+          },
+          fontFamily: {
+            h2: ["Montserrat", "sans-serif"],
+            "body-sm": ["Inter", "sans-serif"],
+            "body-lg": ["Inter", "sans-serif"],
+            h3: ["Montserrat", "sans-serif"],
+            "data-mono": ["JetBrains Mono", "monospace"],
+            "body-md": ["Inter", "sans-serif"],
+            "label-caps": ["Montserrat", "sans-serif"],
+            h1: ["Montserrat", "sans-serif"],
+          },
+          fontSize: {
+            h2: ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "600" }],
+            "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+            "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+            h3: ["24px", { lineHeight: "32px", fontWeight: "600" }],
+            "data-mono": ["13px", { lineHeight: "16px", fontWeight: "500" }],
+            "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+            "label-caps": ["12px", { lineHeight: "16px", fontWeight: "700" }],
+            h1: ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+    }
+    .material-symbols-outlined.fill-icon {
+      font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+    }
+    .message-anim {
+      opacity: 0;
+      transform: translateY(14px);
+      animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+      animation-iteration-count: infinite;
+      animation-duration: 12s;
+    }
+    .message-anim:nth-child(2) {
+      animation-name: heroMsgLoop1;
+    }
+    .message-anim:nth-child(3) {
+      animation-name: heroMsgLoop2;
+    }
+    .message-anim:nth-child(4) {
+      animation-name: heroMsgLoop3;
+    }
+    .message-anim:nth-child(5) {
+      animation-name: heroMsgLoop4;
+    }
+    @keyframes heroMsgLoop1 {
+      0%,
+      2% {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      6%,
+      20% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      24%,
+      100% {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+    }
+    @keyframes heroMsgLoop2 {
+      0%,
+      26% {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      30%,
+      44% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      48%,
+      100% {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+    }
+    @keyframes heroMsgLoop3 {
+      0%,
+      50% {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      54%,
+      68% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      72%,
+      100% {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+    }
+    @keyframes heroMsgLoop4 {
+      0%,
+      74% {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      78%,
+      92% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      96%,
+      100% {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+    }
+    #mobile-panel:not(.hidden) {
+      animation: panelIn 0.2s ease-out;
+    }
+    @keyframes panelIn {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hero-grad-text {
+      background: linear-gradient(105deg, #5b21b6 0%, #4338ca 35%, #0052cc 70%, #006875 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    /* Hero: cielo a todo el ancho + nubes sutiles */
+    #inicio {
+      isolation: isolate;
+      overflow-x: hidden;
+      overflow-y: visible;
+    }
+    .hero-atmosphere {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      z-index: 0;
+      width: 100vw;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+    .hero-bg-base {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background: linear-gradient(
+        180deg,
+        #e2f0fa 0%,
+        #e9f4fc 8%,
+        #eef6ff 18%,
+        #f2f5ff 36%,
+        #f7f6ff 62%,
+        #faf8ff 100%
+      );
+    }
+    .hero-bg-skywash {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background: linear-gradient(
+        180deg,
+        rgba(160, 205, 240, 0.22) 0%,
+        rgba(200, 225, 250, 0.14) 26%,
+        rgba(240, 246, 255, 0) 58%
+      );
+    }
+    .hero-sky-glow {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 110% 70% at 12% -8%, rgba(198, 228, 252, 0.55) 0%, transparent 55%),
+        radial-gradient(ellipse 95% 60% at 88% 5%, rgba(210, 234, 252, 0.42) 0%, transparent 52%),
+        radial-gradient(ellipse 75% 50% at 52% 18%, rgba(232, 242, 255, 0.38) 0%, transparent 48%);
+      background-size: 135% 115%, 125% 105%, 100% 90%;
+      background-position: 0% 0%, 100% 0%, 50% 0%;
+      animation: heroSkyBreath 36s ease-in-out infinite;
+      opacity: 0.92;
+    }
+    @keyframes heroSkyBreath {
+      0%,
+      100% {
+        background-position: 0% 0%, 100% 2%, 48% 4%;
+        opacity: 0.82;
+      }
+      50% {
+        background-position: 10% 6%, 90% 0%, 55% 12%;
+        opacity: 0.98;
+      }
+    }
+    .hero-sky {
+      position: absolute;
+      inset: -20px 0;
+      z-index: 1;
+      width: 100%;
+      height: calc(100% + 40px);
+      overflow: visible;
+    }
+    .hero-connect-wrap {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      overflow-x: hidden;
+      overflow-y: visible;
+    }
+    .hero-connect-wrap .hero-connect-layer {
+      width: 100%;
+      min-width: 100%;
+      height: 115%;
+    }
+
+    /* Nubes suaves (velos difuminados, sin forma definida) */
+    .hero-cloud-soft {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      will-change: transform;
+      animation-name: heroCloudWindLeft;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+      background: radial-gradient(
+        ellipse 72% 56% at 46% 48%,
+        rgba(255, 255, 255, 0.52) 0%,
+        rgba(238, 244, 255, 0.34) 40%,
+        rgba(218, 230, 252, 0.18) 58%,
+        transparent 76%
+      );
+      filter: blur(36px);
+      opacity: 0.62;
+    }
+    .hero-cloud-soft--1 {
+      width: clamp(300px, 48vw, 560px);
+      height: clamp(110px, 15vw, 170px);
+      top: 7%;
+      left: -6%;
+      animation-duration: 200s;
+      animation-delay: 0s;
+    }
+    .hero-cloud-soft--2 {
+      width: clamp(260px, 38vw, 480px);
+      height: clamp(96px, 13vw, 150px);
+      top: 20%;
+      left: 35%;
+      animation-duration: 240s;
+      animation-delay: -80s;
+      opacity: 0.5;
+    }
+    .hero-cloud-soft--3 {
+      width: clamp(340px, 52vw, 620px);
+      height: clamp(120px, 17vw, 190px);
+      top: 34%;
+      left: -12%;
+      animation-duration: 280s;
+      animation-delay: -120s;
+      opacity: 0.55;
+    }
+    .hero-cloud-soft--4 {
+      width: clamp(220px, 32vw, 400px);
+      height: clamp(88px, 12vw, 130px);
+      top: 46%;
+      left: 50%;
+      animation-duration: 180s;
+      animation-delay: -45s;
+      opacity: 0.48;
+    }
+    .hero-cloud-soft--5 {
+      width: clamp(280px, 42vw, 520px);
+      height: clamp(100px, 14vw, 155px);
+      bottom: 12%;
+      left: 6%;
+      animation-duration: 220s;
+      animation-delay: -100s;
+      opacity: 0.52;
+    }
+    .hero-cloud-soft--6 {
+      width: clamp(240px, 36vw, 440px);
+      height: clamp(92px, 13vw, 140px);
+      top: 60%;
+      left: 58%;
+      animation-duration: 260s;
+      animation-delay: -140s;
+      opacity: 0.46;
+    }
+
+    @keyframes heroCloudWindLeft {
+      0% {
+        transform: translate3d(0, 0, 0);
+      }
+      100% {
+        transform: translate3d(-85vw, 0, 0);
+      }
+    }
+
+    .hero-connect-layer {
+      color: #0052cc;
+    }
+    .hero-flow {
+      stroke: rgba(0, 82, 204, 0.22);
+      stroke-width: 1.25;
+      stroke-linecap: round;
+      stroke-dasharray: 5 14;
+      animation: heroFlow 18s linear infinite;
+    }
+    .hero-flow-2 {
+      stroke: rgba(0, 103, 117, 0.18);
+      stroke-width: 1;
+      stroke-dasharray: 4 12;
+      animation: heroFlow 22s linear infinite reverse;
+    }
+    @keyframes heroFlow {
+      to {
+        stroke-dashoffset: -240;
+      }
+    }
+    .hero-node {
+      fill: #0052cc;
+      opacity: 0.45;
+      animation: heroNodePulse 4s ease-in-out infinite;
+    }
+    .hero-node-2 {
+      fill: #006875;
+      opacity: 0.35;
+      animation: heroNodePulse 5s ease-in-out infinite 0.8s;
+    }
+    @keyframes heroNodePulse {
+      0%,
+      100% {
+        opacity: 0.22;
+      }
+      50% {
+        opacity: 0.75;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-sky-glow {
+        animation: none;
+        opacity: 0.88;
+      }
+      .hero-cloud-soft--1,
+      .hero-cloud-soft--2,
+      .hero-cloud-soft--3,
+      .hero-cloud-soft--4,
+      .hero-cloud-soft--5,
+      .hero-cloud-soft--6 {
+        animation: none !important;
+        transform: translate3d(-12vw, 0, 0);
+      }
+      .hero-flow,
+      .hero-flow-2 {
+        animation: none;
+        stroke-dasharray: none;
+      }
+      .hero-node,
+      .hero-node-2 {
+        animation: none;
+        opacity: 0.45;
+      }
+      .message-anim {
+        animation: none !important;
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .hero-price-card {
+      box-shadow: 0 12px 40px -16px rgba(0, 82, 204, 0.14), 0 0 0 1px rgba(0, 82, 204, 0.06);
+    }
+
+    .hero-use-tag {
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .hero-use-tag:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -8px rgba(0, 82, 204, 0.2);
+      border-color: rgba(0, 82, 204, 0.35);
+    }
+
+    .hero-tags-row {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .hero-tags-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .pack-card {
+      transition:
+        transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.4s ease,
+        border-color 0.3s ease;
+    }
+    .pack-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 24px 48px -12px rgba(0, 82, 204, 0.22);
+    }
+    .pack-card:not(.pack-card--featured):hover {
+      border-color: rgba(0, 82, 204, 0.45);
+    }
+    .pack-card--featured:hover {
+      border-color: rgba(0, 82, 204, 0.55);
+    }
+    @media (min-width: 768px) {
+      .pack-card--featured:hover {
+        transform: translateY(-10px) scale(1.06);
+      }
+    }
+
+    .faq-details summary {
+      list-style: none;
+    }
+    .faq-details summary::-webkit-details-marker {
+      display: none;
+    }
+    .faq-details[open] .faq-chevron {
+      transform: rotate(45deg);
+      color: #0052cc;
+    }
+
+    .calc-range-input {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 8px;
+      border-radius: 9999px;
+      outline: none;
+    }
+    .calc-range-input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #0052cc;
+      cursor: grab;
+      box-shadow: 0 0 0 4px rgba(0, 82, 204, 0.2);
+      border: 2px solid #faf8ff;
+      margin-top: -7px;
+    }
+    .calc-range-input::-webkit-slider-thumb:active {
+      cursor: grabbing;
+    }
+    .calc-range-input::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #0052cc;
+      cursor: grab;
+      box-shadow: 0 0 0 4px rgba(0, 82, 204, 0.2);
+      border: 2px solid #faf8ff;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container">
+  <!-- TopNavBar -->
+  <nav class="bg-surface/90 backdrop-blur-md sticky top-0 z-50 border-b border-outline-variant/30 w-full">
+    <div class="flex justify-between items-center gap-4 py-4 pl-8 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 lg:pl-28 lg:pr-10 max-w-container-max mx-auto">
+      <a href="#" class="flex items-center gap-2.5 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" data-scroll-top>
+        <img src="assets/telvoice-isotipo.png" alt="Telvoice" width="36" height="36" class="h-9 w-9 rounded-lg object-contain shadow-sm ring-1 ring-outline-variant/30" />
+        <span class="font-h3 text-h3 font-bold text-primary tracking-tight">Telvoice</span>
+      </a>
+      <ul class="hidden md:flex gap-gutter items-center">
+        <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-5 py-2" href="#por-que-telvoice">Por qué Telvoice</a></li>
+        <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-5 py-2" href="#soluciones">Soluciones</a></li>
+        <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-5 py-2" href="#precios">Precios</a></li>
+        <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-5 py-2" href="#contacto">Contacto</a></li>
+      </ul>
+      <div class="flex items-center gap-2 shrink-0">
+        <button type="button" id="nav-demo" class="hidden sm:inline-flex bg-primary text-on-primary font-body-md px-6 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm">Demo Gratis</button>
+        <button type="button" id="menu-toggle" class="md:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant/60 text-on-background" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
+          <span class="material-symbols-outlined" id="menu-icon-open">menu</span>
+          <span class="material-symbols-outlined hidden" id="menu-icon-close">close</span>
+        </button>
+      </div>
+    </div>
+    <div id="mobile-panel" class="hidden md:hidden border-t border-outline-variant/30 bg-surface/95 backdrop-blur-md py-4 pl-8 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 max-w-container-max mx-auto">
+      <ul class="flex flex-col gap-1">
+        <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#por-que-telvoice">Por qué Telvoice</a></li>
+        <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#soluciones">Soluciones</a></li>
+        <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#precios">Precios</a></li>
+        <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#contacto">Contacto</a></li>
+      </ul>
+      <button type="button" id="nav-demo-mobile" class="mt-3 w-full bg-primary text-on-primary font-body-md py-3 rounded-full hover:bg-surface-tint transition-colors">Demo Gratis</button>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="relative w-full overflow-x-hidden py-stack-xl" id="inicio">
+      <div class="hero-atmosphere" aria-hidden="true">
+        <div class="hero-bg-base"></div>
+        <div class="hero-bg-skywash"></div>
+        <div class="hero-sky-glow"></div>
+        <div class="hero-sky">
+          <div class="hero-cloud-soft hero-cloud-soft--1"></div>
+          <div class="hero-cloud-soft hero-cloud-soft--2"></div>
+          <div class="hero-cloud-soft hero-cloud-soft--3"></div>
+          <div class="hero-cloud-soft hero-cloud-soft--4"></div>
+          <div class="hero-cloud-soft hero-cloud-soft--5"></div>
+          <div class="hero-cloud-soft hero-cloud-soft--6"></div>
+        </div>
+        <div class="hero-connect-wrap">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" preserveAspectRatio="none" class="hero-connect-layer -translate-y-[4%] opacity-[0.28] sm:opacity-[0.24]" fill="none">
+            <path class="hero-flow-2" d="M0 520 Q 320 400 600 480 T 1200 420" />
+            <path class="hero-flow-2" d="M0 120 Q 500 280 900 80 T 1200 200" />
+            <path class="hero-flow" d="M140 420 L360 260" />
+            <path class="hero-flow" d="M360 260 L620 340" />
+            <path class="hero-flow" d="M620 340 L880 200" />
+            <path class="hero-flow" d="M880 200 L1080 360" />
+            <path class="hero-flow" d="M360 260 L520 140" />
+            <path class="hero-flow" d="M520 140 L880 200" />
+            <path class="hero-flow" d="M200 180 L360 260" />
+            <path class="hero-flow" d="M620 340 L1000 480" />
+            <circle class="hero-node" cx="140" cy="420" r="3" />
+            <circle class="hero-node" cx="360" cy="260" r="3" />
+            <circle class="hero-node" cx="620" cy="340" r="3" />
+            <circle class="hero-node" cx="880" cy="200" r="3" />
+            <circle class="hero-node" cx="1080" cy="360" r="3" />
+            <circle class="hero-node-2" cx="520" cy="140" r="2.5" />
+            <circle class="hero-node-2" cx="1000" cy="480" r="2.5" />
+          </svg>
+        </div>
+      </div>
+      <div class="relative z-10 mx-auto max-w-container-max px-4 sm:px-margin-page">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-16 py-12">
+        <div class="flex-1 flex flex-col items-start text-left max-w-2xl pl-8 sm:pl-14 md:pl-20 lg:pl-28 xl:pl-36">
+          <div class="flex w-full flex-col gap-stack-md">
+              <div class="inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-outline-variant/55 bg-surface-container-low/90 px-4 py-1.5 backdrop-blur-sm">
+                <span class="h-2 w-2 shrink-0 rounded-full bg-gradient-to-r from-[#5b21b6] to-[#0052cc] animate-pulse" aria-hidden="true"></span>
+                <span class="font-body-sm text-body-sm font-medium text-on-surface-variant tracking-tight">Plataforma SMS A2P · Chile</span>
+              </div>
+              <h1 class="font-h1 text-h1 text-on-background max-md:text-[30px] max-md:leading-[38px]">
+                <span class="block font-semibold tracking-tight text-on-background">Llega a tus</span>
+                <span class="hero-grad-text mt-1 block text-[clamp(2rem,6.2vw,3.55rem)] font-extrabold leading-[1.1] tracking-tight">clientes chilenos</span>
+                <span class="mt-1 block font-semibold tracking-tight text-on-background">en segundos.</span>
+              </h1>
+              <p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+                Rutas directas A2P, API REST y entrega confiable hacia móviles en Chile: OTP, alertas y campañas desde una sola plataforma.
+              </p>
+          </div>
+          <div class="hero-price-card mt-stack-md w-full max-w-xl rounded-2xl border border-outline-variant/50 bg-gradient-to-br from-surface-container-lowest via-surface/95 to-primary/[0.035] p-4 ring-1 ring-primary/[0.07] sm:p-5">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+              <div class="flex min-w-0 items-start gap-3 sm:items-center">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/[0.09] text-primary ring-1 ring-primary/12" aria-hidden="true">
+                  <span class="material-symbols-outlined text-[22px]">savings</span>
+                </div>
+                <div class="min-w-0">
+                  <p class="font-label-caps text-label-caps uppercase tracking-wider text-primary">Mejor precio</p>
+                  <p class="mt-1 font-body-md font-semibold leading-snug text-on-background sm:text-body-lg">Más bajo del mercado</p>
+                  <p class="mt-0.5 font-body-sm text-body-sm text-on-surface-variant">SMS unitarios</p>
+                </div>
+              </div>
+              <div class="flex shrink-0 items-center justify-center gap-2 self-stretch rounded-xl bg-primary/[0.07] px-4 py-3 ring-1 ring-primary/10 sm:flex-col sm:items-center sm:justify-center sm:self-auto sm:px-5 sm:py-3.5">
+                <span class="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">Desde</span>
+                <div class="flex items-baseline gap-1.5">
+                  <span class="font-data-mono text-3xl font-bold tracking-tight text-primary sm:text-4xl">$5</span>
+                  <span class="font-body-sm text-on-surface-variant whitespace-nowrap">+ IVA / SMS</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-4 pt-stack-sm">
+            <button type="button" class="hero-cta-demo bg-primary text-on-primary font-body-md px-8 py-3.5 rounded-full hover:bg-surface-tint transition-all shadow-md">Prueba Gratis</button>
+            <a href="#precios" class="inline-flex items-center justify-center bg-surface text-primary font-body-md px-8 py-3.5 rounded-full border border-primary/20 hover:bg-surface-container-low hover:border-primary transition-all">Ver Precios</a>
+          </div>
+        </div>
+        <div class="flex-1 flex justify-center items-center w-full">
+          <div class="relative w-[min(320px,90vw)] h-[min(640px,85vh)] bg-inverse-surface rounded-[48px] border-[12px] border-surface-container-highest shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col">
+            <div class="absolute top-0 inset-x-0 h-6 bg-surface-container-highest rounded-b-2xl w-36 mx-auto z-20"></div>
+            <div class="flex-1 bg-surface-container-lowest relative p-5 pt-16 flex flex-col gap-4 overflow-hidden">
+              <div class="flex items-center gap-3 mb-2 border-b border-outline-variant/30 pb-4">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-surface ring-1 ring-outline-variant/40 shadow-sm">
+                  <img src="assets/telvoice-isotipo.png" alt="" width="40" height="40" class="h-8 w-8 object-contain" loading="lazy" decoding="async" />
+                </div>
+                <div>
+                  <div class="font-body-sm font-semibold text-on-background">SMS Express</div>
+                  <div class="text-[11px] text-on-surface-variant">Vía Telvoice A2P</div>
+                </div>
+              </div>
+              <div class="message-anim bg-surface-container-low text-on-background p-3.5 rounded-2xl rounded-tl-sm text-[13px] self-start max-w-[85%] shadow-sm">
+                ¡Hola Juan! Tu código de verificación para ingresar es <strong>4921</strong>. No lo compartas con nadie.
+              </div>
+              <div class="message-anim bg-primary text-on-primary p-3.5 rounded-2xl rounded-tr-sm text-[13px] self-end max-w-[85%] shadow-sm">Entendido, gracias.</div>
+              <div class="message-anim bg-surface-container-low text-on-background p-3.5 rounded-2xl rounded-tl-sm text-[13px] self-start max-w-[85%] shadow-sm">
+                📦 Tu pedido #8839 ha sido despachado y está en ruta. Sigue tu entrega aquí: link.cl/trk8839
+              </div>
+              <div class="message-anim bg-surface-container-low text-on-background p-3.5 rounded-2xl rounded-tl-sm text-[13px] self-start max-w-[85%] shadow-sm">
+                ⭐ ¿Cómo fue tu experiencia? Responde con una nota del 1 al 7.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="relative z-10 flex flex-col items-center pb-10 pt-2">
+        <ul class="hero-use-tags hero-tags-row flex w-full max-w-5xl flex-nowrap justify-start gap-2 overflow-x-auto py-1 sm:justify-center" role="list" aria-label="Usos del servicio SMS">
+          <li class="shrink-0">
+            <span class="hero-use-tag inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 px-3 py-1.5 font-body-sm text-body-sm text-on-background shadow-sm sm:px-3.5 sm:py-2">
+              <span class="material-symbols-outlined text-primary text-[18px]" aria-hidden="true">notifications_active</span>
+              Notificaciones
+            </span>
+          </li>
+          <li class="shrink-0">
+            <span class="hero-use-tag inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 px-3 py-1.5 font-body-sm text-body-sm text-on-background shadow-sm sm:px-3.5 sm:py-2">
+              <span class="material-symbols-outlined text-primary text-[18px]" aria-hidden="true">event_available</span>
+              Recordatorios
+            </span>
+          </li>
+          <li class="shrink-0">
+            <span class="hero-use-tag inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 px-3 py-1.5 font-body-sm text-body-sm text-on-background shadow-sm sm:px-3.5 sm:py-2">
+              <span class="material-symbols-outlined text-primary text-[18px]" aria-hidden="true">campaign</span>
+              Promociones
+            </span>
+          </li>
+          <li class="shrink-0">
+            <span class="hero-use-tag inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 px-3 py-1.5 font-body-sm text-body-sm text-on-background shadow-sm sm:px-3.5 sm:py-2">
+              <span class="material-symbols-outlined text-primary text-[18px]" aria-hidden="true">verified_user</span>
+              Autenticación
+            </span>
+          </li>
+          <li class="shrink-0">
+            <span class="hero-use-tag inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 px-3 py-1.5 font-body-sm text-body-sm text-on-background shadow-sm sm:px-3.5 sm:py-2">
+              <span class="material-symbols-outlined text-primary text-[18px]" aria-hidden="true">receipt_long</span>
+              Alertas transaccionales
+            </span>
+          </li>
+        </ul>
+      </div>
+      </div>
+    </section>
+
+    <!-- Promesa comercial: igualación de tarifa -->
+    <section id="igualacion-tarifa" class="relative z-10 px-4 pb-stack-md sm:px-margin-page" aria-labelledby="promesa-tarifas-titulo">
+      <div class="mx-auto max-w-3xl">
+        <div class="flex items-start gap-4 rounded-2xl border border-outline-variant/60 bg-surface/95 p-4 shadow-sm sm:items-center sm:gap-5 sm:p-5">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <span class="material-symbols-outlined text-[26px]" aria-hidden="true">handshake</span>
+          </div>
+          <div class="min-w-0">
+            <p id="promesa-tarifas-titulo" class="font-label-caps text-label-caps uppercase tracking-wider text-primary">Compromiso comercial</p>
+            <p class="mt-1.5 font-body-md text-body-md leading-snug text-on-surface-variant">
+              <strong class="text-on-background">Igualamos tu tarifa</strong> con otro proveedor y sumamos <strong class="text-on-background">10% de descuento</strong> adicional. Presenta cotización o factura reciente; condiciones según volumen y vigencia.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Por qué Telvoice -->
+    <section id="por-que-telvoice" class="px-4 sm:px-margin-page py-stack-xl max-w-container-max mx-auto" aria-labelledby="por-que-titulo" tabindex="-1">
+      <div class="mx-auto max-w-3xl text-center">
+        <p class="font-label-caps text-label-caps uppercase tracking-wider text-primary">Por qué Telvoice</p>
+        <h2 id="por-que-titulo" class="mt-2 font-h2 text-h2 text-on-background">Comunicación SMS hecha para Chile</h2>
+        <p class="font-body-lg text-body-lg text-on-surface-variant mt-3 leading-relaxed">Infraestructura local, contratos en CLP y un equipo que entiende el mercado chileno.</p>
+      </div>
+      <div class="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <article class="flex flex-col gap-4 rounded-[28px] border border-outline-variant/60 bg-surface-container-lowest p-8 transition-shadow duration-300 hover:shadow-[0px_20px_40px_rgba(15,23,42,0.08)]">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <span class="material-symbols-outlined fill-icon text-3xl" aria-hidden="true">bolt</span>
+          </div>
+          <h3 class="font-h3 text-h3 text-on-background">Velocidad de entrega</h3>
+          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Mensajes entregados en segundos con rutas directas a los operadores locales. Sin intermediarios.</p>
+        </article>
+        <article class="flex flex-col gap-4 rounded-[28px] border border-outline-variant/60 bg-surface-container-lowest p-8 transition-shadow duration-300 hover:shadow-[0px_20px_40px_rgba(15,23,42,0.08)]">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <span class="material-symbols-outlined fill-icon text-3xl" aria-hidden="true">signal_cellular_alt</span>
+          </div>
+          <h3 class="font-h3 text-h3 text-on-background">Cobertura total</h3>
+          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Entel, Movistar, Claro y WOM. Cubrimos el 100% de la red móvil de Chile.</p>
+        </article>
+        <article class="flex flex-col gap-4 rounded-[28px] border border-outline-variant/60 bg-surface-container-lowest p-8 transition-shadow duration-300 hover:shadow-[0px_20px_40px_rgba(15,23,42,0.08)]">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <span class="material-symbols-outlined fill-icon text-3xl" aria-hidden="true">hub</span>
+          </div>
+          <h3 class="font-h3 text-h3 text-on-background">API simple</h3>
+          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Integración en horas, no en semanas. Documentación clara, SDKs y soporte técnico en español.</p>
+        </article>
+        <article class="flex flex-col gap-4 rounded-[28px] border border-outline-variant/60 bg-surface-container-lowest p-8 transition-shadow duration-300 hover:shadow-[0px_20px_40px_rgba(15,23,42,0.08)]">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <span class="material-symbols-outlined fill-icon text-3xl" aria-hidden="true">gavel</span>
+          </div>
+          <h3 class="font-h3 text-h3 text-on-background">Cumplimiento Subtel</h3>
+          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Operamos bajo regulación chilena. Rutas transparentes, trazabilidad total y factura electrónica en CLP.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Propuesta de Valor -->
+    <section class="px-4 sm:px-margin-page py-stack-xl max-w-container-max mx-auto" id="soluciones" tabindex="-1">
+      <div class="text-center mb-16">
+        <h2 class="font-h2 text-h2 text-on-background">Rendimiento sin Concesiones</h2>
+        <p class="font-body-md text-body-md text-on-surface-variant mt-3 max-w-2xl mx-auto">Infraestructura y procesos alineados a buenas prácticas A2P y al contexto regulatorio local.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="bg-surface-container-lowest border border-outline-variant/60 rounded-[32px] p-10 flex flex-col items-start gap-5 hover:shadow-[0px_20px_40px_rgba(15,23,42,0.06)] transition-all duration-300">
+          <div class="bg-surface-container-low p-4 rounded-2xl">
+            <span class="material-symbols-outlined text-primary fill-icon text-3xl">visibility</span>
+          </div>
+          <h3 class="font-h3 text-h3 text-on-background">Transparencia Total</h3>
+          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Modelo de bolsas de SMS claro y predecible. Sin cargos ocultos, sin sorpresas a fin de mes.</p>
+        </div>
+        <div class="bg-surface-container-lowest border border-outline-variant/60 rounded-[32px] p-10 flex flex-col items-start gap-5 hover:shadow-[0px_20px_40px_rgba(15,23,42,0.06)] transition-all duration-300">
+          <div class="bg-surface-container-low p-4 rounded-2xl">
+            <span class="material-symbols-outlined text-primary fill-icon text-3xl">route</span>
+          </div>
+          <h3 class="font-h3 text-h3 text-on-background">Rutas Premium</h3>
+          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Enfoque en entregabilidad y calidad de ruta para mensajes transaccionales y notificaciones.</p>
+        </div>
+        <div class="bg-surface-container-lowest border border-outline-variant/60 rounded-[32px] p-10 flex flex-col items-start gap-5 hover:shadow-[0px_20px_40px_rgba(15,23,42,0.06)] transition-all duration-300">
+          <div class="bg-surface-container-low p-4 rounded-2xl">
+            <span class="material-symbols-outlined text-primary fill-icon text-3xl">speed</span>
+          </div>
+          <h3 class="font-h3 text-h3 text-on-background">Alto Rendimiento</h3>
+          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Infraestructura escalable para picos de envío sin sacrificar tiempos de respuesta de API.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="px-4 sm:px-margin-page py-stack-xl max-w-container-max mx-auto" id="precios" tabindex="-1">
+      <div class="text-center mb-16">
+        <h2 class="font-h2 text-h2 text-on-background">Bolsas de SMS</h2>
+        <p class="font-body-lg text-body-lg text-on-surface-variant mt-3">Pague solo por lo que necesita. Precios referenciales en CLP + IVA; cotización final según volumen y uso.</p>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        <article class="pack-card bg-surface-container-lowest border border-outline-variant/60 rounded-[32px] p-8 flex flex-col" data-pack="Pack Inicial" data-sms="1000" data-price="$9.000">
+          <h3 class="font-body-md text-body-md text-on-surface-variant font-semibold">Pack Inicial</h3>
+          <div class="mt-5 mb-2 flex items-baseline gap-1">
+            <span class="font-h2 text-h2 text-on-background text-4xl">1.000</span>
+            <span class="font-body-sm text-body-sm text-on-surface-variant">SMS</span>
+          </div>
+          <div class="font-h3 text-h3 text-primary mb-8">$9.000 <span class="text-[14px] text-on-surface-variant font-normal">+ IVA</span></div>
+          <ul class="space-y-4 mb-10 flex-1">
+            <li class="flex items-center gap-3 font-body-sm text-body-sm text-on-surface-variant"><span class="material-symbols-outlined text-[18px] text-secondary">check</span> Rutas Premium</li>
+            <li class="flex items-center gap-3 font-body-sm text-body-sm text-on-surface-variant"><span class="material-symbols-outlined text-[18px] text-secondary">check</span> API Access</li>
+          </ul>
+          <button type="button" class="pack-cta w-full bg-surface-container-high text-primary font-body-md font-semibold py-3.5 rounded-full hover:bg-surface-variant transition-colors">Comprar Bolsa</button>
+        </article>
+        <article class="pack-card bg-surface-container-lowest border border-outline-variant/60 rounded-[32px] p-8 flex flex-col" data-pack="Pack Crecimiento" data-sms="2000" data-price="$18.000">
+          <h3 class="font-body-md text-body-md text-on-surface-variant font-semibold">Pack Crecimiento</h3>
+          <div class="mt-5 mb-2 flex items-baseline gap-1">
+            <span class="font-h2 text-h2 text-on-background text-4xl">2.000</span>
+            <span class="font-body-sm text-body-sm text-on-surface-variant">SMS</span>
+          </div>
+          <div class="font-h3 text-h3 text-primary mb-8">$18.000 <span class="text-[14px] text-on-surface-variant font-normal">+ IVA</span></div>
+          <ul class="space-y-4 mb-10 flex-1">
+            <li class="flex items-center gap-3 font-body-sm text-body-sm text-on-surface-variant"><span class="material-symbols-outlined text-[18px] text-secondary">check</span> Rutas Premium</li>
+            <li class="flex items-center gap-3 font-body-sm text-body-sm text-on-surface-variant"><span class="material-symbols-outlined text-[18px] text-secondary">check</span> API Access</li>
+          </ul>
+          <button type="button" class="pack-cta w-full bg-surface-container-high text-primary font-body-md font-semibold py-3.5 rounded-full hover:bg-surface-variant transition-colors">Comprar Bolsa</button>
+        </article>
+        <article class="pack-card pack-card--featured bg-surface-container-lowest border-2 border-secondary-container rounded-[32px] p-8 flex flex-col relative shadow-[0px_20px_40px_rgba(15,23,42,0.08)] md:scale-105 z-10" data-pack="Pack Profesional" data-sms="5000" data-price="$45.000">
+          <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-secondary-container text-on-secondary-container font-label-caps text-label-caps px-4 py-1.5 rounded-full uppercase tracking-wider">Más Popular</div>
+          <h3 class="font-body-md text-body-md text-on-surface-variant font-semibold mt-3">Pack Profesional</h3>
+          <div class="mt-5 mb-2 flex items-baseline gap-1">
+            <span class="font-h2 text-h2 text-on-background text-4xl">5.000</span>
+            <span class="font-body-sm text-body-sm text-on-surface-variant">SMS</span>
+          </div>
+          <div class="font-h3 text-h3 text-primary mb-8">$45.000 <span class="text-[14px] text-on-surface-variant font-normal">+ IVA</span></div>
+          <ul class="space-y-4 mb-10 flex-1">
+            <li class="flex items-center gap-3 font-body-sm text-body-sm text-on-surface-variant"><span class="material-symbols-outlined text-[18px] text-secondary">check</span> Filtro listas de exclusión</li>
+            <li class="flex items-center gap-3 font-body-sm text-body-sm text-on-surface-variant"><span class="material-symbols-outlined text-[18px] text-secondary">check</span> Panel de Analítica</li>
+            <li class="flex items-center gap-3 font-body-sm text-body-sm text-on-surface-variant"><span class="material-symbols-outlined text-[18px] text-secondary">check</span> Soporte Prioritario</li>
+          </ul>
+          <button type="button" class="pack-cta w-full bg-primary text-on-primary font-body-md font-semibold py-3.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm">Comprar Bolsa</button>
+        </article>
+        <article class="pack-card bg-surface-container-lowest border border-outline-variant/60 rounded-[32px] p-8 flex flex-col" data-pack="Pack Masivo" data-sms="10000" data-price="$90.000">
+          <h3 class="font-body-md text-body-md text-on-surface-variant font-semibold">Pack Masivo</h3>
+          <div class="mt-5 mb-2 flex items-baseline gap-1">
+            <span class="font-h2 text-h2 text-on-background text-4xl">10.000</span>
+            <span class="font-body-sm text-body-sm text-on-surface-variant">SMS</span>
+          </div>
+          <div class="font-h3 text-h3 text-primary mb-8">$90.000 <span class="text-[14px] text-on-surface-variant font-normal">+ IVA</span></div>
+          <ul class="space-y-4 mb-10 flex-1">
+            <li class="flex items-center gap-3 font-body-sm text-body-sm text-on-surface-variant"><span class="material-symbols-outlined text-[18px] text-secondary">check</span> Todo lo Profesional</li>
+            <li class="flex items-center gap-3 font-body-sm text-body-sm text-on-surface-variant"><span class="material-symbols-outlined text-[18px] text-secondary">check</span> Gestor de Campañas</li>
+          </ul>
+          <button type="button" class="pack-cta w-full bg-surface-container-high text-primary font-body-md font-semibold py-3.5 rounded-full hover:bg-surface-variant transition-colors">Comprar Bolsa</button>
+        </article>
+      </div>
+    </section>
+
+    <!-- Calculadora (alineada a web-telvoice-cl.html) -->
+    <section id="calculadora" class="px-4 sm:px-margin-page py-stack-lg max-w-container-max mx-auto bg-surface-container-low/35" aria-labelledby="calc-titulo" tabindex="-1">
+      <div class="mx-auto max-w-[800px]">
+        <div class="text-center">
+          <p class="font-label-caps text-label-caps uppercase tracking-wider text-primary">Calculadora</p>
+          <h2 id="calc-titulo" class="mt-1 font-h2 text-h2 text-on-background">Estima tu inversión</h2>
+          <p class="mx-auto mt-2 max-w-xl font-body-md text-body-md leading-relaxed text-on-surface-variant">Mueve el slider para ver el costo estimado según tu volumen mensual.</p>
+        </div>
+        <div class="mt-10 rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-sm sm:p-10">
+          <div class="mb-8">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <span class="font-body-md font-semibold text-on-background">SMS al mes</span>
+              <span id="calcVol" class="font-data-mono text-lg font-bold text-primary sm:text-xl" aria-live="polite">10.000</span>
+            </div>
+            <label for="calcSlider" class="sr-only">Cantidad de SMS por mes</label>
+            <input id="calcSlider" class="calc-range-input w-full" type="range" min="1000" max="500000" step="1000" value="10000" aria-valuemin="1000" aria-valuemax="500000" aria-valuenow="10000" />
+            <div class="mt-2 flex justify-between font-body-sm text-body-sm text-on-surface-variant">
+              <span>1.000</span>
+              <span>500.000</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div class="rounded-xl border border-outline-variant/50 bg-surface/90 px-4 py-5 text-center shadow-sm">
+              <span id="calcPxSMS" class="font-data-mono block text-2xl font-bold tracking-tight text-on-background">$7</span>
+              <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Precio por SMS (ref.)</span>
+            </div>
+            <div class="rounded-xl border border-outline-variant/50 bg-surface/90 px-4 py-5 text-center shadow-sm">
+              <span id="calcTotal" class="font-data-mono block text-2xl font-bold tracking-tight text-on-background">$70.000</span>
+              <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Total mensual estimado</span>
+            </div>
+            <div class="rounded-xl border border-outline-variant/50 bg-surface/90 px-4 py-5 text-center shadow-sm">
+              <span id="calcPlan" class="font-h3 block text-xl font-bold leading-tight text-primary sm:text-2xl">Starter</span>
+              <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Plan recomendado</span>
+            </div>
+          </div>
+          <p class="mt-6 text-center font-body-sm text-body-sm leading-relaxed text-on-surface-variant">
+            * Precios en CLP + IVA. El precio final depende del volumen y condiciones del contrato.
+            <a class="font-medium text-primary underline decoration-primary/30 hover:decoration-primary" href="#contacto">Cotiza sin compromiso →</a>
+          </p>
+          <div class="mt-7 flex justify-center">
+            <button type="button" id="calc-request-quote" class="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3.5 font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint">Obtener cotización exacta →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Casos de Uso -->
+    <section class="px-4 sm:px-margin-page py-stack-xl max-w-container-max mx-auto bg-surface-bright rounded-[40px] mb-stack-xl border border-outline-variant/30" aria-labelledby="casos-titulo">
+      <div class="mb-12 mx-auto max-w-3xl px-2 text-center">
+        <h2 id="casos-titulo" class="font-h2 text-h2 text-on-background">Casos de uso</h2>
+        <p class="font-body-lg text-body-lg text-on-surface-variant mt-3 leading-relaxed">Empresas de todos los sectores usan Telvoice.cl para sus comunicaciones críticas.</p>
+      </div>
+      <div class="grid grid-cols-1 gap-10 p-6 pt-0 sm:grid-cols-2 sm:gap-12 sm:p-8 sm:pt-0 lg:grid-cols-4">
+        <div class="flex items-start gap-5">
+          <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
+            <span class="material-symbols-outlined text-3xl">storefront</span>
+          </div>
+          <div>
+            <h4 class="font-body-lg text-body-lg font-semibold text-on-background">Retail</h4>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Promociones y estado de despacho con alto engagement en el canal SMS.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-5">
+          <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
+            <span class="material-symbols-outlined text-3xl">shopping_bag</span>
+          </div>
+          <div>
+            <h4 class="font-body-lg text-body-lg font-semibold text-on-background">E-commerce</h4>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Carritos abandonados, cupones y confirmación de compra para cerrar más ventas.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-5">
+          <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
+            <span class="material-symbols-outlined text-3xl">restaurant</span>
+          </div>
+          <div>
+            <h4 class="font-body-lg text-body-lg font-semibold text-on-background">Restaurantes</h4>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Lista de espera, pedido listo para retiro y encuestas post-visita.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-5">
+          <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
+            <span class="material-symbols-outlined text-3xl">local_mall</span>
+          </div>
+          <div>
+            <h4 class="font-body-lg text-body-lg font-semibold text-on-background">Supermercados</h4>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Ofertas del día, programa de fidelización y avisos de despacho a domicilio.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-5">
+          <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
+            <span class="material-symbols-outlined text-3xl">local_shipping</span>
+          </div>
+          <div>
+            <h4 class="font-body-lg text-body-lg font-semibold text-on-background">Transporte y logística</h4>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Ventanas de entrega, reprogramación de visitas, PIN o código de recepción y avisos de última milla en tiempo real.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-5">
+          <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
+            <span class="material-symbols-outlined text-3xl">app_registration</span>
+          </div>
+          <div>
+            <h4 class="font-body-lg text-body-lg font-semibold text-on-background">Fintech y aplicaciones</h4>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">OTP bancario, verificación de registro, recuperación de cuenta y alertas de seguridad para apps que exigen validar al usuario por SMS.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-5">
+          <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
+            <span class="material-symbols-outlined text-3xl">medical_services</span>
+          </div>
+          <div>
+            <h4 class="font-body-lg text-body-lg font-semibold text-on-background">Salud</h4>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Recordatorios de citas para reducir inasistencias.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-5">
+          <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
+            <span class="material-symbols-outlined text-3xl">account_balance</span>
+          </div>
+          <div>
+            <h4 class="font-body-lg text-body-lg font-semibold text-on-background">Finanzas</h4>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">OTP y alertas transaccionales con foco en entrega rápida.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Preguntas frecuentes -->
+    <section id="faq" class="px-4 sm:px-margin-page py-stack-xl max-w-container-max mx-auto mb-stack-xl" aria-labelledby="faq-titulo-principal">
+      <div class="mx-auto max-w-3xl text-center">
+        <p class="font-label-caps text-label-caps uppercase tracking-wider text-primary">Preguntas frecuentes</p>
+        <h2 id="faq-titulo-principal" class="mt-2 font-h2 text-h2 text-on-background">¿Tienes dudas?</h2>
+      </div>
+      <div class="mx-auto mt-10 max-w-3xl space-y-3">
+        <details class="faq-details group rounded-2xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm open:border-primary/25 open:shadow-md">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left font-body-lg text-body-lg font-semibold text-on-background transition hover:bg-surface-container-low/80 sm:px-6 sm:py-5">
+            <span>¿Cómo funciona el envío de SMS masivos?</span>
+            <span class="faq-chevron material-symbols-outlined shrink-0 text-on-surface-variant transition-transform duration-200" aria-hidden="true">add</span>
+          </summary>
+          <div class="border-t border-outline-variant/40 px-5 pb-5 pt-0 sm:px-6 sm:pb-6">
+            <p class="pt-4 font-body-md text-body-md leading-relaxed text-on-surface-variant">
+              Puedes enviar SMS desde tu sistema vía nuestra API REST o desde el panel de administración web. Solo debes subir tu base de datos de teléfonos, redactar el mensaje y programar el envío. En segundos los mensajes comienzan a entregarse en la red chilena.
+            </p>
+          </div>
+        </details>
+        <details class="faq-details group rounded-2xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm open:border-primary/25 open:shadow-md">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left font-body-lg text-body-lg font-semibold text-on-background transition hover:bg-surface-container-low/80 sm:px-6 sm:py-5">
+            <span>¿En cuánto tiempo se integra la API?</span>
+            <span class="faq-chevron material-symbols-outlined shrink-0 text-on-surface-variant transition-transform duration-200" aria-hidden="true">add</span>
+          </summary>
+          <div class="border-t border-outline-variant/40 px-5 pb-5 pt-0 sm:px-6 sm:pb-6">
+            <p class="pt-4 font-body-md text-body-md leading-relaxed text-on-surface-variant">
+              La integración básica (envío de un SMS desde tu sistema) puede estar lista en menos de una hora. Contamos con documentación completa, ejemplos de código en múltiples lenguajes y soporte técnico en español para acompañarte durante el proceso.
+            </p>
+          </div>
+        </details>
+        <details class="faq-details group rounded-2xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm open:border-primary/25 open:shadow-md">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left font-body-lg text-body-lg font-semibold text-on-background transition hover:bg-surface-container-low/80 sm:px-6 sm:py-5">
+            <span>¿Qué operadores móviles incluyen?</span>
+            <span class="faq-chevron material-symbols-outlined shrink-0 text-on-surface-variant transition-transform duration-200" aria-hidden="true">add</span>
+          </summary>
+          <div class="border-t border-outline-variant/40 px-5 pb-5 pt-0 sm:px-6 sm:pb-6">
+            <p class="pt-4 font-body-md text-body-md leading-relaxed text-on-surface-variant">
+              Cubrimos los cuatro operadores principales de Chile: Entel, Movistar, Claro y WOM. Esto garantiza que tus mensajes lleguen al 100% de los teléfonos móviles del país, independientemente del operador de tu cliente.
+            </p>
+          </div>
+        </details>
+        <details class="faq-details group rounded-2xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm open:border-primary/25 open:shadow-md">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left font-body-lg text-body-lg font-semibold text-on-background transition hover:bg-surface-container-low/80 sm:px-6 sm:py-5">
+            <span>¿Los SMS no utilizados caducan?</span>
+            <span class="faq-chevron material-symbols-outlined shrink-0 text-on-surface-variant transition-transform duration-200" aria-hidden="true">add</span>
+          </summary>
+          <div class="border-t border-outline-variant/40 px-5 pb-5 pt-0 sm:px-6 sm:pb-6">
+            <p class="pt-4 font-body-md text-body-md leading-relaxed text-on-surface-variant">
+              Depende del plan contratado. Las bolsas mensuales se renuevan cada mes. Para grandes volúmenes, podemos negociar bolsas anuales sin caducidad. Consulta en tu cotización las condiciones exactas de tu plan.
+            </p>
+          </div>
+        </details>
+        <details class="faq-details group rounded-2xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm open:border-primary/25 open:shadow-md">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left font-body-lg text-body-lg font-semibold text-on-background transition hover:bg-surface-container-low/80 sm:px-6 sm:py-5">
+            <span>¿Tienen soporte técnico en Chile?</span>
+            <span class="faq-chevron material-symbols-outlined shrink-0 text-on-surface-variant transition-transform duration-200" aria-hidden="true">add</span>
+          </summary>
+          <div class="border-t border-outline-variant/40 px-5 pb-5 pt-0 sm:px-6 sm:pb-6">
+            <p class="pt-4 font-body-md text-body-md leading-relaxed text-on-surface-variant">
+              Sí. Telvoice.cl es operado por TelefoníaChile LTDA, empresa establecida en Chile. Nuestro equipo técnico y comercial está disponible en horario local y puedes comunicarte en español para cualquier consulta o incidencia.
+            </p>
+          </div>
+        </details>
+        <details class="faq-details group rounded-2xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm open:border-primary/25 open:shadow-md">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left font-body-lg text-body-lg font-semibold text-on-background transition hover:bg-surface-container-low/80 sm:px-6 sm:py-5">
+            <span>¿Cómo se emite la factura?</span>
+            <span class="faq-chevron material-symbols-outlined shrink-0 text-on-surface-variant transition-transform duration-200" aria-hidden="true">add</span>
+          </summary>
+          <div class="border-t border-outline-variant/40 px-5 pb-5 pt-0 sm:px-6 sm:pb-6">
+            <p class="pt-4 font-body-md text-body-md leading-relaxed text-on-surface-variant">
+              Emitimos factura electrónica afecta al IVA por cada período facturado, en pesos chilenos (CLP). La factura se envía automáticamente al correo registrado y queda disponible en el portal del SII bajo el RUT de TelefoníaChile LTDA.
+            </p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- Contacto -->
+    <section class="px-4 sm:px-margin-page py-stack-xl max-w-container-max mx-auto" id="contacto" tabindex="-1">
+      <div class="mx-auto max-w-2xl text-center">
+        <h2 class="font-h2 text-h2 text-on-background">Solicite demo o cotización</h2>
+        <p class="mt-4 font-body-lg text-body-lg leading-relaxed text-on-surface-variant">
+          Complete el formulario y nos contactaremos a la brevedad.
+        </p>
+      </div>
+      <div class="mx-auto mt-10 max-w-xl rounded-[32px] border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-sm sm:p-8">
+        <form id="lead-form" class="space-y-5" novalidate>
+          <div id="form-alert" class="hidden rounded-xl px-4 py-3 text-body-sm font-medium" role="status"></div>
+          <div>
+            <label for="nombre" class="mb-1.5 block font-body-sm text-body-sm font-medium text-on-background">Nombre y apellido</label>
+            <input id="nombre" name="nombre" type="text" autocomplete="name" required maxlength="120" class="w-full rounded-xl border-outline-variant/80 bg-surface focus:border-primary focus:ring-primary" placeholder="Juan Pérez" />
+          </div>
+          <div>
+            <label for="empresa" class="mb-1.5 block font-body-sm text-body-sm font-medium text-on-background">Empresa</label>
+            <input id="empresa" name="empresa" type="text" autocomplete="organization" required maxlength="120" class="w-full rounded-xl border-outline-variant/80 bg-surface focus:border-primary focus:ring-primary" placeholder="Mi Empresa SpA" />
+          </div>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label for="email" class="mb-1.5 block font-body-sm text-body-sm font-medium text-on-background">Correo</label>
+              <input id="email" name="email" type="email" autocomplete="email" required maxlength="120" class="w-full rounded-xl border-outline-variant/80 bg-surface focus:border-primary focus:ring-primary" placeholder="nombre@empresa.cl" />
+            </div>
+            <div>
+              <label for="telefono" class="mb-1.5 block font-body-sm text-body-sm font-medium text-on-background">Teléfono</label>
+              <input id="telefono" name="telefono" type="tel" autocomplete="tel" inputmode="tel" required maxlength="20" class="w-full rounded-xl border-outline-variant/80 bg-surface focus:border-primary focus:ring-primary" placeholder="+56 9 1234 5678" />
+            </div>
+          </div>
+          <div>
+            <label for="interes" class="mb-1.5 block font-body-sm text-body-sm font-medium text-on-background">Interés</label>
+            <select id="interes" name="interes" required class="w-full rounded-xl border-outline-variant/80 bg-surface focus:border-primary focus:ring-primary">
+              <option value="">Seleccione…</option>
+              <option value="demo">Demo gratuita</option>
+              <option value="cotizacion">Cotización bolsas SMS</option>
+              <option value="api">Integración API</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div>
+            <label for="mensaje" class="mb-1.5 block font-body-sm text-body-sm font-medium text-on-background">Mensaje (opcional)</label>
+            <textarea id="mensaje" name="mensaje" rows="4" maxlength="2000" class="w-full rounded-xl border-outline-variant/80 bg-surface focus:border-primary focus:ring-primary" placeholder="Volumen estimado, casos de uso, plazos…"></textarea>
+          </div>
+          <input type="text" name="website" id="website" class="hidden" tabindex="-1" autocomplete="off" aria-hidden="true" />
+          <button type="submit" id="form-submit" class="w-full rounded-full bg-primary py-3.5 font-body-md font-semibold text-on-primary shadow-sm transition-colors hover:bg-surface-tint disabled:pointer-events-none disabled:opacity-60">Enviar solicitud</button>
+          <p class="font-body-sm text-body-sm text-on-surface-variant">Al enviar, acepta ser contactado con fines comerciales relacionados con Telvoice. No vendemos datos a terceros.</p>
+        </form>
+      </div>
+      <ul class="mx-auto mt-8 flex max-w-xl flex-col items-center gap-4 px-1 text-center font-body-sm text-body-sm text-on-surface-variant">
+        <li class="flex w-full items-center justify-center gap-3 sm:justify-start sm:pl-1">
+          <span class="material-symbols-outlined shrink-0 text-secondary text-[20px]" aria-hidden="true">schedule</span>
+          <span class="text-left">Respuesta típica en 1 día hábil.</span>
+        </li>
+        <li class="flex w-full items-center justify-center gap-3 sm:justify-start sm:pl-1">
+          <span class="material-symbols-outlined shrink-0 text-secondary text-[20px]" aria-hidden="true">hub</span>
+          <span class="text-left">Integración vía API REST documentada.</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="px-4 sm:px-margin-page py-24 max-w-container-max mx-auto text-center">
+      <h2 class="font-h2 text-h2 text-on-background mb-6">Comience hoy su campaña masiva en Chile</h2>
+      <p class="font-body-lg text-body-lg text-on-surface-variant mb-10 max-w-2xl mx-auto leading-relaxed">Regístrese y pruebe la plataforma con créditos de bienvenida. Sin tarjeta de crédito para agendar demo.</p>
+      <button type="button" class="final-cta bg-primary text-on-primary font-body-md px-10 py-4 rounded-full hover:bg-surface-tint transition-all shadow-lg text-lg font-semibold">Crear Cuenta Gratuita</button>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-primary text-on-primary" role="contentinfo">
+    <div class="max-w-container-max mx-auto px-4 sm:px-margin-page pt-14 pb-6">
+      <div class="grid grid-cols-1 gap-12 border-b border-on-primary/20 pb-12 md:grid-cols-2 lg:grid-cols-12 lg:gap-10">
+        <div class="lg:col-span-4">
+          <a href="#" class="inline-flex items-center gap-2.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary" data-scroll-top>
+            <img src="assets/telvoice-isotipo.png" alt="" width="40" height="40" class="h-10 w-10 rounded-lg object-contain ring-1 ring-on-primary/25" aria-hidden="true" />
+            <span class="font-h3 text-h3 font-bold text-on-primary tracking-tight">Telvoice</span>
+          </a>
+          <p class="mt-4 max-w-sm font-body-md text-body-md leading-relaxed text-on-primary/85">
+            Plataforma de mensajería A2P para empresas en Chile: envíos masivos, API y acompañamiento en cumplimiento.
+          </p>
+          <div class="mt-6 flex flex-wrap gap-3">
+            <a href="#contacto" class="inline-flex items-center justify-center rounded-full bg-on-primary px-5 py-2.5 font-body-md text-body-md font-semibold text-primary shadow-sm transition hover:bg-primary-fixed hover:text-on-primary-fixed focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary">Solicitar demo</a>
+            <a href="mailto:ventas@telvoice.net" class="inline-flex items-center justify-center rounded-full border-2 border-on-primary/50 bg-transparent px-5 py-2.5 font-body-md text-body-md font-semibold text-on-primary transition hover:border-on-primary hover:bg-on-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary">ventas@telvoice.net</a>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-10 sm:grid-cols-3 md:col-span-2 lg:col-span-8 lg:grid-cols-3">
+          <div>
+            <p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Producto</p>
+            <ul class="mt-4 space-y-3">
+              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#por-que-telvoice">Por qué Telvoice</a></li>
+              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#soluciones">Soluciones</a></li>
+              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#precios">Precios y bolsas</a></li>
+              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#calculadora">Calculadora</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Empresa</p>
+            <ul class="mt-4 space-y-3">
+              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#contacto">Contacto</a></li>
+              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#inicio">Inicio</a></li>
+            </ul>
+          </div>
+          <div class="col-span-2 sm:col-span-1">
+            <p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Legal</p>
+            <ul class="mt-4 space-y-3">
+              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#">Términos y condiciones</a></li>
+              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#">Política de privacidad</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-col gap-4 pt-8 sm:flex-row sm:items-center sm:justify-between">
+        <p class="font-body-sm text-body-sm text-on-primary/65">© 2026 Telvoice.cl. Todos los derechos reservados.</p>
+        <p class="font-body-sm text-body-sm text-on-primary/55">Mensajería empresarial · Chile</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var SALES_EMAIL = "ventas@telvoice.net";
+
+      function qs(id) {
+        return document.getElementById(id);
+      }
+
+      function closeMobileMenu() {
+        var panel = qs("mobile-panel");
+        var toggle = qs("menu-toggle");
+        var openI = qs("menu-icon-open");
+        var closeI = qs("menu-icon-close");
+        if (!panel || !toggle) return;
+        panel.classList.add("hidden");
+        toggle.setAttribute("aria-expanded", "false");
+        if (openI) openI.classList.remove("hidden");
+        if (closeI) closeI.classList.add("hidden");
+      }
+
+      function openMobileMenu() {
+        var panel = qs("mobile-panel");
+        var toggle = qs("menu-toggle");
+        var openI = qs("menu-icon-open");
+        var closeI = qs("menu-icon-close");
+        if (!panel || !toggle) return;
+        panel.classList.remove("hidden");
+        toggle.setAttribute("aria-expanded", "true");
+        if (openI) openI.classList.add("hidden");
+        if (closeI) closeI.classList.remove("hidden");
+      }
+
+      var menuToggle = qs("menu-toggle");
+      if (menuToggle) {
+        menuToggle.addEventListener("click", function () {
+          var expanded = menuToggle.getAttribute("aria-expanded") === "true";
+          if (expanded) closeMobileMenu();
+          else openMobileMenu();
+        });
+      }
+
+      document.querySelectorAll('#mobile-panel a[href^="#"]').forEach(function (a) {
+        a.addEventListener("click", closeMobileMenu);
+      });
+
+      document.querySelectorAll('[data-scroll-top]').forEach(function (el) {
+        el.addEventListener("click", function (e) {
+          e.preventDefault();
+          closeMobileMenu();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      });
+
+      function scrollToContact(prefill) {
+        closeMobileMenu();
+        var el = qs("contacto");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (prefill && prefill.interes) {
+          var sel = qs("interes");
+          if (sel) sel.value = prefill.interes;
+        }
+        if (prefill && typeof prefill.mensaje === "string") {
+          var msgBox = qs("mensaje");
+          if (msgBox) msgBox.value = prefill.mensaje;
+        }
+        var nombre = qs("nombre");
+        if (nombre) setTimeout(function () { nombre.focus(); }, 400);
+      }
+
+      function bindDemoButtons() {
+        ["nav-demo", "nav-demo-mobile"].forEach(function (id) {
+          var b = qs(id);
+          if (b) b.addEventListener("click", function () { scrollToContact({ interes: "demo" }); });
+        });
+        document.querySelectorAll(".hero-cta-demo, .final-cta").forEach(function (b) {
+          b.addEventListener("click", function () { scrollToContact({ interes: "demo" }); });
+        });
+      }
+      bindDemoButtons();
+
+      document.querySelectorAll(".pack-cta").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var card = btn.closest("[data-pack]");
+          var pack = card ? card.getAttribute("data-pack") : "";
+          var sms = card ? card.getAttribute("data-sms") : "";
+          var price = card ? card.getAttribute("data-price") : "";
+          scrollToContact({ interes: "cotizacion" });
+          var msg = qs("mensaje");
+          if (msg && !msg.value.trim()) {
+            msg.value = "Hola, quiero comprar: " + pack + " (" + sms + " SMS, " + price + " + IVA).";
+          }
+        });
+      });
+
+      function showFormAlert(type, text) {
+        var box = qs("form-alert");
+        if (!box) return;
+        box.classList.remove("hidden", "bg-error-container", "text-on-error-container", "bg-secondary-fixed", "text-on-secondary-fixed");
+        if (type === "error") {
+          box.classList.add("bg-error-container", "text-on-error-container");
+        } else {
+          box.classList.add("bg-secondary-fixed", "text-on-secondary-fixed");
+        }
+        box.textContent = text;
+      }
+
+      function isValidEmail(v) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+      }
+
+      var form = qs("lead-form");
+      if (form) {
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          var honeypot = qs("website");
+          if (honeypot && honeypot.value) {
+            showFormAlert("ok", "Solicitud recibida.");
+            return;
+          }
+
+          var nombre = (qs("nombre").value || "").trim();
+          var empresa = (qs("empresa").value || "").trim();
+          var email = (qs("email").value || "").trim();
+          var telefono = (qs("telefono").value || "").trim();
+          var interes = qs("interes").value;
+          var mensaje = (qs("mensaje").value || "").trim();
+
+          if (nombre.length < 2) {
+            showFormAlert("error", "Indique un nombre válido.");
+            qs("nombre").focus();
+            return;
+          }
+          if (empresa.length < 2) {
+            showFormAlert("error", "Indique el nombre de la empresa.");
+            qs("empresa").focus();
+            return;
+          }
+          if (!isValidEmail(email)) {
+            showFormAlert("error", "Indique un correo válido.");
+            qs("email").focus();
+            return;
+          }
+          if (telefono.length < 8) {
+            showFormAlert("error", "Indique un teléfono de contacto.");
+            qs("telefono").focus();
+            return;
+          }
+          if (!interes) {
+            showFormAlert("error", "Seleccione el tipo de interés.");
+            qs("interes").focus();
+            return;
+          }
+
+          var lines = [
+            "Nueva solicitud Telvoice (landing)",
+            "Nombre: " + nombre,
+            "Empresa: " + empresa,
+            "Email: " + email,
+            "Teléfono: " + telefono,
+            "Interés: " + interes,
+            "",
+            mensaje || "(sin mensaje adicional)",
+          ];
+          var subject = encodeURIComponent("[Telvoice] " + interes + " — " + empresa);
+          var body = encodeURIComponent(lines.join("\n"));
+          var mailto = "mailto:" + SALES_EMAIL + "?subject=" + subject + "&body=" + body;
+
+          showFormAlert(
+            "ok",
+            "Preparando su correo hacia " + SALES_EMAIL + ". Si no se abre la app de correo, copie el mensaje y envíelo manualmente."
+          );
+
+          window.setTimeout(function () {
+            window.location.href = mailto;
+          }, 150);
+        });
+      }
+
+      var PRECIOS = [
+        { min: 0, max: 49999, pxSMS: 7, plan: "Starter" },
+        { min: 50000, max: 199999, pxSMS: 6, plan: "Business" },
+        { min: 200000, max: 499999, pxSMS: 5, plan: "Pro" },
+        { min: 500000, max: Infinity, pxSMS: 4, plan: "Corporativo" },
+      ];
+
+      function fmtCalc(n) {
+        return new Intl.NumberFormat("es-CL").format(Math.round(n));
+      }
+
+      function initCalculadoraTelvoice() {
+        var slider = qs("calcSlider");
+        if (!slider) return;
+
+        var calcVol = qs("calcVol");
+        var calcPxSMS = qs("calcPxSMS");
+        var calcTotal = qs("calcTotal");
+        var calcPlan = qs("calcPlan");
+        var cta = qs("calc-request-quote");
+        var minV = +slider.min;
+        var maxV = +slider.max;
+
+        function calcSetSliderProgress() {
+          var val = +slider.value;
+          var pct = ((val - minV) / (maxV - minV)) * 100;
+          slider.style.background =
+            "linear-gradient(to right, #0052cc " + pct + "%, #c3c6d6 " + pct + "%)";
+        }
+
+        function updateCalc() {
+          var vol = +slider.value;
+          slider.setAttribute("aria-valuenow", String(vol));
+          if (calcVol) calcVol.textContent = fmtCalc(vol);
+          calcSetSliderProgress();
+          var tier = PRECIOS.find(function (t) {
+            return vol >= t.min && vol <= t.max;
+          });
+          if (!tier) return;
+          if (calcPxSMS) calcPxSMS.textContent = "$" + tier.pxSMS;
+          if (calcTotal) calcTotal.textContent = "$" + fmtCalc(vol * tier.pxSMS);
+          if (calcPlan) calcPlan.textContent = tier.plan;
+        }
+
+        slider.addEventListener("input", updateCalc);
+
+        if (cta) {
+          cta.addEventListener("click", function () {
+            var vol = +slider.value;
+            var tier = PRECIOS.find(function (t) {
+              return vol >= t.min && vol <= t.max;
+            });
+            var line =
+              "Cotización (calculadora web): " +
+              fmtCalc(vol) +
+              " SMS/mes, plan ref. " +
+              (tier ? tier.plan : "") +
+              ", $" +
+              (tier ? tier.pxSMS : "") +
+              " + IVA por SMS.";
+            scrollToContact({ interes: "cotizacion", mensaje: line });
+          });
+        }
+
+        updateCalc();
+      }
+      initCalculadoraTelvoice();
+    })();
+  </script>
+</body>
+</html>
