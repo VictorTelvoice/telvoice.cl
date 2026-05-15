@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html class="light" lang="es-CL">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SMS Masivos Chile | Compra Bolsas de SMS Online | Telvoice.cl</title>
+  <meta name="description" content="Compra SMS masivos para Chile con precios por volumen. Bolsas prepago, pago online, API para empresas y soporte comercial Telvoice." />
+  <meta name="keywords" content="sms masivos chile, sms marketing chile, comprar sms chile, bolsas sms chile, api sms chile, plataforma sms chile, sms empresas chile, enviar sms chile" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://telvoice.cl/" />
+  <meta property="og:title" content="SMS Masivos Chile | Telvoice.cl" />
+  <meta property="og:description" content="Compra bolsas de SMS para Chile. Precios por volumen, pago online y API para empresas." />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_CL" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Montserrat:wght@600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#003d9b",
+            "primary-container": "#0052cc",
+            "surface-tint": "#0c56d0",
+            secondary: "#006875",
+            "secondary-container": "#00e3fd",
+            "on-secondary-container": "#00616d",
+            "secondary-fixed": "#9cf0ff",
+            "secondary-fixed-dim": "#00daf3",
+            background: "#faf8ff",
+            surface: "#faf8ff",
+            "surface-bright": "#faf8ff",
+            "surface-container-low": "#f2f3ff",
+            "surface-container": "#eaedff",
+            "surface-container-high": "#e2e7ff",
+            "surface-container-highest": "#dae2fd",
+            "surface-container-lowest": "#ffffff",
+            "surface-variant": "#dae2fd",
+            "surface-dim": "#d2d9f4",
+            "on-background": "#131b2e",
+            "on-surface": "#131b2e",
+            "on-surface-variant": "#434654",
+            "on-primary": "#ffffff",
+            "primary-fixed": "#dae2ff",
+            "primary-fixed-dim": "#b2c5ff",
+            outline: "#737685",
+            "outline-variant": "#c3c6d6",
+            "inverse-surface": "#283044",
+            "inverse-on-surface": "#eef0ff",
+            error: "#ba1a1a",
+            "error-container": "#ffdad6",
+            "on-error-container": "#93000a",
+          },
+          borderRadius: { xl: "0.5rem", full: "0.75rem" },
+          spacing: {
+            "margin-page": "1.25rem",
+            "stack-md": "24px",
+            "stack-lg": "48px",
+            "stack-sm": "12px",
+            gutter: "24px",
+          },
+          maxWidth: { "container-max": "1440px" },
+          fontFamily: {
+            h1: ["Montserrat", "sans-serif"],
+            h2: ["Montserrat", "sans-serif"],
+            h3: ["Montserrat", "sans-serif"],
+            "body-md": ["Inter", "sans-serif"],
+            "body-sm": ["Inter", "sans-serif"],
+            "body-lg": ["Inter", "sans-serif"],
+            "label-caps": ["Montserrat", "sans-serif"],
+            "data-mono": ["JetBrains Mono", "monospace"],
+          },
+          fontSize: {
+            h1: ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }],
+            h2: ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "600" }],
+            h3: ["24px", { lineHeight: "32px", fontWeight: "600" }],
+            "body-lg": ["18px", { lineHeight: "28px" }],
+            "body-md": ["16px", { lineHeight: "24px" }],
+            "body-sm": ["14px", { lineHeight: "20px" }],
+            "label-caps": ["12px", { lineHeight: "16px", fontWeight: "700" }],
+            "data-mono": ["13px", { lineHeight: "16px", fontWeight: "500" }],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24; }
+    .material-symbols-outlined.fill-icon { font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24; }
+    html { scroll-behavior: smooth; }
+    @media (min-width: 768px) {
+      .md\:px-margin-page { padding-left: 2.5rem; padding-right: 2.5rem; }
+    }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Telvoice.cl",
+    "url": "https://telvoice.cl",
+    "description": "Plataforma de SMS masivos para empresas en Chile. Bolsas prepago y API.",
+    "areaServed": "CL"
+  }
+  </script>
+</head>
+<body class="bg-background font-body-md text-on-background antialiased selection:bg-primary-container selection:text-on-primary">
+  <!-- Header -->
+  <header class="sticky top-0 z-50 border-b border-outline-variant/30 bg-surface/95 backdrop-blur-md">
+    <div class="mx-auto flex max-w-container-max items-center justify-between gap-4 px-margin-page py-3 md:px-10">
+      <a href="#" class="font-h3 text-h3 shrink-0 font-bold text-primary" aria-label="Telvoice.cl inicio">Telvoice<span class="font-body-md font-medium text-on-surface-variant">.cl</span></a>
+      <button id="nav-toggle" type="button" class="rounded-xl p-2 text-on-surface-variant hover:bg-surface-container-low md:hidden" aria-expanded="false" aria-controls="nav-menu" aria-label="Abrir menú">
+        <span class="material-symbols-outlined" aria-hidden="true">menu</span>
+      </button>
+      <nav id="nav-menu" class="absolute left-0 right-0 top-full hidden flex-col border-b border-outline-variant/30 bg-surface px-margin-page py-4 shadow-lg md:static md:flex md:flex-row md:items-center md:border-0 md:bg-transparent md:p-0 md:shadow-none">
+        <ul class="flex flex-col gap-1 md:flex-row md:items-center md:gap-1">
+          <li><a class="block rounded-xl px-4 py-2 font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#calculadora">Precios</a></li>
+          <li><a class="block rounded-xl px-4 py-2 font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#casos">Casos de uso</a></li>
+          <li><a class="block rounded-xl px-4 py-2 font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#api">API</a></li>
+          <li><a class="block rounded-xl px-4 py-2 font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#empresas">Empresas</a></li>
+          <li><a class="block rounded-xl px-4 py-2 font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#contacto">Contacto</a></li>
+        </ul>
+        <div class="mt-4 flex flex-col gap-2 border-t border-outline-variant/30 pt-4 md:mt-0 md:ml-4 md:flex-row md:border-0 md:pt-0">
+          <a href="#calculadora" data-scroll-calc data-track="click_calcular_precio" class="rounded-xl bg-primary px-5 py-2.5 text-center font-body-md text-sm font-semibold text-on-primary hover:bg-surface-tint">Calcular precio</a>
+          <a href="#contacto" data-track="click_cotizar_volumen" class="rounded-xl border border-primary px-5 py-2.5 text-center font-body-md text-sm font-semibold text-primary hover:bg-surface-container-low">Hablar con ventas</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="relative overflow-hidden border-b border-outline-variant/40 bg-gradient-to-b from-surface-container-low to-background">
+      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(0,61,155,0.08),_transparent_55%)]" aria-hidden="true"></div>
+      <div class="relative mx-auto grid max-w-container-max gap-10 px-margin-page py-12 md:grid-cols-2 md:items-center md:gap-12 md:px-10 md:py-16 lg:py-20">
+        <div>
+          <p class="mb-4 inline-flex items-center gap-2 rounded-full border border-outline-variant bg-surface-container-lowest px-3 py-1 font-label-caps text-label-caps uppercase tracking-wider text-primary">
+            <span class="h-2 w-2 rounded-full bg-secondary-container" aria-hidden="true"></span>
+            SMS masivos · Chile
+          </p>
+          <h1 class="font-h1 text-h1 text-on-background">SMS masivos en Chile, simples, rápidos y económicos</h1>
+          <p class="mt-4 font-body-lg text-body-lg text-on-surface-variant">
+            Compra bolsas de SMS para empresas, campañas, notificaciones y recordatorios. Paga online, carga saldo y comienza a enviar con infraestructura profesional Telvoice.
+          </p>
+          <ul class="mt-6 flex flex-wrap gap-2">
+            <li class="rounded-full bg-surface-container-low px-3 py-1 font-body-sm text-body-sm text-on-surface-variant">Bolsas prepago</li>
+            <li class="rounded-full bg-surface-container-low px-3 py-1 font-body-sm text-body-sm text-on-surface-variant">Precios por volumen</li>
+            <li class="rounded-full bg-surface-container-low px-3 py-1 font-body-sm text-body-sm text-on-surface-variant">Pago online</li>
+            <li class="rounded-full bg-surface-container-low px-3 py-1 font-body-sm text-body-sm text-on-surface-variant">API disponible</li>
+            <li class="rounded-full bg-surface-container-low px-3 py-1 font-body-sm text-body-sm text-on-surface-variant">Soporte comercial</li>
+          </ul>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a href="#calculadora" data-scroll-calc data-track="click_calcular_precio" class="rounded-xl bg-primary px-6 py-3 font-body-md font-semibold text-on-primary shadow-sm hover:bg-surface-tint">Calcular mi bolsa</a>
+            <a href="#empresas" data-track="click_cotizar_volumen" class="rounded-xl border border-primary px-6 py-3 font-body-md font-semibold text-primary hover:bg-surface-container-lowest">Cotizar alto volumen</a>
+          </div>
+        </div>
+        <!-- Hero mini calculator -->
+        <aside class="rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 shadow-[0_12px_40px_rgba(15,23,42,0.08)]" aria-label="Vista previa de precio">
+          <p class="font-label-caps text-label-caps uppercase tracking-wider text-on-surface-variant">Tu bolsa estimada</p>
+          <p class="mt-2 font-h3 text-h3 text-on-background" data-calc-label>5.000 SMS</p>
+          <div class="mt-4 space-y-2 border-t border-outline-variant/50 pt-4">
+            <div class="flex justify-between font-body-sm text-body-sm">
+              <span class="text-on-surface-variant">Total con IVA</span>
+              <span class="font-data-mono font-semibold text-primary" data-calc-total>$53.550</span>
+            </div>
+            <div class="flex justify-between font-body-sm text-body-sm">
+              <span class="text-on-surface-variant">Precio por SMS</span>
+              <span class="font-data-mono text-on-background" data-calc-per-sms>$9 / SMS</span>
+            </div>
+          </div>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="rounded-full bg-primary/10 px-2.5 py-0.5 font-label-caps text-[11px] font-bold uppercase text-primary">Precios por volumen</span>
+            <span class="rounded-full bg-secondary/10 px-2.5 py-0.5 font-label-caps text-[11px] font-bold uppercase text-secondary">Pago online</span>
+            <span class="rounded-full bg-surface-container-high px-2.5 py-0.5 font-label-caps text-[11px] font-bold uppercase text-on-surface-variant">Soporte en Chile</span>
+          </div>
+          <button type="button" data-action-buy class="mt-6 w-full rounded-xl bg-primary py-3 font-body-md font-semibold text-on-primary hover:bg-surface-tint">Comprar ahora</button>
+          <a href="#calculadora" data-scroll-calc class="mt-2 block text-center font-body-sm text-body-sm text-primary hover:underline">Ver detalle de precios</a>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Calculadora -->
+    <section id="calculadora" class="mx-auto max-w-container-max px-margin-page py-stack-lg md:px-10">
+      <div class="mx-auto max-w-3xl text-center">
+        <h2 class="font-h2 text-h2 text-on-background">Calcula tu bolsa de SMS</h2>
+        <p class="mt-3 font-body-md text-body-md text-on-surface-variant">
+          Elige la cantidad que necesitas, revisa el precio final y compra online en segundos. Tu saldo queda disponible para comenzar a enviar campañas o integrarte vía API.
+        </p>
+      </div>
+      <div class="mx-auto mt-10 grid max-w-4xl gap-8 lg:grid-cols-5">
+        <div class="lg:col-span-2">
+          <p class="mb-3 font-body-sm font-medium text-on-surface-variant">Cantidad de SMS</p>
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-2" role="group" aria-label="Seleccionar bolsa">
+            <button type="button" data-plan-option data-plan-quantity="1000" class="rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-left font-body-md transition-all hover:border-primary/40" aria-pressed="false">1.000 SMS</button>
+            <button type="button" data-plan-option data-plan-quantity="5000" class="rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 text-left font-body-md transition-all hover:border-primary/40" aria-pressed="true">5.000 SMS <span class="text-primary">· Recomendado</span></button>
+            <button type="button" data-plan-option data-plan-quantity="10000" class="rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-left font-body-md transition-all hover:border-primary/40" aria-pressed="false">10.000 SMS</button>
+            <button type="button" data-plan-option data-plan-quantity="50000" class="rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-left font-body-md transition-all hover:border-primary/40" aria-pressed="false">50.000 SMS</button>
+            <button type="button" data-plan-option data-plan-quantity="100000" class="rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-left font-body-md transition-all hover:border-primary/40 sm:col-span-2" aria-pressed="false">100.000+ SMS · Cotización</button>
+          </div>
+        </div>
+        <div class="rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 shadow-sm lg:col-span-3">
+          <p class="font-label-caps text-label-caps uppercase text-on-surface-variant">Resumen</p>
+          <p class="mt-1 font-h3 text-h3 text-on-background"><span data-calc-label>5.000 SMS</span> seleccionados</p>
+          <dl class="mt-6 space-y-3">
+            <div class="flex justify-between border-b border-outline-variant/50 pb-3 font-body-md">
+              <dt class="text-on-surface-variant">Precio neto</dt>
+              <dd class="font-data-mono font-medium" data-calc-net>$45.000</dd>
+            </div>
+            <div class="flex justify-between border-b border-outline-variant/50 pb-3 font-body-md">
+              <dt class="text-on-surface-variant">IVA 19%</dt>
+              <dd class="font-data-mono font-medium" data-calc-iva>$8.550</dd>
+            </div>
+            <div class="flex justify-between pb-1 font-body-md font-semibold">
+              <dt>Total con IVA</dt>
+              <dd class="font-data-mono text-primary text-lg" data-calc-total>$53.550</dd>
+            </div>
+            <div class="flex justify-between font-body-sm">
+              <dt class="text-on-surface-variant">Precio aprox. por SMS</dt>
+              <dd class="font-data-mono" data-calc-per-sms>$9 / SMS</dd>
+            </div>
+          </dl>
+          <p data-calc-savings-wrap class="mt-4 rounded-lg bg-secondary/10 px-3 py-2 font-body-sm text-secondary hidden">
+            <span data-calc-savings></span>
+          </p>
+          <div data-buy-block class="mt-6 flex flex-col gap-3 sm:flex-row">
+            <button type="button" data-action-buy class="flex-1 rounded-xl bg-primary py-3 font-semibold text-on-primary hover:bg-surface-tint">Comprar bolsa</button>
+            <a href="#empresas" data-track="click_cotizar_volumen" class="flex-1 rounded-xl border border-outline-variant py-3 text-center font-semibold text-primary hover:bg-surface-container-low">Solicitar cotización</a>
+          </div>
+          <div data-quote-block class="mt-6 hidden rounded-xl border border-primary/20 bg-primary/5 p-4">
+            <p class="font-body-md font-medium text-on-background">Volumen empresarial</p>
+            <p class="mt-1 font-body-sm text-on-surface-variant">Para 100.000 SMS o más preparamos tarifa y soporte a medida.</p>
+            <button type="button" data-action-quote class="mt-4 w-full rounded-xl bg-primary py-3 font-semibold text-on-primary hover:bg-surface-tint">Cotizar volumen mensual</button>
+          </div>
+          <p class="mt-4 font-body-sm text-on-surface-variant">Pago online próximamente si aún no está activo: al comprar te guiamos por el canal habilitado.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Planes -->
+    <section id="planes" class="border-y border-outline-variant/40 bg-surface-container-low py-stack-lg">
+      <div class="mx-auto max-w-container-max px-margin-page md:px-10">
+        <div class="text-center">
+          <h2 class="font-h2 text-h2 text-on-background">Bolsas SMS para cada etapa de tu empresa</h2>
+          <p class="mx-auto mt-3 max-w-2xl font-body-md text-on-surface-variant">Compra la bolsa que calza con tu operación. Todos los precios se calculan desde la misma configuración comercial.</p>
+        </div>
+        <div id="plans-grid" class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"></div>
+      </div>
+    </section>
+
+    <!-- Casos de uso -->
+    <section id="casos" class="mx-auto max-w-container-max px-margin-page py-stack-lg md:px-10">
+      <div class="max-w-3xl">
+        <h2 class="font-h2 text-h2 text-on-background">SMS para vender, notificar y contactar clientes en Chile</h2>
+        <p class="mt-3 font-body-md text-on-surface-variant">
+          Envía promociones, recordatorios, alertas, notificaciones de despacho, cobranzas y códigos de validación directamente al celular de tus clientes.
+        </p>
+        <p class="mt-2 font-body-sm text-on-surface-variant">
+          El SMS sigue siendo uno de los canales más directos para llegar al teléfono del cliente, sin depender de aplicaciones, datos móviles ni bandejas de correo saturadas.
+        </p>
+      </div>
+      <div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <article class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
+          <span class="material-symbols-outlined text-primary" aria-hidden="true">campaign</span>
+          <h3 class="mt-3 font-body-md font-semibold">Campañas promocionales</h3>
+          <p class="mt-1 font-body-sm text-on-surface-variant">Ofertas, cupones y lanzamientos con alta lectura en minutos.</p>
+        </article>
+        <article class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
+          <span class="material-symbols-outlined text-primary" aria-hidden="true">event</span>
+          <h3 class="mt-3 font-body-md font-semibold">Recordatorios de citas</h3>
+          <p class="mt-1 font-body-sm text-on-surface-variant">Reduce inasistencias en salud, servicios y atención presencial.</p>
+        </article>
+        <article class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
+          <span class="material-symbols-outlined text-primary" aria-hidden="true">local_shipping</span>
+          <h3 class="mt-3 font-body-md font-semibold">Notificaciones de despacho</h3>
+          <p class="mt-1 font-body-sm text-on-surface-variant">Estado de pedido, ruta y entrega sin depender del correo.</p>
+        </article>
+        <article class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
+          <span class="material-symbols-outlined text-primary" aria-hidden="true">payments</span>
+          <h3 class="mt-3 font-body-md font-semibold">Cobranza</h3>
+          <p class="mt-1 font-body-sm text-on-surface-variant">Avisos de vencimiento y recordatorios de pago claros.</p>
+        </article>
+        <article class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
+          <span class="material-symbols-outlined text-primary" aria-hidden="true">pin</span>
+          <h3 class="mt-3 font-body-md font-semibold">Validaciones y OTP</h3>
+          <p class="mt-1 font-body-sm text-on-surface-variant">Códigos de acceso, verificación y seguridad en segundos.</p>
+        </article>
+        <article class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
+          <span class="material-symbols-outlined text-primary" aria-hidden="true">notifications</span>
+          <h3 class="mt-3 font-body-md font-semibold">Alertas internas</h3>
+          <p class="mt-1 font-body-sm text-on-surface-variant">Avisos operativos a equipos y sucursales en tiempo real.</p>
+        </article>
+        <article class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
+          <span class="material-symbols-outlined text-primary" aria-hidden="true">wifi_off</span>
+          <h3 class="mt-3 font-body-md font-semibold">Sin depender de internet</h3>
+          <p class="mt-1 font-body-sm text-on-surface-variant">Llega al celular aunque el cliente no tenga datos ni apps instaladas.</p>
+        </article>
+        <article class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
+          <span class="material-symbols-outlined text-primary" aria-hidden="true">hub</span>
+          <h3 class="mt-3 font-body-md font-semibold">CRM y software propio</h3>
+          <p class="mt-1 font-body-sm text-on-surface-variant">Integra envíos desde tu stack con API Telvoice.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Por qué Telvoice -->
+    <section id="por-que" class="border-y border-outline-variant/40 bg-surface-bright py-stack-lg">
+      <div class="mx-auto max-w-container-max px-margin-page md:px-10">
+        <h2 class="font-h2 text-h2 text-center text-on-background">Precio económico con infraestructura profesional</h2>
+        <ul class="mx-auto mt-10 grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2">
+          <li class="flex gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+            <span class="material-symbols-outlined shrink-0 text-secondary" aria-hidden="true">shopping_cart</span>
+            <span class="font-body-sm">Compra online de bolsas SMS.</span>
+          </li>
+          <li class="flex gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+            <span class="material-symbols-outlined shrink-0 text-secondary" aria-hidden="true">trending_down</span>
+            <span class="font-body-sm">Precios por volumen.</span>
+          </li>
+          <li class="flex gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+            <span class="material-symbols-outlined shrink-0 text-secondary" aria-hidden="true">bolt</span>
+            <span class="font-body-sm">Plataforma simple y rápida.</span>
+          </li>
+          <li class="flex gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+            <span class="material-symbols-outlined shrink-0 text-secondary" aria-hidden="true">api</span>
+            <span class="font-body-sm">API disponible para empresas e integradores.</span>
+          </li>
+          <li class="flex gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+            <span class="material-symbols-outlined shrink-0 text-secondary" aria-hidden="true">support_agent</span>
+            <span class="font-body-sm">Soporte comercial en Chile.</span>
+          </li>
+          <li class="flex gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+            <span class="material-symbols-outlined shrink-0 text-secondary" aria-hidden="true">public</span>
+            <span class="font-body-sm">Infraestructura internacional Telvoice.</span>
+          </li>
+          <li class="flex gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+            <span class="material-symbols-outlined shrink-0 text-secondary" aria-hidden="true">monitoring</span>
+            <span class="font-body-sm">Reportes y trazabilidad de envíos.</span>
+          </li>
+          <li class="flex gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+            <span class="material-symbols-outlined shrink-0 text-secondary" aria-hidden="true">savings</span>
+            <span class="font-body-sm">Pensado para empresas que necesitan volumen y control de costos.</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- API -->
+    <section id="api" class="mx-auto max-w-container-max px-margin-page py-stack-lg md:px-10">
+      <div class="grid gap-10 lg:grid-cols-2 lg:items-center">
+        <div>
+          <h2 class="font-h2 text-h2 text-on-background">Integra SMS en tu sistema, CRM o plataforma</h2>
+          <p class="mt-4 font-body-md text-on-surface-variant">
+            Si tu empresa necesita automatizar envíos desde un software propio, CRM, e-commerce o sistema de gestión, Telvoice puede entregar acceso vía API para enviar SMS de forma programática.
+          </p>
+          <button type="button" id="btn-api-request" class="mt-6 rounded-xl bg-primary px-6 py-3 font-semibold text-on-primary hover:bg-surface-tint">Solicitar acceso API</button>
+        </div>
+        <aside class="rounded-xl border border-outline-variant bg-surface-container-low p-6">
+          <p class="font-label-caps text-label-caps uppercase text-on-surface-variant">Respaldo técnico</p>
+          <h3 class="mt-2 font-h3 text-h3 text-on-background">Powered by aSMSC v3 de Almuqeet</h3>
+          <p class="mt-2 font-body-sm text-on-surface-variant">
+            La operación de Telvoice se apoya en infraestructura profesional de mensajería utilizada para tráfico SMS a nivel internacional. Telvoice.cl simplifica la compra y el uso para el mercado chileno; la tecnología respalda confianza y escala.
+          </p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Proceso -->
+    <section id="proceso" class="border-y border-outline-variant/40 bg-surface-container-low py-stack-lg">
+      <div class="mx-auto max-w-container-max px-margin-page text-center md:px-10">
+        <h2 class="font-h2 text-h2 text-on-background">Compra y comienza en pocos pasos</h2>
+        <ol class="mx-auto mt-10 grid max-w-4xl grid-cols-1 gap-6 text-left sm:grid-cols-2 lg:grid-cols-5">
+          <li class="relative rounded-xl border border-outline-variant bg-surface-container-lowest p-5 pt-8">
+            <span class="absolute -top-3 left-5 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-on-primary">1</span>
+            <p class="font-body-md font-semibold">Elige tu bolsa</p>
+            <p class="mt-1 font-body-sm text-on-surface-variant">Define el volumen según tu campaña o operación mensual.</p>
+          </li>
+          <li class="relative rounded-xl border border-outline-variant bg-surface-container-lowest p-5 pt-8">
+            <span class="absolute -top-3 left-5 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-on-primary">2</span>
+            <p class="font-body-md font-semibold">Revisa el precio</p>
+            <p class="mt-1 font-body-sm text-on-surface-variant">Usa la calculadora y confirma neto, IVA y total.</p>
+          </li>
+          <li class="relative rounded-xl border border-outline-variant bg-surface-container-lowest p-5 pt-8">
+            <span class="absolute -top-3 left-5 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-on-primary">3</span>
+            <p class="font-body-md font-semibold">Paga online</p>
+            <p class="mt-1 font-body-sm text-on-surface-variant">Activa tu bolsa con el medio de pago habilitado.</p>
+          </li>
+          <li class="relative rounded-xl border border-outline-variant bg-surface-container-lowest p-5 pt-8">
+            <span class="absolute -top-3 left-5 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-on-primary">4</span>
+            <p class="font-body-md font-semibold">Activa tu saldo</p>
+            <p class="mt-1 font-body-sm text-on-surface-variant">Tu crédito queda listo en la plataforma.</p>
+          </li>
+          <li class="relative rounded-xl border border-outline-variant bg-surface-container-lowest p-5 pt-8 sm:col-span-2 lg:col-span-1">
+            <span class="absolute -top-3 left-5 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-on-primary">5</span>
+            <p class="font-body-md font-semibold">Envía o integra</p>
+            <p class="mt-1 font-body-sm text-on-surface-variant">Lanza campañas desde el panel o vía API.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Empresas -->
+    <section id="empresas" class="mx-auto max-w-container-max px-margin-page py-stack-lg md:px-10">
+      <div class="grid gap-10 lg:grid-cols-2">
+        <div>
+          <h2 class="font-h2 text-h2 text-on-background">¿Envías más de 100.000 SMS al mes?</h2>
+          <p class="mt-4 font-body-md text-on-surface-variant">
+            Preparamos propuestas especiales para empresas, agencias, integradores y plataformas que requieren alto volumen, mejores tarifas y soporte comercial directo.
+          </p>
+        </div>
+        <form id="form-empresas" class="rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 shadow-sm">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="emp-nombre" class="font-body-sm font-medium text-on-surface-variant">Nombre</label>
+              <input id="emp-nombre" name="nombre" required class="mt-1 w-full rounded-xl border-outline-variant" />
+            </div>
+            <div>
+              <label for="emp-empresa" class="font-body-sm font-medium text-on-surface-variant">Empresa</label>
+              <input id="emp-empresa" name="empresa" required class="mt-1 w-full rounded-xl border-outline-variant" />
+            </div>
+            <div>
+              <label for="emp-email" class="font-body-sm font-medium text-on-surface-variant">Email</label>
+              <input id="emp-email" name="email" type="email" required class="mt-1 w-full rounded-xl border-outline-variant" />
+            </div>
+            <div>
+              <label for="emp-tel" class="font-body-sm font-medium text-on-surface-variant">Teléfono</label>
+              <input id="emp-tel" name="telefono" type="tel" class="mt-1 w-full rounded-xl border-outline-variant" />
+            </div>
+            <div class="sm:col-span-2">
+              <label for="emp-volume" class="font-body-sm font-medium text-on-surface-variant">Volumen mensual estimado</label>
+              <select id="emp-volume" name="volumen" required class="mt-1 w-full rounded-xl border-outline-variant">
+                <option value="">Selecciona…</option>
+                <option>100.000 – 250.000 SMS</option>
+                <option>250.000 – 500.000 SMS</option>
+                <option>500.000 – 1.000.000 SMS</option>
+                <option>Más de 1.000.000 SMS</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <label for="emp-uso" class="font-body-sm font-medium text-on-surface-variant">Uso principal</label>
+              <select id="emp-uso" name="uso" required class="mt-1 w-full rounded-xl border-outline-variant">
+                <option value="">Selecciona…</option>
+                <option>Marketing</option>
+                <option>Notificaciones</option>
+                <option>Cobranza</option>
+                <option>OTP / validaciones</option>
+                <option>API</option>
+                <option>Otro</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" data-track="click_cotizar_volumen" class="mt-6 w-full rounded-xl bg-primary py-3 font-semibold text-on-primary hover:bg-surface-tint">Cotizar volumen mensual</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Cumplimiento -->
+    <section id="cumplimiento" class="border-y border-outline-variant/40 bg-surface-container-low py-stack-lg">
+      <div class="mx-auto max-w-container-max px-margin-page md:px-10">
+        <h2 class="font-h2 text-h2 text-on-background">Envíos responsables y profesionales</h2>
+        <p class="mt-4 max-w-3xl font-body-md text-on-surface-variant">
+          Telvoice.cl promueve el uso responsable del SMS. Las campañas deben enviarse a bases autorizadas, con mensajes claros y respetando las solicitudes de baja o suspensión de comunicaciones.
+        </p>
+        <ul class="mt-8 grid gap-3 sm:grid-cols-2">
+          <li class="flex gap-3 rounded-xl bg-surface-container-lowest p-4 font-body-sm">
+            <span class="material-symbols-outlined text-secondary" aria-hidden="true">verified</span>
+            Uso permitido para empresas legítimas.
+          </li>
+          <li class="flex gap-3 rounded-xl bg-surface-container-lowest p-4 font-body-sm">
+            <span class="material-symbols-outlined text-secondary" aria-hidden="true">gpp_maybe</span>
+            No se permite phishing, fraude, suplantación ni spam.
+          </li>
+          <li class="flex gap-3 rounded-xl bg-surface-container-lowest p-4 font-body-sm">
+            <span class="material-symbols-outlined text-secondary" aria-hidden="true">groups</span>
+            Recomendamos usar bases autorizadas.
+          </li>
+          <li class="flex gap-3 rounded-xl bg-surface-container-lowest p-4 font-body-sm">
+            <span class="material-symbols-outlined text-secondary" aria-hidden="true">unsubscribe</span>
+            Las campañas promocionales deben permitir baja o contacto claro.
+          </li>
+        </ul>
+        <p class="mt-6 font-body-sm text-on-surface-variant">Telvoice puede revisar o bloquear usos abusivos para proteger la calidad del servicio y la entregabilidad de todos los clientes.</p>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="mx-auto max-w-container-max px-margin-page py-stack-lg md:px-10">
+      <h2 class="font-h2 text-h2 text-center text-on-background">Preguntas frecuentes</h2>
+      <div class="mx-auto mt-10 max-w-3xl divide-y divide-outline-variant/50 rounded-2xl border border-outline-variant bg-surface-container-lowest">
+        <div class="p-4">
+          <button type="button" data-faq-toggle class="flex w-full items-center justify-between gap-4 text-left font-body-md font-semibold" aria-expanded="false">
+            ¿Qué es una bolsa de SMS?
+            <span class="material-symbols-outlined faq-icon text-primary" aria-hidden="true">add</span>
+          </button>
+          <div class="hidden pt-3 font-body-sm text-on-surface-variant">
+            Es una cantidad prepagada de mensajes que puedes comprar para enviar campañas, notificaciones o recordatorios a teléfonos en Chile.
+          </div>
+        </div>
+        <div class="p-4">
+          <button type="button" data-faq-toggle class="flex w-full items-center justify-between gap-4 text-left font-body-md font-semibold" aria-expanded="false">
+            ¿Los SMS vencen?
+            <span class="material-symbols-outlined faq-icon text-primary" aria-hidden="true">add</span>
+          </button>
+          <div class="hidden pt-3 font-body-sm text-on-surface-variant" id="faq-vigencia">
+            Las condiciones de uso y vigencia se informan al momento de comprar cada bolsa.
+          </div>
+        </div>
+        <div class="p-4">
+          <button type="button" data-faq-toggle class="flex w-full items-center justify-between gap-4 text-left font-body-md font-semibold" aria-expanded="false">
+            ¿Puedo enviar SMS desde mi propio sistema?
+            <span class="material-symbols-outlined faq-icon text-primary" aria-hidden="true">add</span>
+          </button>
+          <div class="hidden pt-3 font-body-sm text-on-surface-variant">
+            Sí. Telvoice puede entregar integración vía API para empresas que necesitan automatizar envíos.
+          </div>
+        </div>
+        <div class="p-4">
+          <button type="button" data-faq-toggle class="flex w-full items-center justify-between gap-4 text-left font-body-md font-semibold" aria-expanded="false">
+            ¿Sirve para campañas promocionales?
+            <span class="material-symbols-outlined faq-icon text-primary" aria-hidden="true">add</span>
+          </button>
+          <div class="hidden pt-3 font-body-sm text-on-surface-variant">
+            Sí, siempre que la empresa utilice bases autorizadas y respete las buenas prácticas de comunicación.
+          </div>
+        </div>
+        <div class="p-4">
+          <button type="button" data-faq-toggle class="flex w-full items-center justify-between gap-4 text-left font-body-md font-semibold" aria-expanded="false">
+            ¿Puedo cotizar grandes volúmenes?
+            <span class="material-symbols-outlined faq-icon text-primary" aria-hidden="true">add</span>
+          </button>
+          <div class="hidden pt-3 font-body-sm text-on-surface-variant">
+            Sí. Para volúmenes sobre 100.000 SMS mensuales puedes solicitar una cotización especial en la sección Empresas.
+          </div>
+        </div>
+        <div class="p-4">
+          <button type="button" data-faq-toggle class="flex w-full items-center justify-between gap-4 text-left font-body-md font-semibold" aria-expanded="false">
+            ¿Telvoice.cl es lo mismo que Telvoice.net?
+            <span class="material-symbols-outlined faq-icon text-primary" aria-hidden="true">add</span>
+          </button>
+          <div class="hidden pt-3 font-body-sm text-on-surface-variant">
+            Telvoice.cl está enfocado en el mercado chileno y en la compra simple de bolsas SMS. <a href="https://telvoice.net" class="text-primary hover:underline" rel="noopener noreferrer">Telvoice.net</a> representa la operación internacional y mayorista de Telvoice.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA final -->
+    <section id="cta-final" class="bg-primary py-16 text-center text-on-primary">
+      <div class="mx-auto max-w-container-max px-margin-page md:px-10">
+        <h2 class="font-h2 text-h2">Comienza a enviar SMS en Chile hoy</h2>
+        <p class="mx-auto mt-4 max-w-2xl font-body-lg opacity-95">
+          Calcula tu bolsa, compra online y activa una solución simple, económica y profesional para comunicarte con tus clientes.
+        </p>
+        <div class="mt-8 flex flex-wrap justify-center gap-4">
+          <a href="#calculadora" data-scroll-calc data-track="click_calcular_precio" class="rounded-xl bg-surface-container-lowest px-8 py-3 font-semibold text-primary hover:bg-primary-fixed">Calcular precio</a>
+          <a href="#contacto" data-track="click_cotizar_volumen" class="rounded-xl border-2 border-on-primary px-8 py-3 font-semibold hover:bg-white/10">Hablar con ventas</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contacto -->
+    <section id="contacto" class="mx-auto max-w-container-max px-margin-page py-stack-lg md:px-10">
+      <div class="mx-auto max-w-lg text-center">
+        <h2 class="font-h2 text-h2 text-on-background">Contacto comercial</h2>
+        <p class="mt-3 font-body-md text-on-surface-variant">Te ayudamos a elegir bolsa, activar cuenta o integrar API.</p>
+      </div>
+      <form id="form-contacto" class="mx-auto mt-8 max-w-md space-y-4 rounded-2xl border border-outline-variant bg-surface-container-lowest p-6">
+        <div>
+          <label for="contact-pack" class="font-body-sm font-medium text-on-surface-variant">Interés</label>
+          <select id="contact-pack" name="pack" class="mt-1 w-full rounded-xl border-outline-variant">
+            <option value="">Selecciona bolsa…</option>
+            <option>1.000 SMS</option>
+            <option>5.000 SMS</option>
+            <option>10.000 SMS</option>
+            <option>50.000 SMS</option>
+            <option>100.000+ SMS</option>
+            <option>Acceso API</option>
+          </select>
+        </div>
+        <div>
+          <label for="contact-email" class="font-body-sm font-medium text-on-surface-variant">Email corporativo</label>
+          <input id="contact-email" name="email" type="email" required placeholder="tu@empresa.cl" class="mt-1 w-full rounded-xl border-outline-variant" />
+        </div>
+        <div>
+          <label for="contact-msg" class="font-body-sm font-medium text-on-surface-variant">Mensaje</label>
+          <textarea id="contact-msg" name="mensaje" rows="3" class="mt-1 w-full rounded-xl border-outline-variant"></textarea>
+        </div>
+        <button type="submit" class="w-full rounded-xl bg-primary py-3 font-semibold text-on-primary hover:bg-surface-tint">Enviar solicitud</button>
+        <a data-whatsapp href="#" class="hidden w-full rounded-xl border border-secondary py-3 text-center font-semibold text-secondary">WhatsApp ventas</a>
+      </form>
+    </section>
+  </main>
+
+  <footer class="bg-inverse-surface text-inverse-on-surface">
+    <div class="mx-auto max-w-container-max px-margin-page py-stack-lg md:px-10">
+      <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <p class="font-h3 text-h3 font-bold text-primary-fixed">Telvoice.cl</p>
+          <p class="mt-2 font-body-sm text-surface-variant">SMS masivos Chile · Bolsas prepago para empresas.</p>
+        </div>
+        <div>
+          <p class="font-label-caps text-label-caps uppercase text-surface-variant">Producto</p>
+          <ul class="mt-3 space-y-2 font-body-sm">
+            <li><a class="text-surface-variant hover:text-secondary-fixed-dim" href="#calculadora">Bolsas SMS</a></li>
+            <li><a class="text-surface-variant hover:text-secondary-fixed-dim" href="#api">API SMS</a></li>
+            <li><a class="text-surface-variant hover:text-secondary-fixed-dim" href="#empresas">Empresas</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="font-label-caps text-label-caps uppercase text-surface-variant">Legal</p>
+          <ul class="mt-3 space-y-2 font-body-sm">
+            <li><a class="text-surface-variant hover:text-secondary-fixed-dim" href="#">Términos y condiciones</a></li>
+            <li><a class="text-surface-variant hover:text-secondary-fixed-dim" href="#">Política de privacidad</a></li>
+            <li><a class="text-surface-variant hover:text-secondary-fixed-dim" href="#cumplimiento">Uso responsable</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="font-label-caps text-label-caps uppercase text-surface-variant">Telvoice</p>
+          <ul class="mt-3 space-y-2 font-body-sm">
+            <li><a class="text-surface-variant hover:text-secondary-fixed-dim" href="#contacto">Contacto</a></li>
+            <li><a class="text-surface-variant hover:text-secondary-fixed-dim" href="https://telvoice.net" rel="noopener noreferrer">Telvoice.net</a></li>
+          </ul>
+        </div>
+      </div>
+      <p class="mt-10 border-t border-outline/20 pt-6 font-body-sm text-surface-variant">© <span id="y"></span> Telvoice.cl. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+  <script src="js/sms-plans.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    (function () {
+      var note = document.getElementById("faq-vigencia");
+      if (note && window.TELVOICE_CONFIG && window.TELVOICE_CONFIG.creditValidityNote) {
+        note.textContent = window.TELVOICE_CONFIG.creditValidityNote;
+      }
+    })();
+  </script>
+</body>
+</html>
