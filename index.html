@@ -628,6 +628,261 @@
     body.modal-open {
       overflow: hidden;
     }
+
+    /* —— Sistema de secciones: ritmo, fondos y jerarquía —— */
+    .section-inner {
+      width: 100%;
+      max-width: 1440px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+    @media (min-width: 640px) {
+      .section-inner {
+        padding-left: 2.5rem;
+        padding-right: 2.5rem;
+      }
+    }
+    .section-block {
+      padding-top: 4rem;
+      padding-bottom: 4rem;
+    }
+    @media (min-width: 768px) {
+      .section-block {
+        padding-top: 6rem;
+        padding-bottom: 6rem;
+      }
+    }
+    .section-block-lg {
+      padding-top: 5rem;
+      padding-bottom: 5rem;
+    }
+    @media (min-width: 768px) {
+      .section-block-lg {
+        padding-top: 7rem;
+        padding-bottom: 7rem;
+      }
+    }
+    .section-header {
+      margin-bottom: 2.5rem;
+      text-align: center;
+    }
+    @media (min-width: 768px) {
+      .section-header {
+        margin-bottom: 3.5rem;
+      }
+    }
+    .section-eyebrow {
+      display: inline-block;
+      font-family: Montserrat, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #0052cc;
+    }
+    .section-intro {
+      margin-top: 0.75rem;
+      margin-left: auto;
+      margin-right: auto;
+      max-width: 42rem;
+    }
+    .section-bg-white {
+      background-color: #ffffff;
+    }
+    .section-bg-muted {
+      background-color: #f4f6fb;
+    }
+    .section-bg-plans {
+      background-color: #f8fafc;
+    }
+    .section-bg-soft {
+      background: linear-gradient(180deg, #eef2ff 0%, #faf8ff 100%);
+    }
+    .section-band {
+      background-color: #f2f3ff;
+      border-top: 1px solid rgba(0, 82, 204, 0.08);
+      border-bottom: 1px solid rgba(0, 82, 204, 0.08);
+    }
+
+    .ui-card {
+      border-radius: 1.25rem;
+      border: 1px solid rgba(195, 198, 214, 0.65);
+      background: #ffffff;
+      box-shadow: 0 4px 24px -8px rgba(15, 23, 42, 0.08);
+      transition: box-shadow 0.25s ease, transform 0.25s ease;
+    }
+    .ui-card:hover {
+      box-shadow: 0 12px 40px -12px rgba(0, 82, 204, 0.15);
+    }
+    .ui-card-benefit {
+      padding: 2rem;
+    }
+    @media (min-width: 768px) {
+      .ui-card-benefit {
+        padding: 2.25rem;
+      }
+    }
+    .ui-card-feature {
+      padding: 2.5rem;
+    }
+    @media (min-width: 768px) {
+      .ui-card-feature {
+        padding: 2.75rem;
+      }
+    }
+    .pack-card {
+      padding: 2rem;
+    }
+    @media (min-width: 768px) {
+      .pack-card {
+        padding: 2.25rem;
+      }
+    }
+
+    .section-hero-wrap {
+      padding-bottom: 3rem;
+    }
+    @media (min-width: 768px) {
+      .section-hero-wrap {
+        padding-bottom: 4.5rem;
+      }
+    }
+    .section-trust {
+      padding-top: 2.5rem;
+      padding-bottom: 2.5rem;
+    }
+    @media (min-width: 768px) {
+      .section-trust {
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+      }
+    }
+
+    .section-calc {
+      background: linear-gradient(152deg, #002d6e 0%, #0052cc 42%, #0a3a7a 100%);
+      padding-top: 5rem;
+      padding-bottom: 5rem;
+      margin-top: 0;
+    }
+    @media (min-width: 768px) {
+      .section-calc {
+        padding-top: 7rem;
+        padding-bottom: 7rem;
+      }
+    }
+    .section-calc .section-eyebrow {
+      color: #9cf0ff;
+    }
+    .section-calc .calc-hero-title {
+      color: #ffffff;
+    }
+    .section-calc .calc-hero-intro {
+      color: rgba(255, 255, 255, 0.9);
+    }
+    .calc-panel {
+      margin-top: 2.5rem;
+      border-radius: 1.5rem;
+      background: #ffffff;
+      box-shadow: 0 28px 64px -20px rgba(0, 0, 0, 0.4);
+      padding: 1.5rem;
+    }
+    @media (min-width: 640px) {
+      .calc-panel {
+        margin-top: 3rem;
+        padding: 2.5rem 2.75rem;
+      }
+    }
+    .calc-stat {
+      border-radius: 1rem;
+      border: 1px solid #e2e7ff;
+      background: linear-gradient(180deg, #fafbff 0%, #ffffff 100%);
+      padding: 1.25rem 1rem;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .section-empresas {
+      background: linear-gradient(135deg, #0a2458 0%, #0052cc 48%, #003d8f 100%);
+      padding-top: 4.5rem;
+      padding-bottom: 4.5rem;
+    }
+    @media (min-width: 768px) {
+      .section-empresas {
+        padding-top: 6rem;
+        padding-bottom: 6rem;
+      }
+    }
+    .empresas-inner-card {
+      border-radius: 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      padding: 2rem;
+    }
+    @media (min-width: 768px) {
+      .empresas-inner-card {
+        padding: 2.75rem 3rem;
+      }
+    }
+
+    .section-contact {
+      background: linear-gradient(180deg, #0f1729 0%, #1a2744 55%, #131b2e 100%);
+      padding-top: 5rem;
+      padding-bottom: 5rem;
+    }
+    @media (min-width: 768px) {
+      .section-contact {
+        padding-top: 7rem;
+        padding-bottom: 7rem;
+      }
+    }
+    .section-contact .section-eyebrow {
+      color: #9cf0ff;
+    }
+    .contact-form-card {
+      border-radius: 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #ffffff;
+      box-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.35);
+      padding: 1.75rem;
+    }
+    .calc-stat .font-data-mono {
+      font-size: 1.75rem;
+    }
+    @media (min-width: 640px) {
+      .calc-stat .font-data-mono {
+        font-size: 2rem;
+      }
+    }
+    #calcVol {
+      font-size: 1.35rem;
+    }
+    @media (min-width: 640px) {
+      #calcVol {
+        font-size: 1.5rem;
+      }
+    }
+    @media (min-width: 768px) {
+      .contact-form-card {
+        padding: 2.5rem;
+      }
+    }
+
+    .caso-card {
+      border-radius: 1rem;
+      border: 1px solid rgba(195, 198, 214, 0.5);
+      background: #ffffff;
+      padding: 1.25rem 1.5rem;
+      box-shadow: 0 2px 12px -4px rgba(15, 23, 42, 0.06);
+    }
+    .api-tech-card {
+      border-radius: 1.5rem;
+      border: 1px solid rgba(0, 82, 204, 0.12);
+      background: #ffffff;
+      box-shadow: 0 8px 32px -12px rgba(0, 82, 204, 0.12);
+    }
   </style>
   <script type="application/ld+json">
     {
@@ -697,7 +952,7 @@
 
   <main>
     <!-- Hero Section -->
-    <section class="relative w-full overflow-x-hidden py-[2px]" id="inicio">
+    <section class="section-hero-wrap relative w-full overflow-x-hidden bg-white py-[2px]" id="inicio">
       <div class="hero-atmosphere" aria-hidden="true">
         <div class="hero-bg-base"></div>
         <div class="hero-bg-skywash"></div>
@@ -733,7 +988,7 @@
         </div>
       </div>
       <div class="relative z-10 mx-auto max-w-container-max px-4 sm:px-margin-page">
-      <div class="flex flex-col md:flex-row items-center justify-between gap-16 py-12">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-16 py-16 md:py-24 lg:py-28">
         <div class="flex-1 flex flex-col items-start text-left max-w-2xl pl-8 sm:pl-14 md:pl-20 lg:pl-28 xl:pl-36">
           <div class="flex w-full flex-col gap-stack-md">
               <div class="inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-outline-variant/55 bg-surface-container-low/90 px-4 py-1.5 backdrop-blur-sm">
@@ -800,8 +1055,13 @@
           </div>
         </div>
       </div>
-      <div class="relative z-10 flex flex-col items-center pb-10 pt-2">
-        <ul class="hero-use-tags hero-tags-row flex w-full max-w-5xl flex-nowrap justify-start gap-2 overflow-x-auto py-1 sm:justify-center" role="list" aria-label="Usos del servicio SMS">
+      </div>
+    </section>
+
+    <!-- Franja de confianza -->
+    <section class="section-trust section-bg-white border-y border-outline-variant/30" aria-label="Usos del servicio SMS">
+      <div class="section-inner flex flex-col items-center">
+        <ul class="hero-use-tags hero-tags-row flex w-full max-w-5xl flex-nowrap justify-start gap-2 overflow-x-auto py-1 sm:justify-center" role="list">
           <li class="shrink-0">
             <span class="hero-use-tag inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 px-3 py-1.5 font-body-sm text-body-sm text-on-background shadow-sm sm:px-3.5 sm:py-2">
               <span class="material-symbols-outlined text-primary text-[18px]" aria-hidden="true">notifications_active</span>
@@ -834,39 +1094,39 @@
           </li>
         </ul>
       </div>
-      </div>
     </section>
 
     <!-- Por qué Telvoice -->
-    <section id="por-que-telvoice" class="px-4 sm:px-margin-page py-stack-xl max-w-container-max mx-auto" aria-labelledby="por-que-titulo" tabindex="-1">
-      <div class="mx-auto max-w-3xl text-center">
-        <p class="font-label-caps text-label-caps uppercase tracking-wider text-primary">Por qué Telvoice.cl</p>
-        <h2 id="por-que-titulo" class="mt-2 font-h2 text-h2 text-on-background">Precio económico con infraestructura profesional</h2>
-        <p class="font-body-lg text-body-lg text-on-surface-variant mt-3 leading-relaxed">Compra online, controla tu volumen y envía con respaldo de Telvoice y rutas hacia operadores en Chile.</p>
-      </div>
-      <div class="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <article class="flex flex-col gap-4 rounded-[28px] border border-outline-variant/60 bg-surface-container-lowest p-8 transition-shadow duration-300 hover:shadow-[0px_20px_40px_rgba(15,23,42,0.08)]">
+    <section id="por-que-telvoice" class="section-block section-bg-white" aria-labelledby="por-que-titulo" tabindex="-1">
+      <div class="section-inner">
+      <header class="section-header mx-auto max-w-3xl">
+        <span class="section-eyebrow">Por qué Telvoice.cl</span>
+        <h2 id="por-que-titulo" class="mt-3 font-h2 text-h2 text-on-background">Precio económico con infraestructura profesional</h2>
+        <p class="section-intro font-body-lg text-body-lg text-on-surface-variant leading-relaxed">Compra online, controla tu volumen y envía con respaldo de Telvoice y rutas hacia operadores en Chile.</p>
+      </header>
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-4">
+        <article class="ui-card ui-card-benefit flex flex-col gap-4">
           <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <span class="material-symbols-outlined fill-icon text-3xl" aria-hidden="true">bolt</span>
           </div>
           <h3 class="font-h3 text-h3 text-on-background">Velocidad de entrega</h3>
           <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Mensajes entregados en segundos con rutas optimizadas hacia operadores locales en Chile.</p>
         </article>
-        <article class="flex flex-col gap-4 rounded-[28px] border border-outline-variant/60 bg-surface-container-lowest p-8 transition-shadow duration-300 hover:shadow-[0px_20px_40px_rgba(15,23,42,0.08)]">
+        <article class="ui-card ui-card-benefit flex flex-col gap-4">
           <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <span class="material-symbols-outlined fill-icon text-3xl" aria-hidden="true">signal_cellular_alt</span>
           </div>
           <h3 class="font-h3 text-h3 text-on-background">Cobertura operadores</h3>
           <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Cobertura para principales operadores móviles de Chile: Entel, Movistar, Claro y WOM.</p>
         </article>
-        <article class="flex flex-col gap-4 rounded-[28px] border border-outline-variant/60 bg-surface-container-lowest p-8 transition-shadow duration-300 hover:shadow-[0px_20px_40px_rgba(15,23,42,0.08)]">
+        <article class="ui-card ui-card-benefit flex flex-col gap-4">
           <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <span class="material-symbols-outlined fill-icon text-3xl" aria-hidden="true">hub</span>
           </div>
           <h3 class="font-h3 text-h3 text-on-background">API simple</h3>
           <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Integración en horas, no en semanas. Documentación clara, SDKs y soporte técnico en español.</p>
         </article>
-        <article class="flex flex-col gap-4 rounded-[28px] border border-outline-variant/60 bg-surface-container-lowest p-8 transition-shadow duration-300 hover:shadow-[0px_20px_40px_rgba(15,23,42,0.08)]">
+        <article class="ui-card ui-card-benefit flex flex-col gap-4">
           <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <span class="material-symbols-outlined fill-icon text-3xl" aria-hidden="true">gavel</span>
           </div>
@@ -874,30 +1134,33 @@
           <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Operamos bajo regulación chilena. Rutas transparentes, trazabilidad total y factura electrónica en CLP.</p>
         </article>
       </div>
+      </div>
     </section>
 
     <!-- Propuesta de Valor -->
-    <section class="px-4 sm:px-margin-page py-stack-xl max-w-container-max mx-auto" id="soluciones" tabindex="-1">
-      <div class="text-center mb-16">
+    <section class="section-block section-bg-muted" id="soluciones" tabindex="-1">
+      <div class="section-inner">
+      <header class="section-header mx-auto max-w-3xl">
+        <span class="section-eyebrow">Rendimiento</span>
         <h2 class="font-h2 text-h2 text-on-background">Rendimiento sin Concesiones</h2>
-        <p class="font-body-md text-body-md text-on-surface-variant mt-3 max-w-2xl mx-auto">Infraestructura y procesos alineados a buenas prácticas A2P y al contexto regulatorio local.</p>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div class="bg-surface-container-lowest border border-outline-variant/60 rounded-[32px] p-10 flex flex-col items-start gap-5 hover:shadow-[0px_20px_40px_rgba(15,23,42,0.06)] transition-all duration-300">
+        <p class="section-intro font-body-md text-body-md text-on-surface-variant">Infraestructura y procesos alineados a buenas prácticas A2P y al contexto regulatorio local.</p>
+      </header>
+      <div class="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-10">
+        <div class="ui-card ui-card-feature flex flex-col items-start gap-5">
           <div class="bg-surface-container-low p-4 rounded-2xl">
             <span class="material-symbols-outlined text-primary fill-icon text-3xl">visibility</span>
           </div>
           <h3 class="font-h3 text-h3 text-on-background">Transparencia Total</h3>
           <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Modelo de bolsas de SMS claro y predecible. Sin cargos ocultos, sin sorpresas a fin de mes.</p>
         </div>
-        <div class="bg-surface-container-lowest border border-outline-variant/60 rounded-[32px] p-10 flex flex-col items-start gap-5 hover:shadow-[0px_20px_40px_rgba(15,23,42,0.06)] transition-all duration-300">
+        <div class="ui-card ui-card-feature flex flex-col items-start gap-5">
           <div class="bg-surface-container-low p-4 rounded-2xl">
             <span class="material-symbols-outlined text-primary fill-icon text-3xl">route</span>
           </div>
           <h3 class="font-h3 text-h3 text-on-background">Rutas Premium</h3>
           <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Enfoque en entregabilidad y calidad de ruta para mensajes transaccionales y notificaciones.</p>
         </div>
-        <div class="bg-surface-container-lowest border border-outline-variant/60 rounded-[32px] p-10 flex flex-col items-start gap-5 hover:shadow-[0px_20px_40px_rgba(15,23,42,0.06)] transition-all duration-300">
+        <div class="ui-card ui-card-feature flex flex-col items-start gap-5">
           <div class="bg-surface-container-low p-4 rounded-2xl">
             <span class="material-symbols-outlined text-primary fill-icon text-3xl">speed</span>
           </div>
@@ -905,16 +1168,19 @@
           <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Infraestructura escalable para picos de envío sin sacrificar tiempos de respuesta de API.</p>
         </div>
       </div>
+      </div>
     </section>
 
     <!-- Pricing -->
-    <section class="px-4 sm:px-margin-page py-stack-xl max-w-container-max mx-auto" id="precios" tabindex="-1">
-      <div class="text-center mb-16">
+    <section class="section-block-lg section-bg-plans pb-20 md:pb-32" id="precios" tabindex="-1">
+      <div class="section-inner">
+      <header class="section-header mx-auto max-w-3xl">
+        <span class="section-eyebrow">Precios</span>
         <h2 class="font-h2 text-h2 text-on-background">Bolsas SMS para cada etapa de tu empresa</h2>
-        <p class="font-body-lg text-body-lg text-on-surface-variant mt-3">Compra la bolsa que necesitas, paga online y comienza a enviar. Precios en CLP + IVA.</p>
-      </div>
-      <div class="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3">
-        <article class="pack-card flex flex-col rounded-[32px] border border-outline-variant/60 bg-surface-container-lowest p-8" data-bag-id="3k" data-pack="Bolsa 3.000 SMS" data-sms="3000" data-price="$24.000" data-px-sms="8">
+        <p class="section-intro font-body-lg text-body-lg text-on-surface-variant">Compra la bolsa que necesitas, paga online y comienza a enviar. Precios en CLP + IVA.</p>
+      </header>
+      <div class="mx-auto grid max-w-5xl grid-cols-1 gap-8 md:grid-cols-3 md:gap-10">
+        <article class="pack-card ui-card flex flex-col rounded-3xl shadow-md border border-outline-variant/60 bg-surface-container-lowest p-8" data-bag-id="3k" data-pack="Bolsa 3.000 SMS" data-sms="3000" data-price="$24.000" data-px-sms="8">
           <h3 class="font-body-md font-semibold text-body-md text-on-surface-variant">Bolsa 3.000</h3>
           <div class="mb-2 mt-5 flex items-baseline gap-1">
             <span class="font-h2 text-4xl text-on-background">3.000</span>
@@ -928,7 +1194,7 @@
           </ul>
           <button type="button" class="pack-cta w-full rounded-full bg-surface-container-high py-3.5 font-body-md font-semibold text-primary transition-colors hover:bg-surface-variant" data-track="click_comprar_bolsa">Comprar Bolsa</button>
         </article>
-        <article class="pack-card pack-card--featured relative z-10 flex flex-col rounded-[32px] border-2 border-secondary-container bg-surface-container-lowest p-8 shadow-[0px_20px_40px_rgba(15,23,42,0.08)] md:scale-105" data-bag-id="15k" data-pack="Bolsa 15.000 SMS" data-sms="15000" data-price="$105.000" data-px-sms="7">
+        <article class="pack-card pack-card--featured ui-card relative z-10 flex flex-col rounded-3xl shadow-lg border-2 border-secondary-container bg-surface-container-lowest p-8 shadow-[0px_20px_40px_rgba(15,23,42,0.08)] md:scale-105" data-bag-id="15k" data-pack="Bolsa 15.000 SMS" data-sms="15000" data-price="$105.000" data-px-sms="7">
           <div class="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-secondary-container px-4 py-1.5 font-label-caps text-label-caps uppercase tracking-wider text-on-secondary-container">Más popular</div>
           <h3 class="mt-3 font-body-md font-semibold text-body-md text-on-surface-variant">Bolsa 15.000</h3>
           <div class="mb-2 mt-5 flex items-baseline gap-1">
@@ -944,7 +1210,7 @@
           </ul>
           <button type="button" class="pack-cta w-full rounded-full bg-primary py-3.5 font-body-md font-semibold text-on-primary shadow-sm transition-colors hover:bg-surface-tint" data-track="click_comprar_bolsa">Comprar Bolsa</button>
         </article>
-        <article class="pack-card flex flex-col rounded-[32px] border border-outline-variant/60 bg-surface-container-lowest p-8" data-bag-id="100k" data-pack="Bolsa 100.000 SMS" data-sms="100000" data-price="$600.000" data-px-sms="6">
+        <article class="pack-card ui-card flex flex-col rounded-3xl shadow-md border border-outline-variant/60 bg-surface-container-lowest p-8" data-bag-id="100k" data-pack="Bolsa 100.000 SMS" data-sms="100000" data-price="$600.000" data-px-sms="6">
           <h3 class="font-body-md font-semibold text-body-md text-on-surface-variant">Bolsa 100.000</h3>
           <div class="mb-2 mt-5 flex items-baseline gap-1">
             <span class="font-h2 text-4xl text-on-background">100.000</span>
@@ -959,18 +1225,19 @@
           <button type="button" class="pack-cta w-full rounded-full bg-surface-container-high py-3.5 font-body-md font-semibold text-primary transition-colors hover:bg-surface-variant" data-track="click_comprar_bolsa">Comprar Bolsa</button>
         </article>
       </div>
-      <p class="mx-auto mt-8 max-w-2xl text-center font-body-sm text-body-sm text-on-surface-variant">Precios de bolsas en CLP + IVA. La calculadora muestra tarifas por volumen mensual; desde $4 + IVA/SMS aplica sobre 500.000 SMS/mes.</p>
+      <p class="mx-auto mt-10 max-w-2xl text-center font-body-sm text-body-sm text-on-surface-variant">Precios de bolsas en CLP + IVA. La calculadora muestra tarifas por volumen mensual; desde $4 + IVA/SMS aplica sobre 500.000 SMS/mes.</p>
+      </div>
     </section>
 
-    <!-- Calculadora (alineada a web-telvoice-cl.html) -->
-    <section id="calculadora" class="px-4 sm:px-margin-page py-stack-lg max-w-container-max mx-auto bg-surface-container-low/35" aria-labelledby="calc-titulo" tabindex="-1">
-      <div class="mx-auto max-w-[800px]">
-        <div class="text-center">
-          <p class="font-label-caps text-label-caps uppercase tracking-wider text-primary">Calculadora</p>
-          <h2 id="calc-titulo" class="mt-1 font-h2 text-h2 text-on-background">Calcula tu bolsa de SMS</h2>
-          <p class="mx-auto mt-2 max-w-xl font-body-md text-body-md leading-relaxed text-on-surface-variant">Elige la cantidad que necesitas, revisa el precio final y compra online en segundos. Tu saldo queda disponible para campañas o integración vía API.</p>
-        </div>
-        <div class="mt-10 rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-sm sm:p-10">
+    <!-- Calculadora -->
+    <section id="calculadora" class="section-calc" aria-labelledby="calc-titulo" tabindex="-1">
+      <div class="section-inner mx-auto max-w-[880px]">
+        <header class="section-header">
+          <span class="section-eyebrow">Calculadora</span>
+          <h2 id="calc-titulo" class="calc-hero-title mt-3 font-h2 text-h2">Calcula tu bolsa de SMS</h2>
+          <p class="calc-hero-intro section-intro font-body-md text-body-md leading-relaxed">Elige la cantidad que necesitas, revisa el precio final y compra online en segundos. Tu saldo queda disponible para campañas o integración vía API.</p>
+        </header>
+        <div class="calc-panel">
           <div class="mb-8">
             <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
               <span class="font-body-md font-semibold text-on-background">SMS al mes</span>
@@ -983,16 +1250,16 @@
               <span>500.000</span>
             </div>
           </div>
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div class="rounded-xl border border-outline-variant/50 bg-surface/90 px-4 py-5 text-center shadow-sm">
+          <div class="grid grid-cols-1 gap-5 sm:grid-cols-3 sm:gap-6">
+            <div class="calc-stat">
               <span id="calcPxSMS" class="font-data-mono block text-2xl font-bold tracking-tight text-on-background">$8</span>
               <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Precio por SMS (ref.)</span>
             </div>
-            <div class="rounded-xl border border-outline-variant/50 bg-surface/90 px-4 py-5 text-center shadow-sm">
+            <div class="calc-stat">
               <span id="calcTotal" class="font-data-mono block text-2xl font-bold tracking-tight text-on-background">$80.000</span>
               <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Total estimado (+ IVA 19%)</span>
             </div>
-            <div class="rounded-xl border border-outline-variant/50 bg-surface/90 px-4 py-5 text-center shadow-sm">
+            <div class="calc-stat">
               <span id="calcPlan" class="font-h3 block text-xl font-bold leading-tight text-primary sm:text-2xl">Starter</span>
               <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Plan recomendado</span>
             </div>
@@ -1001,16 +1268,16 @@
             * Precios en CLP + IVA. El precio final depende del volumen y condiciones del contrato.
             <a class="font-medium text-primary underline decoration-primary/30 hover:decoration-primary" href="#contacto">Cotiza sin compromiso →</a>
           </p>
-          <div class="mt-7 flex justify-center">
-            <button type="button" id="calc-request-quote" class="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3.5 font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_cotizar_volumen">Solicitar cotización →</button>
+          <div class="mt-8 flex justify-center">
+            <button type="button" id="calc-request-quote" class="inline-flex items-center justify-center rounded-full bg-primary px-10 py-4 text-lg font-semibold text-on-primary shadow-lg transition hover:bg-surface-tint font-body-md" data-track="click_cotizar_volumen">Solicitar cotización →</button>
           </div>
         </div>
       </div>
     </section>
 
     <!-- Compromiso comercial (texto, debajo de calculadora) -->
-    <section id="igualacion-tarifa" class="border-t border-primary/[0.08] bg-surface-container-low/35 px-4 pb-stack-xl pt-stack-lg sm:px-margin-page" aria-labelledby="promesa-tarifas-titulo">
-      <div class="mx-auto max-w-3xl text-center">
+    <section id="igualacion-tarifa" class="section-band py-14 md:py-20" aria-labelledby="promesa-tarifas-titulo">
+      <div class="section-inner mx-auto max-w-3xl text-center">
         <div class="mx-auto mb-5 h-[3px] w-14 rounded-full bg-gradient-to-r from-[#5b21b6] via-primary to-secondary opacity-90" aria-hidden="true"></div>
         <p id="promesa-tarifas-titulo" class="font-label-caps text-label-caps uppercase tracking-[0.14em] text-primary">Compromiso comercial</p>
         <p class="mt-5 font-body-lg text-body-lg leading-relaxed text-on-surface-variant sm:text-[1.0625rem] sm:leading-8">
@@ -1023,11 +1290,11 @@
 
 
     <!-- API / Integración -->
-    <section id="api" class="px-4 sm:px-margin-page py-stack-xl max-w-container-max mx-auto bg-surface-container-low/35" aria-labelledby="api-titulo" tabindex="-1">
-      <div class="mx-auto grid max-w-5xl grid-cols-1 items-center gap-10 lg:grid-cols-2">
+    <section id="api" class="section-block section-bg-muted" aria-labelledby="api-titulo" tabindex="-1">
+      <div class="section-inner mx-auto grid max-w-5xl grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
         <div>
-          <p class="font-label-caps text-label-caps uppercase tracking-wider text-primary">API e integración</p>
-          <h2 id="api-titulo" class="mt-2 font-h2 text-h2 text-on-background">Integra SMS en tu sistema, CRM o plataforma</h2>
+          <span class="section-eyebrow">API</span>
+          <h2 id="api-titulo" class="mt-3 font-h2 text-h2 text-on-background">Integra SMS en tu sistema, CRM o plataforma</h2>
           <p class="mt-4 font-body-lg text-body-lg leading-relaxed text-on-surface-variant">Automatiza tus envíos SMS desde tu sistema, CRM, plataforma e-commerce o software interno. Telvoice entrega acceso vía API para enviar mensajes de forma programática.</p>
           <div class="mt-6 flex flex-wrap gap-3">
             <button type="button" class="api-request-cta inline-flex items-center justify-center rounded-full bg-primary px-8 py-3.5 font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_api_request">Solicitar acceso API</button>
@@ -1037,7 +1304,7 @@
         <div class="api-platform-showcase relative flex justify-center lg:justify-end">
           <div class="api-platform-glow" aria-hidden="true"></div>
           <div class="api-platform-float relative w-full max-w-[min(540px,100%)]">
-            <div class="api-platform-screen overflow-hidden rounded-2xl border-[10px] border-surface-container-highest bg-inverse-surface shadow-[0_24px_64px_-18px_rgba(0,0,0,0.22)] ring-1 ring-primary/[0.08]">
+            <div class="api-platform-screen api-tech-card overflow-hidden rounded-2xl border-[10px] border-surface-container-highest bg-inverse-surface shadow-[0_24px_64px_-18px_rgba(0,0,0,0.22)] ring-1 ring-primary/[0.08]">
               <div class="api-platform-chrome flex items-center gap-2 border-b border-outline-variant/50 px-3 py-2.5 sm:px-4">
                 <span class="flex gap-1.5" aria-hidden="true">
                   <span class="h-2.5 w-2.5 rounded-full bg-[#ff5f57] sm:h-3 sm:w-3"></span>
@@ -1067,13 +1334,15 @@
     </section>
 
     <!-- Casos de Uso -->
-    <section id="casos-uso" class="px-4 sm:px-margin-page py-stack-xl max-w-container-max mx-auto bg-surface-bright rounded-[40px] mb-stack-xl border border-outline-variant/30" aria-labelledby="casos-titulo" tabindex="-1">
-      <div class="mb-12 mx-auto max-w-3xl px-2 text-center">
+    <section id="casos-uso" class="section-block section-bg-soft" aria-labelledby="casos-titulo" tabindex="-1">
+      <div class="section-inner">
+      <header class="section-header mx-auto max-w-3xl">
+        <span class="section-eyebrow">Casos de uso</span>
         <h2 id="casos-titulo" class="font-h2 text-h2 text-on-background">SMS para vender, notificar y contactar clientes en Chile</h2>
-        <p class="font-body-lg text-body-lg text-on-surface-variant mt-3 leading-relaxed">Envía promociones, recordatorios, alertas, notificaciones de despacho, cobranzas y códigos de validación directamente al celular de tus clientes.</p>
-      </div>
-      <div class="grid grid-cols-1 gap-10 p-6 pt-0 sm:grid-cols-2 sm:gap-12 sm:p-8 sm:pt-0 lg:grid-cols-4">
-        <div class="flex items-start gap-5">
+        <p class="section-intro font-body-lg text-body-lg text-on-surface-variant leading-relaxed">Envía promociones, recordatorios, alertas, notificaciones de despacho, cobranzas y códigos de validación directamente al celular de tus clientes.</p>
+      </header>
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-4">
+        <div class="caso-card flex items-start gap-4">
           <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
             <span class="material-symbols-outlined text-3xl">storefront</span>
           </div>
@@ -1082,7 +1351,7 @@
             <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Promociones y estado de despacho con alto engagement en el canal SMS.</p>
           </div>
         </div>
-        <div class="flex items-start gap-5">
+        <div class="caso-card flex items-start gap-4">
           <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
             <span class="material-symbols-outlined text-3xl">shopping_bag</span>
           </div>
@@ -1091,7 +1360,7 @@
             <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Carritos abandonados, cupones y confirmación de compra para cerrar más ventas.</p>
           </div>
         </div>
-        <div class="flex items-start gap-5">
+        <div class="caso-card flex items-start gap-4">
           <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
             <span class="material-symbols-outlined text-3xl">restaurant</span>
           </div>
@@ -1100,7 +1369,7 @@
             <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Lista de espera, pedido listo para retiro y encuestas post-visita.</p>
           </div>
         </div>
-        <div class="flex items-start gap-5">
+        <div class="caso-card flex items-start gap-4">
           <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
             <span class="material-symbols-outlined text-3xl">local_mall</span>
           </div>
@@ -1109,7 +1378,7 @@
             <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Ofertas del día, programa de fidelización y avisos de despacho a domicilio.</p>
           </div>
         </div>
-        <div class="flex items-start gap-5">
+        <div class="caso-card flex items-start gap-4">
           <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
             <span class="material-symbols-outlined text-3xl">local_shipping</span>
           </div>
@@ -1118,7 +1387,7 @@
             <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Ventanas de entrega, reprogramación de visitas, PIN o código de recepción y avisos de última milla en tiempo real.</p>
           </div>
         </div>
-        <div class="flex items-start gap-5">
+        <div class="caso-card flex items-start gap-4">
           <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
             <span class="material-symbols-outlined text-3xl">app_registration</span>
           </div>
@@ -1127,7 +1396,7 @@
             <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">OTP bancario, verificación de registro, recuperación de cuenta y alertas de seguridad para apps que exigen validar al usuario por SMS.</p>
           </div>
         </div>
-        <div class="flex items-start gap-5">
+        <div class="caso-card flex items-start gap-4">
           <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
             <span class="material-symbols-outlined text-3xl">medical_services</span>
           </div>
@@ -1136,7 +1405,7 @@
             <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Recordatorios de citas para reducir inasistencias.</p>
           </div>
         </div>
-        <div class="flex items-start gap-5">
+        <div class="caso-card flex items-start gap-4">
           <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
             <span class="material-symbols-outlined text-3xl">account_balance</span>
           </div>
@@ -1146,11 +1415,12 @@
           </div>
         </div>
       </div>
+      </div>
     </section>
 
     <!-- Por qué el canal SMS -->
-    <section id="canal-sms" class="border-t border-primary/[0.08] bg-surface-container-low/35 px-4 py-stack-lg sm:px-margin-page" aria-labelledby="canal-sms-titulo">
-      <div class="mx-auto max-w-3xl text-center">
+    <section id="canal-sms" class="section-band py-14 md:py-20" aria-labelledby="canal-sms-titulo">
+      <div class="section-inner mx-auto max-w-3xl text-center">
         <div class="mx-auto mb-5 h-[3px] w-14 rounded-full bg-gradient-to-r from-[#5b21b6] via-primary to-secondary opacity-90" aria-hidden="true"></div>
         <p id="canal-sms-titulo" class="font-label-caps text-label-caps uppercase tracking-[0.14em] text-primary">El canal SMS hoy</p>
         <p class="mt-5 font-body-lg text-body-lg leading-relaxed text-on-surface-variant sm:text-[1.0625rem] sm:leading-8">
@@ -1160,40 +1430,45 @@
     </section>
 
     <!-- Empresas / alto volumen -->
-    <section id="empresas" class="px-4 sm:px-margin-page py-stack-xl max-w-container-max mx-auto" aria-labelledby="empresas-titulo" tabindex="-1">
-      <div class="mx-auto max-w-3xl rounded-[40px] border border-outline-variant/60 bg-gradient-to-br from-surface-container-lowest via-surface to-primary/[0.04] p-8 text-center shadow-sm sm:p-12">
-        <p class="font-label-caps text-label-caps uppercase tracking-wider text-primary">Alto volumen</p>
-        <h2 id="empresas-titulo" class="mt-2 font-h2 text-h2 text-on-background">¿Envías más de 100.000 SMS al mes?</h2>
-        <p class="mt-4 font-body-lg text-body-lg leading-relaxed text-on-surface-variant">Para empresas con alto volumen, Telvoice prepara tarifas especiales y soporte comercial directo. Ideal para agencias, integradores y plataformas que requieren mejores tarifas.</p>
-        <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <button type="button" class="empresas-cta inline-flex items-center justify-center rounded-full bg-primary px-10 py-4 font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="submit_lead_empresa">Cotizar volumen mensual</button>
-          <a href="#" class="wa-section-cta hidden inline-flex items-center justify-center rounded-full border border-primary/25 bg-surface px-8 py-4 font-body-md font-semibold text-primary transition hover:bg-surface-container-low" data-track="click_whatsapp">Hablar por WhatsApp</a>
+    <section id="empresas" class="section-empresas" aria-labelledby="empresas-titulo" tabindex="-1">
+      <div class="section-inner">
+        <div class="empresas-inner-card mx-auto max-w-3xl text-center text-white">
+          <span class="section-eyebrow text-[#9cf0ff]">Alto volumen</span>
+          <h2 id="empresas-titulo" class="mt-3 font-h2 text-h2 text-white">¿Envías más de 100.000 SMS al mes?</h2>
+          <p class="mt-4 font-body-lg text-body-lg leading-relaxed text-white/90">Para empresas con alto volumen, Telvoice prepara tarifas especiales y soporte comercial directo. Ideal para agencias, integradores y plataformas que requieren mejores tarifas.</p>
+          <div class="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <button type="button" class="empresas-cta inline-flex items-center justify-center rounded-full bg-white px-10 py-4 font-body-md font-semibold text-primary shadow-lg transition hover:bg-primary-fixed hover:text-on-primary-fixed" data-track="submit_lead_empresa">Cotizar volumen mensual</button>
+            <a href="#" class="wa-section-cta hidden inline-flex items-center justify-center rounded-full border border-white/40 px-8 py-4 font-body-md font-semibold text-white transition hover:bg-white/10" data-track="click_whatsapp">Hablar por WhatsApp</a>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- Cumplimiento -->
-    <section id="compliance" class="px-4 sm:px-margin-page pb-stack-xl max-w-container-max mx-auto" aria-labelledby="compliance-titulo" tabindex="-1">
-      <div class="mx-auto max-w-3xl text-center">
-        <p class="font-label-caps text-label-caps uppercase tracking-wider text-primary">Buenas prácticas</p>
-        <h2 id="compliance-titulo" class="mt-2 font-h2 text-h2 text-on-background">Envíos responsables y profesionales</h2>
-        <p class="mt-4 font-body-lg text-body-lg leading-relaxed text-on-surface-variant">Telvoice.cl promueve campañas responsables, bases autorizadas y comunicaciones claras con los destinatarios.</p>
-      </div>
-      <ul class="mx-auto mt-8 max-w-2xl space-y-3 font-body-md text-body-md text-on-surface-variant">
+    <section id="compliance" class="section-block section-bg-white" aria-labelledby="compliance-titulo" tabindex="-1">
+      <div class="section-inner">
+      <header class="section-header mx-auto max-w-3xl">
+        <span class="section-eyebrow">Buenas prácticas</span>
+        <h2 id="compliance-titulo" class="mt-3 font-h2 text-h2 text-on-background">Envíos responsables y profesionales</h2>
+        <p class="section-intro font-body-lg text-body-lg leading-relaxed text-on-surface-variant">Telvoice.cl promueve campañas responsables, bases autorizadas y comunicaciones claras con los destinatarios.</p>
+      </header>
+      <ul class="mx-auto mt-10 max-w-2xl space-y-4 font-body-md text-body-md text-on-surface-variant">
         <li class="flex gap-3"><span class="material-symbols-outlined shrink-0 text-secondary text-[20px]">check_circle</span>Uso permitido para empresas legítimas.</li>
         <li class="flex gap-3"><span class="material-symbols-outlined shrink-0 text-secondary text-[20px]">check_circle</span>No se permite phishing, fraude, suplantación ni spam.</li>
         <li class="flex gap-3"><span class="material-symbols-outlined shrink-0 text-secondary text-[20px]">check_circle</span>Recomendamos bases autorizadas y mensajes claros.</li>
         <li class="flex gap-3"><span class="material-symbols-outlined shrink-0 text-secondary text-[20px]">check_circle</span>Las campañas promocionales deben permitir baja o contacto claro.</li>
         <li class="flex gap-3"><span class="material-symbols-outlined shrink-0 text-secondary text-[20px]">check_circle</span>Telvoice puede revisar usos abusivos para proteger la calidad del servicio.</li>
       </ul>
+      </div>
     </section>
 
     <!-- Preguntas frecuentes -->
-    <section id="faq" class="px-4 sm:px-margin-page py-stack-xl max-w-container-max mx-auto mb-stack-xl" aria-labelledby="faq-titulo-principal">
-      <div class="mx-auto max-w-3xl text-center">
-        <p class="font-label-caps text-label-caps uppercase tracking-wider text-primary">Preguntas frecuentes</p>
-        <h2 id="faq-titulo-principal" class="mt-2 font-h2 text-h2 text-on-background">¿Tienes dudas?</h2>
-      </div>
+    <section id="faq" class="section-block section-bg-white pb-20 md:pb-28" aria-labelledby="faq-titulo-principal">
+      <div class="section-inner">
+      <header class="section-header mx-auto max-w-3xl">
+        <span class="section-eyebrow">Preguntas frecuentes</span>
+        <h2 id="faq-titulo-principal" class="mt-3 font-h2 text-h2 text-on-background">¿Tienes dudas?</h2>
+      </header>
       <div class="mx-auto mt-10 max-w-3xl space-y-3">
         <details class="faq-details group rounded-2xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm open:border-primary/25 open:shadow-md">
           <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left font-body-lg text-body-lg font-semibold text-on-background transition hover:bg-surface-container-low/80 sm:px-6 sm:py-5">
@@ -1309,17 +1584,20 @@
           </div>
         </details>
       </div>
+      </div>
     </section>
 
     <!-- Contacto -->
-    <section class="px-4 sm:px-margin-page py-stack-xl max-w-container-max mx-auto" id="contacto" tabindex="-1">
-      <div class="mx-auto max-w-2xl text-center">
-        <h2 class="font-h2 text-h2 text-on-background">Cotiza tu volumen SMS en Chile</h2>
-        <p class="mt-4 font-body-lg text-body-lg leading-relaxed text-on-surface-variant">
+    <section class="section-contact" id="contacto" tabindex="-1">
+      <div class="section-inner">
+      <header class="section-header mx-auto max-w-2xl">
+        <span class="section-eyebrow">Contacto</span>
+        <h2 class="font-h2 text-h2 text-white">Cotiza tu volumen SMS en Chile</h2>
+        <p class="section-intro font-body-lg text-body-lg leading-relaxed text-white/85">
           Cuéntanos cuántos SMS necesitas enviar al mes y prepararemos una tarifa especial para tu empresa.
         </p>
-      </div>
-      <div class="mx-auto mt-10 max-w-xl rounded-[32px] border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-sm sm:p-8">
+      </header>
+      <div class="contact-form-card mx-auto mt-10 max-w-xl">
         <form id="lead-form" class="space-y-5" novalidate>
           <div id="form-alert" class="hidden rounded-xl px-4 py-3 text-body-sm font-medium" role="status"></div>
           <div>
@@ -1386,26 +1664,29 @@
           <p class="font-body-sm text-body-sm text-on-surface-variant">Al enviar, acepta ser contactado con fines comerciales relacionados con Telvoice. No vendemos datos a terceros.</p>
         </form>
       </div>
-      <ul class="mx-auto mt-8 flex max-w-xl flex-col items-center gap-4 px-1 text-center font-body-sm text-body-sm text-on-surface-variant">
+      <ul class="mx-auto mt-8 flex max-w-xl flex-col items-center gap-4 px-1 text-center font-body-sm text-body-sm text-white/80">
         <li class="flex w-full items-center justify-center gap-3 sm:justify-start sm:pl-1">
-          <span class="material-symbols-outlined shrink-0 text-secondary text-[20px]" aria-hidden="true">schedule</span>
+          <span class="material-symbols-outlined shrink-0 text-[#9cf0ff] text-[20px]" aria-hidden="true">schedule</span>
           <span class="text-left">Respuesta típica en 1 día hábil.</span>
         </li>
         <li class="flex w-full items-center justify-center gap-3 sm:justify-start sm:pl-1">
-          <span class="material-symbols-outlined shrink-0 text-secondary text-[20px]" aria-hidden="true">hub</span>
+          <span class="material-symbols-outlined shrink-0 text-[#9cf0ff] text-[20px]" aria-hidden="true">hub</span>
           <span class="text-left">Integración vía API REST documentada.</span>
         </li>
       </ul>
+      </div>
     </section>
 
     <!-- Final CTA -->
-    <section class="px-4 sm:px-margin-page py-24 max-w-container-max mx-auto text-center">
+    <section class="section-block section-bg-muted text-center">
+      <div class="section-inner py-8 md:py-12">
       <h2 class="font-h2 text-h2 text-on-background mb-6">Comienza a enviar SMS en Chile hoy</h2>
       <p class="font-body-lg text-body-lg text-on-surface-variant mb-10 max-w-2xl mx-auto leading-relaxed">Calcula tu bolsa, compra online y activa una solución simple, económica y profesional para comunicarte con tus clientes.</p>
       <div class="flex flex-wrap justify-center gap-4">
         <a href="#calculadora" class="inline-flex items-center justify-center bg-primary text-on-primary font-body-md px-10 py-4 rounded-full hover:bg-surface-tint transition-all shadow-lg text-lg font-semibold" data-track="click_calcular_precio">Calcular precio</a>
         <button type="button" class="final-cta inline-flex items-center justify-center bg-surface text-primary font-body-md px-10 py-4 rounded-full border border-primary/20 hover:bg-surface-container-low transition-all text-lg font-semibold" data-track="click_hablar_ventas">Hablar con ventas</button>
         <a href="#" class="wa-section-cta hidden inline-flex items-center justify-center bg-[#25d366] text-white font-body-md px-10 py-4 rounded-full transition-all text-lg font-semibold shadow-md hover:brightness-105" data-track="click_whatsapp">Hablar por WhatsApp</a>
+      </div>
       </div>
     </section>
   </main>
