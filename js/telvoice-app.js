@@ -331,30 +331,14 @@
   }
   initHeroPricing();
 
-  function updateCalcCtas(vol, tier) {
-    var buyBtn = qs("calc-buy-bag");
-    var quoteBtn = qs("calc-request-quote");
-    var isHigh = vol >= QUOTE_MIN;
-    if (buyBtn) {
-      buyBtn.classList.toggle("hidden", isHigh);
-    }
-    if (quoteBtn) {
-      quoteBtn.classList.toggle("hidden", !isHigh);
-      quoteBtn.classList.toggle("inline-flex", isHigh);
-    }
-  }
-
   function initCalculadora() {
     var slider = qs("calcSlider");
     if (!slider) return;
 
     var calcVol = qs("calcVol");
     var calcPxSMS = qs("calcPxSMS");
-    var calcNet = qs("calcNet");
-    var calcIva = qs("calcIva");
     var calcTotal = qs("calcTotal");
     var calcPlan = qs("calcPlan");
-    var buyBtn = qs("calc-buy-bag");
     var quoteBtn = qs("calc-request-quote");
     var minV = +slider.min;
     var maxV = +slider.max;
@@ -376,16 +360,11 @@
       if (!tier) return;
 
       var net = vol * tier.pxSMS;
-      var iva = Math.round(net * IVA_RATE);
-      var total = net + iva;
+      var totalIva = Math.round(net * (1 + IVA_RATE));
 
       if (calcPxSMS) calcPxSMS.textContent = "$" + tier.pxSMS;
-      if (calcNet) calcNet.textContent = "$" + fmt(net);
-      if (calcIva) calcIva.textContent = "$" + fmt(iva);
-      if (calcTotal) calcTotal.textContent = "$" + fmt(total);
+      if (calcTotal) calcTotal.textContent = "$" + fmt(totalIva);
       if (calcPlan) calcPlan.textContent = tier.plan;
-
-      updateCalcCtas(vol, tier);
 
       if (lastTrackVol !== vol) {
         trackEvent("select_sms_plan", { volume: vol, plan: tier.plan, pxSms: tier.pxSMS });
@@ -394,31 +373,6 @@
     }
 
     slider.addEventListener("input", updateCalc);
-
-    if (buyBtn) {
-      buyBtn.addEventListener("click", function () {
-        var vol = +slider.value;
-        var bag = findBagForVolume(vol);
-        var tier = findTier(vol);
-        if (bag) {
-          openCompraModal({
-            bagId: bag.id,
-            sms: bag.sms,
-            priceNet: bag.priceNet,
-            label: bag.label + " (estimado desde calculadora)",
-            source: "calculator",
-          });
-        } else if (tier) {
-          openCompraModal({
-            bagId: "estimate",
-            sms: vol,
-            priceNet: vol * tier.pxSMS,
-            label: "Estimación " + fmt(vol) + " SMS/mes · plan " + tier.plan,
-            source: "calculator",
-          });
-        }
-      });
-    }
 
     if (quoteBtn) {
       quoteBtn.addEventListener("click", function () {

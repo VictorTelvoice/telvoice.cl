@@ -983,35 +983,26 @@
               <span>500.000</span>
             </div>
           </div>
-          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div class="rounded-xl border border-outline-variant/50 bg-surface/90 px-4 py-5 text-center shadow-sm">
               <span id="calcPxSMS" class="font-data-mono block text-2xl font-bold tracking-tight text-on-background">$8</span>
-              <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Precio por SMS</span>
+              <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Precio por SMS (ref.)</span>
             </div>
             <div class="rounded-xl border border-outline-variant/50 bg-surface/90 px-4 py-5 text-center shadow-sm">
-              <span id="calcNet" class="font-data-mono block text-2xl font-bold tracking-tight text-on-background">$80.000</span>
-              <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Subtotal neto</span>
-            </div>
-            <div class="rounded-xl border border-outline-variant/50 bg-surface/90 px-4 py-5 text-center shadow-sm">
-              <span id="calcIva" class="font-data-mono block text-2xl font-bold tracking-tight text-on-background">$15.200</span>
-              <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">IVA 19%</span>
-            </div>
-            <div class="rounded-xl border-2 border-primary/20 bg-primary/[0.06] px-4 py-5 text-center shadow-sm">
-              <span id="calcTotal" class="font-data-mono block text-2xl font-bold tracking-tight text-primary">$95.200</span>
-              <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Total con IVA</span>
+              <span id="calcTotal" class="font-data-mono block text-2xl font-bold tracking-tight text-on-background">$80.000</span>
+              <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Total estimado (+ IVA 19%)</span>
             </div>
             <div class="rounded-xl border border-outline-variant/50 bg-surface/90 px-4 py-5 text-center shadow-sm">
               <span id="calcPlan" class="font-h3 block text-xl font-bold leading-tight text-primary sm:text-2xl">Starter</span>
-              <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Plan recomendado según volumen</span>
+              <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Plan recomendado</span>
             </div>
           </div>
           <p class="mt-6 text-center font-body-sm text-body-sm leading-relaxed text-on-surface-variant">
-            * Precios referenciales en CLP. Bolsas: 3.000 ($8), 15.000 ($7) y 100.000 ($6) + IVA por SMS. Desde $4 + IVA aplica a volúmenes corporativos sobre 500.000 SMS/mes.
+            * Precios en CLP + IVA. El precio final depende del volumen y condiciones del contrato.
+            <a class="font-medium text-primary underline decoration-primary/30 hover:decoration-primary" href="#contacto">Cotiza sin compromiso →</a>
           </p>
-          <div class="mt-7 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <button type="button" id="calc-buy-bag" class="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3.5 font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_comprar_bolsa">Comprar bolsa</button>
-            <button type="button" id="calc-request-quote" class="hidden inline-flex items-center justify-center rounded-full border border-primary/25 bg-surface px-8 py-3.5 font-body-md font-semibold text-primary transition hover:bg-surface-container-low" data-track="click_cotizar_volumen">Solicitar cotización</button>
-            <a href="#" class="wa-inline-cta hidden font-body-md font-medium text-primary underline decoration-primary/30 hover:decoration-primary" data-track="click_whatsapp">Hablar por WhatsApp</a>
+          <div class="mt-7 flex justify-center">
+            <button type="button" id="calc-request-quote" class="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3.5 font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_cotizar_volumen">Solicitar cotización →</button>
           </div>
         </div>
       </div>
@@ -1030,40 +1021,6 @@
       </div>
     </section>
 
-    <!-- Proceso de compra -->
-    <section id="proceso" class="px-4 sm:px-margin-page py-stack-xl max-w-container-max mx-auto" aria-labelledby="proceso-titulo" tabindex="-1">
-      <div class="mx-auto max-w-3xl text-center">
-        <p class="font-label-caps text-label-caps uppercase tracking-wider text-primary">Cómo funciona</p>
-        <h2 id="proceso-titulo" class="mt-2 font-h2 text-h2 text-on-background">Compra y comienza en pocos pasos</h2>
-      </div>
-      <ol class="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
-        <li class="rounded-[28px] border border-outline-variant/60 bg-surface-container-lowest p-6 text-center">
-          <span class="font-data-mono text-2xl font-bold text-primary">1</span>
-          <p class="mt-3 font-body-md font-semibold text-on-background">Elige tu bolsa</p>
-          <p class="mt-2 font-body-sm text-on-surface-variant">Selecciona volumen en precios o calculadora.</p>
-        </li>
-        <li class="rounded-[28px] border border-outline-variant/60 bg-surface-container-lowest p-6 text-center">
-          <span class="font-data-mono text-2xl font-bold text-primary">2</span>
-          <p class="mt-3 font-body-md font-semibold text-on-background">Revisa el precio</p>
-          <p class="mt-2 font-body-sm text-on-surface-variant">Ve el total con IVA antes de pagar.</p>
-        </li>
-        <li class="rounded-[28px] border border-outline-variant/60 bg-surface-container-lowest p-6 text-center">
-          <span class="font-data-mono text-2xl font-bold text-primary">3</span>
-          <p class="mt-3 font-body-md font-semibold text-on-background">Paga online</p>
-          <p class="mt-2 font-body-sm text-on-surface-variant">Activa tu bolsa con pago seguro.</p>
-        </li>
-        <li class="rounded-[28px] border border-outline-variant/60 bg-surface-container-lowest p-6 text-center">
-          <span class="font-data-mono text-2xl font-bold text-primary">4</span>
-          <p class="mt-3 font-body-md font-semibold text-on-background">Carga saldo</p>
-          <p class="mt-2 font-body-sm text-on-surface-variant">Tu saldo queda listo en la plataforma.</p>
-        </li>
-        <li class="rounded-[28px] border border-outline-variant/60 bg-surface-container-lowest p-6 text-center sm:col-span-2 lg:col-span-1">
-          <span class="font-data-mono text-2xl font-bold text-primary">5</span>
-          <p class="mt-3 font-body-md font-semibold text-on-background">Envía o integra</p>
-          <p class="mt-2 font-body-sm text-on-surface-variant">Campañas desde el panel o vía API.</p>
-        </li>
-      </ol>
-    </section>
 
     <!-- API / Integración -->
     <section id="api" class="px-4 sm:px-margin-page py-stack-xl max-w-container-max mx-auto bg-surface-container-low/35" aria-labelledby="api-titulo" tabindex="-1">
@@ -1114,7 +1071,6 @@
       <div class="mb-12 mx-auto max-w-3xl px-2 text-center">
         <h2 id="casos-titulo" class="font-h2 text-h2 text-on-background">SMS para vender, notificar y contactar clientes en Chile</h2>
         <p class="font-body-lg text-body-lg text-on-surface-variant mt-3 leading-relaxed">Envía promociones, recordatorios, alertas, notificaciones de despacho, cobranzas y códigos de validación directamente al celular de tus clientes.</p>
-        <p class="font-body-md text-body-md text-on-surface-variant mt-4 leading-relaxed">El SMS sigue siendo uno de los canales más directos para llegar al teléfono del cliente, sin depender de aplicaciones, datos móviles ni bandejas de correo saturadas.</p>
       </div>
       <div class="grid grid-cols-1 gap-10 p-6 pt-0 sm:grid-cols-2 sm:gap-12 sm:p-8 sm:pt-0 lg:grid-cols-4">
         <div class="flex items-start gap-5">
@@ -1189,6 +1145,17 @@
             <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">OTP y alertas transaccionales con foco en entrega rápida.</p>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- Por qué el canal SMS -->
+    <section id="canal-sms" class="border-t border-primary/[0.08] bg-surface-container-low/35 px-4 py-stack-lg sm:px-margin-page" aria-labelledby="canal-sms-titulo">
+      <div class="mx-auto max-w-3xl text-center">
+        <div class="mx-auto mb-5 h-[3px] w-14 rounded-full bg-gradient-to-r from-[#5b21b6] via-primary to-secondary opacity-90" aria-hidden="true"></div>
+        <p id="canal-sms-titulo" class="font-label-caps text-label-caps uppercase tracking-[0.14em] text-primary">El canal SMS hoy</p>
+        <p class="mt-5 font-body-lg text-body-lg leading-relaxed text-on-surface-variant sm:text-[1.0625rem] sm:leading-8">
+          El SMS sigue siendo uno de los canales más directos para llegar al teléfono del cliente, sin depender de aplicaciones, datos móviles ni bandejas de correo saturadas.
+        </p>
       </div>
     </section>
 
