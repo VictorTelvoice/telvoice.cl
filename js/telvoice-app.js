@@ -1,0 +1,531 @@
+(function () {
+  var CFG = window.TELVOICE_CONFIG || {};
+  var SALES_EMAIL = CFG.salesEmail || "ventas@telvoice.net";
+  var IVA_RATE = CFG.ivaRate != null ? CFG.ivaRate : 0.19;
+  var QUOTE_MIN = CFG.quoteVolumeMin != null ? CFG.quoteVolumeMin : 200000;
+  var BAGS = CFG.bags || [];
+  var TIERS = CFG.volumeTiers || [];
+
+  function qs(id) {
+    return document.getElementById(id);
+  }
+
+  function fmt(n) {
+    return new Intl.NumberFormat("es-CL").format(Math.round(n));
+  }
+
+  function trackEvent(name, detail) {
+    if (!name) return;
+    if (typeof window.gtag === "function") {
+      window.gtag("event", name, detail || {});
+    }
+    if (typeof window.dataLayer !== "undefined") {
+      window.dataLayer.push(Object.assign({ event: name }, detail || {}));
+    }
+    if (typeof window.TelvoiceTrack === "function") {
+      window.TelvoiceTrack(name, detail);
+    }
+  }
+
+  window.TelvoiceTrack = trackEvent;
+
+  function whatsappUrl(customMessage) {
+    var wa = CFG.whatsapp || {};
+    var num = (wa.number || "").replace(/\D/g, "");
+    if (!num) return null;
+    var text = encodeURIComponent(customMessage || wa.message || "Hola, quiero cotizar una bolsa de SMS para Chile.");
+    return "https://wa.me/" + num + "?text=" + text;
+  }
+
+  function bindWhatsappLinks() {
+    var url = whatsappUrl();
+    document.querySelectorAll(".wa-inline-cta, .wa-section-cta").forEach(function (el) {
+      if (url) {
+        el.href = url;
+        el.target = "_blank";
+        el.rel = "noopener noreferrer";
+        el.classList.remove("hidden");
+      } else {
+        el.classList.add("hidden");
+      }
+    });
+    var floatBtn = qs("wa-float");
+    if (floatBtn && url) {
+      floatBtn.href = url;
+      floatBtn.addEventListener("click", function () {
+        trackEvent("click_whatsapp", { placement: "float" });
+      });
+    } else if (floatBtn) {
+      floatBtn.hidden = true;
+    }
+  }
+
+  function closeMobileMenu() {
+    var panel = qs("mobile-panel");
+    var toggle = qs("menu-toggle");
+    var openI = qs("menu-icon-open");
+    var closeI = qs("menu-icon-close");
+    if (!panel || !toggle) return;
+    panel.classList.add("hidden");
+    toggle.setAttribute("aria-expanded", "false");
+    if (openI) openI.classList.remove("hidden");
+    if (closeI) closeI.classList.add("hidden");
+  }
+
+  function openMobileMenu() {
+    var panel = qs("mobile-panel");
+    var toggle = qs("menu-toggle");
+    var openI = qs("menu-icon-open");
+    var closeI = qs("menu-icon-close");
+    if (!panel || !toggle) return;
+    panel.classList.remove("hidden");
+    toggle.setAttribute("aria-expanded", "true");
+    if (openI) openI.classList.add("hidden");
+    if (closeI) closeI.classList.remove("hidden");
+  }
+
+  var menuToggle = qs("menu-toggle");
+  if (menuToggle) {
+    menuToggle.addEventListener("click", function () {
+      var expanded = menuToggle.getAttribute("aria-expanded") === "true";
+      if (expanded) closeMobileMenu();
+      else openMobileMenu();
+    });
+  }
+
+  document.querySelectorAll('#mobile-panel a[href^="#"]').forEach(function (a) {
+    a.addEventListener("click", closeMobileMenu);
+  });
+
+  document.querySelectorAll("[data-scroll-top]").forEach(function (el) {
+    el.addEventListener("click", function (e) {
+      e.preventDefault();
+      closeMobileMenu();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  });
+
+  document.querySelectorAll("[data-track]").forEach(function (el) {
+    el.addEventListener("click", function () {
+      trackEvent(el.getAttribute("data-track"), {
+        label: (el.textContent || "").trim().slice(0, 80),
+      });
+    });
+  });
+
+  function scrollToContact(prefill) {
+    closeMobileMenu();
+    var el = qs("contacto");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (prefill) {
+      if (prefill.interes) {
+        var uso = qs("uso-principal");
+        if (uso) uso.value = prefill.interes;
+      }
+      if (prefill.volumen) {
+        var vol = qs("volumen-mensual");
+        if (vol) vol.value = prefill.volumen;
+      }
+      if (prefill.necesitaApi) {
+        var api = qs("necesita-api");
+        if (api) api.value = prefill.necesitaApi;
+      }
+      if (typeof prefill.mensaje === "string") {
+        var msgBox = qs("mensaje");
+        if (msgBox) msgBox.value = prefill.mensaje;
+      }
+    }
+    var nombre = qs("nombre");
+    if (nombre) setTimeout(function () { nombre.focus(); }, 400);
+  }
+
+  function findTier(vol) {
+    return TIERS.find(function (t) {
+      return vol >= t.min && vol <= t.max;
+    });
+  }
+
+  function findBagForVolume(vol) {
+    var match = null;
+    BAGS.forEach(function (b) {
+      if (vol >= b.sms && (!match || b.sms > match.sms)) match = b;
+    });
+    return match;
+  }
+
+  function bagById(id) {
+    return BAGS.find(function (b) {
+      return b.id === id;
+    });
+  }
+
+  var compraState = { bagId: null, sms: 0, priceNet: 0, label: "", source: "" };
+
+  function openCompraModal(payload) {
+    var modal = qs("compra-modal");
+    if (!modal) return;
+
+    if (CFG.checkoutUrl && payload && payload.bagId) {
+      trackEvent("click_comprar_bolsa", { bagId: payload.bagId, checkout: true });
+      window.location.href = CFG.checkoutUrl + (CFG.checkoutUrl.indexOf("?") >= 0 ? "&" : "?") + "bag=" + encodeURIComponent(payload.bagId);
+      return;
+    }
+
+    compraState = Object.assign(
+      { bagId: null, sms: 0, priceNet: 0, label: "", source: payload && payload.source ? payload.source : "web" },
+      payload || {}
+    );
+
+    var iva = Math.round(compraState.priceNet * IVA_RATE);
+    var total = compraState.priceNet + iva;
+
+    var title = qs("compra-modal-title");
+    var summary = qs("compra-resumen");
+    if (title) title.textContent = "Activar bolsa SMS";
+    if (summary) {
+      summary.innerHTML =
+        "<strong>" +
+        (compraState.label || "Bolsa SMS") +
+        "</strong><br>" +
+        fmt(compraState.sms) +
+        " SMS · Neto $" +
+        fmt(compraState.priceNet) +
+        " · IVA $" +
+        fmt(iva) +
+        " · Total $" +
+        fmt(total) +
+        " CLP";
+    }
+
+    qs("compra-bag-id").value = compraState.bagId || "";
+    qs("compra-bag-label").value = compraState.label || "";
+
+    modal.hidden = false;
+    document.body.classList.add("modal-open");
+    var first = qs("compra-nombre");
+    if (first) setTimeout(function () { first.focus(); }, 100);
+  }
+
+  function closeCompraModal() {
+    var modal = qs("compra-modal");
+    if (!modal) return;
+    modal.hidden = true;
+    document.body.classList.remove("modal-open");
+  }
+
+  function initCompraModal() {
+    var modal = qs("compra-modal");
+    if (!modal) return;
+
+    modal.querySelectorAll("[data-close-modal]").forEach(function (el) {
+      el.addEventListener("click", closeCompraModal);
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !modal.hidden) closeCompraModal();
+    });
+
+    var form = qs("compra-form");
+    if (form) {
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var honeypot = qs("compra-website");
+        if (honeypot && honeypot.value) return;
+
+        var nombre = (qs("compra-nombre").value || "").trim();
+        var empresa = (qs("compra-empresa").value || "").trim();
+        var rut = (qs("compra-rut").value || "").trim();
+        var email = (qs("compra-email").value || "").trim();
+        var whatsapp = (qs("compra-whatsapp").value || "").trim();
+        var bagLabel = qs("compra-bag-label").value || compraState.label;
+
+        if (nombre.length < 2 || empresa.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || whatsapp.length < 8) {
+          alert("Complete nombre, empresa, email y WhatsApp válidos.");
+          return;
+        }
+
+        var iva = Math.round(compraState.priceNet * IVA_RATE);
+        var lines = [
+          "Solicitud de activación de bolsa SMS (Telvoice.cl)",
+          "Bolsa: " + bagLabel,
+          "SMS: " + fmt(compraState.sms),
+          "Neto: $" + fmt(compraState.priceNet),
+          "IVA: $" + fmt(iva),
+          "Total: $" + fmt(compraState.priceNet + iva),
+          "",
+          "Nombre: " + nombre,
+          "Empresa: " + empresa,
+          "RUT: " + (rut || "—"),
+          "Email: " + email,
+          "WhatsApp: " + whatsapp,
+        ];
+        var subject = encodeURIComponent("[Telvoice] Activar bolsa — " + empresa);
+        var body = encodeURIComponent(lines.join("\n"));
+        window.location.href = "mailto:" + SALES_EMAIL + "?subject=" + subject + "&body=" + body;
+        closeCompraModal();
+      });
+    }
+  }
+
+  function openCompraFromCard(btn) {
+    var card = btn.closest("[data-bag-id], [data-pack]");
+    if (!card) return;
+    var bagId = card.getAttribute("data-bag-id");
+    var bag = bagId ? bagById(bagId) : null;
+    if (bag) {
+      openCompraModal({
+        bagId: bag.id,
+        sms: bag.sms,
+        priceNet: bag.priceNet,
+        label: bag.label,
+        source: "pack-card",
+      });
+      return;
+    }
+    var sms = parseInt(card.getAttribute("data-sms") || "0", 10);
+    var priceStr = (card.getAttribute("data-price") || "").replace(/[^\d]/g, "");
+    openCompraModal({
+      bagId: bagId || "custom",
+      sms: sms,
+      priceNet: parseInt(priceStr, 10) || 0,
+      label: card.getAttribute("data-pack") || "Bolsa SMS",
+      source: "pack-card",
+    });
+  }
+
+  document.querySelectorAll(".pack-cta").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      openCompraFromCard(btn);
+    });
+  });
+
+  function bindDemoButtons() {
+    ["nav-demo", "nav-demo-mobile", ".final-cta"].forEach(function (sel) {
+      var nodes = sel.indexOf(".") === 0 ? document.querySelectorAll(sel) : [qs(sel)];
+      nodes.forEach(function (b) {
+        if (!b) return;
+        b.addEventListener("click", function () {
+          scrollToContact({ interes: "cotizacion" });
+        });
+      });
+    });
+    document.querySelectorAll(".api-request-cta").forEach(function (b) {
+      b.addEventListener("click", function () {
+        scrollToContact({ interes: "api", necesitaApi: "si" });
+      });
+    });
+    document.querySelectorAll(".empresas-cta").forEach(function (b) {
+      b.addEventListener("click", function () {
+        scrollToContact({ interes: "alto-volumen", volumen: "100000+" });
+      });
+    });
+  }
+  bindDemoButtons();
+
+  function initHeroPricing() {
+    var hero = CFG.hero || {};
+    var priceEl = qs("hero-from-price");
+    var noteEl = qs("hero-price-note");
+    if (priceEl && hero.fromPriceSms != null) priceEl.textContent = "$" + hero.fromPriceSms;
+    if (noteEl && hero.fromPriceNote) noteEl.textContent = hero.fromPriceNote;
+  }
+  initHeroPricing();
+
+  function updateCalcCtas(vol, tier) {
+    var buyBtn = qs("calc-buy-bag");
+    var quoteBtn = qs("calc-request-quote");
+    var isHigh = vol >= QUOTE_MIN;
+    if (buyBtn) {
+      buyBtn.classList.toggle("hidden", isHigh);
+    }
+    if (quoteBtn) {
+      quoteBtn.classList.toggle("hidden", !isHigh);
+      quoteBtn.classList.toggle("inline-flex", isHigh);
+    }
+  }
+
+  function initCalculadora() {
+    var slider = qs("calcSlider");
+    if (!slider) return;
+
+    var calcVol = qs("calcVol");
+    var calcPxSMS = qs("calcPxSMS");
+    var calcNet = qs("calcNet");
+    var calcIva = qs("calcIva");
+    var calcTotal = qs("calcTotal");
+    var calcPlan = qs("calcPlan");
+    var buyBtn = qs("calc-buy-bag");
+    var quoteBtn = qs("calc-request-quote");
+    var minV = +slider.min;
+    var maxV = +slider.max;
+    var lastTrackVol = null;
+
+    function calcSetSliderProgress() {
+      var val = +slider.value;
+      var pct = ((val - minV) / (maxV - minV)) * 100;
+      slider.style.background = "linear-gradient(to right, #0052cc " + pct + "%, #c3c6d6 " + pct + "%)";
+    }
+
+    function updateCalc() {
+      var vol = +slider.value;
+      slider.setAttribute("aria-valuenow", String(vol));
+      if (calcVol) calcVol.textContent = fmt(vol);
+      calcSetSliderProgress();
+
+      var tier = findTier(vol);
+      if (!tier) return;
+
+      var net = vol * tier.pxSMS;
+      var iva = Math.round(net * IVA_RATE);
+      var total = net + iva;
+
+      if (calcPxSMS) calcPxSMS.textContent = "$" + tier.pxSMS;
+      if (calcNet) calcNet.textContent = "$" + fmt(net);
+      if (calcIva) calcIva.textContent = "$" + fmt(iva);
+      if (calcTotal) calcTotal.textContent = "$" + fmt(total);
+      if (calcPlan) calcPlan.textContent = tier.plan;
+
+      updateCalcCtas(vol, tier);
+
+      if (lastTrackVol !== vol) {
+        trackEvent("select_sms_plan", { volume: vol, plan: tier.plan, pxSms: tier.pxSMS });
+        lastTrackVol = vol;
+      }
+    }
+
+    slider.addEventListener("input", updateCalc);
+
+    if (buyBtn) {
+      buyBtn.addEventListener("click", function () {
+        var vol = +slider.value;
+        var bag = findBagForVolume(vol);
+        var tier = findTier(vol);
+        if (bag) {
+          openCompraModal({
+            bagId: bag.id,
+            sms: bag.sms,
+            priceNet: bag.priceNet,
+            label: bag.label + " (estimado desde calculadora)",
+            source: "calculator",
+          });
+        } else if (tier) {
+          openCompraModal({
+            bagId: "estimate",
+            sms: vol,
+            priceNet: vol * tier.pxSMS,
+            label: "Estimación " + fmt(vol) + " SMS/mes · plan " + tier.plan,
+            source: "calculator",
+          });
+        }
+      });
+    }
+
+    if (quoteBtn) {
+      quoteBtn.addEventListener("click", function () {
+        var vol = +slider.value;
+        var tier = findTier(vol);
+        var line =
+          "Cotización (calculadora): " +
+          fmt(vol) +
+          " SMS/mes, plan " +
+          (tier ? tier.plan : "") +
+          ", $" +
+          (tier ? tier.pxSMS : "") +
+          " + IVA por SMS.";
+        scrollToContact({ interes: "alto-volumen", volumen: String(vol), mensaje: line });
+        trackEvent("click_cotizar_volumen", { volume: vol });
+      });
+    }
+
+    updateCalc();
+  }
+  initCalculadora();
+
+  function showFormAlert(type, text) {
+    var box = qs("form-alert");
+    if (!box) return;
+    box.classList.remove("hidden", "bg-error-container", "text-on-error-container", "bg-secondary-fixed", "text-on-secondary-fixed");
+    if (type === "error") {
+      box.classList.add("bg-error-container", "text-on-error-container");
+    } else {
+      box.classList.add("bg-secondary-fixed", "text-on-secondary-fixed");
+    }
+    box.textContent = text;
+  }
+
+  var form = qs("lead-form");
+  if (form) {
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var honeypot = qs("website");
+      if (honeypot && honeypot.value) {
+        showFormAlert("ok", "Solicitud recibida.");
+        return;
+      }
+
+      var nombre = (qs("nombre").value || "").trim();
+      var empresa = (qs("empresa").value || "").trim();
+      var email = (qs("email").value || "").trim();
+      var telefono = (qs("telefono").value || "").trim();
+      var volumen = (qs("volumen-mensual") && qs("volumen-mensual").value) || "";
+      var uso = qs("uso-principal") ? qs("uso-principal").value : "";
+      var necesitaApi = qs("necesita-api") ? qs("necesita-api").value : "";
+      var mensaje = (qs("mensaje").value || "").trim();
+
+      if (nombre.length < 2) {
+        showFormAlert("error", "Indique un nombre válido.");
+        qs("nombre").focus();
+        return;
+      }
+      if (empresa.length < 2) {
+        showFormAlert("error", "Indique el nombre de la empresa.");
+        qs("empresa").focus();
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showFormAlert("error", "Indique un correo válido.");
+        qs("email").focus();
+        return;
+      }
+      if (telefono.length < 8) {
+        showFormAlert("error", "Indique un WhatsApp de contacto.");
+        qs("telefono").focus();
+        return;
+      }
+      if (!uso) {
+        showFormAlert("error", "Seleccione el uso principal.");
+        qs("uso-principal").focus();
+        return;
+      }
+      if (!volumen) {
+        showFormAlert("error", "Indique el volumen mensual estimado.");
+        qs("volumen-mensual").focus();
+        return;
+      }
+
+      var lines = [
+        "Cotización volumen SMS (Telvoice.cl)",
+        "Nombre: " + nombre,
+        "Empresa: " + empresa,
+        "Email: " + email,
+        "WhatsApp: " + telefono,
+        "Volumen mensual: " + volumen,
+        "Uso principal: " + uso,
+        "¿Necesita API?: " + (necesitaApi || "—"),
+        "",
+        mensaje || "(sin mensaje adicional)",
+      ];
+      var subject = encodeURIComponent("[Telvoice] Cotización SMS — " + empresa);
+      var body = encodeURIComponent(lines.join("\n"));
+      trackEvent("submit_lead_empresa", { volumen: volumen, uso: uso });
+
+      showFormAlert("ok", "Preparando su correo hacia " + SALES_EMAIL + ".");
+      window.setTimeout(function () {
+        window.location.href = "mailto:" + SALES_EMAIL + "?subject=" + subject + "&body=" + body;
+      }, 150);
+    });
+  }
+
+  initCompraModal();
+  bindWhatsappLinks();
+})();
