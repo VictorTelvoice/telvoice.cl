@@ -742,6 +742,7 @@
     }
 
     .section-hero-wrap {
+      padding-top: 0;
       padding-bottom: 3rem;
     }
     @media (min-width: 768px) {
@@ -749,14 +750,13 @@
         padding-bottom: 4.5rem;
       }
     }
-    .section-trust {
-      padding-top: 2.5rem;
-      padding-bottom: 2.5rem;
+    .hero-tags-below {
+      padding-top: 0.5rem;
+      padding-bottom: 2rem;
     }
     @media (min-width: 768px) {
-      .section-trust {
-        padding-top: 3rem;
-        padding-bottom: 3rem;
+      .hero-tags-below {
+        padding-bottom: 2.5rem;
       }
     }
 
@@ -828,7 +828,7 @@
     }
 
     .section-contact {
-      background: linear-gradient(180deg, #0f1729 0%, #1a2744 55%, #131b2e 100%);
+      background: linear-gradient(135deg, #e85a0a 0%, #f97316 32%, #2563eb 68%, #0066ff 100%);
       padding-top: 5rem;
       padding-bottom: 5rem;
     }
@@ -839,7 +839,7 @@
       }
     }
     .section-contact .section-eyebrow {
-      color: #9cf0ff;
+      color: rgba(255, 255, 255, 0.92);
     }
     .contact-form-card {
       border-radius: 1.5rem;
@@ -988,7 +988,7 @@
         </div>
       </div>
       <div class="relative z-10 mx-auto max-w-container-max px-4 sm:px-margin-page">
-      <div class="flex flex-col md:flex-row items-center justify-between gap-16 py-16 md:py-24 lg:py-28">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-16 pt-0 pb-12 md:pb-20 lg:pb-24">
         <div class="flex-1 flex flex-col items-start text-left max-w-2xl pl-8 sm:pl-14 md:pl-20 lg:pl-28 xl:pl-36">
           <div class="flex w-full flex-col gap-stack-md">
               <div class="inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-outline-variant/55 bg-surface-container-low/90 px-4 py-1.5 backdrop-blur-sm">
@@ -1055,13 +1055,8 @@
           </div>
         </div>
       </div>
-      </div>
-    </section>
-
-    <!-- Franja de confianza -->
-    <section class="section-trust section-bg-white border-y border-outline-variant/30" aria-label="Usos del servicio SMS">
-      <div class="section-inner flex flex-col items-center">
-        <ul class="hero-use-tags hero-tags-row flex w-full max-w-5xl flex-nowrap justify-start gap-2 overflow-x-auto py-1 sm:justify-center" role="list">
+      <div class="hero-tags-below relative z-10 flex flex-col items-center">
+        <ul class="hero-use-tags hero-tags-row flex w-full max-w-5xl flex-nowrap justify-start gap-2 overflow-x-auto py-1 sm:justify-center" role="list" aria-label="Usos del servicio SMS">
           <li class="shrink-0">
             <span class="hero-use-tag inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 px-3 py-1.5 font-body-sm text-body-sm text-on-background shadow-sm sm:px-3.5 sm:py-2">
               <span class="material-symbols-outlined text-primary text-[18px]" aria-hidden="true">notifications_active</span>
@@ -1093,6 +1088,7 @@
             </span>
           </li>
         </ul>
+      </div>
       </div>
     </section>
 
