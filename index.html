@@ -751,6 +751,29 @@
       }
     }
 
+    #soluciones .soluciones-header {
+      margin-bottom: 3rem;
+    }
+    @media (min-width: 768px) {
+      #soluciones .soluciones-header {
+        margin-bottom: 4rem;
+      }
+    }
+    #soluciones .ui-card-feature {
+      border-radius: 1.5rem;
+      box-shadow: 0 6px 28px -10px rgba(15, 23, 42, 0.1);
+    }
+    #soluciones .ui-card-feature .feature-icon-wrap {
+      display: flex;
+      height: 3.25rem;
+      width: 3.25rem;
+      align-items: center;
+      justify-content: center;
+      border-radius: 1rem;
+      background: linear-gradient(180deg, #f2f3ff 0%, #ffffff 100%);
+      border: 1px solid rgba(0, 82, 204, 0.1);
+    }
+
     .section-hero-wrap {
       --hero-edge-gap: 2.5rem;
       padding-top: var(--hero-edge-gap);
@@ -1149,36 +1172,36 @@
       </div>
     </section>
 
-    <!-- Propuesta de Valor -->
+    <!-- Operación y control -->
     <section class="section-block section-bg-muted" id="soluciones" tabindex="-1">
       <div class="section-inner">
-      <header class="section-header mx-auto max-w-3xl">
-        <span class="section-eyebrow">Rendimiento</span>
-        <h2 class="font-h2 text-h2 text-on-background">Rendimiento sin Concesiones</h2>
-        <p class="section-intro font-body-md text-body-md text-on-surface-variant">Infraestructura y procesos alineados a buenas prácticas A2P y al contexto regulatorio local.</p>
+      <header class="section-header soluciones-header mx-auto max-w-3xl">
+        <span class="section-eyebrow">Operación y control</span>
+        <h2 class="mt-4 font-h2 text-h2 text-on-background leading-tight">Operación confiable para campañas SMS en Chile</h2>
+        <p class="section-intro mt-4 font-body-lg text-body-lg text-on-surface-variant leading-relaxed">Precios claros, rutas orientadas a operadores chilenos y herramientas de control para campañas comerciales, notificaciones y tráfico A2P.</p>
       </header>
-      <div class="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-10">
-        <div class="ui-card ui-card-feature flex flex-col items-start gap-5">
-          <div class="bg-surface-container-low p-4 rounded-2xl">
-            <span class="material-symbols-outlined text-primary fill-icon text-3xl">visibility</span>
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8 lg:gap-10">
+        <article class="ui-card ui-card-feature flex flex-col items-start gap-5">
+          <div class="feature-icon-wrap" aria-hidden="true">
+            <span class="material-symbols-outlined text-primary fill-icon text-[1.75rem]">price_check</span>
           </div>
-          <h3 class="font-h3 text-h3 text-on-background">Transparencia Total</h3>
-          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Modelo de bolsas de SMS claro y predecible. Sin cargos ocultos, sin sorpresas a fin de mes.</p>
-        </div>
-        <div class="ui-card ui-card-feature flex flex-col items-start gap-5">
-          <div class="bg-surface-container-low p-4 rounded-2xl">
-            <span class="material-symbols-outlined text-primary fill-icon text-3xl">route</span>
+          <h3 class="font-h3 text-h3 text-on-background">Transparencia comercial</h3>
+          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Modelo de bolsas de SMS claro y predecible, con compra online y costos visibles desde el inicio. Una solución pensada para planificar campañas sin cargos inesperados.</p>
+        </article>
+        <article class="ui-card ui-card-feature flex flex-col items-start gap-5">
+          <div class="feature-icon-wrap" aria-hidden="true">
+            <span class="material-symbols-outlined text-primary fill-icon text-[1.75rem]">track_changes</span>
           </div>
-          <h3 class="font-h3 text-h3 text-on-background">Rutas Premium</h3>
-          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Enfoque en entregabilidad y calidad de ruta para mensajes transaccionales y notificaciones.</p>
-        </div>
-        <div class="ui-card ui-card-feature flex flex-col items-start gap-5">
-          <div class="bg-surface-container-low p-4 rounded-2xl">
-            <span class="material-symbols-outlined text-primary fill-icon text-3xl">speed</span>
+          <h3 class="font-h3 text-h3 text-on-background">Entrega y trazabilidad</h3>
+          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Rutas SMS orientadas a operadores móviles en Chile, con visibilidad sobre el estado de los envíos y mejor control del desempeño de cada campaña.</p>
+        </article>
+        <article class="ui-card ui-card-feature flex flex-col items-start gap-5">
+          <div class="feature-icon-wrap" aria-hidden="true">
+            <span class="material-symbols-outlined text-primary fill-icon text-[1.75rem]">integration_instructions</span>
           </div>
-          <h3 class="font-h3 text-h3 text-on-background">Alto Rendimiento</h3>
-          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Infraestructura escalable para picos de envío sin sacrificar tiempos de respuesta de API.</p>
-        </div>
+          <h3 class="font-h3 text-h3 text-on-background">Plataforma e integración</h3>
+          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Gestiona campañas desde una plataforma simple o integra tus sistemas mediante API para automatizar notificaciones, validaciones y comunicaciones empresariales.</p>
+        </article>
       </div>
       </div>
     </section>
