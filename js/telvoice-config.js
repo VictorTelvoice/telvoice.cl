@@ -19,11 +19,12 @@ window.TELVOICE_CONFIG = {
   },
   bags: [
     {
-      id: "3k",
-      label: "Bolsa 3.000 SMS",
-      sms: 3000,
-      priceNet: 24000,
-      pxSms: 8,
+      id: "1k",
+      label: "Bolsa 1.000 SMS",
+      sms: 1000,
+      priceNet: 10000,
+      pxSms: 10,
+      plan: "Starter",
     },
     {
       id: "15k",
@@ -31,14 +32,16 @@ window.TELVOICE_CONFIG = {
       sms: 15000,
       priceNet: 105000,
       pxSms: 7,
+      plan: "Silver",
       featured: true,
     },
     {
       id: "100k",
       label: "Bolsa 100.000 SMS",
       sms: 100000,
-      priceNet: 600000,
-      pxSms: 6,
+      priceNet: 500000,
+      pxSms: 5,
+      plan: "Pro",
     },
   ],
   volumeTiers: [
@@ -51,6 +54,6 @@ window.TELVOICE_CONFIG = {
     { min: 49001, max: 49999, pxSMS: 7, plan: "Silver" },
     { min: 50000, max: 90000, pxSMS: 6, plan: "Business" },
     { min: 90001, max: 99999, pxSMS: 6, plan: "Business" },
-    { min: 100000, max: 120000, pxSMS: 5, plan: "Pro" },
+    { min: 100000, max: 100000, pxSMS: 5, plan: "Pro" },
   ],
 };
