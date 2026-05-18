@@ -113,6 +113,35 @@
     });
   });
 
+  var USO_PREFILL_MAP = {
+    cotizacion: "",
+    api: "integracion-api",
+    "integracion-api": "integracion-api",
+    "alto-volumen": "campanas-comerciales",
+    marketing: "campanas-comerciales",
+    notificaciones: "notificaciones-alertas",
+    cobranza: "recordatorios-cobranza",
+    otp: "otp-validacion",
+  };
+
+  function mapVolumePrefill(v) {
+    if (v === undefined || v === null || v === "") return "";
+    var n = parseInt(String(v).replace(/\D/g, ""), 10);
+    if (!isNaN(n) && String(v).match(/\d/)) {
+      if (n < 10000) return "menos-10000";
+      if (n <= 50000) return "10000-50000";
+      if (n <= 100000) return "50000-100000";
+      return "mas-100000";
+    }
+    var legacy = {
+      "100000+": "mas-100000",
+      "200000+": "mas-100000",
+      "15000-100000": "50000-100000",
+      "3000-15000": "10000-50000",
+    };
+    return legacy[v] || v;
+  }
+
   function scrollToContact(prefill) {
     closeMobileMenu();
     var el = qs("contacto");
@@ -120,23 +149,38 @@
     if (prefill) {
       if (prefill.interes) {
         var uso = qs("uso-principal");
-        if (uso) uso.value = prefill.interes;
+        if (uso) uso.value = USO_PREFILL_MAP[prefill.interes] || prefill.interes;
       }
-      if (prefill.volumen) {
+      if (prefill.volumen !== undefined) {
         var vol = qs("volumen-mensual");
-        if (vol) vol.value = prefill.volumen;
-      }
-      if (prefill.necesitaApi) {
-        var api = qs("necesita-api");
-        if (api) api.value = prefill.necesitaApi;
+        if (vol) vol.value = mapVolumePrefill(prefill.volumen);
       }
       if (typeof prefill.mensaje === "string") {
-        var msgBox = qs("mensaje");
-        if (msgBox) msgBox.value = prefill.mensaje;
+        var nota = qs("lead-nota");
+        if (nota) nota.value = prefill.mensaje;
       }
     }
-    var nombre = qs("nombre");
+    var nombre = qs("lead-nombre");
     if (nombre) setTimeout(function () { nombre.focus(); }, 400);
+  }
+
+  function selectOptionLabel(id) {
+    var el = qs(id);
+    if (!el || !el.value) return "";
+    var opt = el.options[el.selectedIndex];
+    return opt ? opt.text.trim() : el.value;
+  }
+
+  function clearLeadFieldErrors() {
+    ["lead-nombre", "lead-contacto", "volumen-mensual", "uso-principal"].forEach(function (id) {
+      var field = qs(id);
+      if (field) field.removeAttribute("aria-invalid");
+    });
+  }
+
+  function markLeadFieldError(id) {
+    var field = qs(id);
+    if (field) field.setAttribute("aria-invalid", "true");
   }
 
   function findTier(vol) {
@@ -317,12 +361,12 @@
     });
     document.querySelectorAll(".api-request-cta").forEach(function (b) {
       b.addEventListener("click", function () {
-        scrollToContact({ interes: "api", necesitaApi: "si" });
+        scrollToContact({ interes: "integracion-api" });
       });
     });
     document.querySelectorAll(".empresas-cta").forEach(function (b) {
       b.addEventListener("click", function () {
-        scrollToContact({ interes: "alto-volumen", volumen: "100000+" });
+        scrollToContact({ interes: "alto-volumen", volumen: "mas-100000" });
       });
     });
   }
@@ -447,72 +491,72 @@
   if (form) {
     form.addEventListener("submit", function (e) {
       e.preventDefault();
+      clearLeadFieldErrors();
+
       var honeypot = qs("website");
       if (honeypot && honeypot.value) {
-        showFormAlert("ok", "Solicitud recibida.");
+        showFormAlert("ok", "Solicitud enviada. Te contactaremos pronto para revisar la mejor opción para tu empresa.");
         return;
       }
 
-      var nombre = (qs("nombre").value || "").trim();
-      var empresa = (qs("empresa").value || "").trim();
-      var email = (qs("email").value || "").trim();
-      var telefono = (qs("telefono").value || "").trim();
+      var nombreEmpresa = (qs("lead-nombre").value || "").trim();
+      var contacto = (qs("lead-contacto").value || "").trim();
       var volumen = (qs("volumen-mensual") && qs("volumen-mensual").value) || "";
       var uso = qs("uso-principal") ? qs("uso-principal").value : "";
-      var necesitaApi = qs("necesita-api") ? qs("necesita-api").value : "";
-      var mensaje = (qs("mensaje").value || "").trim();
+      var nota = qs("lead-nota") ? (qs("lead-nota").value || "").trim() : "";
 
-      if (nombre.length < 2) {
-        showFormAlert("error", "Indique un nombre válido.");
-        qs("nombre").focus();
+      if (nombreEmpresa.length < 2) {
+        showFormAlert("error", "Indique su nombre o el nombre de su empresa.");
+        markLeadFieldError("lead-nombre");
+        qs("lead-nombre").focus();
         return;
       }
-      if (empresa.length < 2) {
-        showFormAlert("error", "Indique el nombre de la empresa.");
-        qs("empresa").focus();
+      if (!contacto) {
+        showFormAlert("error", "Indique un WhatsApp o correo de contacto.");
+        markLeadFieldError("lead-contacto");
+        qs("lead-contacto").focus();
         return;
       }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showFormAlert("error", "Indique un correo válido.");
-        qs("email").focus();
-        return;
-      }
-      if (telefono.length < 8) {
-        showFormAlert("error", "Indique un WhatsApp de contacto.");
-        qs("telefono").focus();
+      if (!volumen) {
+        showFormAlert("error", "Seleccione el volumen mensual estimado.");
+        markLeadFieldError("volumen-mensual");
+        qs("volumen-mensual").focus();
         return;
       }
       if (!uso) {
         showFormAlert("error", "Seleccione el uso principal.");
+        markLeadFieldError("uso-principal");
         qs("uso-principal").focus();
         return;
       }
-      if (!volumen) {
-        showFormAlert("error", "Indique el volumen mensual estimado.");
-        qs("volumen-mensual").focus();
-        return;
-      }
+
+      var volumenLabel = selectOptionLabel("volumen-mensual");
+      var usoLabel = selectOptionLabel("uso-principal");
+      var fecha = new Date().toLocaleString("es-CL", { timeZone: "America/Santiago" });
 
       var lines = [
-        "Cotización volumen SMS (Telvoice.cl)",
-        "Nombre: " + nombre,
-        "Empresa: " + empresa,
-        "Email: " + email,
-        "WhatsApp: " + telefono,
-        "Volumen mensual: " + volumen,
-        "Uso principal: " + uso,
-        "¿Necesita API?: " + (necesitaApi || "—"),
+        "Solicitud de cotización SMS — Telvoice.cl",
         "",
-        mensaje || "(sin mensaje adicional)",
+        "Origen: formulario web telvoice.cl",
+        "Fecha de solicitud: " + fecha,
+        "",
+        "Nombre o empresa: " + nombreEmpresa,
+        "WhatsApp o correo: " + contacto,
+        "Volumen mensual estimado: " + volumenLabel,
+        "Uso principal: " + usoLabel,
       ];
-      var subject = encodeURIComponent("[Telvoice] Cotización SMS — " + empresa);
+      if (nota) {
+        lines.push("", "Nota adicional:", nota);
+      }
+
+      var subject = encodeURIComponent("[Telvoice] Cotización SMS — " + nombreEmpresa);
       var body = encodeURIComponent(lines.join("\n"));
       trackEvent("submit_lead_empresa", { volumen: volumen, uso: uso });
 
-      showFormAlert("ok", "Preparando su correo hacia " + SALES_EMAIL + ".");
+      showFormAlert("ok", "Solicitud enviada. Te contactaremos pronto para revisar la mejor opción para tu empresa.");
       window.setTimeout(function () {
         window.location.href = "mailto:" + SALES_EMAIL + "?subject=" + subject + "&body=" + body;
-      }, 150);
+      }, 400);
     });
   }
 

@@ -987,11 +987,49 @@
       color: rgba(255, 255, 255, 0.88);
     }
     .contact-form-card {
-      border-radius: 1.5rem;
+      width: 100%;
+      max-width: 32.5rem;
+      border-radius: 1.25rem;
       border: 1px solid rgba(255, 255, 255, 0.12);
       background: #ffffff;
       box-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.35);
-      padding: 1.75rem;
+      padding: 1.5rem 1.25rem;
+    }
+    #lead-form .lead-field {
+      display: block;
+      width: 100%;
+      min-height: 2.75rem;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(195, 198, 214, 0.85);
+      background: #faf8ff;
+      padding: 0.625rem 0.875rem;
+      font-size: 1rem;
+      line-height: 1.5;
+      color: #131b2e;
+    }
+    #lead-form .lead-field:focus {
+      outline: none;
+      border-color: #0052cc;
+      box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.15);
+    }
+    #lead-form .lead-field[aria-invalid="true"] {
+      border-color: #ba1a1a;
+      box-shadow: 0 0 0 3px rgba(186, 26, 26, 0.12);
+    }
+    #lead-form .lead-consent {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      color: #434654;
+    }
+    #lead-form .lead-wa-link {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: #0052cc;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    #lead-form .lead-wa-link:hover {
+      color: #0040a2;
     }
     .calc-stat .font-data-mono {
       font-size: 1.75rem;
@@ -1009,9 +1047,10 @@
         font-size: 1.5rem;
       }
     }
-    @media (min-width: 768px) {
+    @media (min-width: 640px) {
       .contact-form-card {
-        padding: 2.5rem;
+        max-width: 38.75rem;
+        padding: 1.75rem 2rem;
       }
     }
 
@@ -1833,79 +1872,56 @@
       <div class="section-inner">
       <header class="section-header mx-auto max-w-2xl">
         <span class="section-eyebrow">Contacto</span>
-        <h2 class="font-h2 text-h2 text-white">Cotiza tu volumen SMS en Chile</h2>
+        <h2 class="font-h2 text-h2 text-white">Solicita una cotización SMS para tu empresa</h2>
         <p class="section-intro font-body-lg text-body-lg leading-relaxed text-white/85">
-          Cuéntanos cuántos SMS necesitas enviar al mes y prepararemos una tarifa especial para tu empresa.
+          Cuéntanos tu volumen estimado y el tipo de envío que necesitas. Te contactaremos para orientarte con la mejor opción.
         </p>
       </header>
-      <div class="contact-form-card mx-auto mt-10 max-w-xl">
-        <form id="lead-form" class="space-y-5" novalidate>
+      <div class="contact-form-card mx-auto mt-8">
+        <form id="lead-form" class="space-y-4" novalidate>
           <div id="form-alert" class="hidden rounded-xl px-4 py-3 text-body-sm font-medium" role="status"></div>
           <div>
-            <label for="nombre" class="mb-1.5 block font-body-sm text-body-sm font-medium text-on-background">Nombre y apellido</label>
-            <input id="nombre" name="nombre" type="text" autocomplete="name" required maxlength="120" class="w-full rounded-xl border-outline-variant/80 bg-surface focus:border-primary focus:ring-primary" placeholder="Juan Pérez" />
+            <label for="lead-nombre" class="mb-1 block font-body-sm text-body-sm font-medium text-on-background">Nombre o empresa</label>
+            <input id="lead-nombre" name="nombre_empresa" type="text" autocomplete="name" required maxlength="120" class="lead-field" placeholder="Ej: Juan Pérez / Mi Empresa SpA" />
           </div>
           <div>
-            <label for="empresa" class="mb-1.5 block font-body-sm text-body-sm font-medium text-on-background">Empresa</label>
-            <input id="empresa" name="empresa" type="text" autocomplete="organization" required maxlength="120" class="w-full rounded-xl border-outline-variant/80 bg-surface focus:border-primary focus:ring-primary" placeholder="Mi Empresa SpA" />
-          </div>
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label for="email" class="mb-1.5 block font-body-sm text-body-sm font-medium text-on-background">Correo</label>
-              <input id="email" name="email" type="email" autocomplete="email" required maxlength="120" class="w-full rounded-xl border-outline-variant/80 bg-surface focus:border-primary focus:ring-primary" placeholder="nombre@empresa.cl" />
-            </div>
-            <div>
-              <label for="telefono" class="mb-1.5 block font-body-sm text-body-sm font-medium text-on-background">WhatsApp</label>
-              <input id="telefono" name="telefono" type="tel" autocomplete="tel" inputmode="tel" required maxlength="20" class="w-full rounded-xl border-outline-variant/80 bg-surface focus:border-primary focus:ring-primary" placeholder="+56 9 1234 5678" />
-            </div>
+            <label for="lead-contacto" class="mb-1 block font-body-sm text-body-sm font-medium text-on-background">WhatsApp o correo</label>
+            <input id="lead-contacto" name="contacto" type="text" autocomplete="email" inputmode="email" required maxlength="120" class="lead-field" placeholder="Ej: +56 9 1234 5678 o nombre@empresa.cl" />
           </div>
           <div>
-            <label for="volumen-mensual" class="mb-1.5 block font-body-sm text-body-sm font-medium text-on-background">Volumen mensual estimado</label>
-            <select id="volumen-mensual" name="volumen-mensual" required class="w-full rounded-xl border-outline-variant/80 bg-surface focus:border-primary focus:ring-primary">
-              <option value="">Seleccione…</option>
-              <option value="3000-15000">3.000 – 15.000 SMS</option>
-              <option value="15000-100000">15.000 – 100.000 SMS</option>
-              <option value="100000+">Más de 100.000 SMS</option>
-              <option value="200000+">Más de 200.000 SMS / mes</option>
+            <label for="volumen-mensual" class="mb-1 block font-body-sm text-body-sm font-medium text-on-background">Volumen mensual estimado</label>
+            <select id="volumen-mensual" name="volumen_mensual" required class="lead-field">
+              <option value="">Selecciona un rango</option>
+              <option value="menos-10000">Menos de 10.000 SMS</option>
+              <option value="10000-50000">10.000 a 50.000 SMS</option>
+              <option value="50000-100000">50.000 a 100.000 SMS</option>
+              <option value="mas-100000">Más de 100.000 SMS</option>
+              <option value="no-claro">Aún no lo tengo claro</option>
             </select>
           </div>
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label for="uso-principal" class="mb-1.5 block font-body-sm text-body-sm font-medium text-on-background">Uso principal</label>
-              <select id="uso-principal" name="uso-principal" required class="w-full rounded-xl border-outline-variant/80 bg-surface focus:border-primary focus:ring-primary">
-                <option value="">Seleccione…</option>
-                <option value="marketing">Marketing / campañas</option>
-                <option value="notificaciones">Notificaciones / recordatorios</option>
-                <option value="cobranza">Cobranza</option>
-                <option value="otp">OTP / validaciones</option>
-                <option value="api">Integración API</option>
-                <option value="otro">Otro</option>
-              </select>
-            </div>
-            <div>
-              <label for="necesita-api" class="mb-1.5 block font-body-sm text-body-sm font-medium text-on-background">¿Necesitas API?</label>
-              <select id="necesita-api" name="necesita-api" class="w-full rounded-xl border-outline-variant/80 bg-surface focus:border-primary focus:ring-primary">
-                <option value="">Seleccione…</option>
-                <option value="si">Sí</option>
-                <option value="no">No</option>
-                <option value="evaluando">Aún lo evalúo</option>
-              </select>
-            </div>
-          </div>
           <div>
-            <label for="mensaje" class="mb-1.5 block font-body-sm text-body-sm font-medium text-on-background">Mensaje (opcional)</label>
-            <textarea id="mensaje" name="mensaje" rows="4" maxlength="2000" class="w-full rounded-xl border-outline-variant/80 bg-surface focus:border-primary focus:ring-primary" placeholder="Volumen estimado, casos de uso, plazos…"></textarea>
+            <label for="uso-principal" class="mb-1 block font-body-sm text-body-sm font-medium text-on-background">Uso principal</label>
+            <select id="uso-principal" name="uso_principal" required class="lead-field">
+              <option value="">Selecciona una opción</option>
+              <option value="campanas-comerciales">Campañas comerciales</option>
+              <option value="notificaciones-alertas">Notificaciones y alertas</option>
+              <option value="otp-validacion">OTP / códigos de validación</option>
+              <option value="recordatorios-cobranza">Recordatorios o cobranza</option>
+              <option value="integracion-api">Integración API</option>
+              <option value="otro">Otro</option>
+            </select>
           </div>
+          <input type="hidden" id="lead-nota" name="nota" value="" />
           <input type="text" name="website" id="website" class="hidden" tabindex="-1" autocomplete="off" aria-hidden="true" />
-          <button type="submit" id="form-submit" class="w-full rounded-full bg-primary py-3.5 font-body-md font-semibold text-on-primary shadow-sm transition-colors hover:bg-surface-tint disabled:pointer-events-none disabled:opacity-60" data-track="submit_lead_empresa">Enviar solicitud</button>
+          <button type="submit" id="form-submit" class="w-full rounded-full bg-primary py-3.5 font-body-md font-semibold text-on-primary shadow-sm transition-colors hover:bg-surface-tint disabled:pointer-events-none disabled:opacity-60" data-track="submit_lead_empresa">Solicitar cotización</button>
+          <p class="lead-consent text-center">Al enviar esta solicitud, aceptas ser contactado por Telvoice.cl para recibir información comercial relacionada con servicios SMS.</p>
           <p class="text-center font-body-sm text-body-sm text-on-surface-variant">
-            ¿Prefiere chat?
-            <a href="#" class="wa-section-cta hidden font-medium text-primary underline decoration-primary/30 hover:decoration-primary" data-track="click_whatsapp">Hablar por WhatsApp</a>
+            ¿Prefieres hablar directo?
+            <a href="#" class="wa-section-cta lead-wa-link hidden" data-track="click_whatsapp">Escríbenos por WhatsApp</a>
           </p>
-          <p class="font-body-sm text-body-sm text-on-surface-variant">Al enviar, acepta ser contactado con fines comerciales relacionados con Telvoice. No vendemos datos a terceros.</p>
         </form>
       </div>
-      <ul class="mx-auto mt-8 flex max-w-xl flex-col items-center gap-4 px-1 text-center font-body-sm text-body-sm text-white/80">
+      <ul class="mx-auto mt-6 flex max-w-[38.75rem] flex-col items-center gap-3 px-1 text-center font-body-sm text-body-sm text-white/80">
         <li class="flex w-full items-center justify-center gap-3 sm:justify-start sm:pl-1">
           <span class="material-symbols-outlined shrink-0 text-on-primary/75 text-[20px]" aria-hidden="true">schedule</span>
           <span class="text-left">Respuesta típica en 1 día hábil.</span>
