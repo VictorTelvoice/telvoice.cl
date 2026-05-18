@@ -19,10 +19,10 @@ window.TELVOICE_CONFIG = {
   },
   bags: [
     {
-      id: "3k",
-      label: "Bolsa 3.000 SMS",
-      sms: 3000,
-      priceNet: 24000,
+      id: "1k",
+      label: "Bolsa 1.000 SMS",
+      sms: 1000,
+      priceNet: 8000,
       pxSms: 8,
     },
     {
