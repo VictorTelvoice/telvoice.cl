@@ -12,7 +12,7 @@ window.TELVOICE_CONFIG = {
   ivaRate: 0.19,
   quoteVolumeMin: 200000,
   hero: {
-    fromPriceSms: 6,
+    fromPriceSms: 5,
     fromPriceNote: "bolsas desde 100.000 SMS",
     corporatePriceSms: 4,
     corporateNote: "desde 500.000 SMS/mes (plan corporativo)",
