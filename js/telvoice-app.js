@@ -156,8 +156,13 @@
         if (vol) vol.value = mapVolumePrefill(prefill.volumen);
       }
       if (typeof prefill.mensaje === "string") {
-        var nota = qs("lead-nota");
-        if (nota) nota.value = prefill.mensaje;
+        var mensajeField = qs("lead-mensaje");
+        if (mensajeField) {
+          mensajeField.value = prefill.mensaje;
+        } else {
+          var nota = qs("lead-nota");
+          if (nota) nota.value = prefill.mensaje;
+        }
       }
     }
     var nombre = qs("lead-nombre");
@@ -503,6 +508,7 @@
       var contacto = (qs("lead-contacto").value || "").trim();
       var volumen = (qs("volumen-mensual") && qs("volumen-mensual").value) || "";
       var uso = qs("uso-principal") ? qs("uso-principal").value : "";
+      var mensaje = qs("lead-mensaje") ? (qs("lead-mensaje").value || "").trim() : "";
       var nota = qs("lead-nota") ? (qs("lead-nota").value || "").trim() : "";
 
       if (nombreEmpresa.length < 2) {
@@ -545,8 +551,11 @@
         "Volumen mensual estimado: " + volumenLabel,
         "Uso principal: " + usoLabel,
       ];
-      if (nota) {
-        lines.push("", "Nota adicional:", nota);
+      if (mensaje) {
+        lines.push("", "Mensaje:", mensaje);
+      }
+      if (nota && nota !== mensaje) {
+        lines.push("", "Contexto:", nota);
       }
 
       var subject = encodeURIComponent("[Telvoice] Cotización SMS — " + nombreEmpresa);
@@ -560,6 +569,31 @@
     });
   }
 
+  function initFaq() {
+    var more = qs("faq-more");
+    var btn = qs("faq-show-more");
+    if (!more || !btn) return;
+
+    var label = qs("faq-show-more-text");
+    var icon = btn.querySelector(".material-symbols-outlined");
+
+    btn.addEventListener("click", function () {
+      var willExpand = more.hasAttribute("hidden");
+      if (willExpand) {
+        more.removeAttribute("hidden");
+        btn.setAttribute("aria-expanded", "true");
+        if (label) label.textContent = "Ver menos preguntas frecuentes";
+        if (icon) icon.textContent = "expand_less";
+      } else {
+        more.setAttribute("hidden", "");
+        btn.setAttribute("aria-expanded", "false");
+        if (label) label.textContent = "Ver más preguntas frecuentes";
+        if (icon) icon.textContent = "expand_more";
+      }
+    });
+  }
+
+  initFaq();
   initCompraModal();
   bindWhatsappLinks();
 })();

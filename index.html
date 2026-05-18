@@ -639,6 +639,12 @@
       transform: rotate(45deg);
       color: #0052cc;
     }
+    .faq-more[hidden] {
+      display: none;
+    }
+    #faq-show-more {
+      margin-top: 0.25rem;
+    }
 
     .calc-range-input {
       -webkit-appearance: none;
@@ -1030,6 +1036,10 @@
     }
     #lead-form .lead-wa-link:hover {
       color: #0040a2;
+    }
+    #lead-form textarea.lead-field {
+      min-height: 5.5rem;
+      resize: vertical;
     }
     .calc-stat .font-data-mono {
       font-size: 1.75rem;
@@ -1805,6 +1815,7 @@
             </p>
           </div>
         </details>
+        <div id="faq-more" class="faq-more space-y-3" hidden>
         <details class="faq-details group rounded-2xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm open:border-primary/25 open:shadow-md">
           <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left font-body-lg text-body-lg font-semibold text-on-background transition hover:bg-surface-container-low/80 sm:px-6 sm:py-5">
             <span>¿Tienen soporte técnico en Chile?</span>
@@ -1863,6 +1874,13 @@
             <p class="pt-4 font-body-md text-body-md leading-relaxed text-on-surface-variant">Telvoice.cl está enfocado en el mercado chileno y en la compra simple de bolsas SMS. Telvoice.net representa la operación internacional y mayorista de Telvoice.</p>
           </div>
         </details>
+        </div>
+        <div class="pt-2 text-center">
+          <button type="button" id="faq-show-more" class="inline-flex items-center justify-center gap-2 rounded-full border border-primary/25 bg-surface-container-low px-6 py-2.5 font-body-md font-semibold text-primary transition hover:border-primary/40 hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" aria-expanded="false" aria-controls="faq-more">
+            <span id="faq-show-more-text">Ver más preguntas frecuentes</span>
+            <span class="material-symbols-outlined text-[1.25rem]" aria-hidden="true">expand_more</span>
+          </button>
+        </div>
       </div>
       </div>
     </section>
@@ -1910,6 +1928,10 @@
               <option value="integracion-api">Integración API</option>
               <option value="otro">Otro</option>
             </select>
+          </div>
+          <div>
+            <label for="lead-mensaje" class="mb-1 block font-body-sm text-body-sm font-medium text-on-background">Mensaje <span class="font-normal text-on-surface-variant">(opcional)</span></label>
+            <textarea id="lead-mensaje" name="mensaje" rows="4" maxlength="2000" class="lead-field resize-y" placeholder="Cuéntanos más sobre tu proyecto o consulta"></textarea>
           </div>
           <input type="hidden" id="lead-nota" name="nota" value="" />
           <input type="text" name="website" id="website" class="hidden" tabindex="-1" autocomplete="off" aria-hidden="true" />
