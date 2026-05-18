@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Política de uso responsable de los servicios SMS de Telvoice.cl para campañas, API, OTP, notificaciones y comunicaciones empresariales." />
+  <title>Uso Responsable | Telvoice.cl</title>
+  <link rel="canonical" href="https://telvoice.cl/uso-responsable/" />
+  <link rel="icon" href="../assets/telvoice-isotipo.png" type="image/png" sizes="any" />
+  <meta name="theme-color" content="#0052cc" />
+  <meta property="og:locale" content="es_CL" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://telvoice.cl/uso-responsable/" />
+  <meta property="og:site_name" content="Telvoice" />
+  <meta property="og:title" content="Uso Responsable | Telvoice.cl" />
+  <meta property="og:description" content="Política de uso responsable de los servicios SMS de Telvoice.cl para campañas, API, OTP, notificaciones y comunicaciones empresariales." />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Montserrat:wght@600;700&amp;display=swap" rel="stylesheet" />
+  <script id="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#0052cc",
+            background: "#faf8ff",
+            surface: "#faf8ff",
+            "on-background": "#131b2e",
+            "on-surface-variant": "#434654",
+            "on-primary": "#ffffff",
+            "outline-variant": "#c3c6d6",
+            "surface-container-low": "#f2f3ff",
+          },
+          spacing: { "margin-page": "40px", "container-max": "1440px" },
+          fontFamily: {
+            h2: ["Montserrat", "sans-serif"],
+            h3: ["Montserrat", "sans-serif"],
+            "body-md": ["Inter", "sans-serif"],
+            "body-lg": ["Inter", "sans-serif"],
+            "body-sm": ["Inter", "sans-serif"],
+            "label-caps": ["Montserrat", "sans-serif"],
+          },
+          fontSize: {
+            h2: ["32px", { lineHeight: "40px", fontWeight: "600" }],
+            h3: ["24px", { lineHeight: "32px", fontWeight: "600" }],
+            "body-lg": ["18px", { lineHeight: "28px" }],
+            "body-md": ["16px", { lineHeight: "24px" }],
+            "body-sm": ["14px", { lineHeight: "20px" }],
+            "label-caps": ["12px", { lineHeight: "16px", fontWeight: "700" }],
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="../css/legal-pages.css" />
+</head>
+<body class="bg-background text-on-background font-body-md antialiased">
+  <nav class="legal-nav bg-surface/90 backdrop-blur-md sticky top-0 z-50 border-b border-outline-variant/30 w-full">
+    <div class="flex justify-between items-center gap-4 py-4 pl-8 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 lg:pl-28 lg:pr-10 max-w-container-max mx-auto">
+      <a href="../" class="flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label="telvoice.cl, ir al inicio">
+        <img src="../assets/telvoice-isotipo.png" alt="" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" />
+        <span class="font-h3 text-h3 font-bold tracking-tight lowercase inline-flex items-baseline">
+          <span class="text-black">telvoice</span><span class="font-h3 text-body-lg font-bold hero-grad-text">.cl</span>
+        </span>
+      </a>
+      <ul class="hidden lg:flex gap-1 items-center">
+        <li><a class="font-body-md text-on-surface-variant hover:text-primary px-4 py-2 rounded-full hover:bg-surface-container-low" href="../index.html#precios">Precios</a></li>
+        <li><a class="font-body-md text-on-surface-variant hover:text-primary px-4 py-2 rounded-full hover:bg-surface-container-low" href="../index.html#casos-uso">Casos de uso</a></li>
+        <li><a class="font-body-md text-on-surface-variant hover:text-primary px-4 py-2 rounded-full hover:bg-surface-container-low" href="../index.html#api">API</a></li>
+        <li><a class="font-body-md text-on-surface-variant hover:text-primary px-4 py-2 rounded-full hover:bg-surface-container-low" href="../index.html#empresas">Empresas</a></li>
+        <li><a class="font-body-md text-on-surface-variant hover:text-primary px-4 py-2 rounded-full hover:bg-surface-container-low" href="../index.html#contacto">Contacto</a></li>
+      </ul>
+      <button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant/60" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
+        <span class="material-symbols-outlined" id="menu-icon-open">menu</span>
+        <span class="material-symbols-outlined hidden" id="menu-icon-close">close</span>
+      </button>
+    </div>
+    <div id="mobile-panel" class="hidden lg:hidden border-t border-outline-variant/30 bg-surface/95 py-4 pl-8 pr-4 sm:pl-12 md:pl-20 max-w-container-max mx-auto">
+      <ul class="flex flex-col gap-1">
+        <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="../index.html#precios">Precios</a></li>
+        <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="../index.html#casos-uso">Casos de uso</a></li>
+        <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="../index.html#api">API</a></li>
+        <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="../index.html#empresas">Empresas</a></li>
+        <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="../index.html#contacto">Contacto</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="legal-page">
+    <article class="legal-doc mx-auto">
+      <header class="legal-doc-header">
+        <p class="legal-eyebrow">Documento legal</p>
+        <h1>Política de Uso Responsable</h1>
+        <p class="legal-lead">Uso responsable de los servicios de mensajería SMS ofrecidos por Telvoice.cl.</p>
+        <p class="legal-updated"><strong>Última actualización:</strong> 18 de mayo de 2026</p>
+        <dl class="legal-meta">
+          <div><dt>Titular del servicio</dt><dd>Telefoniachile Ltda</dd></div>
+          <div><dt>RUT / Identificación tributaria</dt><dd>76.287.242-0</dd></div>
+          <div><dt>Domicilio comercial</dt><dd>Av Caupolicán 222, Temuco, Chile</dd></div>
+          <div><dt>Correo de contacto</dt><dd><a href="mailto:contacto@telvoice.cl">contacto@telvoice.cl</a></dd></div>
+          <div><dt>Correo para asuntos legales o cumplimiento</dt><dd><a href="mailto:legal@telvoice.cl">legal@telvoice.cl</a></dd></div>
+          <div><dt>Sitio web</dt><dd><a href="https://telvoice.cl/">telvoice.cl</a></dd></div>
+        </dl>
+      </header>
+<!-- Editar en scripts/uso_responsable_sections.py (SECTIONS) y ejecutar el script -->
+<div class="legal-sections">
+      <section class="legal-section" id="sec-1">
+        <h2>1. Objetivo de esta política</h2>
+        <p>La presente Política de Uso Responsable establece las condiciones mínimas que deben cumplir los usuarios, clientes y empresas que utilizan Telvoice.cl para el envío de mensajes SMS, campañas comerciales, notificaciones, alertas, validaciones OTP, recordatorios, comunicaciones transaccionales o integraciones mediante API.</p>
+        <p>El objetivo es promover un uso seguro, legítimo, transparente y responsable de los servicios de mensajería SMS, protegiendo a los destinatarios, a los clientes, a la plataforma Telvoice.cl y a la operación general del servicio.</p>
+      </section>
+      <section class="legal-section" id="sec-2">
+        <h2>2. Alcance</h2>
+        <p>Esta política aplica a todo usuario, empresa, institución, desarrollador, integrador o tercero autorizado que utilice Telvoice.cl para:</p>
+        <ul>
+          <li>Comprar bolsas de SMS.</li>
+          <li>Enviar campañas SMS.</li>
+          <li>Utilizar la plataforma de envío.</li>
+          <li>Integrar servicios mediante API.</li>
+          <li>Enviar mensajes transaccionales.</li>
+          <li>Enviar códigos OTP o validaciones.</li>
+          <li>Realizar comunicaciones comerciales, informativas u operativas.</li>
+          <li>Gestionar tráfico SMS hacia destinatarios en Chile u otros destinos disponibles.</li>
+        </ul>
+        <p>El uso de Telvoice.cl implica la aceptación de esta Política de Uso Responsable, junto con los <a href="../terminos-y-condiciones/">Términos y Condiciones</a> y la <a href="../politica-de-privacidad/">Política de Privacidad</a> del sitio.</p>
+      </section>
+      <section class="legal-section" id="sec-3">
+        <h2>3. Principio general de uso responsable</h2>
+        <p>El usuario deberá utilizar Telvoice.cl únicamente para fines lícitos, legítimos y relacionados con su actividad comercial, institucional u operacional.</p>
+        <p>Toda campaña, integración o envío SMS debe respetar los siguientes principios:</p>
+        <ul>
+          <li>Legalidad.</li>
+          <li>Transparencia.</li>
+          <li>Veracidad.</li>
+          <li>Seguridad.</li>
+          <li>Respeto al destinatario.</li>
+          <li>Protección de datos personales.</li>
+          <li>Identificación adecuada del remitente.</li>
+          <li>Uso de bases de datos autorizadas.</li>
+          <li>Respeto de solicitudes de baja, oposición o no contacto.</li>
+          <li>Cumplimiento de la normativa aplicable.</li>
+        </ul>
+        <p>Telvoice.cl no debe utilizarse para enviar comunicaciones engañosas, abusivas, fraudulentas, no autorizadas o que puedan afectar la seguridad, privacidad o confianza de los destinatarios.</p>
+      </section>
+      <section class="legal-section" id="sec-4">
+        <h2>4. Responsabilidad del usuario</h2>
+        <p>El usuario es el único responsable del contenido de los mensajes que envía, de las bases de datos que utiliza, del origen de los números telefónicos, de la finalidad de cada campaña y del cumplimiento de las normas aplicables a sus comunicaciones.</p>
+        <p>El usuario declara y garantiza que:</p>
+        <ul>
+          <li>Los destinatarios fueron obtenidos de forma lícita.</li>
+          <li>Cuenta con autorización, consentimiento o base legal suficiente para contactarlos.</li>
+          <li>Los mensajes enviados son verdaderos, claros y no inducen a error.</li>
+          <li>Respeta las solicitudes de baja, exclusión, oposición o no contacto.</li>
+          <li>No utilizará Telvoice.cl para spam, fraude, phishing, smishing o suplantación de identidad.</li>
+          <li>Cumplirá las normas de protección de datos, consumidor, telecomunicaciones, publicidad y comercio electrónico que correspondan.</li>
+        </ul>
+        <p>Telvoice.cl actúa como proveedor tecnológico y operativo de mensajería SMS, pero no valida de forma previa la legalidad de cada base de datos utilizada por el cliente, salvo cuando sea necesario realizar revisiones por seguridad, cumplimiento, abuso, reclamos o riesgo operativo.</p>
+      </section>
+      <section class="legal-section" id="sec-5">
+        <h2>5. Usos permitidos</h2>
+        <p>El servicio puede utilizarse para comunicaciones legítimas, tales como:</p>
+        <ul>
+          <li>Campañas comerciales autorizadas.</li>
+          <li>Promociones enviadas a bases propias o autorizadas.</li>
+          <li>Recordatorios de citas o reservas.</li>
+          <li>Confirmaciones de compra.</li>
+          <li>Notificaciones de despacho.</li>
+          <li>Alertas de seguridad.</li>
+          <li>Mensajes transaccionales.</li>
+          <li>Códigos OTP o validaciones.</li>
+          <li>Comunicaciones de cobranza permitidas por la ley.</li>
+          <li>Información relevante para clientes, usuarios, pacientes, afiliados o miembros de una organización.</li>
+          <li>Alertas operativas o logísticas.</li>
+          <li>Mensajes relacionados con servicios contratados por el destinatario.</li>
+        </ul>
+        <p>Cada uso debe estar respaldado por una finalidad legítima y por una base de contacto válida.</p>
+      </section>
+      <section class="legal-section" id="sec-6">
+        <h2>6. Usos prohibidos</h2>
+        <p>Está estrictamente prohibido utilizar Telvoice.cl para enviar, facilitar o promover mensajes relacionados con:</p>
+        <ul>
+          <li>Spam o comunicaciones no autorizadas.</li>
+          <li>Phishing, smishing, fraude o suplantación de identidad.</li>
+          <li>Estafas, engaños o captación ilícita de datos.</li>
+          <li>Enlaces maliciosos, malware o sitios fraudulentos.</li>
+          <li>Mensajes falsos, confusos o diseñados para inducir a error.</li>
+          <li>Promoción de actividades ilegales.</li>
+          <li>Amenazas, acoso, extorsión o intimidación.</li>
+          <li>Contenido discriminatorio, violento, abusivo o difamatorio.</li>
+          <li>Venta no autorizada de productos o servicios regulados.</li>
+          <li>Juegos de azar no autorizados.</li>
+          <li>Contenido sexual explícito o servicios para adultos cuando no corresponda legalmente.</li>
+          <li>Sustancias prohibidas o actividades ilícitas.</li>
+          <li>Mensajes que vulneren derechos de terceros.</li>
+          <li>Campañas que oculten la identidad real del remitente.</li>
+          <li>Uso de bases de datos compradas, filtradas, extraídas o recolectadas sin autorización.</li>
+          <li>Envíos destinados a evadir bloqueos, filtros, regulaciones o controles de operadores.</li>
+        </ul>
+        <p>Telvoice.cl podrá suspender, bloquear o cancelar cualquier cuenta, campaña, integración, remitente o tráfico que infrinja esta política.</p>
+      </section>
+      <section class="legal-section" id="sec-7">
+        <h2>7. Bases de datos y consentimiento</h2>
+        <p>El usuario deberá utilizar únicamente bases de datos obtenidas de forma lícita y autorizada.</p>
+        <p>No se permite cargar o utilizar bases de datos que provengan de:</p>
+        <ul>
+          <li>Compra de bases sin autorización verificable.</li>
+          <li>Extracción automatizada de sitios web.</li>
+          <li>Filtraciones de datos.</li>
+          <li>Registros obtenidos sin consentimiento o sin base legal.</li>
+          <li>Listados de origen desconocido.</li>
+          <li>Bases que incluyan personas que hayan solicitado no ser contactadas.</li>
+        </ul>
+        <p>El usuario debe mantener mecanismos internos que permitan acreditar, cuando corresponda, el origen de sus contactos y la autorización para enviar comunicaciones SMS.</p>
+      </section>
+      <section class="legal-section" id="sec-8">
+        <h2>8. Identificación del remitente</h2>
+        <p>Todo mensaje enviado debe permitir que el destinatario identifique de forma clara quién envía la comunicación o en nombre de quién se envía.</p>
+        <p>Cuando corresponda, el mensaje deberá incluir:</p>
+        <ul>
+          <li>Nombre comercial, marca o entidad responsable.</li>
+          <li>Finalidad clara de la comunicación.</li>
+          <li>Información suficiente para que el destinatario entienda por qué recibe el mensaje.</li>
+          <li>Mecanismo de baja, exclusión u oposición cuando aplique.</li>
+        </ul>
+        <p>No se permite enviar mensajes que simulen provenir de bancos, instituciones, comercios, organismos públicos, operadores móviles u otras entidades sin autorización expresa.</p>
+      </section>
+      <section class="legal-section" id="sec-9">
+        <h2>9. Baja, oposición y solicitudes de no contacto</h2>
+        <p>El usuario debe respetar toda solicitud de baja, exclusión, oposición o no contacto realizada por un destinatario.</p>
+        <p>Cuando se trate de comunicaciones promocionales o publicitarias, el usuario deberá contar con mecanismos razonables para evitar contactar nuevamente a personas que hayan solicitado dejar de recibir mensajes.</p>
+        <p>El usuario también deberá considerar las solicitudes ingresadas por consumidores a través de mecanismos oficiales aplicables, como herramientas de exclusión o “No Molestar” cuando corresponda.</p>
+        <p>Telvoice.cl podrá solicitar al usuario antecedentes sobre sus mecanismos de baja, listas de exclusión o gestión de solicitudes de no contacto si existen reclamos, riesgos o requerimientos de cumplimiento.</p>
+      </section>
+      <section class="legal-section" id="sec-10">
+        <h2>10. Contenido de los mensajes</h2>
+        <p>El contenido de cada SMS debe ser claro, veraz y proporcional a la finalidad del envío.</p>
+        <p>El usuario debe evitar:</p>
+        <ul>
+          <li>Mensajes engañosos.</li>
+          <li>Promesas falsas.</li>
+          <li>Ofertas que no puedan ser cumplidas.</li>
+          <li>Enlaces que oculten su destino real.</li>
+          <li>Textos que generen urgencia falsa para obtener datos.</li>
+          <li>Comunicaciones que aparenten ser oficiales sin serlo.</li>
+          <li>Uso de marcas, nombres o instituciones sin autorización.</li>
+          <li>Mensajes que puedan confundirse con alertas bancarias, gubernamentales o de seguridad si no corresponden realmente.</li>
+        </ul>
+        <p>Telvoice.cl podrá bloquear campañas o mensajes cuando detecte contenido riesgoso, fraudulento, abusivo o contrario a esta política.</p>
+      </section>
+      <section class="legal-section" id="sec-11">
+        <h2>11. Enlaces dentro de los SMS</h2>
+        <p>Cuando un mensaje incluya enlaces, el usuario será responsable de que dichos enlaces dirijan a sitios seguros, legítimos y coherentes con el contenido del SMS.</p>
+        <p>No se permiten enlaces hacia:</p>
+        <ul>
+          <li>Sitios fraudulentos.</li>
+          <li>Formularios de captura de datos sin autorización.</li>
+          <li>Páginas que suplanten marcas o instituciones.</li>
+          <li>Sitios con malware.</li>
+          <li>Redirecciones engañosas.</li>
+          <li>Contenido prohibido por esta política.</li>
+        </ul>
+        <p>Telvoice.cl podrá solicitar revisión de enlaces o bloquear campañas cuando existan señales de riesgo, reclamos o sospecha de abuso.</p>
+      </section>
+      <section class="legal-section" id="sec-12">
+        <h2>12. Uso de API</h2>
+        <p>Los usuarios que integren Telvoice.cl mediante API deberán adoptar medidas de seguridad adecuadas para evitar uso indebido, envíos no autorizados o exposición de credenciales.</p>
+        <p>El usuario deberá:</p>
+        <ul>
+          <li>Proteger sus claves API, tokens y credenciales.</li>
+          <li>No compartir accesos con terceros no autorizados.</li>
+          <li>Implementar controles internos de seguridad.</li>
+          <li>Validar destinatarios y contenidos antes de enviar.</li>
+          <li>Evitar envíos duplicados o accidentales.</li>
+          <li>Respetar límites técnicos y reglas operativas.</li>
+          <li>Informar a Telvoice.cl cualquier incidente de seguridad.</li>
+        </ul>
+        <p>Telvoice.cl podrá suspender o revocar accesos API si detecta uso indebido, abuso, tráfico irregular, riesgo de fraude, incidentes de seguridad o afectación de la estabilidad del servicio.</p>
+      </section>
+      <section class="legal-section" id="sec-13">
+        <h2>13. Tráfico OTP y mensajes transaccionales</h2>
+        <p>Los mensajes OTP, códigos de validación, alertas de seguridad y mensajes transaccionales deben utilizarse exclusivamente para finalidades legítimas de autenticación, confirmación, seguridad o información relacionada con una acción real del usuario final.</p>
+        <p>No se permite utilizar mensajes transaccionales para ocultar campañas promocionales, evadir reglas comerciales o contactar destinatarios sin autorización.</p>
+        <p>El usuario será responsable de asegurar que cada OTP, alerta o mensaje transaccional corresponda a una solicitud, relación o evento válido.</p>
+      </section>
+      <section class="legal-section" id="sec-14">
+        <h2>14. Prevención de fraude y abuso</h2>
+        <p>Telvoice.cl podrá monitorear patrones de uso, volumen, contenido, frecuencia, reclamos, enlaces, tasas de error, rutas, destinatarios y otros elementos técnicos para prevenir fraude, abuso o afectación de la plataforma.</p>
+        <p>Entre las medidas que Telvoice.cl podrá adoptar se incluyen:</p>
+        <ul>
+          <li>Solicitar antecedentes adicionales al usuario.</li>
+          <li>Revisar contenido de campañas.</li>
+          <li>Limitar temporalmente el envío.</li>
+          <li>Bloquear campañas específicas.</li>
+          <li>Suspender accesos API.</li>
+          <li>Retener tráfico sospechoso.</li>
+          <li>Cancelar cuentas en caso de infracción grave.</li>
+          <li>Informar a autoridades competentes cuando corresponda.</li>
+        </ul>
+        <p>Estas medidas podrán aplicarse sin aviso previo cuando exista riesgo de fraude, afectación del servicio, incumplimiento legal, reclamos relevantes o amenaza a la seguridad.</p>
+      </section>
+      <section class="legal-section" id="sec-15">
+        <h2>15. Límites operativos y calidad del servicio</h2>
+        <p>Telvoice.cl podrá aplicar límites técnicos, comerciales u operativos para proteger la estabilidad del servicio, la reputación de las rutas y la calidad de la mensajería.</p>
+        <p>Estos límites pueden estar relacionados con:</p>
+        <ul>
+          <li>Volumen de mensajes.</li>
+          <li>Velocidad de envío.</li>
+          <li>Destinos permitidos.</li>
+          <li>Tipo de campaña.</li>
+          <li>Horarios de envío.</li>
+          <li>Contenido.</li>
+          <li>Uso de API.</li>
+          <li>Historial del usuario.</li>
+          <li>Nivel de riesgo del tráfico.</li>
+          <li>Requerimientos de operadores o proveedores.</li>
+        </ul>
+        <p>Telvoice.cl podrá ajustar estas condiciones cuando sea necesario para mantener una operación segura y estable.</p>
+      </section>
+      <section class="legal-section" id="sec-16">
+        <h2>16. Reclamos de destinatarios</h2>
+        <p>Si Telvoice.cl recibe reclamos de destinatarios, operadores, autoridades, proveedores o terceros relacionados con campañas enviadas por un usuario, podrá revisar la cuenta, la campaña, el contenido, la base de datos y los antecedentes disponibles.</p>
+        <p>El usuario deberá colaborar con Telvoice.cl entregando información razonable para aclarar el origen del tráfico, la autorización de contacto y la finalidad de la campaña.</p>
+        <p>Cuando existan reclamos reiterados, señales de abuso o incumplimiento, Telvoice.cl podrá suspender el servicio sin perjuicio de otras acciones disponibles.</p>
+      </section>
+      <section class="legal-section" id="sec-17">
+        <h2>17. Suspensión del servicio</h2>
+        <p>Telvoice.cl podrá suspender, bloquear o terminar total o parcialmente el servicio si el usuario:</p>
+        <ul>
+          <li>Incumple esta Política de Uso Responsable.</li>
+          <li>Envía spam o comunicaciones no autorizadas.</li>
+          <li>Utiliza bases de datos ilegales o no verificables.</li>
+          <li>Envía contenido fraudulento o engañoso.</li>
+          <li>Genera reclamos reiterados.</li>
+          <li>Afecta la reputación de rutas u operadores.</li>
+          <li>Compromete la seguridad de la plataforma.</li>
+          <li>Usa API de forma abusiva o insegura.</li>
+          <li>Incumple obligaciones legales o contractuales.</li>
+          <li>Se niega a entregar antecedentes razonables de cumplimiento.</li>
+        </ul>
+        <p>La suspensión podrá aplicarse de forma inmediata cuando exista riesgo legal, técnico, reputacional, comercial o de seguridad.</p>
+      </section>
+      <section class="legal-section" id="sec-18">
+        <h2>18. Cooperación con autoridades</h2>
+        <p>Telvoice.cl podrá colaborar con autoridades competentes, operadores, proveedores tecnológicos o entidades reguladoras cuando exista una obligación legal, requerimiento formal, investigación de fraude, denuncia, incidente de seguridad o incumplimiento grave.</p>
+        <p>Dicha colaboración se realizará conforme a la normativa aplicable y a los procedimientos internos de Telvoice.cl.</p>
+      </section>
+      <section class="legal-section" id="sec-19">
+        <h2>19. Reporte de abuso</h2>
+        <p>Cualquier persona que reciba un SMS que considere fraudulento, engañoso, no autorizado o abusivo puede reportarlo a Telvoice.cl escribiendo a:</p>
+        <p><a href="mailto:legal@telvoice.cl">legal@telvoice.cl</a></p>
+        <p>El reporte idealmente debe incluir:</p>
+        <ul>
+          <li>Número que recibió el mensaje.</li>
+          <li>Fecha y hora aproximada.</li>
+          <li>Contenido del SMS.</li>
+          <li>Captura de pantalla, si está disponible.</li>
+          <li>Nombre de la empresa o marca mencionada.</li>
+          <li>Enlace incluido en el mensaje, si corresponde.</li>
+        </ul>
+        <p>Telvoice.cl revisará los antecedentes y podrá adoptar medidas razonables según la información disponible.</p>
+      </section>
+      <section class="legal-section" id="sec-20">
+        <h2>20. Relación con otros documentos legales</h2>
+        <p>Esta Política de Uso Responsable complementa los <a href="../terminos-y-condiciones/">Términos y Condiciones</a> y la <a href="../politica-de-privacidad/">Política de Privacidad</a> de Telvoice.cl.</p>
+        <p>En caso de conflicto entre esta política y otros documentos legales del sitio, prevalecerá la disposición más específica respecto del uso aceptable, prevención de abuso, seguridad o cumplimiento normativo del servicio SMS.</p>
+      </section>
+      <section class="legal-section" id="sec-21">
+        <h2>21. Modificaciones</h2>
+        <p>Telvoice.cl podrá modificar esta Política de Uso Responsable en cualquier momento para adaptarla a cambios legales, regulatorios, técnicos, comerciales u operativos.</p>
+        <p>La versión actualizada será publicada en telvoice.cl con su fecha de actualización. El uso continuado del servicio después de publicada una modificación implicará conocimiento y aceptación de la nueva versión.</p>
+      </section>
+      <section class="legal-section" id="sec-22">
+        <h2>22. Contacto</h2>
+        <p>Para consultas relacionadas con esta Política de Uso Responsable, reportes de abuso, cumplimiento o uso del servicio, puedes contactar a Telvoice.cl a través de:</p>
+        <dl class="legal-contact-list">
+          <dt>Correo de contacto</dt><dd><a href="mailto:contacto@telvoice.cl">contacto@telvoice.cl</a></dd>
+          <dt>Correo legal / cumplimiento</dt><dd><a href="mailto:legal@telvoice.cl">legal@telvoice.cl</a></dd>
+          <dt>Titular del servicio</dt><dd>Telefoniachile Ltda</dd>
+          <dt>RUT</dt><dd>76.287.242-0</dd>
+          <dt>Domicilio comercial</dt><dd>Av Caupolicán 222, Temuco, Chile</dd>
+          <dt>Sitio web</dt><dd><a href="https://telvoice.cl/">telvoice.cl</a></dd>
+        </dl>
+      </section>
+  <div class="legal-actions">
+    <a href="../" class="legal-btn-back">Volver al inicio</a>
+  </div>
+</div>
+
+    </article>
+  </main>
+
+  <footer class="legal-footer bg-primary text-on-primary" role="contentinfo">
+    <div class="max-w-container-max mx-auto px-4 sm:px-margin-page pt-12 pb-6">
+      <div class="grid grid-cols-1 gap-10 border-b border-on-primary/20 pb-10 md:grid-cols-2 lg:grid-cols-12">
+        <div class="lg:col-span-4">
+          <a href="../" class="inline-flex items-center gap-2 text-on-primary" aria-label="telvoice.cl, ir al inicio">
+            <img src="../assets/telvoice-isotipo.png" alt="" width="40" height="40" class="h-10 w-10 object-contain" />
+            <span class="font-h3 text-h3 font-bold lowercase">telvoice<span class="text-body-lg">.cl</span></span>
+          </a>
+          <p class="mt-4 max-w-sm font-body-md text-on-primary/85">SMS masivos para empresas en Chile: bolsas prepago, precios por volumen, pago online y API.</p>
+        </div>
+        <div class="lg:col-span-8 grid grid-cols-2 sm:grid-cols-3 gap-8">
+          <div>
+            <p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Telvoice.cl</p>
+            <ul class="mt-4 space-y-3">
+              <li><a class="text-on-primary/90 hover:text-on-primary" href="../index.html#precios">Bolsas SMS</a></li>
+              <li><a class="text-on-primary/90 hover:text-on-primary" href="../index.html#api">API SMS</a></li>
+              <li><a class="text-on-primary/90 hover:text-on-primary" href="../index.html#contacto">Contacto</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Legal</p>
+            <ul class="mt-4 space-y-3">
+              <li><a class="text-on-primary/90 hover:text-on-primary" href="../terminos-y-condiciones/">Términos y condiciones</a></li>
+              <li><a class="text-on-primary/90 hover:text-on-primary" href="../politica-de-privacidad/">Política de privacidad</a></li>
+              <li><a class="text-on-primary font-semibold" href="./" aria-current="page">Uso responsable</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p class="pt-8 font-body-sm text-on-primary/65">© 2026 Telvoice.cl. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+  <script src="../js/telvoice-legal-nav.js"></script>
+</body>
+</html>
