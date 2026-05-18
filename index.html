@@ -1015,12 +1015,99 @@
       }
     }
 
-    .caso-card {
+    #casos-uso .casos-header {
+      margin-bottom: 3rem;
+    }
+    @media (min-width: 768px) {
+      #casos-uso .casos-header {
+        margin-bottom: 4.25rem;
+      }
+    }
+    #casos-uso .casos-header .section-intro {
+      max-width: 44rem;
+    }
+    #casos-uso .casos-grid {
+      align-items: stretch;
+    }
+    #casos-uso .caso-card {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      height: 100%;
+      border-radius: 1.25rem;
+      border: 1px solid rgba(0, 82, 204, 0.1);
+      background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
+      padding: 1.5rem;
+      box-shadow: 0 4px 20px -8px rgba(0, 82, 204, 0.12);
+      transition: box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    @media (min-width: 640px) {
+      #casos-uso .caso-card {
+        padding: 1.625rem 1.75rem;
+      }
+    }
+    #casos-uso .caso-card:hover {
+      border-color: rgba(0, 82, 204, 0.18);
+      box-shadow: 0 10px 32px -12px rgba(0, 82, 204, 0.16);
+    }
+    #casos-uso .caso-icon-wrap {
+      display: flex;
+      height: 3rem;
+      width: 3rem;
+      flex-shrink: 0;
+      align-items: center;
+      justify-content: center;
       border-radius: 1rem;
-      border: 1px solid rgba(195, 198, 214, 0.5);
-      background: #ffffff;
-      padding: 1.25rem 1.5rem;
-      box-shadow: 0 2px 12px -4px rgba(15, 23, 42, 0.06);
+      background: linear-gradient(180deg, #eef2ff 0%, #ffffff 100%);
+      border: 1px solid rgba(0, 82, 204, 0.12);
+      color: #0052cc;
+    }
+    @media (min-width: 640px) {
+      #casos-uso .caso-icon-wrap {
+        height: 3.25rem;
+        width: 3.25rem;
+      }
+    }
+    #casos-uso .caso-sector {
+      font-family: Montserrat, sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #0052cc;
+    }
+    @media (min-width: 640px) {
+      #casos-uso .caso-sector {
+        font-size: 0.75rem;
+      }
+    }
+    #casos-uso .caso-tagline {
+      margin-top: 0.375rem;
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.4;
+      color: #0f172a;
+    }
+    @media (min-width: 640px) {
+      #casos-uso .caso-tagline {
+        margin-top: 0.5rem;
+        font-size: 1.0625rem;
+        line-height: 1.45;
+      }
+    }
+    #casos-uso .caso-desc {
+      margin-top: 0.625rem;
+      flex: 1;
+      font-size: 0.875rem;
+      line-height: 1.55;
+      color: #475569;
+    }
+    @media (min-width: 640px) {
+      #casos-uso .caso-desc {
+        margin-top: 0.75rem;
+        font-size: 0.9375rem;
+        line-height: 1.6;
+      }
     }
     .api-tech-card {
       border-radius: 1.5rem;
@@ -1482,84 +1569,92 @@
     <!-- Casos de Uso -->
     <section id="casos-uso" class="section-block section-bg-soft" aria-labelledby="casos-titulo" tabindex="-1">
       <div class="section-inner">
-      <header class="section-header mx-auto max-w-3xl">
+      <header class="section-header casos-header mx-auto max-w-4xl">
         <span class="section-eyebrow">Casos de uso</span>
-        <h2 id="casos-titulo" class="font-h2 text-h2 text-on-background">SMS para vender, notificar y contactar clientes en Chile</h2>
-        <p class="section-intro font-body-lg text-body-lg text-on-surface-variant leading-relaxed">Envía promociones, recordatorios, alertas, notificaciones de despacho, cobranzas y códigos de validación directamente al celular de tus clientes.</p>
+        <h2 id="casos-titulo" class="mt-4 font-h2 text-h2 text-on-background leading-tight">Cómo el SMS ayuda a tu empresa a comunicar con más seguridad y control</h2>
+        <p class="section-intro mt-4 font-body-lg text-body-lg text-on-surface-variant leading-relaxed">Utiliza SMS para confirmar acciones, enviar alertas, validar usuarios, recordar citas y mantener informados a tus clientes con una comunicación directa, confiable y oportuna.</p>
       </header>
-      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-4">
-        <div class="caso-card flex items-start gap-4">
-          <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
-            <span class="material-symbols-outlined text-3xl">storefront</span>
+      <div class="casos-grid grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 lg:gap-7">
+        <article class="caso-card">
+          <div class="caso-icon-wrap" aria-hidden="true">
+            <span class="material-symbols-outlined text-[1.625rem] sm:text-[1.75rem]">storefront</span>
           </div>
           <div>
-            <h4 class="font-body-lg text-body-lg font-semibold text-on-background">Retail</h4>
-            <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Promociones y estado de despacho con alto engagement en el canal SMS.</p>
+            <p class="caso-sector">Retail</p>
+            <h3 class="caso-tagline">Promociones, confirmaciones y seguimiento de compra</h3>
+            <p class="caso-desc">Informa ofertas, confirma compras y mantén a tus clientes al tanto del estado de sus pedidos con mensajes directos al celular.</p>
           </div>
-        </div>
-        <div class="caso-card flex items-start gap-4">
-          <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
-            <span class="material-symbols-outlined text-3xl">shopping_bag</span>
-          </div>
-          <div>
-            <h4 class="font-body-lg text-body-lg font-semibold text-on-background">E-commerce</h4>
-            <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Carritos abandonados, cupones y confirmación de compra para cerrar más ventas.</p>
-          </div>
-        </div>
-        <div class="caso-card flex items-start gap-4">
-          <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
-            <span class="material-symbols-outlined text-3xl">restaurant</span>
+        </article>
+        <article class="caso-card">
+          <div class="caso-icon-wrap" aria-hidden="true">
+            <span class="material-symbols-outlined text-[1.625rem] sm:text-[1.75rem]">shopping_bag</span>
           </div>
           <div>
-            <h4 class="font-body-lg text-body-lg font-semibold text-on-background">Restaurantes</h4>
-            <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Lista de espera, pedido listo para retiro y encuestas post-visita.</p>
+            <p class="caso-sector">E-commerce</p>
+            <h3 class="caso-tagline">Recuperación de ventas y comunicación post-compra</h3>
+            <p class="caso-desc"><span class="sm:hidden">Recordatorios de carrito, cupones, confirmaciones y avisos de despacho para mejorar conversión y experiencia.</span><span class="hidden sm:inline">Envía recordatorios de carrito abandonado, cupones, confirmaciones de compra y avisos de despacho para mejorar conversión y experiencia de cliente.</span></p>
           </div>
-        </div>
-        <div class="caso-card flex items-start gap-4">
-          <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
-            <span class="material-symbols-outlined text-3xl">local_mall</span>
-          </div>
-          <div>
-            <h4 class="font-body-lg text-body-lg font-semibold text-on-background">Supermercados</h4>
-            <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Ofertas del día, programa de fidelización y avisos de despacho a domicilio.</p>
-          </div>
-        </div>
-        <div class="caso-card flex items-start gap-4">
-          <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
-            <span class="material-symbols-outlined text-3xl">local_shipping</span>
+        </article>
+        <article class="caso-card">
+          <div class="caso-icon-wrap" aria-hidden="true">
+            <span class="material-symbols-outlined text-[1.625rem] sm:text-[1.75rem]">restaurant</span>
           </div>
           <div>
-            <h4 class="font-body-lg text-body-lg font-semibold text-on-background">Transporte y logística</h4>
-            <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Ventanas de entrega, reprogramación de visitas, PIN o código de recepción y avisos de última milla en tiempo real.</p>
+            <p class="caso-sector">Restaurantes</p>
+            <h3 class="caso-tagline">Reservas, retiros y comunicación con clientes</h3>
+            <p class="caso-desc">Confirma reservas, avisa cuando un pedido esté listo para retiro y envía mensajes posteriores para reforzar la relación con el cliente.</p>
           </div>
-        </div>
-        <div class="caso-card flex items-start gap-4">
-          <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
-            <span class="material-symbols-outlined text-3xl">app_registration</span>
-          </div>
-          <div>
-            <h4 class="font-body-lg text-body-lg font-semibold text-on-background">Fintech y aplicaciones</h4>
-            <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">OTP bancario, verificación de registro, recuperación de cuenta y alertas de seguridad para apps que exigen validar al usuario por SMS.</p>
-          </div>
-        </div>
-        <div class="caso-card flex items-start gap-4">
-          <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
-            <span class="material-symbols-outlined text-3xl">medical_services</span>
+        </article>
+        <article class="caso-card">
+          <div class="caso-icon-wrap" aria-hidden="true">
+            <span class="material-symbols-outlined text-[1.625rem] sm:text-[1.75rem]">local_mall</span>
           </div>
           <div>
-            <h4 class="font-body-lg text-body-lg font-semibold text-on-background">Salud</h4>
-            <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">Recordatorios de citas para reducir inasistencias.</p>
+            <p class="caso-sector">Supermercados</p>
+            <h3 class="caso-tagline">Ofertas, fidelización y avisos de entrega</h3>
+            <p class="caso-desc">Comunica promociones, campañas de fidelización y actualizaciones de despacho con un canal rápido y de alta visibilidad.</p>
           </div>
-        </div>
-        <div class="caso-card flex items-start gap-4">
-          <div class="bg-primary/10 p-4 rounded-2xl text-primary shrink-0">
-            <span class="material-symbols-outlined text-3xl">account_balance</span>
+        </article>
+        <article class="caso-card">
+          <div class="caso-icon-wrap" aria-hidden="true">
+            <span class="material-symbols-outlined text-[1.625rem] sm:text-[1.75rem]">local_shipping</span>
           </div>
           <div>
-            <h4 class="font-body-lg text-body-lg font-semibold text-on-background">Finanzas</h4>
-            <p class="font-body-sm text-body-sm text-on-surface-variant mt-2 leading-relaxed">OTP y alertas transaccionales con foco en entrega rápida.</p>
+            <p class="caso-sector">Transporte y logística</p>
+            <h3 class="caso-tagline">Coordinación de entregas y trazabilidad operativa</h3>
+            <p class="caso-desc"><span class="sm:hidden">Informa ventanas de entrega, reprogramaciones y alertas de última milla para una operación más ordenada.</span><span class="hidden sm:inline">Informa ventanas de entrega, reprogramaciones, códigos de recepción y alertas de última milla para mantener una operación más ordenada y visible.</span></p>
           </div>
-        </div>
+        </article>
+        <article class="caso-card">
+          <div class="caso-icon-wrap" aria-hidden="true">
+            <span class="material-symbols-outlined text-[1.625rem] sm:text-[1.75rem]">verified_user</span>
+          </div>
+          <div>
+            <p class="caso-sector">Fintech y aplicaciones</p>
+            <h3 class="caso-tagline">Validación de usuarios y seguridad de acceso</h3>
+            <p class="caso-desc"><span class="sm:hidden">Envía códigos OTP, verificaciones y alertas de seguridad para proteger accesos y transacciones.</span><span class="hidden sm:inline">Envía códigos OTP, verificaciones de registro, recuperación de cuenta y alertas de seguridad para proteger accesos y transacciones.</span></p>
+          </div>
+        </article>
+        <article class="caso-card">
+          <div class="caso-icon-wrap" aria-hidden="true">
+            <span class="material-symbols-outlined text-[1.625rem] sm:text-[1.75rem]">medical_services</span>
+          </div>
+          <div>
+            <p class="caso-sector">Salud</p>
+            <h3 class="caso-tagline">Recordatorios y confirmación de citas</h3>
+            <p class="caso-desc">Reduce inasistencias con recordatorios oportunos, confirmaciones de hora y avisos relevantes para pacientes.</p>
+          </div>
+        </article>
+        <article class="caso-card">
+          <div class="caso-icon-wrap" aria-hidden="true">
+            <span class="material-symbols-outlined text-[1.625rem] sm:text-[1.75rem]">account_balance</span>
+          </div>
+          <div>
+            <p class="caso-sector">Finanzas</p>
+            <h3 class="caso-tagline">Alertas transaccionales y comunicación crítica</h3>
+            <p class="caso-desc">Notifica movimientos, pagos, validaciones y eventos importantes con mensajes enviados de forma directa y prioritaria.</p>
+          </div>
+        </article>
       </div>
       </div>
     </section>
