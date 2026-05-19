@@ -22,8 +22,8 @@ window.TELVOICE_CONFIG = {
       id: "1k",
       label: "Bolsa 1.000 SMS",
       sms: 1000,
-      priceNet: 8000,
-      pxSms: 8,
+      priceNet: 10000,
+      pxSms: 10,
     },
     {
       id: "15k",
@@ -37,8 +37,8 @@ window.TELVOICE_CONFIG = {
       id: "100k",
       label: "Bolsa 100.000 SMS",
       sms: 100000,
-      priceNet: 600000,
-      pxSms: 6,
+      priceNet: 500000,
+      pxSms: 5,
     },
   ],
   volumeTiers: [
