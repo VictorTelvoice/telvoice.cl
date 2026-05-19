@@ -4,7 +4,6 @@
   var IVA_RATE = CFG.ivaRate != null ? CFG.ivaRate : 0.19;
   var QUOTE_MIN = CFG.quoteVolumeMin != null ? CFG.quoteVolumeMin : 200000;
   var BAGS = CFG.bags || [];
-  var TIERS = CFG.volumeTiers || [];
 
   function qs(id) {
     return document.getElementById(id);
@@ -188,24 +187,16 @@
     if (field) field.setAttribute("aria-invalid", "true");
   }
 
-  function findTier(vol) {
-    var v = +vol;
-    if (!v || v % 1000 !== 0) return null;
-    return TIERS.find(function (t) {
-      return v >= t.min && v <= t.max;
-    }) || null;
+  function recommendBagForNeed(needVol) {
+    var need = +needVol;
+    if (need > 100000) return { type: "quote" };
+    if (need <= 1000) return { type: "bag", bag: bagById("1k") };
+    if (need <= 15000) return { type: "bag", bag: bagById("15k") };
+    return { type: "bag", bag: bagById("100k") };
   }
 
-  function isCalcVolumePriced(vol) {
-    return !!findTier(vol);
-  }
-
-  function findBagForVolume(vol) {
-    var match = null;
-    BAGS.forEach(function (b) {
-      if (vol >= b.sms && (!match || b.sms > match.sms)) match = b;
-    });
-    return match;
+  function formatBagPrice(net) {
+    return "$" + fmt(net) + " + IVA";
   }
 
   function bagById(id) {
@@ -369,9 +360,20 @@
         scrollToContact({ interes: "integracion-api" });
       });
     });
-    document.querySelectorAll(".empresas-cta").forEach(function (b) {
+    document.querySelectorAll(".empresas-cta, .comercial-cotizar-cta").forEach(function (b) {
       b.addEventListener("click", function () {
         scrollToContact({ interes: "alto-volumen", volumen: "mas-100000" });
+      });
+    });
+    document.querySelectorAll(".comercial-comprar-cta").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var el = qs("precios");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+    document.querySelectorAll(".comercial-api-cta").forEach(function (b) {
+      b.addEventListener("click", function () {
+        scrollToContact({ interes: "integracion-api" });
       });
     });
   }
@@ -379,8 +381,12 @@
 
   function initHeroPricing() {
     var hero = CFG.hero || {};
+    var bagsLabel = qs("hero-bags-label");
+    var priceDetail = qs("hero-price-detail");
     var priceEl = qs("hero-from-price");
     var noteEl = qs("hero-price-note");
+    if (bagsLabel && hero.bagsFromLabel) bagsLabel.textContent = hero.bagsFromLabel;
+    if (priceDetail && hero.fromPriceDetail) priceDetail.textContent = hero.fromPriceDetail;
     if (priceEl && hero.fromPriceSms != null) priceEl.textContent = "$" + hero.fromPriceSms;
     if (noteEl && hero.fromPriceNote) noteEl.textContent = hero.fromPriceNote;
   }
@@ -394,10 +400,14 @@
     var calcPxSMS = qs("calcPxSMS");
     var calcTotal = qs("calcTotal");
     var calcPlan = qs("calcPlan");
+    var calcBagSms = qs("calcBagSms");
     var quoteBtn = qs("calc-request-quote");
+    var buyBtn = qs("calc-buy-bolsa");
+    var quoteMsg = qs("calc-quote-msg");
     var minV = +slider.min;
     var maxV = +slider.max;
     var lastTrackVol = null;
+    var lastRec = null;
 
     function calcSetSliderProgress() {
       var val = +slider.value;
@@ -405,54 +415,51 @@
       slider.style.background = "linear-gradient(to right, #0052cc " + pct + "%, #c3c6d6 " + pct + "%)";
     }
 
-    function clampToValidVolume(vol) {
-      var v = Math.round(+vol / 1000) * 1000;
-      if (v < minV) v = minV;
-      if (v > maxV) v = maxV;
-      if (isCalcVolumePriced(v)) return v;
-      var priced = TIERS.map(function (t) {
-        return { min: t.min, max: t.max };
-      });
-      var nearest = minV;
-      var nearestDist = Infinity;
-      priced.forEach(function (r) {
-        [r.min, r.max].forEach(function (edge) {
-          if (edge >= minV && edge <= maxV) {
-            var d = Math.abs(v - edge);
-            if (d < nearestDist) {
-              nearestDist = d;
-              nearest = edge;
-            }
-          }
-        });
-      });
-      return nearest;
+    function setCalcQuoteMode(needVol) {
+      if (calcPlan) calcPlan.textContent = "Cotización personalizada";
+      if (calcBagSms) calcBagSms.textContent = "—";
+      if (calcTotal) calcTotal.textContent = "—";
+      if (calcPxSMS) calcPxSMS.textContent = "—";
+      if (quoteMsg) quoteMsg.classList.remove("hidden");
+      if (buyBtn) buyBtn.classList.add("hidden");
+      if (quoteBtn) quoteBtn.classList.remove("hidden");
+      lastRec = { type: "quote", need: needVol };
+    }
+
+    function setCalcBagMode(bag) {
+      var planName = bag.planName || bag.label;
+      if (calcPlan) calcPlan.textContent = planName;
+      if (calcBagSms) calcBagSms.textContent = fmt(bag.sms) + " SMS";
+      if (calcTotal) calcTotal.textContent = formatBagPrice(bag.priceNet);
+      if (calcPxSMS) calcPxSMS.textContent = "$" + bag.pxSms + " + IVA por SMS";
+      if (quoteMsg) quoteMsg.classList.add("hidden");
+      if (buyBtn) buyBtn.classList.remove("hidden");
+      if (quoteBtn) quoteBtn.classList.add("hidden");
+      lastRec = { type: "bag", bag: bag };
     }
 
     function updateCalc() {
-      var vol = clampToValidVolume(slider.value);
+      var vol = Math.round(+slider.value / 1000) * 1000;
+      if (vol < minV) vol = minV;
+      if (vol > maxV) vol = maxV;
       if (+slider.value !== vol) slider.value = String(vol);
       slider.setAttribute("aria-valuenow", String(vol));
       if (calcVol) calcVol.textContent = fmt(vol);
       calcSetSliderProgress();
 
-      var tier = findTier(vol);
-      if (!tier) {
-        if (calcPxSMS) calcPxSMS.textContent = "—";
-        if (calcTotal) calcTotal.textContent = "A cotizar";
-        if (calcPlan) calcPlan.textContent = "Cotización";
-        return;
+      var rec = recommendBagForNeed(vol);
+      if (rec.type === "quote") {
+        setCalcQuoteMode(vol);
+      } else {
+        setCalcBagMode(rec.bag);
       }
 
-      var net = vol * tier.pxSMS;
-      var totalIva = Math.round(net * (1 + IVA_RATE));
-
-      if (calcPxSMS) calcPxSMS.textContent = "$" + tier.pxSMS;
-      if (calcTotal) calcTotal.textContent = "$" + fmt(totalIva);
-      if (calcPlan) calcPlan.textContent = tier.plan;
-
       if (lastTrackVol !== vol) {
-        trackEvent("select_sms_plan", { volume: vol, plan: tier.plan, pxSms: tier.pxSMS });
+        trackEvent("select_sms_plan", {
+          volume: vol,
+          plan: rec.type === "bag" ? rec.bag.id : "quote",
+          pxSms: rec.type === "bag" ? rec.bag.pxSms : null,
+        });
         lastTrackVol = vol;
       }
     }
@@ -462,17 +469,26 @@
     if (quoteBtn) {
       quoteBtn.addEventListener("click", function () {
         var vol = +slider.value;
-        var tier = findTier(vol);
         var line =
-          "Cotización (calculadora): " +
+          "Cotización (calculadora): necesito aproximadamente " +
           fmt(vol) +
-          " SMS/mes, plan " +
-          (tier ? tier.plan : "") +
-          ", $" +
-          (tier ? tier.pxSMS : "") +
-          " + IVA por SMS.";
+          " SMS. Solicito condiciones para alto volumen.";
         scrollToContact({ interes: "alto-volumen", volumen: String(vol), mensaje: line });
         trackEvent("click_cotizar_volumen", { volume: vol });
+      });
+    }
+
+    if (buyBtn) {
+      buyBtn.addEventListener("click", function () {
+        if (!lastRec || lastRec.type !== "bag" || !lastRec.bag) return;
+        openCompraModal({
+          bagId: lastRec.bag.id,
+          sms: lastRec.bag.sms,
+          priceNet: lastRec.bag.priceNet,
+          label: lastRec.bag.label,
+          source: "calculadora",
+        });
+        trackEvent("click_comprar_bolsa", { bagId: lastRec.bag.id, source: "calculadora" });
       });
     }
 
