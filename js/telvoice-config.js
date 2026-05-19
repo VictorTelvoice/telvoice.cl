@@ -47,4 +47,13 @@ window.TELVOICE_CONFIG = {
       maxNeed: 100000,
     },
   ],
+  volumeTiers: [
+    { min: 1000, max: 4000, pxSMS: 10, label: "1.000 a 4.000 SMS" },
+    { min: 5000, max: 9000, pxSMS: 9, label: "5.000 a 9.000 SMS" },
+    { min: 10000, max: 14000, pxSMS: 8, label: "10.000 a 14.000 SMS" },
+    { min: 15000, max: 49000, pxSMS: 7, label: "15.000 a 49.000 SMS" },
+    { min: 50000, max: 90000, pxSMS: 6, label: "50.000 a 90.000 SMS" },
+    { min: 100000, max: 120000, pxSMS: 5, label: "100.000 a 120.000 SMS" },
+  ],
+  calcMaxVolume: 120000,
 };

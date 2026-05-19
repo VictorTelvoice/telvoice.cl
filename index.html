@@ -1041,24 +1041,158 @@
     }
     .calc-panel {
       margin-top: 2.5rem;
-      border-radius: 1.5rem;
+      border-radius: 1.25rem;
       background: #ffffff;
       box-shadow: 0 28px 64px -20px rgba(0, 0, 0, 0.4);
-      padding: 1.5rem;
+      padding: 1.75rem 1.5rem;
     }
     @media (min-width: 640px) {
       .calc-panel {
         margin-top: 3rem;
-        padding: 2.5rem 2.75rem;
+        padding: 2.5rem 3rem;
       }
     }
-    .calc-stat {
+    .calc-slider-block {
+      padding-bottom: 1.75rem;
+      border-bottom: 1px solid #e8ebf4;
+    }
+    .calc-slider-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 0.75rem 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .calc-slider-label {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: #1a1c20;
+    }
+    .calc-vol-display {
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: #0052cc;
+      white-space: nowrap;
+    }
+    .calc-slider-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+      font-size: 0.8125rem;
+      color: #5c6478;
+    }
+    .calc-result-panel {
+      margin-top: 1.75rem;
       border-radius: 1rem;
       border: 1px solid #e2e7ff;
-      background: linear-gradient(180deg, #fafbff 0%, #ffffff 100%);
-      padding: 1.25rem 1rem;
+      background: linear-gradient(180deg, #f8f9ff 0%, #ffffff 100%);
+      padding: 1.25rem 1.25rem 1rem;
+    }
+    @media (min-width: 768px) {
+      .calc-result-panel {
+        padding: 1.5rem 1.75rem 1.25rem;
+      }
+    }
+    .calc-result-grid {
+      display: grid;
+      gap: 1.5rem;
+    }
+    @media (min-width: 768px) {
+      .calc-result-grid {
+        grid-template-columns: 1fr minmax(12rem, 16rem);
+        align-items: end;
+        gap: 2rem;
+      }
+    }
+    .calc-result-dl {
+      display: grid;
+      gap: 1rem;
+    }
+    .calc-result-row-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #5c6478;
+    }
+    .calc-result-row-value {
+      display: block;
+      margin-top: 0.25rem;
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.35;
+      color: #1a1c20;
+    }
+    .calc-result-total-wrap {
+      text-align: left;
+    }
+    @media (min-width: 768px) {
+      .calc-result-total-wrap {
+        text-align: right;
+      }
+    }
+    .calc-result-total-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #5c6478;
+    }
+    .calc-result-total-value {
+      display: block;
+      margin-top: 0.35rem;
+      font-size: clamp(1.75rem, 4vw, 2.25rem);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: #0052cc;
+      white-space: nowrap;
+    }
+    .calc-result-note {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e8ebf4;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      color: #5c6478;
+    }
+    .calc-footnote {
+      margin-top: 1.25rem;
       text-align: center;
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+      font-size: 0.8125rem;
+      line-height: 1.55;
+      color: #5c6478;
+    }
+    .calc-cta-wrap {
+      margin-top: 1.75rem;
+      text-align: center;
+    }
+    .calc-cta-btn {
+      width: 100%;
+      max-width: 22rem;
+    }
+    @media (min-width: 640px) {
+      .calc-cta-btn {
+        width: auto;
+        min-width: 16rem;
+      }
+    }
+    .calc-cta-link {
+      display: inline-block;
+      margin-top: 1rem;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: #0052cc;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .calc-cta-link:hover {
+      color: #0040a2;
     }
 
     .section-empresas {
@@ -1148,22 +1282,6 @@
     #lead-form textarea.lead-field {
       min-height: 5.5rem;
       resize: vertical;
-    }
-    .calc-stat .font-data-mono {
-      font-size: 1.75rem;
-    }
-    @media (min-width: 640px) {
-      .calc-stat .font-data-mono {
-        font-size: 2rem;
-      }
-    }
-    #calcVol {
-      font-size: 1.35rem;
-    }
-    @media (min-width: 640px) {
-      #calcVol {
-        font-size: 1.5rem;
-      }
     }
     @media (min-width: 640px) {
       .contact-form-card {
@@ -1611,52 +1729,54 @@
 
     <!-- Calculadora -->
     <section id="calculadora" class="section-calc" aria-labelledby="calc-titulo" tabindex="-1">
-      <div class="section-inner mx-auto max-w-[880px]">
+      <div class="section-inner mx-auto max-w-[920px]">
         <header class="section-header">
           <span class="section-eyebrow">Calculadora</span>
-          <h2 id="calc-titulo" class="calc-hero-title mt-3 font-h2 text-h2">Calcula tu bolsa SMS</h2>
-          <p class="calc-hero-intro section-intro font-body-md text-body-md leading-relaxed">Indica cuántos SMS necesitas y te recomendaremos la bolsa más conveniente según la tabla vigente.</p>
+          <h2 id="calc-titulo" class="calc-hero-title mt-3 font-h2 text-h2">Calcula el valor de tu envío SMS</h2>
+          <p class="calc-hero-intro section-intro font-body-md text-body-md leading-relaxed">Selecciona la cantidad de SMS que necesitas y conoce el valor estimado según el tramo de volumen correspondiente.</p>
         </header>
         <div class="calc-panel">
-          <div class="mb-8">
-            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <span class="font-body-md font-semibold text-on-background">¿Cuántos SMS necesitas?</span>
-              <span id="calcVol" class="font-data-mono text-lg font-bold text-primary sm:text-xl" aria-live="polite">10.000</span>
+          <div class="calc-slider-block">
+            <div class="calc-slider-head">
+              <span class="calc-slider-label">Cantidad de SMS</span>
+              <span id="calcVol" class="calc-vol-display" aria-live="polite">10.000 SMS</span>
             </div>
-            <label for="calcSlider" class="sr-only">Cantidad de SMS necesarios</label>
-            <input id="calcSlider" class="calc-range-input w-full" type="range" min="1000" max="150000" step="1000" value="10000" aria-valuemin="1000" aria-valuemax="150000" aria-valuenow="10000" />
-            <div class="mt-2 flex justify-between font-body-sm text-body-sm text-on-surface-variant">
+            <label for="calcSlider" class="sr-only">Cantidad de SMS</label>
+            <input id="calcSlider" class="calc-range-input w-full" type="range" min="0" max="110" step="1" value="9" aria-valuemin="1000" aria-valuemax="120000" aria-valuenow="10000" />
+            <div class="calc-slider-labels">
               <span>1.000</span>
-              <span>150.000</span>
+              <span>120.000</span>
             </div>
           </div>
-          <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-6">
-            <div class="calc-stat">
-              <span id="calcPlan" class="font-h3 block text-xl font-bold leading-tight text-primary sm:text-2xl">Plan Empresa</span>
-              <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Plan recomendado</span>
+          <div class="calc-result-panel" aria-live="polite">
+            <div class="calc-result-grid">
+              <div class="calc-result-dl">
+                <div class="calc-result-row">
+                  <span class="calc-result-row-label">Cantidad seleccionada</span>
+                  <span id="calcQty" class="calc-result-row-value">10.000 SMS</span>
+                </div>
+                <div class="calc-result-row">
+                  <span class="calc-result-row-label">Tramo aplicado</span>
+                  <span id="calcTier" class="calc-result-row-value">10.000 a 14.000 SMS</span>
+                </div>
+                <div class="calc-result-row">
+                  <span class="calc-result-row-label">Valor unitario</span>
+                  <span id="calcPxSMS" class="calc-result-row-value">$8 + IVA por SMS</span>
+                </div>
+              </div>
+              <div class="calc-result-total-wrap">
+                <span class="calc-result-total-label">Total estimado</span>
+                <strong id="calcTotal" class="calc-result-total-value">$80.000 + IVA</strong>
+              </div>
             </div>
-            <div class="calc-stat">
-              <span id="calcBagSms" class="font-data-mono block text-2xl font-bold tracking-tight text-on-background">15.000 SMS</span>
-              <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Bolsa sugerida</span>
-            </div>
-            <div class="calc-stat">
-              <span id="calcTotal" class="font-data-mono block text-2xl font-bold tracking-tight text-on-background">$105.000 + IVA</span>
-              <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Precio de la bolsa</span>
-            </div>
-            <div class="calc-stat">
-              <span id="calcPxSMS" class="font-data-mono block text-2xl font-bold tracking-tight text-on-background">$7 + IVA por SMS</span>
-              <span class="mt-1 block font-body-sm text-body-sm text-on-surface-variant">Valor unitario</span>
-            </div>
+            <p class="calc-result-note">Este valor se calcula multiplicando la cantidad seleccionada por el valor unitario del tramo.</p>
           </div>
-          <p id="calc-quote-msg" class="mt-6 hidden rounded-xl border border-primary/15 bg-primary/[0.04] px-4 py-3 text-center font-body-sm text-body-sm leading-relaxed text-on-surface-variant">
-            Para este volumen podemos revisar condiciones especiales según frecuencia, destino y tipo de tráfico.
-          </p>
-          <p id="calc-footnote" class="mt-6 text-center font-body-sm text-body-sm leading-relaxed text-on-surface-variant">
-            Valores en CLP + IVA. La calculadora recomienda una bolsa según los planes disponibles. Para volúmenes superiores a 100.000 SMS, solicita una cotización personalizada.
-          </p>
-          <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <button type="button" id="calc-buy-bolsa" class="inline-flex items-center justify-center rounded-full bg-primary px-10 py-4 text-lg font-semibold text-on-primary shadow-lg transition hover:bg-surface-tint font-body-md" data-track="click_comprar_bolsa">Comprar bolsa recomendada</button>
-            <button type="button" id="calc-request-quote" class="hidden inline-flex items-center justify-center rounded-full border border-primary/25 bg-surface px-10 py-4 text-lg font-semibold text-primary transition hover:bg-surface-container-low font-body-md" data-track="click_cotizar_volumen">Cotizar alto volumen</button>
+          <p class="calc-footnote">Valores en CLP + IVA. El cálculo es referencial según los tramos vigentes. Para volúmenes superiores a 120.000 SMS, solicita una cotización personalizada.</p>
+          <div class="calc-cta-wrap">
+            <button type="button" id="calc-request-btn" class="calc-cta-btn inline-flex items-center justify-center rounded-full bg-primary px-10 py-4 font-body-md font-semibold text-on-primary shadow-lg transition hover:bg-surface-tint" data-track="click_cotizar_volumen">Solicitar esta cantidad</button>
+            <p class="mt-3">
+              <a href="#empresas" class="calc-cta-link">¿Necesitas más de 120.000 SMS? Cotiza alto volumen</a>
+            </p>
           </div>
         </div>
       </div>
