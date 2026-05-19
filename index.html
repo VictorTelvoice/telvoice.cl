@@ -853,33 +853,6 @@
       color: #0052cc;
     }
 
-    /* Hero: título +15% */
-    .hero-copy h1 {
-      font-size: 3.45rem !important;
-      line-height: 4.025rem !important;
-    }
-    .hero-copy .hero-grad-text {
-      font-size: clamp(2.0125rem, 6.325vw, 3.7375rem) !important;
-    }
-
-    /* Alineación derecha en bloques indicados */
-    .hero-phone-float .message-anim {
-      text-align: right;
-    }
-    .pack-includes-item {
-      justify-content: flex-end;
-      text-align: right;
-    }
-    #compliance ul li {
-      justify-content: flex-end;
-      text-align: right;
-    }
-    .faq-details summary > span:first-child {
-      flex: 1;
-      min-width: 0;
-      text-align: right;
-    }
-
     .faq-details summary {
       list-style: none;
     }
@@ -1175,6 +1148,15 @@
       }
       .hero-cta-row {
         padding-top: 0.5rem;
+        max-width: 100%;
+      }
+      .hero-cta-row .hero-cta-primary {
+        flex: none;
+        width: 100%;
+        max-width: 20rem;
+        padding: 1rem 1.75rem;
+        font-size: 1.0625rem;
+        line-height: 1.3;
       }
       .hero-tags-mobile {
         padding-top: 0.5rem;
@@ -1225,6 +1207,9 @@
         padding-top: 0.75rem;
         padding-bottom: 0.25rem;
       }
+      .hero-phone-mobile .message-anim {
+        text-align: left;
+      }
       /* Textos del landing centrados en móvil */
       main,
       main section,
@@ -1250,7 +1235,7 @@
       }
       main .pack-includes-item,
       main #compliance ul li {
-        text-align: right;
+        text-align: left;
       }
       main .ui-card-benefit,
       main .ui-card-feature,
@@ -1270,12 +1255,12 @@
         justify-items: stretch;
       }
       main .pack-includes-item {
-        justify-content: flex-end;
-        text-align: right;
+        justify-content: flex-start;
+        text-align: left;
       }
       #compliance ul li {
-        justify-content: flex-end;
-        text-align: right;
+        justify-content: flex-start;
+        text-align: left;
       }
       main .api-content ul li {
         display: flex;
@@ -1289,7 +1274,9 @@
         text-align: center;
       }
       main .faq-details summary > span:first-child {
-        text-align: right !important;
+        flex: 1;
+        min-width: 0;
+        text-align: left !important;
       }
       main .section-calc,
       main .section-calc .section-header,
@@ -1884,7 +1871,7 @@
                 <span class="font-body-sm text-body-sm font-medium text-on-surface-variant tracking-tight">Compra bolsas SMS · Chile</span>
               </div>
               <h1 class="font-h1 text-h1 text-on-background">
-                <span class="hero-grad-text block font-extrabold leading-[1.12] tracking-tight">SMS masivos en Chile,</span>
+                <span class="hero-grad-text block text-[clamp(1.75rem,5.5vw,3.25rem)] font-extrabold leading-[1.12] tracking-tight">SMS masivos en Chile,</span>
                 <span class="mt-1 block font-semibold tracking-tight text-on-background">con rutas directas y sin contratos</span>
               </h1>
               <p class="hero-intro font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
@@ -1913,8 +1900,8 @@
             </div>
           </div>
           <div class="hero-cta-row pt-stack-sm">
-            <a href="#calculadora" class="inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_calcular_precio">Calcular bolsa</a>
-            <a href="#empresas" class="inline-flex items-center justify-center rounded-full border border-primary/20 bg-surface font-body-md font-semibold text-primary transition hover:border-primary hover:bg-surface-container-low" data-track="click_cotizar_volumen">Cotizar alto volumen</a>
+            <a href="#precios" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_compra_bolsa">Compra Tu bolsa</a>
+            <a href="#empresas" class="hidden items-center justify-center rounded-full border border-primary/20 bg-surface font-body-md font-semibold text-primary transition hover:border-primary hover:bg-surface-container-low md:inline-flex" data-track="click_cotizar_volumen">Cotizar alto volumen</a>
           </div>
           <div class="hero-tags-below hero-tags-mobile relative z-10 flex w-full flex-col items-center md:hidden">
             <ul class="hero-use-tags hero-tags-row" role="list" aria-label="Usos del servicio SMS">
@@ -2267,7 +2254,7 @@
           </div>
         </div>
         <div class="order-2 flex justify-center lg:justify-end">
-          <figure class="api-laptop-wrap flex w-full flex-col items-center">
+          <figure class="api-laptop-wrap max-lg:flex max-lg:w-full max-lg:flex-col max-lg:items-center">
             <div class="api-laptop-mockup">
               <div class="api-laptop-floor-shadow" aria-hidden="true"></div>
               <div class="api-laptop-lid">
