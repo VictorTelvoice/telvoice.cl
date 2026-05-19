@@ -588,9 +588,17 @@
 
     .hero-price-card {
       max-width: 28.8rem;
+      margin-left: auto;
+      margin-right: auto;
       padding: 0.8rem;
       border-radius: 0.8rem;
       box-shadow: 0 12px 40px -16px rgba(0, 82, 204, 0.14), 0 0 0 1px rgba(0, 82, 204, 0.06);
+    }
+    @media (min-width: 768px) {
+      .hero-price-card {
+        margin-left: 0;
+        margin-right: 0;
+      }
     }
     @media (min-width: 640px) {
       .hero-price-card {
@@ -599,27 +607,16 @@
     }
     .hero-price-card__row {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
       gap: 0.8rem;
-    }
-    @media (min-width: 640px) {
-      .hero-price-card__row {
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1.2rem;
-      }
     }
     .hero-price-card__left {
       display: flex;
       min-width: 0;
-      align-items: flex-start;
+      align-items: center;
       gap: 0.6rem;
-    }
-    @media (min-width: 640px) {
-      .hero-price-card__left {
-        align-items: center;
-      }
     }
     .hero-price-card__icon {
       display: flex;
@@ -664,7 +661,7 @@
       align-items: center;
       justify-content: center;
       gap: 0.2rem;
-      align-self: stretch;
+      align-self: auto;
       border-radius: 0.6rem;
       background: rgba(0, 82, 204, 0.07);
       padding: 0.6rem 0.8rem;
@@ -1130,6 +1127,34 @@
       padding-top: 0;
       padding-bottom: 0;
     }
+    .hero-main-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "copy"
+        "tags"
+        "phone";
+      gap: 1.5rem;
+    }
+    @media (min-width: 768px) {
+      .hero-main-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+          "copy phone"
+          "tags tags";
+        gap: 4rem;
+        align-items: start;
+      }
+    }
+    .hero-copy {
+      grid-area: copy;
+    }
+    .hero-tags-slot {
+      grid-area: tags;
+    }
+    .hero-phone-slot {
+      grid-area: phone;
+    }
     .hero-copy {
       width: 100%;
       max-width: 42rem;
@@ -1191,11 +1216,12 @@
       }
     }
     .hero-tags-below {
-      padding-top: var(--hero-edge-gap, 10pt);
-      padding-bottom: 2rem;
+      padding-top: 0.25rem;
+      padding-bottom: 1.5rem;
     }
     @media (min-width: 768px) {
       .hero-tags-below {
+        padding-top: var(--hero-edge-gap, 2.5rem);
         padding-bottom: 2.5rem;
       }
     }
@@ -1677,7 +1703,7 @@
         </div>
       </div>
       <div class="relative z-10 mx-auto max-w-container-max px-4 sm:px-margin-page">
-      <div class="hero-main-row flex flex-col md:flex-row items-start justify-between gap-16">
+      <div class="hero-main-row hero-main-grid items-start">
         <div class="hero-copy flex flex-1 flex-col px-4 md:px-0 md:pl-20 lg:pl-28 xl:pl-36">
           <div class="flex w-full flex-col items-center gap-stack-md md:items-start">
               <div class="inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-outline-variant/55 bg-surface-container-low/90 px-4 py-1.5 backdrop-blur-sm">
@@ -1685,7 +1711,7 @@
                 <span class="font-body-sm text-body-sm font-medium text-on-surface-variant tracking-tight">Compra bolsas SMS · Chile</span>
               </div>
               <h1 class="font-h1 text-h1 text-on-background max-md:text-[30px] max-md:leading-[38px]">
-                <span class="hero-grad-text block text-[clamp(1.75rem,5.5vw,3.25rem)] font-extrabold leading-[1.12] tracking-tight">Compra SMS masivos en Chile,</span>
+                <span class="hero-grad-text block text-[clamp(1.75rem,5.5vw,3.25rem)] font-extrabold leading-[1.12] tracking-tight">SMS masivos en Chile,</span>
                 <span class="mt-1 block font-semibold tracking-tight text-on-background">con rutas directas y sin contratos</span>
               </h1>
               <p class="hero-intro font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
@@ -1718,33 +1744,8 @@
             <a href="#empresas" class="inline-flex items-center justify-center rounded-full border border-primary/20 bg-surface font-body-md font-semibold text-primary transition hover:border-primary hover:bg-surface-container-low" data-track="click_cotizar_volumen">Cotizar alto volumen</a>
           </div>
         </div>
-        <div class="flex-1 flex justify-center items-center w-full">
-          <div class="hero-phone-float relative w-[min(320px,90vw)] h-[min(640px,85vh)] bg-inverse-surface rounded-[48px] border-[12px] border-surface-container-highest shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col">
-            <div class="absolute top-0 inset-x-0 h-6 bg-surface-container-highest rounded-b-2xl w-36 mx-auto z-20"></div>
-            <div class="flex-1 bg-surface-container-lowest relative p-5 pt-16 flex flex-col gap-4 overflow-hidden">
-              <div class="flex items-center gap-3 mb-2 border-b border-outline-variant/30 pb-4">
-                <img src="assets/telvoice-isotipo.png" alt="" width="40" height="40" class="h-10 w-10 shrink-0 object-contain" loading="lazy" decoding="async" />
-                <div>
-                  <div class="font-body-sm font-semibold text-on-background">SMS Express</div>
-                  <div class="text-[11px] text-on-surface-variant">Vía Telvoice A2P</div>
-                </div>
-              </div>
-              <div class="message-anim bg-surface-container-low text-on-background p-3.5 rounded-2xl rounded-tl-sm text-[13px] self-start max-w-[85%] shadow-sm">
-                ¡Hola Juan! Tu código de verificación para ingresar es <strong>4921</strong>. No lo compartas con nadie.
-              </div>
-              <div class="message-anim bg-primary text-on-primary p-3.5 rounded-2xl rounded-tr-sm text-[13px] self-end max-w-[85%] shadow-sm">Entendido, gracias.</div>
-              <div class="message-anim bg-surface-container-low text-on-background p-3.5 rounded-2xl rounded-tl-sm text-[13px] self-start max-w-[85%] shadow-sm">
-                📦 Tu pedido #8839 ha sido despachado y está en ruta. Sigue tu entrega aquí: link.cl/trk8839
-              </div>
-              <div class="message-anim bg-surface-container-low text-on-background p-3.5 rounded-2xl rounded-tl-sm text-[13px] self-start max-w-[85%] shadow-sm">
-                ⭐ ¿Cómo fue tu experiencia? Responde con una nota del 1 al 7.
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="hero-tags-below relative z-10 flex flex-col items-center">
-        <ul class="hero-use-tags hero-tags-row flex w-full max-w-5xl flex-nowrap justify-start gap-2 overflow-x-auto py-1 sm:justify-center" role="list" aria-label="Usos del servicio SMS">
+      <div class="hero-tags-below hero-tags-slot relative z-10 flex flex-col items-center px-4 md:px-0">
+        <ul class="hero-use-tags hero-tags-row flex w-full max-w-5xl flex-nowrap justify-center gap-2 overflow-x-auto py-1" role="list" aria-label="Usos del servicio SMS">
           <li class="shrink-0">
             <span class="hero-use-tag inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 px-3 py-1.5 font-body-sm text-body-sm text-on-background shadow-sm sm:px-3.5 sm:py-2">
               <span class="material-symbols-outlined text-primary text-[18px]" aria-hidden="true">notifications_active</span>
@@ -1776,6 +1777,32 @@
             </span>
           </li>
         </ul>
+      </div>
+        <div class="hero-phone-slot flex flex-1 justify-center items-center w-full">
+          <div class="hero-phone-float relative w-[min(320px,90vw)] h-[min(640px,85vh)] bg-inverse-surface rounded-[48px] border-[12px] border-surface-container-highest shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col">
+            <div class="absolute top-0 inset-x-0 h-6 bg-surface-container-highest rounded-b-2xl w-36 mx-auto z-20"></div>
+            <div class="flex-1 bg-surface-container-lowest relative p-5 pt-16 flex flex-col gap-4 overflow-hidden">
+              <div class="flex items-center gap-3 mb-2 border-b border-outline-variant/30 pb-4">
+                <img src="assets/telvoice-isotipo.png" alt="" width="40" height="40" class="h-10 w-10 shrink-0 object-contain" loading="lazy" decoding="async" />
+                <div>
+                  <div class="font-body-sm font-semibold text-on-background">SMS Express</div>
+                  <div class="text-[11px] text-on-surface-variant">Vía Telvoice A2P</div>
+                </div>
+              </div>
+              <div class="message-anim bg-surface-container-low text-on-background p-3.5 rounded-2xl rounded-tl-sm text-[13px] self-start max-w-[85%] shadow-sm">
+                ¡Hola Juan! Tu código de verificación para ingresar es <strong>4921</strong>. No lo compartas con nadie.
+              </div>
+              <div class="message-anim bg-primary text-on-primary p-3.5 rounded-2xl rounded-tr-sm text-[13px] self-end max-w-[85%] shadow-sm">Entendido, gracias.</div>
+              <div class="message-anim bg-surface-container-low text-on-background p-3.5 rounded-2xl rounded-tl-sm text-[13px] self-start max-w-[85%] shadow-sm">
+                📦 Tu pedido #8839 ha sido despachado y está en ruta. Sigue tu entrega aquí: link.cl/trk8839
+              </div>
+              <div class="message-anim bg-surface-container-low text-on-background p-3.5 rounded-2xl rounded-tl-sm text-[13px] self-start max-w-[85%] shadow-sm">
+                ⭐ ¿Cómo fue tu experiencia? Responde con una nota del 1 al 7.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       </div>
       </div>
     </section>
