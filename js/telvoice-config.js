@@ -13,8 +13,9 @@ window.TELVOICE_CONFIG = {
   quoteVolumeMin: 100001,
   hero: {
     bagsFromLabel: "Bolsas desde 1.000 SMS",
-    planLine1: "Planes flexibles para empresas",
-    planLine2: "Desde campañas pequeñas hasta envíos de alto volumen",
+    fromPriceDetail: "Desde campañas pequeñas hasta envíos de alto volumen",
+    fromPriceSms: 5,
+    fromPriceNote: "Plan Volumen · 100.000 SMS",
   },
   bags: [
     {

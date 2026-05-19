@@ -418,11 +418,13 @@
   function initHeroPricing() {
     var hero = CFG.hero || {};
     var bagsLabel = qs("hero-bags-label");
-    var line1 = qs("hero-price-line1");
-    var line2 = qs("hero-price-line2");
+    var priceDetail = qs("hero-price-detail");
+    var priceEl = qs("hero-from-price");
+    var noteEl = qs("hero-price-note");
     if (bagsLabel && hero.bagsFromLabel) bagsLabel.textContent = hero.bagsFromLabel;
-    if (line1 && hero.planLine1) line1.textContent = hero.planLine1;
-    if (line2 && hero.planLine2) line2.textContent = hero.planLine2;
+    if (priceDetail && hero.fromPriceDetail) priceDetail.textContent = hero.fromPriceDetail;
+    if (priceEl && hero.fromPriceSms != null) priceEl.textContent = "$" + hero.fromPriceSms;
+    if (noteEl && hero.fromPriceNote) noteEl.textContent = hero.fromPriceNote;
   }
   initHeroPricing();
 
