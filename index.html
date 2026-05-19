@@ -853,6 +853,33 @@
       color: #0052cc;
     }
 
+    /* Hero: título +15% */
+    .hero-copy h1 {
+      font-size: 3.45rem !important;
+      line-height: 4.025rem !important;
+    }
+    .hero-copy .hero-grad-text {
+      font-size: clamp(2.0125rem, 6.325vw, 3.7375rem) !important;
+    }
+
+    /* Alineación derecha en bloques indicados */
+    .hero-phone-float .message-anim {
+      text-align: right;
+    }
+    .pack-includes-item {
+      justify-content: flex-end;
+      text-align: right;
+    }
+    #compliance ul li {
+      justify-content: flex-end;
+      text-align: right;
+    }
+    .faq-details summary > span:first-child {
+      flex: 1;
+      min-width: 0;
+      text-align: right;
+    }
+
     .faq-details summary {
       list-style: none;
     }
@@ -1137,11 +1164,11 @@
         max-width: none;
       }
       .hero-copy h1 {
-        font-size: 2.4375rem !important;
+        font-size: 2.803125rem !important;
         line-height: 1.2 !important;
       }
       .hero-copy .hero-grad-text {
-        font-size: clamp(2.25rem, 9.75vw, 2.625rem) !important;
+        font-size: clamp(2.5875rem, 11.2125vw, 3.01875rem) !important;
       }
       .hero-price-card {
         margin-top: 0.75rem;
@@ -1221,6 +1248,10 @@
       main .empresas-inner-card {
         text-align: center;
       }
+      main .pack-includes-item,
+      main #compliance ul li {
+        text-align: right;
+      }
       main .ui-card-benefit,
       main .ui-card-feature,
       main .comercial-card,
@@ -1232,10 +1263,19 @@
       main #soluciones .ui-card-feature {
         align-items: center;
       }
-      main .api-content ul li,
-      main .pack-includes-list,
-      main .pack-includes-item {
+      main .api-content ul li {
         justify-content: center;
+      }
+      main .pack-includes-list {
+        justify-items: stretch;
+      }
+      main .pack-includes-item {
+        justify-content: flex-end;
+        text-align: right;
+      }
+      #compliance ul li {
+        justify-content: flex-end;
+        text-align: right;
       }
       main .api-content ul li {
         display: flex;
@@ -1248,8 +1288,8 @@
       main .calc-result-total-wrap {
         text-align: center;
       }
-      main .faq-details summary {
-        text-align: center !important;
+      main .faq-details summary > span:first-child {
+        text-align: right !important;
       }
       main .section-calc,
       main .section-calc .section-header,
@@ -1844,7 +1884,7 @@
                 <span class="font-body-sm text-body-sm font-medium text-on-surface-variant tracking-tight">Compra bolsas SMS · Chile</span>
               </div>
               <h1 class="font-h1 text-h1 text-on-background">
-                <span class="hero-grad-text block text-[clamp(1.75rem,5.5vw,3.25rem)] font-extrabold leading-[1.12] tracking-tight">SMS masivos en Chile,</span>
+                <span class="hero-grad-text block font-extrabold leading-[1.12] tracking-tight">SMS masivos en Chile,</span>
                 <span class="mt-1 block font-semibold tracking-tight text-on-background">con rutas directas y sin contratos</span>
               </h1>
               <p class="hero-intro font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
@@ -2221,13 +2261,13 @@
             <li class="flex gap-2"><span class="material-symbols-outlined shrink-0 text-[18px] text-primary">check</span>API disponible para automatizar envíos</li>
             <li class="flex gap-2"><span class="material-symbols-outlined shrink-0 text-[18px] text-primary">check</span>Documentación y acompañamiento según el tipo de integración</li>
           </ul>
-          <div class="api-cta-row flex flex-wrap gap-3">
+          <div class="api-cta-row api-cta-row--desktop hidden flex-wrap gap-3 lg:flex">
             <button type="button" class="api-request-cta inline-flex items-center justify-center rounded-full bg-primary px-8 py-3.5 font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_api_request">Solicitar acceso API</button>
             <a href="#" class="wa-section-cta hidden inline-flex items-center justify-center rounded-full border border-primary/25 px-6 py-3.5 font-body-md font-semibold text-primary transition hover:bg-surface-container-low" data-track="click_whatsapp">Hablar por WhatsApp</a>
           </div>
         </div>
         <div class="order-2 flex justify-center lg:justify-end">
-          <figure class="api-laptop-wrap">
+          <figure class="api-laptop-wrap flex w-full flex-col items-center">
             <div class="api-laptop-mockup">
               <div class="api-laptop-floor-shadow" aria-hidden="true"></div>
               <div class="api-laptop-lid">
@@ -2256,6 +2296,9 @@
             <figcaption class="api-laptop-caption font-body-sm text-body-sm text-on-surface-variant">
               Panel de gestión para envíos, monitoreo y administración de tráfico SMS
             </figcaption>
+            <div class="api-cta-row api-cta-row--mobile mt-4 flex w-full justify-center lg:hidden">
+              <button type="button" class="api-request-cta inline-flex items-center justify-center rounded-full bg-primary px-8 py-3.5 font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_api_request">Solicitar acceso API</button>
+            </div>
           </figure>
         </div>
       </div>
