@@ -137,11 +137,14 @@ export default async function handler(req, res) {
       message: err.message,
       stack: err.stack,
     });
+    const clientMessage =
+      err.message && /blob|token|configurado/i.test(err.message)
+        ? "No pudimos iniciar el pago. Intenta nuevamente o contáctanos por WhatsApp."
+        : err.message ||
+          "No pudimos iniciar el pago. Intenta nuevamente o contáctanos por WhatsApp.";
     return json(res, 500, {
       ok: false,
-      error:
-        err.message ||
-        "No pudimos iniciar el pago. Intente nuevamente o contáctenos.",
+      error: clientMessage,
     });
   }
 }

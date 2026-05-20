@@ -374,6 +374,15 @@
     setCompraError("");
     setCompraLoading(false);
 
+    var submitBtn = qs("compra-submit");
+    if (submitBtn && !submitBtn.dataset.mpBound) {
+      submitBtn.dataset.mpBound = "1";
+      submitBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        startMercadoPagoCheckout();
+      });
+    }
+
     modal.hidden = false;
     document.body.classList.add("modal-open");
     var first = qs("compra-nombre");
@@ -477,7 +486,12 @@
       .catch(function (err) {
         compraSubmitting = false;
         setCompraLoading(false);
-        setCompraError(err.message || COMPRA_PAY_ERROR);
+        console.error("[checkout] create-preference failed", err.message || err);
+        var msg = err.message || COMPRA_PAY_ERROR;
+        if (/^Vercel Blob:|^MERCADOPAGO_|token no configurado/i.test(msg)) {
+          msg = COMPRA_PAY_ERROR;
+        }
+        setCompraError(msg);
       });
   }
 
