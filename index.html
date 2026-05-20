@@ -1652,11 +1652,18 @@
     }
     .calc-cta-wrap {
       margin-top: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
       text-align: center;
     }
     .calc-cta-btn {
       width: 100%;
       max-width: 22rem;
+    }
+    .calc-cta-btn[hidden] {
+      display: none !important;
     }
     @media (min-width: 640px) {
       .calc-cta-btn {
@@ -2257,11 +2264,12 @@
           <div class="calc-slider-block">
             <div class="calc-slider-head">
               <span class="calc-slider-label">Cantidad de SMS</span>
-              <span id="calcVol" class="calc-vol-display" aria-live="polite">10.000 SMS</span>
+              <span id="calcVol" class="calc-vol-display" aria-live="polite">200 SMS</span>
             </div>
             <label for="calcSlider" class="sr-only">Cantidad de SMS</label>
-            <input id="calcSlider" class="calc-range-input w-full" type="range" min="0" max="110" step="1" value="9" aria-valuemin="1000" aria-valuemax="120000" aria-valuenow="10000" />
+            <input id="calcSlider" class="calc-range-input w-full" type="range" min="0" max="111" step="1" value="0" aria-valuemin="200" aria-valuemax="120000" aria-valuenow="200" />
             <div class="calc-slider-labels">
+              <span>200</span>
               <span>1.000</span>
               <span>120.000</span>
             </div>
@@ -2271,27 +2279,28 @@
               <div class="calc-result-dl">
                 <div class="calc-result-row">
                   <span class="calc-result-row-label">Cantidad seleccionada</span>
-                  <span id="calcQty" class="calc-result-row-value">10.000 SMS</span>
+                  <span id="calcQty" class="calc-result-row-value">200 SMS</span>
                 </div>
                 <div class="calc-result-row">
                   <span class="calc-result-row-label">Tramo aplicado</span>
-                  <span id="calcTier" class="calc-result-row-value">10.000 a 14.000 SMS</span>
+                  <span id="calcTier" class="calc-result-row-value">200 SMS — prueba pago online</span>
                 </div>
                 <div class="calc-result-row">
                   <span class="calc-result-row-label">Valor unitario</span>
-                  <span id="calcPxSMS" class="calc-result-row-value">$8 + IVA por SMS</span>
+                  <span id="calcPxSMS" class="calc-result-row-value">$10 + IVA por SMS</span>
                 </div>
               </div>
               <div class="calc-result-total-wrap">
                 <span class="calc-result-total-label">Total estimado</span>
-                <strong id="calcTotal" class="calc-result-total-value">$80.000 + IVA</strong>
+                <strong id="calcTotal" class="calc-result-total-value">$2.000 + IVA</strong>
               </div>
             </div>
             <p class="calc-result-note">Este valor se calcula multiplicando la cantidad seleccionada por el valor unitario del tramo.</p>
           </div>
           <p class="calc-footnote">Valores en CLP + IVA. El cálculo es referencial según los tramos vigentes. Para volúmenes superiores a 120.000 SMS, solicita una cotización personalizada.</p>
           <div class="calc-cta-wrap">
-            <button type="button" id="calc-request-btn" class="calc-cta-btn inline-flex items-center justify-center rounded-full bg-primary px-10 py-4 font-body-md font-semibold text-on-primary shadow-lg transition hover:bg-surface-tint" data-track="click_cotizar_volumen">Solicitar esta cantidad</button>
+            <button type="button" id="calc-buy-btn" class="calc-cta-btn calc-cta-btn--buy inline-flex w-full items-center justify-center rounded-full bg-primary px-10 py-4 font-body-md font-semibold text-on-primary shadow-lg transition hover:bg-surface-tint" data-track="click_comprar_online_calc" hidden>Comprar online</button>
+            <button type="button" id="calc-request-btn" class="calc-cta-btn calc-cta-btn--quote inline-flex w-full items-center justify-center rounded-full border-2 border-primary bg-transparent px-10 py-4 font-body-md font-semibold text-primary transition hover:bg-surface-container-low" data-track="click_cotizar_volumen">Solicitar esta cantidad</button>
             <p class="mt-3">
               <a href="#empresas" class="calc-cta-link">¿Necesitas más de 120.000 SMS? Cotiza alto volumen</a>
             </p>

@@ -5,6 +5,7 @@
   var QUOTE_MIN = CFG.quoteVolumeMin != null ? CFG.quoteVolumeMin : 200000;
   var BAGS = CFG.bags || [];
   var CALC_TIERS = CFG.volumeTiers || [];
+  var CALC_ONLINE_OFFERS = CFG.calcOnlineOffers || [];
   var CALC_MAX_VOL = CFG.calcMaxVolume != null ? CFG.calcMaxVolume : 120000;
 
   function qs(id) {
@@ -200,7 +201,7 @@
   }
 
   function buildCalcVolumes() {
-    var list = [];
+    var list = [200];
     var v;
     for (v = 1000; v <= 90000; v += 1000) list.push(v);
     for (v = 100000; v <= CALC_MAX_VOL; v += 1000) list.push(v);
@@ -210,7 +211,9 @@
   var CALC_VOLUMES = buildCalcVolumes();
 
   function snapCalcVolume(vol) {
-    var v = Math.round(+vol / 1000) * 1000;
+    var v = Math.round(+vol);
+    if (v <= 200) return 200;
+    v = Math.round(v / 1000) * 1000;
     if (v < 1000) return 1000;
     if (v > CALC_MAX_VOL) return CALC_MAX_VOL;
     if (v > 90000 && v < 100000) return 100000;
@@ -219,7 +222,8 @@
 
   function volumeToSliderIndex(vol) {
     var v = snapCalcVolume(vol);
-    if (v <= 90000) return v / 1000 - 1;
+    if (v === 200) return 0;
+    if (v <= 90000) return v / 1000;
     return 90 + (v / 1000 - 100);
   }
 
@@ -237,6 +241,23 @@
     );
   }
 
+  function planFromCalcVolume(vol) {
+    var v = snapCalcVolume(vol);
+    var offer = CALC_ONLINE_OFFERS.find(function (o) {
+      return o.sms === v;
+    });
+    if (!offer || !offer.planId) return null;
+    var tax = Math.round(offer.priceNet * IVA_RATE);
+    return {
+      plan_id: offer.planId,
+      name: offer.planName,
+      sms: offer.sms,
+      net_amount: offer.priceNet,
+      tax_amount: tax,
+      total_amount: offer.priceNet + tax,
+    };
+  }
+
   function formatCalcMoney(amount) {
     return "$" + fmt(amount) + " + IVA";
   }
@@ -252,7 +273,7 @@
   }
 
   var BAG_TO_PLAN = { "1k": "inicial", "15k": "empresa", "100k": "volumen" };
-  var ONLINE_PLAN_IDS = { inicial: true, empresa: true, volumen: true };
+  var ONLINE_PLAN_IDS = { prueba: true, inicial: true, empresa: true, volumen: true };
 
   var compraState = {
     planId: null,
@@ -673,9 +694,10 @@
     var calcPxSMS = qs("calcPxSMS");
     var calcTotal = qs("calcTotal");
     var requestBtn = qs("calc-request-btn");
+    var buyBtn = qs("calc-buy-btn");
     var sliderMax = CALC_VOLUMES.length - 1;
     var lastTrackVol = null;
-    var currentVol = 10000;
+    var currentVol = 200;
 
     slider.min = "0";
     slider.max = String(sliderMax);
@@ -706,6 +728,16 @@
       if (calcPxSMS) calcPxSMS.textContent = "$" + tier.pxSMS + " + IVA por SMS";
       if (calcTotal) calcTotal.textContent = formatCalcMoney(total);
 
+      var calcPlan = planFromCalcVolume(vol);
+      if (buyBtn) {
+        if (calcPlan) {
+          buyBtn.hidden = false;
+          buyBtn.textContent = "Comprar " + fmt(calcPlan.sms) + " SMS online";
+        } else {
+          buyBtn.hidden = true;
+        }
+      }
+
       if (lastTrackVol !== vol) {
         trackEvent("select_sms_plan", { volume: vol, pxSms: tier.pxSMS, tier: tier.label });
         lastTrackVol = vol;
@@ -713,6 +745,27 @@
     }
 
     slider.addEventListener("input", updateCalc);
+
+    if (buyBtn) {
+      buyBtn.addEventListener("click", function () {
+        var plan = planFromCalcVolume(currentVol);
+        if (!plan) return;
+        openCompraModal({
+          planId: plan.plan_id,
+          planName: plan.name,
+          sms: plan.sms,
+          net_amount: plan.net_amount,
+          tax_amount: plan.tax_amount,
+          total_amount: plan.total_amount,
+          source: "calculadora",
+        });
+        trackEvent("click_comprar_online", {
+          planId: plan.plan_id,
+          source: "calculadora",
+          volume: currentVol,
+        });
+      });
+    }
 
     if (requestBtn) {
       requestBtn.addEventListener("click", function () {
@@ -727,7 +780,7 @@
       });
     }
 
-    slider.value = String(volumeToSliderIndex(10000));
+    slider.value = String(volumeToSliderIndex(200));
     updateCalc();
   }
   initCalculadora();
