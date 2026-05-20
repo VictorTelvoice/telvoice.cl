@@ -19,10 +19,14 @@ export default async function handler(req, res) {
     const sandboxEnv = isSandbox();
     const mismatch = sandboxEnv && !account.is_test_user;
 
+    const testPayerEmail = (process.env.MERCADOPAGO_TEST_PAYER_EMAIL || "").trim();
+
     return json(res, 200, {
       ok: true,
       sandbox_env: sandboxEnv,
       collector_id: account.id,
+      test_payer_email_configured: Boolean(testPayerEmail),
+      test_payer_email_hint: testPayerEmail || "Configure MERCADOPAGO_TEST_PAYER_EMAIL con el email del Comprador de prueba (Cuentas de prueba → Comprador).",
       account,
       diagnosis: mismatch
         ? "MISMATCH_SELLER_PRODUCTION"
