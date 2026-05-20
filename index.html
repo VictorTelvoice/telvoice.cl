@@ -774,10 +774,13 @@
       }
     }
     .pack-plan-name {
-      font-size: 0.875rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      color: #5c6478;
+      margin: 0;
+      font-family: Montserrat, sans-serif;
+      font-size: 1.125rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      color: #131b2e;
     }
     .pack-volume {
       margin-top: 0.35rem;
@@ -1770,10 +1773,25 @@
     }
     .calc-footnote {
       margin-top: 1.25rem;
+      max-width: 100%;
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
       text-align: center;
-      font-size: 0.8125rem;
-      line-height: 1.55;
+      font-size: 0.75rem;
+      line-height: 1.4;
       color: #5c6478;
+    }
+    @media (min-width: 640px) {
+      .calc-footnote {
+        font-size: 0.8125rem;
+      }
+    }
+    @media (min-width: 1024px) {
+      .calc-footnote {
+        font-size: clamp(0.75rem, 0.72vw, 0.875rem);
+        line-height: 1.35;
+        white-space: nowrap;
+      }
     }
     .calc-cta-wrap {
       margin-top: 1.75rem;
@@ -2489,8 +2507,8 @@
         <p class="section-intro font-body-lg text-body-lg text-on-surface-variant">Compra la bolsa que necesitas, paga online y comienza a enviar. Precios en CLP + IVA.</p>
       </header>
       <div class="mx-auto grid max-w-5xl grid-cols-1 items-stretch gap-6 md:grid-cols-3 md:gap-8">
-        <article class="pack-card ui-card flex flex-col rounded-3xl border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-md sm:p-7" data-plan-id="inicial" data-bag-id="1k" data-pack="Plan Inicial — 1.000 SMS" data-sms="1000" data-price="$10.000" data-px-sms="10">
-          <p class="pack-plan-name">Plan Inicial</p>
+        <article class="pack-card ui-card flex flex-col rounded-3xl border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-md sm:p-7" data-plan-id="inicial" data-bag-id="1k" data-pack="Plan Starter — 1.000 SMS" data-sms="1000" data-price="$10.000" data-px-sms="10">
+          <h3 class="pack-plan-name">Starter</h3>
           <p class="pack-volume">1.000 SMS</p>
           <p class="pack-price">$10.000 <span class="pack-price-note">+ IVA</span></p>
           <p class="pack-unit"><strong>$10 + IVA</strong> por SMS</p>
@@ -2499,9 +2517,9 @@
             <button type="button" class="pack-cta w-full rounded-full bg-surface-container-high py-3 font-body-md font-semibold text-primary transition-colors hover:bg-surface-variant" data-track="click_comprar_online">Comprar online</button>
           </div>
         </article>
-        <article class="pack-card pack-card--featured ui-card relative z-10 flex flex-col rounded-3xl border-2 border-secondary-container bg-surface-container-lowest p-6 shadow-lg shadow-[0px_20px_40px_rgba(15,23,42,0.08)] sm:p-7 md:scale-105" data-plan-id="empresa" data-bag-id="15k" data-pack="Plan Empresa — 15.000 SMS" data-sms="15000" data-price="$105.000" data-px-sms="7">
+        <article class="pack-card pack-card--featured ui-card relative z-10 flex flex-col rounded-3xl border-2 border-secondary-container bg-surface-container-lowest p-6 shadow-lg shadow-[0px_20px_40px_rgba(15,23,42,0.08)] sm:p-7 md:scale-105" data-plan-id="empresa" data-bag-id="15k" data-pack="Plan Business — 15.000 SMS" data-sms="15000" data-price="$105.000" data-px-sms="7">
           <span class="pack-badge">MÁS POPULAR</span>
-          <p class="pack-plan-name mt-2 md:mt-0">Plan Empresa</p>
+          <h3 class="pack-plan-name mt-2 md:mt-0">Business</h3>
           <p class="pack-volume">15.000 SMS</p>
           <p class="pack-price">$105.000 <span class="pack-price-note">+ IVA</span></p>
           <p class="pack-unit"><strong>$7 + IVA</strong> por SMS</p>
@@ -2510,8 +2528,8 @@
             <button type="button" class="pack-cta w-full rounded-full bg-primary py-3 font-body-md font-semibold text-on-primary shadow-sm transition-colors hover:bg-surface-tint" data-track="click_comprar_online">Comprar online</button>
           </div>
         </article>
-        <article class="pack-card ui-card flex flex-col rounded-3xl border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-md sm:p-7" data-plan-id="volumen" data-bag-id="100k" data-pack="Plan Volumen — 100.000 SMS" data-sms="100000" data-price="$500.000" data-px-sms="5">
-          <p class="pack-plan-name">Plan Volumen</p>
+        <article class="pack-card ui-card flex flex-col rounded-3xl border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-md sm:p-7" data-plan-id="volumen" data-bag-id="100k" data-pack="Plan Corporativo — 100.000 SMS" data-sms="100000" data-price="$500.000" data-px-sms="5">
+          <h3 class="pack-plan-name">Corporativo</h3>
           <p class="pack-volume">100.000 SMS</p>
           <p class="pack-price">$500.000 <span class="pack-price-note">+ IVA</span></p>
           <p class="pack-unit"><strong>$5 + IVA</strong> por SMS</p>
@@ -2541,7 +2559,7 @@
         <header class="section-header">
           <span class="section-eyebrow">Calculadora</span>
           <h2 id="calc-titulo" class="calc-hero-title mt-3 font-h2 text-h2">Calcula el valor de tu envío SMS</h2>
-          <p class="calc-hero-intro section-intro font-body-md text-body-md leading-relaxed">Selecciona la cantidad de SMS que necesitas y conoce el valor estimado según el tramo de volumen correspondiente.</p>
+          <p class="calc-hero-intro section-intro font-body-md text-body-md leading-relaxed">Selecciona la cantidad de SMS que necesitas y conoce el valor estimado según el tramo.</p>
         </header>
         <div class="calc-panel">
           <div class="calc-slider-block">
@@ -2580,7 +2598,7 @@
             </div>
             <p class="calc-result-note">Monto total en CLP con IVA incluido, según cantidad y tramo de precio unitario.</p>
           </div>
-          <p class="calc-footnote">Valores en CLP + IVA. El cálculo es referencial según los tramos vigentes. Para volúmenes superiores a 120.000 SMS, solicita una cotización personalizada.</p>
+          <p class="calc-footnote">El cálculo es referencial según los tramos vigentes. Para volúmenes superiores a 120.000 SMS, solicita una cotización personalizada.</p>
           <div class="calc-cta-wrap">
             <button type="button" id="calc-buy-btn" class="calc-cta-btn calc-cta-btn--buy inline-flex w-full items-center justify-center rounded-full bg-primary px-10 py-4 font-body-md font-semibold text-on-primary shadow-lg transition hover:bg-surface-tint" data-track="click_comprar_online_calc">Comprar online</button>
             <p class="mt-3">

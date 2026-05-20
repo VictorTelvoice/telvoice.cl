@@ -22,13 +22,13 @@ window.TELVOICE_CONFIG = {
     bagsFromLabel: "Bolsas desde 1.000 SMS",
     fromPriceDetail: "Para campañas pequeñas hasta envíos de alto volumen",
     fromPriceSms: 5,
-    fromPriceNote: "Plan Volumen · 100.000 SMS",
+    fromPriceNote: "Plan Corporativo · 100.000 SMS",
   },
   bags: [
     {
       id: "1k",
-      planName: "Plan Inicial",
-      label: "Plan Inicial — 1.000 SMS",
+      planName: "Plan Starter",
+      label: "Plan Starter — 1.000 SMS",
       sms: 1000,
       priceNet: 10000,
       pxSms: 10,
@@ -36,8 +36,8 @@ window.TELVOICE_CONFIG = {
     },
     {
       id: "15k",
-      planName: "Plan Empresa",
-      label: "Plan Empresa — 15.000 SMS",
+      planName: "Plan Business",
+      label: "Plan Business — 15.000 SMS",
       sms: 15000,
       priceNet: 105000,
       pxSms: 7,
@@ -46,8 +46,8 @@ window.TELVOICE_CONFIG = {
     },
     {
       id: "100k",
-      planName: "Plan Volumen",
-      label: "Plan Volumen — 100.000 SMS",
+      planName: "Plan Corporativo",
+      label: "Plan Corporativo — 100.000 SMS",
       sms: 100000,
       priceNet: 500000,
       pxSms: 5,
