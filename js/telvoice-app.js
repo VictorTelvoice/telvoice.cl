@@ -321,8 +321,8 @@
     if (!data) return null;
     return (
       data.checkout_url ||
-      data.sandbox_init_point ||
       data.init_point ||
+      data.sandbox_init_point ||
       data.url ||
       null
     );
@@ -387,6 +387,132 @@
     document.body.classList.remove("modal-open");
   }
 
+  function startMercadoPagoCheckout() {
+    if (compraSubmitting) return;
+
+    var honeypot = qs("compra-website");
+    if (honeypot && honeypot.value) return;
+
+    var nombreEl = qs("compra-nombre");
+    var razonEl = qs("compra-razon-social");
+    var rutEl = qs("compra-rut");
+    var emailEl = qs("compra-email");
+    var whatsappEl = qs("compra-whatsapp");
+    var planInput = qs("compra-plan-id");
+
+    var nombre = (nombreEl && nombreEl.value ? nombreEl.value : "").trim();
+    var razonSocial = (razonEl && razonEl.value ? razonEl.value : "").trim();
+    var rut = (rutEl && rutEl.value ? rutEl.value : "").trim();
+    var email = (emailEl && emailEl.value ? emailEl.value : "").trim();
+    var whatsapp = (whatsappEl && whatsappEl.value ? whatsappEl.value : "").trim();
+    var planId = (
+      (planInput && planInput.value ? planInput.value : "") ||
+      compraState.planId ||
+      ""
+    ).trim();
+
+    if (nombre.length < 2) {
+      setCompraError("Ingrese su nombre o empresa.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setCompraError("Ingrese un email válido.");
+      return;
+    }
+    if (whatsapp.length < 8) {
+      setCompraError("Ingrese un WhatsApp de contacto.");
+      return;
+    }
+    if (rut.length < 8) {
+      setCompraError("Ingrese un RUT válido.");
+      return;
+    }
+    if (!planId || !ONLINE_PLAN_IDS[planId]) {
+      setCompraError("Plan no disponible para pago online.");
+      return;
+    }
+
+    console.log("Iniciando pago Mercado Pago", { planId: planId });
+
+    setCompraError("");
+    compraSubmitting = true;
+    setCompraLoading(true);
+    trackEvent("click_comprar_online", { planId: planId, source: compraState.source });
+
+    fetch("/api/mercadopago/create-preference", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        plan_id: planId,
+        customer: {
+          name: nombre,
+          email: email,
+          phone: whatsapp,
+          rut: rut,
+          business_name: razonSocial || null,
+        },
+      }),
+    })
+      .then(function (res) {
+        return parseApiJson(res).then(function (data) {
+          return { httpOk: res.ok, status: res.status, data: data };
+        });
+      })
+      .then(function (result) {
+        var data = result.data || {};
+        var checkoutUrl = resolveCheckoutUrl(data);
+
+        if (!result.httpOk || data.ok === false) {
+          throw new Error(data.error || COMPRA_PAY_ERROR);
+        }
+        if (!checkoutUrl) {
+          throw new Error("No se recibió URL de Mercado Pago");
+        }
+
+        window.location.href = checkoutUrl;
+      })
+      .catch(function (err) {
+        compraSubmitting = false;
+        setCompraLoading(false);
+        setCompraError(err.message || COMPRA_PAY_ERROR);
+      });
+  }
+
+  function bindCompraCheckoutHandlers() {
+    document.addEventListener(
+      "submit",
+      function (e) {
+        var form = e.target;
+        if (!form || form.id !== "compra-form") return;
+        e.preventDefault();
+        e.stopPropagation();
+        startMercadoPagoCheckout();
+      },
+      true
+    );
+
+    document.addEventListener("click", function (e) {
+      var btn = e.target && e.target.closest("#compra-submit");
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      startMercadoPagoCheckout();
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter") return;
+      var form = qs("compra-form");
+      var modal = qs("compra-modal");
+      if (!form || !modal || modal.hidden) return;
+      if (!form.contains(e.target)) return;
+      e.preventDefault();
+      startMercadoPagoCheckout();
+    });
+  }
+
   function initCompraModal() {
     var modal = qs("compra-modal");
     if (!modal) return;
@@ -398,112 +524,6 @@
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && !modal.hidden) closeCompraModal();
     });
-
-    function handleCompraPay(e) {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      if (compraSubmitting) return false;
-
-      var honeypot = qs("compra-website");
-      if (honeypot && honeypot.value) return false;
-
-      var nombreEl = qs("compra-nombre");
-      var razonEl = qs("compra-razon-social");
-      var rutEl = qs("compra-rut");
-      var emailEl = qs("compra-email");
-      var whatsappEl = qs("compra-whatsapp");
-      var planInput = qs("compra-plan-id");
-
-      var nombre = (nombreEl && nombreEl.value ? nombreEl.value : "").trim();
-      var razonSocial = (razonEl && razonEl.value ? razonEl.value : "").trim();
-      var rut = (rutEl && rutEl.value ? rutEl.value : "").trim();
-      var email = (emailEl && emailEl.value ? emailEl.value : "").trim();
-      var whatsapp = (whatsappEl && whatsappEl.value ? whatsappEl.value : "").trim();
-      var planId = (
-        (planInput && planInput.value ? planInput.value : "") ||
-        compraState.planId ||
-        ""
-      ).trim();
-
-      if (nombre.length < 2) {
-        setCompraError("Ingrese su nombre o empresa.");
-        return false;
-      }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        setCompraError("Ingrese un email válido.");
-        return false;
-      }
-      if (whatsapp.length < 8) {
-        setCompraError("Ingrese un WhatsApp de contacto.");
-        return false;
-      }
-      if (rut.length < 8) {
-        setCompraError("Ingrese un RUT válido.");
-        return false;
-      }
-      if (!planId || !ONLINE_PLAN_IDS[planId]) {
-        setCompraError("Plan no disponible para pago online.");
-        return false;
-      }
-
-      setCompraError("");
-      compraSubmitting = true;
-      setCompraLoading(true);
-      trackEvent("click_comprar_online", { planId: planId, source: compraState.source });
-
-      var payload = {
-        plan_id: planId,
-        customer: {
-          name: nombre,
-          email: email,
-          phone: whatsapp,
-          rut: rut,
-          business_name: razonSocial || null,
-        },
-      };
-
-      fetch("/api/mercadopago/create-preference", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(payload),
-      })
-        .then(function (res) {
-          return parseApiJson(res).then(function (data) {
-            return { httpOk: res.ok, status: res.status, data: data };
-          });
-        })
-        .then(function (result) {
-          var data = result.data || {};
-          var checkoutUrl = resolveCheckoutUrl(data);
-
-          if (!result.httpOk || data.ok === false) {
-            throw new Error(data.error || COMPRA_PAY_ERROR);
-          }
-          if (!checkoutUrl) {
-            throw new Error("No se recibió URL de Mercado Pago");
-          }
-
-          window.location.assign(checkoutUrl);
-          return null;
-        })
-        .catch(function (err) {
-          compraSubmitting = false;
-          setCompraLoading(false);
-          setCompraError(err.message || COMPRA_PAY_ERROR);
-        });
-
-      return false;
-    }
-
-    var form = qs("compra-form");
-    if (form) {
-      form.addEventListener("submit", handleCompraPay);
-    }
   }
 
   function openCompraFromCard(btn) {
@@ -778,6 +798,7 @@
   }
 
   initFaq();
+  bindCompraCheckoutHandlers();
   initCompraModal();
   bindWhatsappLinks();
 })();
