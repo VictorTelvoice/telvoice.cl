@@ -1108,11 +1108,44 @@
       border-bottom: 1px solid rgba(0, 82, 204, 0.06);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
     }
-    .section-bg-promo {
-      background: linear-gradient(135deg, #ebe6ff 0%, #dce8ff 38%, #f0f5ff 72%, #ffffff 100%);
-      border-top: 1px solid rgba(91, 33, 182, 0.12);
-      border-bottom: 1px solid rgba(0, 82, 204, 0.08);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    .section-bg-cta,
+    .section-empresas,
+    .section-contact {
+      background: linear-gradient(135deg, #0a2458 0%, #0052cc 48%, #003d8f 100%);
+      color: #ffffff;
+    }
+    .section-bg-cta .section-eyebrow,
+    .section-empresas .section-eyebrow,
+    .section-contact .section-eyebrow {
+      color: #9cf0ff;
+    }
+    .section-bg-cta .section-header h2,
+    .section-bg-cta .font-h2,
+    .section-bg-cta h2 {
+      color: #ffffff;
+    }
+    .section-bg-cta .section-intro,
+    .section-bg-cta .font-body-lg,
+    .section-bg-cta .text-on-surface-variant {
+      color: rgba(255, 255, 255, 0.9);
+    }
+    .section-bg-cta .text-on-background {
+      color: #ffffff;
+    }
+    #canal-sms .text-primary {
+      color: #9cf0ff;
+    }
+    #canal-sms .text-on-surface-variant {
+      color: rgba(255, 255, 255, 0.9);
+    }
+    #igualacion-tarifa .text-primary {
+      color: #9cf0ff;
+    }
+    #igualacion-tarifa .text-on-surface-variant {
+      color: rgba(255, 255, 255, 0.9);
+    }
+    #igualacion-tarifa .text-on-background {
+      color: #ffffff;
     }
 
     .ui-card {
@@ -1501,17 +1534,6 @@
     }
 
     .section-calc {
-      background: linear-gradient(
-        165deg,
-        #e0ebff 0%,
-        #c9d9ff 28%,
-        #eef3ff 58%,
-        #f8faff 85%,
-        #ffffff 100%
-      );
-      border-top: 1px solid rgba(0, 82, 204, 0.14);
-      border-bottom: 1px solid rgba(0, 82, 204, 0.08);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
       padding-top: 5rem;
       padding-bottom: 5rem;
       margin-top: 0;
@@ -1745,7 +1767,6 @@
     }
 
     .section-empresas {
-      background: linear-gradient(135deg, #0a2458 0%, #0052cc 48%, #003d8f 100%);
       padding-top: 4.5rem;
       padding-bottom: 4.5rem;
     }
@@ -1769,8 +1790,6 @@
     }
 
     .section-contact {
-      background-color: #0052cc;
-      color: #ffffff;
       padding-top: 5rem;
       padding-bottom: 5rem;
     }
@@ -2221,7 +2240,7 @@
     </section>
 
     <!-- Por qué el canal SMS -->
-    <section id="canal-sms" class="section-band py-14 md:py-20" aria-labelledby="canal-sms-titulo">
+    <section id="canal-sms" class="section-bg-cta py-14 md:py-20" aria-labelledby="canal-sms-titulo">
       <div class="section-inner mx-auto max-w-3xl text-center">
         <div class="mx-auto mb-5 h-[3px] w-14 rounded-full bg-gradient-to-r from-[#5b21b6] via-primary to-secondary opacity-90" aria-hidden="true"></div>
         <p id="canal-sms-titulo" class="font-label-caps text-label-caps uppercase tracking-[0.14em] text-primary">El canal SMS hoy</p>
@@ -2381,7 +2400,7 @@
     </section>
 
     <!-- Caminos comerciales -->
-    <section id="camino-comercial" class="section-block section-bg-sky pb-16 md:pb-24" aria-labelledby="camino-comercial-titulo" tabindex="-1">
+    <section id="camino-comercial" class="section-block section-bg-cta pb-16 md:pb-24" aria-labelledby="camino-comercial-titulo" tabindex="-1">
       <div class="section-inner">
       <header class="section-header mx-auto max-w-3xl">
         <span class="section-eyebrow">Cómo empezar</span>
@@ -2418,7 +2437,7 @@
     </section>
 
     <!-- Pricing -->
-    <section class="section-block-lg section-bg-plans pb-20 md:pb-32" id="precios" tabindex="-1">
+    <section class="section-block-lg section-bg-white pb-20 md:pb-32" id="precios" tabindex="-1">
       <div class="section-inner">
       <header class="section-header mx-auto max-w-3xl">
         <span class="section-eyebrow">Precios</span>
@@ -2473,7 +2492,7 @@
     </section>
 
     <!-- Calculadora -->
-    <section id="calculadora" class="section-calc" aria-labelledby="calc-titulo" tabindex="-1">
+    <section id="calculadora" class="section-calc section-block-lg section-bg-plans" aria-labelledby="calc-titulo" tabindex="-1">
       <div class="section-inner mx-auto max-w-[920px]">
         <header class="section-header">
           <span class="section-eyebrow">Calculadora</span>
@@ -2529,7 +2548,7 @@
     </section>
 
     <!-- Compromiso comercial -->
-    <section id="igualacion-tarifa" class="section-bg-promo py-14 md:py-20" aria-labelledby="promesa-tarifas-titulo">
+    <section id="igualacion-tarifa" class="section-bg-cta py-14 md:py-20" aria-labelledby="promesa-tarifas-titulo">
       <div class="section-inner mx-auto max-w-3xl text-center">
         <div class="mx-auto mb-5 h-[3px] w-14 rounded-full bg-gradient-to-r from-[#5b21b6] via-primary to-secondary opacity-90" aria-hidden="true"></div>
         <p id="promesa-tarifas-titulo" class="font-label-caps text-label-caps uppercase tracking-[0.14em] text-primary">Compromiso comercial</p>
