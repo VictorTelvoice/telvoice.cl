@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { planItemTitle } from "../../lib/plans.js";
+import { planItemTitle, planItemDescription } from "../../lib/plans.js";
 import { resolveCheckoutPlan } from "../../lib/calc-plans.js";
 import {
   createOrderRecord,
@@ -133,6 +133,7 @@ export default async function handler(req, res) {
       order,
       plan,
       itemTitle: planItemTitle(plan),
+      itemDescription: planItemDescription(plan),
     });
 
     order = await updateOrder(orderId, {

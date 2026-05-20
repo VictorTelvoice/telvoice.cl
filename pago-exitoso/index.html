@@ -12,14 +12,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Montserrat:wght@600;700&amp;display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../css/payment-pages.css" />
 </head>
-<body class="payment-page bg-[#faf8ff] text-[#131b2e] font-[Inter,sans-serif] antialiased">
-  <header class="border-b border-[#c3c6d6]/40 bg-[#faf8ff]/95 backdrop-blur-md">
-    <div class="mx-auto flex max-w-[1440px] items-center gap-2 px-4 py-4 sm:px-10">
-      <a href="../" class="flex items-center gap-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0052cc]" aria-label="telvoice.cl, inicio">
-        <img src="../assets/telvoice-isotipo.png" alt="" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" />
-        <span class="font-[Montserrat,sans-serif] text-xl font-bold lowercase">
-          <span class="text-black">telvoice</span><span class="hero-grad-text">.cl</span>
-        </span>
+<body class="payment-page">
+  <header class="payment-header">
+    <div class="payment-header-inner">
+      <a href="../" class="payment-brand" aria-label="Telvoice.cl, inicio">
+        <img src="../assets/telvoice-isotipo.png" alt="Telvoice" width="40" height="40" decoding="async" />
+        <span class="payment-brand-text">Telvoice<span class="domain">.cl</span></span>
       </a>
     </div>
   </header>
@@ -28,8 +26,9 @@
       <span class="payment-icon payment-icon--ok material-symbols-outlined" aria-hidden="true">check_circle</span>
       <h1 id="payment-return-title" class="payment-title">Pago recibido</h1>
       <p id="payment-return-text" class="payment-text">Tu pago fue recibido correctamente. Estamos validando la compra y activando tu bolsa SMS.</p>
+      <div id="payment-order-summary" class="payment-order-summary" hidden></div>
       <p id="payment-return-meta" class="payment-sub" hidden></p>
-      <p class="payment-sub">Recibirás la confirmación en el correo ingresado durante la compra.</p>
+      <p id="payment-email-note" class="payment-sub" hidden></p>
       <div class="payment-actions">
         <a class="payment-btn payment-btn--primary" href="../">Volver al inicio</a>
         

@@ -5,6 +5,19 @@ import {
   appendPaymentLog,
 } from "../../lib/orders.js";
 import { getPayment } from "../../lib/mercadopago.js";
+import { sendOrderConfirmationEmails } from "../../lib/email.js";
+
+async function maybeSendConfirmationEmails(order) {
+  if (order.confirmation_emails_sent_at) return;
+  const emailResult = await sendOrderConfirmationEmails(order);
+  if (emailResult.shouldMarkSent) {
+    await updateOrder(order.id, {
+      confirmation_emails_sent_at: new Date().toISOString(),
+    });
+  } else if (!emailResult.ok && !emailResult.skipped) {
+    console.warn("[webhook] correos no enviados", order.id, emailResult);
+  }
+}
 
 function json(res, status, body) {
   res.status(status).setHeader("Content-Type", "application/json");
@@ -74,6 +87,13 @@ async function processPayment(paymentId, rawWebhook) {
     order.mercadopago?.status === payment.status
   ) {
     await updateOrder(order.id, { payment_logs: order.payment_logs });
+    if (payment.status === "approved" && !order.confirmation_emails_sent_at) {
+      try {
+        await maybeSendConfirmationEmails(order);
+      } catch (emailErr) {
+        console.error("[webhook] reintento correos", order.id, emailErr);
+      }
+    }
     console.log("[webhook] idempotente, orden ya procesada", order.id);
     return;
   }
@@ -121,12 +141,18 @@ async function processPayment(paymentId, rawWebhook) {
       }
     }
 
-    await updateOrder(order.id, {
+    order = await updateOrder(order.id, {
       status: "activation_pending",
       mercadopago: mpPayload,
       payment_logs: order.payment_logs,
     });
     console.log("[webhook] orden activation_pending", order.id);
+
+    try {
+      await maybeSendConfirmationEmails(order);
+    } catch (emailErr) {
+      console.error("[webhook] error enviando correos", order.id, emailErr);
+    }
     return;
   }
 
