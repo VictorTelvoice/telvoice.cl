@@ -4,6 +4,8 @@
  */
 window.TELVOICE_CONFIG = {
   apiOrigin: "https://www.telvoice.cl",
+  /** Muestra ayuda de pago sandbox en el modal (poner false en producción). */
+  mercadoPagoSandbox: true,
   salesEmail: "ventas@telvoice.net",
   whatsapp: {
     number: "56912345678",

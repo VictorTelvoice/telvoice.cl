@@ -384,6 +384,12 @@
     setCompraError("");
     setCompraLoading(false);
 
+    var sandboxHint = qs("compra-sandbox-hint");
+    if (sandboxHint) {
+      if (CFG.mercadoPagoSandbox) sandboxHint.classList.remove("hidden");
+      else sandboxHint.classList.add("hidden");
+    }
+
     var submitBtn = qs("compra-submit");
     if (submitBtn && !submitBtn.dataset.mpBound) {
       submitBtn.dataset.mpBound = "1";
