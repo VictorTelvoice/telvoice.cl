@@ -214,7 +214,7 @@
   }
 
   function buildCalcVolumes() {
-    var list = [200];
+    var list = [];
     var v;
     for (v = 1000; v <= 90000; v += 1000) list.push(v);
     for (v = 100000; v <= CALC_MAX_VOL; v += 1000) list.push(v);
@@ -225,7 +225,7 @@
 
   function snapCalcVolume(vol) {
     var v = Math.round(+vol);
-    if (v <= 200) return 200;
+    if (v < 1000) return 1000;
     v = Math.round(v / 1000) * 1000;
     if (v < 1000) return 1000;
     if (v > CALC_MAX_VOL) return CALC_MAX_VOL;
@@ -237,9 +237,8 @@
     var v = snapCalcVolume(vol);
     var idx = CALC_VOLUMES.indexOf(v);
     if (idx >= 0) return idx;
-    if (v === 200) return 0;
-    if (v <= 90000) return v / 1000;
-    return 91 + (v / 1000 - 100);
+    if (v <= 90000) return Math.max(0, v / 1000 - 1);
+    return 90 + (v / 1000 - 100);
   }
 
   function sliderIndexToVolume(idx) {
@@ -305,7 +304,7 @@
   }
 
   var BAG_TO_PLAN = { "1k": "inicial", "15k": "empresa", "100k": "volumen" };
-  var ONLINE_PLAN_IDS = { prueba: true, inicial: true, empresa: true, volumen: true, calc: true };
+  var ONLINE_PLAN_IDS = { inicial: true, empresa: true, volumen: true, calc: true };
 
   var compraState = {
     planId: null,
@@ -753,7 +752,7 @@
     var sliderMax = CALC_VOLUMES.length - 1;
     var tierSuggestions = calcTierSuggestionVolumes();
     var lastTrackVol = null;
-    var currentVol = 200;
+    var currentVol = 1000;
 
     slider.min = "0";
     slider.max = String(sliderMax);
@@ -863,7 +862,7 @@
       });
     }
 
-    slider.value = String(volumeToSliderIndex(200));
+    slider.value = String(volumeToSliderIndex(1000));
     updateCalc();
   }
   initCalculadora();

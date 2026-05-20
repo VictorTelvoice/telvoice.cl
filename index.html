@@ -1437,6 +1437,15 @@
       main .section-calc .calc-slider-labels {
         text-align: left;
       }
+      main .calc-tier-chips {
+        width: 100%;
+        max-width: 100%;
+        overflow: visible;
+      }
+      main .calc-tier-chip {
+        width: 100%;
+        max-width: 100%;
+      }
       /* Centrar tarjetas y paneles en móvil */
       .section-inner > .grid,
       .section-inner > .mx-auto.grid,
@@ -1615,6 +1624,7 @@
     .calc-slider-block {
       padding-bottom: 1.75rem;
       border-bottom: 1px solid #e8ebf4;
+      overflow: visible;
     }
     .calc-slider-head {
       display: flex;
@@ -1638,48 +1648,57 @@
       white-space: nowrap;
     }
     .calc-tier-chips {
-      display: flex;
-      flex-wrap: nowrap;
-      justify-content: center;
-      gap: 0.25rem;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.45rem 0.35rem;
+      width: 100%;
       margin-top: 1rem;
-      max-width: 100%;
+      overflow: visible;
     }
     .calc-tier-chip {
-      display: inline-flex;
-      flex-shrink: 0;
+      display: flex;
+      box-sizing: border-box;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 1.625rem;
-      padding: 0.22rem 0.45rem;
-      border-radius: 9999px;
+      gap: 0.1rem;
+      min-height: 2.35rem;
+      padding: 0.35rem 0.2rem;
+      border-radius: 0.625rem;
       border: 1px solid rgba(0, 82, 204, 0.18);
       background: #f4f7fc;
       font-size: 0.625rem;
       font-weight: 600;
-      line-height: 1.15;
+      line-height: 1.12;
+      text-align: center;
       color: #43474e;
+      white-space: normal;
+      word-break: break-word;
       cursor: pointer;
       transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
     }
-    @media (min-width: 640px) {
-      .calc-tier-chip {
-        font-size: 0.6875rem;
-        padding: 0.25rem 0.55rem;
-        min-height: 1.75rem;
-      }
-    }
     @media (min-width: 768px) {
       .calc-tier-chips {
+        display: flex;
+        flex-wrap: nowrap;
         justify-content: space-between;
         gap: 0.3rem;
       }
       .calc-tier-chip {
+        display: inline-flex;
         flex: 1 1 0;
+        width: auto;
         min-width: 0;
         max-width: none;
-        padding-left: 0.35rem;
-        padding-right: 0.35rem;
+        flex-direction: row;
+        gap: 0;
+        min-height: 1.75rem;
+        padding: 0.25rem 0.35rem;
+        border-radius: 9999px;
+        font-size: 0.6875rem;
       }
     }
     @media (min-width: 1024px) {
@@ -1700,15 +1719,16 @@
       box-shadow: 0 4px 14px -4px rgba(0, 82, 204, 0.45);
     }
     .calc-tier-chip-sub {
-      margin-left: 0.2rem;
+      margin: 0;
       font-size: 0.5625rem;
       font-weight: 600;
       opacity: 0.85;
+      line-height: 1.1;
     }
-    @media (min-width: 640px) {
+    @media (min-width: 768px) {
       .calc-tier-chip-sub {
-        font-size: 0.6rem;
         margin-left: 0.25rem;
+        font-size: 0.6rem;
       }
     }
     .calc-tier-chip:not(.is-active) .calc-tier-chip-sub {
@@ -2796,13 +2816,13 @@
           <div class="calc-slider-block">
             <div class="calc-slider-head">
               <span class="calc-slider-label">Cantidad de SMS</span>
-              <span id="calcVol" class="calc-vol-display" aria-live="polite">200 SMS</span>
+              <span id="calcVol" class="calc-vol-display" aria-live="polite">1.000 SMS</span>
             </div>
             <label for="calcSlider" class="sr-only">Cantidad de SMS</label>
-            <input id="calcSlider" class="calc-range-input w-full" type="range" min="0" max="111" step="1" value="0" aria-valuemin="200" aria-valuemax="120000" aria-valuenow="200" />
+            <input id="calcSlider" class="calc-range-input w-full" type="range" min="0" max="109" step="1" value="0" aria-valuemin="1000" aria-valuemax="120000" aria-valuenow="1000" />
             <div id="calcSliderSuggestions" class="calc-tier-chips" role="group" aria-label="Cantidades sugeridas por tramo de precio"></div>
             <div class="calc-slider-labels">
-              <span>200</span>
+              <span>1.000</span>
               <span>120.000</span>
             </div>
           </div>
@@ -2811,11 +2831,11 @@
               <div class="calc-result-dl">
                 <div class="calc-result-row">
                   <span class="calc-result-row-label">Cantidad seleccionada</span>
-                  <span id="calcQty" class="calc-result-row-value">200 SMS</span>
+                  <span id="calcQty" class="calc-result-row-value">1.000 SMS</span>
                 </div>
                 <div class="calc-result-row">
                   <span class="calc-result-row-label">Tramo aplicado</span>
-                  <span id="calcTier" class="calc-result-row-value">200 SMS — prueba pago online</span>
+                  <span id="calcTier" class="calc-result-row-value">1.000 a 4.000 SMS</span>
                 </div>
                 <div class="calc-result-row">
                   <span class="calc-result-row-label">Valor unitario</span>
@@ -2824,7 +2844,7 @@
               </div>
               <div class="calc-result-total-wrap">
                 <span class="calc-result-total-label">Total estimado (IVA incl.)</span>
-                <strong id="calcTotal" class="calc-result-total-value">$2.380</strong>
+                <strong id="calcTotal" class="calc-result-total-value">$11.900</strong>
               </div>
             </div>
             <p class="calc-result-note">Monto total en CLP con IVA incluido, según cantidad y tramo de precio unitario.</p>

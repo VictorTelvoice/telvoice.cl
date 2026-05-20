@@ -55,7 +55,6 @@ window.TELVOICE_CONFIG = {
     },
   ],
   volumeTiers: [
-    { min: 200, max: 200, pxSMS: 10, label: "200 SMS — prueba pago online" },
     { min: 1000, max: 4000, pxSMS: 10, label: "1.000 a 4.000 SMS" },
     { min: 5000, max: 9000, pxSMS: 9, label: "5.000 a 9.000 SMS" },
     { min: 10000, max: 14000, pxSMS: 8, label: "10.000 a 14.000 SMS" },
