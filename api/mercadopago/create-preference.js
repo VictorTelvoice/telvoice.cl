@@ -9,6 +9,8 @@ import { validateCustomer } from "../../lib/validate.js";
 import {
   createCheckoutPreference,
   checkoutRedirectUrl,
+  credentialsLookLikeTest,
+  isSandbox,
 } from "../../lib/mercadopago.js";
 
 const ALLOWED_ORIGINS = new Set([
@@ -55,7 +57,8 @@ function logEnvDiagnostics(planId, plan) {
     has_access_token: Boolean(process.env.MERCADOPAGO_ACCESS_TOKEN),
     has_blob_token: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
     has_public_site_url: Boolean(process.env.PUBLIC_SITE_URL),
-    sandbox: process.env.MERCADOPAGO_SANDBOX === "true",
+    sandbox: isSandbox(),
+    credentials_look_test: credentialsLookLikeTest(),
   });
 }
 
