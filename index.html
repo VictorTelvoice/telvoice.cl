@@ -1467,6 +1467,17 @@
       padding-top: 0;
       padding-bottom: 0;
     }
+    .hero-sales-cta {
+      margin-top: 1.25rem;
+      flex-shrink: 0;
+      transform: translateX(-1.25rem);
+    }
+    @media (min-width: 1024px) {
+      .hero-sales-cta {
+        margin-top: 1.5rem;
+        transform: translateX(-2.75rem);
+      }
+    }
     .hero-copy {
       width: 100%;
       max-width: 42rem;
@@ -2036,7 +2047,7 @@
         <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="#contacto">Contacto</a></li>
       </ul>
       <div class="nav-actions flex items-center gap-2 shrink-0">
-        <button type="button" id="nav-demo" class="hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm" data-track="click_hablar_ventas">Hablar con ventas</button>
+        <button type="button" id="nav-demo" class="hidden sm:inline-flex md:hidden bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm" data-track="click_hablar_ventas">Hablar con ventas</button>
         <button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant/60 text-on-background" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
           <span class="material-symbols-outlined" id="menu-icon-open">menu</span>
           <span class="material-symbols-outlined hidden" id="menu-icon-close">close</span>
@@ -2168,7 +2179,7 @@
           </div>
 
         </div>
-        <div class="hero-phone-slot hidden md:flex flex-1 justify-center items-center w-full min-w-0">
+        <div class="hero-phone-slot hidden md:flex flex-col flex-1 items-center justify-center w-full min-w-0">
           <div class="hero-phone-float relative w-[min(320px,90vw)] h-[min(640px,85vh)] bg-inverse-surface rounded-[48px] border-[12px] border-surface-container-highest shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col">
             <div class="absolute top-0 inset-x-0 h-6 bg-surface-container-highest rounded-b-2xl w-36 mx-auto z-20"></div>
             <div class="flex-1 bg-surface-container-lowest relative p-5 pt-16 flex flex-col gap-4 overflow-hidden">
@@ -2191,6 +2202,7 @@
               </div>
             </div>
           </div>
+          <button type="button" id="nav-demo-hero" class="hero-sales-cta hidden md:inline-flex bg-primary text-on-primary font-body-md px-6 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm" data-track="click_hablar_ventas">Hablar con ventas</button>
         </div>
       </div>
       <div class="hero-tags-below hero-tags-desktop relative z-10 hidden flex-col items-center md:flex">

@@ -9,11 +9,16 @@
   var orderRef = params.get("external_reference") || "";
   var preferenceId = params.get("preference_id") || "";
 
+  var cardEl = document.getElementById("payment-card");
   var titleEl = document.getElementById("payment-return-title");
   var textEl = document.getElementById("payment-return-text");
   var metaEl = document.getElementById("payment-return-meta");
   var summaryEl = document.getElementById("payment-order-summary");
+  var accountBoxEl = document.getElementById("payment-account-box");
   var emailNoteEl = document.getElementById("payment-email-note");
+  var tutorialBtn = document.getElementById("payment-tutorial-btn");
+
+  var isApproved = collectionStatus === "approved";
 
   function setMeta(parts) {
     if (!metaEl || !parts.length) return;
@@ -21,12 +26,31 @@
     metaEl.hidden = false;
   }
 
-  if (collectionStatus === "approved") {
-    if (titleEl) titleEl.textContent = "Pago confirmado";
+  function showAccountProvisioning(email) {
+    if (accountBoxEl) accountBoxEl.hidden = false;
+    if (cardEl) cardEl.classList.add("payment-card--confirm");
+    document.body.classList.add("payment-page--confirm");
+
+    if (titleEl) titleEl.textContent = "¡Compra confirmada!";
     if (textEl) {
       textEl.textContent =
-        "Mercado Pago aprobó tu pago. Estamos activando tu bolsa SMS.";
+        "Mercado Pago aprobó tu pago. Ya estamos trabajando en la creación de tu cuenta y la activación de tu bolsa SMS.";
     }
+
+    if (emailNoteEl) {
+      var mail = email || "el correo que ingresaste al comprar";
+      emailNoteEl.textContent =
+        "Recibirás en " +
+        mail +
+        " las credenciales de acceso a tu cuenta cuando esté lista. Revisa también la carpeta de spam.";
+      emailNoteEl.hidden = false;
+    }
+
+    if (tutorialBtn) tutorialBtn.hidden = false;
+  }
+
+  if (isApproved) {
+    showAccountProvisioning(null);
   } else if (
     collectionStatus === "pending" ||
     collectionStatus === "in_process"
@@ -57,23 +81,27 @@
   function renderSummary(order) {
     if (!summaryEl || !order) return;
     var f = order.formatted || {};
+    var customerEmail = order.customer && order.customer.email;
+
     var rows = [
       ["Producto", order.plan_name],
       ["SMS incluidos", f.sms ? f.sms + " mensajes" : null],
       ["Neto", f.net],
       ["IVA (19%)", f.tax],
-      ["Total", f.total],
-      ["Correo", order.customer && order.customer.email],
+      ["Total pagado", f.total],
+      ["Correo de compra", customerEmail],
     ].filter(function (row) {
       return row[1];
     });
 
     var html =
-      "<h2>Resumen de tu compra</h2><dl>" +
+      "<h2>Lo que compraste</h2><dl>" +
       rows
         .map(function (row) {
           var totalClass =
-            row[0] === "Total" ? ' class="row row--total"' : ' class="row"';
+            row[0] === "Total pagado"
+              ? ' class="row row--total"'
+              : ' class="row"';
           return (
             "<div" +
             totalClass +
@@ -90,11 +118,13 @@
     summaryEl.innerHTML = html;
     summaryEl.hidden = false;
 
-    if (emailNoteEl && order.customer && order.customer.email) {
+    if (isApproved) {
+      showAccountProvisioning(customerEmail);
+    } else if (emailNoteEl && customerEmail) {
       emailNoteEl.textContent =
-        "Enviaremos el detalle completo a " +
-        order.customer.email +
-        " en los próximos minutos (revisa spam si no lo ves).";
+        "Te enviaremos novedades a " +
+        customerEmail +
+        " cuando confirmemos el pago.";
       emailNoteEl.hidden = false;
     }
   }
@@ -103,9 +133,7 @@
 
   var apiBase = window.location.origin;
   fetch(
-    apiBase +
-      "/api/orders/summary?order_id=" +
-      encodeURIComponent(orderRef)
+    apiBase + "/api/orders/summary?order_id=" + encodeURIComponent(orderRef)
   )
     .then(function (res) {
       return res.json();
