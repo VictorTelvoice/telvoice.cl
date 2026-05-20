@@ -113,10 +113,12 @@ async function processPayment(paymentId, rawWebhook) {
       });
       return;
     }
-    const plan = getPlan(order.plan_id);
-    if (!plan || plan.total_amount !== expectedTotal) {
-      console.error("[webhook] plan inválido en orden", order.id);
-      return;
+    if (order.plan_id !== "calc") {
+      const plan = getPlan(order.plan_id);
+      if (!plan || plan.total_amount !== expectedTotal) {
+        console.error("[webhook] plan inválido en orden", order.id);
+        return;
+      }
     }
 
     await updateOrder(order.id, {

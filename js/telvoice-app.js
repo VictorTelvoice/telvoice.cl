@@ -5,7 +5,6 @@
   var QUOTE_MIN = CFG.quoteVolumeMin != null ? CFG.quoteVolumeMin : 200000;
   var BAGS = CFG.bags || [];
   var CALC_TIERS = CFG.volumeTiers || [];
-  var CALC_ONLINE_OFFERS = CFG.calcOnlineOffers || [];
   var CALC_MAX_VOL = CFG.calcMaxVolume != null ? CFG.calcMaxVolume : 120000;
 
   function qs(id) {
@@ -243,18 +242,17 @@
 
   function planFromCalcVolume(vol) {
     var v = snapCalcVolume(vol);
-    var offer = CALC_ONLINE_OFFERS.find(function (o) {
-      return o.sms === v;
-    });
-    if (!offer || !offer.planId) return null;
-    var tax = Math.round(offer.priceNet * IVA_RATE);
+    var tier = findCalcTier(v);
+    if (!tier) return null;
+    var net = v * tier.pxSMS;
+    var tax = Math.round(net * IVA_RATE);
     return {
-      plan_id: offer.planId,
-      name: offer.planName,
-      sms: offer.sms,
-      net_amount: offer.priceNet,
+      plan_id: "calc",
+      name: "Bolsa " + fmt(v) + " SMS",
+      sms: v,
+      net_amount: net,
       tax_amount: tax,
-      total_amount: offer.priceNet + tax,
+      total_amount: net + tax,
     };
   }
 
@@ -273,10 +271,11 @@
   }
 
   var BAG_TO_PLAN = { "1k": "inicial", "15k": "empresa", "100k": "volumen" };
-  var ONLINE_PLAN_IDS = { prueba: true, inicial: true, empresa: true, volumen: true };
+  var ONLINE_PLAN_IDS = { prueba: true, inicial: true, empresa: true, volumen: true, calc: true };
 
   var compraState = {
     planId: null,
+    calcSms: null,
     planName: "",
     sms: 0,
     net: 0,
@@ -376,13 +375,16 @@
 
   function openCompraModal(payload) {
     var modal = qs("compra-modal");
-    var resolvedPlanId = payload && (payload.planId || payload.plan_id);
-    if (!modal || !payload || !resolvedPlanId) return;
+    if (!modal || !payload) return;
+
+    var resolvedPlanId = payload.planId || payload.plan_id || (payload.calcSms ? "calc" : null);
+    if (!resolvedPlanId) return;
 
     compraSubmitting = false;
 
     compraState = {
       planId: resolvedPlanId,
+      calcSms: payload.calcSms || null,
       planName: payload.planName || "",
       sms: payload.sms || 0,
       net: payload.net_amount || 0,
@@ -473,12 +475,20 @@
       setCompraError("Ingrese un RUT válido.");
       return;
     }
-    if (!planId || !ONLINE_PLAN_IDS[planId]) {
+    if (compraState.calcSms) {
+      if (!planId || planId !== "calc") {
+        setCompraError("Plan no disponible para pago online.");
+        return;
+      }
+    } else if (!planId || !ONLINE_PLAN_IDS[planId]) {
       setCompraError("Plan no disponible para pago online.");
       return;
     }
 
-    console.log("Iniciando pago Mercado Pago", { planId: planId });
+    console.log("Iniciando pago Mercado Pago", {
+      planId: planId,
+      calcSms: compraState.calcSms || null,
+    });
 
     setCompraError("");
     compraSubmitting = true;
@@ -497,16 +507,20 @@
         Accept: "application/json",
       },
       signal: abortController ? abortController.signal : undefined,
-      body: JSON.stringify({
-        plan_id: planId,
-        customer: {
-          name: nombre,
-          email: email,
-          phone: whatsapp,
-          rut: rut,
-          business_name: razonSocial || null,
-        },
-      }),
+      body: JSON.stringify(
+        Object.assign(
+          {
+            customer: {
+              name: nombre,
+              email: email,
+              phone: whatsapp,
+              rut: rut,
+              business_name: razonSocial || null,
+            },
+          },
+          compraState.calcSms ? { calc_sms: compraState.calcSms } : { plan_id: planId }
+        )
+      ),
     };
     if (checkoutEndpoint.indexOf("http") !== 0) {
       fetchOpts.credentials = "same-origin";
@@ -729,13 +743,9 @@
       if (calcTotal) calcTotal.textContent = formatCalcMoney(total);
 
       var calcPlan = planFromCalcVolume(vol);
-      if (buyBtn) {
-        if (calcPlan) {
-          buyBtn.hidden = false;
-          buyBtn.textContent = "Comprar " + fmt(calcPlan.sms) + " SMS online";
-        } else {
-          buyBtn.hidden = true;
-        }
+      if (buyBtn && calcPlan) {
+        buyBtn.hidden = false;
+        buyBtn.textContent = "Comprar " + fmt(calcPlan.sms) + " SMS online";
       }
 
       if (lastTrackVol !== vol) {
@@ -752,6 +762,7 @@
         if (!plan) return;
         openCompraModal({
           planId: plan.plan_id,
+          calcSms: plan.plan_id === "calc" ? plan.sms : null,
           planName: plan.name,
           sms: plan.sms,
           net_amount: plan.net_amount,

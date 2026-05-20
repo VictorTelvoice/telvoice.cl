@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
-import { getPlan, planItemTitle } from "../../lib/plans.js";
+import { planItemTitle } from "../../lib/plans.js";
+import { resolveCheckoutPlan } from "../../lib/calc-plans.js";
 import {
   createOrderRecord,
   saveOrder,
@@ -77,8 +78,13 @@ export default async function handler(req, res) {
 
   try {
     const body = parseRequestBody(req);
-    planId = body.plan_id || body.planId || null;
-    const plan = getPlan(planId);
+    const resolved = resolveCheckoutPlan(body);
+    if (!resolved.ok) {
+      return json(req, res, 400, { ok: false, error: resolved.error });
+    }
+
+    const { plan, planId: resolvedPlanId } = resolved;
+    planId = resolvedPlanId;
 
     logEnvDiagnostics(planId, plan);
 
@@ -102,14 +108,6 @@ export default async function handler(req, res) {
       } catch (accountErr) {
         console.warn("[create-preference] no se pudo validar cuenta MP", accountErr.message);
       }
-    }
-
-    if (!plan) {
-      console.warn("[create-preference] plan_id inválido", { plan_id: planId });
-      return json(req, res, 400, {
-        ok: false,
-        error: "Plan no válido. Solo están disponibles los planes publicados.",
-      });
     }
 
     const customerCheck = validateCustomer(body.customer);
