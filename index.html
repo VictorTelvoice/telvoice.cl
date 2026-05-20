@@ -824,6 +824,8 @@
       background: linear-gradient(180deg, #faf8ff 0%, #f5f7fc 100%);
       border-radius: 1.25rem;
       padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
     @media (min-width: 768px) {
       .pack-includes {
@@ -848,27 +850,26 @@
       margin-bottom: 0.75rem;
     }
     .pack-includes-list {
-      display: grid;
-      gap: 0.75rem 1.25rem;
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: center;
+      align-items: center;
+      gap: 0.75rem 1.5rem;
       margin-top: 0;
     }
-    @media (min-width: 640px) {
+    @media (min-width: 768px) {
       .pack-includes-list {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-    @media (min-width: 1024px) {
-      .pack-includes-list {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem 2rem;
       }
     }
     .pack-includes-item {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 0.5rem;
       font-size: 0.8125rem;
       line-height: 1.35;
       color: #43474e;
+      white-space: nowrap;
     }
     .pack-includes-item .material-symbols-outlined {
       font-size: 1.125rem;
@@ -922,36 +923,6 @@
       cursor: grab;
       box-shadow: 0 0 0 4px rgba(0, 82, 204, 0.2);
       border: 2px solid #faf8ff;
-    }
-
-    .wa-float {
-      position: fixed;
-      right: max(1rem, env(safe-area-inset-right));
-      bottom: max(1rem, env(safe-area-inset-bottom));
-      z-index: 90;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      border-radius: 9999px;
-      background: #25d366;
-      color: #fff;
-      padding: 0.75rem 1rem;
-      font-size: 0.875rem;
-      font-weight: 600;
-      box-shadow: 0 8px 28px rgba(37, 211, 102, 0.45);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .wa-float:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 32px rgba(37, 211, 102, 0.5);
-    }
-    @media (max-width: 639px) {
-      .wa-float__label {
-        display: none;
-      }
-      .wa-float {
-        padding: 0.85rem;
-      }
     }
 
     .modal-backdrop {
@@ -1175,18 +1146,10 @@
     #soluciones .soluciones-header {
       margin-bottom: 3rem;
     }
-    @media (min-width: 768px) {
-      #como-funciona .section-header,
-      #soluciones .soluciones-header {
-        margin-bottom: 4rem;
-      }
-    }
-    #como-funciona .ui-card-feature,
     #soluciones .ui-card-feature {
       border-radius: 1.5rem;
       box-shadow: 0 6px 28px -10px rgba(15, 23, 42, 0.1);
     }
-    #como-funciona .ui-card-feature .feature-icon-wrap,
     #soluciones .ui-card-feature .feature-icon-wrap {
       display: flex;
       height: 3.25rem;
@@ -1353,7 +1316,6 @@
         align-items: center;
       }
       main .ui-card-feature.items-start,
-      main #como-funciona .ui-card-feature,
       main #soluciones .ui-card-feature {
         align-items: center;
       }
@@ -1361,11 +1323,12 @@
         justify-content: center;
       }
       main .pack-includes-list {
-        justify-items: stretch;
+        justify-content: center;
+        flex-wrap: wrap;
       }
       main .pack-includes-item {
-        justify-content: flex-start;
-        text-align: left;
+        justify-content: center;
+        text-align: center;
       }
       #compliance ul li {
         justify-content: flex-start;
@@ -1570,10 +1533,56 @@
       color: #0052cc;
       white-space: nowrap;
     }
+    .calc-slider-suggestions {
+      position: relative;
+      height: 2.75rem;
+      margin-top: 0.75rem;
+    }
+    .calc-slider-suggestion {
+      position: absolute;
+      top: 0;
+      transform: translateX(-50%);
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font: inherit;
+      color: #5c6478;
+    }
+    .calc-slider-suggestion::before {
+      content: "";
+      width: 2px;
+      height: 0.5rem;
+      border-radius: 1px;
+      background: rgba(0, 82, 204, 0.35);
+    }
+    .calc-slider-suggestion:hover,
+    .calc-slider-suggestion.is-active {
+      color: #0052cc;
+    }
+    .calc-slider-suggestion:hover::before,
+    .calc-slider-suggestion.is-active::before {
+      background: #0052cc;
+      height: 0.625rem;
+    }
+    .calc-slider-suggestion-label {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    @media (min-width: 640px) {
+      .calc-slider-suggestion-label {
+        font-size: 0.75rem;
+      }
+    }
     .calc-slider-labels {
       display: flex;
       justify-content: space-between;
-      margin-top: 0.5rem;
+      margin-top: 0.35rem;
       font-size: 0.8125rem;
       color: #5c6478;
     }
@@ -1936,7 +1945,6 @@
         <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="#contacto">Contacto</a></li>
       </ul>
       <div class="flex items-center gap-2 shrink-0">
-        <a href="#calculadora" class="hidden sm:inline-flex font-body-md text-primary px-4 py-2.5 rounded-full border border-primary/25 hover:bg-surface-container-low transition-colors" data-track="click_calcular_precio">Calcular precio</a>
         <button type="button" id="nav-demo" class="hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm" data-track="click_hablar_ventas">Hablar con ventas</button>
         <button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant/60 text-on-background" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
           <span class="material-symbols-outlined" id="menu-icon-open">menu</span>
@@ -1952,7 +1960,6 @@
         <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#empresas">Empresas</a></li>
         <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#contacto">Contacto</a></li>
       </ul>
-      <a href="#calculadora" class="mt-3 block w-full text-center font-body-md text-primary py-3 rounded-full border border-primary/25 hover:bg-surface-container-low transition-colors" data-track="click_calcular_precio">Calcular precio</a>
       <button type="button" id="nav-demo-mobile" class="mt-2 w-full bg-primary text-on-primary font-body-md py-3 rounded-full hover:bg-surface-tint transition-colors" data-track="click_hablar_ventas">Hablar con ventas</button>
     </div>
   </nav>
@@ -2168,40 +2175,6 @@
           </div>
           <h3 class="font-h3 text-h3 text-on-background">Respaldo de operación SMS</h3>
           <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Telvoice cuenta con experiencia en mensajería SMS mayorista, tráfico A2P e infraestructura especializada para empresas.</p>
-        </article>
-      </div>
-      </div>
-    </section>
-
-    <!-- Cómo funciona -->
-    <section class="section-block section-bg-muted" id="como-funciona" tabindex="-1">
-      <div class="section-inner">
-      <header class="section-header mx-auto max-w-3xl">
-        <span class="section-eyebrow">Cómo funciona</span>
-        <h2 class="mt-4 font-h2 text-h2 text-on-background leading-tight">Tres pasos para comenzar a enviar</h2>
-        <p class="section-intro mt-4 font-body-lg text-body-lg text-on-surface-variant leading-relaxed">Compra una bolsa, prepara tu envío y monitorea tus campañas con una operación clara y orientada a empresas.</p>
-      </header>
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8 lg:gap-10">
-        <article class="ui-card ui-card-feature flex flex-col items-start gap-5">
-          <div class="feature-icon-wrap" aria-hidden="true">
-            <span class="material-symbols-outlined text-primary fill-icon text-[1.75rem]">shopping_bag</span>
-          </div>
-          <h3 class="font-h3 text-h3 text-on-background">Compra tu bolsa</h3>
-          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Elige el volumen que necesitas y realiza tu compra online.</p>
-        </article>
-        <article class="ui-card ui-card-feature flex flex-col items-start gap-5">
-          <div class="feature-icon-wrap" aria-hidden="true">
-            <span class="material-symbols-outlined text-primary fill-icon text-[1.75rem]">edit_note</span>
-          </div>
-          <h3 class="font-h3 text-h3 text-on-background">Prepara tu envío</h3>
-          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Gestiona tu campaña desde la plataforma o solicita acceso API si necesitas integración.</p>
-        </article>
-        <article class="ui-card ui-card-feature flex flex-col items-start gap-5">
-          <div class="feature-icon-wrap" aria-hidden="true">
-            <span class="material-symbols-outlined text-primary fill-icon text-[1.75rem]">monitoring</span>
-          </div>
-          <h3 class="font-h3 text-h3 text-on-background">Envía y monitorea</h3>
-          <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Realiza tus envíos y revisa la reportería disponible para dar seguimiento a tus campañas.</p>
         </article>
       </div>
       </div>
@@ -2478,9 +2451,9 @@
             </div>
             <label for="calcSlider" class="sr-only">Cantidad de SMS</label>
             <input id="calcSlider" class="calc-range-input w-full" type="range" min="0" max="111" step="1" value="0" aria-valuemin="200" aria-valuemax="120000" aria-valuenow="200" />
+            <div id="calcSliderSuggestions" class="calc-slider-suggestions" role="group" aria-label="Cantidades sugeridas por tramo de precio"></div>
             <div class="calc-slider-labels">
               <span>200</span>
-              <span>1.000</span>
               <span>120.000</span>
             </div>
           </div>
@@ -2501,16 +2474,15 @@
                 </div>
               </div>
               <div class="calc-result-total-wrap">
-                <span class="calc-result-total-label">Total estimado</span>
-                <strong id="calcTotal" class="calc-result-total-value">$2.000 + IVA</strong>
+                <span class="calc-result-total-label">Total estimado (IVA incl.)</span>
+                <strong id="calcTotal" class="calc-result-total-value">$2.380</strong>
               </div>
             </div>
-            <p class="calc-result-note">Este valor se calcula multiplicando la cantidad seleccionada por el valor unitario del tramo.</p>
+            <p class="calc-result-note">Monto total en CLP con IVA incluido, según cantidad y tramo de precio unitario.</p>
           </div>
           <p class="calc-footnote">Valores en CLP + IVA. El cálculo es referencial según los tramos vigentes. Para volúmenes superiores a 120.000 SMS, solicita una cotización personalizada.</p>
           <div class="calc-cta-wrap">
             <button type="button" id="calc-buy-btn" class="calc-cta-btn calc-cta-btn--buy inline-flex w-full items-center justify-center rounded-full bg-primary px-10 py-4 font-body-md font-semibold text-on-primary shadow-lg transition hover:bg-surface-tint" data-track="click_comprar_online_calc">Comprar online</button>
-            <button type="button" id="calc-request-btn" class="calc-cta-btn calc-cta-btn--quote inline-flex w-full items-center justify-center rounded-full border-2 border-primary bg-transparent px-10 py-4 font-body-md font-semibold text-primary transition hover:bg-surface-container-low" data-track="click_cotizar_volumen">Solicitar esta cantidad</button>
             <p class="mt-3">
               <a href="#empresas" class="calc-cta-link">¿Necesitas más de 120.000 SMS? Cotiza alto volumen</a>
             </p>
@@ -2824,11 +2796,6 @@
       </div>
     </div>
   </footer>
-
-  <a id="wa-float" class="wa-float" href="#" target="_blank" rel="noopener noreferrer" aria-label="Contactar por WhatsApp" data-track="click_whatsapp">
-    <span class="wa-float__icon material-symbols-outlined" aria-hidden="true">chat</span>
-    <span class="wa-float__label">WhatsApp</span>
-  </a>
 
   <div id="compra-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="compra-modal-title">
     <div class="modal-panel" role="document">

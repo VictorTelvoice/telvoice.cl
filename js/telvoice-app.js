@@ -48,6 +48,13 @@
     return "https://wa.me/" + num + "?text=" + text;
   }
 
+  function openWhatsapp(message) {
+    var url = whatsappUrl(message);
+    if (!url) return false;
+    window.open(url, "_blank", "noopener,noreferrer");
+    return true;
+  }
+
   function bindWhatsappLinks() {
     var url = whatsappUrl();
     document.querySelectorAll(".wa-inline-cta, .wa-section-cta").forEach(function (el) {
@@ -60,15 +67,22 @@
         el.classList.add("hidden");
       }
     });
-    var floatBtn = qs("wa-float");
-    if (floatBtn && url) {
-      floatBtn.href = url;
-      floatBtn.addEventListener("click", function () {
-        trackEvent("click_whatsapp", { placement: "float" });
+  }
+
+  function bindVentasWhatsappButtons() {
+    var waMsg = (CFG.whatsapp && CFG.whatsapp.message) || "Hola, quiero cotizar una bolsa de SMS para Chile.";
+    ["nav-demo", "nav-demo-mobile", "final-cta", "comercial-cotizar-cta"].forEach(function (sel) {
+      var nodes = sel.indexOf(".") === 0 ? document.querySelectorAll(sel) : [qs(sel)];
+      nodes.forEach(function (btn) {
+        if (!btn) return;
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          if (openWhatsapp(waMsg)) {
+            trackEvent("click_hablar_ventas", { channel: "whatsapp" });
+          }
+        });
       });
-    } else if (floatBtn) {
-      floatBtn.hidden = true;
-    }
+    });
   }
 
   function closeMobileMenu() {
@@ -258,6 +272,20 @@
 
   function formatCalcMoney(amount) {
     return "$" + fmt(amount) + " + IVA";
+  }
+
+  function formatCalcTotalWithIva(net) {
+    return "$" + fmt(Math.round(net * (1 + IVA_RATE)));
+  }
+
+  function calcTierSuggestionVolumes() {
+    var out = [];
+    CALC_TIERS.forEach(function (tier, i) {
+      if (i === 0 || tier.pxSMS !== CALC_TIERS[i - 1].pxSMS) {
+        out.push(tier.min);
+      }
+    });
+    return out;
   }
 
   function formatBagPrice(net) {
@@ -652,21 +680,12 @@
   });
 
   function bindDemoButtons() {
-    ["nav-demo", "nav-demo-mobile", ".final-cta"].forEach(function (sel) {
-      var nodes = sel.indexOf(".") === 0 ? document.querySelectorAll(sel) : [qs(sel)];
-      nodes.forEach(function (b) {
-        if (!b) return;
-        b.addEventListener("click", function () {
-          scrollToContact({ interes: "cotizacion" });
-        });
-      });
-    });
     document.querySelectorAll(".api-request-cta").forEach(function (b) {
       b.addEventListener("click", function () {
         scrollToContact({ interes: "integracion-api" });
       });
     });
-    document.querySelectorAll(".empresas-cta, .comercial-cotizar-cta").forEach(function (b) {
+    document.querySelectorAll(".empresas-cta").forEach(function (b) {
       b.addEventListener("click", function () {
         scrollToContact({ interes: "alto-volumen", volumen: "mas-100000" });
       });
@@ -684,6 +703,7 @@
     });
   }
   bindDemoButtons();
+  bindVentasWhatsappButtons();
 
   function initHeroPricing() {
     var hero = CFG.hero || {};
@@ -707,9 +727,10 @@
     var calcTier = qs("calcTier");
     var calcPxSMS = qs("calcPxSMS");
     var calcTotal = qs("calcTotal");
-    var requestBtn = qs("calc-request-btn");
     var buyBtn = qs("calc-buy-btn");
+    var suggestionsEl = qs("calcSliderSuggestions");
     var sliderMax = CALC_VOLUMES.length - 1;
+    var tierSuggestions = calcTierSuggestionVolumes();
     var lastTrackVol = null;
     var currentVol = 200;
 
@@ -736,11 +757,19 @@
       var tier = findCalcTier(vol);
       if (!tier) return;
 
-      var total = vol * tier.pxSMS;
+      var net = vol * tier.pxSMS;
       if (calcQty) calcQty.textContent = fmt(vol) + " SMS";
       if (calcTier) calcTier.textContent = tier.label;
       if (calcPxSMS) calcPxSMS.textContent = "$" + tier.pxSMS + " + IVA por SMS";
-      if (calcTotal) calcTotal.textContent = formatCalcMoney(total);
+      if (calcTotal) calcTotal.textContent = formatCalcTotalWithIva(net);
+
+      if (suggestionsEl) {
+        suggestionsEl.querySelectorAll(".calc-slider-suggestion").forEach(function (btn) {
+          var match = +btn.getAttribute("data-volume") === vol;
+          btn.classList.toggle("is-active", match);
+          btn.setAttribute("aria-pressed", match ? "true" : "false");
+        });
+      }
 
       var calcPlan = planFromCalcVolume(vol);
       if (buyBtn && calcPlan) {
@@ -778,16 +807,26 @@
       });
     }
 
-    if (requestBtn) {
-      requestBtn.addEventListener("click", function () {
-        var tier = findCalcTier(currentVol);
-        var line =
-          "Solicitud desde calculadora: " +
-          fmt(currentVol) +
-          " SMS" +
-          (tier ? " · Tramo " + tier.label + " · $" + tier.pxSMS + " + IVA/SMS · Total $" + fmt(currentVol * tier.pxSMS) + " + IVA" : "");
-        scrollToContact({ interes: "cotizacion", volumen: String(currentVol), mensaje: line });
-        trackEvent("click_cotizar_volumen", { volume: currentVol, source: "calculadora" });
+    if (suggestionsEl) {
+      tierSuggestions.forEach(function (vol) {
+        var idx = volumeToSliderIndex(vol);
+        var pct = sliderMax > 0 ? (idx / sliderMax) * 100 : 0;
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "calc-slider-suggestion";
+        btn.style.left = pct + "%";
+        btn.setAttribute("data-volume", String(vol));
+        btn.setAttribute("aria-pressed", "false");
+        btn.setAttribute("aria-label", fmt(vol) + " SMS");
+        var label = document.createElement("span");
+        label.className = "calc-slider-suggestion-label";
+        label.textContent = vol >= 1000 ? fmt(vol) : String(vol);
+        btn.appendChild(label);
+        btn.addEventListener("click", function () {
+          slider.value = String(idx);
+          updateCalc();
+        });
+        suggestionsEl.appendChild(btn);
       });
     }
 
