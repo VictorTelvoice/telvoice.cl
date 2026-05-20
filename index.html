@@ -594,21 +594,20 @@
       border-radius: 0.8rem;
       box-shadow: 0 12px 40px -16px rgba(0, 82, 204, 0.14), 0 0 0 1px rgba(0, 82, 204, 0.06);
     }
-    a.hero-price-card--link {
-      display: block;
+    a.hero-price-card__price--link {
       text-decoration: none;
       color: inherit;
       cursor: pointer;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+      transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
     }
-    a.hero-price-card--link:hover {
-      border-color: rgba(0, 82, 204, 0.28);
-      box-shadow: 0 16px 48px -14px rgba(0, 82, 204, 0.22), 0 0 0 1px rgba(0, 82, 204, 0.12);
+    a.hero-price-card__price--link:hover {
+      background: rgba(0, 82, 204, 0.12);
+      box-shadow: 0 0 0 1px rgba(0, 82, 204, 0.2), 0 6px 16px -6px rgba(0, 82, 204, 0.25);
       transform: translateY(-1px);
     }
-    a.hero-price-card--link:focus-visible {
+    a.hero-price-card__price--link:focus-visible {
       outline: 2px solid #0052cc;
-      outline-offset: 3px;
+      outline-offset: 2px;
     }
     @media (min-width: 768px) {
       .hero-price-card {
@@ -1601,34 +1600,51 @@
       display: flex;
       flex-wrap: nowrap;
       justify-content: center;
-      gap: 0.35rem;
+      gap: 0.25rem;
       margin-top: 1rem;
-      overflow-x: auto;
-      padding-bottom: 0.15rem;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: thin;
+      max-width: 100%;
     }
     .calc-tier-chip {
       display: inline-flex;
       flex-shrink: 0;
       align-items: center;
       justify-content: center;
-      min-height: 2rem;
-      padding: 0.35rem 0.75rem;
+      min-height: 1.625rem;
+      padding: 0.22rem 0.45rem;
       border-radius: 9999px;
       border: 1px solid rgba(0, 82, 204, 0.18);
       background: #f4f7fc;
-      font-size: 0.75rem;
+      font-size: 0.625rem;
       font-weight: 600;
-      line-height: 1.2;
+      line-height: 1.15;
       color: #43474e;
       cursor: pointer;
       transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
     }
     @media (min-width: 640px) {
       .calc-tier-chip {
-        font-size: 0.8125rem;
-        padding: 0.4rem 1rem;
+        font-size: 0.6875rem;
+        padding: 0.25rem 0.55rem;
+        min-height: 1.75rem;
+      }
+    }
+    @media (min-width: 768px) {
+      .calc-tier-chips {
+        justify-content: space-between;
+        gap: 0.3rem;
+      }
+      .calc-tier-chip {
+        flex: 1 1 0;
+        min-width: 0;
+        max-width: none;
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
+      }
+    }
+    @media (min-width: 1024px) {
+      .calc-tier-chip {
+        font-size: 0.7rem;
+        padding: 0.28rem 0.5rem;
       }
     }
     .calc-tier-chip:hover {
@@ -1643,10 +1659,16 @@
       box-shadow: 0 4px 14px -4px rgba(0, 82, 204, 0.45);
     }
     .calc-tier-chip-sub {
-      margin-left: 0.35rem;
-      font-size: 0.625rem;
+      margin-left: 0.2rem;
+      font-size: 0.5625rem;
       font-weight: 600;
       opacity: 0.85;
+    }
+    @media (min-width: 640px) {
+      .calc-tier-chip-sub {
+        font-size: 0.6rem;
+        margin-left: 0.25rem;
+      }
     }
     .calc-tier-chip:not(.is-active) .calc-tier-chip-sub {
       color: #5c6478;
@@ -1774,24 +1796,6 @@
     }
     .calc-cta-link:hover {
       color: #0040a2;
-    }
-
-    .nav-contact-actions {
-      min-width: 0;
-    }
-    @media (min-width: 1024px) {
-      .nav-contact-actions {
-        margin-right: 5.5rem;
-        align-items: flex-start;
-      }
-      .nav-phone-link {
-        padding-left: 0.125rem;
-      }
-    }
-    @media (min-width: 1280px) {
-      .nav-contact-actions {
-        margin-right: 7rem;
-      }
     }
 
     .section-empresas {
@@ -2032,10 +2036,7 @@
         <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="#contacto">Contacto</a></li>
       </ul>
       <div class="nav-actions flex items-center gap-2 shrink-0">
-        <div class="nav-contact-actions hidden sm:flex flex-col items-start gap-1.5">
-          <a href="tel:+56997980116" class="nav-phone-link font-body-md font-semibold text-on-background whitespace-nowrap transition-colors hover:text-primary" data-track="click_phone">+56 9 9979 8016</a>
-          <button type="button" id="nav-demo" class="inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm" data-track="click_hablar_ventas">Hablar con ventas</button>
-        </div>
+        <button type="button" id="nav-demo" class="hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm" data-track="click_hablar_ventas">Hablar con ventas</button>
         <button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant/60 text-on-background" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
           <span class="material-symbols-outlined" id="menu-icon-open">menu</span>
           <span class="material-symbols-outlined hidden" id="menu-icon-close">close</span>
@@ -2107,7 +2108,7 @@
                 Adquiere bolsas prepago de SMS para campañas, notificaciones, recordatorios y validaciones. Elige tu volumen, paga online y gestiona tus envíos desde una plataforma simple e intuitiva.
               </p>
           </div>
-          <a href="#calculadora" id="hero-price-card" class="hero-price-card hero-price-card--link mt-stack-md w-full border border-outline-variant/50 bg-gradient-to-br from-surface-container-lowest via-surface/95 to-primary/[0.035] ring-1 ring-primary/[0.07]" data-calc-volume="100000" data-track="click_hero_precio_volumen" aria-label="Ver precio para 100.000 SMS en la calculadora">
+          <div class="hero-price-card mt-stack-md w-full border border-outline-variant/50 bg-gradient-to-br from-surface-container-lowest via-surface/95 to-primary/[0.035] ring-1 ring-primary/[0.07]">
             <div class="hero-price-card__row">
               <div class="hero-price-card__left">
                 <div class="hero-price-card__icon" aria-hidden="true">
@@ -2118,16 +2119,16 @@
                   <p id="hero-price-detail" class="hero-price-detail text-on-surface-variant">Para campañas pequeñas hasta envíos de alto volumen</p>
                 </div>
               </div>
-              <div class="hero-price-card__price">
+              <a href="#calculadora" id="hero-price-cta" class="hero-price-card__price hero-price-card__price--link" data-calc-volume="100000" data-track="click_hero_precio_volumen" aria-label="Ver bolsa de 100.000 SMS en la calculadora">
                 <span class="hero-price-card__price-label">Desde</span>
                 <div class="hero-price-card__price-row">
                   <span id="hero-from-price">$5</span>
                   <span class="hero-price-card__price-suffix">+ IVA / SMS</span>
                 </div>
                 <span id="hero-price-note">Plan Volumen · 100.000 SMS</span>
-              </div>
+              </a>
             </div>
-          </a>
+          </div>
           <div class="hero-cta-row pt-stack-sm">
             <a href="#precios" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_compra_bolsa">Compra Tu bolsa</a>
             <a href="#calculadora" class="hidden items-center justify-center rounded-full border border-primary/20 bg-surface font-body-md font-semibold text-primary transition hover:border-primary hover:bg-surface-container-low md:inline-flex" data-track="click_arma_tu_bolsa">Arma tu bolsa</a>

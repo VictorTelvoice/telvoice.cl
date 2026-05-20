@@ -724,12 +724,6 @@
     });
   }
 
-  var navPhone = document.querySelector(".nav-phone-link");
-  if (navPhone && CFG.phone) {
-    if (CFG.phone.display) navPhone.textContent = CFG.phone.display;
-    if (CFG.phone.tel) navPhone.href = "tel:" + CFG.phone.tel.replace(/\s/g, "");
-  }
-
   function initHeroPricing() {
     var hero = CFG.hero || {};
     var bagsLabel = qs("hero-bags-label");
@@ -874,10 +868,10 @@
   }
   initCalculadora();
 
-  var heroPriceCard = qs("hero-price-card");
-  if (heroPriceCard) {
-    heroPriceCard.addEventListener("click", function (e) {
-      var targetVol = parseInt(heroPriceCard.getAttribute("data-calc-volume") || "100000", 10);
+  var heroPriceCta = qs("hero-price-cta");
+  if (heroPriceCta) {
+    heroPriceCta.addEventListener("click", function (e) {
+      var targetVol = parseInt(heroPriceCta.getAttribute("data-calc-volume") || "100000", 10);
       var calcSection = qs("calculadora");
       if (!calcSection) return;
       e.preventDefault();
