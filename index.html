@@ -1084,18 +1084,16 @@
       background-color: #ffffff;
     }
     .section-bg-muted {
-      background-color: #f4f6fb;
+      background-color: #f5f7fb;
     }
     .section-bg-plans {
-      background-color: #f8fafc;
+      background-color: #f5f7fb;
     }
     .section-bg-soft {
-      background: linear-gradient(180deg, #eef2ff 0%, #faf8ff 100%);
+      background-color: #f5f7fb;
     }
     .section-band {
-      background-color: #f2f3ff;
-      border-top: 1px solid rgba(0, 82, 204, 0.08);
-      border-bottom: 1px solid rgba(0, 82, 204, 0.08);
+      background: linear-gradient(180deg, #f3f5fa 0%, #fafbfd 100%);
     }
 
     .ui-card {
@@ -1484,7 +1482,7 @@
     }
 
     .section-calc {
-      background: linear-gradient(152deg, #002d6e 0%, #0052cc 42%, #0a3a7a 100%);
+      background: linear-gradient(180deg, #ffffff 0%, #eef2f8 55%, #f5f7fb 100%);
       padding-top: 5rem;
       padding-bottom: 5rem;
       margin-top: 0;
@@ -1496,19 +1494,20 @@
       }
     }
     .section-calc .section-eyebrow {
-      color: #9cf0ff;
+      color: #0052cc;
     }
     .section-calc .calc-hero-title {
-      color: #ffffff;
+      color: #1a1c20;
     }
     .section-calc .calc-hero-intro {
-      color: rgba(255, 255, 255, 0.9);
+      color: #43474e;
     }
     .calc-panel {
       margin-top: 2.5rem;
       border-radius: 1.25rem;
+      border: 1px solid rgba(0, 82, 204, 0.1);
       background: #ffffff;
-      box-shadow: 0 28px 64px -20px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 16px 48px -20px rgba(0, 82, 204, 0.18);
       padding: 1.75rem 1.5rem;
     }
     @media (min-width: 640px) {
@@ -1542,51 +1541,54 @@
       color: #0052cc;
       white-space: nowrap;
     }
-    .calc-slider-suggestions {
-      position: relative;
-      height: 2.75rem;
-      margin-top: 0.75rem;
+    .calc-tier-chips {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
     }
-    .calc-slider-suggestion {
-      position: absolute;
-      top: 0;
-      transform: translateX(-50%);
+    .calc-tier-chip {
       display: inline-flex;
-      flex-direction: column;
       align-items: center;
-      gap: 0.2rem;
-      padding: 0;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      font: inherit;
-      color: #5c6478;
-    }
-    .calc-slider-suggestion::before {
-      content: "";
-      width: 2px;
-      height: 0.5rem;
-      border-radius: 1px;
-      background: rgba(0, 82, 204, 0.35);
-    }
-    .calc-slider-suggestion:hover,
-    .calc-slider-suggestion.is-active {
-      color: #0052cc;
-    }
-    .calc-slider-suggestion:hover::before,
-    .calc-slider-suggestion.is-active::before {
-      background: #0052cc;
-      height: 0.625rem;
-    }
-    .calc-slider-suggestion-label {
-      font-size: 0.6875rem;
+      justify-content: center;
+      min-height: 2rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(0, 82, 204, 0.18);
+      background: #f4f7fc;
+      font-size: 0.75rem;
       font-weight: 600;
-      white-space: nowrap;
+      line-height: 1.2;
+      color: #43474e;
+      cursor: pointer;
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
     }
     @media (min-width: 640px) {
-      .calc-slider-suggestion-label {
-        font-size: 0.75rem;
+      .calc-tier-chip {
+        font-size: 0.8125rem;
+        padding: 0.4rem 1rem;
       }
+    }
+    .calc-tier-chip:hover {
+      border-color: rgba(0, 82, 204, 0.35);
+      color: #0052cc;
+      background: #eef3ff;
+    }
+    .calc-tier-chip.is-active {
+      border-color: #0052cc;
+      background: #0052cc;
+      color: #ffffff;
+      box-shadow: 0 4px 14px -4px rgba(0, 82, 204, 0.45);
+    }
+    .calc-tier-chip-sub {
+      margin-left: 0.35rem;
+      font-size: 0.625rem;
+      font-weight: 600;
+      opacity: 0.85;
+    }
+    .calc-tier-chip:not(.is-active) .calc-tier-chip-sub {
+      color: #5c6478;
     }
     .calc-slider-labels {
       display: flex;
@@ -2190,7 +2192,7 @@
     </section>
 
     <!-- Por qué el canal SMS -->
-    <section id="canal-sms" class="section-band py-14 md:py-20" aria-labelledby="canal-sms-titulo">
+    <section id="canal-sms" class="section-band section-bg-muted py-14 md:py-20" aria-labelledby="canal-sms-titulo">
       <div class="section-inner mx-auto max-w-3xl text-center">
         <div class="mx-auto mb-5 h-[3px] w-14 rounded-full bg-gradient-to-r from-[#5b21b6] via-primary to-secondary opacity-90" aria-hidden="true"></div>
         <p id="canal-sms-titulo" class="font-label-caps text-label-caps uppercase tracking-[0.14em] text-primary">El canal SMS hoy</p>
@@ -2201,7 +2203,7 @@
     </section>
 
     <!-- Casos de Uso -->
-    <section id="casos-uso" class="section-block section-bg-soft" aria-labelledby="casos-titulo" tabindex="-1">
+    <section id="casos-uso" class="section-block section-bg-white" aria-labelledby="casos-titulo" tabindex="-1">
       <div class="section-inner">
       <header class="section-header casos-header mx-auto max-w-4xl">
         <span class="section-eyebrow">Casos de uso</span>
@@ -2387,7 +2389,7 @@
     </section>
 
     <!-- Pricing -->
-    <section class="section-block-lg section-bg-plans pb-20 md:pb-32" id="precios" tabindex="-1">
+    <section class="section-block-lg section-bg-muted pb-20 md:pb-32" id="precios" tabindex="-1">
       <div class="section-inner">
       <header class="section-header mx-auto max-w-3xl">
         <span class="section-eyebrow">Precios</span>
@@ -2457,7 +2459,7 @@
             </div>
             <label for="calcSlider" class="sr-only">Cantidad de SMS</label>
             <input id="calcSlider" class="calc-range-input w-full" type="range" min="0" max="111" step="1" value="0" aria-valuemin="200" aria-valuemax="120000" aria-valuenow="200" />
-            <div id="calcSliderSuggestions" class="calc-slider-suggestions" role="group" aria-label="Cantidades sugeridas por tramo de precio"></div>
+            <div id="calcSliderSuggestions" class="calc-tier-chips" role="group" aria-label="Cantidades sugeridas por tramo de precio"></div>
             <div class="calc-slider-labels">
               <span>200</span>
               <span>120.000</span>
@@ -2498,7 +2500,7 @@
     </section>
 
     <!-- Compromiso comercial -->
-    <section id="igualacion-tarifa" class="section-band py-14 md:py-20" aria-labelledby="promesa-tarifas-titulo">
+    <section id="igualacion-tarifa" class="section-band section-bg-white py-14 md:py-20" aria-labelledby="promesa-tarifas-titulo">
       <div class="section-inner mx-auto max-w-3xl text-center">
         <div class="mx-auto mb-5 h-[3px] w-14 rounded-full bg-gradient-to-r from-[#5b21b6] via-primary to-secondary opacity-90" aria-hidden="true"></div>
         <p id="promesa-tarifas-titulo" class="font-label-caps text-label-caps uppercase tracking-[0.14em] text-primary">Compromiso comercial</p>
@@ -2526,7 +2528,7 @@
     </section>
 
     <!-- Cumplimiento -->
-    <section id="compliance" class="section-block section-bg-white" aria-labelledby="compliance-titulo" tabindex="-1">
+    <section id="compliance" class="section-block section-bg-muted" aria-labelledby="compliance-titulo" tabindex="-1">
       <div class="section-inner">
       <header class="section-header mx-auto max-w-3xl">
         <span class="section-eyebrow">Buenas prácticas</span>

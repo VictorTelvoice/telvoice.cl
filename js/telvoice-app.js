@@ -282,10 +282,14 @@
     var out = [];
     CALC_TIERS.forEach(function (tier, i) {
       if (i === 0 || tier.pxSMS !== CALC_TIERS[i - 1].pxSMS) {
-        out.push(tier.min);
+        out.push({ vol: tier.min, pxSMS: tier.pxSMS });
       }
     });
     return out;
+  }
+
+  function formatCalcChipVolume(vol) {
+    return vol < 1000 ? String(vol) : fmt(vol);
   }
 
   function formatBagPrice(net) {
@@ -764,7 +768,7 @@
       if (calcTotal) calcTotal.textContent = formatCalcTotalWithIva(net);
 
       if (suggestionsEl) {
-        suggestionsEl.querySelectorAll(".calc-slider-suggestion").forEach(function (btn) {
+        suggestionsEl.querySelectorAll(".calc-tier-chip").forEach(function (btn) {
           var match = +btn.getAttribute("data-volume") === vol;
           btn.classList.toggle("is-active", match);
           btn.setAttribute("aria-pressed", match ? "true" : "false");
@@ -808,20 +812,23 @@
     }
 
     if (suggestionsEl) {
-      tierSuggestions.forEach(function (vol) {
+      tierSuggestions.forEach(function (item) {
+        var vol = item.vol;
         var idx = volumeToSliderIndex(vol);
-        var pct = sliderMax > 0 ? (idx / sliderMax) * 100 : 0;
         var btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "calc-slider-suggestion";
-        btn.style.left = pct + "%";
+        btn.className = "calc-tier-chip";
         btn.setAttribute("data-volume", String(vol));
         btn.setAttribute("aria-pressed", "false");
-        btn.setAttribute("aria-label", fmt(vol) + " SMS");
-        var label = document.createElement("span");
-        label.className = "calc-slider-suggestion-label";
-        label.textContent = vol >= 1000 ? fmt(vol) : String(vol);
-        btn.appendChild(label);
+        btn.setAttribute(
+          "aria-label",
+          fmt(vol) + " SMS · $" + item.pxSMS + " + IVA por SMS"
+        );
+        btn.appendChild(document.createTextNode(formatCalcChipVolume(vol) + " SMS"));
+        var sub = document.createElement("span");
+        sub.className = "calc-tier-chip-sub";
+        sub.textContent = "$" + item.pxSMS;
+        btn.appendChild(sub);
         btn.addEventListener("click", function () {
           slider.value = String(idx);
           updateCalc();
