@@ -3,6 +3,7 @@
  * Pago online vía Mercado Pago Checkout Pro (API /api/mercadopago/*).
  */
 window.TELVOICE_CONFIG = {
+  apiOrigin: "https://www.telvoice.cl",
   salesEmail: "ventas@telvoice.net",
   whatsapp: {
     number: "56912345678",

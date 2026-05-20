@@ -17,15 +17,25 @@
 
   function trackEvent(name, detail) {
     if (!name) return;
-    if (typeof window.gtag === "function") {
-      window.gtag("event", name, detail || {});
+    try {
+      if (typeof window.gtag === "function") {
+        window.gtag("event", name, detail || {});
+      }
+      if (typeof window.dataLayer !== "undefined" && typeof window.dataLayer.push === "function") {
+        window.dataLayer.push(Object.assign({ event: name }, detail || {}));
+      }
+    } catch (trackErr) {
+      console.warn("[track]", trackErr);
     }
-    if (typeof window.dataLayer !== "undefined") {
-      window.dataLayer.push(Object.assign({ event: name }, detail || {}));
+  }
+
+  function apiUrl(path) {
+    var cfg = window.TELVOICE_CONFIG || {};
+    var base = (cfg.apiOrigin || "").replace(/\/$/, "");
+    if (!base && window.location.hostname === "telvoice.cl") {
+      base = "https://www.telvoice.cl";
     }
-    if (typeof window.TelvoiceTrack === "function") {
-      window.TelvoiceTrack(name, detail);
-    }
+    return base ? base + path : path;
   }
 
   window.TelvoiceTrack = trackEvent;
@@ -446,14 +456,20 @@
     setCompraError("");
     compraSubmitting = true;
     setCompraLoading(true);
-    trackEvent("click_comprar_online", { planId: planId, source: compraState.source });
 
-    fetch("/api/mercadopago/create-preference", {
+    var checkoutEndpoint = apiUrl("/api/mercadopago/create-preference");
+    var abortController = typeof AbortController !== "undefined" ? new AbortController() : null;
+    var timeoutId = window.setTimeout(function () {
+      if (abortController) abortController.abort();
+    }, 45000);
+
+    var fetchOpts = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
+      signal: abortController ? abortController.signal : undefined,
       body: JSON.stringify({
         plan_id: planId,
         customer: {
@@ -464,7 +480,12 @@
           business_name: razonSocial || null,
         },
       }),
-    })
+    };
+    if (checkoutEndpoint.indexOf("http") !== 0) {
+      fetchOpts.credentials = "same-origin";
+    }
+
+    fetch(checkoutEndpoint, fetchOpts)
       .then(function (res) {
         return parseApiJson(res).then(function (data) {
           return { httpOk: res.ok, status: res.status, data: data };
@@ -481,6 +502,7 @@
           throw new Error("No se recibió URL de Mercado Pago");
         }
 
+        trackEvent("click_comprar_online", { planId: planId, source: compraState.source });
         window.location.href = checkoutUrl;
       })
       .catch(function (err) {
@@ -488,10 +510,16 @@
         setCompraLoading(false);
         console.error("[checkout] create-preference failed", err.message || err);
         var msg = err.message || COMPRA_PAY_ERROR;
-        if (/^Vercel Blob:|^MERCADOPAGO_|token no configurado/i.test(msg)) {
+        if (err.name === "AbortError") {
+          msg = COMPRA_PAY_ERROR;
+        }
+        if (/^Vercel Blob:|^MERCADOPAGO_|token no configurado|failed to fetch|network/i.test(msg)) {
           msg = COMPRA_PAY_ERROR;
         }
         setCompraError(msg);
+      })
+      .finally(function () {
+        window.clearTimeout(timeoutId);
       });
   }
 

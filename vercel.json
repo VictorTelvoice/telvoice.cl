@@ -1,4 +1,12 @@
 {
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "telvoice.cl" }],
+      "destination": "https://www.telvoice.cl/:path*",
+      "permanent": true
+    }
+  ],
   "functions": {
     "api/**/*.js": {
       "maxDuration": 30

@@ -11,7 +11,23 @@ import {
   checkoutRedirectUrl,
 } from "../../lib/mercadopago.js";
 
-function json(res, status, body) {
+const ALLOWED_ORIGINS = new Set([
+  "https://telvoice.cl",
+  "https://www.telvoice.cl",
+]);
+
+function applyCors(req, res) {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Vary", "Origin");
+  }
+}
+
+function json(req, res, status, body) {
+  applyCors(req, res);
   res.status(status).setHeader("Content-Type", "application/json");
   res.end(JSON.stringify(body));
 }
@@ -45,13 +61,12 @@ function logEnvDiagnostics(planId, plan) {
 
 export default async function handler(req, res) {
   if (req.method === "OPTIONS") {
-    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    applyCors(req, res);
     return res.status(204).end();
   }
 
   if (req.method !== "POST") {
-    return json(res, 405, { ok: false, error: "Método no permitido." });
+    return json(req, res, 405, { ok: false, error: "Método no permitido." });
   }
 
   let planId = null;
@@ -65,7 +80,7 @@ export default async function handler(req, res) {
 
     if (!plan) {
       console.warn("[create-preference] plan_id inválido", { plan_id: planId });
-      return json(res, 400, {
+      return json(req, res, 400, {
         ok: false,
         error: "Plan no válido. Solo están disponibles los planes publicados.",
       });
@@ -73,7 +88,7 @@ export default async function handler(req, res) {
 
     const customerCheck = validateCustomer(body.customer);
     if (!customerCheck.ok) {
-      return json(res, 400, { ok: false, error: customerCheck.errors.join(" ") });
+      return json(req, res, 400, { ok: false, error: customerCheck.errors.join(" ") });
     }
 
     const orderId = randomUUID();
@@ -111,7 +126,7 @@ export default async function handler(req, res) {
         has_init_point: Boolean(preference.init_point),
         has_sandbox_init_point: Boolean(preference.sandbox_init_point),
       });
-      return json(res, 500, {
+      return json(req, res, 500, {
         ok: false,
         error: "Mercado Pago no devolvió URL de pago. Intente más tarde.",
       });
@@ -123,7 +138,7 @@ export default async function handler(req, res) {
       checkout_host: checkoutUrl.split("/")[2] || "unknown",
     });
 
-    return json(res, 200, {
+    return json(req, res, 200, {
       ok: true,
       order_id: orderId,
       checkout_url: checkoutUrl,
@@ -142,7 +157,7 @@ export default async function handler(req, res) {
         ? "No pudimos iniciar el pago. Intenta nuevamente o contáctanos por WhatsApp."
         : err.message ||
           "No pudimos iniciar el pago. Intenta nuevamente o contáctanos por WhatsApp.";
-    return json(res, 500, {
+    return json(req, res, 500, {
       ok: false,
       error: clientMessage,
     });
