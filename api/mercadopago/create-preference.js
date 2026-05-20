@@ -10,6 +10,7 @@ import {
   createCheckoutPreference,
   checkoutRedirectUrl,
   credentialsLookLikeTest,
+  getAccountInfo,
   isSandbox,
 } from "../../lib/mercadopago.js";
 
@@ -80,6 +81,28 @@ export default async function handler(req, res) {
     const plan = getPlan(planId);
 
     logEnvDiagnostics(planId, plan);
+
+    if (isSandbox()) {
+      try {
+        const account = await getAccountInfo();
+        console.info("[create-preference] collector", {
+          id: account.id,
+          is_test_user: account.is_test_user,
+          tags: account.tags,
+        });
+        if (!account.is_test_user) {
+          return json(req, res, 503, {
+            ok: false,
+            error:
+              "El cobrador configurado en Mercado Pago es una cuenta real, no de prueba. Cree una cuenta VENDEDOR de prueba en Developers → Cuentas de prueba y actualice MERCADOPAGO_ACCESS_TOKEN en Vercel con las credenciales de esa integración.",
+            code: "MISMATCH_SELLER_PRODUCTION",
+            integration_check: "/api/mercadopago/integration-check",
+          });
+        }
+      } catch (accountErr) {
+        console.warn("[create-preference] no se pudo validar cuenta MP", accountErr.message);
+      }
+    }
 
     if (!plan) {
       console.warn("[create-preference] plan_id inválido", { plan_id: planId });
