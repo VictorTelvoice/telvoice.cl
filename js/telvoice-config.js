@@ -1,6 +1,6 @@
 /**
  * Configuración comercial Telvoice.cl — editar precios y contacto aquí.
- * No hay checkout integrado: CHECKOUT_URL debe quedar null hasta tener pasarela real.
+ * Pago online vía Mercado Pago Checkout Pro (API /api/mercadopago/*).
  */
 window.TELVOICE_CONFIG = {
   salesEmail: "ventas@telvoice.net",

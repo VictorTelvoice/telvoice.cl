@@ -1,0 +1,103 @@
+.payment-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.payment-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem 3rem;
+}
+.payment-card {
+  width: 100%;
+  max-width: 32rem;
+  text-align: center;
+  padding: 2rem 1.5rem;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(0, 82, 204, 0.12);
+  background: #fff;
+  box-shadow: 0 20px 48px -16px rgba(15, 23, 42, 0.12);
+}
+.payment-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 999px;
+  margin-bottom: 1rem;
+  font-size: 1.75rem;
+}
+.payment-icon--ok {
+  background: rgba(0, 82, 204, 0.1);
+  color: #0052cc;
+}
+.payment-icon--pending {
+  background: rgba(255, 193, 7, 0.15);
+  color: #b45309;
+}
+.payment-icon--fail {
+  background: rgba(186, 26, 26, 0.1);
+  color: #ba1a1a;
+}
+.payment-title {
+  font-family: Montserrat, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #131b2e;
+  line-height: 1.2;
+}
+.payment-text {
+  margin-top: 1rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #43474e;
+}
+.payment-sub {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #5c6478;
+}
+.payment-actions {
+  margin-top: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+.payment-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 12rem;
+  padding: 0.875rem 1.75rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+.payment-btn--primary {
+  background: #0052cc;
+  color: #fff;
+}
+.payment-btn--primary:hover {
+  background: #0c56d0;
+}
+.payment-btn--secondary {
+  border: 1px solid rgba(0, 82, 204, 0.25);
+  color: #0052cc;
+  background: #faf8ff;
+}
+.payment-btn--secondary:hover {
+  background: #f2f3ff;
+}
+.hero-grad-text {
+  background: linear-gradient(105deg, #5b21b6 0%, #4338ca 35%, #0052cc 70%, #006875 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

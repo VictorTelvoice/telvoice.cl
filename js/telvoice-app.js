@@ -241,46 +241,104 @@
     });
   }
 
-  var compraState = { bagId: null, sms: 0, priceNet: 0, label: "", source: "" };
+  var BAG_TO_PLAN = { "1k": "inicial", "15k": "empresa", "100k": "volumen" };
+  var ONLINE_PLAN_IDS = { inicial: true, empresa: true, volumen: true };
+
+  var compraState = {
+    planId: null,
+    planName: "",
+    sms: 0,
+    net: 0,
+    tax: 0,
+    total: 0,
+    source: "",
+  };
+
+  function planFromBag(bag) {
+    if (!bag) return null;
+    var planId = bag.id && BAG_TO_PLAN[bag.id];
+    if (!planId || !ONLINE_PLAN_IDS[planId]) return null;
+    var tax = Math.round(bag.priceNet * IVA_RATE);
+    return {
+      plan_id: planId,
+      name: bag.planName || bag.label,
+      sms: bag.sms,
+      net_amount: bag.priceNet,
+      tax_amount: tax,
+      total_amount: bag.priceNet + tax,
+    };
+  }
+
+  function renderCheckoutSummary(plan) {
+    var el = qs("checkout-summary");
+    if (!el || !plan) return;
+    el.innerHTML =
+      '<p class="checkout-summary__plan">' +
+      plan.name +
+      "</p>" +
+      '<p class="checkout-summary__sms">' +
+      fmt(plan.sms) +
+      " SMS</p>" +
+      '<div class="checkout-summary__rows">' +
+      '<div class="checkout-summary__row"><span>Neto</span><span>$' +
+      fmt(plan.net_amount) +
+      "</span></div>" +
+      '<div class="checkout-summary__row"><span>IVA 19%</span><span>$' +
+      fmt(plan.tax_amount) +
+      "</span></div>" +
+      '<div class="checkout-summary__row checkout-summary__total"><span>Total a pagar</span><span>$' +
+      fmt(plan.total_amount) +
+      " CLP</span></div>" +
+      "</div>";
+  }
+
+  function setCompraError(message) {
+    var err = qs("compra-error");
+    if (!err) return;
+    if (message) {
+      err.textContent = message;
+      err.hidden = false;
+    } else {
+      err.textContent = "";
+      err.hidden = true;
+    }
+  }
+
+  function setCompraLoading(loading) {
+    var btn = qs("compra-submit");
+    if (btn) {
+      btn.disabled = !!loading;
+      btn.textContent = loading ? "Redirigiendo a Mercado Pago…" : "Pagar con Mercado Pago";
+    }
+  }
 
   function openCompraModal(payload) {
     var modal = qs("compra-modal");
-    if (!modal) return;
+    if (!modal || !payload || !payload.planId) return;
 
-    if (CFG.checkoutUrl && payload && payload.bagId) {
-      trackEvent("click_comprar_bolsa", { bagId: payload.bagId, checkout: true });
-      window.location.href = CFG.checkoutUrl + (CFG.checkoutUrl.indexOf("?") >= 0 ? "&" : "?") + "bag=" + encodeURIComponent(payload.bagId);
-      return;
-    }
+    compraState = {
+      planId: payload.planId,
+      planName: payload.planName || "",
+      sms: payload.sms || 0,
+      net: payload.net_amount || 0,
+      tax: payload.tax_amount || 0,
+      total: payload.total_amount || 0,
+      source: payload.source || "web",
+    };
 
-    compraState = Object.assign(
-      { bagId: null, sms: 0, priceNet: 0, label: "", source: payload && payload.source ? payload.source : "web" },
-      payload || {}
-    );
+    renderCheckoutSummary({
+      name: compraState.planName,
+      sms: compraState.sms,
+      net_amount: compraState.net,
+      tax_amount: compraState.tax,
+      total_amount: compraState.total,
+    });
 
-    var iva = Math.round(compraState.priceNet * IVA_RATE);
-    var total = compraState.priceNet + iva;
+    var planInput = qs("compra-plan-id");
+    if (planInput) planInput.value = compraState.planId;
 
-    var title = qs("compra-modal-title");
-    var summary = qs("compra-resumen");
-    if (title) title.textContent = "Activar bolsa SMS";
-    if (summary) {
-      summary.innerHTML =
-        "<strong>" +
-        (compraState.label || "Bolsa SMS") +
-        "</strong><br>" +
-        fmt(compraState.sms) +
-        " SMS · Neto $" +
-        fmt(compraState.priceNet) +
-        " · IVA $" +
-        fmt(iva) +
-        " · Total $" +
-        fmt(total) +
-        " CLP";
-    }
-
-    qs("compra-bag-id").value = compraState.bagId || "";
-    qs("compra-bag-label").value = compraState.label || "";
+    setCompraError("");
+    setCompraLoading(false);
 
     modal.hidden = false;
     document.body.classList.add("modal-open");
@@ -315,62 +373,105 @@
         if (honeypot && honeypot.value) return;
 
         var nombre = (qs("compra-nombre").value || "").trim();
-        var empresa = (qs("compra-empresa").value || "").trim();
+        var razonSocial = (qs("compra-razon-social").value || "").trim();
         var rut = (qs("compra-rut").value || "").trim();
         var email = (qs("compra-email").value || "").trim();
         var whatsapp = (qs("compra-whatsapp").value || "").trim();
-        var bagLabel = qs("compra-bag-label").value || compraState.label;
+        var planId = (qs("compra-plan-id").value || compraState.planId || "").trim();
 
-        if (nombre.length < 2 || empresa.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || whatsapp.length < 8) {
-          alert("Complete nombre, empresa, email y WhatsApp válidos.");
+        if (nombre.length < 2) {
+          setCompraError("Ingrese su nombre o empresa.");
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          setCompraError("Ingrese un email válido.");
+          return;
+        }
+        if (whatsapp.length < 8) {
+          setCompraError("Ingrese un WhatsApp de contacto.");
+          return;
+        }
+        if (rut.length < 8) {
+          setCompraError("Ingrese un RUT válido.");
+          return;
+        }
+        if (!planId || !ONLINE_PLAN_IDS[planId]) {
+          setCompraError("Plan no disponible para pago online.");
           return;
         }
 
-        var iva = Math.round(compraState.priceNet * IVA_RATE);
-        var lines = [
-          "Solicitud de activación de bolsa SMS (Telvoice.cl)",
-          "Bolsa: " + bagLabel,
-          "SMS: " + fmt(compraState.sms),
-          "Neto: $" + fmt(compraState.priceNet),
-          "IVA: $" + fmt(iva),
-          "Total: $" + fmt(compraState.priceNet + iva),
-          "",
-          "Nombre: " + nombre,
-          "Empresa: " + empresa,
-          "RUT: " + (rut || "—"),
-          "Email: " + email,
-          "WhatsApp: " + whatsapp,
-        ];
-        var subject = encodeURIComponent("[Telvoice] Activar bolsa — " + empresa);
-        var body = encodeURIComponent(lines.join("\n"));
-        window.location.href = "mailto:" + SALES_EMAIL + "?subject=" + subject + "&body=" + body;
-        closeCompraModal();
+        setCompraError("");
+        setCompraLoading(true);
+        trackEvent("click_comprar_online", { planId: planId, source: compraState.source });
+
+        fetch("/api/mercadopago/create-preference", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            plan_id: planId,
+            customer: {
+              name: nombre,
+              email: email,
+              phone: whatsapp,
+              rut: rut,
+              business_name: razonSocial || null,
+            },
+          }),
+        })
+          .then(function (res) {
+            return res.json().then(function (data) {
+              return { ok: res.ok, data: data };
+            });
+          })
+          .then(function (result) {
+            if (!result.ok || !result.data.init_point) {
+              throw new Error(
+                (result.data && result.data.error) ||
+                  "No pudimos iniciar el pago. Intente nuevamente."
+              );
+            }
+            window.location.href = result.data.init_point;
+          })
+          .catch(function (err) {
+            setCompraLoading(false);
+            setCompraError(err.message || "Error al conectar con el servidor de pagos.");
+          });
       });
     }
   }
 
   function openCompraFromCard(btn) {
-    var card = btn.closest("[data-bag-id], [data-pack]");
+    var card = btn.closest("[data-plan-id], [data-bag-id], [data-pack]");
     if (!card) return;
-    var bagId = card.getAttribute("data-bag-id");
-    var bag = bagId ? bagById(bagId) : null;
-    if (bag) {
-      openCompraModal({
-        bagId: bag.id,
-        sms: bag.sms,
-        priceNet: bag.priceNet,
-        label: bag.label,
-        source: "pack-card",
+
+    var planId = card.getAttribute("data-plan-id");
+    if (!planId) {
+      var bagId = card.getAttribute("data-bag-id");
+      if (bagId && BAG_TO_PLAN[bagId]) planId = BAG_TO_PLAN[bagId];
+    }
+
+    var bag = card.getAttribute("data-bag-id") ? bagById(card.getAttribute("data-bag-id")) : null;
+    var plan = bag ? planFromBag(bag) : null;
+
+    if (!plan && planId && ONLINE_PLAN_IDS[planId]) {
+      var matchBag = BAGS.find(function (b) {
+        return BAG_TO_PLAN[b.id] === planId;
       });
+      plan = matchBag ? planFromBag(matchBag) : null;
+    }
+
+    if (!plan) {
+      alert("Este plan no está disponible para pago online. Use Cotizar alto volumen o contáctenos.");
       return;
     }
-    var sms = parseInt(card.getAttribute("data-sms") || "0", 10);
-    var priceStr = (card.getAttribute("data-price") || "").replace(/[^\d]/g, "");
+
     openCompraModal({
-      bagId: bagId || "custom",
-      sms: sms,
-      priceNet: parseInt(priceStr, 10) || 0,
-      label: card.getAttribute("data-pack") || "Bolsa SMS",
+      planId: plan.plan_id,
+      planName: plan.name,
+      sms: plan.sms,
+      net_amount: plan.net_amount,
+      tax_amount: plan.tax_amount,
+      total_amount: plan.total_amount,
       source: "pack-card",
     });
   }
