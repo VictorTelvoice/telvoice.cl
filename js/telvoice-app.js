@@ -71,7 +71,7 @@
 
   function bindVentasWhatsappButtons() {
     var waMsg = (CFG.whatsapp && CFG.whatsapp.message) || "Hola, quiero cotizar una bolsa de SMS para Chile.";
-    ["nav-demo", "nav-demo-hero", "nav-demo-mobile", "comercial-cotizar-cta"].forEach(function (sel) {
+    ["nav-demo", "nav-demo-mobile", "comercial-cotizar-cta"].forEach(function (sel) {
       var nodes = sel.indexOf(".") === 0 ? document.querySelectorAll(sel) : [qs(sel)];
       nodes.forEach(function (btn) {
         if (!btn) return;
