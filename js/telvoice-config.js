@@ -8,8 +8,12 @@ window.TELVOICE_CONFIG = {
   mercadoPagoSandbox: false,
   salesEmail: "ventas@telvoice.net",
   whatsapp: {
-    number: "56912345678",
+    number: "56997980116",
     message: "Hola, quiero cotizar una bolsa de SMS para Chile.",
+  },
+  phone: {
+    display: "+56 9 9979 8016",
+    tel: "+56997980116",
   },
   checkoutUrl: null,
   ivaRate: 0.19,

@@ -71,7 +71,7 @@
 
   function bindVentasWhatsappButtons() {
     var waMsg = (CFG.whatsapp && CFG.whatsapp.message) || "Hola, quiero cotizar una bolsa de SMS para Chile.";
-    ["nav-demo", "nav-demo-mobile", "final-cta", "comercial-cotizar-cta"].forEach(function (sel) {
+    ["nav-demo", "nav-demo-mobile", "comercial-cotizar-cta"].forEach(function (sel) {
       var nodes = sel.indexOf(".") === 0 ? document.querySelectorAll(sel) : [qs(sel)];
       nodes.forEach(function (btn) {
         if (!btn) return;
@@ -235,9 +235,11 @@
 
   function volumeToSliderIndex(vol) {
     var v = snapCalcVolume(vol);
+    var idx = CALC_VOLUMES.indexOf(v);
+    if (idx >= 0) return idx;
     if (v === 200) return 0;
     if (v <= 90000) return v / 1000;
-    return 90 + (v / 1000 - 100);
+    return 91 + (v / 1000 - 100);
   }
 
   function sliderIndexToVolume(idx) {
@@ -709,6 +711,25 @@
   bindDemoButtons();
   bindVentasWhatsappButtons();
 
+  var calcQuoteLink = qs("calc-quote-link");
+  if (calcQuoteLink) {
+    calcQuoteLink.addEventListener("click", function (e) {
+      e.preventDefault();
+      scrollToContact({
+        interes: "alto-volumen",
+        volumen: "mas-100000",
+        mensaje: "Cotización para más de 120.000 SMS (desde calculadora).",
+      });
+      trackEvent("click_cotiza_alto_volumen");
+    });
+  }
+
+  var navPhone = document.querySelector(".nav-phone-link");
+  if (navPhone && CFG.phone) {
+    if (CFG.phone.display) navPhone.textContent = CFG.phone.display;
+    if (CFG.phone.tel) navPhone.href = "tel:" + CFG.phone.tel.replace(/\s/g, "");
+  }
+
   function initHeroPricing() {
     var hero = CFG.hero || {};
     var bagsLabel = qs("hero-bags-label");
@@ -721,6 +742,8 @@
     if (noteEl && hero.fromPriceNote) noteEl.textContent = hero.fromPriceNote;
   }
   initHeroPricing();
+
+  var setCalcVolume = null;
 
   function initCalculadora() {
     var slider = qs("calcSlider");
@@ -811,6 +834,12 @@
       });
     }
 
+    setCalcVolume = function (vol) {
+      var idx = volumeToSliderIndex(vol);
+      slider.value = String(idx);
+      updateCalc();
+    };
+
     if (suggestionsEl) {
       tierSuggestions.forEach(function (item) {
         var vol = item.vol;
@@ -830,8 +859,11 @@
         sub.textContent = "$" + item.pxSMS;
         btn.appendChild(sub);
         btn.addEventListener("click", function () {
-          slider.value = String(idx);
-          updateCalc();
+          if (setCalcVolume) setCalcVolume(vol);
+          else {
+            slider.value = String(idx);
+            updateCalc();
+          }
         });
         suggestionsEl.appendChild(btn);
       });
@@ -841,6 +873,23 @@
     updateCalc();
   }
   initCalculadora();
+
+  var heroPriceCard = qs("hero-price-card");
+  if (heroPriceCard) {
+    heroPriceCard.addEventListener("click", function (e) {
+      var targetVol = parseInt(heroPriceCard.getAttribute("data-calc-volume") || "100000", 10);
+      var calcSection = qs("calculadora");
+      if (!calcSection) return;
+      e.preventDefault();
+      calcSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (setCalcVolume) {
+        setTimeout(function () {
+          setCalcVolume(targetVol);
+        }, 350);
+      }
+      trackEvent("click_hero_precio_volumen", { volume: targetVol });
+    });
+  }
 
   function showFormAlert(type, text) {
     var box = qs("form-alert");
