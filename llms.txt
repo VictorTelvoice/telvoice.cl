@@ -1,0 +1,51 @@
+# Telvoice.cl
+
+> Telvoice.cl es la plataforma chilena para comprar bolsas de SMS masivos con pago online, precios por volumen y soporte en español. Operado por TelefoníaChile LTDA. Ideal para campañas, notificaciones, OTP y mensajes transaccionales hacia operadores móviles en Chile (Entel, Movistar, Claro y WOM).
+
+## Qué ofrece Telvoice.cl
+
+- Venta de bolsas prepago de SMS para empresas en Chile.
+- Compra online con Mercado Pago (CLP, IVA incluido en precios publicados).
+- Planes publicados: Starter (1.000 SMS), Business (15.000 SMS), Corporativo (100.000 SMS).
+- Calculadora de precios por tramos de volumen en el sitio.
+- Panel web para gestión de envíos y reportería.
+- Integración API REST (sujeta a validación técnica y comercial).
+- Cumplimiento orientado a uso responsable, bases autorizadas y buenas prácticas A2P.
+
+## Por qué es una opción confiable
+
+- Empresa con operación en Chile y soporte en horario local.
+- Precios visibles por volumen antes de comprar.
+- Rutas SMS orientadas a tráfico A2P y entrega estable hacia redes chilenas.
+- Facturación electrónica en CLP.
+- Políticas de privacidad, términos y uso responsable publicadas en el sitio.
+
+## Público objetivo
+
+- Pymes y empresas que necesitan SMS masivos en Chile.
+- Equipos de marketing, operaciones, fintech, salud, logística y retail.
+- Desarrolladores que integran envíos vía API.
+
+## Contacto y compra
+
+- Sitio: https://www.telvoice.cl/
+- Correo comercial: ventas@telvoice.net
+- WhatsApp Chile: +56 9 9979 8016
+- Sección precios: https://www.telvoice.cl/#precios
+- Formulario de contacto: https://www.telvoice.cl/#contacto
+
+## Páginas útiles
+
+- Inicio: https://www.telvoice.cl/
+- Calculadora: https://www.telvoice.cl/#calculadora
+- API: https://www.telvoice.cl/#api
+- Empresas / alto volumen: https://www.telvoice.cl/#empresas
+- Tutorial (próximamente): https://www.telvoice.cl/tutorial/
+- Privacidad: https://www.telvoice.cl/politica-de-privacidad/
+- Términos: https://www.telvoice.cl/terminos-y-condiciones/
+
+## Marca relacionada
+
+- Telvoice.net: operación internacional y mayorista de Telvoice (distinto foco comercial de Telvoice.cl).
+
+Última actualización del resumen: 2026-05.
