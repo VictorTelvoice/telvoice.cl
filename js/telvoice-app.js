@@ -304,20 +304,54 @@
     }
   }
 
+  var compraSubmitting = false;
+  var COMPRA_PAY_ERROR =
+    "No pudimos iniciar el pago. Intenta nuevamente o contáctanos por WhatsApp.";
+
   function setCompraLoading(loading) {
     var btn = qs("compra-submit");
     if (btn) {
       btn.disabled = !!loading;
+      btn.setAttribute("aria-busy", loading ? "true" : "false");
       btn.textContent = loading ? "Redirigiendo a Mercado Pago…" : "Pagar con Mercado Pago";
     }
   }
 
+  function resolveCheckoutUrl(data) {
+    if (!data) return null;
+    return (
+      data.checkout_url ||
+      data.sandbox_init_point ||
+      data.init_point ||
+      data.url ||
+      null
+    );
+  }
+
+  function parseApiJson(res) {
+    var ct = res.headers.get("content-type") || "";
+    if (ct.indexOf("application/json") >= 0) {
+      return res.json();
+    }
+    return res.text().then(function (text) {
+      if (res.status === 404) {
+        throw new Error(
+          "No se encontró el servicio de pago. Confirme que el sitio está desplegado en Vercel con las funciones API."
+        );
+      }
+      throw new Error("Respuesta inválida del servidor (HTTP " + res.status + ").");
+    });
+  }
+
   function openCompraModal(payload) {
     var modal = qs("compra-modal");
-    if (!modal || !payload || !payload.planId) return;
+    var resolvedPlanId = payload && (payload.planId || payload.plan_id);
+    if (!modal || !payload || !resolvedPlanId) return;
+
+    compraSubmitting = false;
 
     compraState = {
-      planId: payload.planId,
+      planId: resolvedPlanId,
       planName: payload.planName || "",
       sms: payload.sms || 0,
       net: payload.net_amount || 0,
@@ -365,78 +399,110 @@
       if (e.key === "Escape" && !modal.hidden) closeCompraModal();
     });
 
+    function handleCompraPay(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      if (compraSubmitting) return false;
+
+      var honeypot = qs("compra-website");
+      if (honeypot && honeypot.value) return false;
+
+      var nombreEl = qs("compra-nombre");
+      var razonEl = qs("compra-razon-social");
+      var rutEl = qs("compra-rut");
+      var emailEl = qs("compra-email");
+      var whatsappEl = qs("compra-whatsapp");
+      var planInput = qs("compra-plan-id");
+
+      var nombre = (nombreEl && nombreEl.value ? nombreEl.value : "").trim();
+      var razonSocial = (razonEl && razonEl.value ? razonEl.value : "").trim();
+      var rut = (rutEl && rutEl.value ? rutEl.value : "").trim();
+      var email = (emailEl && emailEl.value ? emailEl.value : "").trim();
+      var whatsapp = (whatsappEl && whatsappEl.value ? whatsappEl.value : "").trim();
+      var planId = (
+        (planInput && planInput.value ? planInput.value : "") ||
+        compraState.planId ||
+        ""
+      ).trim();
+
+      if (nombre.length < 2) {
+        setCompraError("Ingrese su nombre o empresa.");
+        return false;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setCompraError("Ingrese un email válido.");
+        return false;
+      }
+      if (whatsapp.length < 8) {
+        setCompraError("Ingrese un WhatsApp de contacto.");
+        return false;
+      }
+      if (rut.length < 8) {
+        setCompraError("Ingrese un RUT válido.");
+        return false;
+      }
+      if (!planId || !ONLINE_PLAN_IDS[planId]) {
+        setCompraError("Plan no disponible para pago online.");
+        return false;
+      }
+
+      setCompraError("");
+      compraSubmitting = true;
+      setCompraLoading(true);
+      trackEvent("click_comprar_online", { planId: planId, source: compraState.source });
+
+      var payload = {
+        plan_id: planId,
+        customer: {
+          name: nombre,
+          email: email,
+          phone: whatsapp,
+          rut: rut,
+          business_name: razonSocial || null,
+        },
+      };
+
+      fetch("/api/mercadopago/create-preference", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+        .then(function (res) {
+          return parseApiJson(res).then(function (data) {
+            return { httpOk: res.ok, status: res.status, data: data };
+          });
+        })
+        .then(function (result) {
+          var data = result.data || {};
+          var checkoutUrl = resolveCheckoutUrl(data);
+
+          if (!result.httpOk || data.ok === false) {
+            throw new Error(data.error || COMPRA_PAY_ERROR);
+          }
+          if (!checkoutUrl) {
+            throw new Error("No se recibió URL de Mercado Pago");
+          }
+
+          window.location.assign(checkoutUrl);
+          return null;
+        })
+        .catch(function (err) {
+          compraSubmitting = false;
+          setCompraLoading(false);
+          setCompraError(err.message || COMPRA_PAY_ERROR);
+        });
+
+      return false;
+    }
+
     var form = qs("compra-form");
     if (form) {
-      form.addEventListener("submit", function (e) {
-        e.preventDefault();
-        var honeypot = qs("compra-website");
-        if (honeypot && honeypot.value) return;
-
-        var nombre = (qs("compra-nombre").value || "").trim();
-        var razonSocial = (qs("compra-razon-social").value || "").trim();
-        var rut = (qs("compra-rut").value || "").trim();
-        var email = (qs("compra-email").value || "").trim();
-        var whatsapp = (qs("compra-whatsapp").value || "").trim();
-        var planId = (qs("compra-plan-id").value || compraState.planId || "").trim();
-
-        if (nombre.length < 2) {
-          setCompraError("Ingrese su nombre o empresa.");
-          return;
-        }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-          setCompraError("Ingrese un email válido.");
-          return;
-        }
-        if (whatsapp.length < 8) {
-          setCompraError("Ingrese un WhatsApp de contacto.");
-          return;
-        }
-        if (rut.length < 8) {
-          setCompraError("Ingrese un RUT válido.");
-          return;
-        }
-        if (!planId || !ONLINE_PLAN_IDS[planId]) {
-          setCompraError("Plan no disponible para pago online.");
-          return;
-        }
-
-        setCompraError("");
-        setCompraLoading(true);
-        trackEvent("click_comprar_online", { planId: planId, source: compraState.source });
-
-        fetch("/api/mercadopago/create-preference", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            plan_id: planId,
-            customer: {
-              name: nombre,
-              email: email,
-              phone: whatsapp,
-              rut: rut,
-              business_name: razonSocial || null,
-            },
-          }),
-        })
-          .then(function (res) {
-            return res.json().then(function (data) {
-              return { ok: res.ok, data: data };
-            });
-          })
-          .then(function (result) {
-            if (!result.ok || !result.data.init_point) {
-              throw new Error(
-                (result.data && result.data.error) ||
-                  "No pudimos iniciar el pago. Intente nuevamente."
-              );
-            }
-            window.location.href = result.data.init_point;
-          })
-          .catch(function (err) {
-            setCompraLoading(false);
-            setCompraError(err.message || "Error al conectar con el servidor de pagos.");
-          });
-      });
+      form.addEventListener("submit", handleCompraPay);
     }
   }
 
