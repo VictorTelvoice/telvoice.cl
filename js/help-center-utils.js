@@ -125,6 +125,9 @@
       '<a href="' +
       r +
       '#calculadora" class="inline-flex items-center justify-center rounded-full bg-on-primary px-5 py-2.5 font-body-md text-body-md font-semibold text-primary shadow-sm transition hover:bg-primary-fixed hover:text-on-primary-fixed">Calcular precio</a>' +
+      '<a href="' +
+      esc(HC.portalUrl) +
+      '" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-full border-2 border-on-primary/50 bg-transparent px-5 py-2.5 font-body-md text-body-md font-semibold text-on-primary transition hover:border-on-primary hover:bg-on-primary/10">Ir al portal</a>' +
       "</div></div>" +
       '<div class="grid grid-cols-2 gap-10 sm:grid-cols-3 md:col-span-2 lg:col-span-8 lg:grid-cols-3">' +
       '<div><p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Telvoice.cl</p><ul class="mt-4 space-y-3">' +
@@ -171,6 +174,58 @@
       '<p class="font-body-sm text-body-sm text-on-primary/55">Mensajería empresarial · Chile</p>' +
       "</div></div></footer>"
     );
+  }
+
+  function faqCount() {
+    return (HC.faqSections || []).reduce(function (n, sec) {
+      return n + (sec.items ? sec.items.length : 0);
+    }, 0);
+  }
+
+  function renderFaqItem(item) {
+    return (
+      '<details class="faq-details group rounded-2xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm open:border-primary/25 open:shadow-md">' +
+      '<summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left font-body-lg text-body-lg font-semibold text-on-background transition hover:bg-surface-container-low/80 sm:px-6 sm:py-5">' +
+      "<span>" +
+      esc(item.question) +
+      '</span><span class="faq-chevron material-symbols-outlined shrink-0 text-on-surface-variant transition-transform duration-200" aria-hidden="true">add</span></summary>' +
+      '<div class="border-t border-outline-variant/40 px-5 pb-5 pt-0 sm:px-6 sm:pb-6">' +
+      '<div class="pt-4 font-body-md text-body-md leading-relaxed text-on-surface-variant">' +
+      item.answer +
+      "</div></div></details>"
+    );
+  }
+
+  function renderFaqSections() {
+    var r = root();
+    return (HC.faqSections || [])
+      .map(function (sec) {
+        var items = (sec.items || []).map(renderFaqItem).join("");
+        return (
+          '<section class="faq-section-group" aria-labelledby="faq-sec-' +
+          esc(sec.id) +
+          '">' +
+          '<h2 id="faq-sec-' +
+          esc(sec.id) +
+          '" class="font-h3 text-h3 text-on-background">' +
+          esc(sec.title) +
+          "</h2>" +
+          (sec.description
+            ? '<p class="mt-2 font-body-md text-body-md text-on-surface-variant leading-relaxed">' +
+              esc(sec.description) +
+              "</p>"
+            : "") +
+          '<div class="mt-4 space-y-3">' +
+          items +
+          "</div></section>"
+        );
+      })
+      .join("") +
+      '<p class="pt-4 text-center font-body-md text-body-md text-on-surface-variant">¿Quieres comprar una bolsa o cotizar? Visita <a href="' +
+      r +
+      '#precios" class="font-semibold text-primary hover:underline">Precios</a> o <a href="' +
+      r +
+      '#contacto" class="font-semibold text-primary hover:underline">Contacto</a>.</p>';
   }
 
   function renderCard(opts) {
@@ -248,6 +303,8 @@
     shellClass: HC_SHELL,
     gridClass: HC_GRID,
     gridTwoClass: HC_GRID_TWO,
+    faqCount: faqCount,
+    renderFaqSections: renderFaqSections,
     renderCard: renderCard,
     mountShell: mountShell,
     allArticles: allArticles,

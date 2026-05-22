@@ -46,36 +46,110 @@ window.HELP_CENTER = {
     "envio-masivo-de-sms",
     "descargar-reporte-de-envios",
   ],
-  faqItems: [
+  faqSections: [
     {
-      question: "¿Cómo compro una bolsa de SMS en Telvoice.cl?",
-      answer:
-        'En la <a href="../../#calculadora">calculadora</a> eliges el volumen, revisas el precio y completas el pago con Mercado Pago. Recibes confirmación y acceso al portal para usar tus SMS.',
+      id: "servicio",
+      title: "Servicio y bolsas SMS",
+      description: "Compra, precios, operadores y condiciones del servicio en Chile.",
+      items: [
+        {
+          question: "¿Qué es una bolsa de SMS?",
+          answer:
+            "Es una cantidad prepagada de mensajes que puedes comprar para enviar campañas, notificaciones o recordatorios a teléfonos en Chile.",
+        },
+        {
+          question: "¿Cómo funciona el envío de SMS masivos?",
+          answer:
+            "Puedes enviar SMS desde tu sistema vía nuestra API REST o desde el panel de administración web. Solo debes subir tu base de datos de teléfonos, redactar el mensaje y programar el envío. Los mensajes se procesan hacia la red chilena con rutas orientadas a una entrega estable.",
+        },
+        {
+          question: "¿Cómo compro una bolsa de SMS en Telvoice.cl?",
+          answer:
+            'En la <a href="../../#calculadora" class="font-semibold text-primary hover:underline">calculadora</a> eliges el volumen, revisas el precio y completas el pago con Mercado Pago. Recibes confirmación y acceso al portal para usar tus SMS.',
+        },
+        {
+          question: "¿En cuánto tiempo se integra la API?",
+          answer:
+            "La integración vía API dependerá del sistema del cliente, el tipo de uso y la validación técnica. Telvoice puede entregar orientación para facilitar el proceso, junto con documentación y ejemplos según el tipo de integración requerida.",
+        },
+        {
+          question: "¿Qué operadores móviles incluyen?",
+          answer:
+            "Cubrimos los cuatro operadores principales de Chile: Entel, Movistar, Claro y WOM, con rutas orientadas a maximizar la entrega hacia sus redes móviles.",
+        },
+        {
+          question: "¿Los SMS vencen?",
+          answer:
+            "Las condiciones de uso y vigencia se informan al momento de comprar cada bolsa. Para volúmenes altos podemos acordar condiciones especiales en tu cotización.",
+        },
+        {
+          question: "¿Tienen soporte técnico en Chile?",
+          answer:
+            "Sí. Telvoice.cl es operado por TelefoníaChile LTDA, empresa establecida en Chile. Nuestro equipo técnico y comercial está disponible en horario local y puedes comunicarte en español para cualquier consulta o incidencia.",
+        },
+        {
+          question: "¿Cómo se emite la factura?",
+          answer:
+            "Emitimos factura electrónica afecta al IVA por cada período facturado, en pesos chilenos (CLP). La factura se envía automáticamente al correo registrado y queda disponible en el portal del SII bajo el RUT de TelefoníaChile LTDA.",
+        },
+        {
+          question: "¿Puedo enviar SMS desde mi propio sistema?",
+          answer:
+            "Sí. Telvoice puede entregar integración vía API para empresas que necesitan automatizar envíos.",
+        },
+        {
+          question: "¿Sirve para campañas promocionales?",
+          answer:
+            "Sí, siempre que la empresa utilice bases autorizadas y respete las buenas prácticas de comunicación.",
+        },
+        {
+          question: "¿Puedo cotizar grandes volúmenes?",
+          answer:
+            'Sí. Para volúmenes sobre 100.000 SMS mensuales puedes solicitar una cotización especial desde la sección <a href="../../#empresas" class="font-semibold text-primary hover:underline">Empresas</a> o el <a href="../../#contacto" class="font-semibold text-primary hover:underline">formulario de contacto</a>.',
+        },
+        {
+          question: "¿Telvoice.cl es lo mismo que portal.telvoice.net?",
+          answer:
+            "<strong>Telvoice.cl</strong> está enfocado en el mercado chileno y en la compra de bolsas SMS. <strong>portal.telvoice.net</strong> es el portal cliente donde envías mensajes, revisas reportes y administras tu cuenta.",
+        },
+      ],
     },
     {
-      question: "¿Cuál es la diferencia entre envío rápido y envío masivo?",
-      answer:
-        'El <strong>envío rápido (Quick SMS)</strong> sirve para uno o pocos destinatarios desde el portal. El <strong>envío masivo</strong> carga un archivo Excel o CSV con cientos o miles de números. Ver tutoriales en la categoría <a href="../envio-de-sms/">Envío de SMS</a>.',
-    },
-    {
-      question: "¿Cómo reviso si mis SMS se entregaron?",
-      answer:
-        'En el portal, abre <strong>View Reports → DLR Report</strong>, filtra por fechas y descarga Excel. Guía paso a paso en <a href="../reportes-y-seguimiento/descargar-reporte-de-envios/">Descargar reporte de envíos</a>.',
-    },
-    {
-      question: "¿Necesito API o puedo usar solo el panel web?",
-      answer:
-        'Puedes operar solo con el <a href="../../#soluciones">panel web</a> del portal. La <a href="../../#api">API REST</a> es opcional para integrar con CRM, ERP o aplicaciones propias.',
-    },
-    {
-      question: "¿Telvoice.cl es lo mismo que Telvoice.net?",
-      answer:
-        "<strong>Telvoice.cl</strong> está enfocado en Chile y compra de bolsas SMS. <strong>Telvoice.net</strong> es el portal cliente y la operación internacional del servicio.",
-    },
-    {
-      question: "¿Qué formato deben tener los números móviles?",
-      answer:
-        "Usa formato internacional: Chile <strong>569XXXXXXXX</strong> (código 56 + 9 dígitos). Revisa una muestra del archivo antes de envíos masivos.",
+      id: "portal",
+      title: "Portal cliente y envíos",
+      description: "Acceso, envíos, reportes DLR y uso del panel web.",
+      items: [
+        {
+          question: "¿Cómo ingreso al portal cliente?",
+          answer:
+            'Abre <a href="https://portal.telvoice.net/" class="font-semibold text-primary hover:underline" target="_blank" rel="noopener noreferrer">portal.telvoice.net</a> con el usuario y contraseña que te entregó Telvoice. Guía: <a href="../primeros-pasos/acceso-al-portal-cliente/" class="font-semibold text-primary hover:underline">Acceso al portal cliente</a>.',
+        },
+        {
+          question: "¿Cuál es la diferencia entre envío rápido y envío masivo?",
+          answer:
+            'El <strong>envío rápido (Quick SMS)</strong> sirve para uno o pocos destinatarios desde el portal. El <strong>envío masivo</strong> carga un archivo Excel o CSV con cientos o miles de números. Tutoriales en <a href="../envio-de-sms/" class="font-semibold text-primary hover:underline">Envío de SMS</a>.',
+        },
+        {
+          question: "¿Cómo reviso si mis SMS se entregaron?",
+          answer:
+            'En el portal, abre <strong>View Reports → DLR Report</strong>, filtra por fechas y descarga Excel. Paso a paso en <a href="../reportes-y-seguimiento/descargar-reporte-de-envios/" class="font-semibold text-primary hover:underline">Descargar reporte de envíos</a>.',
+        },
+        {
+          question: "¿Necesito API o puedo usar solo el panel web?",
+          answer:
+            'Puedes operar solo con el panel web del portal. La <a href="../../#api" class="font-semibold text-primary hover:underline">API REST</a> es opcional para integrar con CRM, ERP o aplicaciones propias.',
+        },
+        {
+          question: "¿Qué formato deben tener los números móviles?",
+          answer:
+            "Usa formato internacional: Chile <strong>569XXXXXXXX</strong> (código 56 + 9 dígitos). Revisa una muestra del archivo antes de envíos masivos.",
+        },
+        {
+          question: "¿Olvidé mi contraseña del portal?",
+          answer:
+            'Contacta a Telvoice desde el <a href="../../#contacto" class="font-semibold text-primary hover:underline">formulario de contacto</a> indicando la razón social de tu cuenta para validar identidad y restablecer el acceso.',
+        },
+      ],
     },
   ],
   articles: {

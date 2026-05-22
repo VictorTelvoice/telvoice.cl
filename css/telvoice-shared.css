@@ -49,8 +49,15 @@ html {
   box-shadow: 0 12px 40px -12px rgba(0, 82, 204, 0.15);
 }
 
-.hc-faq-item summary::-webkit-details-marker {
+.faq-details summary {
+  list-style: none;
+}
+.faq-details summary::-webkit-details-marker {
   display: none;
+}
+.faq-details[open] .faq-chevron {
+  transform: rotate(45deg);
+  color: #0052cc;
 }
 
 /* Nav: posición del CTA como en el landing */

@@ -12,7 +12,7 @@
     .map(function (c) {
       var count =
         c.slug === "preguntas-frecuentes"
-          ? (HC.faqItems || []).length + " preguntas"
+          ? U.faqCount() + " preguntas"
           : U.guideLabel(U.articlesByCategory(c.slug).length);
       return U.renderCard({
         href: U.categoryUrl(c.href),
