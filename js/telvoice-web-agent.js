@@ -389,7 +389,7 @@
         redirectToCheckout(payload);
         return;
       }
-      window.location.href = (API_BASE || "/") + "#precios";
+      window.location.href = (API_BASE || "/") + "#calculadora";
       return;
     }
     if (cta.type === "register" && cta.url) {
@@ -409,8 +409,8 @@
         );
       return;
     }
-    if (cta.hash === "#precios" || cta.type === "pay") {
-      window.location.href = (API_BASE || "/") + "#precios";
+    if (cta.hash === "#precios" || cta.hash === "#calculadora" || cta.type === "pay") {
+      window.location.href = (API_BASE || "/") + "#calculadora";
       return;
     }
     if (cta.type === "lead") {
@@ -671,7 +671,7 @@
           "bot",
           "No pude conectar con el agente en este momento. " +
             (err.message || "Intenta de nuevo.") +
-            "\n\nTambién puedes escribir a ventas@telvoice.net o usar la calculadora en Precios.",
+            "\n\nTambién puedes escribir a ventas@telvoice.net o usar Arma tu bolsa en el sitio.",
         );
       })
       .finally(function () {
@@ -688,8 +688,26 @@
     } catch (e) {
       /* ignore */
     }
-    window.location.href = (API_BASE || "/") + "#precios";
+    window.location.href = (API_BASE || "/") + "#calculadora";
   }
+
+  function openAgentChat(options) {
+    if (!els.panel) {
+      var launcher = document.querySelector(".tva-launcher");
+      if (launcher) {
+        launcher.click();
+      }
+      return;
+    }
+    openPanel();
+    var msg =
+      options && options.message ? String(options.message).trim() : "";
+    if (msg) {
+      sendToApi({ message: msg });
+    }
+  }
+
+  window.TELVOICE_OPEN_AGENT = openAgentChat;
 
   function initPendingCheckoutOnLanding() {
     if (!document.getElementById("compra-modal")) {

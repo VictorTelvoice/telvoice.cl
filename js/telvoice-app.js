@@ -697,7 +697,7 @@
     });
     document.querySelectorAll(".comercial-comprar-cta").forEach(function (b) {
       b.addEventListener("click", function () {
-        var el = qs("precios");
+        var el = qs("calculadora");
         if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     });
@@ -714,11 +714,14 @@
   if (calcQuoteLink) {
     calcQuoteLink.addEventListener("click", function (e) {
       e.preventDefault();
-      scrollToContact({
-        interes: "alto-volumen",
-        volumen: "mas-100000",
-        mensaje: "Cotización para más de 120.000 SMS (desde calculadora).",
-      });
+      if (typeof window.TELVOICE_OPEN_AGENT === "function") {
+        window.TELVOICE_OPEN_AGENT({
+          message: "Quiero cotizar una bolsa de más de 120000 SMS",
+        });
+      } else {
+        var launcher = document.querySelector(".tva-launcher");
+        if (launcher) launcher.click();
+      }
       trackEvent("click_cotiza_alto_volumen");
     });
   }
