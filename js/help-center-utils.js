@@ -39,6 +39,12 @@
     return count + " guías";
   }
 
+  /** Márgenes del Hero: margin-page + pl-20 / pl-28 / pl-36 en escritorio */
+  var HC_SHELL_X =
+    "px-4 sm:px-margin-page md:pl-[7.5rem] md:pr-8 lg:pl-[9.5rem] lg:pr-10 xl:pl-[11.5rem]";
+  var HC_SHELL =
+    "max-w-container-max mx-auto w-full " + HC_SHELL_X;
+
   function renderHeader(active) {
     var r = root();
     return (
@@ -95,7 +101,9 @@
     var r = root();
     return (
       '<footer class="bg-primary text-on-primary" role="contentinfo">' +
-      '<div class="max-w-container-max mx-auto px-4 sm:px-margin-page pt-14 pb-6">' +
+      '<div class="max-w-container-max mx-auto ' +
+      HC_SHELL_X +
+      ' pt-14 pb-6">' +
       '<div class="grid grid-cols-1 gap-12 border-b border-on-primary/20 pb-12 md:grid-cols-2 lg:grid-cols-12 lg:gap-10">' +
       '<div class="lg:col-span-4">' +
       '<a href="' +
@@ -209,7 +217,7 @@
     bindMobileNav();
     var main = document.getElementById("hc-main");
     main.innerHTML =
-      '<div class="max-w-container-max mx-auto px-4 sm:px-margin-page py-stack-lg md:py-stack-xl">';
+      '<div class="' + HC_SHELL + ' py-stack-lg md:py-stack-xl">';
     return main.firstElementChild;
   }
 
@@ -232,6 +240,7 @@
     categoryUrl: categoryUrl,
     categoryIcon: categoryIcon,
     guideLabel: guideLabel,
+    shellClass: HC_SHELL,
     renderCard: renderCard,
     mountShell: mountShell,
     allArticles: allArticles,

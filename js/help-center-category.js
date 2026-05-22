@@ -52,7 +52,7 @@
       );
     }
     return (
-      '<div class="mx-auto grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 md:gap-8">' +
+      '<div class="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 md:gap-8">' +
       articles
         .map(function (a) {
           return U.renderCard({
@@ -111,7 +111,7 @@
     "</div>" +
     '<section class="mt-12 border-t border-outline-variant/40 pt-12 md:mt-16" aria-labelledby="hc-other-cats">' +
     '<h2 class="font-h3 text-h3 text-on-background" id="hc-other-cats">Otras categorías</h2>' +
-    '<div class="mx-auto mt-8 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 md:gap-8">' +
+    '<div class="mt-8 grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 md:gap-8">' +
     otherCats +
     "</div></section>" +
     '<div class="mt-12 flex flex-wrap gap-4">' +

@@ -56,12 +56,12 @@
     "</header>" +
     '<section class="mt-12 md:mt-16" aria-labelledby="hc-cats-title">' +
     '<h2 class="font-h3 text-h3 text-on-background" id="hc-cats-title">Categorías</h2>' +
-    '<div class="mx-auto mt-8 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 md:gap-8">' +
+    '<div class="mt-8 grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 md:gap-8">' +
     catsHtml +
     "</div></section>" +
     '<section class="mt-12 md:mt-16" aria-labelledby="hc-feat-title">' +
     '<h2 class="font-h3 text-h3 text-on-background" id="hc-feat-title">Tutoriales destacados</h2>' +
-    '<div class="mx-auto mt-8 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 md:gap-8">' +
+    '<div class="mt-8 grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 md:gap-8">' +
     featHtml +
     "</div></section>" +
     '<div class="mt-12 flex flex-wrap gap-4 rounded-2xl border border-outline-variant/50 bg-surface-container-low p-6 md:p-8">' +
