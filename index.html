@@ -2051,6 +2051,7 @@
       max-height: 100%;
       object-fit: contain;
       object-position: center center;
+      border-radius: 0.75rem;
       filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.08));
     }
     #casos-uso .caso-card-body {
@@ -2363,7 +2364,7 @@
         <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="ayuda/">Centro de ayuda</a></li>
       </ul>
       <div class="nav-actions flex items-center gap-2 shrink-0">
-        <button type="button" id="nav-demo" class="nav-sales-btn hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm" data-track="click_hablar_ventas">Hablar con ventas</button>
+        <button type="button" id="nav-demo" class="nav-sales-btn hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm" data-track="click_agente_ventas">Agente IA de Ventas</button>
         <button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant/60 text-on-background" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
           <span class="material-symbols-outlined" id="menu-icon-open">menu</span>
           <span class="material-symbols-outlined hidden" id="menu-icon-close">close</span>
@@ -2379,7 +2380,7 @@
         <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#contacto">Contacto</a></li>
         <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="ayuda/">Centro de ayuda</a></li>
       </ul>
-      <button type="button" id="nav-demo-mobile" class="mt-2 w-full bg-primary text-on-primary font-body-md py-3 rounded-full hover:bg-surface-tint transition-colors" data-track="click_hablar_ventas">Hablar con ventas</button>
+      <button type="button" id="nav-demo-mobile" class="mt-2 w-full bg-primary text-on-primary font-body-md py-3 rounded-full hover:bg-surface-tint transition-colors" data-track="click_agente_ventas">Agente IA de Ventas</button>
     </div>
   </nav>
 
@@ -2459,7 +2460,6 @@
           </div>
           <div class="hero-cta-row pt-stack-sm">
             <a href="#calculadora" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_compra_bolsa">Compra Tu bolsa</a>
-            <a href="#calculadora" class="hidden items-center justify-center rounded-full border border-primary/20 bg-surface font-body-md font-semibold text-primary transition hover:border-primary hover:bg-surface-container-low md:inline-flex" data-track="click_arma_tu_bolsa">Arma tu bolsa</a>
           </div>
           <div class="hero-tags-below hero-tags-mobile relative z-10 flex w-full flex-col items-center md:hidden">
             <ul class="hero-use-tags hero-tags-row" role="list" aria-label="Usos del servicio SMS">

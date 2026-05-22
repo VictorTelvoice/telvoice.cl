@@ -80,18 +80,24 @@
     if (trackId) trackEvent(trackId);
   }
 
-  function bindVentasWhatsappButtons() {
-    var waMsg = (CFG.whatsapp && CFG.whatsapp.message) || "Hola, quiero cotizar una bolsa de SMS para Chile.";
+  function openSalesAgent(trackId) {
+    if (typeof window.TELVOICE_OPEN_AGENT === "function") {
+      window.TELVOICE_OPEN_AGENT({ message: "" });
+    } else {
+      var launcher = document.querySelector(".tva-launcher");
+      if (launcher) launcher.click();
+    }
+    if (trackId) trackEvent(trackId);
+  }
+
+  function bindNavSalesAgentButtons() {
     ["nav-demo", "nav-demo-mobile"].forEach(function (sel) {
-      var nodes = sel.indexOf(".") === 0 ? document.querySelectorAll(sel) : [qs(sel)];
-      nodes.forEach(function (btn) {
-        if (!btn) return;
-        btn.addEventListener("click", function (e) {
-          e.preventDefault();
-          if (openWhatsapp(waMsg)) {
-            trackEvent("click_hablar_ventas", { channel: "whatsapp" });
-          }
-        });
+      var btn = qs(sel);
+      if (!btn) return;
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        closeMobileMenu();
+        openSalesAgent("click_agente_ventas");
       });
     });
   }
@@ -726,7 +732,7 @@
     });
   }
   bindDemoButtons();
-  bindVentasWhatsappButtons();
+  bindNavSalesAgentButtons();
 
   var calcQuoteLink = qs("calc-quote-link");
   if (calcQuoteLink) {
