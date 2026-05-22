@@ -34,142 +34,183 @@
     return icons[slug] || "folder";
   }
 
+  function guideLabel(count) {
+    if (count === 1) return "1 guía";
+    return count + " guías";
+  }
+
   function renderHeader(active) {
     var r = root();
     return (
-      '<header class="hc-header">' +
-      '<div class="hc-header-inner">' +
-      '<a class="hc-brand" href="' +
+      '<nav class="bg-surface/90 backdrop-blur-md sticky top-0 z-50 border-b border-outline-variant/30 w-full">' +
+      '<div class="flex justify-between items-center gap-4 py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 lg:pl-28 lg:pr-10 max-w-container-max mx-auto">' +
+      '<a href="' +
       r +
-      '" aria-label="telvoice.cl, ir al inicio">' +
+      '" class="flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" aria-label="telvoice.cl, ir al inicio">' +
       '<img src="' +
       r +
-      'assets/telvoice-isotipo.png" alt="" width="40" height="40" class="hc-brand-logo" decoding="async" aria-hidden="true" />' +
-      '<span class="hc-brand-text">telvoice<span class="domain">.cl</span></span></a>' +
-      '<nav class="hc-nav" aria-label="Navegación">' +
-      '<a href="' +
+      'assets/telvoice-isotipo.png" alt="" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" aria-hidden="true" />' +
+      '<span class="font-h3 text-h3 font-bold tracking-tight lowercase inline-flex items-baseline">' +
+      '<span class="text-black">telvoice</span><span class="font-h3 text-body-lg font-bold tracking-tight hero-grad-text">.cl</span></span></a>' +
+      '<ul class="hidden md:flex gap-1 items-center">' +
+      '<li><a class="font-body-md text-body-md rounded-full px-4 py-2 transition-colors ' +
+      (active === "home" ? "text-primary bg-surface-container-low" : "text-on-surface-variant hover:text-primary hover:bg-surface-container-low") +
+      '" href="' +
       r +
-      'ayuda/"' +
-      (active === "home" ? ' class="is-active"' : "") +
-      ">Centro de ayuda</a>" +
-      '<a href="' +
+      'ayuda/">Centro de ayuda</a></li>' +
+      '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
       r +
-      '#calculadora">Precios</a>' +
-      '<a href="' +
+      '#precios">Precios</a></li>' +
+      '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
       r +
-      '#contacto">Contacto</a>' +
-      '<a class="hc-nav-cta" href="' +
+      '#contacto">Contacto</a></li>' +
+      "</ul>" +
+      '<div class="flex items-center gap-2 shrink-0">' +
+      '<a class="hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm font-semibold" href="' +
       esc(HC.portalUrl) +
       '" target="_blank" rel="noopener noreferrer">Ir al portal</a>' +
-      "</nav></div></header>"
+      '<button type="button" id="hc-menu-toggle" class="md:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant/60 text-on-background" aria-expanded="false" aria-controls="hc-mobile-panel" aria-label="Abrir menú">' +
+      '<span class="material-symbols-outlined" id="hc-menu-open">menu</span>' +
+      '<span class="material-symbols-outlined hidden" id="hc-menu-close">close</span></button>' +
+      "</div></div>" +
+      '<div id="hc-mobile-panel" class="hidden md:hidden border-t border-outline-variant/30 bg-surface/95 backdrop-blur-md py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 max-w-container-max mx-auto">' +
+      '<ul class="flex flex-col gap-1">' +
+      '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
+      r +
+      'ayuda/">Centro de ayuda</a></li>' +
+      '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
+      r +
+      '#precios">Precios</a></li>' +
+      '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
+      r +
+      '#contacto">Contacto</a></li>' +
+      '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
+      esc(HC.portalUrl) +
+      '" target="_blank" rel="noopener noreferrer">Ir al portal</a></li>' +
+      "</ul></div></nav>"
     );
   }
 
   function renderFooter() {
     var r = root();
     return (
-      '<footer class="hc-site-footer" role="contentinfo">' +
-      '<div class="hc-site-footer-inner">' +
-      '<div class="hc-site-footer-grid">' +
-      '<div class="hc-site-footer-brand">' +
+      '<footer class="bg-primary text-on-primary" role="contentinfo">' +
+      '<div class="max-w-container-max mx-auto px-4 sm:px-margin-page pt-14 pb-6">' +
+      '<div class="grid grid-cols-1 gap-12 border-b border-on-primary/20 pb-12 md:grid-cols-2 lg:grid-cols-12 lg:gap-10">' +
+      '<div class="lg:col-span-4">' +
       '<a href="' +
       r +
-      '" class="hc-site-footer-logo-link" aria-label="telvoice.cl, ir al inicio">' +
+      '" class="inline-flex items-center gap-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary" aria-label="telvoice.cl, ir al inicio">' +
       '<img src="' +
       r +
-      'assets/telvoice-isotipo.png" alt="" width="40" height="40" class="hc-site-footer-logo" decoding="async" aria-hidden="true" />' +
-      '<span class="hc-site-footer-logo-text">telvoice<span>.cl</span></span></a>' +
-      "<p>SMS masivos para empresas en Chile: bolsas prepago, precios por volumen, pago online y API.</p>" +
+      'assets/telvoice-isotipo.png" alt="" width="40" height="40" class="h-10 w-10 object-contain" aria-hidden="true" decoding="async" />' +
+      '<span class="font-h3 text-h3 font-bold tracking-tight lowercase inline-flex items-baseline text-on-primary">' +
+      '<span>telvoice</span><span class="font-h3 text-body-lg font-bold leading-none">.cl</span></span></a>' +
+      '<p class="mt-4 max-w-sm font-body-md text-body-md leading-relaxed text-on-primary/85">SMS masivos para empresas en Chile: bolsas prepago, precios por volumen, pago online y API.</p>' +
+      '<div class="mt-6 flex flex-wrap gap-3">' +
       '<a href="' +
       r +
-      '#calculadora" class="hc-site-footer-cta">Calcular precio</a>' +
-      "</div>" +
-      '<div class="hc-site-footer-col">' +
-      '<p class="hc-site-footer-label">Telvoice.cl</p>' +
-      "<ul>" +
-      '<li><a href="' +
+      '#calculadora" class="inline-flex items-center justify-center rounded-full bg-on-primary px-5 py-2.5 font-body-md text-body-md font-semibold text-primary shadow-sm transition hover:bg-primary-fixed hover:text-on-primary-fixed">Calcular precio</a>' +
+      "</div></div>" +
+      '<div class="grid grid-cols-2 gap-10 sm:grid-cols-3 md:col-span-2 lg:col-span-8 lg:grid-cols-3">' +
+      '<div><p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Telvoice.cl</p><ul class="mt-4 space-y-3">' +
+      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       r +
       '#inicio">SMS masivos Chile</a></li>' +
-      '<li><a href="' +
+      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       r +
       '#precios">Bolsas SMS</a></li>' +
-      '<li><a href="' +
+      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       r +
       '#api">API SMS</a></li>' +
-      '<li><a href="' +
+      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       r +
       '#empresas">Empresas</a></li>' +
-      '<li><a href="' +
+      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       r +
-      '#contacto">Contacto</a></li>' +
-      "</ul></div>" +
-      '<div class="hc-site-footer-col">' +
-      '<p class="hc-site-footer-label">Recursos</p>' +
-      "<ul>" +
-      '<li><a href="' +
+      '#contacto">Contacto</a></li></ul></div>' +
+      '<div><p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Recursos</p><ul class="mt-4 space-y-3">' +
+      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       r +
       '#calculadora">Calculadora</a></li>' +
-      '<li><a href="' +
+      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       r +
       '#casos-uso">Casos de uso</a></li>' +
-      '<li><a href="' +
+      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       r +
       'ayuda/">Centro de ayuda</a></li>' +
-      '<li><a href="' +
+      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       esc(HC.portalUrl) +
-      '" target="_blank" rel="noopener noreferrer">Portal cliente</a></li>' +
-      "</ul></div>" +
-      '<div class="hc-site-footer-col">' +
-      '<p class="hc-site-footer-label">Legal</p>' +
-      "<ul>" +
-      '<li><a href="' +
+      '" target="_blank" rel="noopener noreferrer">Portal cliente</a></li></ul></div>' +
+      '<div class="col-span-2 sm:col-span-1"><p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Legal</p><ul class="mt-4 space-y-3">' +
+      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       r +
       'terminos-y-condiciones/">Términos y condiciones</a></li>' +
-      '<li><a href="' +
+      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       r +
       'politica-de-privacidad/">Política de privacidad</a></li>' +
-      '<li><a href="' +
+      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       r +
-      'uso-responsable/">Uso responsable</a></li>' +
-      "</ul></div>" +
-      "</div>" +
-      '<div class="hc-site-footer-bottom">' +
-      "<p>© 2026 Telvoice.cl. Todos los derechos reservados.</p>" +
-      "<p>Mensajería empresarial · Chile</p>" +
+      'uso-responsable/">Uso responsable</a></li></ul></div></div></div>' +
+      '<div class="flex flex-col gap-4 pt-8 sm:flex-row sm:items-center sm:justify-between">' +
+      '<p class="font-body-sm text-body-sm text-on-primary/65">© 2026 Telvoice.cl. Todos los derechos reservados.</p>' +
+      '<p class="font-body-sm text-body-sm text-on-primary/55">Mensajería empresarial · Chile</p>' +
       "</div></div></footer>"
     );
   }
 
   function renderCard(opts) {
-    var icon = opts.icon || "article";
-    var meta = opts.meta
-      ? '<span class="hc-card-badge">' + esc(opts.meta) + "</span>"
+    var badge = opts.meta
+      ? '<span class="shrink-0 rounded-full bg-primary/10 px-2.5 py-0.5 font-label-caps text-label-caps font-bold uppercase tracking-wider text-primary">' +
+        esc(opts.meta) +
+        "</span>"
       : "";
     return (
-      '<a class="hc-card" href="' +
+      '<a href="' +
       esc(opts.href) +
-      '">' +
-      '<div class="hc-card-top">' +
-      '<span class="hc-card-icon material-symbols-outlined" aria-hidden="true">' +
-      icon +
-      "</span>" +
-      meta +
+      '" class="ui-card group flex h-full flex-col rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-6 no-underline text-inherit transition hover:-translate-y-0.5">' +
+      '<div class="mb-4 flex items-start justify-between gap-3">' +
+      '<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary" aria-hidden="true">' +
+      '<span class="material-symbols-outlined text-[1.5rem]">' +
+      esc(opts.icon || "article") +
+      "</span></div>" +
+      badge +
       "</div>" +
-      "<h3>" +
+      '<h3 class="font-h3 text-h3 text-on-background">' +
       esc(opts.title) +
       "</h3>" +
-      "<p>" +
+      '<p class="mt-3 flex-1 font-body-md text-body-md text-on-surface-variant leading-relaxed">' +
       esc(opts.description) +
-      '</p><span class="hc-card-cta">Ver guía <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></span></a>'
+      '</p><span class="mt-5 inline-flex items-center gap-1 font-body-md text-body-md font-semibold text-primary">Ver guía <span class="material-symbols-outlined text-lg transition-transform group-hover:translate-x-0.5" aria-hidden="true">arrow_forward</span></span></a>'
     );
   }
 
+  function bindMobileNav() {
+    var toggle = document.getElementById("hc-menu-toggle");
+    var panel = document.getElementById("hc-mobile-panel");
+    var openIcon = document.getElementById("hc-menu-open");
+    var closeIcon = document.getElementById("hc-menu-close");
+    if (!toggle || !panel) return;
+    toggle.addEventListener("click", function () {
+      var open = panel.classList.toggle("hidden");
+      toggle.setAttribute("aria-expanded", open ? "false" : "true");
+      if (openIcon) openIcon.classList.toggle("hidden", !open);
+      if (closeIcon) closeIcon.classList.toggle("hidden", open);
+    });
+  }
+
   function mountShell(active) {
+    document.body.className =
+      "bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col";
     document.body.insertAdjacentHTML(
       "afterbegin",
-      renderHeader(active) + '<main class="hc-main" id="hc-main"></main>' + renderFooter()
+      renderHeader(active) + '<main class="flex-1 w-full" id="hc-main"></main>' + renderFooter()
     );
-    return document.getElementById("hc-main");
+    bindMobileNav();
+    var main = document.getElementById("hc-main");
+    main.innerHTML =
+      '<div class="max-w-container-max mx-auto px-4 sm:px-margin-page py-stack-lg md:py-stack-xl">';
+    return main.firstElementChild;
   }
 
   function allArticles() {
@@ -190,6 +231,7 @@
     articleUrl: articleUrl,
     categoryUrl: categoryUrl,
     categoryIcon: categoryIcon,
+    guideLabel: guideLabel,
     renderCard: renderCard,
     mountShell: mountShell,
     allArticles: allArticles,
