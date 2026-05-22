@@ -31,7 +31,7 @@ window.HELP_CENTER = {
     {
       slug: "cuenta-y-acceso",
       title: "Cuenta y acceso",
-      description: "Credenciales, permisos y configuración (en ampliación).",
+      description: "Credenciales, permisos por rol y recuperación de acceso al portal.",
       href: "cuenta-y-acceso/",
     },
     {
@@ -46,7 +46,188 @@ window.HELP_CENTER = {
     "envio-masivo-de-sms",
     "descargar-reporte-de-envios",
   ],
+  faqItems: [
+    {
+      question: "¿Cómo compro una bolsa de SMS en Telvoice.cl?",
+      answer:
+        'En la <a href="../../#calculadora">calculadora</a> eliges el volumen, revisas el precio y completas el pago con Mercado Pago. Recibes confirmación y acceso al portal para usar tus SMS.',
+    },
+    {
+      question: "¿Cuál es la diferencia entre envío rápido y envío masivo?",
+      answer:
+        'El <strong>envío rápido (Quick SMS)</strong> sirve para uno o pocos destinatarios desde el portal. El <strong>envío masivo</strong> carga un archivo Excel o CSV con cientos o miles de números. Ver tutoriales en la categoría <a href="../envio-de-sms/">Envío de SMS</a>.',
+    },
+    {
+      question: "¿Cómo reviso si mis SMS se entregaron?",
+      answer:
+        'En el portal, abre <strong>View Reports → DLR Report</strong>, filtra por fechas y descarga Excel. Guía paso a paso en <a href="../reportes-y-seguimiento/descargar-reporte-de-envios/">Descargar reporte de envíos</a>.',
+    },
+    {
+      question: "¿Necesito API o puedo usar solo el panel web?",
+      answer:
+        'Puedes operar solo con el <a href="../../#soluciones">panel web</a> del portal. La <a href="../../#api">API REST</a> es opcional para integrar con CRM, ERP o aplicaciones propias.',
+    },
+    {
+      question: "¿Telvoice.cl es lo mismo que Telvoice.net?",
+      answer:
+        "<strong>Telvoice.cl</strong> está enfocado en Chile y compra de bolsas SMS. <strong>Telvoice.net</strong> es el portal cliente y la operación internacional del servicio.",
+    },
+    {
+      question: "¿Qué formato deben tener los números móviles?",
+      answer:
+        "Usa formato internacional: Chile <strong>569XXXXXXXX</strong> (código 56 + 9 dígitos). Revisa una muestra del archivo antes de envíos masivos.",
+    },
+  ],
   articles: {
+    "acceso-al-portal-cliente": {
+      title: "Acceso al portal cliente",
+      slug: "acceso-al-portal-cliente",
+      category: "primeros-pasos",
+      categoryTitle: "Primeros pasos",
+      summary:
+        "Cómo ingresar a telvoice.net con tu usuario, verificar saldo SMS y ubicar el menú principal del portal.",
+      estimatedTime: "1 min",
+      videoUrl: "",
+      videoProvider: "youtube",
+      videoThumbnail: "",
+      videoTitle: "Acceso al portal cliente Telvoice",
+      videoTranscript: "Inicio de sesión y vista general del panel.",
+      prerequisites: [
+        "Credenciales entregadas por Telvoice (usuario y contraseña).",
+        "Navegador actualizado (Chrome, Firefox, Safari o Edge).",
+      ],
+      steps: [
+        {
+          stepNumber: 1,
+          stepTitle: "Abre el portal cliente",
+          stepBody:
+            "Ingresa a telvoice.net desde el enlace «Ir al portal» en este sitio o el que te envió tu ejecutivo.",
+          imageUrl: "",
+          imageAlt: "URL del portal cliente Telvoice",
+        },
+        {
+          stepNumber: 2,
+          stepTitle: "Inicia sesión",
+          stepBody:
+            "Completa usuario y contraseña. Si olvidaste la clave, contacta a soporte de Telvoice para restablecerla.",
+          imageUrl: "",
+          imageAlt: "Formulario de login",
+        },
+        {
+          stepNumber: 3,
+          stepTitle: "Revisa saldo y menú",
+          stepBody:
+            "Tras ingresar, verifica tu saldo SMS y localiza Send SMS, View Reports y la configuración de cuenta.",
+          imageUrl: "",
+          imageAlt: "Panel principal del portal",
+        },
+      ],
+      notes: [
+        "Guarda el portal en favoritos para acceso rápido.",
+        "No compartas tus credenciales fuera de tu equipo autorizado.",
+      ],
+      relatedArticles: ["navegacion-panel-sms", "envio-rapido-de-sms"],
+      seoTitle: "Acceso al portal cliente | Centro de ayuda Telvoice",
+      seoDescription:
+        "Guía para iniciar sesión en el portal cliente Telvoice y revisar saldo y menú principal.",
+    },
+    "navegacion-panel-sms": {
+      title: "Navegación del panel SMS",
+      slug: "navegacion-panel-sms",
+      category: "primeros-pasos",
+      categoryTitle: "Primeros pasos",
+      summary:
+        "Recorrido por las secciones del portal: envíos, reportes, campañas y configuración básica.",
+      estimatedTime: "2 min",
+      videoUrl: "",
+      videoProvider: "youtube",
+      videoThumbnail: "",
+      videoTitle: "Navegación del panel SMS",
+      videoTranscript: "Tour por menús Send SMS y View Reports.",
+      prerequisites: ["Sesión activa en el portal cliente."],
+      steps: [
+        {
+          stepNumber: 1,
+          stepTitle: "Menú Send SMS",
+          stepBody:
+            "Aquí encuentras Quick SMS (envío puntual) y Upload File (envío masivo por archivo).",
+          imageUrl: "",
+          imageAlt: "Menú Send SMS",
+        },
+        {
+          stepNumber: 2,
+          stepTitle: "Menú View Reports",
+          stepBody:
+            "Consulta DLR y otros reportes de entrega. Exporta resultados a Excel.",
+          imageUrl: "",
+          imageAlt: "Menú View Reports",
+        },
+        {
+          stepNumber: 3,
+          stepTitle: "Cuenta y configuración",
+          stepBody:
+            "Revisa datos de usuario, remitentes autorizados y preferencias según los permisos de tu rol.",
+          imageUrl: "",
+          imageAlt: "Configuración de cuenta",
+        },
+      ],
+      notes: [
+        "Si no ves alguna opción, puede que tu usuario no tenga permisos; solicita ajuste a tu administrador o a Telvoice.",
+      ],
+      relatedArticles: ["acceso-al-portal-cliente", "envio-rapido-de-sms"],
+      seoTitle: "Navegación del panel SMS | Centro de ayuda Telvoice",
+      seoDescription:
+        "Conoce las secciones principales del portal cliente Telvoice para enviar SMS y revisar reportes.",
+    },
+    "credenciales-portal-cliente": {
+      title: "Credenciales y acceso al portal",
+      slug: "credenciales-portal-cliente",
+      category: "cuenta-y-acceso",
+      categoryTitle: "Cuenta y acceso",
+      summary:
+        "Usuarios, contraseñas, permisos por rol y buenas prácticas de seguridad en el portal cliente.",
+      estimatedTime: "2 min",
+      videoUrl: "",
+      videoProvider: "youtube",
+      videoThumbnail: "",
+      videoTitle: "Credenciales del portal Telvoice",
+      videoTranscript: "Gestión de accesos y permisos.",
+      prerequisites: ["Ser administrador de cuenta o tener credenciales activas."],
+      steps: [
+        {
+          stepNumber: 1,
+          stepTitle: "Usuario y contraseña",
+          stepBody:
+            "Cada operador debe tener su propio usuario. Evita cuentas compartidas para trazabilidad y seguridad.",
+          imageUrl: "",
+          imageAlt: "Usuarios del portal",
+        },
+        {
+          stepNumber: 2,
+          stepTitle: "Permisos por rol",
+          stepBody:
+            "Algunos perfiles solo envían SMS; otros también ven reportes o administran usuarios. Confirma el rol asignado a tu equipo.",
+          imageUrl: "",
+          imageAlt: "Roles y permisos",
+        },
+        {
+          stepNumber: 3,
+          stepTitle: "Recuperación de acceso",
+          stepBody:
+            "Si no puedes ingresar, contacta a Telvoice con el RUT o razón social de la cuenta para validar identidad y restablecer acceso.",
+          imageUrl: "",
+          imageAlt: "Soporte de acceso",
+        },
+      ],
+      notes: [
+        "Telvoice no solicita contraseñas por correo ni WhatsApp.",
+        "Reporta accesos sospechosos de inmediato a soporte.",
+      ],
+      relatedArticles: ["acceso-al-portal-cliente"],
+      seoTitle: "Credenciales portal cliente | Centro de ayuda Telvoice",
+      seoDescription:
+        "Usuarios, permisos y recuperación de acceso al portal cliente Telvoice.",
+    },
     "envio-rapido-de-sms": {
       title: "Envío rápido de SMS",
       slug: "envio-rapido-de-sms",

@@ -10,39 +10,28 @@
 
   var catsHtml = HC.categories
     .map(function (c) {
-      return (
-        '<a class="hc-card" href="' +
-        U.root() +
-        "ayuda/" +
-        c.href +
-        '">' +
-        '<span class="hc-card-icon material-symbols-outlined" aria-hidden="true">folder</span>' +
-        "<h3>" +
-        U.esc(c.title) +
-        "</h3>" +
-        "<p>" +
-        U.esc(c.description) +
-        "</p></a>"
-      );
+      return U.renderCard({
+        href: U.categoryUrl(c.href),
+        icon: U.categoryIcon(c.slug),
+        title: c.title,
+        description: c.description,
+        meta:
+          c.slug === "preguntas-frecuentes"
+            ? (HC.faqItems || []).length + " preguntas"
+            : U.articlesByCategory(c.slug).length + " guías",
+      });
     })
     .join("");
 
   var featHtml = featured
     .map(function (a) {
-      return (
-        '<a class="hc-card" href="' +
-        U.articleUrl(a.slug, a.category) +
-        '">' +
-        '<span class="hc-card-icon material-symbols-outlined" aria-hidden="true">play_circle</span>' +
-        "<h3>" +
-        U.esc(a.title) +
-        "</h3>" +
-        "<p>" +
-        U.esc(a.summary) +
-        '</p><span class="hc-card-meta">' +
-        U.esc(a.estimatedTime) +
-        " · Tutorial</span></a>"
-      );
+      return U.renderCard({
+        href: U.articleUrl(a.slug, a.category),
+        icon: "play_circle",
+        title: a.title,
+        description: a.summary,
+        meta: a.estimatedTime,
+      });
     })
     .join("");
 
@@ -63,12 +52,12 @@
     "</form>" +
     '<ul class="hc-search-results" id="hc-search-results" hidden></ul>' +
     "</div>" +
-    '<section aria-labelledby="hc-cats-title">' +
+    '<section class="hc-section" aria-labelledby="hc-cats-title">' +
     '<h2 class="hc-section-title" id="hc-cats-title">Categorías</h2>' +
     '<div class="hc-grid hc-grid--cats">' +
     catsHtml +
     "</div></section>" +
-    '<section style="margin-top:2.5rem" aria-labelledby="hc-feat-title">' +
+    '<section class="hc-section" aria-labelledby="hc-feat-title">' +
     '<h2 class="hc-section-title" id="hc-feat-title">Tutoriales destacados</h2>' +
     '<div class="hc-grid hc-grid--featured">' +
     featHtml +
