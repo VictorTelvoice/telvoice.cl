@@ -77,54 +77,54 @@
     return div;
   }
 
-  function renderQuickActions(container, actions, onClick) {
-    container.innerHTML = "";
-    var wrap = els.suggestions;
-    var toggle = els.suggestionsToggle;
-    if (!actions || !actions.length) {
-      if (wrap) {
-        wrap.hidden = true;
-      }
-      container.hidden = true;
-      if (toggle) {
-        toggle.setAttribute("aria-expanded", "false");
-        toggle.classList.remove("is-open");
-      }
+  function collapseActionDrawer() {
+    if (!els.suggestionsPanel || !els.suggestionsToggle) {
       return;
     }
-    if (wrap) {
-      wrap.hidden = false;
+    els.suggestionsPanel.hidden = true;
+    els.suggestionsToggle.setAttribute("aria-expanded", "false");
+    els.suggestionsToggle.classList.remove("is-open");
+    updateActionDrawerHint();
+  }
+
+  function updateActionDrawerHint() {
+    if (!els.suggestionsDot || !els.suggestions) {
+      return;
     }
-    container.hidden = true;
-    if (toggle) {
-      toggle.setAttribute("aria-expanded", "false");
-      toggle.classList.remove("is-open");
+    var collapsed = els.suggestionsPanel && els.suggestionsPanel.hidden;
+    var hasContent =
+      !els.suggestions.hidden &&
+      ((els.quick && els.quick.children.length > 0) ||
+        (els.ctas && els.ctas.children.length > 0));
+    var showHint = hasContent && collapsed;
+    els.suggestionsDot.hidden = !showHint;
+    els.suggestions.classList.toggle("has-hint", showHint);
+  }
+
+  function toggleSuggestions() {
+    if (!els.suggestionsPanel || !els.suggestionsToggle) {
+      return;
     }
-    actions.forEach(function (action) {
+    var open = els.suggestionsPanel.hidden;
+    els.suggestionsPanel.hidden = !open;
+    els.suggestionsToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    els.suggestionsToggle.classList.toggle("is-open", open);
+    updateActionDrawerHint();
+  }
+
+  function renderQuickActions(container, actions, onClick) {
+    container.innerHTML = "";
+    (actions || []).forEach(function (action) {
       var btn = document.createElement("button");
       btn.type = "button";
       btn.textContent = action.label;
       btn.dataset.actionId = action.id;
       btn.addEventListener("click", function () {
         onClick(action.id, action.label);
-        container.hidden = true;
-        if (toggle) {
-          toggle.setAttribute("aria-expanded", "false");
-          toggle.classList.remove("is-open");
-        }
+        collapseActionDrawer();
       });
       container.appendChild(btn);
     });
-  }
-
-  function toggleSuggestions() {
-    if (!els.quick || !els.suggestionsToggle) {
-      return;
-    }
-    var open = els.quick.hidden;
-    els.quick.hidden = !open;
-    els.suggestionsToggle.setAttribute("aria-expanded", open ? "true" : "false");
-    els.suggestionsToggle.classList.toggle("is-open", open);
   }
 
   function renderCtas(container, ctas) {
@@ -132,11 +132,6 @@
     var visible = (ctas || []).filter(function (cta) {
       return cta && cta.type !== "lead";
     });
-    if (!visible.length) {
-      container.hidden = true;
-      return;
-    }
-    container.hidden = false;
     visible.forEach(function (cta) {
       var btn = document.createElement("button");
       btn.type = "button";
@@ -146,9 +141,33 @@
       }
       btn.addEventListener("click", function () {
         handleCta(cta);
+        collapseActionDrawer();
       });
       container.appendChild(btn);
     });
+    return visible.length;
+  }
+
+  function syncActionDrawer(quickActions, ctas) {
+    var onQuick = function (id, label) {
+      appendMessage(els.messages, "user", label);
+      sendToApi({ quick_action: id });
+    };
+    renderQuickActions(els.quick, quickActions, onQuick);
+    var ctaCount = renderCtas(els.ctas, ctas);
+    var hasQuick = quickActions && quickActions.length > 0;
+    var hasAny = hasQuick || ctaCount > 0;
+
+    if (!els.suggestions) {
+      return;
+    }
+    els.suggestions.hidden = !hasAny;
+    if (!hasAny) {
+      collapseActionDrawer();
+      return;
+    }
+    collapseActionDrawer();
+    updateActionDrawerHint();
   }
 
   function planFromCalcSms(sms) {
@@ -235,6 +254,8 @@
     open: false,
     loading: false,
     welcomed: false,
+    drawerQuick: [],
+    drawerCtas: [],
   };
 
   var els = {};
@@ -264,15 +285,16 @@
       '<div class="tva-header-text"><h2 id="tva-title">Agente Telvoice</h2><p>Cotiza SMS para Chile</p></div>' +
       '<button type="button" class="tva-close" aria-label="Cerrar chat"><span aria-hidden="true">×</span></button>' +
       "</div>" +
-      '<div class="tva-messages" id="tva-messages" aria-live="polite"></div>' +
       '<div class="tva-suggestions" id="tva-suggestions" hidden>' +
-      '<button type="button" class="tva-suggestions-toggle" id="tva-suggestions-toggle" aria-expanded="false" aria-controls="tva-quick">' +
-      '<span>Sugerencias</span>' +
+      '<button type="button" class="tva-suggestions-toggle" id="tva-suggestions-toggle" aria-expanded="false" aria-controls="tva-suggestions-panel" aria-label="Ver sugerencias y acciones">' +
       '<span class="tva-suggestions-chevron" aria-hidden="true"></span>' +
+      '<span class="tva-suggestions-dot" aria-hidden="true"></span>' +
       "</button>" +
-      '<div class="tva-quick" id="tva-quick" hidden></div>' +
-      "</div>" +
-      '<div class="tva-ctas" id="tva-ctas" hidden></div>' +
+      '<div class="tva-suggestions-panel" id="tva-suggestions-panel" hidden>' +
+      '<div class="tva-quick" id="tva-quick"></div>' +
+      '<div class="tva-ctas" id="tva-ctas"></div>' +
+      "</div></div>" +
+      '<div class="tva-messages" id="tva-messages" aria-live="polite"></div>' +
       '<form class="tva-form" id="tva-form">' +
       '<input type="text" id="tva-input" placeholder="Escribe tu mensaje…" autocomplete="off" maxlength="2000" />' +
       '<button type="submit">Enviar</button>' +
@@ -295,6 +317,8 @@
     els.messages = qs("#tva-messages", root);
     els.suggestions = qs("#tva-suggestions", root);
     els.suggestionsToggle = qs("#tva-suggestions-toggle", root);
+    els.suggestionsPanel = qs("#tva-suggestions-panel", root);
+    els.suggestionsDot = qs(".tva-suggestions-dot", root);
     els.quick = qs("#tva-quick", root);
     els.ctas = qs("#tva-ctas", root);
     els.form = qs("#tva-form", root);
@@ -355,12 +379,12 @@
       appendMessage(els.messages, "bot", data.reply);
     }
     if (data.quick_actions) {
-      renderQuickActions(els.quick, data.quick_actions, function (id, label) {
-        appendMessage(els.messages, "user", label);
-        sendToApi({ quick_action: id });
-      });
+      state.drawerQuick = data.quick_actions;
     }
-    renderCtas(els.ctas, data.ctas);
+    if (data.ctas !== undefined) {
+      state.drawerCtas = data.ctas;
+    }
+    syncActionDrawer(state.drawerQuick, state.drawerCtas);
   }
 
   function sendToApi(payload) {
