@@ -362,19 +362,35 @@
   border-color: var(--tva-primary);
 }
 
-.tva-ctas {
+.tva-drawer-ctas,
+.tva-conversation-actions {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+}
+
+.tva-drawer-ctas {
   padding: 0;
   background: transparent;
 }
 
-.tva-ctas:empty {
+.tva-drawer-ctas:empty {
   display: none;
 }
 
-.tva-ctas button {
+.tva-conversation-actions {
+  flex-shrink: 0;
+  padding: 0 0.85rem 0.45rem;
+  background: var(--tva-surface);
+  border-top: 1px solid var(--tva-border);
+}
+
+.tva-conversation-actions[hidden] {
+  display: none !important;
+}
+
+.tva-drawer-ctas button,
+.tva-conversation-actions button {
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0.5rem 0.75rem;
@@ -385,7 +401,8 @@
   color: #fff;
 }
 
-.tva-ctas button.tva-cta--secondary {
+.tva-drawer-ctas button.tva-cta--secondary,
+.tva-conversation-actions button.tva-cta--secondary {
   background: #fff;
   color: var(--tva-primary);
   border: 1px solid var(--tva-primary);

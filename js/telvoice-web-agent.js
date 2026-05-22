@@ -95,7 +95,7 @@
     var hasContent =
       !els.suggestions.hidden &&
       ((els.quick && els.quick.children.length > 0) ||
-        (els.ctas && els.ctas.children.length > 0));
+        (els.drawerCtas && els.drawerCtas.children.length > 0));
     var showHint = hasContent && collapsed;
     els.suggestionsDot.hidden = !showHint;
     els.suggestions.classList.toggle("has-hint", showHint);
@@ -127,12 +127,28 @@
     });
   }
 
-  function renderCtas(container, ctas) {
-    container.innerHTML = "";
-    var visible = (ctas || []).filter(function (cta) {
-      return cta && cta.type !== "lead";
+  var DRAWER_CTA_TYPES = { register: true, advisor: true };
+
+  function splitCtas(ctas) {
+    var drawer = [];
+    var conversation = [];
+    (ctas || []).forEach(function (cta) {
+      if (!cta || cta.type === "lead") {
+        return;
+      }
+      if (DRAWER_CTA_TYPES[cta.type]) {
+        drawer.push(cta);
+      } else {
+        conversation.push(cta);
+      }
     });
-    visible.forEach(function (cta) {
+    return { drawer: drawer, conversation: conversation };
+  }
+
+  function renderCtaButtons(container, ctas, options) {
+    container.innerHTML = "";
+    var opts = options || {};
+    ctas.forEach(function (cta) {
       var btn = document.createElement("button");
       btn.type = "button";
       btn.textContent = cta.label || "Continuar";
@@ -141,11 +157,13 @@
       }
       btn.addEventListener("click", function () {
         handleCta(cta);
-        collapseActionDrawer();
+        if (opts.collapseDrawer) {
+          collapseActionDrawer();
+        }
       });
       container.appendChild(btn);
     });
-    return visible.length;
+    return ctas.length;
   }
 
   function syncActionDrawer(quickActions, ctas) {
@@ -153,21 +171,32 @@
       appendMessage(els.messages, "user", label);
       sendToApi({ quick_action: id });
     };
+    var split = splitCtas(ctas);
+
     renderQuickActions(els.quick, quickActions, onQuick);
-    var ctaCount = renderCtas(els.ctas, ctas);
+    renderCtaButtons(els.drawerCtas, split.drawer, { collapseDrawer: true });
+
+    var convCount = 0;
+    if (els.conversationActions) {
+      convCount = renderCtaButtons(els.conversationActions, split.conversation, {
+        collapseDrawer: false,
+      });
+      els.conversationActions.hidden = convCount === 0;
+    }
+
     var hasQuick = quickActions && quickActions.length > 0;
-    var hasAny = hasQuick || ctaCount > 0;
+    var hasDrawer = hasQuick || split.drawer.length > 0;
 
     if (!els.suggestions) {
       return;
     }
-    els.suggestions.hidden = !hasAny;
-    if (!hasAny) {
+    els.suggestions.hidden = !hasDrawer;
+    if (!hasDrawer) {
       collapseActionDrawer();
-      return;
+    } else {
+      collapseActionDrawer();
+      updateActionDrawerHint();
     }
-    collapseActionDrawer();
-    updateActionDrawerHint();
   }
 
   function planFromCalcSms(sms) {
@@ -292,9 +321,10 @@
       "</button>" +
       '<div class="tva-suggestions-panel" id="tva-suggestions-panel" hidden>' +
       '<div class="tva-quick" id="tva-quick"></div>' +
-      '<div class="tva-ctas" id="tva-ctas"></div>' +
+      '<div class="tva-drawer-ctas" id="tva-drawer-ctas"></div>' +
       "</div></div>" +
       '<div class="tva-messages" id="tva-messages" aria-live="polite"></div>' +
+      '<div class="tva-conversation-actions" id="tva-conversation-actions" hidden></div>' +
       '<form class="tva-form" id="tva-form">' +
       '<input type="text" id="tva-input" placeholder="Escribe tu mensaje…" autocomplete="off" maxlength="2000" />' +
       '<button type="submit">Enviar</button>' +
@@ -320,7 +350,8 @@
     els.suggestionsPanel = qs("#tva-suggestions-panel", root);
     els.suggestionsDot = qs(".tva-suggestions-dot", root);
     els.quick = qs("#tva-quick", root);
-    els.ctas = qs("#tva-ctas", root);
+    els.drawerCtas = qs("#tva-drawer-ctas", root);
+    els.conversationActions = qs("#tva-conversation-actions", root);
     els.form = qs("#tva-form", root);
     els.input = qs("#tva-input", root);
     els.close = qs(".tva-close", root);
