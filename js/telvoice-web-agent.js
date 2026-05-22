@@ -338,7 +338,17 @@
       }),
     })
       .then(function (res) {
-        return res.json().then(function (data) {
+        return res.text().then(function (text) {
+          var data;
+          try {
+            data = text ? JSON.parse(text) : {};
+          } catch (parseErr) {
+            throw new Error(
+              res.ok
+                ? "Respuesta inválida del servidor."
+                : "El agente no está disponible temporalmente.",
+            );
+          }
           if (!res.ok || !data.ok) {
             throw new Error(data.error || "Error del agente comercial");
           }

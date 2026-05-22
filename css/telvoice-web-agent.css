@@ -81,15 +81,15 @@
   max-height: min(34rem, calc(100vh - 7rem));
   display: flex;
   flex-direction: column;
-  background: #fff;
-  border-radius: 1.125rem;
-  border: 1px solid var(--tva-border);
-  box-shadow: var(--tva-shadow);
+  background: transparent;
+  border: none;
+  box-shadow: none;
   overflow: hidden;
   opacity: 0;
   visibility: hidden;
   transform: translateY(14px) scale(0.97);
   transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s;
+  gap: 0.5rem;
 }
 
 .tva-panel.is-open {
@@ -105,6 +105,8 @@
   padding: 0.9rem 1rem;
   background: var(--tva-gradient);
   color: #fff;
+  border-radius: 1rem;
+  box-shadow: var(--tva-shadow);
 }
 
 .tva-header img {
@@ -146,11 +148,12 @@
 .tva-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem;
+  padding: 0.25rem 0;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
-  background: var(--tva-surface);
+  background: transparent;
+  scrollbar-width: thin;
 }
 
 .tva-msg {
@@ -165,9 +168,10 @@
 
 .tva-msg--bot {
   align-self: flex-start;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.96);
   color: var(--tva-on-surface);
   border: 1px solid var(--tva-border);
+  box-shadow: 0 4px 16px rgba(19, 27, 46, 0.08);
 }
 
 .tva-msg--user {
@@ -185,8 +189,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  padding: 0 0.85rem 0.45rem;
-  background: var(--tva-surface);
+  padding: 0;
+  background: transparent;
 }
 
 .tva-quick button {
@@ -209,8 +213,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  padding: 0 0.85rem 0.45rem;
-  background: var(--tva-surface);
+  padding: 0;
+  background: transparent;
 }
 
 .tva-ctas button {
@@ -233,9 +237,9 @@
 .tva-form {
   display: flex;
   gap: 0.5rem;
-  padding: 0.75rem 0.85rem 0.9rem;
-  border-top: 1px solid var(--tva-border);
-  background: #fff;
+  padding: 0;
+  border: none;
+  background: transparent;
 }
 
 .tva-form input {
@@ -245,6 +249,8 @@
   border-radius: 9999px;
   padding: 0.55rem 0.875rem;
   font-size: 0.8125rem;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 4px 16px rgba(19, 27, 46, 0.08);
 }
 
 .tva-form button[type="submit"] {
