@@ -69,9 +69,20 @@
     });
   }
 
+  function openAgentForHighVolume(trackId) {
+    var msg = "Quiero cotizar alto volumen para mi empresa";
+    if (typeof window.TELVOICE_OPEN_AGENT === "function") {
+      window.TELVOICE_OPEN_AGENT({ message: msg });
+    } else {
+      var launcher = document.querySelector(".tva-launcher");
+      if (launcher) launcher.click();
+    }
+    if (trackId) trackEvent(trackId);
+  }
+
   function bindVentasWhatsappButtons() {
     var waMsg = (CFG.whatsapp && CFG.whatsapp.message) || "Hola, quiero cotizar una bolsa de SMS para Chile.";
-    ["nav-demo", "nav-demo-mobile", "comercial-cotizar-cta"].forEach(function (sel) {
+    ["nav-demo", "nav-demo-mobile"].forEach(function (sel) {
       var nodes = sel.indexOf(".") === 0 ? document.querySelectorAll(sel) : [qs(sel)];
       nodes.forEach(function (btn) {
         if (!btn) return;
@@ -691,8 +702,15 @@
       });
     });
     document.querySelectorAll(".empresas-cta").forEach(function (b) {
-      b.addEventListener("click", function () {
-        scrollToContact({ interes: "alto-volumen", volumen: "mas-100000" });
+      b.addEventListener("click", function (e) {
+        e.preventDefault();
+        openAgentForHighVolume("submit_lead_empresa");
+      });
+    });
+    document.querySelectorAll(".comercial-cotizar-cta").forEach(function (b) {
+      b.addEventListener("click", function (e) {
+        e.preventDefault();
+        openAgentForHighVolume("click_cotiza_alto_volumen_camino");
       });
     });
     document.querySelectorAll(".comercial-comprar-cta").forEach(function (b) {
@@ -714,15 +732,7 @@
   if (calcQuoteLink) {
     calcQuoteLink.addEventListener("click", function (e) {
       e.preventDefault();
-      if (typeof window.TELVOICE_OPEN_AGENT === "function") {
-        window.TELVOICE_OPEN_AGENT({
-          message: "Quiero cotizar una bolsa de más de 120000 SMS",
-        });
-      } else {
-        var launcher = document.querySelector(".tva-launcher");
-        if (launcher) launcher.click();
-      }
-      trackEvent("click_cotiza_alto_volumen");
+      openAgentForHighVolume("click_cotiza_alto_volumen");
     });
   }
 
