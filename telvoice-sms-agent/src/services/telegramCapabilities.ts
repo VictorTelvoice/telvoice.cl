@@ -32,7 +32,7 @@ export function buildTelegramCapabilitiesMessage(
 ): string {
   const commercial = `Comercial (disponible para todos):
 • Planes, precios y bolsas SMS para Chile
-• Cotizar y comprar bolsas (pago MercadoPago)
+• Cotizar bolsas y pagar con botones (MercadoPago, telvoice.cl o datos en el chat)
 • Preguntas sobre bolsa SMS, operadores, factura, API, activación, etc. (base de conocimiento Telvoice)`;
 
   const operational = authorized

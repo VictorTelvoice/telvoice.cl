@@ -361,9 +361,23 @@
     };
   }
 
+  function isMobileViewport() {
+    return window.matchMedia("(max-width: 640px)").matches;
+  }
+
+  /** En móvil el chat tapa el modal de compra (z-index mayor); cerrar antes del checkout. */
+  function dismissChatForCheckout() {
+    if (isMobileViewport() && state.open) {
+      closePanel();
+    }
+  }
+
   function handleCta(cta) {
     if (!cta) {
       return;
+    }
+    if (cta.type === "pay") {
+      dismissChatForCheckout();
     }
     if (cta.type === "pay" && cta.calc_sms) {
       var payload = planFromCalcSms(cta.calc_sms);

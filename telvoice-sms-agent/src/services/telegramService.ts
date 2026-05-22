@@ -41,6 +41,15 @@ import {
 import {
   setTelegramLastError,
 } from "./telegram/runtime.js";
+import {
+  handleTelegramPaymentCallback,
+  handleTelegramPaymentRequest,
+} from "./telegramPaymentHandler.js";
+import {
+  sendTelegramText,
+  TELEGRAM_COMMERCIAL_REPLY_SENT,
+} from "./telegramQuoteDelivery.js";
+import type { TelegramCallbackQuery } from "../types/telegram.js";
 
 const UNAUTHORIZED_MSG =
   "No estás autorizado para operar este bot. Contacta al administrador Telvoice.";
@@ -90,9 +99,23 @@ function requireClient(): NonNullable<typeof telegramClient> {
   return telegramClient;
 }
 
-async function reply(chatId: number, text: string): Promise<void> {
+async function reply(
+  chatId: number,
+  text: string | typeof TELEGRAM_COMMERCIAL_REPLY_SENT,
+): Promise<void> {
+  if (text === TELEGRAM_COMMERCIAL_REPLY_SENT) {
+    return;
+  }
+  await sendTelegramText(chatId, text);
+}
+
+async function answerCallback(callback: TelegramCallbackQuery): Promise<void> {
   const client = requireClient();
-  await client.sendMessage(chatId, text);
+  try {
+    await client.answerCallbackQuery(callback.id);
+  } catch {
+    /* ignore */
+  }
 }
 
 function stripBotSuffix(token: string): string {
@@ -130,6 +153,18 @@ async function resolveAuth(
 }
 
 export async function processTelegramUpdate(update: TelegramUpdate): Promise<void> {
+  if (update.callback_query) {
+    try {
+      await handleTelegramCallback(update.callback_query);
+    } catch (error) {
+      const msg =
+        error instanceof Error ? error.message : "Error procesando callback";
+      setTelegramLastError(msg);
+      console.error("[telegram] Error callback:", error);
+    }
+    return;
+  }
+
   const message = update.message;
   if (!message?.text || !message.from) {
     return;
@@ -151,6 +186,22 @@ export async function processTelegramUpdate(update: TelegramUpdate): Promise<voi
       /* ignore secondary failure */
     }
   }
+}
+
+async function handleTelegramCallback(
+  callback: TelegramCallbackQuery,
+): Promise<void> {
+  const chatId = callback.message?.chat.id;
+  const userId = callback.from.id;
+  const data = callback.data?.trim();
+
+  if (!chatId || !data) {
+    return;
+  }
+
+  await answerCallback(callback);
+  const auth = await resolveAuth(userId);
+  await handleTelegramPaymentCallback(chatId, userId, data, auth);
 }
 
 async function handleTelegramMessage(message: TelegramMessage): Promise<void> {
@@ -211,6 +262,10 @@ async function handleTelegramMessage(message: TelegramMessage): Promise<void> {
   );
   if (commercialThreadReply !== null) {
     await reply(chatId, commercialThreadReply);
+    return;
+  }
+
+  if (await handleTelegramPaymentRequest(chatId, userId, text, authForThread)) {
     return;
   }
 

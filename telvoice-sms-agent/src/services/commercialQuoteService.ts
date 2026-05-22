@@ -119,15 +119,10 @@ export function buildQuoteCommercialMessage(
     "Cobertura Chile: Entel, Movistar, Claro y WOM.",
   );
 
-  if (quote.checkout_url) {
-    lines.push("", `Pagar ahora por MercadoPago: ${quote.checkout_url}`);
-  } else {
-    lines.push(
-      "",
-      "Puedes pagar online mediante MercadoPago si el link de pago está disponible.",
-      "Si no hay link configurado, registramos tu solicitud para que Telvoice te contacte.",
-    );
-  }
+  lines.push(
+    "",
+    "Usa el botón «Pagar ahora» para MercadoPago, «Continuar en telvoice.cl» para el checkout web, o «Dejar mis datos» para completar el pago en este chat.",
+  );
 
   return lines.join("\n");
 }

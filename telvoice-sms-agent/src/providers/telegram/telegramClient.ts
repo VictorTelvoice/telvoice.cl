@@ -7,6 +7,21 @@ import type {
 } from "../../types/telegram.js";
 import { AppError } from "../../utils/errors.js";
 
+export type InlineKeyboardButton = {
+  text: string;
+  url?: string;
+  callback_data?: string;
+};
+
+export type InlineKeyboardMarkup = {
+  inline_keyboard: InlineKeyboardButton[][];
+};
+
+export interface SendMessageOptions {
+  reply_markup?: InlineKeyboardMarkup;
+  disable_web_page_preview?: boolean;
+}
+
 export class TelegramClient {
   private readonly http: AxiosInstance;
 
@@ -21,10 +36,27 @@ export class TelegramClient {
   async sendMessage(
     chatId: number | string,
     text: string,
+    options?: SendMessageOptions,
   ): Promise<{ message_id: number }> {
     return this.post<{ message_id: number }>("sendMessage", {
       chat_id: chatId,
       text,
+      ...(options?.reply_markup
+        ? { reply_markup: options.reply_markup }
+        : {}),
+      ...(options?.disable_web_page_preview
+        ? { disable_web_page_preview: true }
+        : {}),
+    });
+  }
+
+  async answerCallbackQuery(
+    callbackQueryId: string,
+    text?: string,
+  ): Promise<boolean> {
+    return this.post<boolean>("answerCallbackQuery", {
+      callback_query_id: callbackQueryId,
+      ...(text ? { text, show_alert: false } : {}),
     });
   }
 
@@ -34,6 +66,7 @@ export class TelegramClient {
   ): Promise<boolean> {
     return this.post<boolean>("setWebhook", {
       url,
+      allowed_updates: ["message", "callback_query"],
       ...(secretToken ? { secret_token: secretToken } : {}),
     });
   }
@@ -51,7 +84,7 @@ export class TelegramClient {
       offset,
       timeout: 25,
       limit: 50,
-      allowed_updates: ["message"],
+      allowed_updates: ["message", "callback_query"],
     });
   }
 

@@ -8,8 +8,11 @@ import {
 import type { AuthorizedTelegramClient } from "./telegramAuthorizationService.js";
 import {
   rememberCommercialSession,
-  rememberQuoteSession,
 } from "./telegramCommercialContext.js";
+import {
+  deliverQuoteToTelegramChat,
+  TELEGRAM_COMMERCIAL_REPLY_SENT,
+} from "./telegramQuoteDelivery.js";
 import {
   clearPendingLead,
   getPendingLead,
@@ -39,26 +42,32 @@ export async function handleCommercialText(
   text: string,
   auth: AuthorizedTelegramClient | null = null,
   options?: { userId?: number; chatId?: number },
-): Promise<string | null> {
+): Promise<string | null | typeof TELEGRAM_COMMERCIAL_REPLY_SENT> {
   const commercial = detectCommercialIntent(text);
   if (!commercial) {
     return null;
   }
 
+  if (
+    options?.userId !== undefined &&
+    options.chatId !== undefined &&
+    commercial.hasQuantity &&
+    commercial.quantity !== null
+  ) {
+    const quote =
+      (await quoteFromText(text)) ??
+      (await quoteSmsQuantity(commercial.quantity));
+    return deliverQuoteToTelegramChat(
+      options.chatId,
+      options.userId,
+      quote,
+    );
+  }
+
   const reply = await buildCommercialTelegramReply(text, commercial, auth);
 
   if (options?.userId !== undefined && options.chatId !== undefined) {
-    if (commercial.hasQuantity && commercial.quantity !== null) {
-      const quote =
-        (await quoteFromText(text)) ??
-        (await quoteSmsQuantity(commercial.quantity));
-      rememberQuoteSession(
-        options.userId,
-        options.chatId,
-        quote.quoted_quantity,
-        quote.checkout_url,
-      );
-    } else if (shouldAskQuantity(commercial)) {
+    if (shouldAskQuantity(commercial)) {
       rememberCommercialSession(options.userId, options.chatId, "awaiting_quantity");
     }
   }

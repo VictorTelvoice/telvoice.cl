@@ -90,7 +90,10 @@ export const TELEGRAM_INTENT_TEST_CASES: {
     expectedRoute: "commercial",
   },
   { input: "Comprar", expectedRoute: "commercial" },
-  { input: "Si dame el link para pagar", expectedRoute: "fallback" },
+  {
+    input: "Si dame el link para pagar",
+    expectedRoute: "fallback",
+  },
   { input: "quiero comprar una bolsa", expectedRoute: "commercial" },
   { input: "Hola", expectedRoute: "fallback" },
   { input: "necesito cargar saldo", expectedRoute: "commercial" },

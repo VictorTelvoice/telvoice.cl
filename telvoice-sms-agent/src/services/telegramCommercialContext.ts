@@ -13,7 +13,11 @@ import {
 } from "./telegram/pendingCommercial.js";
 import { startLeadCapture } from "./telegramCommercialService.js";
 import { AppError, ValidationError } from "../utils/errors.js";
-
+import {
+  deliverPaymentLinkToTelegramChat,
+  deliverQuoteToTelegramChat,
+  TELEGRAM_COMMERCIAL_REPLY_SENT,
+} from "./telegramQuoteDelivery.js";
 export function matchesCommercialFollowUp(normalized: string): boolean {
   if (!normalized) {
     return false;
@@ -91,16 +95,24 @@ export function rememberQuoteSession(
   });
 }
 
+function extractFirstHttpsUrl(text: string): string | null {
+  const match = text.match(/https:\/\/[^\s]+/);
+  return match ? match[0] : null;
+}
+
 async function replyWithPaymentOrLead(
   userId: number,
   chatId: number,
   quantity: number,
   checkoutUrl: string | null,
   auth: AuthorizedTelegramClient | null,
-): Promise<string> {
+): Promise<string | typeof TELEGRAM_COMMERCIAL_REPLY_SENT> {
   if (auth) {
     try {
-      return await resolveCheckoutForAuthorizedUser(quantity, auth);
+      const msg = await resolveCheckoutForAuthorizedUser(quantity, auth);
+      const url = extractFirstHttpsUrl(msg) ?? checkoutUrl;
+      await deliverPaymentLinkToTelegramChat(chatId, msg, quantity, url);
+      return TELEGRAM_COMMERCIAL_REPLY_SENT;
     } catch (error) {
       const msg =
         error instanceof ValidationError || error instanceof AppError
@@ -109,16 +121,18 @@ async function replyWithPaymentOrLead(
             ? error.message
             : "No se pudo generar el link de pago.";
       console.error("[telegram] Checkout autorizado:", msg, error);
-      return `${msg}\n\nSi persiste, contacta a soporte Telvoice.`;
+      return `${msg}\n\nSi persiste, contacta a soporte Telvoice o usa «Continuar en telvoice.cl» tras cotizar.`;
     }
   }
 
   if (checkoutUrl) {
-    return (
-      `Link de pago MercadoPago (${quantity.toLocaleString("es-CL")} SMS):\n` +
-      `${checkoutUrl}\n\n` +
-      `Total según tu última cotización. Si necesitas otra cantidad, escribe: cotizar 15000 sms`
+    await deliverPaymentLinkToTelegramChat(
+      chatId,
+      `Listo — pago MercadoPago para ${quantity.toLocaleString("es-CL")} SMS según tu cotización.`,
+      quantity,
+      checkoutUrl,
     );
+    return TELEGRAM_COMMERCIAL_REPLY_SENT;
   }
 
   return startLeadCapture(userId, chatId, quantity);
@@ -129,7 +143,7 @@ export async function continueCommercialConversation(
   chatId: number,
   text: string,
   auth: AuthorizedTelegramClient | null = null,
-): Promise<string | null> {
+): Promise<string | null | typeof TELEGRAM_COMMERCIAL_REPLY_SENT> {
   const session = getPendingCommercial(userId);
   if (!session || session.chat_id !== chatId) {
     return null;
@@ -146,25 +160,13 @@ export async function continueCommercialConversation(
     const qtyFromText = extractQuantityOnlyReply(text);
     if (qtyFromText !== null) {
       const quote = await quoteSmsQuantity(qtyFromText);
-      rememberQuoteSession(
-        userId,
-        chatId,
-        quote.quoted_quantity,
-        quote.checkout_url,
-      );
-      return quote.commercial_message;
+      return deliverQuoteToTelegramChat(chatId, userId, quote);
     }
 
     const embedded = extractSmsQuantityFromText(text);
     if (embedded !== null) {
       const quote = await quoteSmsQuantity(embedded);
-      rememberQuoteSession(
-        userId,
-        chatId,
-        quote.quoted_quantity,
-        quote.checkout_url,
-      );
-      return quote.commercial_message;
+      return deliverQuoteToTelegramChat(chatId, userId, quote);
     }
 
     if (matchesCommercialFollowUp(normalized)) {
@@ -193,13 +195,7 @@ export async function continueCommercialConversation(
     const qtyOnly = extractQuantityOnlyReply(text);
     if (qtyOnly !== null && qtyOnly !== qty) {
       const quote = await quoteSmsQuantity(qtyOnly);
-      rememberQuoteSession(
-        userId,
-        chatId,
-        quote.quoted_quantity,
-        quote.checkout_url,
-      );
-      return quote.commercial_message;
+      return deliverQuoteToTelegramChat(chatId, userId, quote);
     }
   }
 
