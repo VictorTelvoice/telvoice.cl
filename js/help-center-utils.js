@@ -276,6 +276,13 @@
       renderHeader(active) + '<main class="flex-1 w-full" id="hc-main"></main>' + renderFooter()
     );
     bindMobileNav();
+    if (!document.querySelector("script[data-tva-loader]")) {
+      var agentLoader = document.createElement("script");
+      agentLoader.src = root() + "js/telvoice-web-agent-loader.js";
+      agentLoader.setAttribute("data-root", root());
+      agentLoader.setAttribute("data-tva-loader", "1");
+      document.body.appendChild(agentLoader);
+    }
     var main = document.getElementById("hc-main");
     main.innerHTML = '<div class="' + HC_SHELL + '">';
     return main.firstElementChild;

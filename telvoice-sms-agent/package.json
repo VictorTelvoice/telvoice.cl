@@ -1,0 +1,43 @@
+{
+  "name": "telvoice-sms-agent",
+  "version": "1.0.0",
+  "description": "Agente backend Telvoice para envío de SMS vía API aSMSC/Telvoice",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "setup:env": "tsx scripts/setup-env.ts",
+    "setup:env:force": "tsx scripts/setup-env.ts --force",
+    "verify:setup": "tsx scripts/verify-setup.ts",
+    "debug:supabase": "tsx scripts/debug-supabase.ts",
+    "debug:supabase-rest": "tsx scripts/debug-supabase-rest.ts",
+    "seed:admin": "tsx scripts/seed-admin.ts",
+    "telegram:get-me": "tsx scripts/telegram-get-me.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.8",
+    "axios": "^1.9.0",
+    "bcrypt": "^5.1.1",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/express": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.15.21",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

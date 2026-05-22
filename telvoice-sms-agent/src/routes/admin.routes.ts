@@ -1,0 +1,172 @@
+import { Router } from "express";
+import {
+  getEditTelegramUserForm,
+  getNewTelegramUserForm,
+  getTestClientTelegramUsers,
+  postCreateTelegramUser,
+  postDeactivateTelegramUser,
+  postDeleteTelegramUser,
+  postEditTelegramUser,
+  postTestTelegramUser,
+} from "../controllers/admin-telegram-users.controller.js";
+import {
+  getAsmscBalancePage,
+  getAsmscDiagnosticsPage,
+  getCreditForm,
+  getSendTestForm,
+  postCredit,
+  postSendTest,
+  postSimulateDlr,
+  postSimulateDlrFailed,
+  getTestClientLedger,
+  getTelegramDiagnosticsPage,
+  getTelegramIntentTest,
+  postTelegramDiagnosticsTest,
+  postTelegramIntentTest,
+} from "../controllers/admin-ops.controller.js";
+import {
+  getCalculatorTest,
+  getLeadsList,
+  getProductEditForm,
+  getProductNewForm,
+  getProductsList,
+  postCalculatorTest,
+  postCreateProduct,
+  postEditProduct,
+  postUpdateLeadStatus,
+} from "../controllers/admin-commercial.controller.js";
+import {
+  getPricingTiersAdmin,
+  getWebAgentLeads,
+  getWebAgentQuotes,
+  getWebAgentSessions,
+  postUpdatePricingTier,
+} from "../controllers/admin-web-agent.controller.js";
+import {
+  getKnowledgeEditForm,
+  getKnowledgeList,
+  getKnowledgeNewForm,
+  getKnowledgeTest,
+  postCreateKnowledge,
+  postDeleteKnowledge,
+  postEditKnowledge,
+  postKnowledgeTest,
+} from "../controllers/admin-knowledge.controller.js";
+import {
+  getDashboard,
+  getLoginPage,
+  getMessageDetail,
+  getSettingsPage,
+  getTestClientPage,
+  postLogin,
+  postLogout,
+} from "../controllers/admin.controller.js";
+import {
+  loadAdminSession,
+  redirectIfAuthenticated,
+  requireAdminPage,
+} from "../middleware/admin-auth.js";
+
+export const adminRouter = Router();
+
+adminRouter.use(loadAdminSession);
+
+adminRouter.get("/login", redirectIfAuthenticated, getLoginPage);
+adminRouter.post("/login", postLogin);
+adminRouter.post("/logout", postLogout);
+
+adminRouter.get("/", requireAdminPage, getDashboard);
+adminRouter.get("/sms/send-test", requireAdminPage, getSendTestForm);
+adminRouter.post("/sms/send-test", requireAdminPage, postSendTest);
+adminRouter.get("/clients/test/credit", requireAdminPage, getCreditForm);
+adminRouter.post("/clients/test/credit", requireAdminPage, postCredit);
+adminRouter.get("/clients/test/ledger", requireAdminPage, getTestClientLedger);
+adminRouter.get(
+  "/clients/test/telegram-users",
+  requireAdminPage,
+  getTestClientTelegramUsers,
+);
+adminRouter.get(
+  "/clients/test/telegram-users/new",
+  requireAdminPage,
+  getNewTelegramUserForm,
+);
+adminRouter.post(
+  "/clients/test/telegram-users",
+  requireAdminPage,
+  postCreateTelegramUser,
+);
+adminRouter.get(
+  "/clients/test/telegram-users/:id/edit",
+  requireAdminPage,
+  getEditTelegramUserForm,
+);
+adminRouter.post(
+  "/clients/test/telegram-users/:id/edit",
+  requireAdminPage,
+  postEditTelegramUser,
+);
+adminRouter.post(
+  "/clients/test/telegram-users/:id/deactivate",
+  requireAdminPage,
+  postDeactivateTelegramUser,
+);
+adminRouter.post(
+  "/clients/test/telegram-users/:id/delete",
+  requireAdminPage,
+  postDeleteTelegramUser,
+);
+adminRouter.get("/calculator", requireAdminPage, getCalculatorTest);
+adminRouter.post("/calculator", requireAdminPage, postCalculatorTest);
+adminRouter.get("/products", requireAdminPage, getProductsList);
+adminRouter.get("/products/new", requireAdminPage, getProductNewForm);
+adminRouter.post("/products", requireAdminPage, postCreateProduct);
+adminRouter.get("/products/:id/edit", requireAdminPage, getProductEditForm);
+adminRouter.post("/products/:id/edit", requireAdminPage, postEditProduct);
+adminRouter.get("/leads", requireAdminPage, getLeadsList);
+adminRouter.post("/leads/:id/status", requireAdminPage, postUpdateLeadStatus);
+adminRouter.get("/web-agent/leads", requireAdminPage, getWebAgentLeads);
+adminRouter.get("/web-agent/sessions", requireAdminPage, getWebAgentSessions);
+adminRouter.get("/web-agent/quotes", requireAdminPage, getWebAgentQuotes);
+adminRouter.get("/pricing-tiers", requireAdminPage, getPricingTiersAdmin);
+adminRouter.post(
+  "/pricing-tiers/:id/edit",
+  requireAdminPage,
+  postUpdatePricingTier,
+);
+adminRouter.get("/knowledge", requireAdminPage, getKnowledgeList);
+adminRouter.get("/knowledge/test", requireAdminPage, getKnowledgeTest);
+adminRouter.post("/knowledge/test", requireAdminPage, postKnowledgeTest);
+adminRouter.get("/knowledge/new", requireAdminPage, getKnowledgeNewForm);
+adminRouter.post("/knowledge", requireAdminPage, postCreateKnowledge);
+adminRouter.get("/knowledge/:id/edit", requireAdminPage, getKnowledgeEditForm);
+adminRouter.post("/knowledge/:id/edit", requireAdminPage, postEditKnowledge);
+adminRouter.post("/knowledge/:id/delete", requireAdminPage, postDeleteKnowledge);
+adminRouter.get("/settings", requireAdminPage, getSettingsPage);
+adminRouter.get("/asmsc/balance", requireAdminPage, getAsmscBalancePage);
+adminRouter.get("/asmsc/diagnostics", requireAdminPage, getAsmscDiagnosticsPage);
+adminRouter.get("/telegram/diagnostics", requireAdminPage, getTelegramDiagnosticsPage);
+adminRouter.get("/telegram/test-intent", requireAdminPage, getTelegramIntentTest);
+adminRouter.post("/telegram/test-intent", requireAdminPage, postTelegramIntentTest);
+adminRouter.post(
+  "/telegram/diagnostics/test",
+  requireAdminPage,
+  postTelegramDiagnosticsTest,
+);
+adminRouter.post(
+  "/clients/test/telegram-users/:id/test",
+  requireAdminPage,
+  postTestTelegramUser,
+);
+adminRouter.post(
+  "/messages/:id/simulate-dlr",
+  requireAdminPage,
+  postSimulateDlr,
+);
+adminRouter.post(
+  "/messages/:id/simulate-dlr-failed",
+  requireAdminPage,
+  postSimulateDlrFailed,
+);
+adminRouter.get("/messages/:id", requireAdminPage, getMessageDetail);
+adminRouter.get("/clients/test", requireAdminPage, getTestClientPage);

@@ -1,0 +1,236 @@
+import type { NextFunction, Request, Response } from "express";
+import { getBootstrapStatus } from "../config/bootstrap-status.js";
+import { buildDlrCallbackUrl, env, isProduction } from "../config/env.js";
+import {
+  authenticateAdmin,
+  getAdminJwtCookieName,
+  getJwtCookieOptions,
+  signAdminToken,
+} from "../services/adminAuthService.js";
+import { getBalanceByClientId } from "../services/balanceService.js";
+import { listTelegramUsersByClientId } from "../services/clientTelegramUserService.js";
+import { getTestClientBundle } from "../services/clientService.js";
+import { getClientById } from "../services/clientService.js";
+import {
+  fetchAsmscBalance,
+} from "../services/sms.service.js";
+import {
+  getMessageById,
+  getSmsMessageStats,
+  listDlrEventsByMessageId,
+  listRecentMessages,
+} from "../services/smsMessageService.js";
+import { parseAsmscBalanceSummary } from "../utils/asmsc-balance-summary.js";
+import {
+  renderDashboardPage,
+  renderLoginPage,
+  renderMessageDetailPage,
+  renderSettingsPage,
+  renderTestClientPage,
+} from "../views/admin-pages.js";
+import { getConfiguredDlrWebhookUrl } from "../utils/dlr-callback.js";
+import { validateUuidParam } from "../utils/validation.js";
+
+export function getLoginPage(req: Request, res: Response): void {
+  const error = typeof req.query.error === "string" ? req.query.error : undefined;
+  const next =
+    typeof req.query.next === "string" ? req.query.next : "/admin";
+
+  res.type("html").send(renderLoginPage({ error, next }));
+}
+
+export async function postLogin(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const email = String(req.body?.email ?? "").trim();
+    const password = String(req.body?.password ?? "");
+    const nextPath = sanitizeNextPath(String(req.body?.next ?? "/admin"));
+
+    if (!email || !password) {
+      res.redirect(
+        `/admin/login?error=${encodeURIComponent("Correo y contraseña son obligatorios.")}&next=${encodeURIComponent(nextPath)}`,
+      );
+      return;
+    }
+
+    const admin = await authenticateAdmin(email, password);
+    if (!admin) {
+      res.redirect(
+        `/admin/login?error=${encodeURIComponent("Credenciales inválidas.")}&next=${encodeURIComponent(nextPath)}`,
+      );
+      return;
+    }
+
+    const token = signAdminToken(admin);
+    res.cookie(getAdminJwtCookieName(), token, getJwtCookieOptions());
+    res.redirect(nextPath);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export function postLogout(_req: Request, res: Response): void {
+  res.clearCookie(getAdminJwtCookieName(), { path: "/" });
+  res.redirect("/admin/login");
+}
+
+export async function getDashboard(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const admin = req.adminUser!;
+    const bootstrap = getBootstrapStatus();
+    let testClient = null;
+    let balance = null;
+    let messages: Awaited<ReturnType<typeof listRecentMessages>> = [];
+    let stats: Awaited<ReturnType<typeof getSmsMessageStats>> | null = null;
+    let asmscBalance = parseAsmscBalanceSummary(null);
+    let dbLoadError: string | null = bootstrap.warning;
+
+    if (env.supabase.url && env.supabase.serviceRoleKey && !bootstrap.pgrestSchemaCacheIssue) {
+      try {
+        testClient = await getTestClientBundle();
+        balance = await getBalanceByClientId(testClient.client.id);
+        [messages, stats] = await Promise.all([
+          listRecentMessages(),
+          getSmsMessageStats(),
+        ]);
+        dbLoadError = null;
+      } catch (dbError) {
+        const msg =
+          dbError instanceof Error ? dbError.message : "Error cargando datos";
+        dbLoadError = dbLoadError ?? msg;
+        console.error("[admin] Error cargando datos:", dbError);
+      }
+    }
+
+    if (env.asmsc.apiId && env.asmsc.apiPassword) {
+      try {
+        const provider = await fetchAsmscBalance();
+        asmscBalance = parseAsmscBalanceSummary(provider);
+      } catch (balanceError) {
+        asmscBalance = parseAsmscBalanceSummary(null, balanceError);
+      }
+    }
+
+    let successMessage: string | null = null;
+    if (typeof req.query.credited === "string" && req.query.credited) {
+      const units = req.query.credited;
+      const country =
+        typeof req.query.country === "string" ? req.query.country : "CL";
+      const available =
+        typeof req.query.available === "string" ? req.query.available : "";
+      successMessage = `Crédito aplicado: +${units} unidades (${country}). Disponible: ${available || "ver balance abajo"}.`;
+    }
+
+    res.type("html").send(
+      renderDashboardPage({
+        admin,
+        serviceOk: !bootstrap.pgrestSchemaCacheIssue,
+        testClient,
+        balance,
+        messages,
+        stats,
+        asmscBalance,
+        supabaseConfigured: Boolean(
+          env.supabase.url && env.supabase.serviceRoleKey,
+        ),
+        configWarning: dbLoadError,
+        successMessage,
+        dlrWebhookUrl: buildDlrCallbackUrl() ?? getConfiguredDlrWebhookUrl(),
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getMessageDetail(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = validateUuidParam(String(req.params.id ?? ""), "id");
+    const message = await getMessageById(id);
+    const dlrEvents = await listDlrEventsByMessageId(id);
+    const client = await getClientById(message.client_id);
+    const simulatedParam =
+      typeof req.query.simulated === "string" ? req.query.simulated : null;
+    const simulated =
+      simulatedParam === "delivered" || simulatedParam === "failed"
+        ? simulatedParam
+        : simulatedParam === "1"
+          ? "delivered"
+          : null;
+
+    res.type("html").send(
+      renderMessageDetailPage({
+        admin: req.adminUser!,
+        message,
+        clientName: client?.company_name ?? message.client_id,
+        dlrEvents,
+        showSimulateDlr: !isProduction(),
+        simulated,
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getTestClientPage(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const bundle = await getTestClientBundle();
+    const balance = await getBalanceByClientId(bundle.client.id);
+    const telegramUsers = await listTelegramUsersByClientId(bundle.client.id);
+    const success =
+      typeof req.query.success === "string" ? req.query.success : undefined;
+    const telegramTestResult =
+      typeof req.query.telegram_test_result === "string"
+        ? req.query.telegram_test_result
+        : undefined;
+    const telegramTestError =
+      typeof req.query.telegram_test_error === "string"
+        ? req.query.telegram_test_error
+        : undefined;
+
+    res.type("html").send(
+      renderTestClientPage({
+        admin: req.adminUser!,
+        bundle,
+        balance,
+        telegramUsers,
+        successMessage: success,
+        telegramTestResult,
+        telegramTestError,
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+}
+
+export function getSettingsPage(req: Request, res: Response): void {
+  res.type("html").send(
+    renderSettingsPage({
+      admin: req.adminUser!,
+    }),
+  );
+}
+
+function sanitizeNextPath(path: string): string {
+  if (path.startsWith("/admin") && !path.startsWith("//")) {
+    return path;
+  }
+  return "/admin";
+}

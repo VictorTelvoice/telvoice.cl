@@ -999,4 +999,6 @@
   bindCompraCheckoutHandlers();
   initCompraModal();
   bindWhatsappLinks();
+
+  window.TELVOICE_OPEN_CHECKOUT = openCompraModal;
 })();
