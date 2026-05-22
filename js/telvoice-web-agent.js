@@ -440,11 +440,11 @@
     root.id = "telvoice-web-agent";
     root.innerHTML =
       '<div class="tva-launcher-wrap">' +
-      '<span class="tva-badge" aria-hidden="true">Asesor en línea</span>' +
       '<button type="button" class="tva-launcher" aria-expanded="false" aria-controls="tva-panel" aria-label="Abrir agente comercial Telvoice">' +
       '<img src="' +
       escHtml(iso) +
       '" alt="" width="48" height="48" decoding="async" data-tva-iso="1" />' +
+      '<span class="tva-launcher-online" aria-hidden="true" title="En línea"></span>' +
       "</button></div>" +
       '<div id="tva-panel" class="tva-panel" role="dialog" aria-labelledby="tva-title" aria-modal="true">' +
       '<div class="tva-header">' +

@@ -24,27 +24,33 @@
   gap: 0.5rem;
 }
 
-.tva-badge {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  padding: 0.3rem 0.65rem;
-  border-radius: 9999px;
-  background: #fff;
-  color: var(--tva-purple);
-  border: 1px solid var(--tva-border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-  white-space: nowrap;
-}
-
-.tva-badge::before {
-  content: "";
-  display: inline-block;
-  width: 0.5rem;
-  height: 0.5rem;
-  margin-right: 0.35rem;
+.tva-launcher-online {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.2rem;
+  z-index: 2;
+  width: 0.75rem;
+  height: 0.75rem;
   border-radius: 50%;
   background: #22c55e;
-  vertical-align: middle;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.2);
+  pointer-events: none;
+  animation: tva-online-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes tva-online-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(34, 197, 94, 0.45),
+      0 1px 4px rgba(15, 23, 42, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px rgba(34, 197, 94, 0),
+      0 1px 4px rgba(15, 23, 42, 0.2);
+  }
 }
 
 .tva-launcher {
@@ -113,7 +119,8 @@
 
 .tva-root--chat-open .tva-launcher::before,
 .tva-root--chat-open .tva-launcher::after,
-.tva-root--chat-open .tva-launcher img {
+.tva-root--chat-open .tva-launcher img,
+.tva-root--chat-open .tva-launcher-online {
   animation-play-state: paused;
 }
 
@@ -445,6 +452,7 @@
   .tva-launcher::before,
   .tva-launcher::after,
   .tva-launcher img,
+  .tva-launcher-online,
   .tva-suggestions-dot,
   .tva-suggestions.has-hint .tva-suggestions-toggle {
     animation: none;
@@ -520,8 +528,3 @@ html.tva-chat-open body {
   }
 }
 
-@media (max-width: 480px) {
-  .tva-badge {
-    display: none;
-  }
-}
