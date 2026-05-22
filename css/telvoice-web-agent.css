@@ -48,29 +48,112 @@
 }
 
 .tva-launcher {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 4rem;
-  height: 4rem;
+  width: 4.25rem;
+  height: 4.25rem;
   border: none;
   border-radius: 9999px;
-  background: var(--tva-gradient);
+  background: transparent;
   cursor: pointer;
-  box-shadow: var(--tva-shadow);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  padding: 0.35rem;
+  box-shadow: none;
+  padding: 0;
+  transition: transform 0.25s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.tva-launcher::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 82, 204, 0.45);
+  animation: tva-launcher-ring 2.6s ease-out infinite;
+  pointer-events: none;
+}
+
+.tva-launcher::after {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    rgba(91, 33, 182, 0.18) 0%,
+    transparent 65%
+  );
+  animation: tva-launcher-glow 3.2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .tva-launcher:hover {
-  transform: scale(1.05);
+  transform: scale(1.08);
+}
+
+.tva-launcher:active {
+  transform: scale(0.96);
 }
 
 .tva-launcher img {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   object-fit: contain;
-  border-radius: 0.65rem;
+  border-radius: 0;
+  background: transparent;
+  filter: drop-shadow(0 10px 22px rgba(0, 82, 204, 0.28));
+  animation: tva-launcher-float 3s ease-in-out infinite;
+  transition: filter 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.tva-launcher:hover img {
+  filter: drop-shadow(0 14px 28px rgba(91, 33, 182, 0.38));
+}
+
+.tva-root--chat-open .tva-launcher::before,
+.tva-root--chat-open .tva-launcher::after,
+.tva-root--chat-open .tva-launcher img {
+  animation-play-state: paused;
+}
+
+@keyframes tva-launcher-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes tva-launcher-ring {
+  0% {
+    transform: scale(0.88);
+    opacity: 0.75;
+  }
+  70% {
+    transform: scale(1.22);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.22);
+    opacity: 0;
+  }
+}
+
+@keyframes tva-launcher-glow {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.05);
+  }
 }
 
 .tva-panel {
@@ -81,15 +164,15 @@
   max-height: min(34rem, calc(100vh - 7rem));
   display: flex;
   flex-direction: column;
-  background: transparent;
-  border: none;
-  box-shadow: none;
+  background: #fff;
+  border-radius: 1.125rem;
+  border: 1px solid var(--tva-border);
+  box-shadow: var(--tva-shadow);
   overflow: hidden;
   opacity: 0;
   visibility: hidden;
   transform: translateY(14px) scale(0.97);
   transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s;
-  gap: 0.5rem;
 }
 
 .tva-panel.is-open {
@@ -105,8 +188,6 @@
   padding: 0.9rem 1rem;
   background: var(--tva-gradient);
   color: #fff;
-  border-radius: 1rem;
-  box-shadow: var(--tva-shadow);
 }
 
 .tva-header img {
@@ -148,12 +229,11 @@
 .tva-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 0.25rem 0;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
-  background: transparent;
-  scrollbar-width: thin;
+  background: var(--tva-surface);
 }
 
 .tva-msg {
@@ -168,10 +248,9 @@
 
 .tva-msg--bot {
   align-self: flex-start;
-  background: rgba(255, 255, 255, 0.96);
+  background: #fff;
   color: var(--tva-on-surface);
   border: 1px solid var(--tva-border);
-  box-shadow: 0 4px 16px rgba(19, 27, 46, 0.08);
 }
 
 .tva-msg--user {
@@ -189,8 +268,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  padding: 0;
-  background: transparent;
+  padding: 0 0.85rem 0.45rem;
+  background: var(--tva-surface);
 }
 
 .tva-quick button {
@@ -213,8 +292,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  padding: 0;
-  background: transparent;
+  padding: 0 0.85rem 0.45rem;
+  background: var(--tva-surface);
 }
 
 .tva-ctas button {
@@ -237,9 +316,9 @@
 .tva-form {
   display: flex;
   gap: 0.5rem;
-  padding: 0;
-  border: none;
-  background: transparent;
+  padding: 0.75rem 0.85rem 0.9rem;
+  border-top: 1px solid var(--tva-border);
+  background: #fff;
 }
 
 .tva-form input {
@@ -249,8 +328,6 @@
   border-radius: 9999px;
   padding: 0.55rem 0.875rem;
   font-size: 0.8125rem;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 4px 16px rgba(19, 27, 46, 0.08);
 }
 
 .tva-form button[type="submit"] {
@@ -267,6 +344,14 @@
 .tva-form button[type="submit"]:disabled {
   opacity: 0.65;
   cursor: wait;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tva-launcher::before,
+  .tva-launcher::after,
+  .tva-launcher img {
+    animation: none;
+  }
 }
 
 @media (max-width: 480px) {

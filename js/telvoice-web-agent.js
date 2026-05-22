@@ -278,6 +278,7 @@
 
   function openPanel() {
     state.open = true;
+    els.root.classList.add("tva-root--chat-open");
     els.panel.classList.add("is-open");
     els.launcher.setAttribute("aria-expanded", "true");
     if (!state.welcomed) {
@@ -291,6 +292,7 @@
 
   function closePanel() {
     state.open = false;
+    els.root.classList.remove("tva-root--chat-open");
     els.panel.classList.remove("is-open");
     els.launcher.setAttribute("aria-expanded", "false");
   }
