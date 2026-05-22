@@ -264,12 +264,57 @@
   font-style: italic;
 }
 
+.tva-suggestions {
+  background: var(--tva-surface);
+  padding: 0 0.85rem 0.45rem;
+}
+
+.tva-suggestions-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--tva-border);
+  border-radius: 0.55rem;
+  background: #fff;
+  color: var(--tva-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tva-suggestions-toggle:hover {
+  background: rgba(0, 82, 204, 0.06);
+}
+
+.tva-suggestions-chevron {
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+  margin-top: -0.15rem;
+}
+
+.tva-suggestions-toggle.is-open .tva-suggestions-chevron {
+  transform: rotate(-135deg);
+  margin-top: 0.1rem;
+}
+
 .tva-quick {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  padding: 0 0.85rem 0.45rem;
-  background: var(--tva-surface);
+  padding: 0.5rem 0 0;
+  background: transparent;
+}
+
+.tva-quick[hidden] {
+  display: none !important;
 }
 
 .tva-quick button {

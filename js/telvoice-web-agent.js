@@ -79,26 +79,65 @@
 
   function renderQuickActions(container, actions, onClick) {
     container.innerHTML = "";
-    (actions || []).forEach(function (action) {
+    var wrap = els.suggestions;
+    var toggle = els.suggestionsToggle;
+    if (!actions || !actions.length) {
+      if (wrap) {
+        wrap.hidden = true;
+      }
+      container.hidden = true;
+      if (toggle) {
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.classList.remove("is-open");
+      }
+      return;
+    }
+    if (wrap) {
+      wrap.hidden = false;
+    }
+    container.hidden = true;
+    if (toggle) {
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.classList.remove("is-open");
+    }
+    actions.forEach(function (action) {
       var btn = document.createElement("button");
       btn.type = "button";
       btn.textContent = action.label;
       btn.dataset.actionId = action.id;
       btn.addEventListener("click", function () {
         onClick(action.id, action.label);
+        container.hidden = true;
+        if (toggle) {
+          toggle.setAttribute("aria-expanded", "false");
+          toggle.classList.remove("is-open");
+        }
       });
       container.appendChild(btn);
     });
   }
 
+  function toggleSuggestions() {
+    if (!els.quick || !els.suggestionsToggle) {
+      return;
+    }
+    var open = els.quick.hidden;
+    els.quick.hidden = !open;
+    els.suggestionsToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    els.suggestionsToggle.classList.toggle("is-open", open);
+  }
+
   function renderCtas(container, ctas) {
     container.innerHTML = "";
-    if (!ctas || !ctas.length) {
+    var visible = (ctas || []).filter(function (cta) {
+      return cta && cta.type !== "lead";
+    });
+    if (!visible.length) {
       container.hidden = true;
       return;
     }
     container.hidden = false;
-    ctas.forEach(function (cta) {
+    visible.forEach(function (cta) {
       var btn = document.createElement("button");
       btn.type = "button";
       btn.textContent = cta.label || "Continuar";
@@ -226,7 +265,13 @@
       '<button type="button" class="tva-close" aria-label="Cerrar chat"><span aria-hidden="true">×</span></button>' +
       "</div>" +
       '<div class="tva-messages" id="tva-messages" aria-live="polite"></div>' +
-      '<div class="tva-quick" id="tva-quick"></div>' +
+      '<div class="tva-suggestions" id="tva-suggestions" hidden>' +
+      '<button type="button" class="tva-suggestions-toggle" id="tva-suggestions-toggle" aria-expanded="false" aria-controls="tva-quick">' +
+      '<span>Sugerencias</span>' +
+      '<span class="tva-suggestions-chevron" aria-hidden="true"></span>' +
+      "</button>" +
+      '<div class="tva-quick" id="tva-quick" hidden></div>' +
+      "</div>" +
       '<div class="tva-ctas" id="tva-ctas" hidden></div>' +
       '<form class="tva-form" id="tva-form">' +
       '<input type="text" id="tva-input" placeholder="Escribe tu mensaje…" autocomplete="off" maxlength="2000" />' +
@@ -248,6 +293,8 @@
     els.launcher = qs(".tva-launcher", root);
     els.panel = qs(".tva-panel", root);
     els.messages = qs("#tva-messages", root);
+    els.suggestions = qs("#tva-suggestions", root);
+    els.suggestionsToggle = qs("#tva-suggestions-toggle", root);
     els.quick = qs("#tva-quick", root);
     els.ctas = qs("#tva-ctas", root);
     els.form = qs("#tva-form", root);
@@ -256,6 +303,9 @@
 
     els.launcher.addEventListener("click", togglePanel);
     els.close.addEventListener("click", closePanel);
+    if (els.suggestionsToggle) {
+      els.suggestionsToggle.addEventListener("click", toggleSuggestions);
+    }
     els.form.addEventListener("submit", function (e) {
       e.preventDefault();
       var text = (els.input.value || "").trim();
