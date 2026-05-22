@@ -9,6 +9,7 @@
   var API_BASE = (CFG.apiOrigin || "").replace(/\/$/, "");
   var VISITOR_KEY = "tva_visitor";
   var SESSION_KEY = "tva_session";
+  var CHAT_STATE_KEY = "tva_chat_state";
 
   function asset(path) {
     return ROOT + path;
@@ -45,7 +46,7 @@
 
   function getSessionId() {
     try {
-      return sessionStorage.getItem(SESSION_KEY) || null;
+      return localStorage.getItem(SESSION_KEY) || null;
     } catch (e) {
       return null;
     }
@@ -54,11 +55,134 @@
   function setSessionId(id) {
     try {
       if (id) {
-        sessionStorage.setItem(SESSION_KEY, id);
+        localStorage.setItem(SESSION_KEY, id);
       }
     } catch (e) {
       /* ignore */
     }
+  }
+
+  function persistChatState() {
+    try {
+      localStorage.setItem(
+        CHAT_STATE_KEY,
+        JSON.stringify({
+          sessionId: getSessionId(),
+          welcomed: state.welcomed,
+          messages: state.messages,
+          drawerQuick: state.drawerQuick,
+          drawerCtas: state.drawerCtas,
+        }),
+      );
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function restoreChatState() {
+    try {
+      var raw = localStorage.getItem(CHAT_STATE_KEY);
+      if (!raw) {
+        return false;
+      }
+      var saved = JSON.parse(raw);
+      if (saved.sessionId) {
+        setSessionId(saved.sessionId);
+      }
+      if (Array.isArray(saved.messages) && saved.messages.length) {
+        state.messages = saved.messages;
+        state.welcomed = true;
+      } else if (saved.welcomed) {
+        state.welcomed = true;
+      }
+      if (saved.drawerQuick) {
+        state.drawerQuick = saved.drawerQuick;
+      }
+      if (saved.drawerCtas) {
+        state.drawerCtas = saved.drawerCtas;
+      }
+      return state.messages.length > 0;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function renderStoredMessages() {
+    if (!els.messages) {
+      return;
+    }
+    els.messages.innerHTML = "";
+    state.messages.forEach(function (msg) {
+      if (msg && msg.text) {
+        appendMessage(els.messages, msg.role === "user" ? "user" : "bot", msg.text);
+      }
+    });
+  }
+
+  function pushStoredMessage(role, text) {
+    if (!text) {
+      return;
+    }
+    state.messages.push({ role: role, text: text });
+    persistChatState();
+  }
+
+  function resumeChatFromServer() {
+    var sessionId = getSessionId();
+    if (!sessionId || String(sessionId).indexOf("local-") === 0) {
+      return Promise.resolve(false);
+    }
+    return fetch(apiUrl("/api/web-agent/resume"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        session_token: getVisitorKey(),
+        visitor_key: getVisitorKey(),
+        session_id: sessionId,
+        current_url: window.location.href,
+      }),
+    })
+      .then(function (res) {
+        return res.text().then(function (text) {
+          var data;
+          try {
+            data = text ? JSON.parse(text) : {};
+          } catch (e) {
+            return null;
+          }
+          if (!res.ok || !data.ok || !data.has_history) {
+            return null;
+          }
+          return data;
+        });
+      })
+      .catch(function () {
+        return null;
+      });
+  }
+
+  function applyResumeData(data) {
+    if (!data) {
+      return;
+    }
+    if (data.session_id) {
+      setSessionId(data.session_id);
+    }
+    if (Array.isArray(data.messages) && data.messages.length) {
+      state.messages = data.messages.map(function (m) {
+        return { role: m.role, text: m.text };
+      });
+      state.welcomed = true;
+      renderStoredMessages();
+    }
+    if (data.quick_actions) {
+      state.drawerQuick = data.quick_actions;
+    }
+    if (data.ctas) {
+      state.drawerCtas = data.ctas;
+    }
+    syncActionDrawer(state.drawerQuick, state.drawerCtas);
+    persistChatState();
   }
 
   function escHtml(s) {
@@ -169,6 +293,7 @@
   function syncActionDrawer(quickActions, ctas) {
     var onQuick = function (id, label) {
       appendMessage(els.messages, "user", label);
+      pushStoredMessage("user", label);
       sendToApi({ quick_action: id });
     };
     var split = splitCtas(ctas);
@@ -283,6 +408,7 @@
     open: false,
     loading: false,
     welcomed: false,
+    messages: [],
     drawerQuick: [],
     drawerCtas: [],
   };
@@ -369,6 +495,7 @@
       }
       els.input.value = "";
       appendMessage(els.messages, "user", text);
+      pushStoredMessage("user", text);
       sendToApi({ message: text });
     });
   }
@@ -386,9 +513,11 @@
     els.root.classList.add("tva-root--chat-open");
     els.panel.classList.add("is-open");
     els.launcher.setAttribute("aria-expanded", "true");
-    if (!state.welcomed) {
+    if (!state.welcomed && state.messages.length === 0) {
       state.welcomed = true;
       sendToApi({ message: "" });
+    } else {
+      state.welcomed = true;
     }
     setTimeout(function () {
       els.input.focus();
@@ -408,6 +537,7 @@
     }
     if (data.reply) {
       appendMessage(els.messages, "bot", data.reply);
+      pushStoredMessage("bot", data.reply);
     }
     if (data.quick_actions) {
       state.drawerQuick = data.quick_actions;
@@ -416,6 +546,7 @@
       state.drawerCtas = data.ctas;
     }
     syncActionDrawer(state.drawerQuick, state.drawerCtas);
+    persistChatState();
   }
 
   function sendToApi(payload) {
@@ -520,6 +651,16 @@
       return;
     }
     buildUi();
+    var hadLocal = restoreChatState();
+    if (hadLocal) {
+      renderStoredMessages();
+      syncActionDrawer(state.drawerQuick, state.drawerCtas);
+    }
+    resumeChatFromServer().then(function (data) {
+      if (data && data.messages && data.messages.length) {
+        applyResumeData(data);
+      }
+    });
     initPendingCheckoutOnLanding();
   }
 
