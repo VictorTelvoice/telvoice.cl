@@ -1456,21 +1456,11 @@
         width: 100%;
         max-width: 100%;
       }
-      #casos-uso .caso-card {
-        max-width: 11.75rem;
-      }
       #casos-uso .caso-visual {
-        padding: 0.35rem;
+        padding: 0.4rem;
       }
       #casos-uso .caso-card-body {
-        padding: 0.6rem 0.65rem 0.75rem;
-      }
-      #casos-uso .caso-tagline {
-        font-size: 0.8125rem;
-      }
-      #casos-uso .caso-desc {
-        font-size: 0.75rem;
-        line-height: 1.4;
+        padding: 0.65rem 0.75rem 0.8rem;
       }
       /* Centrar tarjetas y paneles en móvil */
       .section-inner > .grid,
@@ -1996,18 +1986,12 @@
     }
     #casos-uso .casos-grid {
       align-items: stretch;
-      max-width: 54rem;
-      margin-left: auto;
-      margin-right: auto;
     }
     #casos-uso .caso-card {
       display: flex;
       flex-direction: column;
       gap: 0;
       width: 100%;
-      max-width: 16.75rem;
-      margin-left: auto;
-      margin-right: auto;
       height: 100%;
       overflow: hidden;
       border-radius: 1rem;
@@ -2109,10 +2093,7 @@
       font-weight: 400;
       color: #5c6478;
     }
-    @media (min-width: 640px) {
-      #casos-uso .caso-card {
-        max-width: 17.25rem;
-      }
+    @media (min-width: 768px) {
       #casos-uso .caso-card-body {
         padding: 0.75rem 0.95rem 1rem;
       }
@@ -2631,7 +2612,7 @@
         <h2 id="casos-titulo" class="mt-4 font-h2 text-h2 text-on-background leading-tight">Cómo el SMS ayuda a tu empresa a comunicar con más seguridad y control</h2>
         <p class="section-intro mt-4 text-on-surface-variant leading-relaxed">Utiliza SMS para confirmar acciones, enviar alertas, validar usuarios, recordar citas y mantener informados a tus clientes con una comunicación directa, confiable y oportuna.</p>
       </header>
-      <div class="casos-grid grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 lg:gap-5">
+      <div class="casos-grid mx-auto mt-10 grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
         <article id="caso-promociones" class="caso-card scroll-mt-[4.75rem]" tabindex="-1">
           <figure class="caso-visual">
             <img src="assets/casos-uso/casos-uso-retail.png" alt="Retail: promociones y seguimiento de compra por SMS" width="640" height="480" loading="lazy" decoding="async" />
