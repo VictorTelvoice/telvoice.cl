@@ -451,12 +451,77 @@
   }
 }
 
-@media (max-width: 480px) {
+html.tva-chat-open,
+html.tva-chat-open body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+@media (max-width: 640px) {
   .tva-root {
-    right: 0.65rem;
-    bottom: 0.65rem;
+    right: 0;
+    bottom: 0;
+    left: auto;
   }
-  .tva-panel {
-    width: calc(100vw - 1.3rem);
+
+  .tva-root--chat-open {
+    position: fixed;
+    inset: 0;
+    left: 0;
+    right: 0;
+    bottom: var(--tva-kb-offset, 0px);
+    top: auto;
+    height: calc(100dvh - var(--tva-kb-offset, 0px));
+    max-height: calc(100dvh - var(--tva-kb-offset, 0px));
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0;
+    background: rgba(19, 27, 46, 0.35);
+  }
+
+  .tva-root--chat-open .tva-launcher-wrap {
+    display: none;
+  }
+
+  .tva-root--chat-open .tva-panel {
+    position: relative;
+    bottom: auto;
+    right: auto;
+    left: auto;
+    width: 100%;
+    max-width: none;
+    max-height: 100%;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
+    border-radius: 1rem 1rem 0 0;
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .tva-root--chat-open .tva-panel.is-open {
+    transform: none;
+  }
+
+  .tva-messages {
+    min-height: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tva-form {
+    flex-shrink: 0;
+    padding-bottom: max(0.9rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .tva-form input {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .tva-badge {
+    display: none;
   }
 }

@@ -487,6 +487,13 @@
     if (els.suggestionsToggle) {
       els.suggestionsToggle.addEventListener("click", toggleSuggestions);
     }
+    if (els.input) {
+      els.input.addEventListener("focus", function () {
+        setTimeout(syncMobileViewport, 80);
+        setTimeout(syncMobileViewport, 320);
+      });
+    }
+
     els.form.addEventListener("submit", function (e) {
       e.preventDefault();
       var text = (els.input.value || "").trim();
@@ -508,11 +515,49 @@
     }
   }
 
+  function setChatOpenLock(on) {
+    try {
+      document.documentElement.classList.toggle("tva-chat-open", on);
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function syncMobileViewport() {
+    if (!els.root || !state.open) {
+      return;
+    }
+    var offset = 0;
+    if (window.visualViewport) {
+      var vv = window.visualViewport;
+      offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    }
+    els.root.style.setProperty("--tva-kb-offset", offset + "px");
+    if (els.messages) {
+      els.messages.scrollTop = els.messages.scrollHeight;
+    }
+  }
+
+  function bindMobileViewport() {
+    if (!window.visualViewport || els._vvBound) {
+      return;
+    }
+    els._vvBound = true;
+    var onVv = function () {
+      syncMobileViewport();
+    };
+    window.visualViewport.addEventListener("resize", onVv);
+    window.visualViewport.addEventListener("scroll", onVv);
+  }
+
   function openPanel() {
     state.open = true;
     els.root.classList.add("tva-root--chat-open");
     els.panel.classList.add("is-open");
     els.launcher.setAttribute("aria-expanded", "true");
+    setChatOpenLock(true);
+    bindMobileViewport();
+    syncMobileViewport();
     if (!state.welcomed && state.messages.length === 0) {
       state.welcomed = true;
       sendToApi({ message: "" });
@@ -520,8 +565,9 @@
       state.welcomed = true;
     }
     setTimeout(function () {
-      els.input.focus();
-    }, 200);
+      els.input.focus({ preventScroll: true });
+      syncMobileViewport();
+    }, 280);
   }
 
   function closePanel() {
@@ -529,6 +575,13 @@
     els.root.classList.remove("tva-root--chat-open");
     els.panel.classList.remove("is-open");
     els.launcher.setAttribute("aria-expanded", "false");
+    setChatOpenLock(false);
+    if (els.root) {
+      els.root.style.removeProperty("--tva-kb-offset");
+    }
+    if (els.input) {
+      els.input.blur();
+    }
   }
 
   function applyResponse(data) {
