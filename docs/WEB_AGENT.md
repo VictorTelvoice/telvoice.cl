@@ -17,6 +17,7 @@ Chat flotante **FloatingSalesAgent** + panel **SalesAgentChatWidget**. No usa Te
 | `lib/telvoice-pricing-tiers.js` | Tramos oficiales compartidos con calculadora |
 | `lib/web-agent/telvoiceQuoteService.js` | Cotización |
 | `lib/web-agent/webAgentIntentService.js` | Intenciones |
+| `lib/web-agent/capabilities.js` | Respuesta «qué puedes hacer» |
 | `lib/web-agent/conversation.js` | Motor de conversación |
 | `api/web-agent/chat.js` | POST conversación |
 | `api/web-agent/lead.js` | POST lead |

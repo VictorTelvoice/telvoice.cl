@@ -4,6 +4,10 @@ import {
   formatPlansCatalogMessage,
   quoteFromText,
 } from "./commercialQuoteService.js";
+import {
+  buildTelegramCapabilitiesMessage,
+  matchesCapabilitiesIntent,
+} from "./telegramCapabilities.js";
 import { answerKnowledgeQuestion } from "./telegramKnowledge.js";
 import {
   filterKnowledgeSearchResults,
@@ -26,6 +30,7 @@ export type TelegramIntentRoute =
   | "operational"
   | "commercial"
   | "knowledge"
+  | "capabilities"
   | "fallback";
 
 export type CommercialIntentKind =
@@ -94,6 +99,14 @@ export const TELEGRAM_INTENT_TEST_CASES: {
     input: "cuánto cuesta 70000 sms",
     expectedRoute: "commercial",
     expectedQuantity: 70000,
+  },
+  {
+    input: "¿Qué puedes hacer por mí?",
+    expectedRoute: "capabilities",
+  },
+  {
+    input: "en qué puedes ayudarme",
+    expectedRoute: "capabilities",
   },
   { input: "qué significa submitted", expectedRoute: "knowledge" },
   { input: "qué significa sms tipo P", expectedRoute: "knowledge" },
@@ -355,6 +368,16 @@ export function classifyTelegramIntent(
     };
   }
 
+  if (matchesCapabilitiesIntent(normalizedText)) {
+    return {
+      route: "capabilities",
+      normalizedText,
+      originalText: text.trim(),
+      operationalCommand: null,
+      commercial: null,
+    };
+  }
+
   if (isExplicitKnowledgeQuestion(normalizedText)) {
     return {
       route: "knowledge",
@@ -513,6 +536,8 @@ export async function simulateTelegramIntent(
     );
   } else if (classification.route === "knowledge") {
     replyPreview = await buildKnowledgeReplySafe(trimmed);
+  } else if (classification.route === "capabilities") {
+    replyPreview = buildTelegramCapabilitiesMessage(!!auth);
   } else {
     const commercial = detectCommercialIntent(trimmed);
     if (commercial) {

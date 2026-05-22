@@ -1989,7 +1989,7 @@ export function renderTelegramIntentTestPage(options: {
   const body = `
     <p><a href="/admin/telegram/diagnostics" class="row-link">← Diagnóstico Telegram</a></p>
     <h1>Probar intención del bot</h1>
-    <p class="subtitle">Prioridad: operativo → comercial → knowledge → fallback. Sin enviar mensajes reales a Telegram.</p>
+    <p class="subtitle">Prioridad: operativo → comercial → capabilities → knowledge → fallback. Sin enviar mensajes reales a Telegram.</p>
     ${errorBlock}
     <div class="card">
       <form method="post" action="/admin/telegram/test-intent">

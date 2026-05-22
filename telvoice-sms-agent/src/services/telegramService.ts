@@ -25,6 +25,7 @@ import {
   continueLeadCapture,
   handleCommercialText,
 } from "./telegramCommercialService.js";
+import { buildTelegramCapabilitiesMessage } from "./telegramCapabilities.js";
 import {
   buildHumanGreetingMessage,
   isCasualGreetingOnly,
@@ -318,6 +319,11 @@ async function handleFreeTextByIntent(
 
   if (classification.route === "knowledge") {
     await handleKnowledgeQuestion(chatId, text);
+    return;
+  }
+
+  if (classification.route === "capabilities") {
+    await reply(chatId, buildTelegramCapabilitiesMessage(!!auth));
     return;
   }
 
