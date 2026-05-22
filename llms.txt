@@ -40,7 +40,10 @@
 - Calculadora: https://www.telvoice.cl/#calculadora
 - API: https://www.telvoice.cl/#api
 - Empresas / alto volumen: https://www.telvoice.cl/#empresas
-- Tutorial (próximamente): https://www.telvoice.cl/tutorial/
+- Centro de ayuda: https://www.telvoice.cl/ayuda/
+- Envío rápido de SMS: https://www.telvoice.cl/ayuda/envio-de-sms/envio-rapido-de-sms/
+- Envío masivo de SMS: https://www.telvoice.cl/ayuda/envio-de-sms/envio-masivo-de-sms/
+- Descargar reporte de envíos: https://www.telvoice.cl/ayuda/reportes-y-seguimiento/descargar-reporte-de-envios/
 - Privacidad: https://www.telvoice.cl/politica-de-privacidad/
 - Términos: https://www.telvoice.cl/terminos-y-condiciones/
 

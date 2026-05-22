@@ -744,7 +744,6 @@
 
     var calcVol = qs("calcVol");
     var calcQty = qs("calcQty");
-    var calcTier = qs("calcTier");
     var calcPxSMS = qs("calcPxSMS");
     var calcTotal = qs("calcTotal");
     var buyBtn = qs("calc-buy-btn");
@@ -779,7 +778,6 @@
 
       var net = vol * tier.pxSMS;
       if (calcQty) calcQty.textContent = fmt(vol) + " SMS";
-      if (calcTier) calcTier.textContent = tier.label;
       if (calcPxSMS) calcPxSMS.textContent = "$" + tier.pxSMS + " + IVA por SMS";
       if (calcTotal) calcTotal.textContent = formatCalcTotalWithIva(net);
 

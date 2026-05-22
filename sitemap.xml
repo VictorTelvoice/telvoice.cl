@@ -21,9 +21,29 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.telvoice.cl/ayuda/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.telvoice.cl/ayuda/envio-de-sms/envio-rapido-de-sms/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.telvoice.cl/ayuda/envio-de-sms/envio-masivo-de-sms/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.telvoice.cl/ayuda/reportes-y-seguimiento/descargar-reporte-de-envios/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
     <loc>https://www.telvoice.cl/tutorial/</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.telvoice.cl/politica-de-privacidad/</loc>
