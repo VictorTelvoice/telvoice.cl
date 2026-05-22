@@ -53,6 +53,42 @@ html {
   display: none;
 }
 
+/* Nav: posición del CTA como en el landing */
+.nav-sales-btn {
+  flex-shrink: 0;
+}
+@media (min-width: 768px) {
+  .nav-actions {
+    margin-right: 6rem;
+  }
+}
+@media (min-width: 1024px) {
+  .nav-actions {
+    margin-right: 9rem;
+  }
+}
+@media (min-width: 1280px) {
+  .nav-actions {
+    margin-right: 11rem;
+  }
+}
+
+/* Contenedor de sección (casos de uso, etc.) */
+.section-inner {
+  width: 100%;
+  max-width: 1440px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .section-inner {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

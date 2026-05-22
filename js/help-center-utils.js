@@ -39,11 +39,13 @@
     return count + " guías";
   }
 
-  /** Márgenes del Hero: margin-page + pl-20 / pl-28 / pl-36 en escritorio */
-  var HC_SHELL_X =
-    "px-4 sm:px-margin-page md:pl-[7.5rem] md:pr-8 lg:pl-[9.5rem] lg:pr-10 xl:pl-[11.5rem]";
-  var HC_SHELL =
-    "max-w-container-max mx-auto w-full " + HC_SHELL_X;
+  /** Mismo contenedor que casos de uso (section-inner) */
+  var HC_SHELL = "section-inner py-stack-lg md:py-stack-xl";
+  /** Grilla centrada como .casos-grid */
+  var HC_GRID =
+    "mx-auto mt-8 grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3 md:gap-8";
+  var HC_GRID_TWO =
+    "mx-auto mt-8 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 md:gap-8";
 
   function renderHeader(active) {
     var r = root();
@@ -58,9 +60,11 @@
       'assets/telvoice-isotipo.png" alt="" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" aria-hidden="true" />' +
       '<span class="font-h3 text-h3 font-bold tracking-tight lowercase inline-flex items-baseline">' +
       '<span class="text-black">telvoice</span><span class="font-h3 text-body-lg font-bold tracking-tight hero-grad-text">.cl</span></span></a>' +
-      '<ul class="hidden md:flex gap-1 items-center">' +
+      '<ul class="hidden lg:flex gap-1 items-center">' +
       '<li><a class="font-body-md text-body-md rounded-full px-4 py-2 transition-colors ' +
-      (active === "home" ? "text-primary bg-surface-container-low" : "text-on-surface-variant hover:text-primary hover:bg-surface-container-low") +
+      (active === "home"
+        ? "text-primary bg-surface-container-low"
+        : "text-on-surface-variant hover:text-primary hover:bg-surface-container-low") +
       '" href="' +
       r +
       'ayuda/">Centro de ayuda</a></li>' +
@@ -69,17 +73,20 @@
       '#precios">Precios</a></li>' +
       '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
       r +
+      '#casos-uso">Casos de uso</a></li>' +
+      '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
+      r +
       '#contacto">Contacto</a></li>' +
       "</ul>" +
-      '<div class="flex items-center gap-2 shrink-0">' +
-      '<a class="hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm font-semibold" href="' +
+      '<div class="nav-actions flex items-center gap-2 shrink-0">' +
+      '<a class="nav-sales-btn hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm font-semibold" href="' +
       esc(HC.portalUrl) +
       '" target="_blank" rel="noopener noreferrer">Ir al portal</a>' +
-      '<button type="button" id="hc-menu-toggle" class="md:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant/60 text-on-background" aria-expanded="false" aria-controls="hc-mobile-panel" aria-label="Abrir menú">' +
+      '<button type="button" id="hc-menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant/60 text-on-background" aria-expanded="false" aria-controls="hc-mobile-panel" aria-label="Abrir menú">' +
       '<span class="material-symbols-outlined" id="hc-menu-open">menu</span>' +
       '<span class="material-symbols-outlined hidden" id="hc-menu-close">close</span></button>' +
       "</div></div>" +
-      '<div id="hc-mobile-panel" class="hidden md:hidden border-t border-outline-variant/30 bg-surface/95 backdrop-blur-md py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 max-w-container-max mx-auto">' +
+      '<div id="hc-mobile-panel" class="hidden lg:hidden border-t border-outline-variant/30 bg-surface/95 backdrop-blur-md py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 max-w-container-max mx-auto">' +
       '<ul class="flex flex-col gap-1">' +
       '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
       r +
@@ -90,10 +97,11 @@
       '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
       r +
       '#contacto">Contacto</a></li>' +
-      '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
+      "</ul>" +
+      '<a class="mt-2 block w-full rounded-full bg-primary py-3 text-center font-body-md font-semibold text-on-primary hover:bg-surface-tint" href="' +
       esc(HC.portalUrl) +
-      '" target="_blank" rel="noopener noreferrer">Ir al portal</a></li>' +
-      "</ul></div></nav>"
+      '" target="_blank" rel="noopener noreferrer">Ir al portal</a>' +
+      "</div></nav>"
     );
   }
 
@@ -101,9 +109,7 @@
     var r = root();
     return (
       '<footer class="bg-primary text-on-primary" role="contentinfo">' +
-      '<div class="max-w-container-max mx-auto ' +
-      HC_SHELL_X +
-      ' pt-14 pb-6">' +
+      '<div class="max-w-container-max mx-auto px-4 sm:px-margin-page pt-14 pb-6">' +
       '<div class="grid grid-cols-1 gap-12 border-b border-on-primary/20 pb-12 md:grid-cols-2 lg:grid-cols-12 lg:gap-10">' +
       '<div class="lg:col-span-4">' +
       '<a href="' +
@@ -216,8 +222,7 @@
     );
     bindMobileNav();
     var main = document.getElementById("hc-main");
-    main.innerHTML =
-      '<div class="' + HC_SHELL + ' py-stack-lg md:py-stack-xl">';
+    main.innerHTML = '<div class="' + HC_SHELL + '">';
     return main.firstElementChild;
   }
 
@@ -241,6 +246,8 @@
     categoryIcon: categoryIcon,
     guideLabel: guideLabel,
     shellClass: HC_SHELL,
+    gridClass: HC_GRID,
+    gridTwoClass: HC_GRID_TWO,
     renderCard: renderCard,
     mountShell: mountShell,
     allArticles: allArticles,

@@ -37,7 +37,7 @@
     .join("");
 
   main.innerHTML =
-    '<header class="section-bg-sky rounded-2xl border border-outline-variant/40 px-6 py-8 md:px-10 md:py-10">' +
+    '<header class="mx-auto max-w-5xl section-bg-sky rounded-2xl border border-outline-variant/40 px-6 py-8 md:px-10 md:py-10">' +
     '<span class="section-eyebrow">Centro de ayuda</span>' +
     '<h1 class="mt-3 font-h2 text-h2 text-on-background leading-tight">' +
     U.esc(HC.home.title) +
@@ -55,16 +55,20 @@
     '<ul class="mt-4 hidden list-none space-y-2 p-0" id="hc-search-results"></ul>' +
     "</header>" +
     '<section class="mt-12 md:mt-16" aria-labelledby="hc-cats-title">' +
-    '<h2 class="font-h3 text-h3 text-on-background" id="hc-cats-title">Categorías</h2>' +
-    '<div class="mt-8 grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 md:gap-8">' +
+    '<h2 class="font-h3 text-h3 text-on-background text-center" id="hc-cats-title">Categorías</h2>' +
+    '<div class="' +
+    U.gridClass +
+    '">' +
     catsHtml +
     "</div></section>" +
     '<section class="mt-12 md:mt-16" aria-labelledby="hc-feat-title">' +
-    '<h2 class="font-h3 text-h3 text-on-background" id="hc-feat-title">Tutoriales destacados</h2>' +
-    '<div class="mt-8 grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 md:gap-8">' +
+    '<h2 class="font-h3 text-h3 text-on-background text-center" id="hc-feat-title">Tutoriales destacados</h2>' +
+    '<div class="' +
+    U.gridClass +
+    '">' +
     featHtml +
     "</div></section>" +
-    '<div class="mt-12 flex flex-wrap gap-4 rounded-2xl border border-outline-variant/50 bg-surface-container-low p-6 md:p-8">' +
+    '<div class="mx-auto mt-12 flex max-w-5xl flex-wrap gap-4 rounded-2xl border border-outline-variant/50 bg-surface-container-low p-6 md:p-8">' +
     '<a class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 font-body-md font-semibold text-on-primary transition hover:bg-surface-tint" href="' +
     U.esc(HC.portalUrl) +
     '" target="_blank" rel="noopener noreferrer">Ir al portal</a>' +

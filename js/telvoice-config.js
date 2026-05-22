@@ -5,7 +5,7 @@
 window.TELVOICE_CONFIG = {
   apiOrigin: "https://www.telvoice.cl",
   /** Portal cliente SMS (enlaces «Ir al portal»). */
-  customerPortalUrl: "https://telvoice.net/",
+  customerPortalUrl: "https://portal.telvoice.net/",
   helpCenterUrl: "/ayuda/",
   /** Muestra ayuda de pago sandbox en el modal (true solo en pruebas). */
   mercadoPagoSandbox: false,

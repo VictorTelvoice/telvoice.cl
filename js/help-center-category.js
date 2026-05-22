@@ -30,10 +30,10 @@
       .join("");
 
     return (
-      '<ul class="mx-auto max-w-3xl list-none space-y-3 p-0">' +
+      '<ul class="mx-auto max-w-5xl list-none space-y-3 p-0">' +
       items +
       "</ul>" +
-      '<p class="mx-auto mt-8 max-w-3xl font-body-md text-body-md text-on-surface-variant">¿Necesitas ayuda con el portal? Revisa <a href="' +
+      '<p class="mx-auto mt-8 max-w-5xl text-center font-body-md text-body-md text-on-surface-variant">¿Necesitas ayuda con el portal? Revisa <a href="' +
       U.categoryUrl("envio-de-sms/") +
       '" class="font-semibold text-primary hover:underline">Envío de SMS</a> o <a href="' +
       U.categoryUrl("reportes-y-seguimiento/") +
@@ -52,7 +52,7 @@
       );
     }
     return (
-      '<div class="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 md:gap-8">' +
+      '<div class="' + U.gridTwoClass + '">' +
       articles
         .map(function (a) {
           return U.renderCard({
@@ -92,7 +92,7 @@
     "<span>" +
     U.esc(cat.title) +
     "</span></nav>" +
-    '<header class="section-bg-sky rounded-2xl border border-outline-variant/40 px-6 py-8 md:px-10">' +
+    '<header class="mx-auto max-w-5xl section-bg-sky rounded-2xl border border-outline-variant/40 px-6 py-8 md:px-10">' +
     '<div class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary" aria-hidden="true">' +
     '<span class="material-symbols-outlined text-[1.75rem]">' +
     icon +
@@ -110,11 +110,11 @@
     (catSlug === "preguntas-frecuentes" ? renderFaqCategory() : renderArticles()) +
     "</div>" +
     '<section class="mt-12 border-t border-outline-variant/40 pt-12 md:mt-16" aria-labelledby="hc-other-cats">' +
-    '<h2 class="font-h3 text-h3 text-on-background" id="hc-other-cats">Otras categorías</h2>' +
-    '<div class="mt-8 grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 md:gap-8">' +
+    '<h2 class="font-h3 text-h3 text-on-background text-center" id="hc-other-cats">Otras categorías</h2>' +
+    '<div class="' + U.gridClass + '">' +
     otherCats +
     "</div></section>" +
-    '<div class="mt-12 flex flex-wrap gap-4">' +
+    '<div class="mx-auto mt-12 flex max-w-5xl flex-wrap gap-4">' +
     '<a class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 font-body-md font-semibold text-on-primary transition hover:bg-surface-tint" href="' +
     U.esc(HC.portalUrl) +
     '" target="_blank" rel="noopener noreferrer">Ir al portal</a>' +

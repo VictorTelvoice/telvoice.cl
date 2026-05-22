@@ -97,7 +97,7 @@
     .join("");
 
   main.innerHTML =
-    '<article class="mx-auto max-w-3xl">' +
+    '<article class="mx-auto max-w-5xl">' +
     '<nav aria-label="Breadcrumb" class="mb-6 font-body-sm text-body-sm text-on-surface-variant">' +
     '<a href="' +
     r +

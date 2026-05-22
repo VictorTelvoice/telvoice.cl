@@ -3,7 +3,7 @@
  */
 window.HELP_CENTER = {
   siteName: "Telvoice.cl",
-  portalUrl: "https://telvoice.net/",
+  portalUrl: "https://portal.telvoice.net/",
   home: {
     title: "Centro de ayuda Telvoice",
     subtitle: "Aprende a enviar SMS, revisar reportes y usar tu portal paso a paso",
@@ -85,7 +85,7 @@ window.HELP_CENTER = {
       category: "primeros-pasos",
       categoryTitle: "Primeros pasos",
       summary:
-        "Cómo ingresar a telvoice.net con tu usuario, verificar saldo SMS y ubicar el menú principal del portal.",
+        "Cómo ingresar a portal.telvoice.net con tu usuario, verificar saldo SMS y ubicar el menú principal del portal.",
       estimatedTime: "1 min",
       videoUrl: "",
       videoProvider: "youtube",
@@ -101,7 +101,7 @@ window.HELP_CENTER = {
           stepNumber: 1,
           stepTitle: "Abre el portal cliente",
           stepBody:
-            "Ingresa a telvoice.net desde el enlace «Ir al portal» en este sitio o el que te envió tu ejecutivo.",
+            "Ingresa a portal.telvoice.net desde el enlace «Ir al portal» en este sitio o el que te envió tu ejecutivo.",
           imageUrl: "",
           imageAlt: "URL del portal cliente Telvoice",
         },
