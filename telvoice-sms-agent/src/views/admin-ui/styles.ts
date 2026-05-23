@@ -1054,5 +1054,49 @@ export function getAdminStyles(): string {
     .badge-warn { background: #fffbeb; color: #b45309; }
     .badge-err { background: #fef2f2; color: #b91c1c; }
     .badge-muted { background: #f1f5f9; color: #64748b; }
+    .tv-pill--role {
+      background: linear-gradient(135deg, #ede9fe 0%, #e0e7ff 100%);
+      border-color: rgba(99, 102, 241, 0.25);
+      color: #4338ca;
+      font-weight: 600;
+      font-size: 0.72rem;
+    }
+    .tv-forbidden, .tv-app-placeholder {
+      min-height: 60vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+    .tv-forbidden__card, .tv-app-placeholder__card {
+      max-width: 480px;
+      text-align: center;
+      padding: 2rem;
+      border-radius: var(--tv-radius);
+      border: 1px solid var(--tv-border);
+      background: var(--tv-surface);
+      box-shadow: var(--tv-shadow);
+    }
+    .tv-forbidden__icon, .tv-app-placeholder__icon {
+      font-size: 3rem;
+      color: var(--tv-err);
+      margin-bottom: 0.75rem;
+    }
+    .tv-app-placeholder__icon { color: var(--tv-primary); }
+    .tv-forbidden__title { margin: 0 0 0.5rem; font-size: 1.35rem; }
+    .tv-forbidden__text, .tv-app-placeholder__note {
+      color: var(--tv-muted);
+      margin: 0 0 1.25rem;
+      line-height: 1.5;
+    }
+    .tv-forbidden__actions { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+    .tv-app-placeholder__routes {
+      text-align: left;
+      margin: 1rem 0;
+      padding-left: 1.25rem;
+      color: var(--tv-muted);
+      font-size: 0.85rem;
+    }
+    .tv-app-placeholder__meta { font-size: 0.82rem; color: var(--tv-muted); margin-bottom: 0.75rem; }
   `;
 }

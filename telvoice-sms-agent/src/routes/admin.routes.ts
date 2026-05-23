@@ -86,6 +86,7 @@ import {
   postRegister,
 } from "../controllers/admin.controller.js";
 import {
+  getAdminForbiddenPage,
   loadAdminSession,
   redirectIfAuthenticated,
   requireAdminPage,
@@ -95,6 +96,7 @@ export const adminRouter = Router();
 
 adminRouter.use(loadAdminSession);
 
+adminRouter.get("/forbidden", getAdminForbiddenPage);
 adminRouter.get("/login", redirectIfAuthenticated, getLoginPage);
 adminRouter.post("/login", postLogin);
 adminRouter.get("/register", redirectIfAuthenticated, getRegisterPage);

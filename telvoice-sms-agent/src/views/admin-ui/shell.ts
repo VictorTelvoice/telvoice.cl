@@ -7,6 +7,7 @@ export interface LayoutTopbarOptions {
   routesLabel?: string;
   routesOk?: boolean;
   companyName?: string;
+  roleLabel?: string;
 }
 
 export interface LayoutOptions {
@@ -85,8 +86,12 @@ function renderTopbar(options: LayoutOptions): string {
   const routesLabel = tb.routesLabel ?? "Rutas";
   const routesOk = tb.routesOk ?? true;
   const company = tb.companyName ?? "Telvoice · Superadmin";
+  const roleLabel = tb.roleLabel ?? "";
   const adminName = options.adminName ?? "Admin";
   const routesClass = routesOk ? "tv-pill--ok" : "tv-pill--warn";
+  const roleBadge = roleLabel
+    ? `<span class="tv-pill tv-pill--role" title="Rol en Telvoice">${escapeHtml(roleLabel)}</span>`
+    : "";
 
   return `<header class="tv-topbar">
     <button type="button" class="tv-topbar__menu" id="tv-sidebar-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="tv-sidebar">
@@ -97,6 +102,7 @@ function renderTopbar(options: LayoutOptions): string {
       <input type="search" name="q" placeholder="Buscar clientes, campañas, órdenes, API keys…" aria-label="Búsqueda global Superadmin" autocomplete="off" />
     </div>
     <div class="tv-topbar__pills">
+      ${roleBadge}
       <span class="tv-pill" title="Saldo vendido agregado (referencial)">
         <span class="material-symbols-outlined" aria-hidden="true">sms</span>
         <span class="tv-pill__text">${escapeHtml(balance)} vendidos</span>

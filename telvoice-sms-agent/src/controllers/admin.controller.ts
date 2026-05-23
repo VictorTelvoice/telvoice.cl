@@ -2,6 +2,10 @@ import type { NextFunction, Request, Response } from "express";
 import { getBootstrapStatus } from "../config/bootstrap-status.js";
 import { buildDlrCallbackUrl, env, isProduction } from "../config/env.js";
 import {
+  canAccessAdminPanel,
+  canAccessClientPanel,
+} from "../types/roles.js";
+import {
   authenticateAdmin,
   getAdminJwtCookieName,
   getJwtCookieOptions,
@@ -9,6 +13,7 @@ import {
   registerGmailAdmin,
   signAdminToken,
 } from "../services/adminAuthService.js";
+import { ensureInternalProfileForAdmin } from "../services/userProfileService.js";
 import { getBalanceByClientId } from "../services/balanceService.js";
 import { listTelegramUsersByClientId } from "../services/clientTelegramUserService.js";
 import { getTestClientBundle } from "../services/clientService.js";
@@ -127,7 +132,7 @@ export async function postRegister(
 
     const token = signAdminToken(result.user);
     res.cookie(getAdminJwtCookieName(), token, getJwtCookieOptions());
-    res.redirect(nextPath);
+    res.redirect(resolvePostAuthRedirect(result.user.role, nextPath));
   } catch (error) {
     next(error);
   }
@@ -158,12 +163,27 @@ export async function postLogin(
       return;
     }
 
+    await ensureInternalProfileForAdmin(admin);
+
     const token = signAdminToken(admin);
     res.cookie(getAdminJwtCookieName(), token, getJwtCookieOptions());
-    res.redirect(nextPath);
+    res.redirect(resolvePostAuthRedirect(admin.role, nextPath));
   } catch (error) {
     next(error);
   }
+}
+
+function resolvePostAuthRedirect(role: string, nextPath: string): string {
+  if (canAccessClientPanel(role) && !canAccessAdminPanel(role)) {
+    if (nextPath.startsWith("/app")) {
+      return nextPath;
+    }
+    return "/app";
+  }
+  if (canAccessAdminPanel(role) && nextPath.startsWith("/app")) {
+    return "/admin";
+  }
+  return nextPath;
 }
 
 export function postLogout(_req: Request, res: Response): void {
@@ -356,7 +376,10 @@ export function getSettingsPage(req: Request, res: Response): void {
 }
 
 function sanitizeNextPath(path: string): string {
-  if (path.startsWith("/admin") && !path.startsWith("//")) {
+  if (
+    (path.startsWith("/admin") || path.startsWith("/app")) &&
+    !path.startsWith("//")
+  ) {
     return path;
   }
   return "/admin";

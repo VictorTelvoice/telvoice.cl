@@ -2,6 +2,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 import type { AdminJwtPayload, AdminSessionUser } from "../types/admin.js";
+import { ROLES } from "../types/roles.js";
+import { ensureInternalProfileForAdmin } from "./userProfileService.js";
 import { AppError } from "../utils/errors.js";
 import {
   countAdminUsers,
@@ -164,17 +166,19 @@ export async function registerGmailAdmin(input: {
     email,
     password_hash,
     name,
-    role: isFirstUser ? "superadmin" : "admin",
+    role: isFirstUser ? ROLES.SUPERADMIN : ROLES.TELVOICE_OPERATOR,
   });
 
-  return {
-    user: {
-      id: admin.id,
-      email: admin.email,
-      name: admin.name,
-      role: admin.role,
-    },
+  const user: AdminSessionUser = {
+    id: admin.id,
+    email: admin.email,
+    name: admin.name,
+    role: admin.role,
   };
+
+  await ensureInternalProfileForAdmin(user);
+
+  return { user };
 }
 
 export async function seedSuperadminIfMissing(input: {
@@ -192,7 +196,14 @@ export async function seedSuperadminIfMissing(input: {
     email: input.email,
     password_hash,
     name: input.name,
-    role: "superadmin",
+    role: ROLES.SUPERADMIN,
+  });
+
+  await ensureInternalProfileForAdmin({
+    id: admin.id,
+    email: admin.email,
+    name: admin.name,
+    role: admin.role,
   });
 
   return { created: true, email: admin.email };

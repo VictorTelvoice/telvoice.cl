@@ -1,6 +1,7 @@
 import cookieParser from "cookie-parser";
 import express from "express";
 import { adminRouter } from "./routes/admin.routes.js";
+import { appRouter } from "./routes/app.routes.js";
 import { apiRouter } from "./routes/index.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 
@@ -23,6 +24,7 @@ export function createApp() {
 
   app.use("/api", apiRouter);
   app.use("/admin", adminRouter);
+  app.use("/app", appRouter);
   app.use(notFoundHandler);
   app.use(errorHandler);
 

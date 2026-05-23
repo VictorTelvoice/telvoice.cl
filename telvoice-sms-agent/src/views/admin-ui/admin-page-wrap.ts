@@ -1,4 +1,5 @@
 import type { AdminSessionUser } from "../../types/admin.js";
+import { roleDisplayLabel } from "../../types/roles.js";
 import { renderLayout, type LayoutTopbarOptions } from "./shell.js";
 
 export function wrapAdminPage(options: {
@@ -18,6 +19,7 @@ export function wrapAdminPage(options: {
       companyName: "Telvoice · Superadmin",
       routesLabel: "Red global OK",
       routesOk: true,
+      roleLabel: roleDisplayLabel(options.admin.role),
       ...options.topbar,
     },
   });
