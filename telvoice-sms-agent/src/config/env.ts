@@ -22,6 +22,31 @@ function normalizeTelegramMode(value: string): "polling" | "webhook" {
   return value.trim().toLowerCase() === "webhook" ? "webhook" : "polling";
 }
 
+function parseCsvEnv(name: string): string[] {
+  const raw = optionalEnv(name);
+  if (!raw) {
+    return [];
+  }
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+export type SmsProviderMode = "mock" | "live_test";
+
+export type SmsProviderConfig = {
+  mode: SmsProviderMode;
+  provider: string;
+  liveTestEnabled: boolean;
+  liveTestAllowedCompanyIds: string[];
+  liveTestAllowedNumbers: string[];
+};
+
+function normalizeSmsProviderMode(value: string): SmsProviderMode {
+  return value.trim().toLowerCase() === "live_test" ? "live_test" : "mock";
+}
+
 export const env = {
   nodeEnv: optionalEnv("NODE_ENV", "development"),
   port: Number.parseInt(optionalEnv("PORT", "3001"), 10),
@@ -82,6 +107,13 @@ export const env = {
     pendingUrlApp: optionalEnv("MERCADOPAGO_PENDING_URL_APP"),
   },
   databaseUrl: optionalEnv("DATABASE_URL"),
+  smsProvider: {
+    mode: normalizeSmsProviderMode(optionalEnv("SMS_PROVIDER_MODE", "mock")),
+    provider: optionalEnv("SMS_PROVIDER", "real_api"),
+    liveTestEnabled: optionalEnv("SMS_LIVE_TEST_ENABLED", "false") === "true",
+    liveTestAllowedCompanyIds: parseCsvEnv("SMS_LIVE_TEST_ALLOWED_COMPANY_IDS"),
+    liveTestAllowedNumbers: parseCsvEnv("SMS_LIVE_TEST_ALLOWED_NUMBERS"),
+  } satisfies SmsProviderConfig,
 } as const;
 
 export function isMercadoPagoConfigured(): boolean {

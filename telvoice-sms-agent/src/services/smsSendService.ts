@@ -1,7 +1,6 @@
 import type { CompanyRow } from "../types/tenant.js";
-import type { MockSmsSendResult } from "../types/sms-panel.js";
+import type { MockSmsSendResult, PanelSmsMessageStatus } from "../types/sms-panel.js";
 import { findCompanyById } from "./companyService.js";
-import { sendViaMockProvider } from "./mockSmsProviderService.js";
 import {
   createPanelSmsMessage,
   getPanelSmsMessageById,
@@ -18,9 +17,9 @@ import {
   getCompanyBalance,
   getOrCreateCompanyWallet,
 } from "./smsWalletService.js";
-import {
-  hasSmsDebitForMessage,
-} from "./walletTransactionService.js";
+import { hasSmsDebitForMessage } from "./walletTransactionService.js";
+import { assertLiveTestSendAllowed } from "./smsLiveTestPolicy.js";
+import { sendViaProvider } from "./sms-providers/providerFactory.js";
 import { AppError } from "../utils/errors.js";
 
 export type SendMockSmsInput = {
@@ -30,6 +29,10 @@ export type SendMockSmsInput = {
   message: string;
   campaignName?: string | null;
   createdBy?: string | null;
+};
+
+export type SendPanelSmsInput = SendMockSmsInput & {
+  sendMode?: "mock" | "live_test";
 };
 
 async function assertCompanyCanSend(companyId: string): Promise<CompanyRow> {
@@ -46,9 +49,14 @@ async function assertCompanyCanSend(companyId: string): Promise<CompanyRow> {
   return company;
 }
 
-export async function sendMockSms(
-  input: SendMockSmsInput,
-): Promise<MockSmsSendResult> {
+async function validateSendBasics(input: SendMockSmsInput): Promise<{
+  messageText: string;
+  senderId: string;
+  phone: string;
+  segmentInfo: ReturnType<typeof calculateSmsSegments>;
+  wallet: Awaited<ReturnType<typeof getOrCreateCompanyWallet>>;
+  balanceBefore: number;
+}> {
   const messageText = String(input.message ?? "").trim();
   if (!messageText) {
     throw new AppError("El mensaje no puede estar vacío.", 400);
@@ -87,9 +95,36 @@ export async function sendMockSms(
     );
   }
 
-  const campaignName =
-    input.campaignName?.trim() ||
-    `Envío individual ${new Date().toISOString().slice(0, 16).replace("T", " ")}`;
+  return {
+    messageText,
+    senderId,
+    phone: phone.normalized,
+    segmentInfo,
+    wallet,
+    balanceBefore,
+  };
+}
+
+function defaultCampaignName(): string {
+  return `Envío individual ${new Date().toISOString().slice(0, 16).replace("T", " ")}`;
+}
+
+export async function sendPanelSms(
+  input: SendPanelSmsInput,
+): Promise<MockSmsSendResult> {
+  if (input.sendMode === "live_test") {
+    return sendLiveTestSms(input);
+  }
+  return sendMockSms(input);
+}
+
+export async function sendMockSms(
+  input: SendMockSmsInput,
+): Promise<MockSmsSendResult> {
+  const basics = await validateSendBasics(input);
+  const { messageText, senderId, phone, segmentInfo, balanceBefore } = basics;
+
+  const campaignName = input.campaignName?.trim() || defaultCampaignName();
 
   const campaign = await createSmsCampaign({
     companyId: input.companyId,
@@ -110,7 +145,7 @@ export async function sendMockSms(
   const pendingMessage = await createPanelSmsMessage({
     companyId: input.companyId,
     campaignId: campaign.id,
-    recipientNumber: phone.normalized,
+    recipientNumber: phone,
     senderId,
     message: messageText,
     segments: segmentInfo.segments,
@@ -121,7 +156,6 @@ export async function sendMockSms(
       mode: "mock",
       encoding: segmentInfo.encoding,
       characters: segmentInfo.characters,
-      debit_pending: true,
     },
   });
 
@@ -132,13 +166,34 @@ export async function sendMockSms(
     return {
       messageId: pendingMessage.id,
       campaignId: campaign.id,
-      recipientNumber: phone.normalized,
+      recipientNumber: phone,
       segments: existing?.segments ?? segmentInfo.segments,
       balanceBefore: bal.availableSms + (existing?.cost_sms ?? 0),
       balanceAfter: bal.availableSms,
       status: existing?.status ?? "delivered",
       providerMessageId: existing?.provider_message_id ?? "",
+      sendMode: "mock",
     };
+  }
+
+  const providerResult = await sendViaProvider("mock", {
+    to: phone,
+    message: messageText,
+    senderId,
+    metadata: { segments: segmentInfo.segments },
+  });
+
+  if (!providerResult.accepted) {
+    await updatePanelSmsMessage(pendingMessage.id, {
+      status: "failed",
+      error_code: providerResult.error_code ?? "mock_failed",
+      error_message: providerResult.error_message ?? "Mock rechazado",
+    });
+    await updateSmsCampaign(campaign.id, { status: "failed" });
+    throw new AppError(
+      providerResult.error_message ?? "No se pudo simular el envío.",
+      502,
+    );
   }
 
   try {
@@ -149,6 +204,7 @@ export async function sendMockSms(
       referenceId: pendingMessage.id,
       actorUserId: input.createdBy ?? null,
       description: "Consumo por envío SMS mock",
+      metadata: { mode: "mock" },
     });
   } catch (err) {
     await updatePanelSmsMessage(pendingMessage.id, {
@@ -161,24 +217,16 @@ export async function sendMockSms(
     throw err;
   }
 
-  const mockResult = sendViaMockProvider({
-    to: phone.normalized,
-    from: senderId,
-    message: messageText,
-    segments: segmentInfo.segments,
-  });
-
   const updatedMessage = await updatePanelSmsMessage(pendingMessage.id, {
     status: "delivered",
-    provider_message_id: mockResult.providerMessageId,
-    operator: mockResult.operator,
-    sent_at: mockResult.sentAt,
-    delivered_at: mockResult.deliveredAt,
+    provider: "mock",
+    provider_message_id: providerResult.provider_message_id,
+    sent_at: new Date().toISOString(),
+    delivered_at: new Date().toISOString(),
     metadata: {
       mode: "mock",
       encoding: segmentInfo.encoding,
       characters: segmentInfo.characters,
-      debit_pending: false,
     },
   });
 
@@ -186,13 +234,9 @@ export async function sendMockSms(
     companyId: input.companyId,
     messageId: pendingMessage.id,
     provider: "mock",
-    providerMessageId: mockResult.providerMessageId,
+    providerMessageId: providerResult.provider_message_id,
     status: "delivered",
-    rawPayload: {
-      mode: "mock",
-      operator: mockResult.operator,
-      simulated: true,
-    },
+    rawPayload: providerResult.raw_response,
   });
 
   const now = new Date().toISOString();
@@ -202,16 +246,176 @@ export async function sendMockSms(
     sent_at: now,
   });
 
-  const balanceAfter = balanceBefore - segmentInfo.costSms;
+  return {
+    messageId: updatedMessage.id,
+    campaignId: campaign.id,
+    recipientNumber: phone,
+    segments: segmentInfo.segments,
+    balanceBefore,
+    balanceAfter: balanceBefore - segmentInfo.costSms,
+    status: "delivered",
+    providerMessageId: providerResult.provider_message_id ?? "",
+    sendMode: "mock",
+  };
+}
+
+export async function sendLiveTestSms(
+  input: SendMockSmsInput,
+): Promise<MockSmsSendResult> {
+  const phone = assertLiveTestSendAllowed({
+    companyId: input.companyId,
+    to: input.to,
+  });
+
+  const basics = await validateSendBasics({ ...input, to: phone });
+  const { messageText, senderId, segmentInfo, balanceBefore } = basics;
+
+  const campaignName = input.campaignName?.trim() || defaultCampaignName();
+
+  const campaign = await createSmsCampaign({
+    companyId: input.companyId,
+    name: campaignName,
+    senderId,
+    message: messageText,
+    status: "processing",
+    totalRecipients: 1,
+    validRecipients: 1,
+    invalidRecipients: 0,
+    estimatedSmsCost: segmentInfo.costSms,
+    realSmsCost: 0,
+    mode: "live_test",
+    createdBy: input.createdBy ?? null,
+    metadata: { source: "app_send_sms", mode: "live_test" },
+  });
+
+  const pendingMessage = await createPanelSmsMessage({
+    companyId: input.companyId,
+    campaignId: campaign.id,
+    recipientNumber: phone,
+    senderId,
+    message: messageText,
+    segments: segmentInfo.segments,
+    costSms: segmentInfo.costSms,
+    status: "queued",
+    mode: "live_test",
+    provider: "asmsc",
+    metadata: {
+      mode: "live_test",
+      encoding: segmentInfo.encoding,
+      characters: segmentInfo.characters,
+    },
+  });
+
+  const providerResult = await sendViaProvider("real_api", {
+    to: phone,
+    message: messageText,
+    senderId,
+    metadata: { segments: segmentInfo.segments, panel_message_id: pendingMessage.id },
+  });
+
+  if (!providerResult.accepted) {
+    await updatePanelSmsMessage(pendingMessage.id, {
+      status: "failed",
+      provider: providerResult.provider,
+      provider_message_id: providerResult.provider_message_id,
+      error_code: providerResult.error_code ?? "PROVIDER_REJECTED",
+      error_message: providerResult.error_message ?? "Proveedor rechazó el envío",
+      metadata: {
+        mode: "live_test",
+        asmsc_uid: providerResult.asmsc_uid ?? null,
+        raw_response: providerResult.raw_response,
+      },
+    });
+    await updateSmsCampaign(campaign.id, { status: "failed" });
+    throw new AppError(
+      providerResult.error_message ??
+        "El proveedor no aceptó el SMS. No se descontó saldo.",
+      502,
+    );
+  }
+
+  const panelStatus: PanelSmsMessageStatus =
+    providerResult.status === "pending" ? "pending" : "sent";
+
+  if (await hasSmsDebitForMessage(pendingMessage.id)) {
+    const existing = await getPanelSmsMessageById(pendingMessage.id);
+    const bal = await getCompanyBalance(input.companyId);
+    return {
+      messageId: pendingMessage.id,
+      campaignId: campaign.id,
+      recipientNumber: phone,
+      segments: segmentInfo.segments,
+      balanceBefore: bal.availableSms + segmentInfo.costSms,
+      balanceAfter: bal.availableSms,
+      status: existing?.status ?? panelStatus,
+      providerMessageId: existing?.provider_message_id ?? "",
+      sendMode: "live_test",
+    };
+  }
+
+  try {
+    await debitSmsUsage({
+      companyId: input.companyId,
+      amount: segmentInfo.costSms,
+      referenceType: "sms_message",
+      referenceId: pendingMessage.id,
+      actorUserId: input.createdBy ?? null,
+      description: "Consumo por envío SMS live_test (API aSMSC)",
+      metadata: { mode: "live_test", provider: providerResult.provider },
+    });
+  } catch (err) {
+    await updatePanelSmsMessage(pendingMessage.id, {
+      status: "failed",
+      error_code: "debit_failed",
+      error_message:
+        err instanceof Error ? err.message : "Error al descontar saldo",
+    });
+    await updateSmsCampaign(campaign.id, { status: "failed" });
+    throw err;
+  }
+
+  const sentAt = new Date().toISOString();
+  const updatedMessage = await updatePanelSmsMessage(pendingMessage.id, {
+    status: panelStatus,
+    provider: providerResult.provider,
+    provider_message_id: providerResult.provider_message_id,
+    sent_at: sentAt,
+    metadata: {
+      mode: "live_test",
+      asmsc_uid: providerResult.asmsc_uid ?? null,
+      encoding: segmentInfo.encoding,
+      characters: segmentInfo.characters,
+      raw_response: providerResult.raw_response,
+    },
+  });
+
+  await insertPanelDeliveryEvent({
+    companyId: input.companyId,
+    messageId: pendingMessage.id,
+    provider: providerResult.provider,
+    providerMessageId: providerResult.provider_message_id,
+    status: panelStatus,
+    rawPayload: {
+      ...providerResult.raw_response,
+      event: "submit_accepted",
+    },
+  });
+
+  await updateSmsCampaign(campaign.id, {
+    status: "sent",
+    real_sms_cost: segmentInfo.costSms,
+    sent_at: sentAt,
+  });
 
   return {
     messageId: updatedMessage.id,
     campaignId: campaign.id,
-    recipientNumber: phone.normalized,
+    recipientNumber: phone,
     segments: segmentInfo.segments,
     balanceBefore,
-    balanceAfter,
-    status: "delivered",
-    providerMessageId: mockResult.providerMessageId,
+    balanceAfter: balanceBefore - segmentInfo.costSms,
+    status: panelStatus,
+    providerMessageId: providerResult.provider_message_id ?? "",
+    sendMode: "live_test",
   };
 }

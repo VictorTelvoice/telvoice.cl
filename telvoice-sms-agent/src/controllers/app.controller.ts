@@ -46,7 +46,8 @@ import {
 import { listCampaignsByCompany } from "../services/smsCampaignService.js";
 import { listPanelMessagesByCompany } from "../services/panelSmsMessageService.js";
 import { getClientSmsReportData } from "../services/smsPanelReportsService.js";
-import { sendMockSms } from "../services/smsSendService.js";
+import { canCompanyUseLiveTestUi } from "../services/smsProviderStatusService.js";
+import { sendPanelSms } from "../services/smsSendService.js";
 import { AppError } from "../utils/errors.js";
 
 function flash(req: Request): { flash?: string; error?: string } {
@@ -216,7 +217,10 @@ export async function getAppSendSms(
   await withAppContext(req, res, next, async (ctx) => {
     const error =
       typeof req.query.error === "string" ? req.query.error : undefined;
-    return renderAppSendSmsPage(ctx, { error });
+    return renderAppSendSmsPage(ctx, {
+      error,
+      liveTestAvailable: canCompanyUseLiveTestUi(ctx.company.id),
+    });
   });
 }
 
@@ -238,7 +242,10 @@ export async function postAppSendSms(
       return;
     }
 
-    const result = await sendMockSms({
+    const sendMode =
+      req.body?.send_mode === "live_test" ? "live_test" : "mock";
+
+    const result = await sendPanelSms({
       companyId: ctx.company.id,
       senderId: String(req.body?.sender_id ?? ""),
       to: String(req.body?.to ?? ""),
@@ -249,9 +256,13 @@ export async function postAppSendSms(
           : undefined,
       createdBy:
         ctx.profile.profileId ?? ctx.profile.adminUserId ?? undefined,
+      sendMode,
     });
 
-    const html = renderAppSendSmsPage(ctx, { sendResult: result });
+    const html = renderAppSendSmsPage(ctx, {
+      sendResult: result,
+      liveTestAvailable: canCompanyUseLiveTestUi(ctx.company.id),
+    });
     res.type("html").send(html);
   } catch (error) {
     const msg =

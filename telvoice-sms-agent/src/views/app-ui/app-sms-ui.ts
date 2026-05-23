@@ -22,9 +22,12 @@ export function renderPanelMessageStatusBadge(
 
 export function renderSmsModeBadge(mode: string | null | undefined): string {
   if (mode === "mock") {
-    return badge("muted", "mock");
+    return badge("muted", "MOCK");
   }
-  return badge("ok", mode ?? "live");
+  if (mode === "live_test") {
+    return badge("warn", "LIVE TEST");
+  }
+  return badge("ok", (mode ?? "live").toUpperCase());
 }
 
 export function renderCampaignStatusBadge(status: string): string {
@@ -41,7 +44,7 @@ export function renderCampaignStatusBadge(status: string): string {
 
 export function renderInboxTableRows(messages: PanelSmsMessageRow[]): string {
   if (!messages.length) {
-    return `<tr><td colspan="8">Aún no hay mensajes enviados.</td></tr>`;
+    return `<tr><td colspan="10">Aún no hay mensajes enviados.</td></tr>`;
   }
   return messages
     .map(
@@ -49,11 +52,13 @@ export function renderInboxTableRows(messages: PanelSmsMessageRow[]): string {
       <td>${formatDate(m.created_at)}</td>
       <td><code>${escapeHtml(m.recipient_number)}</code></td>
       <td>${escapeHtml(m.sender_id ?? "—")}</td>
-      <td class="tv-cell-truncate" title="${escapeHtml(m.message)}">${escapeHtml(m.message.slice(0, 60))}${m.message.length > 60 ? "…" : ""}</td>
+      <td class="tv-cell-truncate" title="${escapeHtml(m.message)}">${escapeHtml(m.message.slice(0, 50))}${m.message.length > 50 ? "…" : ""}</td>
       <td>${m.segments}</td>
+      <td>${escapeHtml(m.provider)}</td>
       <td>${renderPanelMessageStatusBadge(m.status)}</td>
       <td>${renderSmsModeBadge(m.mode)}</td>
-      <td><code class="tv-code-sm">${escapeHtml(m.id.slice(0, 8))}</code></td>
+      <td><code class="tv-code-sm" title="${escapeHtml(m.provider_message_id ?? "")}">${escapeHtml((m.provider_message_id ?? "—").slice(0, 12))}</code></td>
+      <td class="tv-cell-truncate" title="${escapeHtml(m.error_message ?? "")}">${escapeHtml(m.error_message ?? "—")}</td>
     </tr>`,
     )
     .join("");

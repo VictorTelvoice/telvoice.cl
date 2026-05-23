@@ -1,4 +1,5 @@
 import type { AdminSessionUser } from "../../../types/admin.js";
+import type { SmsProviderStatusView } from "../../../services/smsProviderStatusService.js";
 import type {
   PanelSmsMessageWithCompany,
   SmsCampaignWithCompany,
@@ -23,6 +24,7 @@ type PageOpts = {
   smsBalance?: string;
   campaigns?: SmsCampaignWithCompany[];
   messages?: PanelSmsMessageWithCompany[];
+  providerStatus?: SmsProviderStatusView;
 };
 
 function wrap(
@@ -126,13 +128,14 @@ export function renderSaMessagesPage(opts: PageOpts): string {
         .map(
           (m) => `<tr>
       <td>${escapeHtml(m.company_name ?? "—")}</td>
-      <td>${escapeHtml(m.campaign_name ?? "—")}</td>
       <td><code>${escapeHtml(m.recipient_number)}</code></td>
-      <td>${statusBadgeSa(m.status)}</td>
       <td>${escapeHtml(m.provider)}</td>
-      <td>${escapeHtml(m.operator ?? "—")}</td>
-      <td>${formatDate(m.created_at)}</td>
       <td>${statusBadgeSa(m.mode)}</td>
+      <td><code class="tv-code-sm" title="${escapeHtml(m.provider_message_id ?? "")}">${escapeHtml((m.provider_message_id ?? "—").slice(0, 14))}</code></td>
+      <td>${statusBadgeSa(m.status)}</td>
+      <td class="tv-cell-truncate" title="${escapeHtml(m.error_message ?? "")}">${escapeHtml(m.error_message ?? "—")}</td>
+      <td>${formatDate(m.created_at)}</td>
+      <td>${m.segments}</td>
     </tr>`,
         )
         .join("")
@@ -151,7 +154,7 @@ export function renderSaMessagesPage(opts: PageOpts): string {
     ${renderPageHeader({ title: "Mensajería global", subtitle: "Todos los mensajes enviados por todos los clientes (panel_sms_messages).", actions: `<a href="/admin/inbox" class="btn btn-ghost btn-sm">Bandeja operador (legacy)</a>` })}
     ${filters}
     <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Cliente</th><th>Campaña</th><th>Número</th><th>Estado</th><th>Proveedor</th><th>Operador</th><th>Fecha</th><th>Modo</th>
+      <th>Cliente</th><th>Número</th><th>Proveedor</th><th>Modo</th><th>Provider Msg ID</th><th>Estado</th><th>Error</th><th>Fecha</th><th>Seg.</th>
     </tr></thead><tbody>${rows}</tbody></table></div>
     ${hint}`;
   return wrap(opts, "messages", "Mensajería", body);
@@ -180,18 +183,40 @@ export function renderSaDlrPage(opts: PageOpts): string {
 }
 
 export function renderSaProvidersPage(opts: PageOpts): string {
+  const ps = opts.providerStatus;
+  const apiCard = ps
+    ? `<section class="tv-panel" style="margin-bottom:1rem">
+      <h2 class="tv-panel__title">API real — aSMSC (panel live_test)</h2>
+      <div class="tv-panel__body tv-form-grid">
+        <div><dt style="font-weight:600">Estado credenciales</dt><dd>${ps.asmscConfigured ? statusBadgeSa("activa") : statusBadgeSa("no configurado")}</dd></div>
+        <div><dt style="font-weight:600">Modo actual (SMS_PROVIDER_MODE)</dt><dd><code>${escapeHtml(ps.providerMode)}</code></dd></div>
+        <div><dt style="font-weight:600">Proveedor (SMS_PROVIDER)</dt><dd><code>${escapeHtml(ps.providerName)}</code> → HTTP POST /SendSMS</dd></div>
+        <div><dt style="font-weight:600">Live test enabled</dt><dd>${ps.liveTestEnabled ? "true" : "false"}</dd></div>
+        <div><dt style="font-weight:600">Live test activo</dt><dd>${ps.liveTestActive ? statusBadgeSa("activa") : statusBadgeSa("inactivo")}</dd></div>
+        <div><dt style="font-weight:600">Último envío live_test</dt><dd>${
+          ps.lastLiveTestMessage
+            ? `${formatDate(ps.lastLiveTestMessage.createdAt)} · ${escapeHtml(ps.lastLiveTestMessage.recipient)} · ${statusBadgeSa(ps.lastLiveTestMessage.status)} · <code>${escapeHtml(ps.lastLiveTestMessage.providerMessageId ?? "—")}</code>`
+            : "—"
+        }</dd></div>
+        <p class="field-hint">DLR: <code>POST /api/webhooks/asmsc/dlr</code> (también alias <code>/api/webhooks/sms/dlr</code>). Sin credenciales en pantalla.</p>
+        <a href="/admin/asmsc/diagnostics" class="btn btn-secondary btn-sm">Diagnóstico aSMSC</a>
+      </div>
+    </section>`
+    : "";
+
   const rows = MOCK_SA_PROVIDERS.map(
     (p) => `<tr>
       <td><strong>${escapeHtml(p.name)}</strong></td><td>${escapeHtml(p.type)}</td><td>${escapeHtml(p.route)}</td>
-      <td>${statusBadgeSa(p.status)}</td><td>${escapeHtml(p.cost)}</td><td>${escapeHtml(p.capacity)}</td>
-      <td>${escapeHtml(p.delivery)}</td><td>${escapeHtml(p.latency)}</td><td>${escapeHtml(p.traffic)}</td>
+      <td>${statusBadgeSa(p.status)}</td><td>${escapeHtml(p.cost)}</td><td>${escapeHtml(p.delivery)}</td>
       <td><a href="/admin/asmsc/diagnostics" class="row-link">Config</a></td>
     </tr>`,
   ).join("");
-  const body = `${renderSuperadminBanner()}${renderPageHeader({ title: "Proveedores SMS", subtitle: "Conectividad, costos y salud de proveedores upstream." })}
+  const body = `${renderSuperadminBanner()}${renderPageHeader({ title: "Proveedores SMS", subtitle: "Conectividad upstream y modo mock/live_test del panel." })}
+    ${apiCard}
     <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Proveedor</th><th>Conexión</th><th>Ruta</th><th>Estado</th><th>Costo SMS</th><th>Capacidad</th><th>Entrega</th><th>Latencia</th><th>Tráfico</th><th></th>
-    </tr></thead><tbody>${rows}</tbody></table></div>`;
+      <th>Proveedor</th><th>Conexión</th><th>Ruta</th><th>Estado</th><th>Costo ref.</th><th>Entrega ref.</th><th></th>
+    </tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="field-hint tv-mock-tag">Tabla inferior: datos de referencia mock. La API real del panel usa aSMSC según variables de entorno.</p>`;
   return wrap(opts, "providers", "Proveedores", body);
 }
 

@@ -341,6 +341,7 @@ export async function debitSmsUsage(input: {
   referenceType?: string;
   referenceId?: string;
   description?: string | null;
+  metadata?: Record<string, unknown>;
   actorUserId?: string | null;
   country?: string;
 }): Promise<CompanySmsWalletRow> {
@@ -374,7 +375,7 @@ export async function debitSmsUsage(input: {
     referenceId: input.referenceId ?? null,
     description: input.description ?? "Consumo por envío SMS",
     createdBy: input.actorUserId ?? null,
-    metadata: { mode: "mock" },
+    metadata: input.metadata ?? {},
   });
 
   return updated;

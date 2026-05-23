@@ -16,6 +16,7 @@ export async function createPanelSmsMessage(input: {
   message: string;
   segments: number;
   costSms: number;
+  provider?: string;
   status?: PanelSmsMessageStatus;
   mode?: string;
   metadata?: Record<string, unknown>;
@@ -30,7 +31,7 @@ export async function createPanelSmsMessage(input: {
       message: input.message,
       segments: input.segments,
       cost_sms: input.costSms,
-      provider: "mock",
+      provider: input.provider ?? "mock",
       status: input.status ?? "queued",
       mode: input.mode ?? "mock",
       metadata: input.metadata ?? {},
@@ -55,6 +56,7 @@ export async function updatePanelSmsMessage(
   id: string,
   patch: Partial<{
     status: PanelSmsMessageStatus;
+    provider: string;
     provider_message_id: string | null;
     operator: string | null;
     sent_at: string | null;
@@ -76,6 +78,63 @@ export async function updatePanelSmsMessage(
   }
 
   return data as PanelSmsMessageRow;
+}
+
+export async function findPanelMessageByProviderMessageId(
+  providerMessageId: string,
+): Promise<PanelSmsMessageRow | null> {
+  const { data, error } = await getSupabase()
+    .from("panel_sms_messages")
+    .select("*")
+    .eq("provider_message_id", providerMessageId)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return null;
+    }
+    wrapSupabaseError(error, "findPanelMessageByProviderMessageId");
+  }
+
+  return data as PanelSmsMessageRow | null;
+}
+
+export async function findPanelMessageByAsmscUid(
+  uid: string,
+): Promise<PanelSmsMessageRow | null> {
+  const { data, error } = await getSupabase()
+    .from("panel_sms_messages")
+    .select("*")
+    .filter("metadata->>asmsc_uid", "eq", uid)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return null;
+    }
+    wrapSupabaseError(error, "findPanelMessageByAsmscUid");
+  }
+
+  return data as PanelSmsMessageRow | null;
+}
+
+export async function getLastLiveTestPanelMessage(): Promise<PanelSmsMessageRow | null> {
+  const { data, error } = await getSupabase()
+    .from("panel_sms_messages")
+    .select("*")
+    .eq("mode", "live_test")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return null;
+    }
+    wrapSupabaseError(error, "getLastLiveTestPanelMessage");
+  }
+
+  return data as PanelSmsMessageRow | null;
 }
 
 export async function getPanelSmsMessageById(

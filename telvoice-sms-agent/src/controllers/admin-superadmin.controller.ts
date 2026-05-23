@@ -5,6 +5,7 @@ import { getBalanceByClientId } from "../services/balanceService.js";
 import { getTestClientBundle } from "../services/clientService.js";
 import { listAllCampaignsWithCompany } from "../services/smsCampaignService.js";
 import { listAllPanelMessagesWithCompany } from "../services/panelSmsMessageService.js";
+import { getSmsProviderStatusView } from "../services/smsProviderStatusService.js";
 import {
   renderSaApiKeysPage,
   renderSaCampaignsPage,
@@ -94,7 +95,27 @@ export async function getSaMessagesPage(
   }
 }
 export const getSaDlrPage = saPage(renderSaDlrPage);
-export const getSaProvidersPage = saPage(renderSaProvidersPage);
+export async function getSaProvidersPage(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const smsBalance = await loadGlobalSmsHint();
+    const providerStatus = await getSmsProviderStatusView();
+    res
+      .type("html")
+      .send(
+        renderSaProvidersPage({
+          admin: req.adminUser!,
+          smsBalance,
+          providerStatus,
+        }),
+      );
+  } catch (error) {
+    next(error);
+  }
+}
 export const getSaRoutesPage = saPage(renderSaRoutesPage);
 export const getSaApiKeysPage = saPage(renderSaApiKeysPage);
 
