@@ -1,5 +1,15 @@
 export type SmsPackageType = "prepaid" | string;
 
+/** Resumen del catálogo para /admin/pricing */
+export interface PricingCatalogSummary {
+  activeCount: number;
+  totalSmsInCatalog: number;
+  minUnitPrice: number | null;
+  maxUnitPrice: number | null;
+  lastUpdatedAt: string | null;
+  customerVisibleCount: number;
+}
+
 export interface SmsPackageRow {
   id: string;
   name: string;

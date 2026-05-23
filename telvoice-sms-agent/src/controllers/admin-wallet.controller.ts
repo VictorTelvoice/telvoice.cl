@@ -8,12 +8,17 @@ import {
 } from "../services/smsOrderService.js";
 import { insertAuditLog } from "../services/auditLogService.js";
 import {
+  buildPricingCatalogSummary,
   createSmsPackage,
   listSmsPackages,
   toggleSmsPackage,
   updateSmsPackage,
   validateSmsPackageInput,
 } from "../services/smsPackageService.js";
+import {
+  defaultCommercialMetadata,
+  type PackageMetadata,
+} from "../utils/package-metadata.js";
 import { AppError } from "../utils/errors.js";
 import {
   getCompanyBalance,
@@ -72,6 +77,7 @@ function parseSmsPackageFormBody(body: Record<string, unknown>): {
   packageType: string;
   sortOrder: number;
   isActive: boolean;
+  metadata: PackageMetadata;
 } {
   const name = String(body.name ?? "").trim();
   const smsQuantity = Number(body.sms_quantity);
@@ -102,6 +108,17 @@ function parseSmsPackageFormBody(body: Record<string, unknown>): {
       ? Number(body.sort_order)
       : 0,
     isActive: parseBoolForm(body.is_active),
+    metadata: {
+      customer_visible: parseBoolForm(
+        body.customer_visible ?? defaultCommercialMetadata(name).customer_visible,
+      ),
+      channel:
+        String(body.channel ?? defaultCommercialMetadata(name).channel ?? "web").trim() ||
+        "web",
+      segment:
+        String(body.segment ?? defaultCommercialMetadata(name).segment ?? "standard").trim() ||
+        "standard",
+    },
   };
 }
 
@@ -125,10 +142,14 @@ export async function getSaPricingPage(
   try {
     const tablesReady = await walletTablesReady();
     const packages = tablesReady ? await listSmsPackages() : [];
+    const catalogSummary = tablesReady
+      ? buildPricingCatalogSummary(packages)
+      : null;
     res.type("html").send(
       renderSaPricingPage({
         admin: req.adminUser!,
         packages,
+        catalogSummary,
         tablesReady,
         useMock: !tablesReady,
         ...flash(req),
@@ -164,6 +185,7 @@ export async function postCreateSmsPackage(
       packageType: parsed.packageType,
       sortOrder: parsed.sortOrder,
       isActive: parsed.isActive,
+      metadata: parsed.metadata,
     });
     redirectWith(res, "/admin/pricing", { ok: "Bolsa creada correctamente." });
   } catch (error) {
@@ -201,6 +223,7 @@ export async function postUpdateSmsPackage(
       packageType: parsed.packageType,
       sortOrder: parsed.sortOrder,
       isActive: parsed.isActive,
+      metadata: parsed.metadata,
     });
 
     await insertAuditLog({

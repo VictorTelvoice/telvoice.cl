@@ -1,7 +1,13 @@
 import { getSupabase } from "../database/supabaseClient.js";
-import type { SmsPackageRow } from "../types/wallet.js";
+import type { PricingCatalogSummary, SmsPackageRow } from "../types/wallet.js";
 import { isMissingTableError } from "../utils/db-table.js";
 import { AppError } from "../utils/errors.js";
+import {
+  defaultCommercialMetadata,
+  isCustomerVisible,
+  mergePackageMetadata,
+  type PackageMetadata,
+} from "../utils/package-metadata.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 
 function toNumber(value: unknown): number {
@@ -34,6 +40,43 @@ export async function listSmsPackages(activeOnly = false): Promise<SmsPackageRow
   return (data ?? []) as SmsPackageRow[];
 }
 
+/** Bolsas visibles para el futuro panel cliente /app */
+export async function listCustomerVisiblePackages(
+  country = "CL",
+): Promise<SmsPackageRow[]> {
+  const all = await listSmsPackages(true);
+  return all.filter(
+    (p) => p.country === country && isCustomerVisible(p.metadata ?? {}),
+  );
+}
+
+export function buildPricingCatalogSummary(
+  packages: SmsPackageRow[],
+): PricingCatalogSummary {
+  const active = packages.filter((p) => p.is_active);
+  const unitPrices = active
+    .map((p) => (p.unit_price != null ? toNumber(p.unit_price) : null))
+    .filter((n): n is number => n !== null && Number.isFinite(n));
+
+  const lastUpdated = packages.reduce<string | null>((max, p) => {
+    if (!max || p.updated_at > max) {
+      return p.updated_at;
+    }
+    return max;
+  }, null);
+
+  return {
+    activeCount: active.length,
+    totalSmsInCatalog: active.reduce((s, p) => s + p.sms_quantity, 0),
+    minUnitPrice: unitPrices.length ? Math.min(...unitPrices) : null,
+    maxUnitPrice: unitPrices.length ? Math.max(...unitPrices) : null,
+    lastUpdatedAt: lastUpdated,
+    customerVisibleCount: active.filter((p) =>
+      isCustomerVisible(p.metadata ?? {}),
+    ).length,
+  };
+}
+
 export async function getSmsPackageById(id: string): Promise<SmsPackageRow | null> {
   const { data, error } = await getSupabase()
     .from("sms_packages")
@@ -61,6 +104,7 @@ export async function createSmsPackage(input: {
   packageType?: string;
   sortOrder?: number;
   isActive?: boolean;
+  metadata?: PackageMetadata;
 }): Promise<SmsPackageRow> {
   const { unitPrice } = validateSmsPackageInput({
     name: input.name,
@@ -68,6 +112,11 @@ export async function createSmsPackage(input: {
     totalPrice: input.totalPrice,
     unitPrice: input.unitPrice,
   });
+
+  const meta = mergePackageMetadata(
+    {},
+    input.metadata ?? defaultCommercialMetadata(input.name),
+  );
 
   const { data, error } = await getSupabase()
     .from("sms_packages")
@@ -81,6 +130,7 @@ export async function createSmsPackage(input: {
       package_type: input.packageType ?? "prepaid",
       sort_order: input.sortOrder ?? 0,
       is_active: input.isActive ?? true,
+      metadata: meta,
     })
     .select("*")
     .single();
@@ -102,6 +152,7 @@ export type SmsPackageUpsertInput = {
   packageType: string;
   sortOrder: number;
   isActive: boolean;
+  metadata?: PackageMetadata;
 };
 
 export function validateSmsPackageInput(input: {
@@ -162,6 +213,14 @@ export async function updateSmsPackage(
   if (input.packageType !== undefined) patch.package_type = input.packageType;
   if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder;
   if (input.isActive !== undefined) patch.is_active = input.isActive;
+
+  if (input.metadata !== undefined) {
+    const current = await getSmsPackageById(id);
+    patch.metadata = mergePackageMetadata(
+      current?.metadata ?? {},
+      input.metadata,
+    );
+  }
 
   const { data, error } = await getSupabase()
     .from("sms_packages")

@@ -39,6 +39,7 @@ export function statusBadgeSa(status: string): string {
     en_prueba: ["warn", "En prueba"],
     pagada: ["ok", "Pagada"],
     acreditada: ["ok", "Acreditada"],
+    "visible app": ["ok", "Visible /app"],
     rechazada: ["err", "Rechazada"],
     entregado: ["ok", "Entregado"],
     fallido: ["err", "Fallido"],

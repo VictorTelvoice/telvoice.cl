@@ -1,12 +1,17 @@
 import type { AdminSessionUser } from "../../../types/admin.js";
 import type { CompanyRow } from "../../../types/tenant.js";
 import type {
+  PricingCatalogSummary,
   SmsOrderWithDetails,
   SmsPackageRow,
   WalletListRow,
   WalletTransactionRow,
 } from "../../../types/wallet.js";
 import { escapeHtml, formatDate } from "../../../utils/html.js";
+import {
+  isCustomerVisible,
+  parsePackageMetadata,
+} from "../../../utils/package-metadata.js";
 import { wrapAdminPage } from "../admin-page-wrap.js";
 import { MOCK_SA_BAGS, MOCK_SA_ORDERS, MOCK_SA_WALLETS } from "../mock-data-superadmin.js";
 import { renderBtn, renderCollapsible, renderPageHeader } from "../page-kit.js";
@@ -66,6 +71,60 @@ function companyOptions(companies: CompanyRow[], selected?: string): string {
   return `<option value="">— Seleccionar empresa —</option>${opts}`;
 }
 
+function renderPackageMetaFields(pkg?: SmsPackageRow): string {
+  const meta = parsePackageMetadata(pkg?.metadata ?? {});
+  const visible = meta.customer_visible !== false;
+  const channel = meta.channel ?? "web";
+  const segment = meta.segment ?? "standard";
+  const visOpts = (v: boolean) =>
+    `<option value="1"${v ? " selected" : ""}>Sí — visible en /app</option>
+     <option value="0"${!v ? " selected" : ""}>No — solo Superadmin</option>`;
+  const channelOpts = ["web", "internal", "partner"]
+    .map(
+      (c) =>
+        `<option value="${c}"${channel === c ? " selected" : ""}>${c}</option>`,
+    )
+    .join("");
+  const segmentOpts = ["standard", "enterprise", "promo"]
+    .map(
+      (s) =>
+        `<option value="${s}"${segment === s ? " selected" : ""}>${s}</option>`,
+    )
+    .join("");
+  return `
+    <label>Visible para cliente (/app)
+      <select name="customer_visible" class="tv-input-full">${visOpts(visible)}</select>
+    </label>
+    <label>Canal (metadata.channel)
+      <select name="channel" class="tv-input-full">${channelOpts}</select>
+    </label>
+    <label>Segmento (metadata.segment)
+      <select name="segment" class="tv-input-full">${segmentOpts}</select>
+    </label>`;
+}
+
+function renderPricingSummary(summary: PricingCatalogSummary): string {
+  const minP =
+    summary.minUnitPrice != null
+      ? fmtMoney(summary.minUnitPrice)
+      : "—";
+  const maxP =
+    summary.maxUnitPrice != null
+      ? fmtMoney(summary.maxUnitPrice)
+      : "—";
+  const updated = summary.lastUpdatedAt
+    ? formatDate(summary.lastUpdatedAt)
+    : "—";
+  return `<div class="tv-kpi-grid" style="margin-bottom:1rem">
+    <article class="tv-kpi"><span class="tv-kpi__label">Bolsas activas</span><span class="tv-kpi__value">${summary.activeCount}</span></article>
+    <article class="tv-kpi"><span class="tv-kpi__label">SMS en catálogo (activas)</span><span class="tv-kpi__value">${fmtSms(summary.totalSmsInCatalog)}</span></article>
+    <article class="tv-kpi"><span class="tv-kpi__label">Precio mín. / SMS</span><span class="tv-kpi__value">${minP}</span></article>
+    <article class="tv-kpi"><span class="tv-kpi__label">Precio máx. / SMS</span><span class="tv-kpi__value">${maxP}</span></article>
+    <article class="tv-kpi"><span class="tv-kpi__label">Visibles en /app</span><span class="tv-kpi__value">${summary.customerVisibleCount}</span></article>
+    <article class="tv-kpi"><span class="tv-kpi__label">Última actualización</span><span class="tv-kpi__value" style="font-size:0.95rem">${escapeHtml(updated)}</span></article>
+  </div>`;
+}
+
 function renderPackageEditForm(pkg: SmsPackageRow): string {
   const activeOpts = (active: boolean) =>
     `<option value="1"${active ? " selected" : ""}>Activa</option>
@@ -104,14 +163,22 @@ function renderPackageEditForm(pkg: SmsPackageRow): string {
     <label>Estado
       <select name="is_active" class="tv-input-full">${activeOpts(pkg.is_active)}</select>
     </label>
+    ${renderPackageMetaFields(pkg)}
     <div class="tv-form-actions">
       <button type="submit" class="btn btn-primary btn-sm">Guardar cambios</button>
     </div>
   </form>`;
 }
 
+function visibilityBadge(pkg: SmsPackageRow): string {
+  return isCustomerVisible(pkg.metadata ?? {})
+    ? statusBadgeSa("visible app")
+    : `<span class="field-hint">Solo admin</span>`;
+}
+
 export function renderSaPricingPage(opts: PageOpts & {
   packages: SmsPackageRow[];
+  catalogSummary: PricingCatalogSummary | null;
   tablesReady: boolean;
   useMock: boolean;
 }): string {
@@ -134,6 +201,7 @@ export function renderSaPricingPage(opts: PageOpts & {
       <td>${b.unit_price != null ? fmtMoney(Number(b.unit_price), b.currency) : "—"}</td>
       <td>${b.sort_order}</td>
       <td>${statusBadgeSa(b.is_active ? "activa" : "suspendido")}</td>
+      <td>${visibilityBadge(b)}</td>
       <td class="tv-table-actions">
         <form method="post" action="/admin/pricing/${escapeHtml(b.id)}/toggle" style="display:inline">
           <button type="submit" class="btn btn-ghost btn-sm">${b.is_active ? "Desactivar" : "Activar"}</button>
@@ -149,10 +217,16 @@ export function renderSaPricingPage(opts: PageOpts & {
       <td>${escapeHtml(b.price)}</td><td>${escapeHtml(b.unit)}</td>
       <td>—</td>
       <td>${statusBadgeSa(b.status)}</td>
+      <td>—</td>
       <td><span class="field-hint">Mock · sin edición</span></td>
     </tr>`,
           ).join("")
-        : `<tr><td colspan="8">No hay bolsas. Crea la primera abajo o ejecuta el seed SQL opcional.</td></tr>`;
+        : `<tr><td colspan="9">No hay bolsas. Crea la primera abajo o ejecuta el seed SQL opcional.</td></tr>`;
+
+  const summaryBlock =
+    opts.catalogSummary && !opts.useMock
+      ? renderPricingSummary(opts.catalogSummary)
+      : "";
 
   const createForm = `
     <section class="tv-panel" style="margin-top:1rem">
@@ -165,6 +239,7 @@ export function renderSaPricingPage(opts: PageOpts & {
           <label>Precio total <input name="total_price" type="number" min="0" step="1" required class="tv-input-full" /></label>
           <label>Precio unitario <input name="unit_price" type="number" min="0" step="0.01" class="tv-input-full" placeholder="Opcional" /></label>
           <label>Moneda <input name="currency" value="CLP" class="tv-input-full" /></label>
+          ${renderPackageMetaFields()}
           <div><button type="submit" class="btn btn-primary">Crear bolsa</button></div>
         </form>
       </div>
@@ -179,8 +254,9 @@ export function renderSaPricingPage(opts: PageOpts & {
     })}
     ${migrationAlert}
     ${opts.useMock ? '<p class="field-hint tv-mock-tag">Datos de ejemplo — las acciones de crear/editar requieren migración 011.</p>' : ""}
+    ${summaryBlock}
     <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Bolsa</th><th>País</th><th>SMS</th><th>Precio venta</th><th>Unitario</th><th>Orden</th><th>Estado</th><th>Acciones</th>
+      <th>Bolsa</th><th>País</th><th>SMS</th><th>Precio venta</th><th>Unitario</th><th>Orden</th><th>Estado</th><th>/app</th><th>Acciones</th>
     </tr></thead><tbody>${rows}</tbody></table></div>
     ${opts.tablesReady ? createForm : `<p class="field-hint">El formulario de alta estará disponible tras aplicar la migración 011.</p>`}`;
   return wrap(opts, "pricing", "Bolsas y tarifas", body);
