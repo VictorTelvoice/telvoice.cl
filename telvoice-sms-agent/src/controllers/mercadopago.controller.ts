@@ -6,7 +6,7 @@ function extractPaymentId(req: Request): string | null {
   if (q.topic === "payment" && q.id) {
     return String(q.id);
   }
-  const body = req.body as Record<string, unknown>;
+  const body = (req.body ?? {}) as Record<string, unknown>;
   if (body.type === "payment" && body.data && typeof body.data === "object") {
     const id = (body.data as { id?: string | number }).id;
     if (id != null) {
