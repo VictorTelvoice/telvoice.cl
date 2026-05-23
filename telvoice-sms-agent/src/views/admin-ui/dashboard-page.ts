@@ -3,6 +3,7 @@ import type { AsmscBalanceSummary } from "../../utils/asmsc-balance-summary.js";
 import type { BalanceRow, SmsMessageRow } from "../../types/database.js";
 import type { SmsMessageStats } from "../../services/smsMessageService.js";
 import type { TestClientBundle } from "../../services/clientService.js";
+import type { WalletGlobalStats } from "../../types/wallet.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 import { getConfiguredDlrWebhookUrl } from "../../utils/dlr-callback.js";
 import { statusBadge } from "./badges.js";
@@ -73,6 +74,7 @@ export function renderDashboardBody(options: {
   configWarning?: string | null;
   successMessage?: string | null;
   dlrWebhookUrl?: string;
+  walletStats?: WalletGlobalStats | null;
 }): string {
   const warningBlock = options.configWarning
     ? `<div class="alert alert-error">${escapeHtml(options.configWarning)}</div>`
@@ -94,19 +96,22 @@ export function renderDashboardBody(options: {
           values: [4200, 5100, 4800, 6200, 5840, 2100, 3900],
         };
 
+  const ws = options.walletStats;
+  const fmtN = (n: number) => new Intl.NumberFormat("es-CL").format(n);
+
   const kpiGrid = `<div class="tv-kpi-grid tv-kpi-grid--dense">
     ${renderKpiCard({ label: "Clientes activos", value: "38", hint: "Cuentas operativas", icon: "business", variant: "primary" })}
     ${renderKpiCard({ label: "SMS enviados hoy", value: sentToday, hint: "Tráfico global", icon: "today", variant: "default" })}
     ${renderKpiCard({ label: "SMS enviados (mes)", value: "284.500", hint: "Acumulado mayo", icon: "calendar_month", variant: "default" })}
-    ${renderKpiCard({ label: "Saldo total vendido", value: "1,2M", hint: "Unidades acreditadas", icon: "sell", variant: "primary" })}
-    ${renderKpiCard({ label: "Saldo consumido", value: "892K", hint: "Débitos por envío", icon: "trending_down", variant: "warn" })}
+    ${renderKpiCard({ label: "Saldo total vendido", value: ws ? fmtN(ws.totalPurchasedSms) : "1,2M", hint: "Wallets empresa", icon: "sell", variant: "primary" })}
+    ${renderKpiCard({ label: "Saldo consumido", value: ws ? fmtN(ws.totalConsumedSms) : "892K", hint: "Débitos por envío", icon: "trending_down", variant: "warn" })}
     ${renderKpiCard({ label: "Campañas activas", value: "24", hint: "Todos los clientes", icon: "campaign", variant: "default" })}
     ${renderKpiCard({ label: "Tasa entrega global", value: deliveryRatePercent(options.stats), hint: "DLR agregado", icon: "check_circle", variant: "success" })}
     ${renderKpiCard({ label: "Mensajes fallidos", value: failed, hint: "Últimas 24h ref.", icon: "error", variant: "danger" })}
-    ${renderKpiCard({ label: "Proveedores activos", value: "3", hint: "Con tráfico", icon: "hub", variant: "default" })}
-    ${renderKpiCard({ label: "Margen estimado", value: "38,2%", hint: "Venta vs costo", icon: "percent", variant: "success" })}
-    ${renderKpiCard({ label: "Compras pendientes", value: "4", hint: "Validación pago", icon: "shopping_cart", variant: "warn" })}
-    ${renderKpiCard({ label: "Tickets abiertos", value: "7", hint: "Soporte", icon: "support_agent", variant: "default" })}
+    ${renderKpiCard({ label: "Wallets activas", value: ws ? String(ws.activeWallets) : "—", hint: "Empresas con wallet", icon: "account_balance_wallet", variant: "default" })}
+    ${renderKpiCard({ label: "Compras pendientes", value: ws ? String(ws.pendingOrders) : "4", hint: "Pago pendiente", icon: "shopping_cart", variant: "warn" })}
+    ${renderKpiCard({ label: "Por acreditar", value: ws ? String(ws.paidPendingCredit) : "—", hint: "Pagadas sin crédito", icon: "payments", variant: "warn" })}
+    ${renderKpiCard({ label: "Saldo bajo", value: ws ? String(ws.lowBalanceCompanies) : "—", hint: "< 500 SMS disp.", icon: "warning", variant: "danger" })}
   </div>`;
 
   const providerRows = MOCK_SA_PROVIDERS.map(

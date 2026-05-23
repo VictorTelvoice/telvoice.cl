@@ -39,6 +39,7 @@ import {
   renderSettingsPage,
   renderTestClientPage,
 } from "../views/admin-pages.js";
+import { getWalletGlobalStats } from "../services/walletDashboardService.js";
 import { getConfiguredDlrWebhookUrl } from "../utils/dlr-callback.js";
 import { validateUuidParam } from "../utils/validation.js";
 
@@ -242,6 +243,8 @@ export async function getDashboard(
       successMessage = `Crédito aplicado: +${units} unidades (${country}). Disponible: ${available || "ver balance abajo"}.`;
     }
 
+    const walletStats = await getWalletGlobalStats();
+
     res.type("html").send(
       renderDashboardPage({
         admin,
@@ -251,6 +254,7 @@ export async function getDashboard(
         messages,
         stats,
         asmscBalance,
+        walletStats,
         supabaseConfigured: Boolean(
           env.supabase.url && env.supabase.serviceRoleKey,
         ),

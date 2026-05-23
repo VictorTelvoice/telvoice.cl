@@ -9,11 +9,8 @@ import {
   renderSaClientsPage,
   renderSaDlrPage,
   renderSaMessagesPage,
-  renderSaOrdersPage,
-  renderSaPricingPage,
   renderSaProvidersPage,
   renderSaRoutesPage,
-  renderSaWalletsPage,
 } from "../views/admin-ui/sections/superadmin-pages.js";
 
 async function loadGlobalSmsHint(): Promise<string | undefined> {
@@ -50,14 +47,11 @@ function saPage(
 }
 
 export const getSaClientsPage = saPage(renderSaClientsPage);
-export const getSaPricingPage = saPage(renderSaPricingPage);
 export const getSaCampaignsPage = saPage(renderSaCampaignsPage);
 export const getSaMessagesPage = saPage(renderSaMessagesPage);
 export const getSaDlrPage = saPage(renderSaDlrPage);
 export const getSaProvidersPage = saPage(renderSaProvidersPage);
 export const getSaRoutesPage = saPage(renderSaRoutesPage);
-export const getSaOrdersPage = saPage(renderSaOrdersPage);
-export const getSaWalletsPage = saPage(renderSaWalletsPage);
 export const getSaApiKeysPage = saPage(renderSaApiKeysPage);
 
 export function redirectSaBot(

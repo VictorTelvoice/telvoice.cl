@@ -3,15 +3,12 @@ import { escapeHtml } from "../../../utils/html.js";
 import { wrapAdminPage } from "../admin-page-wrap.js";
 import {
   MOCK_SA_API_KEYS,
-  MOCK_SA_BAGS,
   MOCK_SA_CAMPAIGNS,
   MOCK_SA_CLIENTS,
   MOCK_SA_DLR,
   MOCK_SA_MESSAGES,
-  MOCK_SA_ORDERS,
   MOCK_SA_PROVIDERS,
   MOCK_SA_ROUTES,
-  MOCK_SA_WALLETS,
 } from "../mock-data-superadmin.js";
 import { renderKpiCard } from "../components.js";
 import { renderBtn, renderFilterBar, renderPageHeader } from "../page-kit.js";
@@ -69,28 +66,6 @@ export function renderSaClientsPage(opts: PageOpts): string {
     </tr></thead><tbody>${rows}</tbody></table></div>
     <p class="field-hint tv-mock-tag">Detalle completo en Cliente prueba hasta conectar listado real desde Supabase.</p>`;
   return wrap(opts, "clients", "Clientes", body);
-}
-
-export function renderSaPricingPage(opts: PageOpts): string {
-  const rows = MOCK_SA_BAGS.map(
-    (b) => `<tr>
-      <td>${escapeHtml(b.name)}</td><td>${escapeHtml(b.country)}</td><td>${escapeHtml(String(b.sms))}</td>
-      <td>${escapeHtml(b.price)}</td><td>${escapeHtml(b.unit)}</td><td>${escapeHtml(b.cost)}</td>
-      <td>${escapeHtml(b.margin)}</td><td>${statusBadgeSa(b.status)}</td>
-      <td><a href="/admin/products" class="row-link">Editar</a></td>
-    </tr>`,
-  ).join("");
-  const body = `
-    ${renderSuperadminBanner()}
-    ${renderPageHeader({
-      title: "Bolsas y tarifas",
-      subtitle: "Define bolsas SMS, precios de venta, costos estimados y márgenes por país y volumen.",
-      actions: `<a href="/admin/products/new" class="btn btn-primary">Crear bolsa</a> <a href="/admin/pricing-tiers" class="btn btn-secondary">Tramos precio</a> <a href="/admin/calculator" class="btn btn-ghost btn-sm">Calculadora</a>`,
-    })}
-    <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Bolsa</th><th>País</th><th>SMS</th><th>Precio venta</th><th>Unitario</th><th>Costo est.</th><th>Margen</th><th>Estado</th><th></th>
-    </tr></thead><tbody>${rows}</tbody></table></div>`;
-  return wrap(opts, "pricing", "Bolsas y tarifas", body);
 }
 
 export function renderSaCampaignsPage(opts: PageOpts): string {
@@ -181,39 +156,6 @@ export function renderSaRoutesPage(opts: PageOpts): string {
       <th>País</th><th>Operador</th><th>Proveedor</th><th>Tipo</th><th>Prior.</th><th>Costo</th><th>Venta</th><th>Margen</th><th>Estado</th><th>DLR</th><th></th>
     </tr></thead><tbody>${rows}</tbody></table></div>`;
   return wrap(opts, "routes", "Rutas SMS", body);
-}
-
-export function renderSaOrdersPage(opts: PageOpts): string {
-  const rows = MOCK_SA_ORDERS.map(
-    (o) => `<tr>
-      <td>${escapeHtml(o.date)}</td><td>${escapeHtml(o.client)}</td><td>${escapeHtml(o.bag)}</td>
-      <td>${escapeHtml(String(o.qty))}</td><td>${escapeHtml(o.amount)}</td><td>${escapeHtml(o.payment)}</td>
-      <td>${statusBadgeSa(o.payStatus)}</td><td>${statusBadgeSa(o.creditStatus)}</td>
-      <td><code>${escapeHtml(o.ref)}</code></td>
-      <td><button class="btn btn-primary btn-sm" disabled>Acreditar</button></td>
-    </tr>`,
-  ).join("");
-  const body = `${renderSuperadminBanner()}${renderPageHeader({ title: "Compras", subtitle: "Órdenes de bolsas SMS y acreditación de saldo.", actions: `<a href="/admin/invoices" class="btn btn-secondary">Facturas</a>` })}
-    <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Fecha</th><th>Cliente</th><th>Bolsa</th><th>SMS</th><th>Monto</th><th>Pago</th><th>Estado pago</th><th>Acreditación</th><th>Ref.</th><th></th>
-    </tr></thead><tbody>${rows}</tbody></table></div>`;
-  return wrap(opts, "orders", "Compras", body);
-}
-
-export function renderSaWalletsPage(opts: PageOpts): string {
-  const rows = MOCK_SA_WALLETS.map(
-    (w) => `<tr>
-      <td>${escapeHtml(w.client)}</td><td>${escapeHtml(w.country)}</td><td>${escapeHtml(w.available)}</td>
-      <td>${escapeHtml(w.reserved)}</td><td>${escapeHtml(w.consumed)}</td><td>${escapeHtml(w.purchased)}</td>
-      <td>${escapeHtml(w.lastMove)}</td><td>${statusBadgeSa(w.status)}</td>
-      <td><a href="/admin/clients/test/credit" class="btn btn-secondary btn-sm">Ajustar</a> <a href="/admin/clients/test/ledger" class="btn btn-ghost btn-sm">Movimientos</a></td>
-    </tr>`,
-  ).join("");
-  const body = `${renderSuperadminBanner()}${renderPageHeader({ title: "Saldos SMS", subtitle: "Saldos por cliente, reservas y movimientos.", actions: `<a href="/admin/clients/test/credit" class="btn btn-primary">Carga manual</a>` })}
-    <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Cliente</th><th>País</th><th>Disponible</th><th>Reservado</th><th>Consumido</th><th>Comprado</th><th>Último mov.</th><th>Estado</th><th></th>
-    </tr></thead><tbody>${rows}</tbody></table></div>`;
-  return wrap(opts, "wallets", "Saldos", body);
 }
 
 export function renderSaApiKeysPage(opts: PageOpts): string {

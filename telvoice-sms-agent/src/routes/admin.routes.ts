@@ -66,13 +66,25 @@ import {
   getSaClientsPage,
   getSaDlrPage,
   getSaMessagesPage,
-  getSaOrdersPage,
-  getSaPricingPage,
   getSaProvidersPage,
   getSaRoutesPage,
-  getSaWalletsPage,
   redirectSaBot,
 } from "../controllers/admin-superadmin.controller.js";
+import {
+  getSaOrdersPage,
+  getSaPricingPage,
+  getSaWalletDetailPage,
+  getSaWalletsPage,
+  postCreateOrder,
+  postCreateSmsPackage,
+  postCreditOrder,
+  postMarkOrderPaid,
+  postToggleSmsPackage,
+  postUpdateSmsPackage,
+  postWalletCredit,
+  postWalletDebit,
+  postWalletQuickCredit,
+} from "../controllers/admin-wallet.controller.js";
 import {
   getDashboard,
   getInboxPage,
@@ -106,13 +118,23 @@ adminRouter.post("/logout", postLogout);
 adminRouter.get("/", requireAdminPage, getDashboard);
 adminRouter.get("/clients", requireAdminPage, getSaClientsPage);
 adminRouter.get("/pricing", requireAdminPage, getSaPricingPage);
+adminRouter.post("/pricing", requireAdminPage, postCreateSmsPackage);
+adminRouter.post("/pricing/:id/update", requireAdminPage, postUpdateSmsPackage);
+adminRouter.post("/pricing/:id/toggle", requireAdminPage, postToggleSmsPackage);
 adminRouter.get("/campaigns", requireAdminPage, getSaCampaignsPage);
 adminRouter.get("/messages", requireAdminPage, getSaMessagesPage);
 adminRouter.get("/dlr", requireAdminPage, getSaDlrPage);
 adminRouter.get("/providers", requireAdminPage, getSaProvidersPage);
 adminRouter.get("/routes", requireAdminPage, getSaRoutesPage);
 adminRouter.get("/orders", requireAdminPage, getSaOrdersPage);
+adminRouter.post("/orders", requireAdminPage, postCreateOrder);
+adminRouter.post("/orders/:id/mark-paid", requireAdminPage, postMarkOrderPaid);
+adminRouter.post("/orders/:id/credit", requireAdminPage, postCreditOrder);
 adminRouter.get("/wallets", requireAdminPage, getSaWalletsPage);
+adminRouter.post("/wallets/quick-credit", requireAdminPage, postWalletQuickCredit);
+adminRouter.get("/wallets/:companyId", requireAdminPage, getSaWalletDetailPage);
+adminRouter.post("/wallets/:companyId/credit", requireAdminPage, postWalletCredit);
+adminRouter.post("/wallets/:companyId/debit", requireAdminPage, postWalletDebit);
 adminRouter.get("/api", requireAdminPage, getSaApiKeysPage);
 adminRouter.get("/bot", requireAdminPage, redirectSaBot);
 adminRouter.get("/inbox", requireAdminPage, getInboxPage);
