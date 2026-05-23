@@ -1,9 +1,17 @@
 #!/usr/bin/env node
 /**
  * Provisiona usuario demo cliente para /app (idempotente).
- * No guarda contraseña en archivos — la imprime solo al crear o con --reset-password.
+ *
+ * Seguridad:
+ * - Lee SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY solo desde process.env / .env local.
+ * - No incluye contraseñas, JWT ni claves en el repositorio.
+ * - La contraseña temporal se genera en runtime y se imprime una sola vez en consola.
+ * - No se ejecuta en deploy ni en CI; uso manual por operador.
+ *
+ * Requisitos: .env con credenciales Supabase (no commitear .env).
  *
  * Uso:
+ *   cd telvoice-sms-agent
  *   node scripts/provision-client-demo-user.mjs
  *   node scripts/provision-client-demo-user.mjs --reset-password
  */
@@ -30,17 +38,20 @@ const sb = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY,
 );
 
+const ADMIN_PUBLIC_COLUMNS =
+  "id, email, name, role, created_at, updated_at";
+
 async function findAdminByEmail(email) {
   const { data, error } = await sb
     .from("admin_users")
-    .select("*")
+    .select(ADMIN_PUBLIC_COLUMNS)
     .eq("email", email)
     .maybeSingle();
   if (error) throw new Error(error.message);
   return data;
 }
 
-async function upsertProfile(adminUserId, createdPassword) {
+async function upsertProfile(adminUserId) {
   const { data: byAdmin } = await sb
     .from("user_profiles")
     .select("*")
@@ -82,7 +93,7 @@ async function upsertProfile(adminUserId, createdPassword) {
     .select("*")
     .single();
   if (error) throw new Error(error.message);
-  return { profile: data, created: true, createdPassword };
+  return { profile: data, created: true };
 }
 
 async function upsertCompanyUser(profileId) {
@@ -167,7 +178,7 @@ async function main() {
         name: FULL_NAME,
         role: ROLE,
       })
-      .select("*")
+      .select(ADMIN_PUBLIC_COLUMNS)
       .single();
     if (error) throw new Error(error.message);
     admin = data;
@@ -182,16 +193,13 @@ async function main() {
       .from("admin_users")
       .update(patch)
       .eq("id", admin.id)
-      .select("*")
+      .select(ADMIN_PUBLIC_COLUMNS)
       .single();
     if (error) throw new Error(error.message);
     admin = data;
   }
 
-  const { profile, created: profileCreated } = await upsertProfile(
-    admin.id,
-    adminCreated,
-  );
+  const { profile, created: profileCreated } = await upsertProfile(admin.id);
   const { companyUser, created: cuCreated } = await upsertCompanyUser(
     profile.id,
   );
