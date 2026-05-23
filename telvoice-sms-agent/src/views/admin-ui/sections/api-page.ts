@@ -17,6 +17,7 @@ import {
   renderPageHeader,
   renderPanel,
 } from "../page-kit.js";
+import { renderSuperadminBanner } from "../superadmin-kit.js";
 
 export function renderApiPageBody(options: {
   balanceResult: AsmscApiResponse | null;
@@ -95,11 +96,12 @@ export function renderApiPageBody(options: {
     : "";
 
   return `
+    ${renderSuperadminBanner()}
     ${renderPageHeader({
-      title: "API Telvoice",
+      title: "Diagnóstico API / aSMSC",
       subtitle:
-        "Integra el envío SMS de Telvoice en tu sistema, CRM, ecommerce, plataforma interna o agente automatizado.",
-      actions: headerActions,
+        "Conectividad técnica upstream. Para API keys de clientes use la sección API del menú.",
+      actions: `${headerActions} <a href="/admin/api" class="btn btn-ghost btn-sm">API keys clientes →</a>`,
     })}
     ${kpis}
     <div class="tv-dash-grid tv-dash-grid--2">

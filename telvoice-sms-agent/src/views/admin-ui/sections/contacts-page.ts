@@ -11,6 +11,7 @@ import {
   renderPageHeader,
   renderPanel,
 } from "../page-kit.js";
+import { renderSuperadminBanner } from "../superadmin-kit.js";
 
 function contactStatusBadge(status: string): string {
   const map: Record<string, [string, string]> = {
@@ -97,10 +98,11 @@ export function renderContactsPage(options: {
   ).join("");
 
   const body = `
+    ${renderSuperadminBanner("CRM interno — para bases de clientes use cada cuenta en el futuro panel /app.")}
     ${renderPageHeader({
-      title: "Contactos",
+      title: "Contactos CRM",
       subtitle:
-        "Administra tus bases de destinatarios, listas, segmentos y estados de opt-in/opt-out.",
+        "Bases de destinatarios y segmentación comercial (herramienta legacy; no confundir con contactos del cliente final).",
       actions: headerActions,
     })}
     ${kpis}

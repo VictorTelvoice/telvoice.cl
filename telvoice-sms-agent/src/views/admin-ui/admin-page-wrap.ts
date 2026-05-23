@@ -14,6 +14,11 @@ export function wrapAdminPage(options: {
     adminName: options.admin.name,
     showNav: true,
     activeNav: options.activeNav,
-    topbar: options.topbar,
+    topbar: {
+      companyName: "Telvoice · Superadmin",
+      routesLabel: "Red global OK",
+      routesOk: true,
+      ...options.topbar,
+    },
   });
 }

@@ -9,6 +9,7 @@ import {
   renderPageHeader,
   renderTabs,
 } from "../page-kit.js";
+import { renderSuperadminBanner } from "../superadmin-kit.js";
 
 export function renderTemplatesPage(options: {
   admin: AdminSessionUser;
@@ -76,10 +77,11 @@ export function renderTemplatesPage(options: {
   const first = MOCK_TEMPLATES[0]!;
 
   const body = `
+    ${renderSuperadminBanner("Knowledge base interna — plantillas de referencia para operación y bot.")}
     ${renderPageHeader({
-      title: "Plantillas SMS",
+      title: "Plantillas (KB interna)",
       subtitle:
-        "Crea, organiza y reutiliza mensajes para campañas, notificaciones, OTP, cobranzas y alertas transaccionales.",
+        "Biblioteca de mensajes de referencia para soporte, bot y campañas de prueba.",
       actions: `
         <a href="/admin/knowledge/new" class="btn btn-primary">Crear plantilla</a>
         ${renderBtn("Importar", { variant: "secondary", disabled: true })}

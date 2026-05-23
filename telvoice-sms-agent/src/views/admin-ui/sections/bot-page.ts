@@ -14,6 +14,7 @@ import {
   renderPageHeader,
   renderPanel,
 } from "../page-kit.js";
+import { renderSuperadminBanner } from "../superadmin-kit.js";
 
 export function renderBotPageBody(options: {
   admin: AdminSessionUser;
@@ -93,10 +94,11 @@ export function renderBotPageBody(options: {
   const usersCount = options.telegramUsers.length;
 
   return `
+    ${renderSuperadminBanner()}
     ${renderPageHeader({
-      title: "Agente Telvoice",
+      title: "Bot asistente (operación)",
       subtitle:
-        "Tu asistente para preparar campañas, revisar contactos, consultar saldo, resolver errores y conectar Telvoice con Telegram.",
+        "Diagnóstico y configuración del bot Telegram para operadores Telvoice y pruebas con cliente de referencia.",
       actions: headerActions,
     })}
     <div class="tv-kpi-grid" style="margin-bottom:1.25rem">

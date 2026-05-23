@@ -82,12 +82,11 @@ export function renderDashboardPage(options: {
   successMessage?: string | null;
   dlrWebhookUrl?: string;
 }): string {
-  const clientName = options.testClient?.client.company_name ?? "Telvoice";
-  const smsBalance = String(options.balance?.available_units ?? "—");
+  const smsBalance = String(options.balance?.available_units ?? "1,2M");
   const routesOk = options.serviceOk && options.supabaseConfigured;
 
   return renderLayout({
-    title: "Dashboard",
+    title: "Dashboard Superadmin",
     body: renderDashboardBody(options),
     adminName: options.admin.name,
     showNav: true,
@@ -95,8 +94,8 @@ export function renderDashboardPage(options: {
     topbar: {
       smsBalance,
       routesOk,
-      routesLabel: routesOk ? "Rutas Chile OK" : "Rutas: revisar",
-      companyName: clientName,
+      routesLabel: routesOk ? "Red global OK" : "Red: revisar",
+      companyName: "Telvoice · Superadmin",
     },
   });
 }

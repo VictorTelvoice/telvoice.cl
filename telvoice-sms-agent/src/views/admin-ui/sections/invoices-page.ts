@@ -9,6 +9,7 @@ import {
   renderPageHeader,
   renderPanel,
 } from "../page-kit.js";
+import { renderSuperadminBanner } from "../superadmin-kit.js";
 
 function invoiceStatusBadge(status: string): string {
   const map: Record<string, [string, string]> = {
@@ -65,16 +66,16 @@ export function renderInvoicesPage(options: {
   ).join("");
 
   const body = `
+    ${renderSuperadminBanner()}
     ${renderPageHeader({
-      title: "Facturas y compras",
+      title: "Facturas y órdenes",
       subtitle:
-        "Consulta tus bolsas SMS adquiridas, facturas, comprobantes, pagos y solicitudes comerciales.",
+        "Control de facturación, comprobantes y documentos de todos los clientes Telvoice.",
       actions: `
-        <a href="https://www.telvoice.cl/#calculadora" target="_blank" rel="noopener" class="tv-btn-campaign">Comprar más SMS</a>
-        ${renderBtn("Solicitar cotización", { variant: "secondary", disabled: true })}
-        ${renderBtn("Estado de cuenta", { variant: "ghost", disabled: true, icon: "download" })}
-        <a href="mailto:ventas@telvoice.cl" class="btn btn-secondary">Contactar ejecutivo</a>
-        <a href="/admin/products" class="btn btn-ghost btn-sm">Catálogo productos →</a>
+        <a href="/admin/orders" class="tv-btn-campaign">Ver compras</a>
+        ${renderBtn("Emitir factura", { variant: "secondary", disabled: true })}
+        ${renderBtn("Exportar", { variant: "ghost", disabled: true, icon: "download" })}
+        <a href="/admin/pricing" class="btn btn-ghost btn-sm">Bolsas y tarifas →</a>
       `,
     })}
     ${kpis}

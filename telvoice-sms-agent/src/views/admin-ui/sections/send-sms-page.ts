@@ -12,6 +12,7 @@ import {
   renderPanel,
   renderStatChip,
 } from "../page-kit.js";
+import { renderSuperadminBanner } from "../superadmin-kit.js";
 
 function renderSmsTypeSelect(selected: string): string {
   const pSelected = selected === "P" ? " selected" : "";
@@ -201,10 +202,11 @@ export function renderSendSmsPageBody(options: {
     </form>`;
 
   return `
+    ${renderSuperadminBanner("Herramienta de prueba técnica — no es el flujo de compra del cliente final.")}
     ${renderPageHeader({
-      title: "Enviar SMS",
+      title: "Enviar SMS (prueba)",
       subtitle:
-        "Crea campañas, envía mensajes individuales o programa envíos masivos usando tu saldo Telvoice.",
+        "Envío unitario y pruebas aSMSC para operadores Telvoice. Los clientes usarán el futuro panel /app.",
       actions: headerActions,
     })}
     ${errorBlock}

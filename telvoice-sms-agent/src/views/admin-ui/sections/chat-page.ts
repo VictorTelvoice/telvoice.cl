@@ -7,6 +7,7 @@ import {
   renderBtn,
   renderPageHeader,
 } from "../page-kit.js";
+import { renderSuperadminBanner } from "../superadmin-kit.js";
 
 function ticketStatusBadge(status: string): string {
   const map: Record<string, [string, string]> = {
@@ -107,10 +108,11 @@ export function renderChatPage(options: {
     .join("");
 
   const body = `
+    ${renderSuperadminBanner()}
     ${renderPageHeader({
-      title: "Chat de soporte",
+      title: "Chat soporte",
       subtitle:
-        "Comunícate con el equipo Telvoice para dudas comerciales, técnicas, de facturación o integración. (Distinto del Bot automatizado.)",
+        "Atiende tickets de clientes empresariales: facturación, integración API, rutas y operación SMS.",
       actions: `
         ${renderBtn("Crear ticket", { variant: "primary", icon: "add", disabled: true })}
         ${renderBtn("Marcar resuelto", { variant: "secondary", disabled: true })}

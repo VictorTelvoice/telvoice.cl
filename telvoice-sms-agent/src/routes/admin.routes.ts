@@ -61,6 +61,19 @@ import {
   redirectSendSmsAlias,
 } from "../controllers/admin-sections.controller.js";
 import {
+  getSaApiKeysPage,
+  getSaCampaignsPage,
+  getSaClientsPage,
+  getSaDlrPage,
+  getSaMessagesPage,
+  getSaOrdersPage,
+  getSaPricingPage,
+  getSaProvidersPage,
+  getSaRoutesPage,
+  getSaWalletsPage,
+  redirectSaBot,
+} from "../controllers/admin-superadmin.controller.js";
+import {
   getDashboard,
   getInboxPage,
   getLoginPage,
@@ -89,6 +102,17 @@ adminRouter.post("/register", postRegister);
 adminRouter.post("/logout", postLogout);
 
 adminRouter.get("/", requireAdminPage, getDashboard);
+adminRouter.get("/clients", requireAdminPage, getSaClientsPage);
+adminRouter.get("/pricing", requireAdminPage, getSaPricingPage);
+adminRouter.get("/campaigns", requireAdminPage, getSaCampaignsPage);
+adminRouter.get("/messages", requireAdminPage, getSaMessagesPage);
+adminRouter.get("/dlr", requireAdminPage, getSaDlrPage);
+adminRouter.get("/providers", requireAdminPage, getSaProvidersPage);
+adminRouter.get("/routes", requireAdminPage, getSaRoutesPage);
+adminRouter.get("/orders", requireAdminPage, getSaOrdersPage);
+adminRouter.get("/wallets", requireAdminPage, getSaWalletsPage);
+adminRouter.get("/api", requireAdminPage, getSaApiKeysPage);
+adminRouter.get("/bot", requireAdminPage, redirectSaBot);
 adminRouter.get("/inbox", requireAdminPage, getInboxPage);
 adminRouter.get("/reports", requireAdminPage, getReportsPage);
 adminRouter.get("/contacts", requireAdminPage, getContactsPage);

@@ -13,6 +13,7 @@ import {
   renderPageHeader,
   renderTabs,
 } from "../page-kit.js";
+import { renderSuperadminBanner } from "../superadmin-kit.js";
 
 function mapRowToMock(m: SmsMessageRow): InboxMessageMock {
   const status = (m.status ?? "pending").toLowerCase();
@@ -123,10 +124,11 @@ export function renderInboxPageBody(options: {
   const first = messages[0]!;
 
   return `
+    ${renderSuperadminBanner("Vista operador legacy — para tráfico global use Mensajería.")}
     ${renderPageHeader({
-      title: "Bandeja SMS",
+      title: "Bandeja operador",
       subtitle:
-        "Revisa el historial de mensajes enviados, recibidos, estados DLR y conversaciones con destinatarios.",
+        "Historial de mensajes y DLR (herramienta de prueba). Monitor global en /admin/messages.",
     })}
     ${tabs}
     <div data-tv-tab-panel="inbox" data-tv-tab-id="all">

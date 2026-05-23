@@ -1,5 +1,5 @@
 import { escapeHtml } from "../../utils/html.js";
-import { MAIN_NAV, SYSTEM_NAV } from "./nav.js";
+import { LEGACY_NAV, MAIN_NAV } from "./nav.js";
 import { getAdminStyles } from "./styles.js";
 
 export interface LayoutTopbarOptions {
@@ -32,11 +32,18 @@ const ACTIVE_NAV_ALIASES: Record<string, string> = {
   telegram: "bot",
   knowledge: "templates",
   "knowledge-test": "templates",
-  products: "invoices",
-  leads: "contacts",
+  products: "pricing",
+  leads: "clients",
+  client: "client-test",
+  "client-test": "clients",
+  credit: "wallets",
+  ledger: "wallets",
   "web-leads": "chat",
   "web-sessions": "chat",
   "web-quotes": "chat",
+  send: "messages",
+  inbox: "messages",
+  contacts: "clients",
 };
 
 function resolveActiveNav(active: string): string {
@@ -62,12 +69,12 @@ function renderNavLinks(
 function renderSidebar(active: string): string {
   return `<aside class="tv-sidebar" id="tv-sidebar" aria-label="Menú principal">
     <div class="tv-sidebar__brand">
-      <a href="/admin">Telvoice<span>SMS Agent · Panel</span></a>
+      <a href="/admin">Telvoice<span>Superadmin</span></a>
     </div>
     <nav class="tv-sidebar__nav">
       ${renderNavLinks(MAIN_NAV, active)}
-      <div class="tv-sidebar__section">Sistema</div>
-      ${renderNavLinks(SYSTEM_NAV, active)}
+      <div class="tv-sidebar__section">Herramientas y legacy</div>
+      ${renderNavLinks(LEGACY_NAV, active)}
     </nav>
   </aside>`;
 }
@@ -77,7 +84,7 @@ function renderTopbar(options: LayoutOptions): string {
   const balance = tb.smsBalance ?? "—";
   const routesLabel = tb.routesLabel ?? "Rutas";
   const routesOk = tb.routesOk ?? true;
-  const company = tb.companyName ?? "Telvoice";
+  const company = tb.companyName ?? "Telvoice · Superadmin";
   const adminName = options.adminName ?? "Admin";
   const routesClass = routesOk ? "tv-pill--ok" : "tv-pill--warn";
 
@@ -87,22 +94,22 @@ function renderTopbar(options: LayoutOptions): string {
     </button>
     <div class="tv-topbar__search">
       <span class="material-symbols-outlined tv-topbar__search-icon" aria-hidden="true">search</span>
-      <input type="search" name="q" placeholder="Buscar campañas, contactos, envíos…" aria-label="Búsqueda global" autocomplete="off" />
+      <input type="search" name="q" placeholder="Buscar clientes, campañas, órdenes, API keys…" aria-label="Búsqueda global Superadmin" autocomplete="off" />
     </div>
     <div class="tv-topbar__pills">
-      <span class="tv-pill" title="Saldo SMS disponible">
+      <span class="tv-pill" title="Saldo vendido agregado (referencial)">
         <span class="material-symbols-outlined" aria-hidden="true">sms</span>
-        <span class="tv-pill__text">${escapeHtml(balance)} SMS</span>
+        <span class="tv-pill__text">${escapeHtml(balance)} vendidos</span>
       </span>
-      <span class="tv-pill ${routesClass}" title="Estado de rutas Chile">
+      <span class="tv-pill ${routesClass}" title="Estado red global">
         <span class="material-symbols-outlined" aria-hidden="true">cell_tower</span>
         <span class="tv-pill__text">${escapeHtml(routesLabel)}</span>
       </span>
     </div>
     <div class="tv-topbar__actions">
-      <a href="/admin/sms/send-test" class="tv-btn-campaign">
-        <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">add_circle</span>
-        Nueva campaña
+      <a href="/admin/clients" class="tv-btn-campaign">
+        <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">business</span>
+        Nuevo cliente
       </a>
       <button type="button" class="tv-topbar__icon-btn" aria-label="Notificaciones" title="Notificaciones">
         <span class="material-symbols-outlined" aria-hidden="true">notifications</span>

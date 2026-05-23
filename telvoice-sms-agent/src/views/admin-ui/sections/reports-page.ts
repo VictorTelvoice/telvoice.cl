@@ -14,6 +14,7 @@ import {
   renderPanel,
   renderPerformanceBadge,
 } from "../page-kit.js";
+import { renderSuperadminBanner } from "../superadmin-kit.js";
 
 export function renderReportsPage(options: {
   admin: AdminSessionUser;
@@ -69,10 +70,11 @@ export function renderReportsPage(options: {
   ).join("");
 
   const body = `
+    ${renderSuperadminBanner()}
     ${renderPageHeader({
-      title: "Reportes SMS",
+      title: "Reportes globales",
       subtitle:
-        "Analiza el rendimiento de tus campañas, consumo de saldo, entregabilidad, costos y tráfico por operador.",
+        "Visión de negocio Telvoice: tráfico total, ingresos, costos, márgenes y consumo por cliente, proveedor y ruta.",
       actions: `
         ${renderBtn("Exportar CSV", { variant: "ghost", disabled: true, icon: "download" })}
         ${renderBtn("Exportar Excel", { variant: "ghost", disabled: true })}
@@ -107,7 +109,7 @@ export function renderReportsPage(options: {
 
   return wrapAdminPage({
     admin: options.admin,
-    title: "Reportes SMS",
+    title: "Reportes globales",
     activeNav: "reports",
     body,
     topbar: options.smsBalance ? { smsBalance: options.smsBalance } : undefined,
