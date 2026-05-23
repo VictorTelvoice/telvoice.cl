@@ -7,6 +7,7 @@ import {
   getAppDashboard,
   getAppInbox,
   getAppInvoices,
+  getAppOrderDetail,
   getAppOrders,
   getAppReports,
   getAppRoot,
@@ -32,6 +33,7 @@ appRouter.post("/buy-sms", requireClientPanelPage, postAppBuySms);
 
 appRouter.get("/wallet", requireClientPanelPage, getAppWallet);
 appRouter.get("/orders", requireClientPanelPage, getAppOrders);
+appRouter.get("/orders/:id", requireClientPanelPage, getAppOrderDetail);
 
 appRouter.get("/send-sms", requireClientPanelPage, getAppSendSms);
 appRouter.get("/campaigns", requireClientPanelPage, getAppCampaigns);

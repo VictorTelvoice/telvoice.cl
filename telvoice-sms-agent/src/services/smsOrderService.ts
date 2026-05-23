@@ -4,6 +4,7 @@ import { getSmsPackageById } from "./smsPackageService.js";
 import { applyPurchaseCredit } from "./smsWalletService.js";
 import type { SmsOrderRow, SmsOrderWithDetails } from "../types/wallet.js";
 import { isMissingTableError } from "../utils/db-table.js";
+import { CLIENT_PANEL_ORDER_METADATA } from "../utils/order-display.js";
 import { AppError } from "../utils/errors.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 
@@ -22,6 +23,45 @@ export async function getOrderById(id: string): Promise<SmsOrderRow | null> {
   }
 
   return data as SmsOrderRow | null;
+}
+
+export async function getOrderForCompany(
+  orderId: string,
+  companyId: string,
+): Promise<SmsOrderRow | null> {
+  const order = await getOrderById(orderId);
+  if (!order || order.company_id !== companyId) {
+    return null;
+  }
+  return order;
+}
+
+export async function getOrderWithDetailsForCompany(
+  orderId: string,
+  companyId: string,
+): Promise<SmsOrderWithDetails | null> {
+  const order = await getOrderForCompany(orderId, companyId);
+  if (!order) {
+    return null;
+  }
+
+  let package_name: string | undefined;
+  if (order.package_id) {
+    const pkg = await getSmsPackageById(order.package_id);
+    package_name = pkg?.name;
+  }
+
+  const { data: company } = await getSupabase()
+    .from("companies")
+    .select("id, name")
+    .eq("id", companyId)
+    .maybeSingle();
+
+  return {
+    ...order,
+    company_name: (company as { name?: string } | null)?.name,
+    package_name,
+  };
 }
 
 export async function listSmsOrdersByCompany(
@@ -79,6 +119,33 @@ export async function listSmsOrdersByCompany(
     company_name: companyName,
     package_name: o.package_id ? packageMap.get(o.package_id) : undefined,
   }));
+}
+
+export async function getOrderWithDetails(
+  orderId: string,
+): Promise<SmsOrderWithDetails | null> {
+  const order = await getOrderById(orderId);
+  if (!order) {
+    return null;
+  }
+
+  let package_name: string | undefined;
+  if (order.package_id) {
+    const pkg = await getSmsPackageById(order.package_id);
+    package_name = pkg?.name;
+  }
+
+  const { data: company } = await getSupabase()
+    .from("companies")
+    .select("id, name")
+    .eq("id", order.company_id)
+    .maybeSingle();
+
+  return {
+    ...order,
+    company_name: (company as { name?: string } | null)?.name,
+    package_name,
+  };
 }
 
 export async function listSmsOrders(limit = 100): Promise<SmsOrderWithDetails[]> {
@@ -144,6 +211,7 @@ export async function createOrder(input: {
   createdBy?: string | null;
   paymentProvider?: string;
   paymentReference?: string;
+  metadata?: Record<string, unknown>;
 }): Promise<SmsOrderRow> {
   const pkg = await getSmsPackageById(input.packageId);
   if (!pkg || !pkg.is_active) {
@@ -163,6 +231,10 @@ export async function createOrder(input: {
       payment_status: "pending",
       credit_status: "pending",
       created_by: input.createdBy ?? null,
+      metadata: {
+        ...CLIENT_PANEL_ORDER_METADATA,
+        ...(input.metadata ?? {}),
+      },
     })
     .select("*")
     .single();

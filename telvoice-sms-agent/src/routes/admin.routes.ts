@@ -71,6 +71,7 @@ import {
   redirectSaBot,
 } from "../controllers/admin-superadmin.controller.js";
 import {
+  getSaOrderDetailPage,
   getSaOrdersPage,
   getSaPricingPage,
   getSaWalletDetailPage,
@@ -127,6 +128,7 @@ adminRouter.get("/dlr", requireAdminPage, getSaDlrPage);
 adminRouter.get("/providers", requireAdminPage, getSaProvidersPage);
 adminRouter.get("/routes", requireAdminPage, getSaRoutesPage);
 adminRouter.get("/orders", requireAdminPage, getSaOrdersPage);
+adminRouter.get("/orders/:id", requireAdminPage, getSaOrderDetailPage);
 adminRouter.post("/orders", requireAdminPage, postCreateOrder);
 adminRouter.post("/orders/:id/mark-paid", requireAdminPage, postMarkOrderPaid);
 adminRouter.post("/orders/:id/credit", requireAdminPage, postCreditOrder);

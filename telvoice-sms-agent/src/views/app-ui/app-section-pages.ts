@@ -1,7 +1,9 @@
+import type { SmsOrderWithDetails } from "../../types/wallet.js";
 import { escapeHtml } from "../../utils/html.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
+import { renderOrderShortIdCell } from "./app-order-ui.js";
 
 function comingSoon(
   ctx: AppPageContext,
@@ -79,17 +81,33 @@ export function renderAppApiPage(ctx: AppPageContext): string {
   ]);
 }
 
-export function renderAppSupportPage(ctx: AppPageContext): string {
+export function renderAppSupportPage(
+  ctx: AppPageContext,
+  relatedOrder?: SmsOrderWithDetails | null,
+): string {
+  const orderCard = relatedOrder
+    ? `<section class="tv-panel tv-panel--hint" style="margin-bottom:1rem">
+      <div class="tv-panel__body">
+        <p style="margin:0"><strong>Consulta relacionada a la orden:</strong>
+          <code>${escapeHtml(relatedOrder.payment_reference ?? "—")}</code>
+          · ${renderOrderShortIdCell(relatedOrder.id)}
+          · <a href="/app/orders/${escapeHtml(relatedOrder.id)}">Ver detalle</a>
+        </p>
+      </div>
+    </section>`
+    : "";
+
   const body = `
     ${renderPageHeader({
       title: "Soporte",
       subtitle: "Contacta al equipo Telvoice para ayuda con tu cuenta.",
     })}
+    ${orderCard}
     <section class="tv-panel">
       <div class="tv-panel__body">
         <p><strong>Email:</strong> <a href="mailto:soporte@telvoice.cl">soporte@telvoice.cl</a></p>
         <p><strong>Horario:</strong> Lunes a viernes, 9:00 – 18:00 (Chile)</p>
-        <p class="field-hint">Para órdenes pendientes de pago, indica el ID de orden desde <a href="/app/orders">Mis órdenes</a>.</p>
+        <p class="field-hint">Para órdenes pendientes de pago, indica la referencia desde <a href="/app/orders">Mis órdenes</a>.</p>
         <div class="tv-quick-actions">
           ${renderBtn("Ver mis órdenes", { href: "/app/orders", variant: "secondary" })}
           ${renderBtn("Comprar SMS", { href: "/app/buy-sms", variant: "primary" })}

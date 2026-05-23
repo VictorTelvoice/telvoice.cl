@@ -1,3 +1,5 @@
+import { getOrderUiSharedStyles } from "../shared/order-ui-styles.js";
+
 /** Estilos adicionales del panel cliente /app */
 export function getAppPanelStyles(): string {
   return `
@@ -98,14 +100,46 @@ export function getAppPanelStyles(): string {
       box-shadow: var(--tv-shadow-lg);
       text-align: center;
     }
-    .tv-order-success {
-      max-width: 560px;
+    .tv-order-success,
+    .tv-order-confirm {
+      max-width: 640px;
       margin: 1rem 0 2rem;
       padding: 1.5rem;
       background: #ecfdf5;
       border: 1px solid #a7f3d0;
       border-radius: var(--tv-radius);
     }
+    .tv-order-confirm__title {
+      margin: 0 0 0.5rem;
+      font-size: 1.25rem;
+      color: #065f46;
+    }
+    .tv-order-confirm__lead {
+      margin: 0;
+      color: #047857;
+    }
+    .tv-order-confirm__dl {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem 1.25rem;
+      margin: 1.25rem 0 0;
+    }
+    .tv-order-confirm__dl dt {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--tv-muted);
+      margin: 0;
+    }
+    .tv-order-confirm__dl dd {
+      margin: 0.15rem 0 0;
+      font-weight: 600;
+    }
+    .tv-panel--hint {
+      background: #f8fafc;
+      border-style: dashed;
+    }
+    ${getOrderUiSharedStyles()}
     .tv-mobile-preview {
       max-width: 280px;
       margin: 1rem auto;

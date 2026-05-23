@@ -1,53 +1,16 @@
-import { canOperateClientPanel } from "../../types/roles.js";
 import type { ClientDashboardData } from "../../services/clientDashboardService.js";
-import type { SmsOrderWithDetails } from "../../types/wallet.js";
-import type { SmsPackageRow } from "../../types/wallet.js";
 import type { WalletTransactionRow } from "../../types/wallet.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
-import { statusBadgeSa } from "../admin-ui/superadmin-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
+import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
 import {
-  fmtMoney,
-  fmtSms,
-  wrapAppPage,
-} from "./app-page-wrap.js";
-
-function orderPaymentBadge(status: string): string {
-  const map: Record<string, string> = {
-    pending: "pendiente",
-    paid: "pagada",
-    rejected: "rechazada",
-    cancelled: "cancelada",
-    refunded: "reembolsada",
-  };
-  return statusBadgeSa(map[status] ?? status);
-}
-
-function orderCreditBadge(status: string): string {
-  if (status === "credited") {
-    return statusBadgeSa("acreditada");
-  }
-  if (status === "failed") {
-    return statusBadgeSa("rechazada");
-  }
-  return statusBadgeSa("pendiente");
-}
-
-function txTypeLabel(type: string): string {
-  const labels: Record<string, string> = {
-    purchase_credit: "Compra acreditada",
-    manual_credit: "Ajuste crédito",
-    manual_debit: "Ajuste débito",
-    sms_debit: "Consumo SMS",
-    sms_refund: "Devolución",
-    reserve: "Reserva",
-    release_reserved: "Liberación reserva",
-    adjustment: "Ajuste",
-    reversal: "Reversión",
-  };
-  return labels[type] ?? type;
-}
+  renderClientCreditBadge,
+  renderClientPaymentBadge,
+  renderOrderQaBadgeIfNeeded,
+  renderTxQaBadgeIfNeeded,
+  renderWalletTxTypeBadge,
+} from "./app-order-ui.js";
 
 export function renderAppDashboardPage(
   ctx: AppPageContext,
@@ -61,10 +24,10 @@ export function renderAppDashboardPage(
         .map(
           (o) => `<tr>
         <td>${formatDate(o.created_at)}</td>
-        <td>${escapeHtml(o.package_name ?? "—")}</td>
+        <td>${escapeHtml(o.package_name ?? "—")}${renderOrderQaBadgeIfNeeded(o)}</td>
         <td>${fmtSms(o.sms_quantity)}</td>
-        <td>${orderPaymentBadge(o.payment_status)}</td>
-        <td>${orderCreditBadge(o.credit_status)}</td>
+        <td>${renderClientPaymentBadge(o.payment_status)}</td>
+        <td>${renderClientCreditBadge(o.credit_status)}</td>
       </tr>`,
         )
         .join("")
@@ -75,7 +38,7 @@ export function renderAppDashboardPage(
         .map(
           (t) => `<tr>
         <td>${formatDate(t.created_at)}</td>
-        <td>${escapeHtml(txTypeLabel(t.type))}</td>
+        <td>${renderWalletTxTypeBadge(t.type)}${renderTxQaBadgeIfNeeded(t)}</td>
         <td>${fmtSms(t.sms_amount)}</td>
         <td>${escapeHtml(t.description ?? "—")}</td>
       </tr>`,
@@ -130,55 +93,6 @@ export function renderAppDashboardPage(
   return wrapAppPage(ctx, "dashboard", "Dashboard", body);
 }
 
-export function renderAppBuySmsPage(
-  ctx: AppPageContext,
-  packages: SmsPackageRow[],
-  orderCreated?: boolean,
-): string {
-  const canBuy = canOperateClientPanel(ctx.profile.role);
-
-  const successBlock = orderCreated
-    ? `<div class="tv-order-success" role="status">
-        <h2 style="margin:0 0 0.5rem;font-size:1.1rem">Orden creada correctamente</h2>
-        <p style="margin:0">En esta etapa, el pago será validado por el equipo Telvoice. Cuando el pago sea confirmado, tu saldo se acreditará automáticamente.</p>
-        <div class="tv-quick-actions" style="margin-top:1rem">
-          ${renderBtn("Ver órdenes", { href: "/app/orders", variant: "primary" })}
-          ${renderBtn("Volver al dashboard", { href: "/app/dashboard", variant: "secondary" })}
-        </div>
-      </div>`
-    : "";
-
-  const cards = packages.length
-    ? packages
-        .map((p) => {
-          const buyBtn = canBuy
-            ? `<form method="post" action="/app/buy-sms">
-                <input type="hidden" name="package_id" value="${escapeHtml(p.id)}" />
-                <button type="submit" class="btn btn-primary btn-sm" style="width:100%">Comprar</button>
-              </form>`
-            : `<button type="button" class="btn btn-secondary btn-sm" disabled style="width:100%" title="Tu rol es solo lectura">Solo lectura</button>`;
-          return `<article class="tv-package-card">
-            <h3 style="margin:0;font-size:1rem">${escapeHtml(p.name)}</h3>
-            <div class="tv-package-card__qty">${fmtSms(p.sms_quantity)} SMS</div>
-            <div class="tv-package-card__price">${fmtMoney(Number(p.total_price), p.currency)}</div>
-            <div class="tv-package-card__unit">${p.unit_price != null ? `${fmtMoney(Number(p.unit_price), p.currency)} / SMS` : ""}</div>
-            ${buyBtn}
-          </article>`;
-        })
-        .join("")
-    : `<p class="tv-page-sub">No hay bolsas disponibles para compra en este momento. Contacta a soporte.</p>`;
-
-  const body = `
-    ${renderPageHeader({
-      title: "Comprar SMS",
-      subtitle: "Bolsas prepago para Chile. El pago se confirma con el equipo Telvoice.",
-    })}
-    ${successBlock}
-    <div class="tv-package-grid">${cards}</div>
-    <p class="field-hint" style="margin-top:1.25rem">Los precios incluyen IVA según tu contrato. Pasarela de pago en línea próximamente.</p>`;
-  return wrapAppPage(ctx, "buy-sms", "Comprar SMS", body);
-}
-
 export function renderAppWalletPage(
   ctx: AppPageContext,
   transactions: WalletTransactionRow[],
@@ -189,7 +103,7 @@ export function renderAppWalletPage(
         .map(
           (t) => `<tr>
         <td>${formatDate(t.created_at)}</td>
-        <td>${escapeHtml(txTypeLabel(t.type))}</td>
+        <td>${renderWalletTxTypeBadge(t.type)}${renderTxQaBadgeIfNeeded(t)}</td>
         <td>${fmtSms(t.sms_amount)}</td>
         <td>${fmtSms(t.balance_before)}</td>
         <td>${fmtSms(t.balance_after)}</td>
@@ -221,41 +135,6 @@ export function renderAppWalletPage(
       </div>
     </section>`;
   return wrapAppPage(ctx, "wallet", "Mi saldo", body);
-}
-
-export function renderAppOrdersPage(
-  ctx: AppPageContext,
-  orders: SmsOrderWithDetails[],
-): string {
-  const rows = orders.length
-    ? orders
-        .map((o) => {
-          const actions = `<a href="/app/support" class="btn btn-ghost btn-sm">Soporte</a>
-            <span class="field-hint" style="margin-left:0.25rem">Reintentar pago — próximamente</span>`;
-          return `<tr>
-        <td>${formatDate(o.created_at)}</td>
-        <td>${escapeHtml(o.package_name ?? "—")}</td>
-        <td>${fmtSms(o.sms_quantity)}</td>
-        <td>${fmtMoney(Number(o.amount), o.currency)}</td>
-        <td>${orderPaymentBadge(o.payment_status)}</td>
-        <td>${orderCreditBadge(o.credit_status)}</td>
-        <td>${escapeHtml(o.payment_reference ?? "—")}</td>
-        <td>${actions}</td>
-      </tr>`;
-        })
-        .join("")
-    : `<tr><td colspan="8">No tienes órdenes aún. <a href="/app/buy-sms">Comprar SMS</a></td></tr>`;
-
-  const body = `
-    ${renderPageHeader({
-      title: "Mis órdenes",
-      subtitle: "Historial de compras de bolsas SMS.",
-      actions: renderBtn("Comprar SMS", { href: "/app/buy-sms", variant: "primary" }),
-    })}
-    <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Fecha</th><th>Bolsa</th><th>SMS</th><th>Monto</th><th>Estado pago</th><th>Acreditación</th><th>Referencia</th><th></th>
-    </tr></thead><tbody>${rows}</tbody></table></div>`;
-  return wrapAppPage(ctx, "orders", "Mis órdenes", body);
 }
 
 export function renderAppSendSmsPage(ctx: AppPageContext): string {

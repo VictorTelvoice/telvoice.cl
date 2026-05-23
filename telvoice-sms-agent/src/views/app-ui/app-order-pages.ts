@@ -1,0 +1,193 @@
+import { canOperateClientPanel } from "../../types/roles.js";
+import type { SmsOrderWithDetails } from "../../types/wallet.js";
+import type { SmsPackageRow } from "../../types/wallet.js";
+import {
+  buildOrderTimeline,
+  checkoutModeLabel,
+  orderMatchesFilter,
+  paymentMethodLabel,
+  type OrderListFilter,
+} from "../../utils/order-display.js";
+import { escapeHtml, formatDate } from "../../utils/html.js";
+import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
+import type { AppPageContext } from "./app-page-wrap.js";
+import { fmtMoney, fmtSms, wrapAppPage } from "./app-page-wrap.js";
+import {
+  renderClientCreditBadge,
+  renderClientPaymentBadge,
+  renderOrderFilterTabs,
+  renderOrderQaBadgeIfNeeded,
+  renderOrderShortIdCell,
+  renderOrderTimeline,
+} from "./app-order-ui.js";
+
+function supportOrderHref(orderId: string): string {
+  return `/app/support?order=${encodeURIComponent(orderId)}`;
+}
+
+export function renderAppBuySmsPage(
+  ctx: AppPageContext,
+  packages: SmsPackageRow[],
+): string {
+  const canBuy = canOperateClientPanel(ctx.profile.role);
+
+  const cards = packages.length
+    ? packages
+        .map((p) => {
+          const buyBtn = canBuy
+            ? `<form method="post" action="/app/buy-sms">
+                <input type="hidden" name="package_id" value="${escapeHtml(p.id)}" />
+                <button type="submit" class="btn btn-primary btn-sm" style="width:100%">Comprar</button>
+              </form>`
+            : `<button type="button" class="btn btn-secondary btn-sm" disabled style="width:100%" title="Tu rol es solo lectura">Solo lectura</button>`;
+          return `<article class="tv-package-card">
+            <h3 style="margin:0;font-size:1rem">${escapeHtml(p.name)}</h3>
+            <div class="tv-package-card__qty">${fmtSms(p.sms_quantity)} SMS</div>
+            <div class="tv-package-card__price">${fmtMoney(Number(p.total_price), p.currency)}</div>
+            <div class="tv-package-card__unit">${p.unit_price != null ? `${fmtMoney(Number(p.unit_price), p.currency)} / SMS` : ""}</div>
+            ${buyBtn}
+          </article>`;
+        })
+        .join("")
+    : `<p class="tv-page-sub">No hay bolsas disponibles para compra en este momento. Contacta a soporte.</p>`;
+
+  const body = `
+    ${renderPageHeader({
+      title: "Comprar SMS",
+      subtitle: "Bolsas prepago para Chile. El pago se confirma con el equipo Telvoice.",
+    })}
+    <div class="tv-package-grid">${cards}</div>
+    <section class="tv-panel tv-panel--hint" style="margin-top:1.25rem">
+      <h2 class="tv-panel__title">Pago manual temporal</h2>
+      <div class="tv-panel__body">
+        <p style="margin:0">En esta etapa, la compra será validada por el equipo Telvoice. Pronto podrás pagar en línea con MercadoPago o Stripe.</p>
+        <p class="field-hint" style="margin:0.75rem 0 0">Los precios incluyen IVA según tu contrato. No se muestran datos bancarios hasta habilitar pago en línea.</p>
+      </div>
+    </section>`;
+  return wrapAppPage(ctx, "buy-sms", "Comprar SMS", body);
+}
+
+function renderOrderCreatedConfirmation(order: SmsOrderWithDetails): string {
+  return `<section class="tv-order-confirm" role="status">
+    <h2 class="tv-order-confirm__title">Orden creada correctamente</h2>
+    <p class="tv-order-confirm__lead">Tu orden fue registrada y quedó pendiente de pago. Cuando el equipo Telvoice confirme el pago, los SMS serán acreditados automáticamente en tu saldo.</p>
+    <dl class="tv-order-confirm__dl">
+      <div><dt>Bolsa</dt><dd>${escapeHtml(order.package_name ?? "—")}${renderOrderQaBadgeIfNeeded(order)}</dd></div>
+      <div><dt>Cantidad SMS</dt><dd>${fmtSms(order.sms_quantity)}</dd></div>
+      <div><dt>Monto total</dt><dd>${fmtMoney(Number(order.amount), order.currency)}</dd></div>
+      <div><dt>Referencia</dt><dd><code>${escapeHtml(order.payment_reference ?? "—")}</code></dd></div>
+      <div><dt>ID interno</dt><dd>${renderOrderShortIdCell(order.id)}</dd></div>
+      <div><dt>Estado pago</dt><dd>${renderClientPaymentBadge(order.payment_status)}</dd></div>
+      <div><dt>Estado acreditación</dt><dd>${renderClientCreditBadge(order.credit_status)}</dd></div>
+    </dl>
+    <div class="tv-quick-actions">
+      ${renderBtn("Ver mis órdenes", { href: "/app/orders", variant: "primary" })}
+      ${renderBtn("Volver al dashboard", { href: "/app/dashboard", variant: "secondary" })}
+      ${renderBtn("Contactar soporte", { href: supportOrderHref(order.id), variant: "ghost" })}
+    </div>
+    <section class="tv-panel tv-panel--hint" style="margin-top:1.25rem">
+      <h3 class="tv-panel__title" style="font-size:1rem">Pago manual temporal</h3>
+      <div class="tv-panel__body">
+        <p style="margin:0">En esta etapa, la compra será validada por el equipo Telvoice. Pronto podrás pagar en línea con MercadoPago o Stripe.</p>
+      </div>
+    </section>
+  </section>`;
+}
+
+export function renderAppOrderDetailPage(
+  ctx: AppPageContext,
+  order: SmsOrderWithDetails,
+  options?: { showCreatedBanner?: boolean },
+): string {
+  const timeline = buildOrderTimeline(order);
+  const showBanner = options?.showCreatedBanner === true;
+
+  const body = `
+    ${renderPageHeader({
+      title: "Detalle de orden",
+      subtitle: `Referencia ${escapeHtml(order.payment_reference ?? "—")}`,
+      actions: renderBtn("Mis órdenes", { href: "/app/orders", variant: "secondary" }),
+    })}
+    ${showBanner ? renderOrderCreatedConfirmation(order) : ""}
+    <div class="tv-dash-grid tv-dash-grid--2">
+      <section class="tv-panel">
+        <h2 class="tv-panel__title">Resumen</h2>
+        <dl class="tv-detail-dl tv-panel__body">
+          <div><dt>Referencia</dt><dd><code>${escapeHtml(order.payment_reference ?? "—")}</code></dd></div>
+          <div><dt>ID interno</dt><dd>${renderOrderShortIdCell(order.id)}</dd></div>
+          <div><dt>Bolsa</dt><dd>${escapeHtml(order.package_name ?? "—")}${renderOrderQaBadgeIfNeeded(order)}</dd></div>
+          <div><dt>Cantidad SMS</dt><dd>${fmtSms(order.sms_quantity)}</dd></div>
+          <div><dt>Monto</dt><dd>${fmtMoney(Number(order.amount), order.currency)} (${escapeHtml(order.currency)})</dd></div>
+          <div><dt>Fecha creación</dt><dd>${formatDate(order.created_at)}</dd></div>
+          <div><dt>Estado de pago</dt><dd>${renderClientPaymentBadge(order.payment_status)}</dd></div>
+          <div><dt>Estado acreditación</dt><dd>${renderClientCreditBadge(order.credit_status)}</dd></div>
+          <div><dt>Fecha acreditación</dt><dd>${order.credited_at ? formatDate(order.credited_at) : "—"}</dd></div>
+          <div><dt>Método de pago</dt><dd>${escapeHtml(paymentMethodLabel(order.payment_provider))}</dd></div>
+          <div><dt>Modo checkout</dt><dd>${escapeHtml(checkoutModeLabel(order.metadata))}</dd></div>
+        </dl>
+      </section>
+      <section class="tv-panel">
+        <h2 class="tv-panel__title">Seguimiento</h2>
+        <div class="tv-panel__body">${renderOrderTimeline(timeline)}</div>
+      </section>
+    </div>
+    <div class="tv-quick-actions" style="margin-top:1rem">
+      ${renderBtn("Contactar soporte por esta orden", { href: supportOrderHref(order.id), variant: "primary" })}
+      ${renderBtn("Volver a mis órdenes", { href: "/app/orders", variant: "secondary" })}
+      ${renderBtn("Comprar otra bolsa", { href: "/app/buy-sms", variant: "ghost" })}
+    </div>`;
+
+  return wrapAppPage(ctx, "orders", "Detalle de orden", body);
+}
+
+export function renderAppOrdersPage(
+  ctx: AppPageContext,
+  orders: SmsOrderWithDetails[],
+  filter: OrderListFilter,
+): string {
+  const filtered = orders.filter((o) => orderMatchesFilter(o, filter));
+
+  const rows = filtered.length
+    ? filtered
+        .map((o) => {
+          const qa = renderOrderQaBadgeIfNeeded(o);
+          return `<tr>
+        <td>${formatDate(o.created_at)}</td>
+        <td>${escapeHtml(o.package_name ?? "—")}${qa}</td>
+        <td>${fmtSms(o.sms_quantity)}</td>
+        <td>${fmtMoney(Number(o.amount), o.currency)}</td>
+        <td>${renderClientPaymentBadge(o.payment_status)}</td>
+        <td>${renderClientCreditBadge(o.credit_status)}</td>
+        <td><code>${escapeHtml(o.payment_reference ?? "—")}</code></td>
+        <td class="tv-table-actions">
+          <a href="/app/orders/${escapeHtml(o.id)}" class="btn btn-ghost btn-sm">Ver detalle</a>
+          <a href="${supportOrderHref(o.id)}" class="btn btn-ghost btn-sm">Soporte</a>
+        </td>
+      </tr>`;
+        })
+        .join("")
+    : `<tr><td colspan="8">No hay órdenes con este filtro. <a href="/app/buy-sms">Comprar SMS</a></td></tr>`;
+
+  const body = `
+    ${renderPageHeader({
+      title: "Mis órdenes",
+      subtitle: "Historial de compras de bolsas SMS.",
+      actions: renderBtn("Comprar SMS", { href: "/app/buy-sms", variant: "primary" }),
+    })}
+    ${renderOrderFilterTabs(filter)}
+    <p class="field-hint">${filtered.length} de ${orders.length} órdenes</p>
+    <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
+      <th>Fecha</th><th>Bolsa</th><th>SMS</th><th>Monto</th><th>Estado pago</th><th>Acreditación</th><th>Referencia</th><th></th>
+    </tr></thead><tbody>${rows}</tbody></table></div>`;
+  return wrapAppPage(ctx, "orders", "Mis órdenes", body);
+}
+
+export function renderAppOrderNotFoundPage(ctx: AppPageContext): string {
+  const body = `
+    ${renderPageHeader({ title: "Orden no encontrada", subtitle: "No existe o no tienes permiso para verla." })}
+    <div class="tv-quick-actions">
+      ${renderBtn("Mis órdenes", { href: "/app/orders", variant: "primary" })}
+      ${renderBtn("Dashboard", { href: "/app/dashboard", variant: "secondary" })}
+    </div>`;
+  return wrapAppPage(ctx, "orders", "Orden no encontrada", body);
+}

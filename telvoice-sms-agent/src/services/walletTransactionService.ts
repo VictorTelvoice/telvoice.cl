@@ -85,3 +85,23 @@ export async function listTransactionsByWallet(
 
   return (data ?? []) as WalletTransactionRow[];
 }
+
+export async function listTransactionsForOrder(
+  orderId: string,
+): Promise<WalletTransactionRow[]> {
+  const { data, error } = await getSupabase()
+    .from("wallet_transactions")
+    .select("*")
+    .eq("reference_type", "sms_order")
+    .eq("reference_id", orderId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return [];
+    }
+    wrapSupabaseError(error, "listTransactionsForOrder");
+  }
+
+  return (data ?? []) as WalletTransactionRow[];
+}

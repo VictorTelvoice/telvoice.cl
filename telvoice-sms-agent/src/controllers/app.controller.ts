@@ -5,22 +5,30 @@ import {
   getClientDashboardData,
 } from "../services/clientDashboardService.js";
 import { findCompanyById } from "../services/companyService.js";
-import { createOrder } from "../services/smsOrderService.js";
+import {
+  createOrder,
+  getOrderWithDetailsForCompany,
+  listSmsOrdersByCompany,
+} from "../services/smsOrderService.js";
 import { getCompanyBalance } from "../services/smsWalletService.js";
 import { listTransactionsByCompany } from "../services/walletTransactionService.js";
-import { listSmsOrdersByCompany } from "../services/smsOrderService.js";
+import { parseOrderListFilter } from "../utils/order-display.js";
 import { validateUuidParam } from "../utils/validation.js";
 import type { AppPageContext } from "../views/app-ui/app-page-wrap.js";
 import {
   renderNoCompanyPage,
 } from "../views/app-ui/app-page-wrap.js";
 import {
-  renderAppBuySmsPage,
   renderAppDashboardPage,
-  renderAppOrdersPage,
   renderAppSendSmsPage,
   renderAppWalletPage,
 } from "../views/app-ui/app-pages.js";
+import {
+  renderAppBuySmsPage,
+  renderAppOrderDetailPage,
+  renderAppOrderNotFoundPage,
+  renderAppOrdersPage,
+} from "../views/app-ui/app-order-pages.js";
 import {
   renderAppApiPage,
   renderAppCampaignsPage,
@@ -105,8 +113,7 @@ export async function getAppBuySms(
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
     const packages = await getClientCatalogPackages(ctx.company.country);
-    const created = req.query.created === "1";
-    return renderAppBuySmsPage(ctx, packages, created);
+    return renderAppBuySmsPage(ctx, packages);
   });
 }
 
@@ -131,7 +138,7 @@ export async function postAppBuySms(
       "package_id",
     );
 
-    await createOrder({
+    const order = await createOrder({
       companyId: ctx.company.id,
       packageId,
       createdBy: ctx.profile.profileId ?? ctx.profile.adminUserId ?? undefined,
@@ -139,7 +146,7 @@ export async function postAppBuySms(
       paymentReference: `APP-${Date.now()}`,
     });
 
-    res.redirect("/app/buy-sms?created=1&ok=Orden%20creada%20correctamente");
+    res.redirect(`/app/orders/${order.id}?created=1`);
   } catch (error) {
     const msg =
       error instanceof Error ? error.message : "No se pudo crear la orden";
@@ -165,7 +172,31 @@ export async function getAppOrders(
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
     const orders = await listSmsOrdersByCompany(ctx.company.id, 100);
-    return renderAppOrdersPage(ctx, orders);
+    const filter = parseOrderListFilter(
+      typeof req.query.filter === "string" ? req.query.filter : undefined,
+    );
+    return renderAppOrdersPage(ctx, orders, filter);
+  });
+}
+
+export async function getAppOrderDetail(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  await withAppContext(req, res, next, async (ctx) => {
+    const orderId = validateUuidParam(String(req.params.id), "id");
+    const order = await getOrderWithDetailsForCompany(
+      orderId,
+      ctx.company.id,
+    );
+    if (!order) {
+      return renderAppOrderNotFoundPage(ctx);
+    }
+    const showCreatedBanner = req.query.created === "1";
+    return renderAppOrderDetailPage(ctx, order, {
+      showCreatedBanner: showCreatedBanner,
+    });
   });
 }
 
@@ -238,7 +269,22 @@ export async function getAppSupport(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  await withAppContext(req, res, next, (ctx) => renderAppSupportPage(ctx));
+  await withAppContext(req, res, next, async (ctx) => {
+    let relatedOrder = null;
+    const orderParam = req.query.order;
+    if (typeof orderParam === "string" && orderParam.trim()) {
+      try {
+        const orderId = validateUuidParam(orderParam.trim(), "order");
+        relatedOrder = await getOrderWithDetailsForCompany(
+          orderId,
+          ctx.company.id,
+        );
+      } catch {
+        relatedOrder = null;
+      }
+    }
+    return renderAppSupportPage(ctx, relatedOrder);
+  });
 }
 
 export async function getAppSettings(

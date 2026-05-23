@@ -3,9 +3,11 @@ import { listCompanies, findCompanyById } from "../services/companyService.js";
 import {
   confirmOrderCredit,
   createOrder,
+  getOrderWithDetails,
   listSmsOrders,
   markOrderPaid,
 } from "../services/smsOrderService.js";
+import { listTransactionsForOrder } from "../services/walletTransactionService.js";
 import { insertAuditLog } from "../services/auditLogService.js";
 import {
   buildPricingCatalogSummary,
@@ -30,6 +32,7 @@ import { listTransactionsByCompany } from "../services/walletTransactionService.
 import { isMissingTableError } from "../utils/db-table.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
+  renderSaOrderDetailPage,
   renderSaOrdersPage,
   renderSaPricingPage,
   renderSaWalletDetailPage,
@@ -452,6 +455,36 @@ export async function postCreateOrder(
   }
 }
 
+export async function getSaOrderDetailPage(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const orderId = validateUuidParam(String(req.params.id), "id");
+    const order = await getOrderWithDetails(orderId);
+    if (!order) {
+      redirectWith(res, "/admin/orders", { error: "Orden no encontrada." });
+      return;
+    }
+    const [transactions, company] = await Promise.all([
+      listTransactionsForOrder(orderId),
+      findCompanyById(order.company_id),
+    ]);
+    res.type("html").send(
+      renderSaOrderDetailPage({
+        admin: req.adminUser!,
+        order,
+        transactions,
+        company,
+        ...flash(req),
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function postMarkOrderPaid(
   req: Request,
   res: Response,
@@ -459,9 +492,11 @@ export async function postMarkOrderPaid(
   try {
     const orderId = validateUuidParam(String(req.params.id), "id");
     await markOrderPaid(orderId, req.adminUser?.id);
-    redirectWith(res, "/admin/orders", { ok: "Orden marcada como pagada." });
+    redirectWith(res, `/admin/orders/${orderId}`, {
+      ok: "Orden marcada como pagada.",
+    });
   } catch (error) {
-    redirectWith(res, "/admin/orders", {
+    redirectWith(res, `/admin/orders/${req.params.id}`, {
       error: error instanceof Error ? error.message : "Error",
     });
   }
@@ -479,9 +514,9 @@ export async function postCreditOrder(
     const msg = result.alreadyCredited
       ? "La orden ya estaba acreditada (sin duplicar saldo)."
       : `Orden acreditada: ${result.order.sms_quantity} SMS.`;
-    redirectWith(res, "/admin/orders", { ok: msg });
+    redirectWith(res, `/admin/orders/${orderId}`, { ok: msg });
   } catch (error) {
-    redirectWith(res, "/admin/orders", {
+    redirectWith(res, `/admin/orders/${req.params.id}`, {
       error: error instanceof Error ? error.message : "Error al acreditar",
     });
   }

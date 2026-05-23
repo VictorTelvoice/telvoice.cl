@@ -1,3 +1,5 @@
+import { getOrderUiSharedStyles } from "../shared/order-ui-styles.js";
+
 /** Estilos del panel admin Telvoice — shell SaaS + compatibilidad legacy (inline SSR). */
 export function getAdminStyles(): string {
   return `
@@ -1098,5 +1100,6 @@ export function getAdminStyles(): string {
       font-size: 0.85rem;
     }
     .tv-app-placeholder__meta { font-size: 0.82rem; color: var(--tv-muted); margin-bottom: 0.75rem; }
+    ${getOrderUiSharedStyles()}
   `;
 }
