@@ -1,5 +1,6 @@
 import { getSupabase } from "../database/supabaseClient.js";
 import { insertAuditLog } from "./auditLogService.js";
+import { isDuplicateKeyError } from "../utils/supabase-errors.js";
 import { getSmsPackageById } from "./smsPackageService.js";
 import { applyPurchaseCredit } from "./smsWalletService.js";
 import type { SmsOrderRow, SmsOrderWithDetails } from "../types/wallet.js";
@@ -252,6 +253,7 @@ export async function patchOrderFields(
     payment_reference?: string | null;
     payment_status?: SmsOrderRow["payment_status"];
     credit_status?: SmsOrderRow["credit_status"];
+    credited_at?: string | null;
     metadata?: Record<string, unknown>;
   },
 ): Promise<SmsOrderRow> {
@@ -269,6 +271,9 @@ export async function patchOrderFields(
   }
   if (patch.credit_status !== undefined) {
     update.credit_status = patch.credit_status;
+  }
+  if (patch.credited_at !== undefined) {
+    update.credited_at = patch.credited_at;
   }
   if (patch.metadata !== undefined) {
     update.metadata = {
@@ -289,6 +294,51 @@ export async function patchOrderFields(
   }
 
   return data as SmsOrderRow;
+}
+
+/** Cancela orden con pago pendiente (superadmin). No toca wallet. */
+export async function cancelPendingOrder(
+  orderId: string,
+  actorUserId?: string | null,
+): Promise<SmsOrderRow> {
+  const order = await getOrderById(orderId);
+  if (!order) {
+    throw new AppError("Orden no encontrada.", 404);
+  }
+  if (order.payment_status !== "pending") {
+    throw new AppError(
+      "Solo se pueden cancelar órdenes con pago pendiente.",
+      400,
+      "ORDER_NOT_PENDING",
+    );
+  }
+  if (order.credit_status === "credited") {
+    throw new AppError(
+      "No se puede cancelar una orden ya acreditada.",
+      400,
+      "ORDER_ALREADY_CREDITED",
+    );
+  }
+
+  const cancelledAt = new Date().toISOString();
+  const updated = await patchOrderFields(orderId, {
+    payment_status: "cancelled",
+    metadata: {
+      cancelled_by: "superadmin",
+      cancelled_at: cancelledAt,
+    },
+  });
+
+  await insertAuditLog({
+    actorUserId,
+    companyId: order.company_id,
+    action: "order.cancel",
+    entityType: "sms_order",
+    entityId: orderId,
+    metadata: { payment_status: "cancelled" },
+  });
+
+  return updated;
 }
 
 export async function markOrderPaid(
@@ -377,12 +427,39 @@ export async function confirmOrderCredit(
     };
   }
 
-  await applyPurchaseCredit({
-    companyId: order.company_id,
-    smsAmount: order.sms_quantity,
-    orderId: order.id,
-    actorUserId,
-  });
+  try {
+    await applyPurchaseCredit({
+      companyId: order.company_id,
+      smsAmount: order.sms_quantity,
+      orderId: order.id,
+      actorUserId,
+    });
+  } catch (error) {
+    if (isDuplicateKeyError(error)) {
+      const current = await getOrderById(orderId);
+      if (current?.credit_status === "credited") {
+        return { order: current, alreadyCredited: true };
+      }
+      const { data: synced } = await getSupabase()
+        .from("sms_orders")
+        .update({
+          credit_status: "credited",
+          credited_at: current?.credited_at ?? new Date().toISOString(),
+          payment_status:
+            current?.payment_status === "pending"
+              ? "paid"
+              : current?.payment_status,
+        })
+        .eq("id", orderId)
+        .select("*")
+        .single();
+      return {
+        order: (synced ?? current ?? order) as SmsOrderRow,
+        alreadyCredited: true,
+      };
+    }
+    throw error;
+  }
 
   const { data, error } = await getSupabase()
     .from("sms_orders")

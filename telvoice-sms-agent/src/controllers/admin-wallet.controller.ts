@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { listCompanies, findCompanyById } from "../services/companyService.js";
 import {
+  cancelPendingOrder,
   confirmOrderCredit,
   createOrder,
   getOrderWithDetails,
@@ -518,6 +519,23 @@ export async function postCreditOrder(
   } catch (error) {
     redirectWith(res, `/admin/orders/${req.params.id}`, {
       error: error instanceof Error ? error.message : "Error al acreditar",
+    });
+  }
+}
+
+export async function postCancelPendingOrder(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const orderId = validateUuidParam(String(req.params.id), "id");
+    await cancelPendingOrder(orderId, req.adminUser?.id);
+    redirectWith(res, `/admin/orders/${orderId}`, {
+      ok: "Orden pendiente cancelada. No se modificó el saldo.",
+    });
+  } catch (error) {
+    redirectWith(res, `/admin/orders/${req.params.id}`, {
+      error: error instanceof Error ? error.message : "No se pudo cancelar",
     });
   }
 }

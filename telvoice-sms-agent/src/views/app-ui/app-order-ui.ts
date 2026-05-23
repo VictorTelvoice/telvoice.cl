@@ -33,7 +33,7 @@ export function renderClientPaymentBadge(status: PaymentStatus): string {
 
 export function renderClientCreditBadge(status: CreditStatus): string {
   if (status === "credited") {
-    return badge("ok", "Acreditada");
+    return badge("ok", "SMS acreditados");
   }
   if (status === "failed" || status === "reversed") {
     return badge("err", creditStatusLabel(status));

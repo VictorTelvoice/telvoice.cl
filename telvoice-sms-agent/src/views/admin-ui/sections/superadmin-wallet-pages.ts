@@ -12,8 +12,9 @@ import {
   checkoutModeLabel,
   formatOrderShortId,
   isQaOrder,
-  mercadoPagoAdminMetaRows,
+  mercadoPagoPaymentAuditRows,
   paymentMethodLabel,
+  renderSaOrderStatusBadges,
 } from "../../../utils/order-display.js";
 import { escapeHtml, formatDate } from "../../../utils/html.js";
 import {
@@ -414,30 +415,38 @@ export function renderSaOrdersPage(opts: PageOpts & {
           const company = escapeHtml(o.company_name ?? o.company_id.slice(0, 8));
           const bag = escapeHtml(o.package_name ?? "—") + renderSaOrderQaBadge(o);
           const amount = fmtMoney(Number(o.amount), o.currency);
-          const pay = statusBadgeSa(o.payment_status);
-          const credit = statusBadgeSa(
-            o.credit_status === "credited" ? "acreditada" : o.credit_status,
-          );
+          const badges = renderSaOrderStatusBadges(o);
           const creditedAt = o.credited_at ? formatDate(o.credited_at) : "—";
           const ref = escapeHtml(o.payment_reference ?? "—");
-          const payMethod = escapeHtml(paymentMethodLabel(o.payment_provider));
+          const mpPayId = o.metadata?.mercadopago_payment_id
+            ? `<div class="field-hint">Pay: <code>${escapeHtml(String(o.metadata.mercadopago_payment_id))}</code></div>`
+            : "";
           const credited = o.credit_status === "credited";
+          const cancelled = o.payment_status === "cancelled";
+          const canCancel =
+            o.payment_status === "pending" && o.credit_status !== "credited";
           const actions = credited
             ? `<a href="/admin/orders/${escapeHtml(o.id)}" class="btn btn-ghost btn-sm">Ver detalle</a>
                <span class="field-hint">Ya acreditada</span>`
-            : `<a href="/admin/orders/${escapeHtml(o.id)}" class="btn btn-ghost btn-sm">Ver detalle</a>
+            : cancelled
+              ? `<a href="/admin/orders/${escapeHtml(o.id)}" class="btn btn-ghost btn-sm">Ver detalle</a>
+                 <span class="field-hint">Cancelada</span>`
+              : `<a href="/admin/orders/${escapeHtml(o.id)}" class="btn btn-ghost btn-sm">Ver detalle</a>
+               ${canCancel ? `<form method="post" action="/admin/orders/${escapeHtml(o.id)}/cancel" style="display:inline;margin-left:0.25rem" onsubmit="return confirm('¿Cancelar esta orden pendiente? No modifica el saldo.');">
+                   <button type="submit" class="btn btn-ghost btn-sm">Cancelar</button>
+                 </form>` : ""}
                ${o.payment_status === "pending" ? `<form method="post" action="/admin/orders/${escapeHtml(o.id)}/mark-paid" style="display:inline;margin-left:0.25rem">
                    <button type="submit" class="btn btn-ghost btn-sm">Marcar pagada</button>
                  </form>` : ""}
-               <form method="post" action="/admin/orders/${escapeHtml(o.id)}/credit" style="display:inline;margin-left:0.25rem">
+               ${!cancelled ? `<form method="post" action="/admin/orders/${escapeHtml(o.id)}/credit" style="display:inline;margin-left:0.25rem">
                  <button type="submit" class="btn btn-primary btn-sm">Acreditar</button>
-               </form>`;
+               </form>` : ""}`;
           return `<tr>
       <td>${date}</td><td>${company}</td><td>${bag}</td>
       <td>${fmtSms(o.sms_quantity)}</td><td>${amount}</td>
-      <td>${payMethod}</td>
+      <td>${badges}${mpPayId}</td>
       <td><code>${ref}</code></td>
-      <td>${pay}</td><td>${credit}</td>
+      <td>${statusBadgeSa(o.payment_status)}</td><td>${statusBadgeSa(o.credit_status === "credited" ? "acreditada" : o.credit_status)}</td>
       <td>${creditedAt}</td>
       <td class="tv-table-actions">${actions}</td>
     </tr>`;
@@ -477,7 +486,7 @@ export function renderSaOrdersPage(opts: PageOpts & {
     })}
     ${opts.useMock ? '<p class="field-hint tv-mock-tag">Datos mock activos.</p>' : ""}
     <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Fecha</th><th>Empresa</th><th>Bolsa</th><th>SMS</th><th>Monto</th><th>Método</th><th>Referencia</th><th>Estado pago</th><th>Acreditación</th><th>Acreditada el</th><th></th>
+      <th>Fecha</th><th>Empresa</th><th>Bolsa</th><th>SMS</th><th>Monto</th><th>Etiquetas</th><th>Referencia</th><th>Estado pago</th><th>Acreditación</th><th>Acreditada el</th><th></th>
     </tr></thead><tbody>${rows}</tbody></table></div>
     ${createForm}`;
   return wrap(opts, "orders", "Compras", body);
@@ -516,6 +525,9 @@ export function renderSaOrderDetailPage(
 ): string {
   const o = opts.order;
   const credited = o.credit_status === "credited";
+  const cancelled = o.payment_status === "cancelled";
+  const canCancel =
+    o.payment_status === "pending" && o.credit_status !== "credited";
   const shortId = formatOrderShortId(o.id);
 
   const creditWarning = credited
@@ -525,7 +537,12 @@ export function renderSaOrderDetailPage(
   const adminActions = credited
     ? `<p class="field-hint">Orden acreditada — no hay acciones de saldo pendientes.</p>
        <button type="button" class="btn btn-secondary btn-sm" disabled>Ya acreditada</button>`
-    : `<div class="tv-quick-actions">
+    : cancelled
+      ? `<p class="field-hint">Orden cancelada. No se puede acreditar ni reanudar el pago desde aquí.</p>`
+      : `<div class="tv-quick-actions">
+         ${canCancel ? `<form method="post" action="/admin/orders/${escapeHtml(o.id)}/cancel" onsubmit="return confirm('¿Cancelar esta orden pendiente? No modifica el saldo de la empresa.');">
+           <button type="submit" class="btn btn-secondary">Cancelar orden pendiente</button>
+         </form>` : ""}
          ${o.payment_status === "pending" ? `<form method="post" action="/admin/orders/${escapeHtml(o.id)}/mark-paid">
            <button type="submit" class="btn btn-secondary">Marcar pagada</button>
          </form>` : ""}
@@ -534,7 +551,8 @@ export function renderSaOrderDetailPage(
          </form>
        </div>`;
 
-  const mpRows = mercadoPagoAdminMetaRows(o.metadata)
+  const auditRowsList = mercadoPagoPaymentAuditRows(o);
+  const auditRowsHtml = auditRowsList
     .map(
       (row) =>
         `<div><dt>${escapeHtml(row.label)}</dt><dd><code>${escapeHtml(row.value)}</code></dd></div>`,
@@ -576,6 +594,7 @@ export function renderSaOrderDetailPage(
       <section class="tv-panel">
         <h2 class="tv-panel__title">Estados</h2>
         <dl class="tv-detail-dl tv-panel__body">
+          <div><dt>Etiquetas</dt><dd>${renderSaOrderStatusBadges(o)}</dd></div>
           <div><dt>Estado pago</dt><dd>${statusBadgeSa(o.payment_status)}</dd></div>
           <div><dt>Acreditación</dt><dd>${statusBadgeSa(o.credit_status === "credited" ? "acreditada" : o.credit_status)}</dd></div>
           <div><dt>Creada</dt><dd>${formatDate(o.created_at)}</dd></div>
@@ -597,13 +616,21 @@ export function renderSaOrderDetailPage(
       </section>
     </div>
     ${
-      mpRows
+      auditRowsList.length &&
+      (o.payment_provider === "mercadopago" ||
+        o.metadata?.checkout_mode === "mercadopago")
         ? `<section class="tv-panel" style="margin-top:1rem">
-      <h2 class="tv-panel__title">Mercado Pago</h2>
-      <dl class="tv-detail-dl tv-panel__body">${mpRows}</dl>
+      <h2 class="tv-panel__title">Auditoría de pago</h2>
+      <dl class="tv-detail-dl tv-panel__body">${auditRowsHtml}</dl>
     </section>`
         : ""
     }
+    <section class="tv-panel tv-panel--hint" style="margin-top:1rem">
+      <h2 class="tv-panel__title">Facturación</h2>
+      <div class="tv-panel__body">
+        <p class="field-hint" style="margin:0">Adjuntar comprobante / factura — próximamente.</p>
+      </div>
+    </section>
     <section class="tv-panel" style="margin-top:1rem">
       <h2 class="tv-panel__title">Movimientos wallet (orden)</h2>
       <div class="table-wrap tv-panel__body" style="padding:0">

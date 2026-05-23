@@ -4,6 +4,7 @@ import type {
   SmsOrderRow,
   WalletTransactionRow,
 } from "../types/wallet.js";
+import { escapeHtml } from "./html.js";
 
 /** Metadata estándar para órdenes creadas desde /app/buy-sms */
 export const CLIENT_PANEL_ORDER_METADATA = {
@@ -218,11 +219,65 @@ export function mercadoPagoOrderHasPendingCheckout(order: {
   );
 }
 
-export function mercadoPagoAdminMetaRows(
+export function mercadoPagoWebhookReceived(
   metadata: Record<string, unknown> | undefined,
+): boolean {
+  return Boolean(metadata?.mercadopago_webhook_at);
+}
+
+export function renderSaPaymentMethodBadge(
+  provider: string | null,
+  metadata?: Record<string, unknown>,
+): string {
+  const mode = metadata?.checkout_mode;
+  if (provider === "mercadopago" || mode === "mercadopago") {
+    return `<span class="badge badge-ok">MercadoPago</span>`;
+  }
+  if (
+    provider === "manual" ||
+    provider === "pending_checkout" ||
+    mode === "manual_pending"
+  ) {
+    return `<span class="badge badge-muted">Manual</span>`;
+  }
+  return `<span class="badge badge-muted">${escapeHtml(paymentMethodLabel(provider))}</span>`;
+}
+
+export function renderSaOrderStatusBadges(
+  order: Pick<
+    SmsOrderRow,
+    "payment_status" | "credit_status" | "payment_provider" | "metadata"
+  >,
+): string {
+  const parts: string[] = [renderSaPaymentMethodBadge(order.payment_provider, order.metadata)];
+
+  if (order.payment_status === "cancelled") {
+    parts.push(`<span class="badge badge-muted">Cancelada</span>`);
+  } else if (order.payment_status === "pending") {
+    parts.push(`<span class="badge badge-warn">Pago pendiente</span>`);
+  } else if (order.payment_status === "paid") {
+    parts.push(`<span class="badge badge-ok">Pagada</span>`);
+  } else if (order.payment_status === "rejected") {
+    parts.push(`<span class="badge badge-err">Rechazada</span>`);
+  }
+
+  if (order.credit_status === "credited") {
+    parts.push(`<span class="badge badge-ok">Acreditada</span>`);
+  }
+
+  if (mercadoPagoWebhookReceived(order.metadata)) {
+    parts.push(`<span class="badge badge-muted">Webhook recibido</span>`);
+  }
+
+  return parts.join(" ");
+}
+
+export function mercadoPagoPaymentAuditRows(
+  order: Pick<SmsOrderRow, "amount" | "currency" | "payment_provider" | "metadata">,
 ): Array<{ label: string; value: string }> {
-  const meta = metadata ?? {};
+  const meta = order.metadata ?? {};
   const rows: Array<{ label: string; value: string }> = [];
+
   if (meta.mercadopago_preference_id) {
     rows.push({
       label: "Preference ID",
@@ -233,7 +288,13 @@ export function mercadoPagoAdminMetaRows(
     rows.push({ label: "Payment ID", value: String(meta.mercadopago_payment_id) });
   }
   if (meta.mercadopago_status) {
-    rows.push({ label: "Estado MP", value: String(meta.mercadopago_status) });
+    rows.push({ label: "Estado MercadoPago", value: String(meta.mercadopago_status) });
+  }
+  if (meta.mercadopago_status_detail) {
+    rows.push({
+      label: "Status detail",
+      value: String(meta.mercadopago_status_detail),
+    });
   }
   if (meta.mercadopago_webhook_at) {
     rows.push({
@@ -241,7 +302,48 @@ export function mercadoPagoAdminMetaRows(
       value: String(meta.mercadopago_webhook_at),
     });
   }
+  if (meta.mercadopago_processed_at) {
+    rows.push({
+      label: "Procesado",
+      value: String(meta.mercadopago_processed_at),
+    });
+  }
+  const validatedAmount =
+    meta.mercadopago_amount != null
+      ? String(meta.mercadopago_amount)
+      : String(order.amount);
+  const validatedCurrency =
+    meta.mercadopago_currency != null
+      ? String(meta.mercadopago_currency)
+      : order.currency;
+  rows.push({
+    label: "Monto validado",
+    value: `${validatedAmount} ${validatedCurrency}`,
+  });
+  if (meta.mercadopago_payment_method_id) {
+    rows.push({
+      label: "Método de pago MP",
+      value: String(meta.mercadopago_payment_method_id),
+    });
+  }
+  rows.push({
+    label: "Proveedor orden",
+    value: paymentMethodLabel(order.payment_provider),
+  });
+
   return rows;
+}
+
+/** @deprecated use mercadoPagoPaymentAuditRows */
+export function mercadoPagoAdminMetaRows(
+  metadata: Record<string, unknown> | undefined,
+): Array<{ label: string; value: string }> {
+  return mercadoPagoPaymentAuditRows({
+    amount: 0,
+    currency: "CLP",
+    payment_provider: "mercadopago",
+    metadata: metadata ?? {},
+  });
 }
 
 export function creditStatusLabel(status: CreditStatus): string {

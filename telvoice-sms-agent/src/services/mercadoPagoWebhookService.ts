@@ -9,24 +9,122 @@ import {
   markOrderPaid,
   patchOrderFields,
 } from "./smsOrderService.js";
+import { hasPurchaseCreditForOrder } from "./walletTransactionService.js";
+import type { MercadoPagoPaymentRecord } from "./mercadoPagoService.js";
+import type { SmsOrderRow } from "../types/wallet.js";
 
 function mergeMpMetadata(
   order: { metadata?: Record<string, unknown> },
-  payment: {
-    id: number | string;
-    status: string;
-    status_detail?: string;
-    payment_method_id?: string | null;
-  },
+  payment: MercadoPagoPaymentRecord,
 ): Record<string, unknown> {
+  const now = new Date().toISOString();
+  const prev = order.metadata ?? {};
+  const approved = payment.status === "approved";
+
   return {
-    ...(order.metadata ?? {}),
+    ...prev,
     mercadopago_payment_id: String(payment.id),
     mercadopago_status: payment.status,
     mercadopago_status_detail: payment.status_detail ?? null,
     mercadopago_payment_method_id: payment.payment_method_id ?? null,
-    mercadopago_webhook_at: new Date().toISOString(),
+    mercadopago_webhook_at: now,
+    mercadopago_amount:
+      payment.transaction_amount != null
+        ? Math.round(Number(payment.transaction_amount))
+        : prev.mercadopago_amount ?? null,
+    mercadopago_currency: payment.currency_id ?? prev.mercadopago_currency ?? null,
+    ...(approved ? { mercadopago_processed_at: now } : {}),
   };
+}
+
+async function syncCreditedOrderState(
+  orderId: string,
+  order: SmsOrderRow,
+  metaPatch: Record<string, unknown>,
+): Promise<SmsOrderRow> {
+  if (order.credit_status !== "credited") {
+    const refreshed = await getOrderById(orderId);
+    if (refreshed?.credit_status === "credited") {
+      await patchOrderFields(orderId, { metadata: metaPatch });
+      return refreshed;
+    }
+    await patchOrderFields(orderId, {
+      payment_status: order.payment_status === "pending" ? "paid" : order.payment_status,
+      credit_status: "credited",
+      credited_at: new Date().toISOString(),
+      metadata: metaPatch,
+    });
+    const afterSync = await getOrderById(orderId);
+    return afterSync ?? order;
+  }
+  await patchOrderFields(orderId, { metadata: metaPatch });
+  const latest = await getOrderById(orderId);
+  return latest ?? order;
+}
+
+async function resolveAlreadyCredited(
+  orderId: string,
+  order: SmsOrderRow,
+  metaPatch: Record<string, unknown>,
+): Promise<{ handled: true; orderId: string; result: "already_credited" }> {
+  if (order.credit_status === "credited") {
+    await patchOrderFields(orderId, { metadata: metaPatch });
+    console.log("[mp-webhook] already_credited (orden acreditada)", orderId);
+    return { handled: true, orderId, result: "already_credited" };
+  }
+
+  const hasTx = await hasPurchaseCreditForOrder(orderId);
+  if (hasTx) {
+    await syncCreditedOrderState(orderId, order, metaPatch);
+    console.log("[mp-webhook] already_credited (purchase_credit existente)", orderId);
+    return { handled: true, orderId, result: "already_credited" };
+  }
+
+  return { handled: true, orderId, result: "already_credited" };
+}
+
+async function creditApprovedOrder(
+  orderId: string,
+  order: SmsOrderRow,
+  metaPatch: Record<string, unknown>,
+): Promise<{ handled: true; orderId: string; result: string }> {
+  const early = await resolveAlreadyCreditedIfApplicable(orderId, order, metaPatch);
+  if (early) {
+    return early;
+  }
+
+  if (order.payment_status !== "paid") {
+    await markOrderPaid(orderId, null);
+  }
+
+  const credit = await confirmOrderCredit(orderId, null, {
+    allowManualWithoutPaid: false,
+  });
+
+  await patchOrderFields(orderId, { metadata: metaPatch });
+
+  const result = credit.alreadyCredited ? "already_credited" : "credited";
+  if (credit.alreadyCredited) {
+    console.log("[mp-webhook] already_credited (confirmOrderCredit)", orderId);
+  } else {
+    console.log("[mp-webhook] credited", orderId);
+  }
+
+  return { handled: true, orderId, result };
+}
+
+async function resolveAlreadyCreditedIfApplicable(
+  orderId: string,
+  order: SmsOrderRow,
+  metaPatch: Record<string, unknown>,
+): Promise<{ handled: true; orderId: string; result: "already_credited" } | null> {
+  if (order.credit_status === "credited") {
+    return resolveAlreadyCredited(orderId, order, metaPatch);
+  }
+  if (await hasPurchaseCreditForOrder(orderId)) {
+    return resolveAlreadyCredited(orderId, order, metaPatch);
+  }
+  return null;
 }
 
 export async function processClientPanelMercadoPagoWebhook(
@@ -44,28 +142,18 @@ export async function processClientPanelMercadoPagoWebhook(
     return { handled: false };
   }
 
-  if (
-    order.metadata?.mercadopago_payment_id === String(paymentId) &&
-    order.metadata?.mercadopago_status === payment.status &&
-    order.credit_status === "credited" &&
-    payment.status === "approved"
-  ) {
-    console.log("[mp-webhook] idempotente, orden ya acreditada", orderId);
-    return { handled: true, orderId, result: "already_credited" };
-  }
-
   const metaPatch = mergeMpMetadata(order, payment);
 
   if (payment.status === "approved") {
     const paidAmount = Math.round(Number(payment.transaction_amount ?? 0));
     const expected = Math.round(Number(order.amount));
     if (payment.currency_id && payment.currency_id !== "CLP") {
-      console.error("[mp-webhook] moneda inválida", payment.currency_id, orderId);
+      console.warn("[mp-webhook] moneda inválida", payment.currency_id, orderId);
       await patchOrderFields(orderId, { metadata: metaPatch });
       return { handled: true, orderId, result: "invalid_currency" };
     }
     if (paidAmount !== expected) {
-      console.error(
+      console.warn(
         "[mp-webhook] monto no coincide",
         paidAmount,
         expected,
@@ -75,21 +163,7 @@ export async function processClientPanelMercadoPagoWebhook(
       return { handled: true, orderId, result: "amount_mismatch" };
     }
 
-    if (order.payment_status !== "paid") {
-      await markOrderPaid(orderId, null);
-    }
-
-    const credit = await confirmOrderCredit(orderId, null, {
-      allowManualWithoutPaid: false,
-    });
-
-    await patchOrderFields(orderId, { metadata: metaPatch });
-
-    return {
-      handled: true,
-      orderId,
-      result: credit.alreadyCredited ? "already_credited" : "credited",
-    };
+    return creditApprovedOrder(orderId, order, metaPatch);
   }
 
   if (payment.status === "rejected") {

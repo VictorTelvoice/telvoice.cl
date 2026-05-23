@@ -76,6 +76,7 @@ import {
   getSaPricingPage,
   getSaWalletDetailPage,
   getSaWalletsPage,
+  postCancelPendingOrder,
   postCreateOrder,
   postCreateSmsPackage,
   postCreditOrder,
@@ -131,6 +132,11 @@ adminRouter.get("/orders", requireAdminPage, getSaOrdersPage);
 adminRouter.get("/orders/:id", requireAdminPage, getSaOrderDetailPage);
 adminRouter.post("/orders", requireAdminPage, postCreateOrder);
 adminRouter.post("/orders/:id/mark-paid", requireAdminPage, postMarkOrderPaid);
+adminRouter.post(
+  "/orders/:id/cancel",
+  requireAdminPage,
+  postCancelPendingOrder,
+);
 adminRouter.post("/orders/:id/credit", requireAdminPage, postCreditOrder);
 adminRouter.get("/wallets", requireAdminPage, getSaWalletsPage);
 adminRouter.post("/wallets/quick-credit", requireAdminPage, postWalletQuickCredit);

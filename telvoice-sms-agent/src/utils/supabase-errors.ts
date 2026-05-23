@@ -28,6 +28,21 @@ export function formatSupabaseError(
   return parts.join(" | ");
 }
 
+export function isDuplicateKeyError(
+  error: unknown,
+): boolean {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" && error && "message" in error
+        ? String((error as { message?: string }).message)
+        : String(error ?? "");
+  return (
+    message.includes("duplicate key") ||
+    message.includes("idx_wallet_transactions_order_purchase_unique")
+  );
+}
+
 export function wrapSupabaseError(
   error: PostgrestError | null,
   context: string,

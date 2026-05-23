@@ -38,7 +38,12 @@ export async function mercadoPagoWebhookHandler(
     const outcome = await routeMercadoPagoWebhook(paymentId);
     res.status(200).json(outcome);
   } catch (error) {
-    console.error("[mp-webhook] error", error);
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("duplicate key")) {
+      console.error("[mp-webhook] error", error);
+    } else {
+      console.log("[mp-webhook] duplicate ignored (idempotente)", paymentId);
+    }
     res.status(200).json({ ok: true, error: "logged" });
   }
 }

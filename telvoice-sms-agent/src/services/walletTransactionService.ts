@@ -86,6 +86,27 @@ export async function listTransactionsByWallet(
   return (data ?? []) as WalletTransactionRow[];
 }
 
+export async function hasPurchaseCreditForOrder(
+  orderId: string,
+): Promise<boolean> {
+  const { data, error } = await getSupabase()
+    .from("wallet_transactions")
+    .select("id")
+    .eq("reference_type", "sms_order")
+    .eq("reference_id", orderId)
+    .eq("type", "purchase_credit")
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return false;
+    }
+    wrapSupabaseError(error, "hasPurchaseCreditForOrder");
+  }
+
+  return Boolean(data);
+}
+
 export async function listTransactionsForOrder(
   orderId: string,
 ): Promise<WalletTransactionRow[]> {

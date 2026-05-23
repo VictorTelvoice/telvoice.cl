@@ -115,12 +115,39 @@ export function renderAppOrderDetailPage(
 ): string {
   const timeline = buildOrderTimeline(order);
   const showBanner = options?.showCreatedBanner === true;
-  const continuePay = mercadoPagoOrderHasPendingCheckout(order)
-    ? renderBtn("Continuar pago en Mercado Pago", {
-        href: `/app/orders/${escapeHtml(order.id)}/continue-payment`,
-        variant: "primary",
-      })
+  const isCancelled = order.payment_status === "cancelled";
+  const isCredited =
+    order.credit_status === "credited" && order.payment_status === "paid";
+  const continuePay =
+    !isCancelled && mercadoPagoOrderHasPendingCheckout(order)
+      ? renderBtn("Continuar pago en Mercado Pago", {
+          href: `/app/orders/${escapeHtml(order.id)}/continue-payment`,
+          variant: "primary",
+        })
+      : "";
+
+  const cancelledNotice = isCancelled
+    ? `<div class="alert alert-muted" role="status" style="margin-bottom:1rem">
+         <strong>Orden cancelada</strong>
+         <p style="margin:0.35rem 0 0">Esta orden fue cancelada. Puedes crear una nueva compra cuando lo necesites.</p>
+       </div>`
     : "";
+
+  const creditedNotice = isCredited
+    ? `<div class="alert alert-success" role="status" style="margin-bottom:1rem">
+         <strong>SMS acreditados</strong>
+         <p style="margin:0.35rem 0 0">El pago fue confirmado y los SMS ya están en tu saldo.</p>
+       </div>`
+    : "";
+
+  const receiptBlock = `
+    <section class="tv-panel tv-panel--hint" style="margin-top:1rem">
+      <h2 class="tv-panel__title">Comprobante</h2>
+      <div class="tv-panel__body">
+        <button type="button" class="btn btn-secondary btn-sm" disabled>Descargar comprobante</button>
+        <p class="field-hint" style="margin:0.5rem 0 0">El comprobante estará disponible cuando la facturación electrónica sea habilitada.</p>
+      </div>
+    </section>`;
 
   const body = `
     ${renderPageHeader({
@@ -129,6 +156,8 @@ export function renderAppOrderDetailPage(
       actions: renderBtn("Mis órdenes", { href: "/app/orders", variant: "secondary" }),
     })}
     ${showBanner ? renderOrderCreatedConfirmation(order) : ""}
+    ${cancelledNotice}
+    ${creditedNotice}
     <div class="tv-dash-grid tv-dash-grid--2">
       <section class="tv-panel">
         <h2 class="tv-panel__title">Resumen</h2>
@@ -151,6 +180,7 @@ export function renderAppOrderDetailPage(
         <div class="tv-panel__body">${renderOrderTimeline(timeline)}</div>
       </section>
     </div>
+    ${receiptBlock}
     <div class="tv-quick-actions" style="margin-top:1rem">
       ${continuePay}
       ${renderBtn("Contactar soporte por esta orden", { href: supportOrderHref(order.id), variant: continuePay ? "secondary" : "primary" })}
