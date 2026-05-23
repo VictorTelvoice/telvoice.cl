@@ -40,14 +40,20 @@ export async function listSmsPackages(activeOnly = false): Promise<SmsPackageRow
   return (data ?? []) as SmsPackageRow[];
 }
 
-/** Bolsas visibles para el futuro panel cliente /app */
+/** Bolsas visibles para el panel cliente /app */
 export async function listCustomerVisiblePackages(
   country = "CL",
 ): Promise<SmsPackageRow[]> {
   const all = await listSmsPackages(true);
-  return all.filter(
-    (p) => p.country === country && isCustomerVisible(p.metadata ?? {}),
-  );
+  return all.filter((p) => {
+    if (p.country !== country || !isCustomerVisible(p.metadata ?? {})) {
+      return false;
+    }
+    const meta = p.metadata ?? {};
+    const channel = String(meta.channel ?? "web");
+    const segment = String(meta.segment ?? "standard");
+    return channel === "web" && segment === "standard";
+  });
 }
 
 export function buildPricingCatalogSummary(

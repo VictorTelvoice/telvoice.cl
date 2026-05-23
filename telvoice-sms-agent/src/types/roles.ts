@@ -68,7 +68,22 @@ export function canAccessAdminPanel(role: string): boolean {
 }
 
 export function canAccessClientPanel(role: string): boolean {
-  return isClientRole(role);
+  const n = normalizeRole(role);
+  return (
+    (CLIENT_ROLES as readonly string[]).includes(n) ||
+    n === ROLES.SUPERADMIN
+  );
+}
+
+/** Cliente puede crear órdenes y operar (no solo lectura). */
+export function canOperateClientPanel(role: string): boolean {
+  const n = normalizeRole(role);
+  return (
+    n === ROLES.CLIENT_OWNER ||
+    n === ROLES.CLIENT_ADMIN ||
+    n === ROLES.CLIENT_OPERATOR ||
+    n === ROLES.SUPERADMIN
+  );
 }
 
 export function roleDisplayLabel(role: string): string {

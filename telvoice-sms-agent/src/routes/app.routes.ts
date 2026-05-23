@@ -1,7 +1,21 @@
 import { Router } from "express";
 import {
-  getAppHome,
-  getAppSectionPlaceholder,
+  getAppApi,
+  getAppBuySms,
+  getAppCampaigns,
+  getAppContacts,
+  getAppDashboard,
+  getAppInbox,
+  getAppInvoices,
+  getAppOrders,
+  getAppReports,
+  getAppRoot,
+  getAppSendSms,
+  getAppSettings,
+  getAppSupport,
+  getAppTemplates,
+  getAppWallet,
+  postAppBuySms,
 } from "../controllers/app.controller.js";
 import { loadAdminSession } from "../middleware/admin-auth.js";
 import { requireClientPanelPage } from "../middleware/client-panel-auth.js";
@@ -10,23 +24,22 @@ export const appRouter = Router();
 
 appRouter.use(loadAdminSession);
 
-const clientSections = [
-  "dashboard",
-  "buy-sms",
-  "send-sms",
-  "campaigns",
-  "inbox",
-  "contacts",
-  "templates",
-  "reports",
-  "invoices",
-  "api",
-  "support",
-  "settings",
-] as const;
+appRouter.get("/", requireClientPanelPage, getAppRoot);
+appRouter.get("/dashboard", requireClientPanelPage, getAppDashboard);
 
-appRouter.get("/", requireClientPanelPage, getAppHome);
+appRouter.get("/buy-sms", requireClientPanelPage, getAppBuySms);
+appRouter.post("/buy-sms", requireClientPanelPage, postAppBuySms);
 
-for (const section of clientSections) {
-  appRouter.get(`/${section}`, requireClientPanelPage, getAppSectionPlaceholder);
-}
+appRouter.get("/wallet", requireClientPanelPage, getAppWallet);
+appRouter.get("/orders", requireClientPanelPage, getAppOrders);
+
+appRouter.get("/send-sms", requireClientPanelPage, getAppSendSms);
+appRouter.get("/campaigns", requireClientPanelPage, getAppCampaigns);
+appRouter.get("/inbox", requireClientPanelPage, getAppInbox);
+appRouter.get("/contacts", requireClientPanelPage, getAppContacts);
+appRouter.get("/templates", requireClientPanelPage, getAppTemplates);
+appRouter.get("/reports", requireClientPanelPage, getAppReports);
+appRouter.get("/invoices", requireClientPanelPage, getAppInvoices);
+appRouter.get("/api", requireClientPanelPage, getAppApi);
+appRouter.get("/support", requireClientPanelPage, getAppSupport);
+appRouter.get("/settings", requireClientPanelPage, getAppSettings);

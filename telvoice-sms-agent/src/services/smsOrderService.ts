@@ -24,6 +24,63 @@ export async function getOrderById(id: string): Promise<SmsOrderRow | null> {
   return data as SmsOrderRow | null;
 }
 
+export async function listSmsOrdersByCompany(
+  companyId: string,
+  limit = 50,
+): Promise<SmsOrderWithDetails[]> {
+  const { data, error } = await getSupabase()
+    .from("sms_orders")
+    .select("*")
+    .eq("company_id", companyId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return [];
+    }
+    wrapSupabaseError(error, "listSmsOrdersByCompany");
+  }
+
+  const orders = (data ?? []) as SmsOrderRow[];
+  if (orders.length === 0) {
+    return [];
+  }
+
+  const packageIds = [
+    ...new Set(orders.map((o) => o.package_id).filter(Boolean)),
+  ] as string[];
+
+  const { data: packages } =
+    packageIds.length > 0
+      ? await getSupabase()
+          .from("sms_packages")
+          .select("id, name")
+          .in("id", packageIds)
+      : { data: [] };
+
+  const packageMap = new Map(
+    ((packages ?? []) as { id: string; name: string }[]).map((p) => [
+      p.id,
+      p.name,
+    ]),
+  );
+
+  const { data: company } = await getSupabase()
+    .from("companies")
+    .select("id, name")
+    .eq("id", companyId)
+    .maybeSingle();
+
+  const companyName = (company as { name?: string } | null)?.name;
+
+  return orders.map((o) => ({
+    ...o,
+    company_name: companyName,
+    package_name: o.package_id ? packageMap.get(o.package_id) : undefined,
+  }));
+}
+
 export async function listSmsOrders(limit = 100): Promise<SmsOrderWithDetails[]> {
   const { data, error } = await getSupabase()
     .from("sms_orders")

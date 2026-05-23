@@ -2,12 +2,13 @@ import type { NextFunction, Request, Response } from "express";
 import {
   canAccessAdmin,
   canAccessClient,
+  isSuperadmin,
   subjectFromAdmin,
 } from "../auth/authorization.js";
+import { isTelvoiceInternalRole } from "../types/roles.js";
 import { getCurrentUserProfile } from "../services/userProfileService.js";
 import {
   renderAppLoginRequiredPage,
-  renderAppPlaceholderPage,
 } from "../views/app-ui/placeholder-page.js";
 import { renderAdminForbiddenPage } from "../views/admin-ui/forbidden-page.js";
 
@@ -35,7 +36,7 @@ async function enforceClientPanel(
     req.userProfile ?? (await getCurrentUserProfile(req.adminUser));
   const subject = subjectFromAdmin(req.adminUser, profile);
 
-  if (canAccessAdmin(subject) && !canAccessClient(subject)) {
+  if (isTelvoiceInternalRole(subject.role) && !isSuperadmin(subject)) {
     res.redirect("/admin");
     return;
   }
@@ -48,6 +49,11 @@ async function enforceClientPanel(
     return;
   }
 
+  if (canAccessAdmin(subject) && !canAccessClient(subject)) {
+    res.redirect("/admin");
+    return;
+  }
+
   if (!profile) {
     res.status(403).type("html").send(renderAppLoginRequiredPage());
     return;
@@ -55,16 +61,4 @@ async function enforceClientPanel(
 
   req.userProfile = profile;
   next();
-}
-
-export function renderAppPlaceholder(
-  req: Request,
-  res: Response,
-): void {
-  const profile = req.userProfile;
-  if (!profile) {
-    res.status(403).type("html").send(renderAppLoginRequiredPage());
-    return;
-  }
-  res.type("html").send(renderAppPlaceholderPage(profile));
 }
