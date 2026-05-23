@@ -111,7 +111,10 @@ async function walletTablesReady(): Promise<boolean> {
   if (!error) {
     return true;
   }
-  return isMissingTableError(error);
+  if (isMissingTableError(error)) {
+    return false;
+  }
+  return false;
 }
 
 export async function getSaPricingPage(
