@@ -295,14 +295,17 @@ O ejecuta: `bash scripts/deploy-vps.sh` (desde la carpeta del agente en el servi
 
 ### Deploy automático (GitHub Actions)
 
-En el repo, el workflow `.github/workflows/deploy-agent.yml` despliega al hacer push a `main` si configuras estos secretos en GitHub → **Settings → Secrets → Actions**:
+En el repo, el workflow `.github/workflows/deploy-agent.yml` despliega al hacer push a `main` si configuras los secretos en GitHub.
 
-| Secreto | Ejemplo |
-|---------|---------|
-| `VPS_HOST` | IP del VPS |
-| `VPS_USER` | `ubuntu` |
-| `VPS_SSH_KEY` | clave privada SSH |
-| `VPS_APP_PATH` | `/var/www/telvoice-sms-agent` (opcional) |
+**Guía detallada:** [`docs/deploy-agent.md`](../docs/deploy-agent.md) (secretos, diagnóstico, deploy manual, PM2).
+
+| Secreto | Descripción |
+|---------|-------------|
+| `VPS_HOST` | IP o hostname del VPS |
+| `VPS_USER` | Usuario SSH (`root`, `ubuntu`, etc.) |
+| `VPS_SSH_KEY` | Clave privada OpenSSH completa |
+| `VPS_APP_PATH` | Opcional; default `/var/www/telvoice-sms-agent` |
+| `VPS_SSH_PORT` | Opcional; default `22` |
 
 ## Registro admin con Gmail
 

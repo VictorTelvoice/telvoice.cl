@@ -1,10 +1,12 @@
 # Despliega telvoice-sms-agent en el VPS (agent.telvoice.cl) al hacer push a main.
 #
-# Secretos requeridos en GitHub → Settings → Secrets → Actions:
-#   VPS_HOST          — IP o hostname del servidor
-#   VPS_USER          — usuario SSH (ej. ubuntu, root)
-#   VPS_SSH_KEY       — clave privada SSH (contenido completo del archivo)
-#   VPS_APP_PATH      — ruta del repo en el VPS (ej. /var/www/telvoice-sms-agent)
+# Secretos requeridos (GitHub → Settings → Secrets and variables → Actions):
+#   VPS_HOST, VPS_USER, VPS_SSH_KEY
+# Opcional:
+#   VPS_APP_PATH (default: /var/www/telvoice-sms-agent)
+#   VPS_SSH_PORT (default: 22)
+#
+# Ver docs/deploy-agent.md para configuración y diagnóstico.
 
 name: Deploy agent.telvoice.cl
 
@@ -14,30 +16,136 @@ on:
     paths:
       - "telvoice-sms-agent/**"
       - ".github/workflows/deploy-agent.yml"
+      - "docs/deploy-agent.md"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-agent-production
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Deploy via SSH
+      - name: Validar secretos requeridos
+        env:
+          HAS_HOST: ${{ secrets.VPS_HOST != '' }}
+          HAS_USER: ${{ secrets.VPS_USER != '' }}
+          HAS_KEY: ${{ secrets.VPS_SSH_KEY != '' }}
+        run: |
+          set -e
+          missing=""
+          [ "$HAS_HOST" = "true" ] || missing="${missing}VPS_HOST "
+          [ "$HAS_USER" = "true" ] || missing="${missing}VPS_USER "
+          [ "$HAS_KEY" = "true" ] || missing="${missing}VPS_SSH_KEY "
+          if [ -n "$missing" ]; then
+            echo "::error::Faltan secretos en GitHub Actions: ${missing}"
+            echo "Configúralos en Settings → Secrets and variables → Actions."
+            echo "Guía: docs/deploy-agent.md"
+            exit 1
+          fi
+          echo "Secretos obligatorios presentes (valores no mostrados)."
+
+      - name: Comprobar conexión SSH y ruta
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT || 22 }}
           script_stop: true
           script: |
-            set -e
+            set -euo pipefail
             APP_PATH="${{ secrets.VPS_APP_PATH }}"
             if [ -z "$APP_PATH" ]; then APP_PATH="/var/www/telvoice-sms-agent"; fi
-            cd "$APP_PATH"
-            git fetch origin main
-            git reset --hard origin/main
-            if [ -f telvoice-sms-agent/package.json ]; then
-              cd telvoice-sms-agent
+            echo "=== SSH conectado ==="
+            whoami
+            hostname
+            echo "APP_PATH=${APP_PATH}"
+            test -d "$APP_PATH" || { echo "::error::Directorio no existe: ${APP_PATH}"; exit 1; }
+            test -f "$APP_PATH/package.json" || { echo "::error::Falta package.json en ${APP_PATH}"; exit 1; }
+            command -v node >/dev/null
+            command -v npm >/dev/null
+            node -v
+            npm -v
+            pm2 -v 2>/dev/null || echo "ADVERTENCIA: pm2 no encontrado en PATH"
+
+      - name: Desplegar aplicación
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT || 22 }}
+          command_timeout: 15m
+          script_stop: true
+          script: |
+            set -euo pipefail
+            APP_PATH="${{ secrets.VPS_APP_PATH }}"
+            if [ -z "$APP_PATH" ]; then APP_PATH="/var/www/telvoice-sms-agent"; fi
+            REPO="https://github.com/${{ github.repository }}.git"
+            CLONE_DIR="/tmp/telvoice-deploy-$$"
+            ENV_BACKUP="/tmp/telvoice-agent-env.backup.$$"
+
+            echo "=== Deploy Etapa agent.telvoice.cl ==="
+            echo "Commit: ${{ github.sha }}"
+            echo "APP_PATH=${APP_PATH}"
+
+            # Preservar .env de producción (nunca commitear)
+            if [ -f "$APP_PATH/.env" ]; then
+              cp "$APP_PATH/.env" "$ENV_BACKUP"
+              echo ".env respaldado"
+            else
+              echo "ADVERTENCIA: no hay .env en ${APP_PATH}; el servicio puede no arrancar."
             fi
+
+            rm -rf "$CLONE_DIR"
+            git clone --depth 1 --branch main "$REPO" "$CLONE_DIR"
+
+            rsync -a \
+              --exclude node_modules \
+              --exclude .env \
+              --exclude dist \
+              "$CLONE_DIR/telvoice-sms-agent/" "$APP_PATH/"
+
+            if [ -f "$ENV_BACKUP" ]; then
+              cp "$ENV_BACKUP" "$APP_PATH/.env"
+              rm -f "$ENV_BACKUP"
+              echo ".env restaurado"
+            fi
+            rm -rf "$CLONE_DIR"
+
+            cd "$APP_PATH"
             npm ci
             npm run build
-            pm2 restart telvoice-sms-agent || pm2 start dist/index.js --name telvoice-sms-agent
-            pm2 save || true
-            curl -sf http://127.0.0.1:3001/health || curl -sf https://agent.telvoice.cl/health
+
+            if pm2 describe telvoice-sms-agent >/dev/null 2>&1; then
+              pm2 restart telvoice-sms-agent
+            else
+              pm2 start dist/index.js --name telvoice-sms-agent
+            fi
+            pm2 save 2>/dev/null || true
+
+            echo "=== PM2 ==="
+            pm2 list | head -8
+
+            echo "=== Health ==="
+            curl -sf http://127.0.0.1:3001/health
+            echo ""
+            test -f dist/index.js && echo "DEPLOY_OK=dist/index.js"
+
+      - name: Verificar health público
+        run: |
+          set -e
+          for i in 1 2 3 4 5; do
+            if curl -sf https://agent.telvoice.cl/health; then
+              echo ""
+              echo "Health público OK"
+              exit 0
+            fi
+            echo "Reintento $i/5..."
+            sleep 3
+          done
+          echo "::warning::No se pudo verificar https://agent.telvoice.cl/health desde GitHub (el deploy remoto puede haber sido exitoso)."
+          exit 0
