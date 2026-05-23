@@ -173,6 +173,65 @@ export function renderNotice(text: string, variant: "info" | "warn" = "info"): s
   return `<div class="alert ${cls} tv-notice-block">${escapeHtml(text)}</div>`;
 }
 
+export function renderFilterBar(innerHtml: string): string {
+  return `<div class="tv-filters tv-filters--wrap">${innerHtml}</div>`;
+}
+
+export function renderFilterField(
+  label: string,
+  inputHtml: string,
+): string {
+  return `<label class="tv-filter-field"><span class="tv-filter-field__label">${escapeHtml(label)}</span>${inputHtml}</label>`;
+}
+
+export function renderMiniChart(
+  title: string,
+  labels: string[],
+  values: number[],
+  variant: "primary" | "purple" | "success" | "warn" = "primary",
+): string {
+  const max = Math.max(...values, 1);
+  const bars = labels
+    .map((label, i) => {
+      const v = values[i] ?? 0;
+      const pct = Math.round((v / max) * 100);
+      return `<div class="tv-mini-chart__col">
+        <div class="tv-mini-chart__bar-wrap"><div class="tv-mini-chart__bar tv-mini-chart__bar--${variant}" style="height:${pct}%"></div></div>
+        <span class="tv-mini-chart__label">${escapeHtml(label)}</span>
+      </div>`;
+    })
+    .join("");
+  return `<div class="tv-mini-chart">
+    <div class="tv-mini-chart__title">${escapeHtml(title)}</div>
+    <div class="tv-mini-chart__bars">${bars}</div>
+  </div>`;
+}
+
+export function renderPerformanceBadge(
+  level: "excelente" | "normal" | "bajo" | "revisar",
+): string {
+  const map = {
+    excelente: ["ok", "Excelente"],
+    normal: ["ok", "Normal"],
+    bajo: ["warn", "Bajo rendimiento"],
+    revisar: ["err", "Revisar errores"],
+  } as const;
+  const [cls, label] = map[level];
+  return `<span class="badge badge-${cls}">${label}</span>`;
+}
+
+export function renderInsightList(items: string[]): string {
+  const lis = items
+    .map(
+      (t) => `<li class="tv-insight">
+        <span class="material-symbols-outlined" aria-hidden="true">insights</span>
+        <span>${escapeHtml(t)}</span>
+      </li>`,
+    )
+    .join("");
+  return `<ul class="tv-insights">${lis}</ul>`;
+}
+
 export function renderCollapsible(title: string, body: string, open = false): string {
   return `<details class="tv-details"${open ? " open" : ""}>
     <summary>${escapeHtml(title)}</summary>
@@ -245,6 +304,41 @@ export function renderAdminUiScript(): string {
       if (seg) seg.textContent = String(Math.max(1, Math.ceil(msg.value.length / 160)));
     });
   }
+  document.querySelectorAll("[data-tv-contact-row]").forEach(function (row) {
+    row.addEventListener("click", function () {
+      var id = row.getAttribute("data-tv-contact-row");
+      document.querySelectorAll("[data-tv-contact-row]").forEach(function (r) {
+        r.classList.toggle("tv-inbox-row--active", r === row);
+      });
+      var detail = document.querySelector("[data-tv-contact-detail]");
+      var tpl = document.getElementById("tv-contact-detail-" + id);
+      if (detail && tpl) detail.innerHTML = tpl.innerHTML;
+    });
+  });
+  document.querySelectorAll("[data-tv-chat-ticket]").forEach(function (row) {
+    row.addEventListener("click", function () {
+      var id = row.getAttribute("data-tv-chat-ticket");
+      document.querySelectorAll("[data-tv-chat-ticket]").forEach(function (r) {
+        r.classList.toggle("tv-inbox-row--active", r === row);
+      });
+      var msgs = document.querySelector("[data-tv-chat-messages]");
+      var meta = document.querySelector("[data-tv-chat-meta]");
+      var tplM = document.getElementById("tv-chat-msgs-" + id);
+      var tplMeta = document.getElementById("tv-chat-meta-" + id);
+      if (msgs && tplM) msgs.innerHTML = tplM.innerHTML;
+      if (meta && tplMeta) meta.innerHTML = tplMeta.innerHTML;
+    });
+  });
+  document.querySelectorAll("[data-tv-template-card]").forEach(function (card) {
+    card.addEventListener("click", function () {
+      document.querySelectorAll("[data-tv-template-card]").forEach(function (c) {
+        c.classList.toggle("tv-template-card--active", c === card);
+      });
+      var editor = document.querySelector("[data-tv-template-editor]");
+      var tpl = document.getElementById("tv-template-editor-" + card.getAttribute("data-tv-template-card"));
+      if (editor && tpl) editor.innerHTML = tpl.innerHTML;
+    });
+  });
 })();
 </script>`;
 }

@@ -53,6 +53,14 @@ import {
   postKnowledgeTest,
 } from "../controllers/admin-knowledge.controller.js";
 import {
+  getChatPage,
+  getContactsPage,
+  getInvoicesPage,
+  getReportsPage,
+  getTemplatesPage,
+  redirectSendSmsAlias,
+} from "../controllers/admin-sections.controller.js";
+import {
   getDashboard,
   getInboxPage,
   getLoginPage,
@@ -82,6 +90,12 @@ adminRouter.post("/logout", postLogout);
 
 adminRouter.get("/", requireAdminPage, getDashboard);
 adminRouter.get("/inbox", requireAdminPage, getInboxPage);
+adminRouter.get("/reports", requireAdminPage, getReportsPage);
+adminRouter.get("/contacts", requireAdminPage, getContactsPage);
+adminRouter.get("/invoices", requireAdminPage, getInvoicesPage);
+adminRouter.get("/templates", requireAdminPage, getTemplatesPage);
+adminRouter.get("/chat", requireAdminPage, getChatPage);
+adminRouter.get("/send-sms", requireAdminPage, redirectSendSmsAlias);
 adminRouter.get("/sms/send-test", requireAdminPage, getSendTestForm);
 adminRouter.post("/sms/send-test", requireAdminPage, postSendTest);
 adminRouter.get("/clients/test/credit", requireAdminPage, getCreditForm);

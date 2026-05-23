@@ -882,5 +882,139 @@ export function getAdminStyles(): string {
       .tv-form-grid { grid-template-columns: 1fr; }
       .tv-mode-grid { grid-template-columns: 1fr 1fr; }
     }
+
+    /* —— Etapa 3 —— */
+    .tv-filters--wrap { align-items: flex-end; }
+    .tv-filter-field { display: flex; flex-direction: column; gap: 0.25rem; }
+    .tv-filter-field__label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: var(--tv-muted); }
+    .tv-filter-input--grow { flex: 1; min-width: 180px; }
+    .tv-filter-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .tv-charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .tv-mini-chart {
+      background: var(--tv-surface);
+      border: 1px solid var(--tv-border);
+      border-radius: var(--tv-radius);
+      padding: 0.85rem;
+      box-shadow: var(--tv-shadow);
+    }
+    .tv-mini-chart__title { font-size: 0.78rem; font-weight: 700; margin-bottom: 0.65rem; color: var(--tv-muted); }
+    .tv-mini-chart__bars { display: flex; align-items: flex-end; gap: 0.35rem; height: 72px; }
+    .tv-mini-chart__col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; }
+    .tv-mini-chart__bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+    .tv-mini-chart__bar {
+      width: 70%;
+      max-width: 24px;
+      border-radius: 6px 6px 2px 2px;
+      min-height: 4px;
+      background: linear-gradient(180deg, var(--tv-primary-light), var(--tv-primary));
+    }
+    .tv-mini-chart__bar--success { background: linear-gradient(180deg, #34d399, var(--tv-ok)); }
+    .tv-mini-chart__bar--purple { background: linear-gradient(180deg, #a78bfa, var(--tv-purple-soft)); }
+    .tv-mini-chart__bar--warn { background: linear-gradient(180deg, #fbbf24, var(--tv-warn)); }
+    .tv-mini-chart__label { font-size: 0.62rem; color: var(--tv-muted); margin-top: 0.25rem; }
+    .tv-insights { list-style: none; margin: 0; padding: 0; }
+    .tv-insight {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid var(--tv-border);
+      font-size: 0.88rem;
+    }
+    .tv-insight:last-child { border-bottom: none; }
+    .tv-insight .material-symbols-outlined { color: var(--tv-purple-soft); font-size: 1.15rem; flex-shrink: 0; }
+    .tv-list-grid { display: grid; gap: 0.65rem; }
+    .tv-list-card {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--tv-border);
+      border-radius: 10px;
+      background: var(--tv-bg);
+    }
+    .tv-list-card__count { margin-left: 0.5rem; font-size: 0.8rem; color: var(--tv-muted); font-weight: 500; }
+    .tv-list-card__meta { font-size: 0.78rem; color: var(--tv-muted); }
+    .tv-list-card__actions { display: flex; gap: 0.35rem; }
+    .tv-bags-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+    .tv-bag-card {
+      border: 1px solid var(--tv-border);
+      border-radius: var(--tv-radius);
+      padding: 1rem;
+      background: var(--tv-bg);
+    }
+    .tv-bag-card h3 { margin: 0 0 0.65rem; font-size: 0.95rem; }
+    .tv-panel--cta .tv-cta-card { text-align: center; padding: 0.5rem 0; }
+    .tv-panel--cta h2 { margin: 0 0 0.5rem; }
+    .tv-panel--cta p { color: var(--tv-muted); margin: 0 0 1rem; max-width: 520px; margin-left: auto; margin-right: auto; }
+    .tv-templates-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 1rem;
+      align-items: start;
+    }
+    .tv-templates-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 0.85rem;
+    }
+    .tv-template-card {
+      border: 1px solid var(--tv-border);
+      border-radius: var(--tv-radius);
+      padding: 1rem;
+      background: var(--tv-surface);
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .tv-template-card--active {
+      border-color: var(--tv-primary);
+      box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.1);
+    }
+    .tv-template-card__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
+    .tv-template-card__head h3 { margin: 0; font-size: 0.95rem; }
+    .tv-template-card__cat { font-size: 0.75rem; color: var(--tv-muted); margin: 0.25rem 0; }
+    .tv-template-card__msg { font-size: 0.85rem; margin: 0.5rem 0; line-height: 1.4; color: var(--tv-text); }
+    .tv-template-card__meta { font-size: 0.72rem; color: var(--tv-muted); }
+    .tv-template-card__actions { display: flex; gap: 0.35rem; margin-top: 0.75rem; flex-wrap: wrap; }
+    .tv-chat-layout {
+      display: grid;
+      grid-template-columns: 260px 1fr 280px;
+      gap: 1rem;
+      align-items: stretch;
+      min-height: 480px;
+    }
+    .tv-chat-list .tv-panel__body--flush { padding: 0; max-height: 520px; overflow-y: auto; }
+    .tv-chat-ticket {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: none;
+      border-bottom: 1px solid var(--tv-border);
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .tv-chat-ticket:hover { background: var(--tv-bg); }
+    .tv-chat-ticket.tv-inbox-row--active { background: #eef2ff; }
+    .tv-chat-ticket__subject { font-weight: 600; font-size: 0.88rem; }
+    .tv-chat-ticket__meta { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+    .tv-chat-ticket__time { font-size: 0.72rem; color: var(--tv-muted); }
+    .tv-chat-main { display: flex; flex-direction: column; }
+    .tv-chat-messages { flex: 1; max-height: 320px; overflow-y: auto; }
+    .tv-chat-meta-panel .tv-panel__body { font-size: 0.88rem; }
+    @media (max-width: 1100px) {
+      .tv-templates-layout, .tv-chat-layout { grid-template-columns: 1fr; }
+      .tv-chat-meta-panel, .tv-template-editor-panel { order: -1; }
+    }
   `;
 }
