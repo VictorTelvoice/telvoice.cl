@@ -9,7 +9,7 @@ export interface NavItem {
 export const MAIN_NAV: NavItem[] = [
   { id: "dashboard", href: "/admin", label: "Dashboard", icon: "dashboard" },
   { id: "send", href: "/admin/sms/send-test", label: "Enviar SMS", icon: "send" },
-  { id: "inbox", href: "/admin", label: "Bandeja", icon: "inbox" },
+  { id: "inbox", href: "/admin/inbox", label: "Bandeja", icon: "inbox" },
   { id: "reports", href: "/admin/clients/test/ledger", label: "Reportes", icon: "analytics" },
   { id: "contacts", href: "/admin/leads", label: "Contactos", icon: "contacts" },
   { id: "bot", href: "/admin/telegram/diagnostics", label: "Bot", icon: "smart_toy" },

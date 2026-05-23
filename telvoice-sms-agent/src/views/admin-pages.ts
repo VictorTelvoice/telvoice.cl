@@ -36,14 +36,12 @@ import {
   getAsmscRemarksHint,
   isProviderStatusFailed,
   responseTextIncludesIpWhitelist,
-  SMS_TYPE_HELP_TEXT,
 } from "../utils/asmsc-hints.js";
 import { env } from "../config/env.js";
 import {
   extractCallbackUrlFromSubmitResponse,
   getConfiguredDlrWebhookUrl,
   isAwaitingDlr,
-  isWebhookUrlLocalhost,
 } from "../utils/dlr-callback.js";
 import {
   maskConnectionUrl,
@@ -52,7 +50,12 @@ import {
 } from "../utils/mask-secret.js";
 import { getTelegramRuntimeStatus } from "../services/telegram/runtime.js";
 import { escapeHtml, formatDate, formatJson } from "../utils/html.js";
+import { wrapAdminPage } from "./admin-ui/admin-page-wrap.js";
 import { renderDashboardBody } from "./admin-ui/dashboard-page.js";
+import { renderApiPage } from "./admin-ui/sections/api-page.js";
+import { renderBotPage } from "./admin-ui/sections/bot-page.js";
+import { renderInboxPage } from "./admin-ui/sections/inbox-page.js";
+import { renderSendSmsPageBody } from "./admin-ui/sections/send-sms-page.js";
 import { renderLayout, statusBadge } from "./layout.js";
 
 import type { AsmscBalanceSummary } from "../utils/asmsc-balance-summary.js";
@@ -556,72 +559,31 @@ export function renderTelegramUserFormPage(options: {
   });
 }
 
-function renderSmsTypeSelect(selected: string): string {
-  const pSelected = selected === "P" ? " selected" : "";
-  const tSelected = selected === "T" ? " selected" : "";
-  return `<select id="sms_type" name="sms_type" required>
-          <option value="P"${pSelected}>P — Promotional</option>
-          <option value="T"${tSelected}>T — Transactional</option>
-        </select>
-        <p class="field-hint">${escapeHtml(SMS_TYPE_HELP_TEXT)}</p>`;
-}
-
 export function renderSendTestFormPage(options: {
   admin: AdminSessionUser;
   error?: string;
   values?: Partial<SendTestFormValues>;
+  smsBalance?: string;
 }): string {
-  const defaultSmsType = env.asmsc.defaultSmsType;
-  const v: SendTestFormValues = {
-    phonenumber: options.values?.phonenumber ?? "56912345678",
-    textmessage: options.values?.textmessage ?? "Mensaje de prueba Telvoice",
-    sender_id: options.values?.sender_id ?? "TELVOICE",
-    sms_type: options.values?.sms_type ?? defaultSmsType,
-    encoding: options.values?.encoding ?? "T",
-  };
-
-  const errorBlock = options.error
-    ? `<div class="alert alert-error">${escapeHtml(options.error)}</div>`
-    : "";
-
-  const body = `
-    <p><a href="/admin" class="row-link">← Volver al dashboard</a></p>
-    <h1>Enviar SMS de prueba</h1>
-    <p class="subtitle">Cliente PRUEBA_TELVOICE — envío real vía aSMSC</p>
-    ${errorBlock}
-    <div class="card">
-      <form method="post" action="/admin/sms/send-test">
-        <div class="form-group">
-          <label for="phonenumber">Número destino (sin +)</label>
-          <input id="phonenumber" name="phonenumber" value="${escapeHtml(v.phonenumber)}" required />
-        </div>
-        <div class="form-group">
-          <label for="textmessage">Mensaje</label>
-          <textarea id="textmessage" name="textmessage" required>${escapeHtml(v.textmessage)}</textarea>
-        </div>
-        <div class="form-group">
-          <label for="sender_id">Sender ID</label>
-          <input id="sender_id" name="sender_id" value="${escapeHtml(v.sender_id)}" required />
-        </div>
-        <div class="form-group">
-          <label for="sms_type">SMS type</label>
-          ${renderSmsTypeSelect(v.sms_type)}
-        </div>
-        <div class="form-group">
-          <label for="encoding">Encoding (T=GSM, U=Unicode)</label>
-          <input id="encoding" name="encoding" value="${escapeHtml(v.encoding)}" maxlength="1" />
-        </div>
-        <button type="submit" class="btn btn-primary">Enviar SMS</button>
-      </form>
-    </div>`;
-
-  return renderLayout({
+  return wrapAdminPage({
+    admin: options.admin,
     title: "Enviar SMS",
-    body,
-    adminName: options.admin.name,
-    showNav: true,
     activeNav: "send",
+    body: renderSendSmsPageBody({
+      error: options.error,
+      values: options.values,
+      smsBalance: options.smsBalance,
+    }),
+    topbar: options.smsBalance ? { smsBalance: options.smsBalance } : undefined,
   });
+}
+
+export function renderInboxPageWrapper(options: {
+  admin: AdminSessionUser;
+  messages?: SmsMessageRow[];
+  smsBalance?: string;
+}): string {
+  return renderInboxPage(options);
 }
 
 export function renderSendTestResultPage(options: {
@@ -888,106 +850,14 @@ export function renderAsmscDiagnosticsPage(options: {
   balanceResult: AsmscApiResponse | null;
   balanceError: string | null;
   publicIp: string | null;
+  smsBalance?: string;
 }): string {
-  const apiId = env.asmsc.apiId || "(no configurado)";
-  const senderId = env.asmsc.defaultSenderId || "(no configurado)";
-  const smsTypeDefault = env.asmsc.defaultSmsType;
-  const dlrUrl = getConfiguredDlrWebhookUrl();
-  const localhostWarning =
-    env.publicWebhookBaseUrl && isWebhookUrlLocalhost(env.publicWebhookBaseUrl)
-      ? `<div class="alert alert-warn" style="margin-bottom:1rem">
-          Estás en entorno local. aSMSC no podrá enviar DLR reales a localhost.
-          Para DLR real debes desplegar en <strong>https://agent.telvoice.cl</strong>.
-        </div>`
-      : "";
-
-  let balanceSection = "";
-  if (options.balanceError) {
-    const ipHint = responseTextIncludesIpWhitelist(options.balanceError)
-      ? `<div class="alert alert-error" style="margin-top:1rem">
-          <strong>IP Not Whitelisted</strong><br>
-          La IP pública del servidor no está autorizada en aSMSC. Agrega la IP en API → Add Whitelist IP.
-        </div>`
-      : "";
-
-    balanceSection = `
-      <h2>CheckBalance</h2>
-      <div class="alert alert-error">${escapeHtml(options.balanceError)}</div>
-      ${ipHint}`;
-  } else if (options.balanceResult) {
-    const record = options.balanceResult as Record<string, unknown>;
-    const balanceAmount = pickString(
-      record,
-      "BalanceAmount",
-      "balance_amount",
-      "balance",
-      "remarks",
-    );
-    const currencyCode = pickString(
-      record,
-      "CurrenceCode",
-      "CurrencyCode",
-      "currency_code",
-    );
-    const remarks = pickString(record, "remarks", "Remarks", "message", "status");
-    const ipWarning = responseTextIncludesIpWhitelist(
-      JSON.stringify(options.balanceResult),
-    )
-      ? `<div class="alert alert-error" style="margin-top:1rem">
-          <strong>IP Not Whitelisted</strong><br>
-          La IP pública del servidor no está autorizada en aSMSC. Agrega la IP en API → Add Whitelist IP.
-        </div>`
-      : "";
-
-    balanceSection = `
-      <h2>CheckBalance</h2>
-      ${ipWarning}
-      <div class="grid">
-        <div class="card"><div class="label">BalanceAmount</div><div class="value" style="font-size:1rem">${escapeHtml(balanceAmount ?? "—")}</div></div>
-        <div class="card"><div class="label">CurrenceCode</div><div class="value">${escapeHtml(currencyCode ?? "—")}</div></div>
-        <div class="card"><div class="label">Mensaje del proveedor</div><div class="value" style="font-size:0.95rem">${escapeHtml(remarks ?? "—")}</div></div>
-      </div>
-      <h3>Respuesta raw del proveedor</h3>
-      <pre>${escapeHtml(formatJson(options.balanceResult))}</pre>`;
-  }
-
-  const body = `
-    <p><a href="/admin" class="row-link">← Volver al dashboard</a></p>
-    <h1>Diagnóstico aSMSC</h1>
-    <p class="subtitle">Configuración activa y prueba de conectividad con el proveedor — NODE_ENV=${escapeHtml(env.nodeEnv)}</p>
-    ${localhostWarning}
-    <div class="card">
-      <dl class="meta-grid">
-        <div class="meta-item"><dt>IP pública (detectada)</dt><dd>${escapeHtml(options.publicIp ?? "No detectada — ejecuta curl https://api.ipify.org")}</dd></div>
-        <div class="meta-item"><dt>API ID</dt><dd>${escapeHtml(apiId)}</dd></div>
-        <div class="meta-item"><dt>Sender ID default</dt><dd>${escapeHtml(senderId)}</dd></div>
-        <div class="meta-item"><dt>SMS type default</dt><dd>${escapeHtml(smsTypeDefault)} (${smsTypeDefault === "P" ? "Promotional" : "Transactional"})</dd></div>
-        <div class="meta-item"><dt>Callback URL DLR</dt><dd style="word-break:break-all">${escapeHtml(dlrUrl)}</dd></div>
-        <div class="meta-item"><dt>Base URL API</dt><dd>${escapeHtml(env.asmsc.baseUrl)}</dd></div>
-        <div class="meta-item"><dt>PUBLIC_WEBHOOK_BASE_URL</dt><dd>${escapeHtml(env.publicWebhookBaseUrl || "—")}</dd></div>
-      </dl>
-    </div>
-    ${balanceSection}
-    <h2 style="margin-top:2rem">Obtener IP pública del servidor</h2>
-    <div class="card">
-      <p>IP detectada desde este servidor: <strong>${escapeHtml(options.publicIp ?? "—")}</strong></p>
-      <p>También puedes verificar manualmente:</p>
-      <pre>curl https://api.ipify.org</pre>
-      <p class="field-hint">Usa esa IP en el panel aSMSC → API → Add Whitelist IP.</p>
-    </div>
-    <div class="actions-row" style="margin-top:1.5rem">
-      <a href="/admin/sms/send-test" class="btn btn-primary">Enviar SMS de prueba</a>
-      <a href="/admin/asmsc/balance" class="btn btn-secondary">Consultar balance</a>
-      <a href="/admin/telegram/diagnostics" class="btn btn-secondary">Diagnóstico Telegram</a>
-      <a href="/admin" class="btn btn-ghost">Dashboard</a>
-    </div>`;
-
-  return renderLayout({
-    title: "Diagnóstico aSMSC",
-    body,
-    adminName: options.admin.name,
-    showNav: true,
-    activeNav: "diagnostics",
+  return renderApiPage({
+    admin: options.admin,
+    balanceResult: options.balanceResult,
+    balanceError: options.balanceError,
+    publicIp: options.publicIp,
+    smsBalance: options.smsBalance,
   });
 }
 
@@ -1021,81 +891,34 @@ export function renderTelegramDiagnosticsPage(options: {
     ? `<div class="alert alert-error">${escapeHtml(runtime.lastError)}</div>`
     : `<div class="alert alert-success">Sin errores recientes en runtime Telegram.</div>`;
 
-  const testOk = options.testResult
-    ? `<div class="alert alert-success">${escapeHtml(options.testResult)}</div>`
-    : "";
-  const testErr = options.testError
-    ? `<div class="alert alert-error">${escapeHtml(options.testError)}</div>`
-    : "";
-  const formErr = options.formError
-    ? `<div class="alert alert-error">${escapeHtml(options.formError)}</div>`
-    : "";
-
-  const body = `
-    <p><a href="/admin/settings" class="row-link">← Configuración</a> · <a href="/admin/clients/test" class="row-link">Cliente prueba</a></p>
-    <h1>Diagnóstico Telegram</h1>
-    <p class="subtitle">Conexión Bot API — el token nunca se muestra. <a href="/admin/telegram/test-intent" class="row-link">Probar intenciones del bot →</a></p>
-    <div class="card">
+  const diagnosticsExtra = `
+    <div class="card" style="margin-top:1rem">
       <dl class="meta-grid">
         <div class="meta-item"><dt>TELEGRAM_BOT_TOKEN</dt><dd>${escapeHtml(tokenStatus)}</dd></div>
         <div class="meta-item"><dt>TELEGRAM_MODE</dt><dd>${escapeHtml(env.telegram.mode)}</dd></div>
-        <div class="meta-item"><dt>TELEGRAM_WEBHOOK_PATH</dt><dd>${escapeHtml(env.telegram.webhookPath)}</dd></div>
         <div class="meta-item"><dt>Polling activo</dt><dd>${runtime.pollingActive ? "sí" : "no"}</dd></div>
-        <div class="meta-item"><dt>Webhook secret</dt><dd>${env.telegram.webhookSecret ? "configurado" : "no configurado"}</dd></div>
       </dl>
     </div>
-    <h2>getMe()</h2>
+    <h3 style="margin-top:1rem">getMe()</h3>
     ${botBlock}
-    <h2>Último error Telegram</h2>
+    <h3>Último error</h3>
     ${errorBlock}
-    <h2>Enviar mensaje de prueba</h2>
-    ${testOk}
-    ${testErr}
-    ${formErr}
-    <div class="card">
-      <form method="post" action="/admin/telegram/diagnostics/test">
-        <div class="form-group">
-          <label for="chat_id">Telegram user_id o chat_id</label>
-          <input id="chat_id" name="chat_id" required pattern="[0-9]+" inputmode="numeric" placeholder="123456789" />
-          <p class="field-hint">Para chat privado suele ser igual al user_id. También puedes usar el botón Enviar test en Cliente prueba.</p>
-        </div>
-        <button type="submit" class="btn btn-primary">Enviar mensaje de prueba</button>
-      </form>
-    </div>
-    <h2>Base de conocimiento (knowledge_articles)</h2>
-    <div class="grid" style="margin-bottom:1rem">
-      <div class="card"><div class="label">Tabla disponible</div><div class="value">${options.knowledgeTableOk ? statusBadge("active") : statusBadge("error")}</div></div>
-      <div class="card"><div class="label">Artículos activos</div><div class="value">${escapeHtml(options.knowledgeActiveCount)}</div></div>
-    </div>
-    ${
-      options.knowledgeRecent.length > 0
-        ? `<div class="card table-wrap" style="padding:0;margin-bottom:1.5rem">
-            <table>
-              <thead><tr><th>Título</th><th>Categoría</th><th>Estado</th></tr></thead>
-              <tbody>${options.knowledgeRecent
-                .map(
-                  (a) => `<tr>
-                    <td>${escapeHtml(a.title)}</td>
-                    <td>${escapeHtml(a.category)}</td>
-                    <td>${a.is_active ? statusBadge("active") : statusBadge("inactive")}</td>
-                  </tr>`,
-                )
-                .join("")}</tbody>
-            </table>
-          </div>`
-        : `<p class="subtitle">Sin artículos. Ejecuta migración 004_knowledge_articles o crea contenido en <a href="/admin/knowledge" class="row-link">Base Telvoice</a>.</p>`
-    }
-    <h2>Usuarios Telegram — ${escapeHtml(options.clientName)}</h2>
-    <p class="subtitle">Registros en client_telegram_users (autorización del bot).</p>
-    ${renderTelegramUsersTable(options.telegramUsers, { showTestButton: true })}
-    <p class="field-hint" style="margin-top:1rem">CLI: <code>npm run telegram:get-me</code></p>`;
+    <h3>Base de conocimiento</h3>
+    <p>Artículos activos: ${escapeHtml(options.knowledgeActiveCount)} · Tabla ${options.knowledgeTableOk ? "OK" : "error"}</p>
+    <h3>Usuarios Telegram — ${escapeHtml(options.clientName)}</h3>
+    ${renderTelegramUsersTable(options.telegramUsers, { showTestButton: true })}`;
 
-  return renderLayout({
-    title: "Diagnóstico Telegram",
-    body,
-    adminName: options.admin.name,
-    showNav: true,
-    activeNav: "telegram",
+  return renderBotPage({
+    admin: options.admin,
+    clientName: options.clientName,
+    telegramUsers: options.telegramUsers,
+    getMeOk: options.getMeOk,
+    knowledgeTableOk: options.knowledgeTableOk,
+    knowledgeActiveCount: options.knowledgeActiveCount,
+    testResult: options.testResult,
+    testError: options.testError,
+    formError: options.formError,
+    diagnosticsExtraHtml: diagnosticsExtra,
   });
 }
 

@@ -29,6 +29,7 @@ import {
 } from "../views/admin-ui/auth-pages.js";
 import {
   renderDashboardPage,
+  renderInboxPageWrapper,
   renderMessageDetailPage,
   renderSettingsPage,
   renderTestClientPage,
@@ -236,6 +237,39 @@ export async function getDashboard(
         configWarning: dbLoadError,
         successMessage,
         dlrWebhookUrl: buildDlrCallbackUrl() ?? getConfiguredDlrWebhookUrl(),
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getInboxPage(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const admin = req.adminUser!;
+    const bootstrap = getBootstrapStatus();
+    let messages: Awaited<ReturnType<typeof listRecentMessages>> = [];
+    let balance = null;
+
+    if (env.supabase.url && env.supabase.serviceRoleKey && !bootstrap.pgrestSchemaCacheIssue) {
+      try {
+        const testClient = await getTestClientBundle();
+        balance = await getBalanceByClientId(testClient.client.id);
+        messages = await listRecentMessages();
+      } catch (dbError) {
+        console.error("[admin] Error cargando bandeja:", dbError);
+      }
+    }
+
+    res.type("html").send(
+      renderInboxPageWrapper({
+        admin,
+        messages,
+        smsBalance: balance ? String(balance.available_units) : undefined,
       }),
     );
   } catch (error) {

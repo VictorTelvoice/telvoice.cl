@@ -593,5 +593,294 @@ export function getAdminStyles(): string {
       .tv-topbar { padding: 0 0.75rem; gap: 0.4rem; }
       table { min-width: 560px; font-size: 0.78rem; }
     }
+
+    /* —— Secciones etapa 2 —— */
+    .tv-page-head--row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .tv-page-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .tv-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--tv-border);
+      padding-bottom: 0.5rem;
+    }
+    .tv-tab {
+      border: none;
+      background: transparent;
+      padding: 0.45rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--tv-muted);
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .tv-tab--active { background: #eef2ff; color: var(--tv-primary); }
+    .tv-tab__count {
+      margin-left: 0.35rem;
+      background: var(--tv-bg);
+      padding: 0.1rem 0.4rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+    }
+    .tv-mode-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 0.65rem;
+      margin-bottom: 1rem;
+    }
+    .tv-mode-card {
+      text-align: left;
+      border: 1px solid var(--tv-border);
+      border-radius: var(--tv-radius);
+      padding: 0.85rem;
+      background: var(--tv-surface);
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .tv-mode-card--active {
+      border-color: var(--tv-primary);
+      box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.12);
+    }
+    .tv-mode-card__icon { color: var(--tv-primary); font-size: 1.35rem; display: block; margin-bottom: 0.35rem; }
+    .tv-mode-card__label { display: block; font-weight: 700; font-size: 0.88rem; }
+    .tv-mode-card__desc { display: block; font-size: 0.75rem; color: var(--tv-muted); margin-top: 0.25rem; line-height: 1.35; }
+    .tv-send-layout { display: grid; grid-template-columns: 1fr 300px; gap: 1.25rem; align-items: start; }
+    .tv-send-aside { display: flex; flex-direction: column; gap: 1rem; }
+    .tv-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .tv-form-grid--compact { margin-top: 0.5rem; }
+    .tv-input-full { max-width: none !important; width: 100%; }
+    .tv-var-row { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
+    .tv-var-chip {
+      border: 1px dashed var(--tv-border);
+      background: var(--tv-bg);
+      border-radius: 6px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.78rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .tv-stat-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .tv-stat-chip {
+      padding: 0.5rem 0.65rem;
+      border-radius: 10px;
+      background: var(--tv-bg);
+      border: 1px solid var(--tv-border);
+    }
+    .tv-stat-chip__label { display: block; font-size: 0.65rem; text-transform: uppercase; color: var(--tv-muted); font-weight: 700; }
+    .tv-stat-chip__value { font-weight: 800; font-size: 0.95rem; }
+    .tv-stat-chip--success .tv-stat-chip__value { color: var(--tv-ok); }
+    .tv-stat-chip--primary .tv-stat-chip__value { color: var(--tv-primary); }
+    .tv-stat-chip--warn .tv-stat-chip__value { color: var(--tv-warn); }
+    .tv-notice-block { font-size: 0.82rem; margin: 0; background: #f0f7ff; border-color: #bfdbfe; color: #1e40af; }
+    .tv-phone {
+      width: 200px;
+      margin: 0 auto;
+      border: 2px solid #1e293b;
+      border-radius: 24px;
+      overflow: hidden;
+      background: #f1f5f9;
+    }
+    .tv-phone__bar {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.65rem;
+      background: #e2e8f0;
+    }
+    .tv-phone__header {
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.35rem;
+      background: #fff;
+      border-bottom: 1px solid var(--tv-border);
+    }
+    .tv-phone__body { padding: 0.75rem; min-height: 100px; }
+    .tv-phone__bubble {
+      background: #e8eef8;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px 14px 14px 4px;
+      padding: 0.55rem 0.65rem;
+      font-size: 0.78rem;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .tv-tips-list { margin: 0; padding-left: 1.1rem; font-size: 0.85rem; color: var(--tv-muted); }
+    .tv-tips-list li { margin-bottom: 0.35rem; }
+    .tv-mock-tag { margin-top: 0.75rem; font-style: italic; }
+    .tv-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .tv-filter-input {
+      padding: 0.45rem 0.65rem;
+      border: 1px solid var(--tv-border);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      min-width: 120px;
+      font-family: inherit;
+    }
+    .tv-inbox-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 1rem;
+      align-items: start;
+    }
+    .tv-inbox-row { cursor: pointer; }
+    .tv-inbox-row--active td { background: #eef2ff !important; }
+    .tv-inbox-msg { max-width: 220px; }
+    .tv-detail-list { display: grid; gap: 0.65rem; margin: 0; }
+    .tv-detail-list div { display: grid; gap: 0.2rem; }
+    .tv-detail-list dt { font-size: 0.68rem; text-transform: uppercase; color: var(--tv-muted); font-weight: 700; }
+    .tv-detail-list dd { margin: 0; font-size: 0.88rem; }
+    .tv-detail__title { margin: 0 0 0.75rem; font-size: 1rem; }
+    .tv-sms-thread { display: flex; flex-direction: column; gap: 0.75rem; }
+    .tv-sms-thread__msg { display: flex; flex-direction: column; max-width: 85%; }
+    .tv-sms-thread__msg--out { align-self: flex-end; align-items: flex-end; }
+    .tv-sms-thread__msg--in { align-self: flex-start; }
+    .tv-sms-thread__meta { font-size: 0.68rem; color: var(--tv-muted); margin-bottom: 0.2rem; }
+    .tv-sms-thread__bubble {
+      padding: 0.55rem 0.7rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      background: #e8eef8;
+      border: 1px solid #cbd5e1;
+    }
+    .tv-sms-thread__msg--out .tv-sms-thread__bubble {
+      background: linear-gradient(135deg, #dbeafe, #e0e7ff);
+    }
+    .tv-code {
+      border: 1px solid var(--tv-border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #0f172a;
+    }
+    .tv-code__title {
+      padding: 0.4rem 0.75rem;
+      background: #1e293b;
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .tv-code pre { margin: 0; padding: 1rem; color: #e2e8f0; font-size: 0.78rem; overflow-x: auto; }
+    .tv-endpoint-grid { display: grid; gap: 0.65rem; }
+    .tv-endpoint-card {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.75rem;
+      border: 1px solid var(--tv-border);
+      border-radius: 10px;
+      background: var(--tv-bg);
+    }
+    .tv-endpoint-card code { display: block; font-size: 0.78rem; margin-top: 0.2rem; word-break: break-all; }
+    .tv-tag {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      margin-left: 0.35rem;
+    }
+    .tv-tag--ok { background: #d1fae5; color: #047857; }
+    .tv-tag--warn { background: #fef3c7; color: #b45309; }
+    .tv-tag--muted { background: #f1f5f9; color: #64748b; }
+    .tv-details { margin-top: 1.25rem; border: 1px solid var(--tv-border); border-radius: var(--tv-radius); }
+    .tv-details summary {
+      padding: 0.85rem 1rem;
+      cursor: pointer;
+      font-weight: 600;
+      background: var(--tv-bg);
+    }
+    .tv-details__body { padding: 1rem; }
+    .tv-bot-layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.25rem; }
+    .tv-bot-chat__body { max-height: 280px; overflow-y: auto; }
+    .tv-chat-msg { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; align-items: flex-start; }
+    .tv-chat-msg--user { justify-content: flex-end; }
+    .tv-chat-msg__avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--tv-primary), var(--tv-purple-soft));
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .tv-chat-msg__bubble {
+      max-width: 85%;
+      padding: 0.6rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      background: var(--tv-bg);
+      border: 1px solid var(--tv-border);
+    }
+    .tv-chat-msg--user .tv-chat-msg__bubble {
+      background: linear-gradient(135deg, #dbeafe, #e0e7ff);
+    }
+    .tv-bot-quick {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      padding: 0.75rem 1rem;
+      border-top: 1px solid var(--tv-border);
+    }
+    .tv-bot-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.35rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid var(--tv-border);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--tv-text);
+      text-decoration: none;
+      background: #fff;
+    }
+    .tv-bot-chip:hover { background: var(--tv-bg); text-decoration: none; }
+    .tv-bot-compose {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      border-top: 1px solid var(--tv-border);
+    }
+    .tv-bot-compose input { flex: 1; padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid var(--tv-border); }
+    .tv-tips-grid { display: grid; gap: 0.5rem; }
+    .tv-tip-card {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.65rem;
+      background: var(--tv-bg);
+      border-radius: 10px;
+      font-size: 0.82rem;
+    }
+    .tv-tip-card .material-symbols-outlined { color: var(--tv-purple-soft); font-size: 1.1rem; }
+    .tv-form-inline { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; margin-top: 0.75rem; }
+    .tv-panel__body--center { display: flex; justify-content: center; }
+    .tv-table--compact th, .tv-table--compact td { padding: 0.45rem 0.65rem; }
+    @media (max-width: 1000px) {
+      .tv-send-layout, .tv-inbox-layout, .tv-bot-layout { grid-template-columns: 1fr; }
+      .tv-inbox-detail-panel { order: -1; }
+    }
+    @media (max-width: 600px) {
+      .tv-form-grid { grid-template-columns: 1fr; }
+      .tv-mode-grid { grid-template-columns: 1fr 1fr; }
+    }
   `;
 }

@@ -54,6 +54,7 @@ import {
 } from "../controllers/admin-knowledge.controller.js";
 import {
   getDashboard,
+  getInboxPage,
   getLoginPage,
   getMessageDetail,
   getRegisterPage,
@@ -80,6 +81,7 @@ adminRouter.post("/register", postRegister);
 adminRouter.post("/logout", postLogout);
 
 adminRouter.get("/", requireAdminPage, getDashboard);
+adminRouter.get("/inbox", requireAdminPage, getInboxPage);
 adminRouter.get("/sms/send-test", requireAdminPage, getSendTestForm);
 adminRouter.post("/sms/send-test", requireAdminPage, postSendTest);
 adminRouter.get("/clients/test/credit", requireAdminPage, getCreditForm);
