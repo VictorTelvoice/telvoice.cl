@@ -5,6 +5,8 @@ import {
   authenticateAdmin,
   getAdminJwtCookieName,
   getJwtCookieOptions,
+  isAdminSignupOpen,
+  registerGmailAdmin,
   signAdminToken,
 } from "../services/adminAuthService.js";
 import { getBalanceByClientId } from "../services/balanceService.js";
@@ -22,8 +24,11 @@ import {
 } from "../services/smsMessageService.js";
 import { parseAsmscBalanceSummary } from "../utils/asmsc-balance-summary.js";
 import {
+  renderAuthLoginPage,
+  renderAuthRegisterPage,
+} from "../views/admin-ui/auth-pages.js";
+import {
   renderDashboardPage,
-  renderLoginPage,
   renderMessageDetailPage,
   renderSettingsPage,
   renderTestClientPage,
@@ -31,12 +36,100 @@ import {
 import { getConfiguredDlrWebhookUrl } from "../utils/dlr-callback.js";
 import { validateUuidParam } from "../utils/validation.js";
 
-export function getLoginPage(req: Request, res: Response): void {
-  const error = typeof req.query.error === "string" ? req.query.error : undefined;
-  const next =
-    typeof req.query.next === "string" ? req.query.next : "/admin";
+export async function getLoginPage(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const error = typeof req.query.error === "string" ? req.query.error : undefined;
+    const successMessage =
+      typeof req.query.registered === "string"
+        ? "Cuenta creada correctamente. Inicia sesión."
+        : undefined;
+    const nextPath =
+      typeof req.query.next === "string" ? req.query.next : "/admin";
+    const signupAvailable = await isAdminSignupOpen();
 
-  res.type("html").send(renderLoginPage({ error, next }));
+    res
+      .type("html")
+      .send(
+        renderAuthLoginPage({
+          error,
+          next: nextPath,
+          signupAvailable,
+          successMessage,
+        }),
+      );
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getRegisterPage(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const open = await isAdminSignupOpen();
+    if (!open) {
+      res.redirect("/admin/login?error=Registro%20no%20disponible.");
+      return;
+    }
+
+    const error = typeof req.query.error === "string" ? req.query.error : undefined;
+    const nextPath =
+      typeof req.query.next === "string" ? req.query.next : "/admin";
+
+    res.type("html").send(renderAuthRegisterPage({ error, next: nextPath }));
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function postRegister(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const open = await isAdminSignupOpen();
+    const nextPath = sanitizeNextPath(String(req.body?.next ?? "/admin"));
+
+    if (!open) {
+      res.redirect(
+        `/admin/login?error=${encodeURIComponent("Registro no disponible.")}`,
+      );
+      return;
+    }
+
+    const email = String(req.body?.email ?? "").trim();
+    const password = String(req.body?.password ?? "");
+    const passwordConfirm = String(req.body?.password_confirm ?? "");
+    const name = String(req.body?.name ?? "").trim();
+
+    if (password !== passwordConfirm) {
+      res.redirect(
+        `/admin/register?error=${encodeURIComponent("Las contraseñas no coinciden.")}&next=${encodeURIComponent(nextPath)}`,
+      );
+      return;
+    }
+
+    const result = await registerGmailAdmin({ email, password, name });
+    if ("error" in result) {
+      res.redirect(
+        `/admin/register?error=${encodeURIComponent(result.error)}&next=${encodeURIComponent(nextPath)}`,
+      );
+      return;
+    }
+
+    const token = signAdminToken(result.user);
+    res.cookie(getAdminJwtCookieName(), token, getJwtCookieOptions());
+    res.redirect(nextPath);
+  } catch (error) {
+    next(error);
+  }
 }
 
 export async function postLogin(

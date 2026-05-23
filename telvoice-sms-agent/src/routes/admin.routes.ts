@@ -56,10 +56,12 @@ import {
   getDashboard,
   getLoginPage,
   getMessageDetail,
+  getRegisterPage,
   getSettingsPage,
   getTestClientPage,
   postLogin,
   postLogout,
+  postRegister,
 } from "../controllers/admin.controller.js";
 import {
   loadAdminSession,
@@ -73,6 +75,8 @@ adminRouter.use(loadAdminSession);
 
 adminRouter.get("/login", redirectIfAuthenticated, getLoginPage);
 adminRouter.post("/login", postLogin);
+adminRouter.get("/register", redirectIfAuthenticated, getRegisterPage);
+adminRouter.post("/register", postRegister);
 adminRouter.post("/logout", postLogout);
 
 adminRouter.get("/", requireAdminPage, getDashboard);

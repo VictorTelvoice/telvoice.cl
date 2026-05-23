@@ -59,6 +59,8 @@ export const env = {
     superadminName: optionalEnv("SUPERADMIN_NAME", "Superadmin Telvoice"),
     jwtSecret: optionalEnv("JWT_SECRET"),
     sessionSecret: optionalEnv("SESSION_SECRET"),
+    /** Permite /admin/register con cuenta @gmail.com */
+    signupEnabled: optionalEnv("ADMIN_SIGNUP_ENABLED", "false") === "true",
   },
   /** URL pública del agente (producción: https://agent.telvoice.cl) */
   publicAppUrl: optionalEnv("PUBLIC_APP_URL", "http://localhost:3001").replace(

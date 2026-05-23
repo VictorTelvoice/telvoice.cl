@@ -265,8 +265,10 @@ export function getAdminStyles(): string {
     .tv-user__company { font-size: 0.7rem; color: var(--tv-muted); display: block; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .tv-content { padding: 1.5rem 1.5rem 2.5rem; flex: 1; }
 
-    /* Auth (login) */
-    .tv-admin--auth { background: linear-gradient(135deg, #f4f7fc 0%, #e8eef8 50%, #ede9fe 100%); }
+    /* Auth (login / registro) */
+    .tv-admin--auth {
+      background: linear-gradient(135deg, #f4f7fc 0%, #dce8f8 45%, #ede9fe 100%);
+    }
     .tv-auth-wrap {
       min-height: 100vh;
       display: flex;
@@ -274,6 +276,55 @@ export function getAdminStyles(): string {
       justify-content: center;
       padding: 1.5rem;
     }
+    .tv-auth-card {
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
+      background: var(--tv-surface);
+      border: 1px solid var(--tv-border);
+      border-radius: calc(var(--tv-radius) + 4px);
+      padding: 1.75rem 1.85rem 1.5rem;
+      box-shadow: var(--tv-shadow-lg);
+    }
+    .tv-auth-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin-bottom: 1.35rem;
+    }
+    .tv-auth-logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--tv-primary), var(--tv-purple-soft));
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+    .tv-auth-title {
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .tv-auth-sub {
+      margin: 0.2rem 0 0;
+      font-size: 0.82rem;
+      color: var(--tv-muted);
+    }
+    .tv-auth-form .form-group input { max-width: none; }
+    .tv-auth-submit { width: 100%; margin-top: 0.25rem; padding: 0.65rem; }
+    .tv-auth-foot {
+      margin: 1.15rem 0 0;
+      text-align: center;
+      font-size: 0.88rem;
+      color: var(--tv-muted);
+    }
+    .tv-auth-foot a { font-weight: 600; }
 
     /* Dashboard */
     .tv-page-head { margin-bottom: 1.25rem; }

@@ -66,36 +66,6 @@ export interface SendTestFormValues {
   encoding: string;
 }
 
-export function renderLoginPage(options: {
-  error?: string;
-  next?: string;
-}): string {
-  const errorBlock = options.error
-    ? `<div class="alert alert-error">${escapeHtml(options.error)}</div>`
-    : "";
-
-  const body = `
-    <div class="login-wrap card">
-      <h1>Acceso administrativo</h1>
-      <p class="subtitle">Telvoice SMS Agent — agent.telvoice.cl</p>
-      ${errorBlock}
-      <form method="post" action="/admin/login">
-        <input type="hidden" name="next" value="${escapeHtml(options.next ?? "/admin")}" />
-        <div class="form-group">
-          <label for="email">Correo</label>
-          <input id="email" name="email" type="email" required autocomplete="username" />
-        </div>
-        <div class="form-group">
-          <label for="password">Contraseña</label>
-          <input id="password" name="password" type="password" required autocomplete="current-password" />
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%">Ingresar</button>
-      </form>
-    </div>`;
-
-  return renderLayout({ title: "Login", body, showNav: false });
-}
-
 export function renderDashboardPage(options: {
   admin: AdminSessionUser;
   serviceOk: boolean;

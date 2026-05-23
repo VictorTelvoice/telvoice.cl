@@ -4,6 +4,7 @@ import { env } from "../config/env.js";
 import type { AdminJwtPayload, AdminSessionUser } from "../types/admin.js";
 import { AppError } from "../utils/errors.js";
 import {
+  countAdminUsers,
   createAdminUser,
   findAdminByEmail,
   findAdminById,
@@ -104,6 +105,75 @@ export async function resolveAdminSession(
     email: admin.email,
     name: admin.name,
     role: admin.role,
+  };
+}
+
+const GMAIL_DOMAIN_RE = /^[^\s@]+@(gmail\.com|googlemail\.com)$/i;
+
+export function isGmailAddress(email: string): boolean {
+  return GMAIL_DOMAIN_RE.test(email.trim());
+}
+
+/** Registro abierto si ADMIN_SIGNUP_ENABLED=true o aún no hay admins en BD. */
+export async function isAdminSignupOpen(): Promise<boolean> {
+  if (env.admin.signupEnabled) {
+    return true;
+  }
+  try {
+    return (await countAdminUsers()) === 0;
+  } catch {
+    return false;
+  }
+}
+
+export async function registerGmailAdmin(input: {
+  email: string;
+  password: string;
+  name: string;
+}): Promise<{ user: AdminSessionUser } | { error: string }> {
+  if (!(await isAdminSignupOpen())) {
+    return { error: "El registro no está habilitado. Contacta al administrador." };
+  }
+
+  const email = input.email.trim().toLowerCase();
+  const name = input.name.trim();
+  const password = input.password;
+
+  if (!isGmailAddress(email)) {
+    return {
+      error: "Usa una cuenta @gmail.com o @googlemail.com.",
+    };
+  }
+
+  if (name.length < 2) {
+    return { error: "Indica tu nombre (mínimo 2 caracteres)." };
+  }
+
+  if (password.length < 8) {
+    return { error: "La contraseña debe tener al menos 8 caracteres." };
+  }
+
+  const existing = await findAdminByEmail(email);
+  if (existing) {
+    return { error: "Ya existe una cuenta con ese correo. Inicia sesión." };
+  }
+
+  const password_hash = await hashPassword(password);
+  const isFirstUser = (await countAdminUsers()) === 0;
+  const admin = await createAdminUser({
+    email,
+    password_hash,
+    name,
+    role: isFirstUser ? "superadmin" : "admin",
+  });
+
+  return {
+    user: {
+      id: admin.id,
+      email: admin.email,
+      name: admin.name,
+      role: admin.role,
+    },
   };
 }
 

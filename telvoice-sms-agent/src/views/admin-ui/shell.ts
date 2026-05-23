@@ -162,7 +162,9 @@ export function renderLayout(options: LayoutOptions): string {
   <style>${getAdminStyles()}</style>
 </head>
 <body class="tv-admin tv-admin--auth">
-  <main class="tv-auth-wrap">${options.body}</main>
+  <main class="tv-auth-wrap">
+    ${options.body}
+  </main>
 </body>
 </html>`;
   }

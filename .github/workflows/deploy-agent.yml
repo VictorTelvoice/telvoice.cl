@@ -1,0 +1,43 @@
+# Despliega telvoice-sms-agent en el VPS (agent.telvoice.cl) al hacer push a main.
+#
+# Secretos requeridos en GitHub → Settings → Secrets → Actions:
+#   VPS_HOST          — IP o hostname del servidor
+#   VPS_USER          — usuario SSH (ej. ubuntu, root)
+#   VPS_SSH_KEY       — clave privada SSH (contenido completo del archivo)
+#   VPS_APP_PATH      — ruta del repo en el VPS (ej. /var/www/telvoice-sms-agent)
+
+name: Deploy agent.telvoice.cl
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "telvoice-sms-agent/**"
+      - ".github/workflows/deploy-agent.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            APP_PATH="${{ secrets.VPS_APP_PATH }}"
+            if [ -z "$APP_PATH" ]; then APP_PATH="/var/www/telvoice-sms-agent"; fi
+            cd "$APP_PATH"
+            git fetch origin main
+            git reset --hard origin/main
+            if [ -f telvoice-sms-agent/package.json ]; then
+              cd telvoice-sms-agent
+            fi
+            npm ci
+            npm run build
+            pm2 restart telvoice-sms-agent || pm2 start dist/index.js --name telvoice-sms-agent
+            pm2 save || true
+            curl -sf http://127.0.0.1:3001/health || curl -sf https://agent.telvoice.cl/health

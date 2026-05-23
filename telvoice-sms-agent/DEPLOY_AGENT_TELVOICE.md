@@ -283,12 +283,33 @@ Envía un SMS de prueba desde el panel y confirma en el detalle del mensaje que 
 
 ```bash
 cd /var/www/telvoice-sms-agent
-git pull
-npm install
-npm run typecheck
+git pull origin main
+# Si el clone es el monorepo completo:
+# cd telvoice-sms-agent
+npm ci
 npm run build
 pm2 restart telvoice-sms-agent
 ```
+
+O ejecuta: `bash scripts/deploy-vps.sh` (desde la carpeta del agente en el servidor).
+
+### Deploy automático (GitHub Actions)
+
+En el repo, el workflow `.github/workflows/deploy-agent.yml` despliega al hacer push a `main` si configuras estos secretos en GitHub → **Settings → Secrets → Actions**:
+
+| Secreto | Ejemplo |
+|---------|---------|
+| `VPS_HOST` | IP del VPS |
+| `VPS_USER` | `ubuntu` |
+| `VPS_SSH_KEY` | clave privada SSH |
+| `VPS_APP_PATH` | `/var/www/telvoice-sms-agent` (opcional) |
+
+## Registro admin con Gmail
+
+- **URL:** https://agent.telvoice.cl/admin/register  
+- Solo correos `@gmail.com` o `@googlemail.com`.  
+- Se habilita si `ADMIN_SIGNUP_ENABLED=true` en `.env`, **o** si aún no existe ningún usuario en `admin_users`.  
+- Tras crear la cuenta, inicia sesión automáticamente en el panel.
 
 ---
 
