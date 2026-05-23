@@ -12,6 +12,7 @@ import {
 } from "../services/smsOrderService.js";
 import { getCompanyBalance } from "../services/smsWalletService.js";
 import { listTransactionsByCompany } from "../services/walletTransactionService.js";
+import { isMercadoPagoConfigured } from "../config/env.js";
 import { parseOrderListFilter } from "../utils/order-display.js";
 import { validateUuidParam } from "../utils/validation.js";
 import type { AppPageContext } from "../views/app-ui/app-page-wrap.js";
@@ -113,7 +114,7 @@ export async function getAppBuySms(
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
     const packages = await getClientCatalogPackages(ctx.company.country);
-    return renderAppBuySmsPage(ctx, packages);
+    return renderAppBuySmsPage(ctx, packages, isMercadoPagoConfigured());
   });
 }
 

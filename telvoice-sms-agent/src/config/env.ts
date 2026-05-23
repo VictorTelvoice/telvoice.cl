@@ -76,6 +76,10 @@ export const env = {
     accessToken: optionalEnv("MERCADOPAGO_ACCESS_TOKEN"),
     sandbox: optionalEnv("MERCADOPAGO_SANDBOX", "true") === "true",
     testPayerEmail: optionalEnv("MERCADOPAGO_TEST_PAYER_EMAIL"),
+    /** Opcional: sobreescriben back_urls del panel /app (default: PUBLIC_APP_URL + /app/payments/mercadopago/...) */
+    successUrlApp: optionalEnv("MERCADOPAGO_SUCCESS_URL_APP"),
+    failureUrlApp: optionalEnv("MERCADOPAGO_FAILURE_URL_APP"),
+    pendingUrlApp: optionalEnv("MERCADOPAGO_PENDING_URL_APP"),
   },
   databaseUrl: optionalEnv("DATABASE_URL"),
 } as const;

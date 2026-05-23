@@ -18,6 +18,11 @@ import {
   getAppWallet,
   postAppBuySms,
 } from "../controllers/app.controller.js";
+import {
+  getAppMercadoPagoContinuePay,
+  getAppMercadoPagoReturn,
+  postAppBuySmsMercadoPago,
+} from "../controllers/app-payments.controller.js";
 import { loadAdminSession } from "../middleware/admin-auth.js";
 import { requireClientPanelPage } from "../middleware/client-panel-auth.js";
 
@@ -30,6 +35,26 @@ appRouter.get("/dashboard", requireClientPanelPage, getAppDashboard);
 
 appRouter.get("/buy-sms", requireClientPanelPage, getAppBuySms);
 appRouter.post("/buy-sms", requireClientPanelPage, postAppBuySms);
+appRouter.post(
+  "/buy-sms/mercadopago",
+  requireClientPanelPage,
+  postAppBuySmsMercadoPago,
+);
+
+appRouter.get("/payments/mercadopago/success", requireClientPanelPage, (req, res, next) =>
+  getAppMercadoPagoReturn(req, res, next, "success"),
+);
+appRouter.get("/payments/mercadopago/failure", requireClientPanelPage, (req, res, next) =>
+  getAppMercadoPagoReturn(req, res, next, "failure"),
+);
+appRouter.get("/payments/mercadopago/pending", requireClientPanelPage, (req, res, next) =>
+  getAppMercadoPagoReturn(req, res, next, "pending"),
+);
+appRouter.get(
+  "/orders/:id/continue-payment",
+  requireClientPanelPage,
+  getAppMercadoPagoContinuePay,
+);
 
 appRouter.get("/wallet", requireClientPanelPage, getAppWallet);
 appRouter.get("/orders", requireClientPanelPage, getAppOrders);

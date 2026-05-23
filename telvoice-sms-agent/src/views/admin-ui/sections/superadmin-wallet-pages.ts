@@ -12,6 +12,7 @@ import {
   checkoutModeLabel,
   formatOrderShortId,
   isQaOrder,
+  mercadoPagoAdminMetaRows,
   paymentMethodLabel,
 } from "../../../utils/order-display.js";
 import { escapeHtml, formatDate } from "../../../utils/html.js";
@@ -419,6 +420,7 @@ export function renderSaOrdersPage(opts: PageOpts & {
           );
           const creditedAt = o.credited_at ? formatDate(o.credited_at) : "—";
           const ref = escapeHtml(o.payment_reference ?? "—");
+          const payMethod = escapeHtml(paymentMethodLabel(o.payment_provider));
           const credited = o.credit_status === "credited";
           const actions = credited
             ? `<a href="/admin/orders/${escapeHtml(o.id)}" class="btn btn-ghost btn-sm">Ver detalle</a>
@@ -433,6 +435,7 @@ export function renderSaOrdersPage(opts: PageOpts & {
           return `<tr>
       <td>${date}</td><td>${company}</td><td>${bag}</td>
       <td>${fmtSms(o.sms_quantity)}</td><td>${amount}</td>
+      <td>${payMethod}</td>
       <td><code>${ref}</code></td>
       <td>${pay}</td><td>${credit}</td>
       <td>${creditedAt}</td>
@@ -447,7 +450,7 @@ export function renderSaOrdersPage(opts: PageOpts & {
       <td>${statusBadgeSa(o.payStatus)}</td><td>${statusBadgeSa(o.creditStatus)}</td><td>Mock</td>
     </tr>`,
           ).join("")
-        : `<tr><td colspan="10">Sin órdenes. Crea una orden manual abajo.</td></tr>`;
+        : `<tr><td colspan="11">Sin órdenes. Crea una orden manual abajo.</td></tr>`;
 
   const createForm =
     opts.companies.length && opts.packages.length
@@ -474,7 +477,7 @@ export function renderSaOrdersPage(opts: PageOpts & {
     })}
     ${opts.useMock ? '<p class="field-hint tv-mock-tag">Datos mock activos.</p>' : ""}
     <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Fecha</th><th>Empresa</th><th>Bolsa</th><th>SMS</th><th>Monto</th><th>Referencia</th><th>Estado pago</th><th>Acreditación</th><th>Acreditada el</th><th></th>
+      <th>Fecha</th><th>Empresa</th><th>Bolsa</th><th>SMS</th><th>Monto</th><th>Método</th><th>Referencia</th><th>Estado pago</th><th>Acreditación</th><th>Acreditada el</th><th></th>
     </tr></thead><tbody>${rows}</tbody></table></div>
     ${createForm}`;
   return wrap(opts, "orders", "Compras", body);
@@ -531,6 +534,13 @@ export function renderSaOrderDetailPage(
          </form>
        </div>`;
 
+  const mpRows = mercadoPagoAdminMetaRows(o.metadata)
+    .map(
+      (row) =>
+        `<div><dt>${escapeHtml(row.label)}</dt><dd><code>${escapeHtml(row.value)}</code></dd></div>`,
+    )
+    .join("");
+
   const txRows = opts.transactions.length
     ? opts.transactions
         .map(
@@ -586,6 +596,14 @@ export function renderSaOrderDetailPage(
         <div class="tv-panel__body">${adminActions}</div>
       </section>
     </div>
+    ${
+      mpRows
+        ? `<section class="tv-panel" style="margin-top:1rem">
+      <h2 class="tv-panel__title">Mercado Pago</h2>
+      <dl class="tv-detail-dl tv-panel__body">${mpRows}</dl>
+    </section>`
+        : ""
+    }
     <section class="tv-panel" style="margin-top:1rem">
       <h2 class="tv-panel__title">Movimientos wallet (orden)</h2>
       <div class="table-wrap tv-panel__body" style="padding:0">

@@ -4,6 +4,7 @@ import type { SmsPackageRow } from "../../types/wallet.js";
 import {
   buildOrderTimeline,
   checkoutModeLabel,
+  mercadoPagoOrderHasPendingCheckout,
   orderMatchesFilter,
   paymentMethodLabel,
   type OrderListFilter,
@@ -28,16 +29,23 @@ function supportOrderHref(orderId: string): string {
 export function renderAppBuySmsPage(
   ctx: AppPageContext,
   packages: SmsPackageRow[],
+  mercadoPagoAvailable: boolean,
 ): string {
   const canBuy = canOperateClientPanel(ctx.profile.role);
 
   const cards = packages.length
     ? packages
         .map((p) => {
-          const buyBtn = canBuy
+          const mpBtn = canBuy && mercadoPagoAvailable
+            ? `<form method="post" action="/app/buy-sms/mercadopago" style="margin-bottom:0.35rem">
+                <input type="hidden" name="package_id" value="${escapeHtml(p.id)}" />
+                <button type="submit" class="btn btn-primary btn-sm" style="width:100%">Pagar con Mercado Pago</button>
+              </form>`
+            : "";
+          const manualBtn = canBuy
             ? `<form method="post" action="/app/buy-sms">
                 <input type="hidden" name="package_id" value="${escapeHtml(p.id)}" />
-                <button type="submit" class="btn btn-primary btn-sm" style="width:100%">Comprar</button>
+                <button type="submit" class="btn btn-secondary btn-sm" style="width:100%">Solicitar pago manual</button>
               </form>`
             : `<button type="button" class="btn btn-secondary btn-sm" disabled style="width:100%" title="Tu rol es solo lectura">Solo lectura</button>`;
           return `<article class="tv-package-card">
@@ -45,23 +53,29 @@ export function renderAppBuySmsPage(
             <div class="tv-package-card__qty">${fmtSms(p.sms_quantity)} SMS</div>
             <div class="tv-package-card__price">${fmtMoney(Number(p.total_price), p.currency)}</div>
             <div class="tv-package-card__unit">${p.unit_price != null ? `${fmtMoney(Number(p.unit_price), p.currency)} / SMS` : ""}</div>
-            ${buyBtn}
+            ${mpBtn}
+            ${manualBtn}
           </article>`;
         })
         .join("")
     : `<p class="tv-page-sub">No hay bolsas disponibles para compra en este momento. Contacta a soporte.</p>`;
 
+  const mpNote = mercadoPagoAvailable
+    ? `<p class="field-hint">Pago con Mercado Pago: redirección segura. El saldo se acredita cuando el webhook confirma el pago aprobado.</p>`
+    : `<p class="field-hint">Mercado Pago no está configurado en el servidor. Usa pago manual temporal.</p>`;
+
   const body = `
     ${renderPageHeader({
       title: "Comprar SMS",
-      subtitle: "Bolsas prepago para Chile. El pago se confirma con el equipo Telvoice.",
+      subtitle: "Elige bolsa y método de pago.",
     })}
     <div class="tv-package-grid">${cards}</div>
+    ${mpNote}
     <section class="tv-panel tv-panel--hint" style="margin-top:1.25rem">
       <h2 class="tv-panel__title">Pago manual temporal</h2>
       <div class="tv-panel__body">
-        <p style="margin:0">En esta etapa, la compra será validada por el equipo Telvoice. Pronto podrás pagar en línea con MercadoPago o Stripe.</p>
-        <p class="field-hint" style="margin:0.75rem 0 0">Los precios incluyen IVA según tu contrato. No se muestran datos bancarios hasta habilitar pago en línea.</p>
+        <p style="margin:0">Si eliges pago manual, el equipo Telvoice validará la compra antes de acreditar SMS.</p>
+        <p class="field-hint" style="margin:0.75rem 0 0">Los precios incluyen IVA según tu contrato.</p>
       </div>
     </section>`;
   return wrapAppPage(ctx, "buy-sms", "Comprar SMS", body);
@@ -101,6 +115,12 @@ export function renderAppOrderDetailPage(
 ): string {
   const timeline = buildOrderTimeline(order);
   const showBanner = options?.showCreatedBanner === true;
+  const continuePay = mercadoPagoOrderHasPendingCheckout(order)
+    ? renderBtn("Continuar pago en Mercado Pago", {
+        href: `/app/orders/${escapeHtml(order.id)}/continue-payment`,
+        variant: "primary",
+      })
+    : "";
 
   const body = `
     ${renderPageHeader({
@@ -132,7 +152,8 @@ export function renderAppOrderDetailPage(
       </section>
     </div>
     <div class="tv-quick-actions" style="margin-top:1rem">
-      ${renderBtn("Contactar soporte por esta orden", { href: supportOrderHref(order.id), variant: "primary" })}
+      ${continuePay}
+      ${renderBtn("Contactar soporte por esta orden", { href: supportOrderHref(order.id), variant: continuePay ? "secondary" : "primary" })}
       ${renderBtn("Volver a mis órdenes", { href: "/app/orders", variant: "secondary" })}
       ${renderBtn("Comprar otra bolsa", { href: "/app/buy-sms", variant: "ghost" })}
     </div>`;

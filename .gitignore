@@ -4,5 +4,6 @@
 .env.*
 !.env.example
 node_modules/
+.deploy-keys/
 .pip_pkgs/
 data/orders/*.json

@@ -97,7 +97,7 @@ export function paymentMethodLabel(provider: string | null): string {
   const map: Record<string, string> = {
     pending_checkout: "Pago manual (pendiente)",
     manual: "Pago manual",
-    mercadopago: "MercadoPago",
+    mercadopago: "Mercado Pago",
     stripe: "Stripe",
   };
   return map[provider] ?? provider;
@@ -201,6 +201,47 @@ export function paymentStatusLabel(status: PaymentStatus): string {
     refunded: "Reembolsada",
   };
   return map[status] ?? status;
+}
+
+export function mercadoPagoOrderHasPendingCheckout(order: {
+  payment_status: PaymentStatus;
+  metadata?: Record<string, unknown>;
+}): boolean {
+  if (order.payment_status !== "pending") {
+    return false;
+  }
+  const meta = order.metadata ?? {};
+  return Boolean(
+    meta.mercadopago_init_point ||
+      meta.mercadopago_sandbox_init_point ||
+      meta.mercadopago_preference_id,
+  );
+}
+
+export function mercadoPagoAdminMetaRows(
+  metadata: Record<string, unknown> | undefined,
+): Array<{ label: string; value: string }> {
+  const meta = metadata ?? {};
+  const rows: Array<{ label: string; value: string }> = [];
+  if (meta.mercadopago_preference_id) {
+    rows.push({
+      label: "Preference ID",
+      value: String(meta.mercadopago_preference_id),
+    });
+  }
+  if (meta.mercadopago_payment_id) {
+    rows.push({ label: "Payment ID", value: String(meta.mercadopago_payment_id) });
+  }
+  if (meta.mercadopago_status) {
+    rows.push({ label: "Estado MP", value: String(meta.mercadopago_status) });
+  }
+  if (meta.mercadopago_webhook_at) {
+    rows.push({
+      label: "Último webhook",
+      value: String(meta.mercadopago_webhook_at),
+    });
+  }
+  return rows;
 }
 
 export function creditStatusLabel(status: CreditStatus): string {

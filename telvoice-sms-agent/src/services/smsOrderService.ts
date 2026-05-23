@@ -246,6 +246,51 @@ export async function createOrder(input: {
   return data as SmsOrderRow;
 }
 
+export async function patchOrderFields(
+  orderId: string,
+  patch: {
+    payment_reference?: string | null;
+    payment_status?: SmsOrderRow["payment_status"];
+    credit_status?: SmsOrderRow["credit_status"];
+    metadata?: Record<string, unknown>;
+  },
+): Promise<SmsOrderRow> {
+  const current = await getOrderById(orderId);
+  if (!current) {
+    throw new AppError("Orden no encontrada.", 404);
+  }
+
+  const update: Record<string, unknown> = {};
+  if (patch.payment_reference !== undefined) {
+    update.payment_reference = patch.payment_reference;
+  }
+  if (patch.payment_status !== undefined) {
+    update.payment_status = patch.payment_status;
+  }
+  if (patch.credit_status !== undefined) {
+    update.credit_status = patch.credit_status;
+  }
+  if (patch.metadata !== undefined) {
+    update.metadata = {
+      ...(current.metadata ?? {}),
+      ...patch.metadata,
+    };
+  }
+
+  const { data, error } = await getSupabase()
+    .from("sms_orders")
+    .update(update)
+    .eq("id", orderId)
+    .select("*")
+    .single();
+
+  if (error) {
+    wrapSupabaseError(error, "patchOrderFields");
+  }
+
+  return data as SmsOrderRow;
+}
+
 export async function markOrderPaid(
   orderId: string,
   actorUserId?: string | null,
