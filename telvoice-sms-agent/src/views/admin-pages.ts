@@ -52,6 +52,7 @@ import {
 } from "../utils/mask-secret.js";
 import { getTelegramRuntimeStatus } from "../services/telegram/runtime.js";
 import { escapeHtml, formatDate, formatJson } from "../utils/html.js";
+import { renderDashboardBody } from "./admin-ui/dashboard-page.js";
 import { renderLayout, statusBadge } from "./layout.js";
 
 import type { AsmscBalanceSummary } from "../utils/asmsc-balance-summary.js";
@@ -108,108 +109,22 @@ export function renderDashboardPage(options: {
   successMessage?: string | null;
   dlrWebhookUrl?: string;
 }): string {
-  const warningBlock = options.configWarning
-    ? `<div class="alert alert-error" style="margin-bottom:1.5rem">${escapeHtml(options.configWarning)}</div>`
-    : "";
-  const successBlock = options.successMessage
-    ? `<div class="alert alert-success" style="margin-bottom:1.5rem">${escapeHtml(options.successMessage)}</div>`
-    : "";
-
-  const clientName = options.testClient?.client.company_name ?? "—";
-  const balanceBlock = options.balance
-    ? `<div class="grid">
-        <div class="card"><div class="label">Disponible (CL)</div><div class="value">${escapeHtml(options.balance.available_units)}</div></div>
-        <div class="card"><div class="label">Reservado</div><div class="value">${escapeHtml(options.balance.reserved_units)}</div></div>
-        <div class="card"><div class="label">Consumido</div><div class="value">${escapeHtml(options.balance.consumed_units)}</div></div>
-      </div>`
-    : `<p class="subtitle">Sin saldo registrado para el cliente de prueba.</p>`;
-
-  const stats = options.stats;
-  const asmsc = options.asmscBalance;
-  const internalAvailable = options.balance?.available_units ?? "—";
-
-  const statCards = stats
-    ? `<div class="grid grid-stats" style="margin-bottom:1.5rem">
-        <div class="card card-stat"><div class="label">Total SMS enviados</div><div class="value">${escapeHtml(stats.total)}</div></div>
-        <div class="card card-stat"><div class="label">SMS submitted</div><div class="value">${escapeHtml(stats.submitted)}</div></div>
-        <div class="card card-stat"><div class="label">SMS failed</div><div class="value">${escapeHtml(stats.failed)}</div></div>
-        <div class="card card-stat"><div class="label">SMS delivered</div><div class="value">${escapeHtml(stats.delivered)}</div></div>
-        <div class="card card-stat"><div class="label">Balance interno CL</div><div class="value">${escapeHtml(internalAvailable)}</div><div class="hint">unidades disponibles</div></div>
-        <div class="card card-stat"><div class="label">Balance técnico aSMSC</div><div class="value" style="font-size:1rem">${escapeHtml(asmsc?.balanceAmount ?? asmsc?.error ?? "—")}</div>${asmsc?.currencyCode ? `<div class="hint">${escapeHtml(asmsc.currencyCode)}</div>` : ""}</div>
-      </div>`
-    : "";
-
-  const rows = options.messages
-    .map(
-      (m) => `<tr>
-        <td>${statusBadge(m.status)}</td>
-        <td><a class="row-link" href="/admin/messages/${escapeHtml(m.id)}">${escapeHtml(m.uid)}</a></td>
-        <td>${escapeHtml(m.phonenumber)}</td>
-        <td>${escapeHtml(m.sender_id)}</td>
-        <td>${escapeHtml(m.sms_type)}</td>
-        <td>${escapeHtml(m.encoding)}</td>
-        <td>${statusBadge(m.provider_status)}</td>
-        <td>${escapeHtml(m.provider_message_id ?? "—")}</td>
-        <td>${escapeHtml(m.dlr_status ?? "—")}</td>
-        <td>${escapeHtml(m.client_cost ?? "—")}</td>
-        <td>${formatDate(m.created_at)}</td>
-      </tr>`,
-    )
-    .join("");
-
-  const body = `
-    <h1>Dashboard administrativo</h1>
-    <p class="subtitle">Panel de operación SMS — ${escapeHtml(options.admin.email)} · ${escapeHtml(clientName)}</p>
-    ${warningBlock}
-    ${successBlock}
-    ${statCards}
-    <div class="card" style="margin-bottom:1.25rem">
-      <div class="label">Webhook DLR (configurar en aSMSC)</div>
-      <div class="value" style="font-size:0.9rem;word-break:break-all">${escapeHtml(options.dlrWebhookUrl ?? getConfiguredDlrWebhookUrl())}</div>
-    </div>
-    <div class="actions-row">
-      <a href="/admin/sms/send-test" class="btn btn-primary">Enviar SMS de prueba</a>
-      <a href="/admin/clients/test/credit" class="btn btn-secondary">Cargar saldo</a>
-      <a href="/admin/clients/test/ledger" class="btn btn-secondary">Ver movimientos de saldo</a>
-      <a href="/admin/asmsc/diagnostics" class="btn btn-secondary">Diagnóstico aSMSC</a>
-      <a href="/admin/settings" class="btn btn-ghost">Configuración</a>
-    </div>
-    <div class="grid" style="margin-bottom:1.25rem">
-      <div class="card">
-        <div class="label">Estado del servicio</div>
-        <div class="value">${options.serviceOk ? statusBadge("ok") : statusBadge("error")}</div>
-      </div>
-      <div class="card">
-        <div class="label">Supabase</div>
-        <div class="value">${options.supabaseConfigured ? statusBadge("active") : statusBadge("pending")}</div>
-      </div>
-      <div class="card">
-        <div class="label">Cliente de prueba</div>
-        <div class="value" style="font-size:1rem">${escapeHtml(clientName)}</div>
-      </div>
-    </div>
-    <h2>Balance interno CL</h2>
-    ${balanceBlock}
-    <h2>Últimos SMS enviados (${options.messages.length})</h2>
-    <div class="card table-wrap" style="padding:0">
-      <table>
-        <thead>
-          <tr>
-            <th>Estado interno</th><th>UID</th><th>Destino</th><th>Sender</th>
-            <th>SMS type</th><th>Encoding</th><th>Provider status</th><th>Provider message ID</th>
-            <th>DLR</th><th>Costo</th><th>Fecha</th>
-          </tr>
-        </thead>
-        <tbody>${rows || '<tr><td colspan="11">Sin mensajes registrados.</td></tr>'}</tbody>
-      </table>
-    </div>`;
+  const clientName = options.testClient?.client.company_name ?? "Telvoice";
+  const smsBalance = String(options.balance?.available_units ?? "—");
+  const routesOk = options.serviceOk && options.supabaseConfigured;
 
   return renderLayout({
     title: "Dashboard",
-    body,
+    body: renderDashboardBody(options),
     adminName: options.admin.name,
     showNav: true,
     activeNav: "dashboard",
+    topbar: {
+      smsBalance,
+      routesOk,
+      routesLabel: routesOk ? "Rutas Chile OK" : "Rutas: revisar",
+      companyName: clientName,
+    },
   });
 }
 
