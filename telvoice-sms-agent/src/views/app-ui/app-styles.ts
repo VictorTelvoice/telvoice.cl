@@ -150,6 +150,25 @@ export function getAppPanelStyles(): string {
       font-size: 0.85rem;
       min-height: 120px;
     }
+    .alert-warn {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #b45309;
+      padding: 0.85rem 1rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+    }
+    .alert-error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+      padding: 0.85rem 1rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+    }
+    .tv-mock-sim-banner { font-size: 0.9rem; }
+    .tv-cell-truncate { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tv-code-sm { font-size: 0.78rem; }
     .tv-send-disabled-note {
       margin-top: 1rem;
       padding: 0.85rem 1rem;

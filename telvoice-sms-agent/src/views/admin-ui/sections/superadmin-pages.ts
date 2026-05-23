@@ -1,5 +1,9 @@
 import type { AdminSessionUser } from "../../../types/admin.js";
-import { escapeHtml } from "../../../utils/html.js";
+import type {
+  PanelSmsMessageWithCompany,
+  SmsCampaignWithCompany,
+} from "../../../types/sms-panel.js";
+import { escapeHtml, formatDate } from "../../../utils/html.js";
 import { wrapAdminPage } from "../admin-page-wrap.js";
 import {
   MOCK_SA_API_KEYS,
@@ -14,7 +18,12 @@ import { renderKpiCard } from "../components.js";
 import { renderBtn, renderFilterBar, renderPageHeader } from "../page-kit.js";
 import { renderSuperadminBanner, statusBadgeSa } from "../superadmin-kit.js";
 
-type PageOpts = { admin: AdminSessionUser; smsBalance?: string };
+type PageOpts = {
+  admin: AdminSessionUser;
+  smsBalance?: string;
+  campaigns?: SmsCampaignWithCompany[];
+  messages?: PanelSmsMessageWithCompany[];
+};
 
 function wrap(
   opts: PageOpts,
@@ -69,38 +78,82 @@ export function renderSaClientsPage(opts: PageOpts): string {
 }
 
 export function renderSaCampaignsPage(opts: PageOpts): string {
-  const rows = MOCK_SA_CAMPAIGNS.map(
-    (c) => `<tr>
-      <td>${escapeHtml(c.client)}</td><td>${escapeHtml(c.name)}</td><td>${escapeHtml(String(c.sent))}</td>
-      <td>${escapeHtml(String(c.delivered))}</td><td>${statusBadgeSa(c.status)}</td><td>${escapeHtml(c.date)}</td>
-      <td><a href="/admin/reports" class="row-link">Reporte</a></td>
+  const real = opts.campaigns ?? [];
+  const rows = real.length
+    ? real
+        .map(
+          (c) => `<tr>
+      <td>${escapeHtml(c.company_name ?? "—")}</td>
+      <td>${escapeHtml(c.name)}</td>
+      <td>${escapeHtml(c.sender_id ?? "—")}</td>
+      <td>${c.real_sms_cost}</td>
+      <td>${statusBadgeSa(c.status)}</td>
+      <td>${statusBadgeSa(c.mode)}</td>
+      <td>${formatDate(c.created_at)}</td>
+      <td><code class="tv-code-sm">${escapeHtml(c.id.slice(0, 8))}</code></td>
     </tr>`,
-  ).join("");
+        )
+        .join("")
+    : MOCK_SA_CAMPAIGNS.map(
+        (c) => `<tr>
+      <td>${escapeHtml(c.client)}</td><td>${escapeHtml(c.name)}</td><td>—</td>
+      <td>${escapeHtml(String(c.sent))}</td><td>${statusBadgeSa(c.status)}</td><td>mock</td>
+      <td>${escapeHtml(c.date)}</td><td>—</td>
+    </tr>`,
+      ).join("");
+  const hint = real.length
+    ? `<p class="field-hint">${real.length} campaña(s) desde Supabase (panel).</p>`
+    : `<p class="field-hint tv-mock-tag">Sin campañas en BD · mostrando datos de ejemplo.</p>`;
   const body = `
     ${renderSuperadminBanner()}
     ${renderPageHeader({ title: "Campañas globales", subtitle: "Monitorea campañas de todos los clientes en la plataforma.", actions: renderBtn("Nueva campaña", { disabled: true, variant: "primary" }) })}
     <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Cliente</th><th>Campaña</th><th>Enviados</th><th>Entregados</th><th>Estado</th><th>Fecha</th><th></th>
-    </tr></thead><tbody>${rows}</tbody></table></div>`;
+      <th>Cliente</th><th>Campaña</th><th>Remitente</th><th>SMS consumidos</th><th>Estado</th><th>Modo</th><th>Fecha</th><th></th>
+    </tr></thead><tbody>${rows}</tbody></table></div>
+    ${hint}`;
   return wrap(opts, "campaigns", "Campañas", body);
 }
 
 export function renderSaMessagesPage(opts: PageOpts): string {
-  const filters = renderFilterBar(`<input class="tv-filter-input" placeholder="Cliente, campaña, número…" /><select class="tv-filter-input" disabled><option>Estado</option></select><select class="tv-filter-input" disabled><option>Proveedor</option></select>`);
-  const rows = MOCK_SA_MESSAGES.map(
-    (m) => `<tr>
+  const filters = renderFilterBar(
+    `<input class="tv-filter-input" placeholder="Cliente, campaña, número…" />
+    <select class="tv-filter-input" disabled><option>Estado</option></select>
+    <select class="tv-filter-input" disabled><option>Modo</option></select>`,
+  );
+  const real = opts.messages ?? [];
+  const rows = real.length
+    ? real
+        .map(
+          (m) => `<tr>
+      <td>${escapeHtml(m.company_name ?? "—")}</td>
+      <td>${escapeHtml(m.campaign_name ?? "—")}</td>
+      <td><code>${escapeHtml(m.recipient_number)}</code></td>
+      <td>${statusBadgeSa(m.status)}</td>
+      <td>${escapeHtml(m.provider)}</td>
+      <td>${escapeHtml(m.operator ?? "—")}</td>
+      <td>${formatDate(m.created_at)}</td>
+      <td>${statusBadgeSa(m.mode)}</td>
+    </tr>`,
+        )
+        .join("")
+    : MOCK_SA_MESSAGES.map(
+        (m) => `<tr>
       <td>${escapeHtml(m.client)}</td><td>${escapeHtml(m.campaign)}</td><td>${escapeHtml(m.phone)}</td>
       <td>${statusBadgeSa(m.status)}</td><td>${escapeHtml(m.provider)}</td><td>${escapeHtml(m.operator)}</td>
       <td>${escapeHtml(m.date)}</td><td>${escapeHtml(m.country)}</td>
     </tr>`,
-  ).join("");
+      ).join("");
+  const hint = real.length
+    ? `<p class="field-hint">${real.length} mensaje(s) panel desde Supabase.</p>`
+    : `<p class="field-hint tv-mock-tag">Sin mensajes panel en BD · datos de ejemplo.</p>`;
   const body = `
     ${renderSuperadminBanner("Monitor operacional global — no es la bandeja de un cliente.")}
-    ${renderPageHeader({ title: "Mensajería global", subtitle: "Todos los mensajes enviados por todos los clientes.", actions: `<a href="/admin/inbox" class="btn btn-ghost btn-sm">Bandeja operador (legacy)</a>` })}
+    ${renderPageHeader({ title: "Mensajería global", subtitle: "Todos los mensajes enviados por todos los clientes (panel_sms_messages).", actions: `<a href="/admin/inbox" class="btn btn-ghost btn-sm">Bandeja operador (legacy)</a>` })}
     ${filters}
     <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Cliente</th><th>Campaña</th><th>Número</th><th>Estado</th><th>Proveedor</th><th>Operador</th><th>Fecha</th><th>País</th>
-    </tr></thead><tbody>${rows}</tbody></table></div>`;
+      <th>Cliente</th><th>Campaña</th><th>Número</th><th>Estado</th><th>Proveedor</th><th>Operador</th><th>Fecha</th><th>Modo</th>
+    </tr></thead><tbody>${rows}</tbody></table></div>
+    ${hint}`;
   return wrap(opts, "messages", "Mensajería", body);
 }
 

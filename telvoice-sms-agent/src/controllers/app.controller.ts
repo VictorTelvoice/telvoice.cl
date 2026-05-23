@@ -21,9 +21,14 @@ import {
 } from "../views/app-ui/app-page-wrap.js";
 import {
   renderAppDashboardPage,
-  renderAppSendSmsPage,
   renderAppWalletPage,
 } from "../views/app-ui/app-pages.js";
+import {
+  renderAppCampaignsPage,
+  renderAppInboxPage,
+  renderAppReportsPage,
+  renderAppSendSmsPage,
+} from "../views/app-ui/app-sms-pages.js";
 import {
   renderAppBuySmsPage,
   renderAppOrderDetailPage,
@@ -32,15 +37,17 @@ import {
 } from "../views/app-ui/app-order-pages.js";
 import {
   renderAppApiPage,
-  renderAppCampaignsPage,
   renderAppContactsPage,
-  renderAppInboxPage,
   renderAppInvoicesPage,
-  renderAppReportsPage,
   renderAppSettingsPage,
   renderAppSupportPage,
   renderAppTemplatesPage,
 } from "../views/app-ui/app-section-pages.js";
+import { listCampaignsByCompany } from "../services/smsCampaignService.js";
+import { listPanelMessagesByCompany } from "../services/panelSmsMessageService.js";
+import { getClientSmsReportData } from "../services/smsPanelReportsService.js";
+import { sendMockSms } from "../services/smsSendService.js";
+import { AppError } from "../utils/errors.js";
 
 function flash(req: Request): { flash?: string; error?: string } {
   return {
@@ -206,7 +213,55 @@ export async function getAppSendSms(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  await withAppContext(req, res, next, (ctx) => renderAppSendSmsPage(ctx));
+  await withAppContext(req, res, next, async (ctx) => {
+    const error =
+      typeof req.query.error === "string" ? req.query.error : undefined;
+    return renderAppSendSmsPage(ctx, { error });
+  });
+}
+
+export async function postAppSendSms(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await buildAppContext(req);
+    if (!ctx) {
+      res.redirect("/app/send-sms?error=Empresa%20no%20asociada");
+      return;
+    }
+
+    if (!canOperateClientPanel(ctx.profile.role)) {
+      res.redirect(
+        "/app/send-sms?error=No%20tienes%20permiso%20para%20enviar%20SMS",
+      );
+      return;
+    }
+
+    const result = await sendMockSms({
+      companyId: ctx.company.id,
+      senderId: String(req.body?.sender_id ?? ""),
+      to: String(req.body?.to ?? ""),
+      message: String(req.body?.message ?? ""),
+      campaignName:
+        typeof req.body?.campaign_name === "string"
+          ? req.body.campaign_name
+          : undefined,
+      createdBy:
+        ctx.profile.profileId ?? ctx.profile.adminUserId ?? undefined,
+    });
+
+    const html = renderAppSendSmsPage(ctx, { sendResult: result });
+    res.type("html").send(html);
+  } catch (error) {
+    const msg =
+      error instanceof AppError
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : "No se pudo enviar el SMS simulado";
+    res.redirect(`/app/send-sms?error=${encodeURIComponent(msg)}`);
+  }
 }
 
 export async function getAppCampaigns(
@@ -214,7 +269,10 @@ export async function getAppCampaigns(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  await withAppContext(req, res, next, (ctx) => renderAppCampaignsPage(ctx));
+  await withAppContext(req, res, next, async (ctx) => {
+    const campaigns = await listCampaignsByCompany(ctx.company.id, 100);
+    return renderAppCampaignsPage(ctx, campaigns);
+  });
 }
 
 export async function getAppInbox(
@@ -222,7 +280,10 @@ export async function getAppInbox(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  await withAppContext(req, res, next, (ctx) => renderAppInboxPage(ctx));
+  await withAppContext(req, res, next, async (ctx) => {
+    const messages = await listPanelMessagesByCompany(ctx.company.id, 100);
+    return renderAppInboxPage(ctx, messages);
+  });
 }
 
 export async function getAppContacts(
@@ -246,7 +307,10 @@ export async function getAppReports(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  await withAppContext(req, res, next, (ctx) => renderAppReportsPage(ctx));
+  await withAppContext(req, res, next, async (ctx) => {
+    const report = await getClientSmsReportData(ctx.company.id);
+    return renderAppReportsPage(ctx, report);
+  });
 }
 
 export async function getAppInvoices(

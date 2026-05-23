@@ -3,6 +3,8 @@ import { getBootstrapStatus } from "../config/bootstrap-status.js";
 import { env } from "../config/env.js";
 import { getBalanceByClientId } from "../services/balanceService.js";
 import { getTestClientBundle } from "../services/clientService.js";
+import { listAllCampaignsWithCompany } from "../services/smsCampaignService.js";
+import { listAllPanelMessagesWithCompany } from "../services/panelSmsMessageService.js";
 import {
   renderSaApiKeysPage,
   renderSaCampaignsPage,
@@ -47,8 +49,50 @@ function saPage(
 }
 
 export const getSaClientsPage = saPage(renderSaClientsPage);
-export const getSaCampaignsPage = saPage(renderSaCampaignsPage);
-export const getSaMessagesPage = saPage(renderSaMessagesPage);
+
+export async function getSaCampaignsPage(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const smsBalance = await loadGlobalSmsHint();
+    const campaigns = await listAllCampaignsWithCompany(150);
+    res
+      .type("html")
+      .send(
+        renderSaCampaignsPage({
+          admin: req.adminUser!,
+          smsBalance,
+          campaigns,
+        }),
+      );
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getSaMessagesPage(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const smsBalance = await loadGlobalSmsHint();
+    const messages = await listAllPanelMessagesWithCompany(150);
+    res
+      .type("html")
+      .send(
+        renderSaMessagesPage({
+          admin: req.adminUser!,
+          smsBalance,
+          messages,
+        }),
+      );
+  } catch (error) {
+    next(error);
+  }
+}
 export const getSaDlrPage = saPage(renderSaDlrPage);
 export const getSaProvidersPage = saPage(renderSaProvidersPage);
 export const getSaRoutesPage = saPage(renderSaRoutesPage);

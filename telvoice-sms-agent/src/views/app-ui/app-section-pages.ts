@@ -25,21 +25,11 @@ function comingSoon(
   return wrapAppPage(ctx, activeNav, title, body);
 }
 
-export function renderAppCampaignsPage(ctx: AppPageContext): string {
-  return comingSoon(ctx, "campaigns", "Campañas", "Tus campañas de SMS masivo.", "campaign", [
-    "Crear y programar campañas",
-    "Estados de envío por campaña",
-    "Sin acceso a rutas ni proveedores internos",
-  ]);
-}
-
-export function renderAppInboxPage(ctx: AppPageContext): string {
-  return comingSoon(ctx, "inbox", "Bandeja", "Mensajes y respuestas de tu empresa.", "inbox", [
-    "Conversaciones entrantes",
-    "Historial por destinatario",
-    "Vinculado a campañas propias",
-  ]);
-}
+export {
+  renderAppCampaignsPage,
+  renderAppInboxPage,
+  renderAppReportsPage,
+} from "./app-sms-pages.js";
 
 export function renderAppContactsPage(ctx: AppPageContext): string {
   return comingSoon(ctx, "contacts", "Contactos", "Tus listas y contactos.", "contacts", [
@@ -54,14 +44,6 @@ export function renderAppTemplatesPage(ctx: AppPageContext): string {
     "Plantillas con variables",
     "Vista previa móvil",
     "Reutilizar en campañas",
-  ]);
-}
-
-export function renderAppReportsPage(ctx: AppPageContext): string {
-  return comingSoon(ctx, "reports", "Reportes", "Métricas de entrega y consumo.", "bar_chart", [
-    "Tasa de entrega",
-    "SMS consumidos por período",
-    "Sin datos globales de Telvoice",
   ]);
 }
 

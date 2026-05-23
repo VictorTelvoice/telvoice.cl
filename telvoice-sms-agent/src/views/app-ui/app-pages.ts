@@ -137,41 +137,4 @@ export function renderAppWalletPage(
   return wrapAppPage(ctx, "wallet", "Mi saldo", body);
 }
 
-export function renderAppSendSmsPage(ctx: AppPageContext): string {
-  const avail = ctx.balance.availableSms;
-  const body = `
-    ${renderPageHeader({
-      title: "Enviar SMS",
-      subtitle: "Preparado para envíos individuales y campañas (activación próxima).",
-    })}
-    <div class="tv-tabs" role="tablist" data-tv-tab-group="send">
-      <button type="button" class="tv-tab tv-tab--active" data-tv-tab="single" data-tv-tab-group="send">SMS individual</button>
-      <button type="button" class="tv-tab" data-tv-tab="bulk" data-tv-tab-group="send">Campaña masiva</button>
-      <button type="button" class="tv-tab" data-tv-tab="template" data-tv-tab-group="send">Desde plantilla</button>
-      <button type="button" class="tv-tab" data-tv-tab="scheduled" data-tv-tab-group="send">Programado</button>
-    </div>
-    <div class="tv-dash-grid tv-dash-grid--2" style="margin-top:1rem">
-      <section class="tv-panel">
-        <h2 class="tv-panel__title">Mensaje</h2>
-        <div class="tv-panel__body tv-form-grid">
-          <label>Remitente <input class="tv-input-full" value="TELVOICE" disabled /></label>
-          <label>Destinatario <input class="tv-input-full" placeholder="+56912345678" disabled /></label>
-          <label>Lista <select class="tv-input-full" disabled><option>— Próximamente —</option></select></label>
-          <label>Mensaje <textarea class="tv-input-full" rows="4" disabled placeholder="Escribe tu mensaje…"></textarea></label>
-          <label>Variables <input class="tv-input-full" placeholder="{{nombre}}" disabled /></label>
-          <p class="field-hint">Costo estimado: — · Saldo después del envío: ${fmtSms(avail)} SMS (sin descuento en esta etapa)</p>
-          <button type="button" class="btn btn-primary" disabled>Enviar SMS</button>
-        </div>
-        <div class="tv-send-disabled-note">
-          El envío real se activará cuando Telvoice habilite tu cuenta para campañas.
-        </div>
-      </section>
-      <section class="tv-panel">
-        <h2 class="tv-panel__title">Vista previa móvil</h2>
-        <div class="tv-panel__body">
-          <div class="tv-mobile-preview">TELVOICE<br/><br/>Hola, tu mensaje aparecerá aquí.</div>
-        </div>
-      </section>
-    </div>`;
-  return wrapAppPage(ctx, "send-sms", "Enviar SMS", body);
-}
+export { renderAppSendSmsPage } from "./app-sms-pages.js";
