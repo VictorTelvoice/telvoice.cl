@@ -67,8 +67,9 @@ En cada push a `main` que toque `telvoice-sms-agent/**` o el propio workflow:
    - Restaura `.env`
    - `npm ci` → `npm run build`
    - `pm2 restart telvoice-sms-agent` (o `pm2 start` si no existe)
-   - `curl` a `http://127.0.0.1:3001/health`
-4. Desde GitHub, reintenta `https://agent.telvoice.cl/health`.
+   - Espera 3 s tras `pm2 restart`, luego hasta **10 intentos** (cada 3 s) a `http://127.0.0.1:PORT/health` (default puerto `3001`, leído de `.env` si existe `PORT=`).
+4. Paso aparte en GitHub: hasta 10 intentos a `https://agent.telvoice.cl/health`.
+5. Si falla el health local, el workflow imprime `pm2 status`, `pm2 logs` (80 líneas) y `curl -v` sin secretos.
 
 El `.env` de producción **no** se sobrescribe ni se commitea.
 

@@ -130,22 +130,55 @@ jobs:
             echo "=== PM2 ==="
             pm2 list | head -8
 
-            echo "=== Health ==="
-            curl -sf http://127.0.0.1:3001/health
-            echo ""
+            HEALTH_PORT=3001
+            if [ -f "$APP_PATH/.env" ]; then
+              env_port=$(grep -E '^PORT=' "$APP_PATH/.env" | tail -1 | cut -d= -f2- | tr -d '"' | tr -d "'" || true)
+              if [ -n "$env_port" ]; then HEALTH_PORT="$env_port"; fi
+            fi
+            HEALTH_URL="http://127.0.0.1:${HEALTH_PORT}/health"
+            echo "=== Health local (${HEALTH_URL}) ==="
+            echo "Esperando arranque tras pm2 restart..."
+            sleep 3
+
+            health_ok=0
+            for attempt in $(seq 1 10); do
+              if curl -sf --connect-timeout 5 --max-time 15 "$HEALTH_URL"; then
+                echo ""
+                echo "Health local OK (intento ${attempt}/10)"
+                health_ok=1
+                break
+              fi
+              echo "Health local intento ${attempt}/10 falló; reintento en 3s..."
+              sleep 3
+            done
+
+            if [ "$health_ok" -ne 1 ]; then
+              echo "::error::Health local no respondió tras 10 intentos"
+              echo "=== pm2 status ==="
+              pm2 status || true
+              echo "=== pm2 logs (últimas 80 líneas) ==="
+              pm2 logs telvoice-sms-agent --lines 80 --nostream 2>&1 || true
+              echo "=== curl -v health local (sin credenciales) ==="
+              curl -sv --connect-timeout 5 --max-time 15 "$HEALTH_URL" 2>&1 | head -60 || true
+              exit 1
+            fi
+
             test -f dist/index.js && echo "DEPLOY_OK=dist/index.js"
 
       - name: Verificar health público
         run: |
           set -e
-          for i in 1 2 3 4 5; do
-            if curl -sf https://agent.telvoice.cl/health; then
+          echo "=== Health público (https://agent.telvoice.cl/health) ==="
+          sleep 3
+          for attempt in $(seq 1 10); do
+            if curl -sf --connect-timeout 10 --max-time 20 https://agent.telvoice.cl/health; then
               echo ""
-              echo "Health público OK"
+              echo "Health público OK (intento ${attempt}/10)"
               exit 0
             fi
-            echo "Reintento $i/5..."
+            echo "Health público intento ${attempt}/10 falló; reintento en 3s..."
             sleep 3
           done
-          echo "::warning::No se pudo verificar https://agent.telvoice.cl/health desde GitHub (el deploy remoto puede haber sido exitoso)."
-          exit 0
+          echo "::error::Health público no respondió tras 10 intentos"
+          curl -sv --connect-timeout 10 --max-time 20 https://agent.telvoice.cl/health 2>&1 | head -40 || true
+          exit 1
