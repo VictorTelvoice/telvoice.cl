@@ -21,6 +21,12 @@ const COUNTABLE_LIVE_TEST_STATUSES = [
   "accepted",
 ] as const;
 
+/** Cuota diaria /app: solo envíos desde panel cliente. */
+export const APP_CLIENT_LIVE_TEST_SOURCE = "app_send_sms_live_test";
+
+/** Pruebas técnicas Superadmin; no consumen cuota del cliente. */
+export const SUPERADMIN_LIVE_TEST_SOURCE = "superadmin_provider_test";
+
 export type LiveTestLimiterConfig = {
   dailyLimit: number;
   minSecondsBetweenSends: number;
@@ -59,8 +65,12 @@ export type LiveTestControlPanelView = {
   maskedCompanyIds: string[];
   allowedNumbersCount: number;
   maskedNumbers: string[];
-  todayLiveTestMessages: number;
-  todayLiveTestSms: number;
+  todayClientLiveTestMessages: number;
+  todayClientLiveTestSms: number;
+  todaySuperadminLiveTestMessages: number;
+  todaySuperadminLiveTestSms: number;
+  todayGlobalLiveTestMessages: number;
+  todayGlobalLiveTestSms: number;
   recentLiveTests: Array<{
     id: string;
     companyId: string;
@@ -119,6 +129,7 @@ export async function countDailyLiveTestMessages(
     .select("id", { count: "exact", head: true })
     .eq("company_id", companyId)
     .eq("mode", "live_test")
+    .filter("metadata->>source", "eq", APP_CLIENT_LIVE_TEST_SOURCE)
     .in("status", [...COUNTABLE_LIVE_TEST_STATUSES])
     .gte("created_at", startOfTodayUtcIso());
 
@@ -140,6 +151,7 @@ async function getLastCountableLiveTestAt(
     .select("created_at")
     .eq("company_id", companyId)
     .eq("mode", "live_test")
+    .filter("metadata->>source", "eq", APP_CLIENT_LIVE_TEST_SOURCE)
     .in("status", [...COUNTABLE_LIVE_TEST_STATUSES])
     .order("created_at", { ascending: false })
     .limit(1)
@@ -372,7 +384,7 @@ export async function getLiveTestControlPanelView(): Promise<LiveTestControlPane
   const start = startOfTodayUtcIso();
   const { data: todayRows, error: todayError } = await getSupabase()
     .from("panel_sms_messages")
-    .select("id, cost_sms")
+    .select("id, cost_sms, metadata")
     .eq("mode", "live_test")
     .in("status", [...COUNTABLE_LIVE_TEST_STATUSES])
     .gte("created_at", start);
@@ -381,7 +393,22 @@ export async function getLiveTestControlPanelView(): Promise<LiveTestControlPane
     wrapSupabaseError(todayError, "getLiveTestControlPanelView.today");
   }
 
-  const today = (todayRows ?? []) as Pick<PanelSmsMessageRow, "id" | "cost_sms">[];
+  const today = (todayRows ?? []) as Pick<
+    PanelSmsMessageRow,
+    "id" | "cost_sms" | "metadata"
+  >[];
+
+  const sourceOf = (row: (typeof today)[number]): string | null => {
+    const src = row.metadata?.source;
+    return typeof src === "string" ? src : null;
+  };
+
+  const clientToday = today.filter(
+    (r) => sourceOf(r) === APP_CLIENT_LIVE_TEST_SOURCE,
+  );
+  const superadminToday = today.filter(
+    (r) => sourceOf(r) === SUPERADMIN_LIVE_TEST_SOURCE,
+  );
 
   const { data: recent, error: recentError } = await getSupabase()
     .from("panel_sms_messages")
@@ -419,8 +446,18 @@ export async function getLiveTestControlPanelView(): Promise<LiveTestControlPane
     maskedCompanyIds: companyIds.map(maskCompanyId),
     allowedNumbersCount: numbers.length,
     maskedNumbers: numbers.map(maskPhoneForDisplay),
-    todayLiveTestMessages: today.length,
-    todayLiveTestSms: today.reduce((s, r) => s + (r.cost_sms ?? 0), 0),
+    todayClientLiveTestMessages: clientToday.length,
+    todayClientLiveTestSms: clientToday.reduce(
+      (s, r) => s + (r.cost_sms ?? 0),
+      0,
+    ),
+    todaySuperadminLiveTestMessages: superadminToday.length,
+    todaySuperadminLiveTestSms: superadminToday.reduce(
+      (s, r) => s + (r.cost_sms ?? 0),
+      0,
+    ),
+    todayGlobalLiveTestMessages: today.length,
+    todayGlobalLiveTestSms: today.reduce((s, r) => s + (r.cost_sms ?? 0), 0),
     recentLiveTests,
   };
 }

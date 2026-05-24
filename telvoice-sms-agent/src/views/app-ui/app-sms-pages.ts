@@ -64,7 +64,7 @@ export function renderAppSendSmsPage(
           Este modo envía SMS reales usando rutas autorizadas por Telvoice. Está limitado para pruebas operativas.
         </p>
         <ul style="margin:0.5rem 0 0;padding-left:1.2rem;font-size:0.9rem">
-          <li><strong>Límite diario disponible:</strong> <span id="tv-lt-daily">${lt.dailyRemaining}</span> / ${lt.dailyLimit}</li>
+          <li><strong>Límite diario cliente:</strong> <span id="tv-lt-daily">${lt.dailyRemaining}</span> / ${lt.dailyLimit} disponibles <span class="field-hint">(no incluye pruebas Superadmin)</span></li>
           <li><strong>Segmentos máximos:</strong> ${lt.maxSegments}</li>
           <li><strong>Número autorizado:</strong> ${
             lt.maskedNumbers.length

@@ -86,7 +86,9 @@ export function renderSaProvidersPage(opts: BaseOpts & {
         <div><dt style="font-weight:600">Límite diario</dt><dd>${lt.dailyLimit} SMS / empresa</dd></div>
         <div><dt style="font-weight:600">Intervalo mínimo</dt><dd>${lt.minSecondsBetweenSends} s</dd></div>
         <div><dt style="font-weight:600">Segmentos máx.</dt><dd>${lt.maxSegments}</dd></div>
-        <div><dt style="font-weight:600">Consumo live_test hoy</dt><dd>${lt.todayLiveTestMessages} mensaje(s) · ${lt.todayLiveTestSms} SMS</dd></div>
+        <div><dt style="font-weight:600">Live test cliente hoy</dt><dd>${lt.todayClientLiveTestMessages} mensaje(s) · ${lt.todayClientLiveTestSms} SMS <span class="field-hint">(solo <code>app_send_sms_live_test</code>)</span></dd></div>
+        <div><dt style="font-weight:600">Pruebas técnicas Superadmin hoy</dt><dd>${lt.todaySuperadminLiveTestMessages} mensaje(s) · ${lt.todaySuperadminLiveTestSms} SMS</dd></div>
+        <div><dt style="font-weight:600">Total live_test global hoy</dt><dd>${lt.todayGlobalLiveTestMessages} mensaje(s) · ${lt.todayGlobalLiveTestSms} SMS <span class="field-hint">(informativo)</span></dd></div>
       </div>
       ${
         lt.recentLiveTests.length

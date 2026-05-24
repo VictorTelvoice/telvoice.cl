@@ -58,7 +58,7 @@ Servicio: `src/services/smsLiveTestLimiterService.ts`
 - Solo empresas y números en listas de env.
 - 1 destinatario por envío (panel individual).
 - Máx. segmentos según `SMS_LIVE_TEST_MAX_SEGMENTS`.
-- Máx. envíos diarios por empresa (`mode=live_test`, estados `sent`, `delivered`, `pending`, `accepted`).
+- Máx. envíos diarios por empresa en `/app`: solo `metadata.source=app_send_sms_live_test` (estados `sent`, `delivered`, `pending`, `accepted`). No cuenta `superadmin_provider_test`.
 - Mínimo 60 s entre envíos reales por empresa.
 - Empresa y wallet en estado `active`.
 - Rate plan y ruta activos; proveedor no `inactive`/`suspended`.
