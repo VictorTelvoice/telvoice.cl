@@ -6,7 +6,16 @@ import type { LiveTestSendPageStatus } from "../../services/smsLiveTestLimiterSe
 import type { SendControlPanelView } from "../../services/smsSendControlPanelService.js";
 import { formatVerifyLastTest } from "../../services/smsSendControlPanelService.js";
 import { escapeHtml } from "../../utils/html.js";
-import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
+import {
+  renderBtn,
+  renderHeroPhonePreview,
+  renderMobilePreview,
+  renderModeCards,
+  renderNotice,
+  renderPageHeader,
+  renderPanel,
+  renderStatChip,
+} from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
 import {
@@ -36,47 +45,53 @@ function renderChecklistItem(ok: boolean, label: string, hint?: string): string 
   </li>`;
 }
 
-function renderVerifyCards(
+function renderVerifyPhoneGrid(
   panel: SendControlPanelView,
   canSend: boolean,
+  defaultVerifyMessage: string,
 ): string {
   if (panel.verifyNumbers.length === 0) {
     return `<div class="tv-verify-empty">
       <p>No hay números de verificación configurados.</p>
-      <p class="field-hint">Telvoice puede registrar líneas telsim.io en <code>TELVOICE_VERIFY_NUMBERS</code> para validar DLR antes de cada campaña.</p>
+      <p class="field-hint">Registra líneas telsim.io en <code>TELVOICE_VERIFY_NUMBERS</code>.</p>
     </div>`;
   }
 
   return panel.verifyNumbers
     .map((v) => {
       const readyCls = v.readyForCampaign
-        ? "tv-verify-card--ready"
-        : "tv-verify-card--pending";
+        ? "tv-verify-phone-col--ready"
+        : "tv-verify-phone-col--pending";
       const disabled = canSend ? "" : "disabled";
-      const channelBadge =
-        v.entry.channel === "telsim"
-          ? `<span class="badge badge-ok">telsim.io</span>`
-          : `<span class="badge badge-muted">manual</span>`;
-      return `<article class="tv-verify-card ${readyCls}">
-        <header class="tv-verify-card__head">
-          <div>
-            <strong class="tv-verify-card__operator">${escapeHtml(v.entry.operator)}</strong>
-            <span class="tv-verify-card__label">${escapeHtml(v.entry.label)}</span>
+      const previewMsg =
+        v.lastTest?.message?.trim() || defaultVerifyMessage;
+      const sender = v.lastTest?.sender_id?.trim() || "TELVOICE";
+      return `<article class="tv-verify-phone-col ${readyCls}">
+        <header class="tv-verify-phone-col__head">
+          <div class="tv-verify-phone-col__meta">
+            <strong>${escapeHtml(v.entry.operator)}</strong>
+            <span class="field-hint">${escapeHtml(v.entry.label)} · ${escapeHtml(v.maskedPhone)}</span>
           </div>
-          ${channelBadge}
+          <div class="tv-verify-phone-col__badges">
+            ${renderPanelMessageStatusBadge(v.lastStatus, "live_test")}
+            ${v.entry.channel === "telsim" ? `<span class="badge badge-ok">telsim.io</span>` : ""}
+          </div>
         </header>
-        <p class="tv-verify-card__phone"><code>${escapeHtml(v.maskedPhone)}</code></p>
-        <p class="tv-verify-card__meta">
-          ${renderPanelMessageStatusBadge(v.lastStatus, "live_test")}
-          · ${escapeHtml(formatVerifyLastTest(v.lastTestAt))}
-          ${v.dlrReceived ? " · DLR confirmado" : ""}
+        ${renderHeroPhonePreview({
+          senderLabel: sender,
+          senderSub: "Vía Telvoice A2P",
+          message: previewMsg,
+          compact: true,
+        })}
+        <p class="field-hint tv-verify-phone-col__foot">
+          ${escapeHtml(formatVerifyLastTest(v.lastTestAt))}${v.dlrReceived ? " · DLR confirmado" : ""}
         </p>
-        <form method="post" action="/app/send-sms" class="tv-verify-card__form">
+        <form method="post" action="/app/send-sms" class="tv-verify-phone-col__form">
           <input type="hidden" name="verify_id" value="${escapeHtml(v.entry.id)}" />
           <input type="hidden" name="sender_id" value="TELVOICE" />
           <input type="hidden" name="quick_verify" value="1" />
-          <button type="submit" class="btn btn-sm btn-secondary" ${disabled}>
-            <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:-2px">science</span>
+          <button type="submit" class="btn btn-sm btn-secondary tv-verify-phone-col__btn" ${disabled}>
+            <span class="material-symbols-outlined" aria-hidden="true">science</span>
             Enviar test QA
           </button>
         </form>
@@ -97,6 +112,7 @@ export function renderAppSendSmsPage(
   const lt = opts.liveTestStatus;
   const panel = opts.controlPanel;
   const canSend = lt?.canSelectLiveTest ?? false;
+  const defaultVerifyMsg = panel?.defaultVerifyMessage ?? "";
 
   const verifyPhonesForJs = panel
     ? panel.verifyNumbers.map((v) => v.entry.phone)
@@ -111,63 +127,53 @@ export function renderAppSendSmsPage(
         ? `${lt.dailyRemaining} / ${lt.dailyLimit}`
         : "—";
 
-  const kpiRow =
-    panel && lt
-      ? `<div class="tv-kpi-grid tv-send-kpis">
-      <article class="tv-kpi"><span class="tv-kpi__label">Saldo SMS</span><span class="tv-kpi__value">${fmtSms(avail)}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Ruta activa</span><span class="tv-kpi__value tv-kpi__value--sm">${escapeHtml(lt.routeName ?? "—")}</span><span class="tv-kpi__sub">${escapeHtml(lt.providerName ?? "—")}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Webhook DLR</span><span class="tv-kpi__value tv-kpi__value--sm">${panel.webhookConfigured ? "Activo" : "Sin config"}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Cuota hoy</span><span class="tv-kpi__value tv-kpi__value--sm">${dailyRemaining}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">TPS asignado</span><span class="tv-kpi__value tv-kpi__value--sm">${lt.effectiveTps != null ? `${lt.effectiveTps}` : "—"}</span></article>
-    </div>`
-      : "";
+  const disabledAttr = canSend ? "" : "disabled";
+  const submitDisabled = canSend ? "" : "disabled";
 
-  const preCampaignBanner =
-    panel && panel.verifyNumbers.length > 0 && !panel.allVerifyNumbersReady
-      ? `<div class="alert alert-warn tv-precampaign-banner">
-      <strong>Validación pre-campaña pendiente.</strong>
-      Envía test QA a cada línea telsim y confirma DLR antes de lanzar la campaña masiva.
-    </div>`
-      : panel && panel.allVerifyNumbersReady && panel.verifyNumbers.length > 0
-        ? `<div class="alert tv-precampaign-banner tv-precampaign-banner--ok">
-      <strong>Listo para campaña.</strong> Todas las líneas de verificación respondieron correctamente.
-    </div>`
-        : "";
+  const headerActions = `
+    ${renderBtn("Bandeja", { href: "/app/inbox", variant: "ghost" })}
+    ${renderBtn("Reportes", { href: "/app/reports", variant: "ghost" })}
+    <button type="submit" form="tv-app-send-form" class="tv-btn-campaign" id="tv-header-send-btn" ${submitDisabled}>
+      <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">send</span>
+      Enviar SMS
+    </button>`;
 
-  const successBlock = opts.sendResult
-    ? `<section class="tv-panel tv-panel--hint tv-send-result" style="margin-bottom:1rem;border-color:var(--tv-ok)">
-      <div class="tv-panel__body">
-        <h2 style="margin:0 0 0.5rem;font-size:1.1rem">Envío registrado</h2>
-        <ul style="margin:0;padding-left:1.2rem">
-          <li><strong>Destino:</strong> ${escapeHtml(opts.sendResult.recipientNumber)}</li>
-          <li><strong>Segmentos:</strong> ${opts.sendResult.segments}</li>
-          <li><strong>Saldo:</strong> ${fmtSms(opts.sendResult.balanceBefore)} → ${fmtSms(opts.sendResult.balanceAfter)} SMS</li>
-          <li><strong>Estado:</strong> ${renderPanelMessageStatusBadge(opts.sendResult.status, opts.sendResult.sendMode)}</li>
-          <li><strong>Provider ID:</strong> <code>${escapeHtml(opts.sendResult.providerMessageId || "—")}</code></li>
-        </ul>
-        <p class="field-hint" style="margin:0.75rem 0 0">«Entregado» se actualiza cuando el operador confirma vía webhook DLR.</p>
-        <div class="tv-quick-actions" style="margin-top:1rem">
-          ${renderBtn("Ver bandeja", { href: "/app/inbox", variant: "secondary" })}
-          ${renderBtn("Reportes", { href: "/app/reports", variant: "ghost" })}
-        </div>
-      </div>
-    </section>`
-    : "";
+  const modes = renderModeCards(
+    [
+      {
+        id: "single",
+        label: "SMS individual",
+        description: "Un destinatario, envío inmediato.",
+        icon: "person",
+      },
+      {
+        id: "verify",
+        label: "Verificación telsim",
+        description: "Prueba DLR antes de campaña.",
+        icon: "science",
+      },
+      {
+        id: "mass",
+        label: "Campaña masiva",
+        description: "Listas y envíos programados.",
+        icon: "groups",
+      },
+      {
+        id: "template",
+        label: "Desde plantilla",
+        description: "Mensajes con variables.",
+        icon: "description",
+      },
+    ],
+    "single",
+  );
 
-  const blockHint =
-    lt?.liveTestBlockReason && !canSend
-      ? `<p class="field-hint tv-send-block-reason">${escapeHtml(lt.liveTestBlockReason)}</p>`
-      : "";
-
-  const checklistBlock = panel
-    ? `<section class="tv-panel tv-send-checklist">
-      <h2 class="tv-panel__title">Checklist pre-campaña</h2>
-      <ul class="tv-checklist tv-panel__body">
-        ${panel.checklist.map((c) => renderChecklistItem(c.ok, c.label, c.hint)).join("")}
-      </ul>
-      ${blockHint}
-    </section>`
-    : `<p class="alert alert-error">El envío SMS no está disponible. Verifique credenciales del proveedor y contacte a soporte Telvoice.</p>`;
+  const varChips = ["{{nombre}}", "{{empresa}}"]
+    .map(
+      (v) =>
+        `<button type="button" class="tv-var-chip tv-var-btn" data-var="${escapeHtml(v)}">${escapeHtml(v)}</button>`,
+    )
+    .join("");
 
   const verifySelectOptions = panel
     ? panel.verifyNumbers
@@ -178,101 +184,161 @@ export function renderAppSendSmsPage(
         .join("")
     : "";
 
-  const disabledAttr = canSend ? "" : "disabled";
+  const opsChips =
+    panel && lt
+      ? `<div class="tv-stat-chips tv-stat-chips--ops">
+      ${renderStatChip("Saldo SMS", fmtSms(avail), "success")}
+      ${renderStatChip("Ruta", lt.routeName ?? "—", "primary")}
+      ${renderStatChip("Webhook", panel.webhookConfigured ? "Activo" : "Off", panel.webhookConfigured ? "success" : "warn")}
+      ${renderStatChip("Cuota hoy", dailyRemaining, "default")}
+      ${renderStatChip("TPS", lt.effectiveTps != null ? String(lt.effectiveTps) : "—", "default")}
+    </div>`
+      : "";
 
-  const body = `
-    ${renderPageHeader({
-      title: "Panel de envío SMS",
-      subtitle:
-        "Envío rápido, verificación telsim.io y validación DLR antes de campañas.",
-    })}
-    ${errorBlock}
-    ${kpiRow}
-    ${preCampaignBanner}
-    ${successBlock}
-    <div class="tv-send-layout">
-      <section class="tv-panel tv-send-quick">
-        <h2 class="tv-panel__title">Envío rápido</h2>
-        <form method="post" action="/app/send-sms" class="tv-panel__body tv-form-grid" id="tv-send-sms-form">
-          <label>Nombre de campaña (opcional)
-            <input class="tv-input-full" name="campaign_name" placeholder="Ej. Bienvenida clientes" ${disabledAttr} />
-          </label>
-          <label>Remitente / Sender ID
-            <input class="tv-input-full" name="sender_id" value="TELVOICE" required maxlength="11" ${disabledAttr} />
-          </label>
-          <label>Número destinatario
-            <div class="tv-send-to-row">
-              <input class="tv-input-full" name="to" id="tv-send-to" placeholder="+56912345678" required ${disabledAttr} />
-              ${
-                verifySelectOptions
-                  ? `<select class="tv-input-full tv-send-to-pick" id="tv-verify-pick" ${disabledAttr} aria-label="Elegir línea de verificación">
-                <option value="">Línea telsim…</option>
-                ${verifySelectOptions}
-              </select>`
-                  : ""
-              }
-            </div>
-          </label>
-          <label>Mensaje
-            <textarea class="tv-input-full" name="message" id="tv-sms-message" rows="5" required placeholder="Escribe tu mensaje…" ${disabledAttr}></textarea>
-          </label>
-          <label>Plantillas rápidas
-            <div class="tv-quick-actions">
-              <button type="button" class="btn btn-ghost btn-sm tv-template-btn" data-template="qa">QA pre-campaña</button>
-              <button type="button" class="btn btn-ghost btn-sm tv-template-btn" data-template="dlr">Test DLR</button>
-              <button type="button" class="btn btn-ghost btn-sm tv-var-btn" data-var="{{nombre}}">{{nombre}}</button>
-              <button type="button" class="btn btn-ghost btn-sm tv-var-btn" data-var="{{empresa}}">{{empresa}}</button>
-            </div>
-          </label>
-          <p class="field-hint" id="tv-sms-segment-hint">
-            Caracteres: 0 · GSM-7 · Segmentos: 0 · Costo: 0 SMS · Saldo: ${fmtSms(avail)}
-          </p>
-          <p class="field-hint tv-live-segment-warn" id="tv-live-segment-warn" hidden style="margin:0;color:var(--tv-danger)">
-            El mensaje supera el máximo de segmentos permitido.
-          </p>
-          <p class="field-hint tv-live-number-warn" id="tv-live-number-warn" hidden style="margin:0;color:var(--tv-danger)">
-            El número destino no está autorizado para envío SMS.
-          </p>
-          <button type="submit" class="btn btn-primary btn-lg tv-send-submit" id="tv-send-submit" ${disabledAttr}>
-            <span class="material-symbols-outlined" style="font-size:1.1rem;vertical-align:-3px">send</span>
-            Enviar SMS
-          </button>
-        </form>
-      </section>
-      <aside class="tv-send-aside">
-        ${checklistBlock}
+  const preCampaignBanner =
+    panel && panel.verifyNumbers.length > 0 && !panel.allVerifyNumbersReady
+      ? renderNotice(
+          "Validación pre-campaña pendiente: envía test QA a cada línea telsim y confirma DLR.",
+          "warn",
+        )
+      : panel && panel.allVerifyNumbersReady && panel.verifyNumbers.length > 0
+        ? `<div class="alert tv-precampaign-banner tv-precampaign-banner--ok">
+      <strong>Listo para campaña.</strong> Todas las líneas de verificación respondieron correctamente.
+    </div>`
+        : "";
+
+  const successBlock = opts.sendResult
+    ? `<section class="tv-panel tv-panel--hint tv-send-result">
+      <header class="tv-section-head"><h2 class="tv-section-head__title">Envío registrado</h2></header>
+      <div class="tv-panel__body">
+        <ul class="tv-send-result__list">
+          <li><strong>Destino:</strong> ${escapeHtml(opts.sendResult.recipientNumber)}</li>
+          <li><strong>Segmentos:</strong> ${opts.sendResult.segments}</li>
+          <li><strong>Saldo:</strong> ${fmtSms(opts.sendResult.balanceBefore)} → ${fmtSms(opts.sendResult.balanceAfter)} SMS</li>
+          <li><strong>Estado:</strong> ${renderPanelMessageStatusBadge(opts.sendResult.status, opts.sendResult.sendMode)}</li>
+        </ul>
+        <p class="field-hint">«Entregado» se actualiza cuando el operador confirma vía webhook DLR.</p>
+      </div>
+    </section>`
+    : "";
+
+  const blockHint =
+    lt?.liveTestBlockReason && !canSend
+      ? `<p class="field-hint tv-send-block-reason">${escapeHtml(lt.liveTestBlockReason)}</p>`
+      : "";
+
+  const checklistHtml = panel
+    ? `<ul class="tv-checklist">
+        ${panel.checklist.map((c) => renderChecklistItem(c.ok, c.label, c.hint)).join("")}
+      </ul>
+      ${blockHint}`
+    : `<p class="alert alert-error">El envío SMS no está disponible. Contacte a soporte Telvoice.</p>`;
+
+  const sendForm = !panel
+    ? checklistHtml
+    : `
+    <form method="post" action="/app/send-sms" id="tv-app-send-form" class="tv-send-layout">
+      <div class="tv-send-main">
+        ${modes}
         <section class="tv-panel">
-          <h2 class="tv-panel__title">Vista previa</h2>
           <div class="tv-panel__body">
-            <div class="tv-mobile-preview" id="tv-sms-preview">
-              <strong id="tv-preview-sender">TELVOICE</strong><br/><br/>
-              <span id="tv-preview-body">Hola, tu mensaje aparecerá aquí.</span>
+            <div class="tv-form-grid">
+              <div class="form-group">
+                <label for="campaign_name">Nombre de campaña (opcional)</label>
+                <input id="campaign_name" class="tv-input-full" name="campaign_name" placeholder="Ej. Bienvenida clientes" ${disabledAttr} />
+              </div>
+              <div class="form-group">
+                <label for="sender_id">Remitente / Sender ID</label>
+                <input id="sender_id" class="tv-input-full" name="sender_id" value="TELVOICE" required maxlength="11" ${disabledAttr} />
+              </div>
             </div>
+            <div class="form-group">
+              <label for="tv-send-to">Número destinatario</label>
+              <div class="tv-send-to-row">
+                <input class="tv-input-full" name="to" id="tv-send-to" placeholder="+56912345678" required ${disabledAttr} />
+                ${
+                  verifySelectOptions
+                    ? `<select class="tv-input-full tv-send-to-pick" id="tv-verify-pick" ${disabledAttr} aria-label="Línea telsim">
+                  <option value="">Línea telsim…</option>
+                  ${verifySelectOptions}
+                </select>`
+                    : ""
+                }
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="tv-sms-message">Mensaje SMS</label>
+              <textarea id="tv-sms-message" class="tv-input-full" name="message" rows="5" required placeholder="Escribe tu mensaje…" ${disabledAttr}></textarea>
+              <div class="tv-var-row">
+                <button type="button" class="tv-var-chip tv-template-btn" data-template="qa">QA pre-campaña</button>
+                <button type="button" class="tv-var-chip tv-template-btn" data-template="dlr">Test DLR</button>
+                ${varChips}
+              </div>
+            </div>
+            <p class="field-hint tv-live-segment-warn" id="tv-live-segment-warn" hidden>El mensaje supera el máximo de segmentos permitido.</p>
+            <p class="field-hint tv-live-number-warn" id="tv-live-number-warn" hidden>El número destino no está autorizado.</p>
+            <button type="submit" class="btn btn-primary tv-send-submit" id="tv-send-submit" ${submitDisabled}>Enviar SMS</button>
+          </div>
+        </section>
+        ${renderPanel("Checklist pre-campaña", checklistHtml)}
+      </div>
+      <aside class="tv-send-aside">
+        <section class="tv-panel">
+          <header class="tv-section-head"><h2 class="tv-section-head__title">Validación</h2></header>
+          <div class="tv-panel__body">
+            <div class="tv-stat-chips">
+              ${renderStatChip("Caracteres", "0", "default")}
+              ${renderStatChip("Segmentos", "0", "primary")}
+              ${renderStatChip("Costo est.", "0 SMS", "primary")}
+              ${renderStatChip("Saldo después", fmtSms(avail), "success")}
+              ${renderStatChip("Codificación", "GSM-7", "default")}
+              ${renderStatChip("Saldo actual", fmtSms(avail), "default")}
+            </div>
+            ${renderNotice("Los SMS se descontarán del saldo si el proveedor acepta el envío.")}
             ${
-              panel?.webhookConfigured
+              panel.webhookConfigured
                 ? `<p class="field-hint tv-webhook-hint"><code>${escapeHtml(panel.webhookUrl)}</code></p>`
-                : `<p class="field-hint tv-webhook-hint tv-webhook-hint--warn">Configure PUBLIC_WEBHOOK_BASE_URL para recibir DLR.</p>`
+                : `<p class="field-hint tv-webhook-hint tv-webhook-hint--warn">Configure PUBLIC_WEBHOOK_BASE_URL para DLR.</p>`
             }
           </div>
         </section>
+        <section class="tv-panel">
+          <header class="tv-section-head"><h2 class="tv-section-head__title">Vista previa móvil</h2></header>
+          <div class="tv-panel__body tv-panel__body--center">
+            ${renderMobilePreview("TELVOICE", "Hola, tu mensaje aparecerá aquí.")}
+          </div>
+        </section>
       </aside>
-    </div>
-    <section class="tv-panel tv-verify-section">
-      <div class="tv-verify-section__head">
-        <h2 class="tv-panel__title">Verificación telsim.io</h2>
-        <p class="field-hint">Prueba cada operador y confirma entrega vía webhook antes de la campaña.</p>
-      </div>
-      <div class="tv-verify-grid tv-panel__body">
-        ${panel ? renderVerifyCards(panel, canSend) : ""}
+    </form>`;
+
+  const body = `
+    <div class="tv-app-send-page">
+    ${renderPageHeader({
+      title: "Enviar SMS",
+      subtitle: "Envío unitario, verificación telsim.io y validación DLR antes de campañas.",
+      actions: panel ? headerActions : undefined,
+    })}
+    ${errorBlock}
+    ${opsChips}
+    ${preCampaignBanner}
+    ${successBlock}
+    ${sendForm}
+    <section class="tv-panel tv-verify-section" id="tv-verify-section">
+      <header class="tv-section-head">
+        <h2 class="tv-section-head__title">Verificación telsim.io</h2>
+        <p class="tv-section-head__sub">Cada línea en un dispositivo de prueba — confirma entrega vía webhook.</p>
+      </header>
+      <div class="tv-panel__body">
+        <div class="tv-verify-phones-grid">
+          ${panel ? renderVerifyPhoneGrid(panel, canSend, defaultVerifyMsg) : ""}
+        </div>
       </div>
     </section>
+    </div>
     <script>
     (function(){
       var ta = document.getElementById('tv-sms-message');
-      var hint = document.getElementById('tv-sms-segment-hint');
-      var previewBody = document.getElementById('tv-preview-body');
-      var previewSender = document.getElementById('tv-preview-sender');
-      var senderInput = document.querySelector('input[name="sender_id"]');
+      var senderInput = document.getElementById('sender_id');
       var toInput = document.getElementById('tv-send-to');
       var verifyPick = document.getElementById('tv-verify-pick');
       var avail = ${avail};
@@ -280,19 +346,19 @@ export function renderAppSendSmsPage(
       var canSend = ${canSend ? "true" : "false"};
       var numbersRestricted = ${lt?.authorizedNumbersConfigured ? "true" : "false"};
       var allowedLiveNumbers = ${JSON.stringify(allowedLiveNumbers)};
-      var defaultVerifyMsg = ${JSON.stringify(panel?.defaultVerifyMessage ?? "")};
+      var defaultVerifyMsg = ${JSON.stringify(defaultVerifyMsg)};
       var templateQa = defaultVerifyMsg;
-      var templateDlr = '[Telvoice DLR] Test entrega ' + new Date().toISOString().slice(0,16).replace('T',' ') + '. Responda OK si recibio.';
+      var templateDlr = '[Telvoice DLR] Test entrega ' + new Date().toISOString().slice(0,16).replace('T',' ') + '.';
       function gsmBasic(ch){ return /^[@£$¥èéùìòÇ\\nØø\\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&'()*+,\\-./0-9:;<=>?¡A-Za-zäöñüà^{}\\\\\\[\\]~|€]*$/.test(ch); }
       function calc(text){
         var chars = [...text].length;
         if(!chars) return {chars:0,enc:'GSM-7',seg:0,cost:0};
         if(gsmBasic(text)){
           if(chars<=160) return {chars:chars,enc:'GSM-7',seg:1,cost:1};
-          var s=Math.ceil(chars/153); return {chars:chars,enc:'GSM-7',seg:s,cost:s};
+          return {chars:chars,enc:'GSM-7',seg:Math.ceil(chars/153),cost:Math.ceil(chars/153)};
         }
         if(chars<=70) return {chars:chars,enc:'UCS-2',seg:1,cost:1};
-        var u=Math.ceil(chars/67); return {chars:chars,enc:'UCS-2',seg:u,cost:u};
+        return {chars:chars,enc:'UCS-2',seg:Math.ceil(chars/67),cost:Math.ceil(chars/67)};
       }
       function normalizePhoneDigits(v){
         var d = (v || '').replace(/\\D/g,'');
@@ -312,21 +378,38 @@ export function renderAppSendSmsPage(
           return a === digits || a === digits.replace(/^\\+/,'');
         });
       }
+      function setChip(label, value){
+        document.querySelectorAll('.tv-stat-chip').forEach(function(chip){
+          var l = chip.querySelector('.tv-stat-chip__label');
+          var val = chip.querySelector('.tv-stat-chip__value');
+          if(l && val && l.textContent === label) val.textContent = value;
+        });
+      }
       function refresh(){
-        var t = ta ? ta.value : '';
+        if(!ta) return;
+        var t = ta.value || '';
         var c = calc(t);
         var after = Math.max(0, avail - c.cost);
-        if(hint) hint.textContent = 'Caracteres: '+c.chars+' · '+c.enc+' · Segmentos: '+c.seg+' · Costo: '+c.cost+' SMS · Saldo: '+avail.toLocaleString('es-CL')+' · Después: '+after.toLocaleString('es-CL');
-        if(previewBody) previewBody.textContent = t || 'Hola, tu mensaje aparecerá aquí.';
-        if(previewSender && senderInput) previewSender.textContent = senderInput.value || 'TELVOICE';
+        setChip('Caracteres', String(c.chars));
+        setChip('Segmentos', String(c.seg));
+        setChip('Costo est.', c.cost + ' SMS');
+        setChip('Saldo después', after.toLocaleString('es-CL'));
+        setChip('Codificación', c.enc);
+        var bubble = document.querySelector('.tv-phone__bubble');
+        var phoneHeader = document.querySelector('.tv-phone__header');
+        if(bubble) bubble.textContent = t || 'Hola, tu mensaje aparecerá aquí.';
+        if(phoneHeader && senderInput) phoneHeader.textContent = senderInput.value || 'TELVOICE';
         var overSeg = c.seg > maxLiveSegments;
+        var numOk = isRecipientAllowed();
         var segWarn = document.getElementById('tv-live-segment-warn');
         var numWarn = document.getElementById('tv-live-number-warn');
         var submitBtn = document.getElementById('tv-send-submit');
-        var numOk = isRecipientAllowed();
+        var headerBtn = document.getElementById('tv-header-send-btn');
         if(segWarn) segWarn.hidden = !overSeg;
         if(numWarn) numWarn.hidden = numOk || (!numbersRestricted && allowedLiveNumbers.length === 0);
-        if(submitBtn && canSend) submitBtn.disabled = overSeg || !numOk;
+        var disabled = overSeg || !numOk;
+        if(submitBtn && canSend) submitBtn.disabled = disabled;
+        if(headerBtn && canSend) headerBtn.disabled = disabled;
       }
       if(verifyPick && toInput){
         verifyPick.addEventListener('change', function(){
@@ -334,7 +417,6 @@ export function renderAppSendSmsPage(
           refresh();
         });
       }
-      if(senderInput){ senderInput.addEventListener('input', refresh); }
       document.querySelectorAll('.tv-var-btn').forEach(function(btn){
         btn.addEventListener('click', function(){
           if(!ta) return;
@@ -346,17 +428,28 @@ export function renderAppSendSmsPage(
       document.querySelectorAll('.tv-template-btn').forEach(function(btn){
         btn.addEventListener('click', function(){
           if(!ta) return;
-          var kind = btn.getAttribute('data-template');
-          ta.value = kind === 'dlr' ? templateDlr : templateQa;
+          ta.value = btn.getAttribute('data-template') === 'dlr' ? templateDlr : templateQa;
           ta.focus();
           refresh();
         });
       });
-      if(toInput){ toInput.addEventListener('input', refresh); }
-      if(ta){ ta.addEventListener('input', refresh); }
-      refresh();
+      document.querySelectorAll('[data-tv-send-mode]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var id = btn.getAttribute('data-tv-send-mode');
+          if(id === 'verify') {
+            var el = document.getElementById('tv-verify-section');
+            if(el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+          if(id === 'mass') window.location.href = '/app/campaigns';
+          if(id === 'template') window.location.href = '/app/templates';
+        });
+      });
+      if(senderInput) senderInput.addEventListener('input', refresh);
+      if(toInput) toInput.addEventListener('input', refresh);
+      if(ta){ ta.addEventListener('input', refresh); refresh(); }
     })();
     </script>`;
+
   return wrapAppPage(ctx, "send-sms", "Enviar SMS", body);
 }
 

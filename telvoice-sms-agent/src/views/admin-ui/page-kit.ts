@@ -109,6 +109,40 @@ export function renderMobilePreview(sender: string, message: string): string {
   </div>`;
 }
 
+/** Mockup estilo hero landing (telvoice.cl) — pantalla con notch y burbuja SMS. */
+export function renderHeroPhonePreview(options: {
+  senderLabel: string;
+  senderSub?: string;
+  message: string;
+  bubbleId?: string;
+  compact?: boolean;
+}): string {
+  const msg = options.message.trim() || "Hola, tu mensaje aparecerá aquí.";
+  const compactCls = options.compact ? " tv-hero-phone--compact" : "";
+  const bubbleAttr = options.bubbleId
+    ? ` id="${escapeHtml(options.bubbleId)}"`
+    : "";
+  const initial = (options.senderLabel.charAt(0) || "T").toUpperCase();
+  const sub = options.senderSub
+    ? `<div class="tv-hero-phone__app-sub">${escapeHtml(options.senderSub)}</div>`
+    : "";
+  return `<div class="tv-hero-phone${compactCls}">
+    <div class="tv-hero-phone__notch" aria-hidden="true"></div>
+    <div class="tv-hero-phone__screen">
+      <div class="tv-hero-phone__app-head">
+        <div class="tv-hero-phone__avatar" aria-hidden="true">${escapeHtml(initial)}</div>
+        <div>
+          <div class="tv-hero-phone__app-title">${escapeHtml(options.senderLabel)}</div>
+          ${sub}
+        </div>
+      </div>
+      <div class="tv-hero-phone__messages">
+        <div class="tv-hero-phone__bubble tv-hero-phone__bubble--in"${bubbleAttr}>${escapeHtml(msg)}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
 export function renderStatusBadgeLabel(status: string): string {
   const map: Record<string, string> = {
     delivered: "Entregado",
