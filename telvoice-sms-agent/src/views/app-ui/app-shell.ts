@@ -5,7 +5,11 @@ import {
   renderSidebarBrand,
 } from "../brand.js";
 import { getAdminStyles } from "../admin-ui/styles.js";
-import { APP_NAV } from "./app-nav.js";
+import {
+  APP_NAV_PRIMARY,
+  APP_NAV_REST,
+  APP_NAV_SEND_SMS,
+} from "./app-nav.js";
 import { getAppPanelStyles } from "./app-styles.js";
 
 export type AppLayoutTopbar = {
@@ -31,14 +35,32 @@ function userInitials(name: string): string {
   return (name.trim()[0] ?? "U").toUpperCase();
 }
 
-function renderNavLinks(active: string): string {
-  return APP_NAV.map((item) => {
-    const isActive = active === item.id;
-    return `<a href="${item.href}" class="tv-nav-link${isActive ? " tv-nav-link--active" : ""}"${isActive ? ' aria-current="page"' : ""}>
+function renderNavLink(item: { id: string; label: string; href: string; icon: string }, active: string, extraClass = ""): string {
+  const isActive = active === item.id;
+  return `<a href="${item.href}" class="tv-nav-link${extraClass}${isActive ? " tv-nav-link--active" : ""}"${isActive ? ' aria-current="page"' : ""}>
       <span class="material-symbols-outlined" aria-hidden="true">${escapeHtml(item.icon)}</span>
       ${escapeHtml(item.label)}
     </a>`;
-  }).join("");
+}
+
+function renderNavSendCta(active: string): string {
+  const item = APP_NAV_SEND_SMS;
+  const isActive = active === item.id;
+  return `<a href="${item.href}" class="tv-nav-send-cta${isActive ? " tv-nav-send-cta--active" : ""}"${isActive ? ' aria-current="page"' : ""}>
+      <span class="tv-nav-send-cta__icon" aria-hidden="true">
+        <span class="material-symbols-outlined">${escapeHtml(item.icon)}</span>
+      </span>
+      <span class="tv-nav-send-cta__label">${escapeHtml(item.label)}</span>
+    </a>`;
+}
+
+function renderNavLinks(active: string): string {
+  const primary = APP_NAV_PRIMARY.map((item) => renderNavLink(item, active)).join("");
+  const rest = APP_NAV_REST.map((item) => renderNavLink(item, active)).join("");
+  return `${renderNavSendCta(active)}
+    <div class="tv-sidebar__nav-group">${primary}</div>
+    <div class="tv-sidebar__nav-divider" role="presentation"></div>
+    <div class="tv-sidebar__nav-group tv-sidebar__nav-group--secondary">${rest}</div>`;
 }
 
 function renderSidebar(active: string): string {

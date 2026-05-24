@@ -10,6 +10,66 @@ export function getAppPanelStyles(): string {
       color: #7dd3fc;
       font-weight: 600;
     }
+    .tv-app-client .tv-sidebar__nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding: 0.5rem 0.75rem 1rem;
+    }
+    .tv-app-client .tv-sidebar__nav-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+    .tv-app-client .tv-sidebar__nav-divider {
+      height: 1px;
+      margin: 0.5rem 0.35rem;
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .tv-app-client .tv-nav-send-cta {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 0.25rem 0 0.65rem;
+      padding: 0.85rem 1rem;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #0a2458;
+      background: linear-gradient(135deg, #fef08a 0%, #facc15 45%, #38bdf8 100%);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    }
+    .tv-app-client .tv-nav-send-cta:hover {
+      text-decoration: none;
+      color: #0a2458;
+      transform: translateY(-1px);
+      filter: brightness(1.03);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    }
+    .tv-app-client .tv-nav-send-cta--active {
+      outline: 2px solid #fff;
+      outline-offset: 2px;
+    }
+    .tv-app-client .tv-nav-send-cta__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 10px;
+      background: rgba(10, 36, 88, 0.12);
+    }
+    .tv-app-client .tv-nav-send-cta__icon .material-symbols-outlined {
+      font-size: 1.35rem;
+      color: #0a2458;
+    }
+    .tv-app-client .tv-nav-send-cta__label {
+      flex: 1;
+      letter-spacing: -0.01em;
+    }
     .tv-app-client .tv-sidebar__badge {
       display: inline-block;
       margin-top: 0.35rem;
