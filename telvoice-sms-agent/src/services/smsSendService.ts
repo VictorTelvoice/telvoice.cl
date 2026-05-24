@@ -141,7 +141,7 @@ export async function sendMockSms(
     realSmsCost: 0,
     mode: "mock",
     createdBy: input.createdBy ?? null,
-    metadata: { source: "app_send_sms", mode: "mock" },
+    metadata: { source: "app_send_sms_mock", mode: "mock" },
   });
 
   const pendingMessage = await createPanelSmsMessage({
@@ -155,6 +155,7 @@ export async function sendMockSms(
     status: "queued",
     mode: "mock",
     metadata: {
+      source: "app_send_sms_mock",
       mode: "mock",
       encoding: segmentInfo.encoding,
       characters: segmentInfo.characters,
@@ -226,6 +227,7 @@ export async function sendMockSms(
     sent_at: new Date().toISOString(),
     delivered_at: new Date().toISOString(),
     metadata: {
+      source: "app_send_sms_mock",
       mode: "mock",
       encoding: segmentInfo.encoding,
       characters: segmentInfo.characters,
@@ -287,7 +289,7 @@ export async function sendLiveTestSms(
     realSmsCost: 0,
     mode: "live_test",
     createdBy: input.createdBy ?? null,
-    metadata: { source: "app_send_sms", mode: "live_test" },
+    metadata: { source: "app_send_sms_live_test", mode: "live_test" },
   });
 
   const resolved = await resolveRouteForMessage({
@@ -312,6 +314,7 @@ export async function sendLiveTestSms(
     mode: "live_test",
     provider: resolved.provider.code,
     metadata: {
+      source: "app_send_sms_live_test",
       mode: "live_test",
       encoding: segmentInfo.encoding,
       characters: segmentInfo.characters,
@@ -340,6 +343,7 @@ export async function sendLiveTestSms(
       error_code: providerResult.error_code ?? "PROVIDER_REJECTED",
       error_message: providerResult.error_message ?? "Proveedor rechazó el envío",
       metadata: {
+        source: "app_send_sms_live_test",
         mode: "live_test",
         asmsc_uid: providerResult.asmsc_uid ?? null,
         raw_response: providerResult.raw_response,
@@ -407,6 +411,7 @@ export async function sendLiveTestSms(
     currency: resolved.currency,
     margin: resolved.margin,
     metadata: {
+      source: "app_send_sms_live_test",
       mode: "live_test",
       asmsc_uid: providerResult.asmsc_uid ?? null,
       encoding: segmentInfo.encoding,
