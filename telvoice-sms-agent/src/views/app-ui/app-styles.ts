@@ -26,49 +26,40 @@ export function getAppPanelStyles(): string {
       margin: 0.5rem 0.35rem;
       background: rgba(255, 255, 255, 0.12);
     }
+    .tv-app-client .tv-nav-send-wrap {
+      margin: 0.15rem 0 0.5rem;
+      padding: 0.4rem;
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+    }
     .tv-app-client .tv-nav-send-cta {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      margin: 0.25rem 0 0.65rem;
-      padding: 0.85rem 1rem;
-      border-radius: 12px;
+      justify-content: center;
+      gap: 0.45rem;
+      width: 100%;
+      padding: 0.5rem 0.65rem;
+      border-radius: 8px;
       text-decoration: none;
-      font-weight: 700;
-      font-size: 0.95rem;
-      color: #0a2458;
-      background: linear-gradient(135deg, #fef08a 0%, #facc15 45%, #38bdf8 100%);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.45);
-      border: 1px solid rgba(255, 255, 255, 0.35);
-      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: #fff;
+      background: var(--tv-primary, #0052cc);
+      border: 1px solid var(--tv-primary-dark, #003d99);
+      box-shadow: none;
+      transition: background 0.15s ease;
+    }
+    .tv-app-client .tv-nav-send-cta .material-symbols-outlined {
+      font-size: 1.1rem;
     }
     .tv-app-client .tv-nav-send-cta:hover {
       text-decoration: none;
-      color: #0a2458;
-      transform: translateY(-1px);
-      filter: brightness(1.03);
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      color: #fff;
+      background: var(--tv-primary-dark, #003d99);
     }
     .tv-app-client .tv-nav-send-cta--active {
-      outline: 2px solid #fff;
-      outline-offset: 2px;
-    }
-    .tv-app-client .tv-nav-send-cta__icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 2.25rem;
-      height: 2.25rem;
-      border-radius: 10px;
-      background: rgba(10, 36, 88, 0.12);
-    }
-    .tv-app-client .tv-nav-send-cta__icon .material-symbols-outlined {
-      font-size: 1.35rem;
-      color: #0a2458;
-    }
-    .tv-app-client .tv-nav-send-cta__label {
-      flex: 1;
-      letter-spacing: -0.01em;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
     }
     .tv-app-client .tv-sidebar__badge {
       display: inline-block;

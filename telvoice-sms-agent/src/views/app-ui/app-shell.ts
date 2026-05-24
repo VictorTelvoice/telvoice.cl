@@ -46,12 +46,12 @@ function renderNavLink(item: { id: string; label: string; href: string; icon: st
 function renderNavSendCta(active: string): string {
   const item = APP_NAV_SEND_SMS;
   const isActive = active === item.id;
-  return `<a href="${item.href}" class="tv-nav-send-cta${isActive ? " tv-nav-send-cta--active" : ""}"${isActive ? ' aria-current="page"' : ""}>
-      <span class="tv-nav-send-cta__icon" aria-hidden="true">
-        <span class="material-symbols-outlined">${escapeHtml(item.icon)}</span>
-      </span>
-      <span class="tv-nav-send-cta__label">${escapeHtml(item.label)}</span>
-    </a>`;
+  return `<div class="tv-nav-send-wrap">
+      <a href="${item.href}" class="tv-nav-send-cta${isActive ? " tv-nav-send-cta--active" : ""}"${isActive ? ' aria-current="page"' : ""}>
+        <span class="material-symbols-outlined" aria-hidden="true">${escapeHtml(item.icon)}</span>
+        ${escapeHtml(item.label)}
+      </a>
+    </div>`;
 }
 
 function renderNavLinks(active: string): string {
