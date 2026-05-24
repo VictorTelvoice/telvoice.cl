@@ -58,6 +58,13 @@ export async function updatePanelSmsMessage(
     status: PanelSmsMessageStatus;
     provider: string;
     provider_message_id: string | null;
+    provider_id: string | null;
+    route_id: string | null;
+    rate_plan_id: string | null;
+    sell_price_per_sms: number | null;
+    cost_price_per_sms: number | null;
+    currency: string | null;
+    margin: number | null;
     operator: string | null;
     sent_at: string | null;
     delivered_at: string | null;

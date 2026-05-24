@@ -333,6 +333,7 @@ export function renderSaWalletDetailPage(opts: PageOpts & {
   company: CompanyRow;
   balance: WalletListRow;
   transactions: WalletTransactionRow[];
+  ratePlanHtml?: string;
 }): string {
   const txRows = opts.transactions.length
     ? opts.transactions
@@ -361,6 +362,7 @@ export function renderSaWalletDetailPage(opts: PageOpts & {
       <article class="tv-kpi"><span class="tv-kpi__label">Consumido</span><span class="tv-kpi__value">${fmtSms(opts.balance.consumedSms)}</span></article>
       <article class="tv-kpi"><span class="tv-kpi__label">Total comprado</span><span class="tv-kpi__value">${fmtSms(opts.balance.totalPurchasedSms)}</span></article>
     </div>
+    ${opts.ratePlanHtml ?? ""}
     <div class="tv-dash-grid tv-dash-grid--2">
       <section class="tv-panel">
         <h2 class="tv-panel__title">Cargar saldo</h2>

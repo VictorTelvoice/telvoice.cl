@@ -54,7 +54,7 @@ export function renderInboxTableRows(messages: PanelSmsMessageRow[]): string {
       <td>${escapeHtml(m.sender_id ?? "—")}</td>
       <td class="tv-cell-truncate" title="${escapeHtml(m.message)}">${escapeHtml(m.message.slice(0, 50))}${m.message.length > 50 ? "…" : ""}</td>
       <td>${m.segments}</td>
-      <td>${escapeHtml(m.provider)}</td>
+      <td>${m.cost_sms}</td>
       <td>${renderPanelMessageStatusBadge(m.status)}</td>
       <td>${renderSmsModeBadge(m.mode)}</td>
       <td><code class="tv-code-sm" title="${escapeHtml(m.provider_message_id ?? "")}">${escapeHtml((m.provider_message_id ?? "—").slice(0, 12))}</code></td>

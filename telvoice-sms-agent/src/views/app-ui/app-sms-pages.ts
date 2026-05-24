@@ -34,7 +34,7 @@ export function renderAppSendSmsPage(
   const successBlock = opts.sendResult
     ? `<section class="tv-panel tv-panel--hint" style="margin-bottom:1rem;border-color:var(--tv-ok)">
       <div class="tv-panel__body">
-        <h2 style="margin:0 0 0.5rem;font-size:1.1rem">${isLiveResult ? "SMS real controlado enviado al proveedor" : "SMS simulado registrado correctamente"}</h2>
+        <h2 style="margin:0 0 0.5rem;font-size:1.1rem">${isLiveResult ? "SMS real controlado enviado" : "SMS simulado registrado correctamente"}</h2>
         <ul style="margin:0;padding-left:1.2rem">
           <li><strong>Destino:</strong> ${escapeHtml(opts.sendResult.recipientNumber)}</li>
           <li><strong>Segmentos descontados:</strong> ${opts.sendResult.segments}</li>
@@ -116,9 +116,9 @@ export function renderAppSendSmsPage(
           </p>
           <div class="tv-panel tv-panel--hint" id="tv-live-meta" hidden style="margin:0">
             <p class="field-hint" style="margin:0">
-              <strong>Proveedor:</strong> API aSMSC (real_api) ·
               <strong>Límite:</strong> 1 destinatario ·
-              <strong>Estado:</strong> prueba controlada (live_test)
+              <strong>Modo:</strong> envío real controlado (live_test) ·
+              La ruta se asigna según tu plan comercial.
             </p>
           </div>
           <button type="submit" class="btn btn-primary" id="tv-send-submit">Enviar SMS simulado</button>
@@ -204,7 +204,7 @@ export function renderAppInboxPage(
       <table class="tv-table">
         <thead><tr>
           <th>Fecha</th><th>Destinatario</th><th>Remitente</th><th>Mensaje</th>
-          <th>Seg.</th><th>Proveedor</th><th>Estado</th><th>Modo</th><th>Provider ID</th><th>Error</th>
+          <th>Seg.</th><th>Costo SMS</th><th>Estado</th><th>Modo</th><th>Referencia</th><th>Error</th>
         </tr></thead>
         <tbody>${renderInboxTableRows(messages)}</tbody>
       </table>

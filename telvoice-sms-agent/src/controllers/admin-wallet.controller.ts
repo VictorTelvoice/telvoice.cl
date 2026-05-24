@@ -30,7 +30,10 @@ import {
   manualDebitWallet,
 } from "../services/smsWalletService.js";
 import { listTransactionsByCompany } from "../services/walletTransactionService.js";
+import { getCompanyRatePlan } from "../services/companyRatePlanService.js";
+import { listSmsRatePlans } from "../services/smsRatePlanService.js";
 import { isMissingTableError } from "../utils/db-table.js";
+import { renderWalletRatePlanBlock } from "../views/admin-ui/sections/superadmin-telco-pages.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
   renderSaOrderDetailPage,
@@ -308,6 +311,15 @@ export async function getSaWalletDetailPage(
 
     const balance = await getCompanyBalance(companyId);
     const transactions = await listTransactionsByCompany(companyId, 30);
+    const [ratePlanAssignment, ratePlans] = await Promise.all([
+      getCompanyRatePlan(companyId),
+      listSmsRatePlans(),
+    ]);
+    const ratePlanHtml = renderWalletRatePlanBlock({
+      companyId,
+      assignment: ratePlanAssignment,
+      ratePlans,
+    });
 
     const walletRow = {
       ...balance,
@@ -321,6 +333,7 @@ export async function getSaWalletDetailPage(
         company,
         balance: walletRow,
         transactions,
+        ratePlanHtml,
         ...flash(req),
       }),
     );

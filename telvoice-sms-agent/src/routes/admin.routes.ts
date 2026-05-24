@@ -63,13 +63,26 @@ import {
 import {
   getSaApiKeysPage,
   getSaCampaignsPage,
-  getSaClientsPage,
   getSaDlrPage,
   getSaMessagesPage,
-  getSaProvidersPage,
-  getSaRoutesPage,
   redirectSaBot,
 } from "../controllers/admin-superadmin.controller.js";
+import {
+  getSaClientsPageTelco,
+  getSaProviderDetailPage,
+  getSaProviderTestPage,
+  getSaProvidersPageTelco,
+  getSaRatePlanDetailPage,
+  getSaRatePlansPage,
+  getSaRoutesPageTelco,
+  postAssignCompanyRatePlan,
+  postCreateProvider,
+  postCreateRatePlan,
+  postCreateRatePlanDetail,
+  postCreateRoute,
+  postSaProviderTest,
+  postToggleRoute,
+} from "../controllers/admin-sms-telco.controller.js";
 import {
   getSaOrderDetailPage,
   getSaOrdersPage,
@@ -118,7 +131,7 @@ adminRouter.post("/register", postRegister);
 adminRouter.post("/logout", postLogout);
 
 adminRouter.get("/", requireAdminPage, getDashboard);
-adminRouter.get("/clients", requireAdminPage, getSaClientsPage);
+adminRouter.get("/clients", requireAdminPage, getSaClientsPageTelco);
 adminRouter.get("/pricing", requireAdminPage, getSaPricingPage);
 adminRouter.post("/pricing", requireAdminPage, postCreateSmsPackage);
 adminRouter.post("/pricing/:id/update", requireAdminPage, postUpdateSmsPackage);
@@ -126,8 +139,23 @@ adminRouter.post("/pricing/:id/toggle", requireAdminPage, postToggleSmsPackage);
 adminRouter.get("/campaigns", requireAdminPage, getSaCampaignsPage);
 adminRouter.get("/messages", requireAdminPage, getSaMessagesPage);
 adminRouter.get("/dlr", requireAdminPage, getSaDlrPage);
-adminRouter.get("/providers", requireAdminPage, getSaProvidersPage);
-adminRouter.get("/routes", requireAdminPage, getSaRoutesPage);
+adminRouter.get("/providers", requireAdminPage, getSaProvidersPageTelco);
+adminRouter.post("/providers", requireAdminPage, postCreateProvider);
+adminRouter.get("/providers/:id", requireAdminPage, getSaProviderDetailPage);
+adminRouter.get("/providers/:id/test", requireAdminPage, getSaProviderTestPage);
+adminRouter.post("/providers/:id/test", requireAdminPage, postSaProviderTest);
+adminRouter.get("/routes", requireAdminPage, getSaRoutesPageTelco);
+adminRouter.post("/routes", requireAdminPage, postCreateRoute);
+adminRouter.post("/routes/:id/status", requireAdminPage, postToggleRoute);
+adminRouter.get("/rate-plans", requireAdminPage, getSaRatePlansPage);
+adminRouter.post("/rate-plans", requireAdminPage, postCreateRatePlan);
+adminRouter.get("/rate-plans/:id", requireAdminPage, getSaRatePlanDetailPage);
+adminRouter.post("/rate-plans/:id/details", requireAdminPage, postCreateRatePlanDetail);
+adminRouter.post(
+  "/wallets/:companyId/rate-plan",
+  requireAdminPage,
+  postAssignCompanyRatePlan,
+);
 adminRouter.get("/orders", requireAdminPage, getSaOrdersPage);
 adminRouter.get("/orders/:id", requireAdminPage, getSaOrderDetailPage);
 adminRouter.post("/orders", requireAdminPage, postCreateOrder);

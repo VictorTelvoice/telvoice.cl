@@ -19,6 +19,8 @@ import {
 } from "./smsWalletService.js";
 import { hasSmsDebitForMessage } from "./walletTransactionService.js";
 import { assertLiveTestSendAllowed } from "./smsLiveTestPolicy.js";
+import { dispatchProviderSend } from "./smsProviderDispatchService.js";
+import { resolveRouteForMessage } from "./smsRoutingService.js";
 import { sendViaProvider } from "./sms-providers/providerFactory.js";
 import { AppError } from "../utils/errors.js";
 
@@ -288,29 +290,46 @@ export async function sendLiveTestSms(
     metadata: { source: "app_send_sms", mode: "live_test" },
   });
 
+  const resolved = await resolveRouteForMessage({
+    companyId: input.companyId,
+    country: "CL",
+    phone,
+    trafficType: "transactional",
+  });
+
+  const effectiveSender =
+    senderId || resolved.provider.default_sender_id || "TELVOICE";
+
   const pendingMessage = await createPanelSmsMessage({
     companyId: input.companyId,
     campaignId: campaign.id,
     recipientNumber: phone,
-    senderId,
+    senderId: effectiveSender,
     message: messageText,
     segments: segmentInfo.segments,
     costSms: segmentInfo.costSms,
     status: "queued",
     mode: "live_test",
-    provider: "asmsc",
+    provider: resolved.provider.code,
     metadata: {
       mode: "live_test",
       encoding: segmentInfo.encoding,
       characters: segmentInfo.characters,
+      provider_id: resolved.provider.id,
+      route_id: resolved.route.id,
+      rate_plan_id: resolved.ratePlan.id,
     },
   });
 
-  const providerResult = await sendViaProvider("real_api", {
+  const providerResult = await dispatchProviderSend(resolved.provider, {
     to: phone,
     message: messageText,
-    senderId,
-    metadata: { segments: segmentInfo.segments, panel_message_id: pendingMessage.id },
+    senderId: effectiveSender,
+    metadata: {
+      segments: segmentInfo.segments,
+      panel_message_id: pendingMessage.id,
+      route_id: resolved.route.id,
+    },
   });
 
   if (!providerResult.accepted) {
@@ -377,15 +396,24 @@ export async function sendLiveTestSms(
   const sentAt = new Date().toISOString();
   const updatedMessage = await updatePanelSmsMessage(pendingMessage.id, {
     status: panelStatus,
-    provider: providerResult.provider,
+    provider: resolved.provider.code,
     provider_message_id: providerResult.provider_message_id,
     sent_at: sentAt,
+    provider_id: resolved.provider.id,
+    route_id: resolved.route.id,
+    rate_plan_id: resolved.ratePlan.id,
+    sell_price_per_sms: resolved.sellPricePerSms,
+    cost_price_per_sms: resolved.costPricePerSms,
+    currency: resolved.currency,
+    margin: resolved.margin,
     metadata: {
       mode: "live_test",
       asmsc_uid: providerResult.asmsc_uid ?? null,
       encoding: segmentInfo.encoding,
       characters: segmentInfo.characters,
       raw_response: providerResult.raw_response,
+      rate_plan_code: resolved.ratePlan.code,
+      route_name: resolved.route.name,
     },
   });
 
