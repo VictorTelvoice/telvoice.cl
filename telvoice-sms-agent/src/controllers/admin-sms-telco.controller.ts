@@ -1,6 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
 import { listCompanies } from "../services/companyService.js";
-import { getSmsProviderStatusView } from "../services/smsProviderStatusService.js";
+import {
+  getLiveTestControlPanel,
+  getSmsProviderStatusView,
+} from "../services/smsProviderStatusService.js";
 import { assignCompanyRatePlan, getCompanyRatePlan } from "../services/companyRatePlanService.js";
 import { listPanelMessagesByCompany } from "../services/panelSmsMessageService.js";
 import {
@@ -51,15 +54,17 @@ export async function getSaProvidersPageTelco(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const [providers, providerStatus] = await Promise.all([
+    const [providers, providerStatus, liveTestControl] = await Promise.all([
       listSmsProviders(),
       getSmsProviderStatusView(),
+      getLiveTestControlPanel(),
     ]);
     res.type("html").send(
       renderSaProvidersPage({
         admin: req.adminUser!,
         providers,
         providerStatus,
+        liveTestControl,
         tablesReady: true,
         ...flash(req),
       }),

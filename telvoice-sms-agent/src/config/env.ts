@@ -41,7 +41,19 @@ export type SmsProviderConfig = {
   liveTestEnabled: boolean;
   liveTestAllowedCompanyIds: string[];
   liveTestAllowedNumbers: string[];
+  liveTestDailyLimit: number;
+  liveTestMinSecondsBetweenSends: number;
+  liveTestMaxSegments: number;
 };
+
+function parsePositiveIntEnv(name: string, fallback: number): number {
+  const raw = optionalEnv(name, String(fallback));
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 1) {
+    return fallback;
+  }
+  return n;
+}
 
 function normalizeSmsProviderMode(value: string): SmsProviderMode {
   return value.trim().toLowerCase() === "live_test" ? "live_test" : "mock";
@@ -113,6 +125,12 @@ export const env = {
     liveTestEnabled: optionalEnv("SMS_LIVE_TEST_ENABLED", "false") === "true",
     liveTestAllowedCompanyIds: parseCsvEnv("SMS_LIVE_TEST_ALLOWED_COMPANY_IDS"),
     liveTestAllowedNumbers: parseCsvEnv("SMS_LIVE_TEST_ALLOWED_NUMBERS"),
+    liveTestDailyLimit: parsePositiveIntEnv("SMS_LIVE_TEST_DAILY_LIMIT", 3),
+    liveTestMinSecondsBetweenSends: parsePositiveIntEnv(
+      "SMS_LIVE_TEST_MIN_SECONDS_BETWEEN_SENDS",
+      60,
+    ),
+    liveTestMaxSegments: parsePositiveIntEnv("SMS_LIVE_TEST_MAX_SEGMENTS", 1),
   } satisfies SmsProviderConfig,
 } as const;
 

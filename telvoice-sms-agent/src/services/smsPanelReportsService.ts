@@ -10,6 +10,11 @@ export type ClientSmsReportData = {
   smsConsumed: number;
   campaignsCount: number;
   deliveredRate: string;
+  mockMessages: number;
+  liveTestMessages: number;
+  deliveredCount: number;
+  pendingCount: number;
+  failedCount: number;
   dailyConsumption: { day: string; sms: number }[];
   recentMessages: PanelSmsMessageRow[];
   recentDebits: WalletTransactionRow[];
@@ -23,6 +28,11 @@ export async function getClientSmsReportData(
     smsConsumed: 0,
     campaignsCount: 0,
     deliveredRate: "—",
+    mockMessages: 0,
+    liveTestMessages: 0,
+    deliveredCount: 0,
+    pendingCount: 0,
+    failedCount: 0,
     dailyConsumption: [],
     recentMessages: [],
     recentDebits: [],
@@ -44,6 +54,14 @@ export async function getClientSmsReportData(
 
   const rows = (messages ?? []) as PanelSmsMessageRow[];
   const delivered = rows.filter((m) => m.status === "delivered").length;
+  const mockMessages = rows.filter((m) => m.mode === "mock").length;
+  const liveTestMessages = rows.filter((m) => m.mode === "live_test").length;
+  const pendingCount = rows.filter(
+    (m) => m.status === "pending" || m.status === "queued",
+  ).length;
+  const failedCount = rows.filter(
+    (m) => m.status === "failed" || m.status === "rejected",
+  ).length;
   const smsConsumed = rows.reduce((sum, m) => sum + (m.cost_sms ?? 0), 0);
   const deliveredRate =
     rows.length > 0
@@ -77,6 +95,11 @@ export async function getClientSmsReportData(
     smsConsumed,
     campaignsCount: campaignsCount ?? 0,
     deliveredRate,
+    mockMessages,
+    liveTestMessages,
+    deliveredCount: delivered,
+    pendingCount,
+    failedCount,
     dailyConsumption,
     recentMessages: rows.slice(0, 10),
     recentDebits: recentDebits.slice(0, 10),

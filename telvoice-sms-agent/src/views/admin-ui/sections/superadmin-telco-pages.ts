@@ -1,7 +1,10 @@
 import type { AdminSessionUser } from "../../../types/admin.js";
 import type { CompanyRow } from "../../../types/tenant.js";
 import type { PanelSmsMessageRow } from "../../../types/sms-panel.js";
-import type { SmsProviderStatusView } from "../../../services/smsProviderStatusService.js";
+import type {
+  LiveTestControlPanelView,
+  SmsProviderStatusView,
+} from "../../../services/smsProviderStatusService.js";
 import type { CompanyRatePlanView } from "../../../services/companyRatePlanService.js";
 import type {
   SmsProviderRow,
@@ -67,8 +70,46 @@ function connTypeLabel(type: string): string {
 export function renderSaProvidersPage(opts: BaseOpts & {
   providers: SmsProviderRow[];
   providerStatus?: SmsProviderStatusView;
+  liveTestControl?: LiveTestControlPanelView;
   tablesReady: boolean;
 }): string {
+  const lt = opts.liveTestControl;
+  const liveTestCard = lt
+    ? `<section class="tv-panel" style="margin-bottom:1rem">
+      <h2 class="tv-panel__title">Control live_test</h2>
+      <div class="tv-panel__body tv-form-grid">
+        <div><dt style="font-weight:600">SMS_PROVIDER_MODE</dt><dd><code>${escapeHtml(lt.providerMode)}</code></dd></div>
+        <div><dt style="font-weight:600">SMS_LIVE_TEST_ENABLED</dt><dd><code>${lt.liveTestEnabled ? "true" : "false"}</code></dd></div>
+        <div><dt style="font-weight:600">Live test activo</dt><dd>${lt.liveTestActive ? statusBadgeSa("activa") : statusBadgeSa("inactivo")}</dd></div>
+        <div><dt style="font-weight:600">Empresas autorizadas</dt><dd>${lt.allowedCompaniesCount} · <code>${escapeHtml(lt.maskedCompanyIds.join(", ") || "—")}</code></dd></div>
+        <div><dt style="font-weight:600">Números autorizados</dt><dd>${lt.allowedNumbersCount} · <code>${escapeHtml(lt.maskedNumbers.join(", ") || "—")}</code></dd></div>
+        <div><dt style="font-weight:600">Límite diario</dt><dd>${lt.dailyLimit} SMS / empresa</dd></div>
+        <div><dt style="font-weight:600">Intervalo mínimo</dt><dd>${lt.minSecondsBetweenSends} s</dd></div>
+        <div><dt style="font-weight:600">Segmentos máx.</dt><dd>${lt.maxSegments}</dd></div>
+        <div><dt style="font-weight:600">Consumo live_test hoy</dt><dd>${lt.todayLiveTestMessages} mensaje(s) · ${lt.todayLiveTestSms} SMS</dd></div>
+      </div>
+      ${
+        lt.recentLiveTests.length
+          ? `<div class="table-wrap" style="margin-top:1rem"><table class="tv-table tv-table--compact"><thead><tr>
+        <th>Fecha</th><th>Empresa</th><th>Destino</th><th>Estado</th><th>Seg.</th><th>Origen</th><th>Provider ID</th>
+      </tr></thead><tbody>${lt.recentLiveTests
+        .map(
+          (m) => `<tr>
+        <td>${formatDate(m.createdAt)}</td>
+        <td><code title="${escapeHtml(m.companyId)}">${escapeHtml(m.companyId.slice(0, 8))}…</code></td>
+        <td><code>${escapeHtml(m.recipient)}</code></td>
+        <td>${statusBadgeSa(m.status)}</td>
+        <td>${m.segments}</td>
+        <td><code class="tv-code-sm">${escapeHtml(m.source ?? "—")}</code></td>
+        <td><code class="tv-code-sm">${escapeHtml((m.providerMessageId ?? "—").slice(0, 14))}</code></td>
+      </tr>`,
+        )
+        .join("")}</tbody></table></div>`
+          : `<p class="field-hint">Sin envíos live_test recientes.</p>`
+      }
+    </section>`
+    : "";
+
   const apiCard = opts.providerStatus
     ? `<section class="tv-panel" style="margin-bottom:1rem">
       <h2 class="tv-panel__title">Estado API (env, sin credenciales)</h2>
@@ -123,6 +164,7 @@ export function renderSaProvidersPage(opts: BaseOpts & {
 
   const body = `${renderSuperadminBanner()}
     ${renderPageHeader({ title: "Proveedores SMS", subtitle: "Catálogo telco upstream — control comercial sin credenciales en BD." })}
+    ${liveTestCard}
     ${apiCard}
     <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
       <th>Proveedor</th><th>Conexión</th><th>Estado</th><th>Base URL</th><th>Sender</th><th>DLR</th><th>Unicode</th><th></th>

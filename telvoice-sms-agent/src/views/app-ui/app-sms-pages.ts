@@ -2,6 +2,7 @@ import type { MockSmsSendResult } from "../../types/sms-panel.js";
 import type { SmsCampaignRow } from "../../types/sms-panel.js";
 import type { PanelSmsMessageRow } from "../../types/sms-panel.js";
 import type { ClientSmsReportData } from "../../services/smsPanelReportsService.js";
+import type { LiveTestSendPageStatus } from "../../services/smsLiveTestLimiterService.js";
 import { escapeHtml } from "../../utils/html.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
@@ -18,6 +19,7 @@ export type SendSmsPageOptions = {
   error?: string;
   sendResult?: MockSmsSendResult | null;
   liveTestAvailable?: boolean;
+  liveTestStatus?: LiveTestSendPageStatus | null;
 };
 
 export function renderAppSendSmsPage(
@@ -52,19 +54,49 @@ export function renderAppSendSmsPage(
     </section>`
     : "";
 
+  const lt = opts.liveTestStatus;
+  const liveTestLimitsCard =
+    opts.liveTestAvailable && lt
+      ? `<section class="tv-panel tv-panel--hint" id="tv-live-test-limits" style="margin-bottom:1rem">
+      <h2 class="tv-panel__title">Envío real controlado</h2>
+      <div class="tv-panel__body">
+        <p class="field-hint" style="margin-top:0">
+          Este modo envía SMS reales usando rutas autorizadas por Telvoice. Está limitado para pruebas operativas.
+        </p>
+        <ul style="margin:0.5rem 0 0;padding-left:1.2rem;font-size:0.9rem">
+          <li><strong>Límite diario disponible:</strong> <span id="tv-lt-daily">${lt.dailyRemaining}</span> / ${lt.dailyLimit}</li>
+          <li><strong>Segmentos máximos:</strong> ${lt.maxSegments}</li>
+          <li><strong>Número autorizado:</strong> ${
+            lt.maskedNumbers.length
+              ? lt.maskedNumbers.map((n) => escapeHtml(n)).join(", ")
+              : "No configurado en servidor"
+          }</li>
+          <li><strong>Empresa autorizada:</strong> ${lt.companyAuthorized ? "Sí" : "No"}</li>
+          <li><strong>Estado ruta:</strong> ${lt.routeActive ? `Activa${lt.routeName ? ` (${escapeHtml(lt.routeName)})` : ""}` : "No disponible"}</li>
+          <li><strong>Estado proveedor:</strong> ${lt.providerActive ? `Activo${lt.providerName ? ` (${escapeHtml(lt.providerName)})` : ""}` : "No disponible"}</li>
+        </ul>
+        <p class="field-hint tv-live-test-policy-block" id="tv-lt-block-hint" ${lt.liveTestBlockReason && !lt.canSelectLiveTest ? "" : 'hidden'} style="margin-top:0.75rem;color:var(--tv-danger)">
+          ${escapeHtml(lt.liveTestBlockReason ?? "")}
+        </p>
+      </div>
+    </section>`
+      : "";
+
+  const liveRadioDisabled =
+    lt && !lt.canSelectLiveTest ? "disabled" : "";
   const modeSelector = opts.liveTestAvailable
     ? `<fieldset class="tv-form-grid" style="border:0;padding:0;margin:0 0 1rem">
         <legend style="font-weight:600;margin-bottom:0.5rem">Modo de envío</legend>
         <label style="display:flex;gap:0.5rem;align-items:center">
           <input type="radio" name="send_mode" value="mock" checked data-tv-send-mode="mock" /> Simulación
         </label>
-        <label style="display:flex;gap:0.5rem;align-items:center">
-          <input type="radio" name="send_mode" value="live_test" data-tv-send-mode="live_test" /> Envío real controlado
+        <label style="display:flex;gap:0.5rem;align-items:center;opacity:${liveRadioDisabled ? "0.6" : "1"}">
+          <input type="radio" name="send_mode" value="live_test" data-tv-send-mode="live_test" ${liveRadioDisabled} id="tv-send-mode-live" /> Envío real controlado
         </label>
       </fieldset>
       <div class="alert alert-error tv-live-test-banner" id="tv-live-test-alert" hidden role="alert">
         <strong>Envío real controlado:</strong> este modo enviará un SMS real usando la ruta API aSMSC conectada.
-        Se descontará saldo <em>solo si el proveedor acepta</em> el mensaje. Límite: 1 destinatario.
+        Se descontará saldo <em>solo si el proveedor acepta</em> el mensaje. Límite: 1 destinatario · ${lt?.maxSegments ?? 1} segmento.
       </div>`
     : "";
 
@@ -86,6 +118,7 @@ export function renderAppSendSmsPage(
     })}
     ${errorBlock}
     ${successBlock}
+    ${liveTestLimitsCard}
     ${mockBanner}
     <div class="tv-dash-grid tv-dash-grid--2" style="margin-top:1rem">
       <section class="tv-panel">
@@ -114,13 +147,12 @@ export function renderAppSendSmsPage(
             Caracteres: 0 · Codificación: GSM-7 · Segmentos: 0 · Costo: 0 SMS ·
             Saldo actual: ${fmtSms(avail)} · Saldo después: ${fmtSms(avail)} SMS
           </p>
-          <div class="tv-panel tv-panel--hint" id="tv-live-meta" hidden style="margin:0">
-            <p class="field-hint" style="margin:0">
-              <strong>Límite:</strong> 1 destinatario ·
-              <strong>Modo:</strong> envío real controlado (live_test) ·
-              La ruta se asigna según tu plan comercial.
-            </p>
-          </div>
+          <p class="field-hint tv-live-segment-warn" id="tv-live-segment-warn" hidden style="margin:0;color:var(--tv-danger)">
+            El mensaje supera el máximo de segmentos permitido para envío real. Usa simulación o acorta el texto.
+          </p>
+          <p class="field-hint tv-live-number-warn" id="tv-live-number-warn" hidden style="margin:0;color:var(--tv-danger)">
+            El número destino no está autorizado para live_test.
+          </p>
           <button type="submit" class="btn btn-primary" id="tv-send-submit">Enviar SMS simulado</button>
         </form>
       </section>
@@ -142,6 +174,8 @@ export function renderAppSendSmsPage(
       var previewSender = document.getElementById('tv-preview-sender');
       var senderInput = document.querySelector('input[name="sender_id"]');
       var avail = ${avail};
+      var maxLiveSegments = ${lt?.maxSegments ?? 1};
+      var liveTestCanSelect = ${lt?.canSelectLiveTest ? "true" : "false"};
       function gsmBasic(ch){ return /^[@£$¥èéùìòÇ\\nØø\\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&'()*+,\\-./0-9:;<=>?¡A-Za-zäöñüà^{}\\\\\\[\\]~|€]*$/.test(ch); }
       function calc(text){
         var chars = [...text].length;
@@ -161,7 +195,6 @@ export function renderAppSendSmsPage(
         if(previewBody) previewBody.textContent = t || 'Hola, tu mensaje aparecerá aquí.';
         if(previewSender && senderInput) previewSender.textContent = senderInput.value || 'TELVOICE';
       }
-      if(ta){ ta.addEventListener('input', refresh); }
       if(senderInput){ senderInput.addEventListener('input', refresh); }
       document.querySelectorAll('.tv-var-btn').forEach(function(btn){
         btn.addEventListener('click', function(){
@@ -176,16 +209,60 @@ export function renderAppSendSmsPage(
       var submitBtn = document.getElementById('tv-send-submit');
       var liveAlert = document.getElementById('tv-live-test-alert');
       var mockBannerEl = document.getElementById('tv-mock-banner');
-      var liveMeta = document.getElementById('tv-live-meta');
+      var segWarn = document.getElementById('tv-live-segment-warn');
+      var numWarn = document.getElementById('tv-live-number-warn');
+      var toInput = document.querySelector('input[name="to"]');
+      var liveRadio = document.getElementById('tv-send-mode-live');
+      var allowedLiveNumbers = ${JSON.stringify(lt?.allowedNumbersNormalized ?? [])};
+      function normalizePhoneDigits(v){
+        var d = (v || '').replace(/\\D/g,'');
+        if(d.length===11 && d.charAt(0)==='9') return '56'+d;
+        if(d.length===9 && d.charAt(0)==='9') return '56'+d;
+        return d;
+      }
+      function isRecipientAllowedForLive(){
+        if(!toInput) return true;
+        var v = (toInput.value || '').trim();
+        if(!v) return true;
+        if(!allowedLiveNumbers.length) return false;
+        var digits = normalizePhoneDigits(v);
+        return allowedLiveNumbers.some(function(n){
+          var a = normalizePhoneDigits(n);
+          return a === digits || a === digits.replace(/^\\+/,'');
+        });
+      }
+      function refreshLiveGuards(){
+        refresh();
+        var t = ta ? ta.value : '';
+        var c = calc(t);
+        var overSeg = c.seg > maxLiveSegments;
+        if(segWarn) segWarn.hidden = !overSeg;
+        var numOk = isRecipientAllowedForLive();
+        if(numWarn) numWarn.hidden = numOk;
+        if(liveRadio){
+          var block = overSeg || !numOk || !liveTestCanSelect;
+          liveRadio.disabled = block;
+          if(block && liveRadio.checked){
+            var mockR = document.querySelector('input[name="send_mode"][value="mock"]');
+            if(mockR) mockR.checked = true;
+          }
+        }
+        syncMode();
+      }
       function syncMode(){
         var live = document.querySelector('input[name="send_mode"][value="live_test"]:checked');
-        if(submitBtn) submitBtn.textContent = live ? 'Enviar SMS real controlado' : 'Enviar SMS simulado';
+        if(submitBtn){
+          submitBtn.textContent = live ? 'Enviar SMS real controlado' : 'Enviar SMS simulado';
+          var c = calc(ta ? ta.value : '');
+          submitBtn.disabled = !!(live && (c.seg > maxLiveSegments || !isRecipientAllowedForLive()));
+        }
         if(liveAlert) liveAlert.hidden = !live;
         if(mockBannerEl) mockBannerEl.hidden = !!live;
-        if(liveMeta) liveMeta.hidden = !live;
       }
       document.querySelectorAll('input[name="send_mode"]').forEach(function(r){ r.addEventListener('change', syncMode); });
-      syncMode();
+      if(toInput){ toInput.addEventListener('input', refreshLiveGuards); }
+      if(ta){ ta.addEventListener('input', refreshLiveGuards); }
+      refreshLiveGuards();
     })();
     </script>`;
   return wrapAppPage(ctx, "send-sms", "Enviar SMS", body);
@@ -265,10 +342,12 @@ export function renderAppReportsPage(
       subtitle: "Métricas iniciales desde mensajes y movimientos reales.",
     })}
     <div class="tv-kpi-grid" style="margin-bottom:1rem">
-      <article class="tv-kpi"><span class="tv-kpi__label">SMS enviados</span><span class="tv-kpi__value">${report.messagesSent}</span></article>
+      <article class="tv-kpi"><span class="tv-kpi__label">SMS simulados (mock)</span><span class="tv-kpi__value">${report.mockMessages}</span></article>
+      <article class="tv-kpi"><span class="tv-kpi__label">SMS reales live_test</span><span class="tv-kpi__value">${report.liveTestMessages}</span></article>
+      <article class="tv-kpi"><span class="tv-kpi__label">Entregados</span><span class="tv-kpi__value">${report.deliveredCount}</span></article>
+      <article class="tv-kpi"><span class="tv-kpi__label">Pendientes</span><span class="tv-kpi__value">${report.pendingCount}</span></article>
+      <article class="tv-kpi"><span class="tv-kpi__label">Fallidos</span><span class="tv-kpi__value">${report.failedCount}</span></article>
       <article class="tv-kpi"><span class="tv-kpi__label">SMS consumidos</span><span class="tv-kpi__value">${report.smsConsumed}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Campañas</span><span class="tv-kpi__value">${report.campaignsCount}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Tasa mock delivered</span><span class="tv-kpi__value">${escapeHtml(report.deliveredRate)}</span></article>
     </div>
     <div class="tv-dash-grid tv-dash-grid--2">
       <section class="tv-panel">

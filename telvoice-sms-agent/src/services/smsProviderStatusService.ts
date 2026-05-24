@@ -5,6 +5,12 @@ import {
 } from "./smsLiveTestPolicy.js";
 import { isAsmscConfigured } from "./sms-providers/realApiProvider.js";
 import { getLastLiveTestPanelMessage } from "./panelSmsMessageService.js";
+import {
+  getLiveTestControlPanelView,
+  type LiveTestControlPanelView,
+} from "./smsLiveTestLimiterService.js";
+
+export type { LiveTestControlPanelView };
 
 export type SmsProviderStatusView = {
   asmscConfigured: boolean;
@@ -44,4 +50,8 @@ export async function getSmsProviderStatusView(): Promise<SmsProviderStatusView>
 
 export function canCompanyUseLiveTestUi(companyId: string): boolean {
   return canShowLiveTestOption(companyId);
+}
+
+export async function getLiveTestControlPanel(): Promise<LiveTestControlPanelView> {
+  return getLiveTestControlPanelView();
 }

@@ -30,6 +30,48 @@ export function renderSmsModeBadge(mode: string | null | undefined): string {
   return badge("ok", (mode ?? "live").toUpperCase());
 }
 
+export function renderPanelMessageSourceBadge(
+  metadata: Record<string, unknown> | null | undefined,
+  mode?: string | null,
+): string {
+  const source =
+    metadata && typeof metadata.source === "string" ? metadata.source : null;
+  if (source === "app_send_sms_mock") {
+    return badge("muted", "app_send_sms_mock");
+  }
+  if (source === "app_send_sms_live_test") {
+    return badge("warn", "app_send_sms_live_test");
+  }
+  if (source === "superadmin_provider_test") {
+    return badge("ok", "superadmin_provider_test");
+  }
+  if (mode === "mock") {
+    return badge("muted", "mock");
+  }
+  if (mode === "live_test") {
+    return badge("warn", "live_test");
+  }
+  return badge("muted", "—");
+}
+
+export function renderAdminPanelModeBadge(
+  mode: string | null | undefined,
+  metadata: Record<string, unknown> | null | undefined,
+): string {
+  const source =
+    metadata && typeof metadata.source === "string" ? metadata.source : "";
+  if (source === "superadmin_provider_test") {
+    return badge("ok", "SUPERADMIN TEST");
+  }
+  if (mode === "live_test") {
+    return badge("warn", "LIVE TEST");
+  }
+  if (mode === "mock") {
+    return badge("muted", "MOCK");
+  }
+  return renderSmsModeBadge(mode);
+}
+
 export function renderCampaignStatusBadge(status: string): string {
   const map: Record<string, string> = {
     completed: "ok",

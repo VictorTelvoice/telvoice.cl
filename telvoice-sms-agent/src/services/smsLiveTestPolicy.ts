@@ -19,7 +19,7 @@ export function isLiveTestGloballyEnabled(): boolean {
 export function isCompanyAllowedForLiveTest(companyId: string): boolean {
   const allowed = env.smsProvider.liveTestAllowedCompanyIds;
   if (allowed.length === 0) {
-    return true;
+    return false;
   }
   return allowed.includes(companyId);
 }
@@ -27,7 +27,7 @@ export function isCompanyAllowedForLiveTest(companyId: string): boolean {
 export function isNumberAllowedForLiveTest(normalizedPhone: string): boolean {
   const allowed = env.smsProvider.liveTestAllowedNumbers;
   if (allowed.length === 0) {
-    return true;
+    return false;
   }
   const digits = normalizedPhone.replace(/[^\d+]/g, "");
   return allowed.some((n) => {
@@ -49,28 +49,25 @@ export function assertLiveTestSendAllowed(input: {
 }): string {
   if (!env.smsProvider.liveTestEnabled) {
     throw new AppError(
-      "Envío real controlado deshabilitado (SMS_LIVE_TEST_ENABLED=false).",
+      "El envío real controlado no está habilitado en este entorno.",
       403,
     );
   }
 
   if (env.smsProvider.mode !== "live_test") {
     throw new AppError(
-      "Modo proveedor no es live_test (SMS_PROVIDER_MODE debe ser live_test).",
+      "El envío real controlado no está habilitado en este entorno.",
       403,
     );
   }
 
   if (!isAsmscConfigured()) {
-    throw new AppError(
-      "API aSMSC no configurada; no se puede enviar en modo live_test.",
-      503,
-    );
+    throw new AppError("Proveedor SMS no disponible.", 503);
   }
 
   if (!isCompanyAllowedForLiveTest(input.companyId)) {
     throw new AppError(
-      "Esta empresa no está autorizada para envío real controlado.",
+      "La empresa no está autorizada para envío real controlado.",
       403,
     );
   }
@@ -82,7 +79,7 @@ export function assertLiveTestSendAllowed(input: {
 
   if (!isNumberAllowedForLiveTest(phone.normalized)) {
     throw new AppError(
-      "Este número no está en la lista permitida para live_test.",
+      "El número destino no está autorizado para live_test.",
       403,
     );
   }

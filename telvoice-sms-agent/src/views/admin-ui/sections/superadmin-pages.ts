@@ -17,6 +17,7 @@ import {
 } from "../mock-data-superadmin.js";
 import { renderKpiCard } from "../components.js";
 import { renderBtn, renderFilterBar, renderPageHeader } from "../page-kit.js";
+import { renderAdminPanelModeBadge, renderPanelMessageSourceBadge } from "../../app-ui/app-sms-ui.js";
 import { renderSuperadminBanner, statusBadgeSa } from "../superadmin-kit.js";
 
 type PageOpts = {
@@ -119,8 +120,11 @@ export function renderSaCampaignsPage(opts: PageOpts): string {
 export function renderSaMessagesPage(opts: PageOpts): string {
   const filters = renderFilterBar(
     `<input class="tv-filter-input" placeholder="Cliente, campaña, número…" />
-    <select class="tv-filter-input" disabled><option>Estado</option></select>
-    <select class="tv-filter-input" disabled><option>Modo</option></select>`,
+    <span class="tv-quick-actions">
+      <span class="badge badge-muted" title="Filtrar en tabla">MOCK</span>
+      <span class="badge badge-warn" title="Filtrar en tabla">LIVE TEST</span>
+      <span class="badge badge-ok" title="Filtrar en tabla">SUPERADMIN TEST</span>
+    </span>`,
   );
   const real = opts.messages ?? [];
   const rows = real.length
@@ -130,7 +134,8 @@ export function renderSaMessagesPage(opts: PageOpts): string {
       <td>${escapeHtml(m.company_name ?? "—")}</td>
       <td><code>${escapeHtml(m.recipient_number)}</code></td>
       <td>${escapeHtml(m.provider)}</td>
-      <td>${statusBadgeSa(m.mode)}</td>
+      <td>${renderAdminPanelModeBadge(m.mode, m.metadata)}</td>
+      <td title="${escapeHtml(String((m.metadata as Record<string, unknown>)?.source ?? ""))}">${renderPanelMessageSourceBadge(m.metadata, m.mode)}</td>
       <td><code class="tv-code-sm" title="${escapeHtml(m.provider_message_id ?? "")}">${escapeHtml((m.provider_message_id ?? "—").slice(0, 14))}</code></td>
       <td>${statusBadgeSa(m.status)}</td>
       <td class="tv-cell-truncate" title="${escapeHtml(m.error_message ?? "")}">${escapeHtml(m.error_message ?? "—")}</td>
@@ -154,7 +159,7 @@ export function renderSaMessagesPage(opts: PageOpts): string {
     ${renderPageHeader({ title: "Mensajería global", subtitle: "Todos los mensajes enviados por todos los clientes (panel_sms_messages).", actions: `<a href="/admin/inbox" class="btn btn-ghost btn-sm">Bandeja operador (legacy)</a>` })}
     ${filters}
     <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Cliente</th><th>Número</th><th>Proveedor</th><th>Modo</th><th>Provider Msg ID</th><th>Estado</th><th>Error</th><th>Fecha</th><th>Seg.</th>
+      <th>Cliente</th><th>Número</th><th>Proveedor</th><th>Modo</th><th>Origen</th><th>Provider Msg ID</th><th>Estado</th><th>Error</th><th>Fecha</th><th>Seg.</th>
     </tr></thead><tbody>${rows}</tbody></table></div>
     ${hint}`;
   return wrap(opts, "messages", "Mensajería", body);

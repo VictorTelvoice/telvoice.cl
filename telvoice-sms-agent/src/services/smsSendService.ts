@@ -18,6 +18,7 @@ import {
   getOrCreateCompanyWallet,
 } from "./smsWalletService.js";
 import { hasSmsDebitForMessage } from "./walletTransactionService.js";
+import { assertLiveTestOperationalLimits } from "./smsLiveTestLimiterService.js";
 import { assertLiveTestSendAllowed } from "./smsLiveTestPolicy.js";
 import { dispatchProviderSend } from "./smsProviderDispatchService.js";
 import { resolveRouteForMessage } from "./smsRoutingService.js";
@@ -273,6 +274,12 @@ export async function sendLiveTestSms(
 
   const basics = await validateSendBasics({ ...input, to: phone });
   const { messageText, senderId, segmentInfo, balanceBefore } = basics;
+
+  await assertLiveTestOperationalLimits({
+    companyId: input.companyId,
+    to: phone,
+    segmentCount: segmentInfo.segments,
+  });
 
   const campaignName = input.campaignName?.trim() || defaultCampaignName();
 

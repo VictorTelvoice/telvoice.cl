@@ -46,6 +46,7 @@ import {
 import { listCampaignsByCompany } from "../services/smsCampaignService.js";
 import { listPanelMessagesByCompany } from "../services/panelSmsMessageService.js";
 import { getClientSmsReportData } from "../services/smsPanelReportsService.js";
+import { getLiveTestSendPageStatus } from "../services/smsLiveTestLimiterService.js";
 import { canCompanyUseLiveTestUi } from "../services/smsProviderStatusService.js";
 import { sendPanelSms } from "../services/smsSendService.js";
 import { AppError } from "../utils/errors.js";
@@ -217,9 +218,14 @@ export async function getAppSendSms(
   await withAppContext(req, res, next, async (ctx) => {
     const error =
       typeof req.query.error === "string" ? req.query.error : undefined;
+    const liveTestAvailable = canCompanyUseLiveTestUi(ctx.company.id);
+    const liveTestStatus = liveTestAvailable
+      ? await getLiveTestSendPageStatus(ctx.company.id)
+      : null;
     return renderAppSendSmsPage(ctx, {
       error,
-      liveTestAvailable: canCompanyUseLiveTestUi(ctx.company.id),
+      liveTestAvailable,
+      liveTestStatus,
     });
   });
 }
@@ -259,9 +265,14 @@ export async function postAppSendSms(
       sendMode,
     });
 
+    const liveTestAvailable = canCompanyUseLiveTestUi(ctx.company.id);
+    const liveTestStatus = liveTestAvailable
+      ? await getLiveTestSendPageStatus(ctx.company.id)
+      : null;
     const html = renderAppSendSmsPage(ctx, {
       sendResult: result,
-      liveTestAvailable: canCompanyUseLiveTestUi(ctx.company.id),
+      liveTestAvailable,
+      liveTestStatus,
     });
     res.type("html").send(html);
   } catch (error) {
