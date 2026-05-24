@@ -1,4 +1,10 @@
 import { escapeHtml } from "../../utils/html.js";
+import {
+  brandPageTitle,
+  renderFaviconLink,
+  renderSidebarBrand,
+  TV_BRAND,
+} from "../brand.js";
 import { LEGACY_NAV, MAIN_NAV } from "./nav.js";
 import { getAdminStyles } from "./styles.js";
 
@@ -70,7 +76,7 @@ function renderNavLinks(
 function renderSidebar(active: string): string {
   return `<aside class="tv-sidebar" id="tv-sidebar" aria-label="Menú principal">
     <div class="tv-sidebar__brand">
-      <a href="/admin">Telvoice<span>Superadmin</span></a>
+      ${renderSidebarBrand("/admin", { subtitle: "superadmin" })}
     </div>
     <nav class="tv-sidebar__nav">
       ${renderNavLinks(MAIN_NAV, active)}
@@ -85,12 +91,12 @@ function renderTopbar(options: LayoutOptions): string {
   const balance = tb.smsBalance ?? "—";
   const routesLabel = tb.routesLabel ?? "Rutas";
   const routesOk = tb.routesOk ?? true;
-  const company = tb.companyName ?? "Telvoice · Superadmin";
+  const company = tb.companyName ?? `${TV_BRAND.name} · superadmin`;
   const roleLabel = tb.roleLabel ?? "";
   const adminName = options.adminName ?? "Admin";
   const routesClass = routesOk ? "tv-pill--ok" : "tv-pill--warn";
   const roleBadge = roleLabel
-    ? `<span class="tv-pill tv-pill--role" title="Rol en Telvoice">${escapeHtml(roleLabel)}</span>`
+    ? `<span class="tv-pill tv-pill--role" title="Rol en ${escapeHtml(TV_BRAND.name)}">${escapeHtml(roleLabel)}</span>`
     : "";
 
   return `<header class="tv-topbar">
@@ -167,7 +173,8 @@ export function renderLayout(options: LayoutOptions): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(options.title)} | Telvoice SMS Agent</title>
+  <title>${escapeHtml(brandPageTitle(options.title))}</title>
+  ${renderFaviconLink()}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -199,7 +206,8 @@ export function renderLayout(options: LayoutOptions): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(options.title)} | Telvoice SMS Agent</title>
+  <title>${escapeHtml(brandPageTitle(options.title))}</title>
+  ${renderFaviconLink()}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />

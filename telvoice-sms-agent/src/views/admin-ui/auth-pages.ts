@@ -1,4 +1,5 @@
 import { escapeHtml } from "../../utils/html.js";
+import { renderAuthBrand } from "../brand.js";
 import { renderLayout } from "./shell.js";
 
 export function renderAuthLoginPage(options: {
@@ -22,13 +23,7 @@ export function renderAuthLoginPage(options: {
 
   const body = `
     <div class="tv-auth-card">
-      <div class="tv-auth-brand">
-        <span class="tv-auth-logo" aria-hidden="true">TV</span>
-        <div>
-          <h1 class="tv-auth-title">Telvoice SMS Agent</h1>
-          <p class="tv-auth-sub">Panel administrativo · agent.telvoice.cl</p>
-        </div>
-      </div>
+      ${renderAuthBrand("telvoice", "Panel administrativo · agent.telvoice.cl")}
       ${successBlock}
       ${errorBlock}
       <form method="post" action="/admin/login" class="tv-auth-form">
@@ -59,13 +54,7 @@ export function renderAuthRegisterPage(options: {
 
   const body = `
     <div class="tv-auth-card">
-      <div class="tv-auth-brand">
-        <span class="tv-auth-logo" aria-hidden="true">TV</span>
-        <div>
-          <h1 class="tv-auth-title">Crear cuenta</h1>
-          <p class="tv-auth-sub">Registro rápido solo con correo Gmail</p>
-        </div>
-      </div>
+      ${renderAuthBrand("telvoice", "Crear cuenta · solo con correo Gmail")}
       ${errorBlock}
       <form method="post" action="/admin/register" class="tv-auth-form">
         <input type="hidden" name="next" value="${escapeHtml(options.next ?? "/admin")}" />

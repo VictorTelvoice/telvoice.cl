@@ -69,7 +69,7 @@ export function renderTemplatesPage(options: {
           <div class="tv-stat-chip"><span class="tv-stat-chip__label">Caracteres</span><span class="tv-stat-chip__value">${escapeHtml(String(t.message.length))}</span></div>
           <div class="tv-stat-chip"><span class="tv-stat-chip__label">Segmentos est.</span><span class="tv-stat-chip__value">${escapeHtml(String(Math.max(1, Math.ceil(t.message.length / 160))))}</span></div>
         </div>
-        <div class="tv-panel__body--center" style="margin-top:1rem">${renderMobilePreview("Telvoice", t.message)}</div>
+        <div class="tv-panel__body--center" style="margin-top:1rem">${renderMobilePreview("telvoice", t.message)}</div>
       </div>
     </template>`,
   ).join("");
@@ -105,7 +105,7 @@ export function renderTemplatesPage(options: {
               <label>Mensaje</label>
               <textarea rows="4" disabled class="tv-input-full">${escapeHtml(first.message)}</textarea>
             </div>
-            ${renderMobilePreview("Telvoice", first.message)}
+            ${renderMobilePreview("telvoice", first.message)}
           </div>
         </div>
       </aside>

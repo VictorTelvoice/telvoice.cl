@@ -5,7 +5,7 @@ export function renderSuperadminBanner(note?: string): string {
   return `<div class="tv-superadmin-banner" role="note">
     <span class="material-symbols-outlined" aria-hidden="true">admin_panel_settings</span>
     <div>
-      <strong>Superadmin Telvoice</strong>
+      <strong>superadmin telvoice</strong>
       <span>Panel interno de operación — no es el panel del cliente final.</span>
       ${note ? `<span class="tv-superadmin-banner__note">${escapeHtml(note)}</span>` : ""}
     </div>

@@ -1,4 +1,9 @@
 import { escapeHtml } from "../../utils/html.js";
+import {
+  brandPageTitle,
+  renderFaviconLink,
+  renderSidebarBrand,
+} from "../brand.js";
 import { getAdminStyles } from "../admin-ui/styles.js";
 import { APP_NAV } from "./app-nav.js";
 import { getAppPanelStyles } from "./app-styles.js";
@@ -39,8 +44,7 @@ function renderNavLinks(active: string): string {
 function renderSidebar(active: string): string {
   return `<aside class="tv-sidebar" id="tv-sidebar" aria-label="Menú cliente">
     <div class="tv-sidebar__brand">
-      <a href="/app/dashboard">Telvoice</a>
-      <span class="tv-sidebar__badge">Panel Cliente</span>
+      ${renderSidebarBrand("/app/dashboard", { badge: "Panel cliente" })}
     </div>
     <nav class="tv-sidebar__nav">
       ${renderNavLinks(active)}
@@ -117,7 +121,8 @@ export function renderAppLayout(options: AppLayoutOptions): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(options.title)} | Telvoice</title>
+  <title>${escapeHtml(brandPageTitle(options.title))}</title>
+  ${renderFaviconLink()}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -152,7 +157,8 @@ export function renderAppMinimalPage(title: string, body: string): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(title)} | Telvoice</title>
+  <title>${escapeHtml(brandPageTitle(title))}</title>
+  ${renderFaviconLink()}
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>${getAdminStyles()} ${getAppPanelStyles()}</style>
 </head>

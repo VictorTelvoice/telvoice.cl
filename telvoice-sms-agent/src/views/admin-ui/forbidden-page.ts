@@ -7,7 +7,7 @@ export function renderAdminForbiddenPage(options?: {
 }): string {
   const message =
     options?.message ??
-    "Tu cuenta no tiene permisos para ingresar al panel interno de Telvoice.";
+    "Tu cuenta no tiene permisos para ingresar al panel interno de telvoice.";
 
   const body = `
     <div class="tv-forbidden">

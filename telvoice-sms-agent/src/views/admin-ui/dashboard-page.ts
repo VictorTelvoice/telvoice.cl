@@ -177,7 +177,7 @@ export function renderDashboardBody(options: {
   <div class="tv-page-head">
       <div>
         <h1 class="tv-page-title">Dashboard Superadmin</h1>
-        <p class="tv-page-sub">Operación global Telvoice · ${escapeHtml(options.admin.name)}</p>
+        <p class="tv-page-sub">Operación global telvoice · ${escapeHtml(options.admin.name)}</p>
       </div>
     </div>
     ${warningBlock}

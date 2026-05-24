@@ -43,7 +43,7 @@ function wrap(
       smsBalance: opts.smsBalance ?? "—",
       routesLabel: "Telco routing",
       routesOk: true,
-      companyName: "Telvoice · Superadmin",
+      companyName: "telvoice · superadmin",
     },
   });
 }

@@ -79,22 +79,37 @@ export function getAdminStyles(): string {
       padding: 1.25rem 1.15rem 1rem;
       border-bottom: 1px solid rgba(255,255,255,0.08);
     }
-    .tv-sidebar__brand a {
+    .tv-brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
       color: #fff;
       text-decoration: none;
+    }
+    .tv-brand-lockup:hover { color: #fff; text-decoration: none; }
+    .tv-brand-isotipo {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+    .tv-brand-lockup__text { min-width: 0; }
+    .tv-brand-wordmark {
       display: block;
       font-weight: 800;
       font-size: 1.05rem;
       letter-spacing: -0.02em;
+      text-transform: lowercase;
+      line-height: 1.15;
     }
-    .tv-sidebar__brand span {
+    .tv-brand-lockup__sub {
       display: block;
       font-size: 0.72rem;
       font-weight: 600;
       color: rgba(255,255,255,0.55);
-      margin-top: 0.2rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
+      margin-top: 0.15rem;
+      text-transform: lowercase;
+      letter-spacing: 0.04em;
     }
     .tv-sidebar__nav { flex: 1; padding: 0.75rem 0.65rem 1.5rem; }
     .tv-sidebar__section {
@@ -294,17 +309,9 @@ export function getAdminStyles(): string {
       gap: 0.85rem;
       margin-bottom: 1.35rem;
     }
-    .tv-auth-logo {
+    .tv-auth-brand .tv-brand-isotipo {
       width: 48px;
       height: 48px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, var(--tv-primary), var(--tv-purple-soft));
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 0.95rem;
       flex-shrink: 0;
     }
     .tv-auth-title {

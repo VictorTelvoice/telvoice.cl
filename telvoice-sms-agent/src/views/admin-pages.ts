@@ -96,7 +96,7 @@ export function renderDashboardPage(options: {
       smsBalance,
       routesOk,
       routesLabel: routesOk ? "Red global OK" : "Red: revisar",
-      companyName: "Telvoice · Superadmin",
+      companyName: "telvoice · superadmin",
     },
   });
 }

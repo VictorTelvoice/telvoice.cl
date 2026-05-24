@@ -43,7 +43,7 @@ function wrap(
       smsBalance: opts.smsBalance ?? "18.420",
       routesLabel: "Red global OK",
       routesOk: true,
-      companyName: "Telvoice · Superadmin",
+      companyName: "telvoice · superadmin",
     },
   });
 }

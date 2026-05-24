@@ -12,7 +12,7 @@ export function renderAppPlaceholderPage(profile: UserProfileContext): string {
     <div class="tv-app-placeholder">
       <div class="tv-app-placeholder__card">
         <span class="material-symbols-outlined tv-app-placeholder__icon" aria-hidden="true">construction</span>
-        <h1 class="tv-page-title">Panel cliente Telvoice</h1>
+        <h1 class="tv-page-title">Panel cliente telvoice</h1>
         <p class="tv-page-sub">Hola, ${escapeHtml(profile.fullName)} · ${escapeHtml(roleDisplayLabel(profile.role))}</p>
         <p class="tv-app-placeholder__note">
           El portal <strong>/app</strong> se habilitará en la siguiente etapa.
@@ -37,7 +37,7 @@ export function renderAppPlaceholderPage(profile: UserProfileContext): string {
     showNav: false,
     adminName: profile.fullName,
     topbar: {
-      companyName: "Telvoice · Cliente",
+      companyName: "telvoice · cliente",
     },
   });
 }

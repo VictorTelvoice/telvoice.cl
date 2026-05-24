@@ -16,7 +16,7 @@ export function wrapAdminPage(options: {
     showNav: true,
     activeNav: options.activeNav,
     topbar: {
-      companyName: "Telvoice · Superadmin",
+      companyName: "telvoice · superadmin",
       routesLabel: "Red global OK",
       routesOk: true,
       roleLabel: roleDisplayLabel(options.admin.role),

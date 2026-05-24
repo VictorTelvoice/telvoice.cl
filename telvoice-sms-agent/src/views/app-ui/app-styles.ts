@@ -6,7 +6,7 @@ export function getAppPanelStyles(): string {
     .tv-app-client .tv-sidebar {
       background: linear-gradient(180deg, #0c4a9e 0%, #0a2458 100%);
     }
-    .tv-app-client .tv-sidebar__brand span {
+    .tv-app-client .tv-brand-lockup__sub {
       color: #7dd3fc;
       font-weight: 600;
     }
