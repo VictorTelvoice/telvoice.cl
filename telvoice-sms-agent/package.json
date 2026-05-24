@@ -19,6 +19,8 @@
     "debug:supabase-rest": "tsx scripts/debug-supabase-rest.ts",
     "seed:admin": "tsx scripts/seed-admin.ts",
     "seed:sms-routing": "node scripts/seed-sms-routing.mjs",
+    "seed:chile-3-providers": "node scripts/seed-chile-3-providers.mjs",
+    "migrate:017": "node scripts/apply-migration-017.mjs",
     "telegram:get-me": "tsx scripts/telegram-get-me.ts"
   },
   "dependencies": {

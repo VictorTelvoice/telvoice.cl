@@ -48,6 +48,10 @@ import { listPanelMessagesByCompany } from "../services/panelSmsMessageService.j
 import { getClientSmsReportData } from "../services/smsPanelReportsService.js";
 import { getLiveTestSendPageStatus } from "../services/smsLiveTestLimiterService.js";
 import { canCompanyUseLiveTestUi } from "../services/smsProviderStatusService.js";
+import {
+  getSendControlPanelView,
+  resolveVerifyTestSend,
+} from "../services/smsSendControlPanelService.js";
 import { sendPanelSms } from "../services/smsSendService.js";
 import { AppError } from "../utils/errors.js";
 
@@ -218,14 +222,18 @@ export async function getAppSendSms(
   await withAppContext(req, res, next, async (ctx) => {
     const error =
       typeof req.query.error === "string" ? req.query.error : undefined;
-    const liveTestAvailable = canCompanyUseLiveTestUi(ctx.company.id);
-    const liveTestStatus = liveTestAvailable
+    const sendEnabled = canCompanyUseLiveTestUi(ctx.company.id);
+    const liveTestStatus = sendEnabled
       ? await getLiveTestSendPageStatus(ctx.company.id)
+      : null;
+    const controlPanel = sendEnabled
+      ? await getSendControlPanelView(ctx.company.id)
       : null;
     return renderAppSendSmsPage(ctx, {
       error,
-      liveTestAvailable,
+      sendEnabled,
       liveTestStatus,
+      controlPanel,
     });
   });
 }
@@ -248,31 +256,59 @@ export async function postAppSendSms(
       return;
     }
 
-    const sendMode =
-      req.body?.send_mode === "live_test" ? "live_test" : "mock";
+    const isVerifyTest =
+      req.body?.quick_verify === "1" ||
+      (typeof req.body?.verify_id === "string" && req.body.verify_id.trim());
+
+    let to = String(req.body?.to ?? "");
+    let message = String(req.body?.message ?? "");
+    let campaignName =
+      typeof req.body?.campaign_name === "string"
+        ? req.body.campaign_name
+        : undefined;
+
+    if (isVerifyTest && typeof req.body?.verify_id === "string") {
+      const resolved = resolveVerifyTestSend({
+        verifyId: req.body.verify_id.trim(),
+        message: req.body?.message,
+      });
+      if (!resolved) {
+        res.redirect(
+          "/app/send-sms?error=" +
+            encodeURIComponent("Número de verificación no encontrado."),
+        );
+        return;
+      }
+      to = resolved.to;
+      message = resolved.message;
+      campaignName = `QA Verify — ${resolved.label}`;
+    }
 
     const result = await sendPanelSms({
       companyId: ctx.company.id,
-      senderId: String(req.body?.sender_id ?? ""),
-      to: String(req.body?.to ?? ""),
-      message: String(req.body?.message ?? ""),
-      campaignName:
-        typeof req.body?.campaign_name === "string"
-          ? req.body.campaign_name
-          : undefined,
+      senderId: String(req.body?.sender_id ?? "TELVOICE"),
+      to,
+      message,
+      campaignName,
       createdBy:
         ctx.profile.profileId ?? ctx.profile.adminUserId ?? undefined,
-      sendMode,
+      sendSource: isVerifyTest
+        ? "app_send_sms_verify_test"
+        : "app_send_sms_live_test",
     });
 
-    const liveTestAvailable = canCompanyUseLiveTestUi(ctx.company.id);
-    const liveTestStatus = liveTestAvailable
+    const sendEnabled = canCompanyUseLiveTestUi(ctx.company.id);
+    const liveTestStatus = sendEnabled
       ? await getLiveTestSendPageStatus(ctx.company.id)
+      : null;
+    const controlPanel = sendEnabled
+      ? await getSendControlPanelView(ctx.company.id)
       : null;
     const html = renderAppSendSmsPage(ctx, {
       sendResult: result,
-      liveTestAvailable,
+      sendEnabled,
       liveTestStatus,
+      controlPanel,
     });
     res.type("html").send(html);
   } catch (error) {
@@ -281,7 +317,7 @@ export async function postAppSendSms(
         ? error.message
         : error instanceof Error
           ? error.message
-          : "No se pudo enviar el SMS simulado";
+          : "No se pudo enviar el SMS";
     res.redirect(`/app/send-sms?error=${encodeURIComponent(msg)}`);
   }
 }

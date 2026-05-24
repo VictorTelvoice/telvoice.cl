@@ -4,6 +4,7 @@ import type { PanelSmsMessageRow } from "../types/sms-panel.js";
 import { AppError } from "../utils/errors.js";
 import { isMissingTableError } from "../utils/db-table.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
+import { getCompanyRatePlan } from "./companyRatePlanService.js";
 import { findCompanyById } from "./companyService.js";
 import {
   isCompanyAllowedForLiveTest,
@@ -23,8 +24,16 @@ const COUNTABLE_LIVE_TEST_STATUSES = [
   "accepted",
 ] as const;
 
-/** Cuota diaria /app: solo envíos desde panel cliente. */
+/** Cuota diaria /app: envíos desde panel cliente. */
 export const APP_CLIENT_LIVE_TEST_SOURCE = "app_send_sms_live_test";
+
+/** Test QA a números telsim registrados (cuenta en cuota diaria). */
+export const APP_VERIFY_TEST_SOURCE = "app_send_sms_verify_test";
+
+export const APP_PANEL_SEND_SOURCES = [
+  APP_CLIENT_LIVE_TEST_SOURCE,
+  APP_VERIFY_TEST_SOURCE,
+] as const;
 
 /** Pruebas técnicas Superadmin; no consumen cuota del cliente. */
 export const SUPERADMIN_LIVE_TEST_SOURCE = "superadmin_provider_test";
@@ -137,7 +146,7 @@ export async function countDailyLiveTestMessages(
     .select("id", { count: "exact", head: true })
     .eq("company_id", companyId)
     .eq("mode", "live_test")
-    .filter("metadata->>source", "eq", APP_CLIENT_LIVE_TEST_SOURCE)
+    .in("metadata->>source", [...APP_PANEL_SEND_SOURCES])
     .in("status", [...COUNTABLE_LIVE_TEST_STATUSES])
     .gte("created_at", startOfTodayUtcIso());
 
@@ -159,7 +168,7 @@ async function getLastCountableLiveTestAt(
     .select("created_at")
     .eq("company_id", companyId)
     .eq("mode", "live_test")
-    .filter("metadata->>source", "eq", APP_CLIENT_LIVE_TEST_SOURCE)
+    .in("metadata->>source", [...APP_PANEL_SEND_SOURCES])
     .in("status", [...COUNTABLE_LIVE_TEST_STATUSES])
     .order("created_at", { ascending: false })
     .limit(1)
@@ -239,7 +248,15 @@ export async function assertLiveTestOperationalLimits(input: {
 
   if (!isCompanyAllowedForLiveTest(input.companyId)) {
     throw new AppError(
-      "La empresa no está autorizada para envío real controlado.",
+      "La empresa no está autorizada para envío SMS.",
+      403,
+    );
+  }
+
+  const assignment = await getCompanyRatePlan(input.companyId);
+  if (!assignment?.live_enabled) {
+    throw new AppError(
+      "El envío SMS no está habilitado para tu cuenta. Contacta a soporte Telvoice.",
       403,
     );
   }
@@ -251,7 +268,7 @@ export async function assertLiveTestOperationalLimits(input: {
 
   if (!isNumberAllowedForLiveTest(phone.normalized)) {
     throw new AppError(
-      "El número destino no está autorizado para live_test.",
+      "El número destino no está autorizado para envío SMS.",
       403,
     );
   }
@@ -267,9 +284,9 @@ export async function assertLiveTestOperationalLimits(input: {
   await assertRoutingReady(input.companyId);
 
   const dailyUsed = await countDailyLiveTestMessages(input.companyId);
-  if (dailyUsed >= limits.dailyLimit) {
+  if (dailyUsed >= limits.dailyLimit && limits.dailyLimit < 999_999) {
     throw new AppError(
-      "Límite diario de pruebas reales alcanzado.",
+      "Límite diario de envíos alcanzado.",
       429,
     );
   }
@@ -296,6 +313,7 @@ export async function getLiveTestSendPageStatus(
   const companyAuthorized = isCompanyAllowedForLiveTest(companyId);
   const allowedNumbers = env.smsProvider.liveTestAllowedNumbers;
   const maskedNumbers = allowedNumbers.map(maskPhoneForDisplay);
+  const numbersRestricted = allowedNumbers.length > 0;
 
   let routeActive = false;
   let providerActive = false;
@@ -355,6 +373,8 @@ export async function getLiveTestSendPageStatus(
       phone.ok && phone.normalized
         ? isNumberAllowedForLiveTest(phone.normalized)
         : false;
+  } else if (!numbersRestricted) {
+    recipientAllowed = true;
   }
 
   const segmentsWithinLimit =
@@ -364,13 +384,13 @@ export async function getLiveTestSendPageStatus(
 
   let liveTestBlockReason: string | null = null;
   if (!globallyEnabled) {
-    liveTestBlockReason = null;
+    liveTestBlockReason = "El envío SMS no está disponible en este entorno.";
   } else if (!companyAuthorized) {
     liveTestBlockReason =
-      "La empresa no está autorizada para envío real controlado.";
+      "La empresa no está autorizada para envío SMS.";
   } else if (!liveEnabledOnPlan) {
     liveTestBlockReason =
-      "El envío real no está habilitado para tu cuenta. Contacta a soporte Telvoice.";
+      "El envío SMS no está habilitado para tu cuenta. Contacta a soporte Telvoice.";
   } else if (!routeActive) {
     liveTestBlockReason = "La ruta SMS no está disponible temporalmente.";
   } else if (!providerActive) {
@@ -379,12 +399,12 @@ export async function getLiveTestSendPageStatus(
     trafficDailyRemaining != null &&
     trafficDailyRemaining <= 0
   ) {
-    liveTestBlockReason = "El límite diario de envíos reales fue alcanzado.";
-  } else if (dailyRemaining <= 0) {
-    liveTestBlockReason = "Límite diario de pruebas reales alcanzado.";
+    liveTestBlockReason = "El límite diario de envíos fue alcanzado.";
+  } else if (dailyRemaining <= 0 && limits.dailyLimit < 999_999) {
+    liveTestBlockReason = "Límite diario de envíos alcanzado.";
   } else if (recipientAllowed === false) {
     liveTestBlockReason =
-      "El número destino no está autorizado para live_test.";
+      "El número destino no está autorizado para envío SMS.";
   } else if (segmentsWithinLimit === false) {
     liveTestBlockReason =
       "El mensaje supera el máximo de segmentos permitido.";

@@ -53,7 +53,9 @@ export async function getClientSmsReportData(
   }
 
   const rows = (messages ?? []) as PanelSmsMessageRow[];
-  const delivered = rows.filter((m) => m.status === "delivered").length;
+  const delivered = rows.filter(
+    (m) => m.status === "delivered" && m.mode !== "mock",
+  ).length;
   const mockMessages = rows.filter((m) => m.mode === "mock").length;
   const liveTestMessages = rows.filter((m) => m.mode === "live_test").length;
   const pendingCount = rows.filter(

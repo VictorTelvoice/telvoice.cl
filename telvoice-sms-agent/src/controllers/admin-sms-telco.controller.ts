@@ -323,6 +323,16 @@ export async function postCreateRatePlan(req: Request, res: Response): Promise<v
   }
 }
 
+function parseUuidListField(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((v) => String(v).trim()).filter(Boolean);
+  }
+  if (value != null && String(value).trim()) {
+    return [String(value).trim()];
+  }
+  return [];
+}
+
 export async function postCreateRatePlanDetail(
   req: Request,
   res: Response,
@@ -338,6 +348,9 @@ export async function postCreateRatePlanDetail(
       sellPricePerSms: Number(req.body.sell_price_per_sms ?? 1),
       costPricePerSms: Number(req.body.cost_price_per_sms ?? 0),
       currency: String(req.body.currency ?? "CLP"),
+      weight: req.body.route_weight
+        ? Number(req.body.route_weight)
+        : undefined,
     });
     redirectQuery(res, `/admin/rate-plans/${planId}`, { ok: "Tarifa agregada" });
   } catch (e) {
@@ -398,6 +411,8 @@ export async function postUpdateCompanyTraffic(
       liveEnabled: req.body.live_enabled === "1",
       campaignsEnabled: req.body.campaigns_enabled === "1",
       apiEnabled: req.body.api_enabled === "1",
+      allowedProviderIds: parseUuidListField(req.body.allowed_provider_ids),
+      blockedProviderIds: parseUuidListField(req.body.blocked_provider_ids),
     });
     redirectQuery(res, `/admin/wallets/${companyId}`, {
       ok: "Límites de tráfico del cliente actualizados",
@@ -415,14 +430,30 @@ export async function postUpdateRatePlanTraffic(
 ): Promise<void> {
   const id = validateUuidParam(String(req.params.id), "id");
   try {
+    const plan = await getSmsRatePlanById(id);
+    if (!plan) {
+      redirectQuery(res, "/admin/rate-plans", { error: "Plan no encontrado" });
+      return;
+    }
+    const routingMode = String(req.body.routing_mode ?? "single");
+    const metadata = {
+      ...(plan.metadata ?? {}),
+      routing_mode:
+        routingMode === "weighted" || routingMode === "round_robin"
+          ? routingMode
+          : "single",
+    };
     await updateSmsRatePlan(id, {
       default_tps: Number(req.body.default_tps ?? 1),
       daily_limit: req.body.daily_limit ? Number(req.body.daily_limit) : null,
       monthly_limit: req.body.monthly_limit
         ? Number(req.body.monthly_limit)
         : null,
+      metadata,
     });
-    redirectQuery(res, `/admin/rate-plans/${id}`, { ok: "TPS del plan actualizado" });
+    redirectQuery(res, `/admin/rate-plans/${id}`, {
+      ok: "Política de routing del plan actualizada",
+    });
   } catch (e) {
     redirectQuery(res, `/admin/rate-plans/${id}`, {
       error: e instanceof Error ? e.message : "Error",

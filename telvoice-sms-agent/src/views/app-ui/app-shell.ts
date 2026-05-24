@@ -43,21 +43,11 @@ function renderNavLink(item: { id: string; label: string; href: string; icon: st
     </a>`;
 }
 
-function renderNavSendCta(active: string): string {
-  const item = APP_NAV_SEND_SMS;
-  const isActive = active === item.id;
-  return `<div class="tv-nav-send-wrap">
-      <a href="${item.href}" class="tv-nav-send-cta${isActive ? " tv-nav-send-cta--active" : ""}"${isActive ? ' aria-current="page"' : ""}>
-        <span class="material-symbols-outlined" aria-hidden="true">${escapeHtml(item.icon)}</span>
-        ${escapeHtml(item.label)}
-      </a>
-    </div>`;
-}
-
 function renderNavLinks(active: string): string {
+  const send = renderNavLink(APP_NAV_SEND_SMS, active, " tv-nav-link--send");
   const primary = APP_NAV_PRIMARY.map((item) => renderNavLink(item, active)).join("");
   const rest = APP_NAV_REST.map((item) => renderNavLink(item, active)).join("");
-  return `${renderNavSendCta(active)}
+  return `${send}
     <div class="tv-sidebar__nav-group">${primary}</div>
     <div class="tv-sidebar__nav-divider" role="presentation"></div>
     <div class="tv-sidebar__nav-group tv-sidebar__nav-group--secondary">${rest}</div>`;

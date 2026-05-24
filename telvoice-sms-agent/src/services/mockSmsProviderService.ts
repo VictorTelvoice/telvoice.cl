@@ -9,10 +9,10 @@ export type MockProviderSendInput = {
 
 export type MockProviderSendResult = {
   providerMessageId: string;
-  status: "delivered";
+  status: "sent";
   operator: string;
   sentAt: string;
-  deliveredAt: string;
+  deliveredAt: null;
 };
 
 /** Simula envío a operador; no contacta SMPP ni Almuqeet. */
@@ -24,9 +24,9 @@ export function sendViaMockProvider(
 
   return {
     providerMessageId: `mock-${randomUUID()}`,
-    status: "delivered",
+    status: "sent",
     operator,
     sentAt: now,
-    deliveredAt: now,
+    deliveredAt: null,
   };
 }

@@ -26,46 +26,32 @@ export function getAppPanelStyles(): string {
       margin: 0.5rem 0.35rem;
       background: rgba(255, 255, 255, 0.12);
     }
-    .tv-app-client .tv-nav-send-wrap {
-      margin: 0.15rem 0 0.5rem;
-      padding: 0.4rem;
-      border: 1px solid rgba(255, 255, 255, 0.9);
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.05);
+    .tv-app-client .tv-brand-lockup .tv-brand-isotipo {
+      width: 38px;
+      height: 38px;
     }
-    .tv-app-client .tv-nav-send-cta {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.45rem;
-      width: 100%;
-      padding: 0.5rem 0.65rem;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 0.875rem;
-      color: #fff;
+    .tv-app-client .tv-nav-link--send {
       background: var(--tv-primary, #0052cc);
-      border: 1px solid var(--tv-primary-dark, #003d99);
-      box-shadow: none;
-      transition: background 0.15s ease;
-    }
-    .tv-app-client .tv-nav-send-cta .material-symbols-outlined {
-      font-size: 1.1rem;
-    }
-    .tv-app-client .tv-nav-send-cta:hover {
-      text-decoration: none;
       color: #fff;
-      background: var(--tv-primary-dark, #003d99);
+      font-weight: 500;
     }
-    .tv-app-client .tv-nav-send-cta--active {
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+    .tv-app-client .tv-nav-link--send .material-symbols-outlined {
+      opacity: 1;
+    }
+    .tv-app-client .tv-nav-link--send:hover {
+      background: var(--tv-primary-dark, #003d99);
+      color: #fff;
+    }
+    .tv-app-client .tv-nav-link--send.tv-nav-link--active {
+      background: linear-gradient(90deg, rgba(14, 165, 233, 0.35), rgba(91, 33, 182, 0.25));
+      color: #fff;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
     }
     .tv-app-client .tv-sidebar__badge {
       display: inline-block;
       margin-top: 0.35rem;
-      padding: 0.2rem 0.55rem;
-      font-size: 0.68rem;
+      padding: 0.16rem 0.44rem;
+      font-size: 0.544rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -227,6 +213,126 @@ export function getAppPanelStyles(): string {
       border: 1px solid #fde68a;
       border-radius: 10px;
       font-size: 0.9rem;
+    }
+    .tv-send-kpis { margin-bottom: 1rem; }
+    .tv-kpi__value--sm { font-size: 1.15rem; }
+    .tv-kpi__sub {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--tv-muted);
+      font-weight: 500;
+      margin-top: 0.15rem;
+    }
+    .tv-send-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.85fr);
+      gap: 1rem;
+      margin-top: 1rem;
+      align-items: start;
+    }
+    .tv-send-aside { display: flex; flex-direction: column; gap: 1rem; }
+    .tv-send-to-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .tv-send-to-pick { min-width: 11rem; font-size: 0.85rem; }
+    .tv-send-submit { width: 100%; justify-content: center; margin-top: 0.25rem; }
+    .tv-checklist {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+    .tv-checklist__item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      font-size: 0.88rem;
+    }
+    .tv-checklist__icon { font-size: 1.15rem; flex-shrink: 0; }
+    .tv-checklist__item--ok .tv-checklist__icon { color: #059669; }
+    .tv-checklist__item--fail .tv-checklist__icon { color: #dc2626; }
+    .tv-checklist__hint {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--tv-muted);
+      margin-top: 0.1rem;
+    }
+    .tv-send-block-reason { color: var(--tv-danger); margin: 0.75rem 0 0; }
+    .tv-precampaign-banner { margin: 0.75rem 0; font-size: 0.92rem; }
+    .tv-precampaign-banner--ok {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+      padding: 0.85rem 1rem;
+      border-radius: 10px;
+    }
+    .tv-webhook-hint { margin-top: 0.75rem; word-break: break-all; font-size: 0.78rem; }
+    .tv-webhook-hint--warn { color: #b45309; }
+    .tv-verify-section { margin-top: 1rem; }
+    .tv-verify-section__head {
+      padding: 1rem 1.25rem 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.75rem 1.25rem;
+    }
+    .tv-verify-section__head .tv-panel__title { margin: 0; }
+    .tv-verify-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 0.85rem;
+    }
+    .tv-verify-card {
+      border: 1px solid var(--tv-border);
+      border-radius: 12px;
+      padding: 1rem;
+      background: #fafafa;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .tv-verify-card--ready { border-color: #a7f3d0; background: #f0fdf4; }
+    .tv-verify-card--pending { border-color: #fde68a; background: #fffbeb; }
+    .tv-verify-card__head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .tv-verify-card__operator { display: block; font-size: 0.95rem; }
+    .tv-verify-card__label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--tv-muted);
+      margin-top: 0.1rem;
+    }
+    .tv-verify-card__phone { margin: 0; font-size: 0.88rem; }
+    .tv-verify-card__meta {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--tv-muted);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .tv-verify-card__form { margin-top: 0.25rem; }
+    .tv-verify-empty {
+      grid-column: 1 / -1;
+      padding: 1.25rem;
+      border: 1px dashed var(--tv-border);
+      border-radius: 10px;
+      text-align: center;
+      color: var(--tv-muted);
+    }
+    @media (max-width: 960px) {
+      .tv-send-layout { grid-template-columns: 1fr; }
+      .tv-send-to-row { grid-template-columns: 1fr; }
     }
   `;
 }

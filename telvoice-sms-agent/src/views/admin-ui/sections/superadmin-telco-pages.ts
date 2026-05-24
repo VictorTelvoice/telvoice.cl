@@ -12,6 +12,10 @@ import type {
   SmsRatePlanRow,
   SmsRouteWithProvider,
 } from "../../../types/sms-routing.js";
+import {
+  companyRoutingPolicyFromAssignment,
+  routingModeFromPlan,
+} from "../../../services/smsRouteSelectionService.js";
 import { escapeHtml, formatDate } from "../../../utils/html.js";
 import { wrapAdminPage } from "../admin-page-wrap.js";
 import { renderPageHeader } from "../page-kit.js";
@@ -418,6 +422,7 @@ export function renderSaRatePlanDetailPage(opts: BaseOpts & {
             d.margin != null
               ? Number(d.margin)
               : Number(d.sell_price_per_sms) - Number(d.cost_price_per_sms);
+          const weight = Number(d.metadata?.weight ?? 100);
           return `<tr>
         <td>${escapeHtml(d.mcc ?? "—")}</td>
         <td>${escapeHtml(d.mnc ?? "—")}</td>
@@ -426,6 +431,7 @@ export function renderSaRatePlanDetailPage(opts: BaseOpts & {
         <td>${escapeHtml(d.traffic_type)}</td>
         <td>${escapeHtml(d.route?.name ?? "—")}</td>
         <td>${escapeHtml(d.provider?.name ?? d.provider?.code ?? "—")}</td>
+        <td>${weight}</td>
         <td>${d.cost_price_per_sms}</td>
         <td>${d.sell_price_per_sms}</td>
         <td>${margin.toFixed(4)}</td>
@@ -434,7 +440,7 @@ export function renderSaRatePlanDetailPage(opts: BaseOpts & {
       </tr>`;
         })
         .join("")
-    : `<tr><td colspan="12">Sin tarifas. Agregue un detalle abajo.</td></tr>`;
+    : `<tr><td colspan="13">Sin tarifas. Agregue un detalle abajo.</td></tr>`;
 
   const routeOpts = opts.routes
     .filter((r) => r.status === "active")
@@ -444,21 +450,33 @@ export function renderSaRatePlanDetailPage(opts: BaseOpts & {
     )
     .join("");
 
+  const routingMode = routingModeFromPlan(opts.ratePlan);
+  const modeOpts = (value: string, label: string) =>
+    `<option value="${value}"${routingMode === value ? " selected" : ""}>${label}</option>`;
+
   const body = `${renderSuperadminBanner()}
     ${renderPageHeader({
       title: escapeHtml(opts.ratePlan.name),
-      subtitle: `Código ${escapeHtml(opts.ratePlan.code)}`,
+      subtitle: `Código ${escapeHtml(opts.ratePlan.code)} · modo ${escapeHtml(routingMode)}`,
       actions: `<a href="/admin/rate-plans" class="btn btn-ghost btn-sm">← Planes</a>`,
     })}
     <form method="post" action="/admin/rate-plans/${escapeHtml(opts.ratePlan.id)}/traffic" class="tv-panel tv-form-grid" style="margin-bottom:1rem;padding:1rem">
-      <h2 class="tv-panel__title" style="grid-column:1/-1">Política TPS del plan</h2>
+      <h2 class="tv-panel__title" style="grid-column:1/-1">Política routing del plan</h2>
+      <label>Modo distribución
+        <select name="routing_mode" class="tv-input-full">
+          ${modeOpts("single", "Single — una ruta (default o prioridad)")}
+          ${modeOpts("weighted", "Weighted — reparto aleatorio por peso")}
+          ${modeOpts("round_robin", "Round robin — reparto secuencial por peso")}
+        </select>
+      </label>
       <label>Default TPS <input name="default_tps" type="number" step="0.1" min="1" value="${Number(opts.ratePlan.default_tps ?? 1)}" class="tv-input-full" /></label>
       <label>Límite diario <input name="daily_limit" type="number" value="${opts.ratePlan.daily_limit ?? ""}" class="tv-input-full" placeholder="Opcional" /></label>
       <label>Límite mensual <input name="monthly_limit" type="number" value="${opts.ratePlan.monthly_limit ?? ""}" class="tv-input-full" placeholder="Opcional" /></label>
-      <button type="submit" class="btn btn-secondary">Guardar TPS plan</button>
+      <button type="submit" class="btn btn-secondary">Guardar política</button>
+      <p class="field-hint" style="grid-column:1/-1">Para repartir entre 3 proveedores CL, use weighted/round_robin y agregue 3 detalles con pesos (ej. 34/33/33).</p>
     </form>
     <div class="table-wrap tv-panel"><table class="tv-table tv-table--compact"><thead><tr>
-      <th>MCC</th><th>MNC</th><th>País</th><th>Operador</th><th>Tipo SMS</th><th>Ruta</th><th>Proveedor</th><th>Costo</th><th>Venta</th><th>Margen</th><th>Moneda</th><th>Estado</th>
+      <th>MCC</th><th>MNC</th><th>País</th><th>Operador</th><th>Tipo SMS</th><th>Ruta</th><th>Proveedor</th><th>Peso</th><th>Costo</th><th>Venta</th><th>Margen</th><th>Moneda</th><th>Estado</th>
     </tr></thead><tbody>${rows}</tbody></table></div>
     <section class="tv-panel" style="margin-top:1rem">
       <h2 class="tv-panel__title">Agregar tarifa</h2>
@@ -467,6 +485,7 @@ export function renderSaRatePlanDetailPage(opts: BaseOpts & {
         <label>País <input name="country" value="CL" class="tv-input-full" /></label>
         <label>Operador <input name="operator_name" class="tv-input-full" /></label>
         <label>Tipo tráfico <select name="traffic_type" class="tv-input-full"><option value="transactional">Transactional</option><option value="promotional">Promotional</option></select></label>
+        <label>Peso reparto <input name="route_weight" type="number" min="1" value="100" class="tv-input-full" /></label>
         <label>Precio venta/SMS <input name="sell_price_per_sms" type="number" step="0.0001" value="1" required class="tv-input-full" /></label>
         <label>Costo ref./SMS <input name="cost_price_per_sms" type="number" step="0.0001" value="0" class="tv-input-full" /></label>
         <label>Moneda <input name="currency" value="${escapeHtml(opts.ratePlan.currency)}" class="tv-input-full" /></label>
@@ -516,11 +535,18 @@ export function renderWalletRatePlanBlock(opts: {
   companyId: string;
   assignment: CompanyRatePlanView | null;
   ratePlans: SmsRatePlanRow[];
+  providers?: SmsProviderRow[];
 }): string {
   const a = opts.assignment;
+  const policy = companyRoutingPolicyFromAssignment(a);
+  const providerPolicyHint =
+    policy.allowedProviderIds.length > 0 || policy.blockedProviderIds.length > 0
+      ? `<br><span class="field-hint">Proveedores permitidos: ${policy.allowedProviderIds.length || "todos"} · bloqueados: ${policy.blockedProviderIds.length}</span>`
+      : "";
+
   const current = a
     ? `<p><strong>${escapeHtml(a.rate_plan_name ?? "—")}</strong> · ${escapeHtml(a.country)} · ${escapeHtml(a.traffic_type)} · ${statusBadgeSa(a.status)}<br>
-      <span class="field-hint">Cliente max TPS: ${Number(a.max_tps ?? 1)} · Live: ${a.live_enabled ? "sí" : "no"} · Campañas: ${a.campaigns_enabled ? "sí" : "no"} · API: ${a.api_enabled ? "sí" : "no"}</span><br>
+      <span class="field-hint">Cliente max TPS: ${Number(a.max_tps ?? 1)} · Live: ${a.live_enabled ? "sí" : "no"} · Campañas: ${a.campaigns_enabled ? "sí" : "no"} · API: ${a.api_enabled ? "sí" : "no"}</span>${providerPolicyHint}<br>
       <span class="field-hint">Asignado ${formatDate(a.created_at)}</span></p>`
     : `<p class="badge badge-warn">Cliente sin rate plan asignado para envío real.</p>`;
 
@@ -530,6 +556,32 @@ export function renderWalletRatePlanBlock(opts: {
         `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} (${escapeHtml(p.code)})</option>`,
     )
     .join("");
+
+  const providerChecks = (opts.providers ?? [])
+    .filter((p) => p.status === "active" || p.status === "testing")
+    .map((p) => {
+      const allowedChecked = policy.allowedProviderIds.includes(p.id)
+        ? " checked"
+        : "";
+      const blockedChecked = policy.blockedProviderIds.includes(p.id)
+        ? " checked"
+        : "";
+      return `<div class="tv-form-grid" style="grid-template-columns:1fr auto auto;align-items:center;gap:0.5rem;margin:0.25rem 0">
+        <span>${escapeHtml(p.name)} <code class="tv-code-sm">${escapeHtml(p.code)}</code></span>
+        <label class="tv-checkbox" title="Solo estos proveedores (vacío = todos del plan)"><input type="checkbox" name="allowed_provider_ids" value="${escapeHtml(p.id)}"${allowedChecked} /> Permitir</label>
+        <label class="tv-checkbox" title="Nunca usar este proveedor"><input type="checkbox" name="blocked_provider_ids" value="${escapeHtml(p.id)}"${blockedChecked} /> Bloquear</label>
+      </div>`;
+    })
+    .join("");
+
+  const providerSection =
+    a && providerChecks
+      ? `<div style="grid-column:1/-1;margin-top:0.5rem">
+        <h4 style="margin:0 0 0.5rem;font-size:0.9rem">Proveedores por cliente (opcional)</h4>
+        <p class="field-hint">Deje «Permitir» vacío para usar todos los del rate plan. «Bloquear» excluye un vendor aunque esté en el plan balanceado.</p>
+        ${providerChecks}
+      </div>`
+      : "";
 
   return `<section class="tv-panel">
     <h2 class="tv-panel__title">Rate Plan asignado</h2>
@@ -553,6 +605,7 @@ export function renderWalletRatePlanBlock(opts: {
         <label class="tv-checkbox"><input type="checkbox" name="live_enabled" value="1" ${a.live_enabled ? "checked" : ""} /> live_enabled</label>
         <label class="tv-checkbox"><input type="checkbox" name="campaigns_enabled" value="1" ${a.campaigns_enabled ? "checked" : ""} /> campaigns_enabled</label>
         <label class="tv-checkbox"><input type="checkbox" name="api_enabled" value="1" ${a.api_enabled ? "checked" : ""} /> api_enabled</label>
+        ${providerSection}
         <button type="submit" class="btn btn-primary">Guardar límites cliente</button>
         <p class="field-hint" style="grid-column:1/-1">El TPS máximo permitido por cuenta cliente es 20.</p>
       </form>`

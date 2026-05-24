@@ -75,6 +75,7 @@ export async function updateSmsRatePlan(
     default_tps: number;
     daily_limit: number | null;
     monthly_limit: number | null;
+    metadata: Record<string, unknown>;
   }>,
 ): Promise<SmsRatePlanRow> {
   const { data, error } = await getSupabase()
@@ -96,7 +97,7 @@ export async function listRatePlanDetails(
   const { data, error } = await getSupabase()
     .from("sms_rate_plan_details")
     .select(
-      "*, sms_routes(*, sms_providers(id, name, code)), sms_rate_plans(name, code)",
+      "*, sms_routes(*, sms_providers(id, name, code, status)), sms_rate_plans(name, code)",
     )
     .eq("rate_plan_id", ratePlanId)
     .order("country");
@@ -111,7 +112,12 @@ export async function listRatePlanDetails(
   return (data ?? []).map((row) => {
     const r = row as SmsRatePlanDetailRow & {
       sms_routes?: (SmsRatePlanDetailEnriched["route"] & {
-        sms_providers?: { id: string; name: string; code: string } | null;
+        sms_providers?: {
+          id: string;
+          name: string;
+          code: string;
+          status?: string;
+        } | null;
       }) | null;
     };
     const route = r.sms_routes ?? null;
@@ -124,6 +130,7 @@ export async function listRatePlanDetails(
             id: prov.id,
             name: prov.name,
             code: prov.code,
+            status: prov.status,
           } as SmsRatePlanDetailEnriched["provider"])
         : null,
     };
@@ -141,7 +148,13 @@ export async function createRatePlanDetail(input: {
   sellPricePerSms: number;
   costPricePerSms?: number;
   currency?: string;
+  weight?: number;
 }): Promise<SmsRatePlanDetailRow> {
+  const metadata: Record<string, unknown> = {};
+  if (input.weight != null && Number.isFinite(input.weight) && input.weight > 0) {
+    metadata.weight = input.weight;
+  }
+
   const { data, error } = await getSupabase()
     .from("sms_rate_plan_details")
     .insert({
@@ -156,6 +169,7 @@ export async function createRatePlanDetail(input: {
       cost_price_per_sms: input.costPricePerSms ?? 0,
       currency: input.currency ?? "CLP",
       status: "active",
+      metadata,
     })
     .select("*")
     .single();

@@ -4,6 +4,7 @@ import { getCompanyRatePlan } from "./companyRatePlanService.js";
 import { getSmsProviderById } from "./smsProviderService.js";
 import { findDefaultRouteForCountry, getSmsRouteById } from "./smsRouteService.js";
 import { getSmsRatePlanById, listRatePlanDetails } from "./smsRatePlanService.js";
+import { selectRatePlanDetail } from "./smsRouteSelectionService.js";
 
 export async function resolveRouteForMessage(input: {
   companyId: string;
@@ -35,10 +36,16 @@ export async function resolveRouteForMessage(input: {
   const details = await listRatePlanDetails(ratePlan.id);
   const activeDetails = details.filter((d) => d.status === "active");
 
-  let detail =
-    activeDetails.find((d) => d.route?.is_default && d.country === country) ??
-    activeDetails.find((d) => d.country === country) ??
-    activeDetails[0];
+  let detail = activeDetails.length
+    ? selectRatePlanDetail({
+        ratePlan,
+        details: activeDetails,
+        assignment,
+        country,
+        trafficType,
+        companyId: input.companyId,
+      })
+  : null;
 
   if (!detail?.route_id) {
     const fallbackRoute = await findDefaultRouteForCountry(country);

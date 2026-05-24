@@ -32,6 +32,7 @@ import {
 import { listTransactionsByCompany } from "../services/walletTransactionService.js";
 import { getCompanyRatePlan } from "../services/companyRatePlanService.js";
 import { listSmsRatePlans } from "../services/smsRatePlanService.js";
+import { listSmsProviders } from "../services/smsProviderService.js";
 import { isMissingTableError } from "../utils/db-table.js";
 import { renderWalletRatePlanBlock } from "../views/admin-ui/sections/superadmin-telco-pages.js";
 import { validateUuidParam } from "../utils/validation.js";
@@ -311,14 +312,16 @@ export async function getSaWalletDetailPage(
 
     const balance = await getCompanyBalance(companyId);
     const transactions = await listTransactionsByCompany(companyId, 30);
-    const [ratePlanAssignment, ratePlans] = await Promise.all([
+    const [ratePlanAssignment, ratePlans, providers] = await Promise.all([
       getCompanyRatePlan(companyId),
       listSmsRatePlans(),
+      listSmsProviders(),
     ]);
     const ratePlanHtml = renderWalletRatePlanBlock({
       companyId,
       assignment: ratePlanAssignment,
       ratePlans,
+      providers,
     });
 
     const walletRow = {

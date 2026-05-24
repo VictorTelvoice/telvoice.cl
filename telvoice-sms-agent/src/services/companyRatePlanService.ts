@@ -4,10 +4,16 @@ import { isMissingTableError } from "../utils/db-table.js";
 import { AppError } from "../utils/errors.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 import {
+  buildCompanyRoutingMetadata,
+  companyRoutingPolicyFromAssignment,
+} from "./smsRouteSelectionService.js";
+import {
   CLIENT_TPS_CAP_ERROR,
   normalizeClientMaxTps,
   validateClientMaxTpsInput,
 } from "./smsTrafficPolicyService.js";
+
+export { companyRoutingPolicyFromAssignment };
 
 export type CompanyRatePlanView = CompanyRatePlanRow & {
   rate_plan?: SmsRatePlanRow | null;
@@ -58,6 +64,8 @@ export async function updateCompanyRatePlanTraffic(
     liveEnabled?: boolean;
     campaignsEnabled?: boolean;
     apiEnabled?: boolean;
+    allowedProviderIds?: string[];
+    blockedProviderIds?: string[];
     country?: string;
     trafficType?: string;
   },
@@ -97,6 +105,33 @@ export async function updateCompanyRatePlanTraffic(
   }
   if (input.apiEnabled !== undefined) {
     patch.api_enabled = input.apiEnabled;
+  }
+
+  if (
+    input.allowedProviderIds !== undefined ||
+    input.blockedProviderIds !== undefined
+  ) {
+    const currentMeta = (current.metadata ?? {}) as Record<string, unknown>;
+    const routingMeta = buildCompanyRoutingMetadata({
+      allowedProviderIds: input.allowedProviderIds,
+      blockedProviderIds: input.blockedProviderIds,
+    });
+    const nextMeta = { ...currentMeta };
+    if (input.allowedProviderIds !== undefined) {
+      if (routingMeta.allowed_provider_ids) {
+        nextMeta.allowed_provider_ids = routingMeta.allowed_provider_ids;
+      } else {
+        delete nextMeta.allowed_provider_ids;
+      }
+    }
+    if (input.blockedProviderIds !== undefined) {
+      if (routingMeta.blocked_provider_ids) {
+        nextMeta.blocked_provider_ids = routingMeta.blocked_provider_ids;
+      } else {
+        delete nextMeta.blocked_provider_ids;
+      }
+    }
+    patch.metadata = nextMeta;
   }
 
   const { data, error } = await getSupabase()

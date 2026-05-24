@@ -120,17 +120,17 @@ export const env = {
   },
   databaseUrl: optionalEnv("DATABASE_URL"),
   smsProvider: {
-    mode: normalizeSmsProviderMode(optionalEnv("SMS_PROVIDER_MODE", "mock")),
+    mode: normalizeSmsProviderMode(optionalEnv("SMS_PROVIDER_MODE", "live_test")),
     provider: optionalEnv("SMS_PROVIDER", "real_api"),
-    liveTestEnabled: optionalEnv("SMS_LIVE_TEST_ENABLED", "false") === "true",
+    liveTestEnabled: optionalEnv("SMS_LIVE_TEST_ENABLED", "true") === "true",
     liveTestAllowedCompanyIds: parseCsvEnv("SMS_LIVE_TEST_ALLOWED_COMPANY_IDS"),
     liveTestAllowedNumbers: parseCsvEnv("SMS_LIVE_TEST_ALLOWED_NUMBERS"),
-    liveTestDailyLimit: parsePositiveIntEnv("SMS_LIVE_TEST_DAILY_LIMIT", 3),
+    liveTestDailyLimit: parsePositiveIntEnv("SMS_LIVE_TEST_DAILY_LIMIT", 10_000),
     liveTestMinSecondsBetweenSends: parsePositiveIntEnv(
       "SMS_LIVE_TEST_MIN_SECONDS_BETWEEN_SENDS",
-      60,
+      5,
     ),
-    liveTestMaxSegments: parsePositiveIntEnv("SMS_LIVE_TEST_MAX_SEGMENTS", 1),
+    liveTestMaxSegments: parsePositiveIntEnv("SMS_LIVE_TEST_MAX_SEGMENTS", 3),
   } satisfies SmsProviderConfig,
   /** TPS global de plataforma (techo superior; no sustituye MAX_CLIENT_TPS). */
   smsPlatformMaxTps: parsePositiveIntEnv("SMS_PLATFORM_MAX_TPS", 100),

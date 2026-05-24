@@ -102,6 +102,7 @@ export type CompanyRatePlanRow = {
   live_enabled?: boolean;
   campaigns_enabled?: boolean;
   api_enabled?: boolean;
+  metadata?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 };

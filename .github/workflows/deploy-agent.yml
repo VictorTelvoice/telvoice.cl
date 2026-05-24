@@ -114,6 +114,25 @@ jobs:
               rm -f "$ENV_BACKUP"
               echo ".env restaurado"
             fi
+
+            # Ajustes operativos en .env (sin sobrescribir secretos existentes)
+            if [ -f "$APP_PATH/.env" ]; then
+              upsert_env() {
+                local key="$1" val="$2"
+                if grep -q "^${key}=" "$APP_PATH/.env"; then
+                  sed -i "s|^${key}=.*|${key}=${val}|" "$APP_PATH/.env"
+                else
+                  echo "${key}=${val}" >> "$APP_PATH/.env"
+                fi
+              }
+              upsert_env SMS_PROVIDER_MODE live_test
+              upsert_env SMS_LIVE_TEST_ENABLED true
+              if ! grep -q '^TELVOICE_VERIFY_NUMBERS=' "$APP_PATH/.env"; then
+                upsert_env TELVOICE_VERIFY_NUMBERS '+56934449937:Linea QA 1 telsim:Movistar|+56973824023:Linea QA 2 telsim:Entel'
+                echo "TELVOICE_VERIFY_NUMBERS configurado (QA telsim)"
+              fi
+            fi
+
             rm -rf "$CLONE_DIR"
 
             cd "$APP_PATH"
@@ -121,7 +140,7 @@ jobs:
             npm run build
 
             if pm2 describe telvoice-sms-agent >/dev/null 2>&1; then
-              pm2 restart telvoice-sms-agent
+              pm2 restart telvoice-sms-agent --update-env
             else
               pm2 start dist/index.js --name telvoice-sms-agent
             fi

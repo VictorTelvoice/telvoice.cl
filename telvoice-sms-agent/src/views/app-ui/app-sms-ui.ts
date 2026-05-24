@@ -7,7 +7,11 @@ function badge(cls: string, label: string): string {
 
 export function renderPanelMessageStatusBadge(
   status: string | null | undefined,
+  mode?: string | null,
 ): string {
+  if (mode === "mock" && (status === "sent" || status === "delivered")) {
+    return badge("muted", "simulado");
+  }
   const map: Record<string, string> = {
     delivered: "ok",
     sent: "ok",
@@ -38,6 +42,9 @@ export function renderPanelMessageSourceBadge(
     metadata && typeof metadata.source === "string" ? metadata.source : null;
   if (source === "app_send_sms_mock") {
     return badge("muted", "app_send_sms_mock");
+  }
+  if (source === "app_send_sms_verify_test") {
+    return badge("ok", "verify_test");
   }
   if (source === "app_send_sms_live_test") {
     return badge("warn", "app_send_sms_live_test");
@@ -97,7 +104,7 @@ export function renderInboxTableRows(messages: PanelSmsMessageRow[]): string {
       <td class="tv-cell-truncate" title="${escapeHtml(m.message)}">${escapeHtml(m.message.slice(0, 50))}${m.message.length > 50 ? "…" : ""}</td>
       <td>${m.segments}</td>
       <td>${m.cost_sms}</td>
-      <td>${renderPanelMessageStatusBadge(m.status)}</td>
+      <td>${renderPanelMessageStatusBadge(m.status, m.mode)}</td>
       <td>${renderSmsModeBadge(m.mode)}</td>
       <td><code class="tv-code-sm" title="${escapeHtml(m.provider_message_id ?? "")}">${escapeHtml((m.provider_message_id ?? "—").slice(0, 12))}</code></td>
       <td class="tv-cell-truncate" title="${escapeHtml(m.error_message ?? "")}">${escapeHtml(m.error_message ?? "—")}</td>

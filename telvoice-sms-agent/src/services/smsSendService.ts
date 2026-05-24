@@ -24,7 +24,6 @@ import { dispatchProviderSend } from "./smsProviderDispatchService.js";
 import { assertLiveTestTrafficAllowed } from "./smsDispatchWorkerService.js";
 import { recordTpsSend } from "./smsTpsLimiterService.js";
 import { resolveRouteForMessage } from "./smsRoutingService.js";
-import { sendViaProvider } from "./sms-providers/providerFactory.js";
 import { AppError } from "../utils/errors.js";
 
 export type SendMockSmsInput = {
@@ -37,7 +36,7 @@ export type SendMockSmsInput = {
 };
 
 export type SendPanelSmsInput = SendMockSmsInput & {
-  sendMode?: "mock" | "live_test";
+  sendSource?: "app_send_sms_live_test" | "app_send_sms_verify_test";
 };
 
 async function assertCompanyCanSend(companyId: string): Promise<CompanyRow> {
@@ -117,158 +116,14 @@ function defaultCampaignName(): string {
 export async function sendPanelSms(
   input: SendPanelSmsInput,
 ): Promise<MockSmsSendResult> {
-  if (input.sendMode === "live_test") {
-    return sendLiveTestSms(input);
-  }
-  return sendMockSms(input);
-}
-
-export async function sendMockSms(
-  input: SendMockSmsInput,
-): Promise<MockSmsSendResult> {
-  const basics = await validateSendBasics(input);
-  const { messageText, senderId, phone, segmentInfo, balanceBefore } = basics;
-
-  const campaignName = input.campaignName?.trim() || defaultCampaignName();
-
-  const campaign = await createSmsCampaign({
-    companyId: input.companyId,
-    name: campaignName,
-    senderId,
-    message: messageText,
-    status: "processing",
-    totalRecipients: 1,
-    validRecipients: 1,
-    invalidRecipients: 0,
-    estimatedSmsCost: segmentInfo.costSms,
-    realSmsCost: 0,
-    mode: "mock",
-    createdBy: input.createdBy ?? null,
-    metadata: { source: "app_send_sms_mock", mode: "mock" },
-  });
-
-  const pendingMessage = await createPanelSmsMessage({
-    companyId: input.companyId,
-    campaignId: campaign.id,
-    recipientNumber: phone,
-    senderId,
-    message: messageText,
-    segments: segmentInfo.segments,
-    costSms: segmentInfo.costSms,
-    status: "queued",
-    mode: "mock",
-    metadata: {
-      source: "app_send_sms_mock",
-      mode: "mock",
-      encoding: segmentInfo.encoding,
-      characters: segmentInfo.characters,
-    },
-  });
-
-  const alreadyDebited = await hasSmsDebitForMessage(pendingMessage.id);
-  if (alreadyDebited) {
-    const existing = await getPanelSmsMessageById(pendingMessage.id);
-    const bal = await getCompanyBalance(input.companyId);
-    return {
-      messageId: pendingMessage.id,
-      campaignId: campaign.id,
-      recipientNumber: phone,
-      segments: existing?.segments ?? segmentInfo.segments,
-      balanceBefore: bal.availableSms + (existing?.cost_sms ?? 0),
-      balanceAfter: bal.availableSms,
-      status: existing?.status ?? "delivered",
-      providerMessageId: existing?.provider_message_id ?? "",
-      sendMode: "mock",
-    };
-  }
-
-  const providerResult = await sendViaProvider("mock", {
-    to: phone,
-    message: messageText,
-    senderId,
-    metadata: { segments: segmentInfo.segments },
-  });
-
-  if (!providerResult.accepted) {
-    await updatePanelSmsMessage(pendingMessage.id, {
-      status: "failed",
-      error_code: providerResult.error_code ?? "mock_failed",
-      error_message: providerResult.error_message ?? "Mock rechazado",
-    });
-    await updateSmsCampaign(campaign.id, { status: "failed" });
-    throw new AppError(
-      providerResult.error_message ?? "No se pudo simular el envío.",
-      502,
-    );
-  }
-
-  try {
-    await debitSmsUsage({
-      companyId: input.companyId,
-      amount: segmentInfo.costSms,
-      referenceType: "sms_message",
-      referenceId: pendingMessage.id,
-      actorUserId: input.createdBy ?? null,
-      description: "Consumo por envío SMS mock",
-      metadata: { mode: "mock" },
-    });
-  } catch (err) {
-    await updatePanelSmsMessage(pendingMessage.id, {
-      status: "failed",
-      error_code: "debit_failed",
-      error_message:
-        err instanceof Error ? err.message : "Error al descontar saldo",
-    });
-    await updateSmsCampaign(campaign.id, { status: "failed" });
-    throw err;
-  }
-
-  const updatedMessage = await updatePanelSmsMessage(pendingMessage.id, {
-    status: "delivered",
-    provider: "mock",
-    provider_message_id: providerResult.provider_message_id,
-    sent_at: new Date().toISOString(),
-    delivered_at: new Date().toISOString(),
-    metadata: {
-      source: "app_send_sms_mock",
-      mode: "mock",
-      encoding: segmentInfo.encoding,
-      characters: segmentInfo.characters,
-    },
-  });
-
-  await insertPanelDeliveryEvent({
-    companyId: input.companyId,
-    messageId: pendingMessage.id,
-    provider: "mock",
-    providerMessageId: providerResult.provider_message_id,
-    status: "delivered",
-    rawPayload: providerResult.raw_response,
-  });
-
-  const now = new Date().toISOString();
-  await updateSmsCampaign(campaign.id, {
-    status: "completed",
-    real_sms_cost: segmentInfo.costSms,
-    sent_at: now,
-  });
-
-  return {
-    messageId: updatedMessage.id,
-    campaignId: campaign.id,
-    recipientNumber: phone,
-    segments: segmentInfo.segments,
-    balanceBefore,
-    balanceAfter: balanceBefore - segmentInfo.costSms,
-    status: "delivered",
-    providerMessageId: providerResult.provider_message_id ?? "",
-    sendMode: "mock",
-  };
+  return sendLiveTestSms(input);
 }
 
 export async function sendLiveTestSms(
-  input: SendMockSmsInput,
+  input: SendPanelSmsInput,
 ): Promise<MockSmsSendResult> {
+  const sendSource = input.sendSource ?? "app_send_sms_live_test";
+
   const phone = assertLiveTestSendAllowed({
     companyId: input.companyId,
     to: input.to,
@@ -298,7 +153,7 @@ export async function sendLiveTestSms(
     realSmsCost: 0,
     mode: "live_test",
     createdBy: input.createdBy ?? null,
-    metadata: { source: "app_send_sms_live_test", mode: "live_test" },
+    metadata: { source: sendSource, mode: "live_test" },
   });
 
   const resolved = await resolveRouteForMessage({
@@ -331,7 +186,7 @@ export async function sendLiveTestSms(
     mode: "live_test",
     provider: resolved.provider.code,
     metadata: {
-      source: "app_send_sms_live_test",
+      source: sendSource,
       mode: "live_test",
       encoding: segmentInfo.encoding,
       characters: segmentInfo.characters,
@@ -360,7 +215,7 @@ export async function sendLiveTestSms(
       error_code: providerResult.error_code ?? "PROVIDER_REJECTED",
       error_message: providerResult.error_message ?? "Proveedor rechazó el envío",
       metadata: {
-        source: "app_send_sms_live_test",
+        source: sendSource,
         mode: "live_test",
         asmsc_uid: providerResult.asmsc_uid ?? null,
         raw_response: providerResult.raw_response,
@@ -428,7 +283,7 @@ export async function sendLiveTestSms(
     currency: resolved.currency,
     margin: resolved.margin,
     metadata: {
-      source: "app_send_sms_live_test",
+      source: sendSource,
       mode: "live_test",
       asmsc_uid: providerResult.asmsc_uid ?? null,
       encoding: segmentInfo.encoding,

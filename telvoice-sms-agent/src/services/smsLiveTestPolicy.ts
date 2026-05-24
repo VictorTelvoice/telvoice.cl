@@ -1,4 +1,5 @@
 import { env, type SmsProviderConfig } from "../config/env.js";
+import { isRegisteredVerifyNumber } from "../config/verifyNumbers.js";
 import { AppError } from "../utils/errors.js";
 import { validateRecipientNumber } from "./smsSegmentService.js";
 import { isAsmscConfigured } from "./sms-providers/realApiProvider.js";
@@ -7,27 +8,27 @@ export function getSmsProviderConfig(): SmsProviderConfig {
   return env.smsProvider;
 }
 
+/** Envío real habilitado globalmente (credenciales + flag). */
 export function isLiveTestGloballyEnabled(): boolean {
   const cfg = env.smsProvider;
-  return (
-    cfg.liveTestEnabled &&
-    cfg.mode === "live_test" &&
-    isAsmscConfigured()
-  );
+  return cfg.liveTestEnabled && isAsmscConfigured();
 }
 
 export function isCompanyAllowedForLiveTest(companyId: string): boolean {
   const allowed = env.smsProvider.liveTestAllowedCompanyIds;
   if (allowed.length === 0) {
-    return false;
+    return true;
   }
   return allowed.includes(companyId);
 }
 
 export function isNumberAllowedForLiveTest(normalizedPhone: string): boolean {
+  if (isRegisteredVerifyNumber(normalizedPhone)) {
+    return true;
+  }
   const allowed = env.smsProvider.liveTestAllowedNumbers;
   if (allowed.length === 0) {
-    return false;
+    return true;
   }
   const digits = normalizedPhone.replace(/[^\d+]/g, "");
   return allowed.some((n) => {
@@ -36,11 +37,8 @@ export function isNumberAllowedForLiveTest(normalizedPhone: string): boolean {
   });
 }
 
-export function canShowLiveTestOption(companyId: string): boolean {
-  if (!isLiveTestGloballyEnabled()) {
-    return false;
-  }
-  return isCompanyAllowedForLiveTest(companyId);
+export function canShowLiveTestOption(_companyId: string): boolean {
+  return isLiveTestGloballyEnabled();
 }
 
 export function assertLiveTestSendAllowed(input: {
@@ -49,14 +47,7 @@ export function assertLiveTestSendAllowed(input: {
 }): string {
   if (!env.smsProvider.liveTestEnabled) {
     throw new AppError(
-      "El envío real controlado no está habilitado en este entorno.",
-      403,
-    );
-  }
-
-  if (env.smsProvider.mode !== "live_test") {
-    throw new AppError(
-      "El envío real controlado no está habilitado en este entorno.",
+      "El envío SMS no está habilitado en este entorno.",
       403,
     );
   }
@@ -67,7 +58,7 @@ export function assertLiveTestSendAllowed(input: {
 
   if (!isCompanyAllowedForLiveTest(input.companyId)) {
     throw new AppError(
-      "La empresa no está autorizada para envío real controlado.",
+      "La empresa no está autorizada para envío SMS.",
       403,
     );
   }
@@ -79,7 +70,7 @@ export function assertLiveTestSendAllowed(input: {
 
   if (!isNumberAllowedForLiveTest(phone.normalized)) {
     throw new AppError(
-      "El número destino no está autorizado para live_test.",
+      "El número destino no está autorizado para envío SMS.",
       403,
     );
   }
