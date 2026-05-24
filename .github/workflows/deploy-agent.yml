@@ -115,20 +115,21 @@ jobs:
               echo ".env restaurado"
             fi
 
-            # Ajustes operativos en .env (sin sobrescribir secretos existentes)
+            # Ajustes operativos en .env (POSIX sh — sin local/sed frágil)
             if [ -f "$APP_PATH/.env" ]; then
-              upsert_env() {
-                local key="$1" val="$2"
-                if grep -q "^${key}=" "$APP_PATH/.env"; then
-                  sed -i "s|^${key}=.*|${key}=${val}|" "$APP_PATH/.env"
-                else
-                  echo "${key}=${val}" >> "$APP_PATH/.env"
+              set_env_key() {
+                _key="$1"
+                _val="$2"
+                _file="$APP_PATH/.env"
+                if grep -q "^${_key}=" "$_file" 2>/dev/null; then
+                  grep -v "^${_key}=" "$_file" > "${_file}.tmp" && mv "${_file}.tmp" "$_file"
                 fi
+                printf '%s=%s\n' "$_key" "$_val" >> "$_file"
               }
-              upsert_env SMS_PROVIDER_MODE live_test
-              upsert_env SMS_LIVE_TEST_ENABLED true
-              if ! grep -q '^TELVOICE_VERIFY_NUMBERS=' "$APP_PATH/.env"; then
-                upsert_env TELVOICE_VERIFY_NUMBERS '+56934449937:Linea QA 1 telsim:Movistar|+56973824023:Linea QA 2 telsim:Entel'
+              set_env_key SMS_PROVIDER_MODE live_test
+              set_env_key SMS_LIVE_TEST_ENABLED true
+              if ! grep -q '^TELVOICE_VERIFY_NUMBERS=' "$APP_PATH/.env" 2>/dev/null; then
+                printf '%s\n' 'TELVOICE_VERIFY_NUMBERS=+56934449937:Linea QA 1 telsim:Movistar|+56973824023:Linea QA 2 telsim:Entel' >> "$APP_PATH/.env"
                 echo "TELVOICE_VERIFY_NUMBERS configurado (QA telsim)"
               fi
             fi
