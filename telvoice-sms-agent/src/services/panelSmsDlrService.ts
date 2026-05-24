@@ -52,6 +52,9 @@ export async function processPanelSmsDlrFromAsmsc(
     ? new Date().toISOString()
     : null;
 
+  const dlrAt = new Date().toISOString();
+  const sanitizedDlr = sanitizeProviderResponse(body as Record<string, unknown>);
+
   await updatePanelSmsMessage(message.id, {
     status: panelStatus,
     delivered_at: deliveredAt,
@@ -62,9 +65,9 @@ export async function processPanelSmsDlrFromAsmsc(
         ? body.ErrorDescription
         : message.error_message,
     metadata: {
-      ...(message.metadata ?? {}),
       last_dlr_status: dlrStatus,
-      last_dlr_at: new Date().toISOString(),
+      last_dlr_at: dlrAt,
+      last_dlr_payload: sanitizedDlr,
     },
   });
 

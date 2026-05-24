@@ -52,6 +52,26 @@ export async function createPanelSmsMessage(input: {
   return data as PanelSmsMessageRow;
 }
 
+function asMetadataRecord(
+  value: unknown,
+): Record<string, unknown> {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
+}
+
+/** Combina metadata existente con parches (shallow); usado antes de persistir. */
+export function mergePanelMessageMetadata(
+  existing: Record<string, unknown> | null | undefined,
+  patch: Record<string, unknown>,
+): Record<string, unknown> {
+  return {
+    ...asMetadataRecord(existing),
+    ...patch,
+  };
+}
+
 export async function updatePanelSmsMessage(
   id: string,
   patch: Partial<{
@@ -73,9 +93,19 @@ export async function updatePanelSmsMessage(
     metadata: Record<string, unknown>;
   }>,
 ): Promise<PanelSmsMessageRow> {
+  let updatePatch = patch;
+
+  if (patch.metadata !== undefined) {
+    const current = await getPanelSmsMessageById(id);
+    updatePatch = {
+      ...patch,
+      metadata: mergePanelMessageMetadata(current?.metadata, patch.metadata),
+    };
+  }
+
   const { data, error } = await getSupabase()
     .from("panel_sms_messages")
-    .update(patch)
+    .update(updatePatch)
     .eq("id", id)
     .select("*")
     .single();
