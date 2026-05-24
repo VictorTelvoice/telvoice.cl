@@ -72,8 +72,13 @@ export function renderAppSendSmsPage(
               : "No configurado en servidor"
           }</li>
           <li><strong>Empresa autorizada:</strong> ${lt.companyAuthorized ? "Sí" : "No"}</li>
-          <li><strong>Estado ruta:</strong> ${lt.routeActive ? `Activa${lt.routeName ? ` (${escapeHtml(lt.routeName)})` : ""}` : "No disponible"}</li>
-          <li><strong>Estado proveedor:</strong> ${lt.providerActive ? `Activo${lt.providerName ? ` (${escapeHtml(lt.providerName)})` : ""}` : "No disponible"}</li>
+          <li><strong>TPS asignado:</strong> ${lt.effectiveTps != null ? `${lt.effectiveTps} TPS` : "—"}</li>
+          <li><strong>Límite diario restante:</strong> ${
+            lt.trafficDailyRemaining != null && lt.trafficDailyLimit != null
+              ? `${lt.trafficDailyRemaining} / ${lt.trafficDailyLimit}`
+              : `${lt.dailyRemaining} / ${lt.dailyLimit} (prueba controlada)`
+          }</li>
+          <li><strong>Estado de ruta:</strong> ${lt.routeActive ? "Disponible" : "No disponible temporalmente"}</li>
         </ul>
         <p class="field-hint tv-live-test-policy-block" id="tv-lt-block-hint" ${lt.liveTestBlockReason && !lt.canSelectLiveTest ? "" : 'hidden'} style="margin-top:0.75rem;color:var(--tv-danger)">
           ${escapeHtml(lt.liveTestBlockReason ?? "")}

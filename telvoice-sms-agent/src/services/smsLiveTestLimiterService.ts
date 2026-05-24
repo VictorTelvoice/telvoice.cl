@@ -11,6 +11,8 @@ import {
   isNumberAllowedForLiveTest,
 } from "./smsLiveTestPolicy.js";
 import { resolveRouteForMessage } from "./smsRoutingService.js";
+import { resolveTrafficPolicy } from "./smsTrafficPolicyService.js";
+import { canSendNow } from "./smsTpsLimiterService.js";
 import { getOrCreateCompanyWallet } from "./smsWalletService.js";
 import { validateRecipientNumber } from "./smsSegmentService.js";
 
@@ -52,6 +54,12 @@ export type LiveTestSendPageStatus = {
   segmentsWithinLimit: boolean | null;
   /** Solo validación en cliente; no mostrar en UI. */
   allowedNumbersNormalized: string[];
+  /** TPS efectivo asignado (visible en /app). */
+  effectiveTps: number | null;
+  /** Límite diario comercial (mínimo entre capas). */
+  trafficDailyLimit: number | null;
+  trafficDailyRemaining: number | null;
+  liveEnabledOnPlan: boolean;
 };
 
 export type LiveTestControlPanelView = {
@@ -293,6 +301,13 @@ export async function getLiveTestSendPageStatus(
   let providerActive = false;
   let routeName: string | null = null;
   let providerName: string | null = null;
+  let effectiveTps: number | null = null;
+  let trafficDailyLimit: number | null = null;
+  let trafficDailyRemaining: number | null = null;
+  let liveEnabledOnPlan = false;
+  let resolvedRouteId: string | null = null;
+  let resolvedProviderId: string | null = null;
+  let resolvedRatePlanId: string | null = null;
 
   if (globallyEnabled && companyAuthorized) {
     try {
@@ -301,6 +316,27 @@ export async function getLiveTestSendPageStatus(
       providerActive = routing.providerActive;
       routeName = routing.routeName;
       providerName = routing.providerName;
+      const resolved = await resolveRouteForMessage({
+        companyId,
+        country: "CL",
+        trafficType: "transactional",
+      });
+      resolvedRouteId = resolved.route.id;
+      resolvedProviderId = resolved.provider.id;
+      resolvedRatePlanId = resolved.ratePlan.id;
+      const policy = await resolveTrafficPolicy({
+        companyId,
+        routeId: resolvedRouteId,
+        providerId: resolvedProviderId,
+        ratePlanId: resolvedRatePlanId,
+      });
+      effectiveTps = policy.effective_tps;
+      liveEnabledOnPlan = policy.live_enabled;
+      trafficDailyLimit = policy.daily_limit;
+      if (trafficDailyLimit != null) {
+        const used = await countDailyLiveTestMessages(companyId);
+        trafficDailyRemaining = Math.max(0, trafficDailyLimit - used);
+      }
     } catch {
       routeActive = false;
       providerActive = false;
@@ -332,10 +368,18 @@ export async function getLiveTestSendPageStatus(
   } else if (!companyAuthorized) {
     liveTestBlockReason =
       "La empresa no está autorizada para envío real controlado.";
+  } else if (!liveEnabledOnPlan) {
+    liveTestBlockReason =
+      "El envío real no está habilitado para tu cuenta. Contacta a soporte Telvoice.";
   } else if (!routeActive) {
-    liveTestBlockReason = "No hay ruta SMS activa para este cliente.";
+    liveTestBlockReason = "La ruta SMS no está disponible temporalmente.";
   } else if (!providerActive) {
-    liveTestBlockReason = "Proveedor SMS no disponible.";
+    liveTestBlockReason = "La ruta SMS no está disponible temporalmente.";
+  } else if (
+    trafficDailyRemaining != null &&
+    trafficDailyRemaining <= 0
+  ) {
+    liveTestBlockReason = "El límite diario de envíos reales fue alcanzado.";
   } else if (dailyRemaining <= 0) {
     liveTestBlockReason = "Límite diario de pruebas reales alcanzado.";
   } else if (recipientAllowed === false) {
@@ -346,14 +390,39 @@ export async function getLiveTestSendPageStatus(
       "El mensaje supera el máximo de segmentos permitido.";
   }
 
-  const canSelectLiveTest =
+  if (
     globallyEnabled &&
     companyAuthorized &&
     routeActive &&
+    resolvedRouteId &&
+    resolvedProviderId
+  ) {
+    const tpsCheck = await canSendNow({
+      companyId,
+      routeId: resolvedRouteId,
+      providerId: resolvedProviderId,
+      ratePlanId: resolvedRatePlanId,
+      flow: "live_test",
+      segmentCost: opts?.segmentCount ?? 1,
+    });
+    if (!tpsCheck.allowed && !liveTestBlockReason) {
+      liveTestBlockReason =
+        tpsCheck.reason ??
+        "Tu cuenta tiene un límite temporal de envío. Intenta nuevamente en unos segundos.";
+    }
+  }
+
+  const canSelectLiveTest =
+    globallyEnabled &&
+    companyAuthorized &&
+    liveEnabledOnPlan &&
+    routeActive &&
     providerActive &&
     dailyRemaining > 0 &&
+    (trafficDailyRemaining == null || trafficDailyRemaining > 0) &&
     recipientAllowed !== false &&
-    segmentsWithinLimit !== false;
+    segmentsWithinLimit !== false &&
+    !liveTestBlockReason;
 
   return {
     globallyEnabled,
@@ -373,6 +442,10 @@ export async function getLiveTestSendPageStatus(
     recipientAllowed,
     segmentsWithinLimit,
     allowedNumbersNormalized: allowedNumbers,
+    effectiveTps,
+    trafficDailyLimit,
+    trafficDailyRemaining,
+    liveEnabledOnPlan,
   };
 }
 

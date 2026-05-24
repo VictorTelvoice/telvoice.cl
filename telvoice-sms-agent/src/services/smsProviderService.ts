@@ -95,6 +95,12 @@ export async function updateSmsProvider(
     api_base_url: string | null;
     default_sender_id: string | null;
     priority: number;
+    max_tps: number;
+    max_concurrent_requests: number;
+    daily_limit: number | null;
+    monthly_limit: number | null;
+    failure_threshold_percent: number;
+    auto_pause_on_failure: boolean;
   }>,
 ): Promise<SmsProviderRow> {
   const { data, error } = await getSupabase()
@@ -108,4 +114,12 @@ export async function updateSmsProvider(
     wrapSupabaseError(error, "updateSmsProvider");
   }
   return data as SmsProviderRow;
+}
+
+export async function pauseSmsProvider(id: string): Promise<SmsProviderRow> {
+  return updateSmsProvider(id, { status: "suspended" });
+}
+
+export async function resumeSmsProvider(id: string): Promise<SmsProviderRow> {
+  return updateSmsProvider(id, { status: "active" });
 }

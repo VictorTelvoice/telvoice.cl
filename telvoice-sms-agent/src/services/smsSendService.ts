@@ -21,6 +21,8 @@ import { hasSmsDebitForMessage } from "./walletTransactionService.js";
 import { assertLiveTestOperationalLimits } from "./smsLiveTestLimiterService.js";
 import { assertLiveTestSendAllowed } from "./smsLiveTestPolicy.js";
 import { dispatchProviderSend } from "./smsProviderDispatchService.js";
+import { assertLiveTestTrafficAllowed } from "./smsDispatchWorkerService.js";
+import { recordTpsSend } from "./smsTpsLimiterService.js";
 import { resolveRouteForMessage } from "./smsRoutingService.js";
 import { sendViaProvider } from "./sms-providers/providerFactory.js";
 import { AppError } from "../utils/errors.js";
@@ -306,6 +308,14 @@ export async function sendLiveTestSms(
     trafficType: "transactional",
   });
 
+  await assertLiveTestTrafficAllowed({
+    companyId: input.companyId,
+    routeId: resolved.route.id,
+    providerId: resolved.provider.id,
+    ratePlanId: resolved.ratePlan.id,
+    segmentCost: segmentInfo.costSms,
+  });
+
   const effectiveSender =
     senderId || resolved.provider.default_sender_id || "TELVOICE";
 
@@ -445,6 +455,13 @@ export async function sendLiveTestSms(
     status: "sent",
     real_sms_cost: segmentInfo.costSms,
     sent_at: sentAt,
+  });
+
+  recordTpsSend({
+    companyId: input.companyId,
+    providerId: resolved.provider.id,
+    routeId: resolved.route.id,
+    ratePlanId: resolved.ratePlan.id,
   });
 
   return {

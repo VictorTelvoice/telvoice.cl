@@ -132,6 +132,8 @@ export const env = {
     ),
     liveTestMaxSegments: parsePositiveIntEnv("SMS_LIVE_TEST_MAX_SEGMENTS", 1),
   } satisfies SmsProviderConfig,
+  /** TPS global de plataforma (techo superior; no sustituye MAX_CLIENT_TPS). */
+  smsPlatformMaxTps: parsePositiveIntEnv("SMS_PLATFORM_MAX_TPS", 100),
 } as const;
 
 export function isMercadoPagoConfigured(): boolean {

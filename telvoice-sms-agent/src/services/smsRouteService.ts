@@ -107,6 +107,11 @@ export async function updateSmsRoute(
     cost_per_sms: number;
     is_default: boolean;
     dlr_enabled: boolean;
+    max_tps: number;
+    max_concurrent_requests: number;
+    daily_limit: number | null;
+    failure_threshold_percent: number;
+    auto_pause_on_failure: boolean;
   }>,
 ): Promise<SmsRouteRow> {
   const { data, error } = await getSupabase()
@@ -120,6 +125,14 @@ export async function updateSmsRoute(
     wrapSupabaseError(error, "updateSmsRoute");
   }
   return data as SmsRouteRow;
+}
+
+export async function pauseSmsRoute(id: string): Promise<SmsRouteRow> {
+  return updateSmsRoute(id, { status: "paused" });
+}
+
+export async function resumeSmsRoute(id: string): Promise<SmsRouteRow> {
+  return updateSmsRoute(id, { status: "active" });
 }
 
 export async function findDefaultRouteForCountry(

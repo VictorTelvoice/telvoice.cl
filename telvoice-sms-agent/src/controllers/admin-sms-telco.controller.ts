@@ -4,7 +4,11 @@ import {
   getLiveTestControlPanel,
   getSmsProviderStatusView,
 } from "../services/smsProviderStatusService.js";
-import { assignCompanyRatePlan, getCompanyRatePlan } from "../services/companyRatePlanService.js";
+import {
+  assignCompanyRatePlan,
+  getCompanyRatePlan,
+  updateCompanyRatePlanTraffic,
+} from "../services/companyRatePlanService.js";
 import { listPanelMessagesByCompany } from "../services/panelSmsMessageService.js";
 import {
   createSmsProvider,
@@ -17,12 +21,14 @@ import {
   getSmsRatePlanById,
   listRatePlanDetails,
   listSmsRatePlans,
+  updateSmsRatePlan,
 } from "../services/smsRatePlanService.js";
 import {
   createSmsRoute,
   listSmsRoutes,
   updateSmsRoute,
 } from "../services/smsRouteService.js";
+import { CLIENT_TPS_CAP_ERROR } from "../services/smsTrafficPolicyService.js";
 import { sendSuperadminProviderTest } from "../services/superadminProviderTestService.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
@@ -347,17 +353,78 @@ export async function postAssignCompanyRatePlan(
 ): Promise<void> {
   const companyId = validateUuidParam(String(req.params.companyId), "companyId");
   try {
+    const maxTpsRaw = req.body.max_tps ? Number(req.body.max_tps) : undefined;
+    if (maxTpsRaw != null && maxTpsRaw > 20) {
+      throw new AppError(CLIENT_TPS_CAP_ERROR, 400);
+    }
     await assignCompanyRatePlan({
       companyId,
       ratePlanId: validateUuidParam(String(req.body.rate_plan_id), "rate_plan_id"),
       country: String(req.body.country ?? "CL"),
       trafficType: String(req.body.traffic_type ?? "transactional"),
+      maxTps: maxTpsRaw,
+      liveEnabled: req.body.live_enabled === "1",
+      campaignsEnabled: req.body.campaigns_enabled === "1",
+      apiEnabled: req.body.api_enabled === "1",
     });
     redirectQuery(res, `/admin/wallets/${companyId}`, {
       ok: "Rate plan asignado al cliente",
     });
   } catch (e) {
     redirectQuery(res, `/admin/wallets/${companyId}`, {
+      error: e instanceof Error ? e.message : "Error",
+    });
+  }
+}
+
+export async function postUpdateCompanyTraffic(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const companyId = validateUuidParam(String(req.params.companyId), "companyId");
+  try {
+    const maxTps = Number(req.body.max_tps ?? 1);
+    if (maxTps > 20) {
+      throw new AppError(CLIENT_TPS_CAP_ERROR, 400);
+    }
+    await updateCompanyRatePlanTraffic(companyId, {
+      maxTps,
+      dailyLimit: req.body.daily_limit
+        ? Number(req.body.daily_limit)
+        : null,
+      monthlyLimit: req.body.monthly_limit
+        ? Number(req.body.monthly_limit)
+        : null,
+      liveEnabled: req.body.live_enabled === "1",
+      campaignsEnabled: req.body.campaigns_enabled === "1",
+      apiEnabled: req.body.api_enabled === "1",
+    });
+    redirectQuery(res, `/admin/wallets/${companyId}`, {
+      ok: "Límites de tráfico del cliente actualizados",
+    });
+  } catch (e) {
+    redirectQuery(res, `/admin/wallets/${companyId}`, {
+      error: e instanceof Error ? e.message : "Error",
+    });
+  }
+}
+
+export async function postUpdateRatePlanTraffic(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const id = validateUuidParam(String(req.params.id), "id");
+  try {
+    await updateSmsRatePlan(id, {
+      default_tps: Number(req.body.default_tps ?? 1),
+      daily_limit: req.body.daily_limit ? Number(req.body.daily_limit) : null,
+      monthly_limit: req.body.monthly_limit
+        ? Number(req.body.monthly_limit)
+        : null,
+    });
+    redirectQuery(res, `/admin/rate-plans/${id}`, { ok: "TPS del plan actualizado" });
+  } catch (e) {
+    redirectQuery(res, `/admin/rate-plans/${id}`, {
       error: e instanceof Error ? e.message : "Error",
     });
   }

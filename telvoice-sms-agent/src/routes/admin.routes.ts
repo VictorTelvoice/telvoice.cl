@@ -68,6 +68,15 @@ import {
   redirectSaBot,
 } from "../controllers/admin-superadmin.controller.js";
 import {
+  getSaTrafficControlPage,
+  postPauseProvider,
+  postPauseRoute,
+  postResumeProvider,
+  postResumeRoute,
+  postTrafficQueueProcessTick,
+  postUpdateProviderTraffic,
+} from "../controllers/admin-traffic-control.controller.js";
+import {
   getSaClientsPageTelco,
   getSaProviderDetailPage,
   getSaProviderTestPage,
@@ -82,6 +91,8 @@ import {
   postCreateRoute,
   postSaProviderTest,
   postToggleRoute,
+  postUpdateCompanyTraffic,
+  postUpdateRatePlanTraffic,
 } from "../controllers/admin-sms-telco.controller.js";
 import {
   getSaOrderDetailPage,
@@ -147,6 +158,21 @@ adminRouter.post("/providers/:id/test", requireAdminPage, postSaProviderTest);
 adminRouter.get("/routes", requireAdminPage, getSaRoutesPageTelco);
 adminRouter.post("/routes", requireAdminPage, postCreateRoute);
 adminRouter.post("/routes/:id/status", requireAdminPage, postToggleRoute);
+adminRouter.get("/traffic-control", requireAdminPage, getSaTrafficControlPage);
+adminRouter.post(
+  "/traffic-control/queue/process-tick",
+  requireAdminPage,
+  postTrafficQueueProcessTick,
+);
+adminRouter.post("/routes/:id/pause", requireAdminPage, postPauseRoute);
+adminRouter.post("/routes/:id/resume", requireAdminPage, postResumeRoute);
+adminRouter.post("/providers/:id/pause", requireAdminPage, postPauseProvider);
+adminRouter.post("/providers/:id/resume", requireAdminPage, postResumeProvider);
+adminRouter.post(
+  "/providers/:id/traffic",
+  requireAdminPage,
+  postUpdateProviderTraffic,
+);
 adminRouter.get("/rate-plans", requireAdminPage, getSaRatePlansPage);
 adminRouter.post("/rate-plans", requireAdminPage, postCreateRatePlan);
 adminRouter.get("/rate-plans/:id", requireAdminPage, getSaRatePlanDetailPage);
@@ -155,6 +181,16 @@ adminRouter.post(
   "/wallets/:companyId/rate-plan",
   requireAdminPage,
   postAssignCompanyRatePlan,
+);
+adminRouter.post(
+  "/wallets/:companyId/traffic",
+  requireAdminPage,
+  postUpdateCompanyTraffic,
+);
+adminRouter.post(
+  "/rate-plans/:id/traffic",
+  requireAdminPage,
+  postUpdateRatePlanTraffic,
 );
 adminRouter.get("/orders", requireAdminPage, getSaOrdersPage);
 adminRouter.get("/orders/:id", requireAdminPage, getSaOrderDetailPage);

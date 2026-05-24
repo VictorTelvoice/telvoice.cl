@@ -66,6 +66,30 @@ export async function createSmsRatePlan(input: {
   return data as SmsRatePlanRow;
 }
 
+export async function updateSmsRatePlan(
+  id: string,
+  patch: Partial<{
+    name: string;
+    status: string;
+    description: string | null;
+    default_tps: number;
+    daily_limit: number | null;
+    monthly_limit: number | null;
+  }>,
+): Promise<SmsRatePlanRow> {
+  const { data, error } = await getSupabase()
+    .from("sms_rate_plans")
+    .update(patch)
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) {
+    wrapSupabaseError(error, "updateSmsRatePlan");
+  }
+  return data as SmsRatePlanRow;
+}
+
 export async function listRatePlanDetails(
   ratePlanId: string,
 ): Promise<SmsRatePlanDetailEnriched[]> {

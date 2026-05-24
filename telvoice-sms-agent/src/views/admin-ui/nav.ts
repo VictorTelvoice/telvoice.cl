@@ -16,6 +16,7 @@ export const MAIN_NAV: NavItem[] = [
   { id: "providers", href: "/admin/providers", label: "Proveedores", icon: "hub" },
   { id: "routes", href: "/admin/routes", label: "Rutas SMS", icon: "route" },
   { id: "rate-plans", href: "/admin/rate-plans", label: "Planes tarifarios", icon: "payments" },
+  { id: "traffic-control", href: "/admin/traffic-control", label: "Tráfico / TPS", icon: "speed" },
   { id: "orders", href: "/admin/orders", label: "Compras", icon: "shopping_cart" },
   { id: "wallets", href: "/admin/wallets", label: "Saldos", icon: "account_balance_wallet" },
   { id: "invoices", href: "/admin/invoices", label: "Facturas", icon: "receipt_long" },

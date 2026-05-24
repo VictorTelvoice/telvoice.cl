@@ -136,6 +136,7 @@ export function renderSaProvidersPage(opts: BaseOpts & {
         <td>${escapeHtml(p.default_sender_id ?? "—")}</td>
         <td>${p.supports_dlr ? "Sí" : "No"}</td>
         <td>${p.supports_unicode ? "Sí" : "No"}</td>
+        <td>${Number(p.max_tps ?? 1)} TPS</td>
         <td>
           <a href="/admin/providers/${escapeHtml(p.id)}" class="row-link">Detalle</a>
           <a href="/admin/providers/${escapeHtml(p.id)}/test" class="btn btn-ghost btn-sm">Probar</a>
@@ -143,7 +144,7 @@ export function renderSaProvidersPage(opts: BaseOpts & {
       </tr>`,
         )
         .join("")
-    : `<tr><td colspan="8">Sin proveedores. Aplica migración 014 y ejecuta <code>npm run seed:sms-routing</code> (opcional).</td></tr>`;
+    : `<tr><td colspan="9">Sin proveedores. Aplica migración 014 y ejecuta <code>npm run seed:sms-routing</code> (opcional).</td></tr>`;
 
   const createForm = `<section class="tv-panel" style="margin-top:1rem">
     <h2 class="tv-panel__title">Nuevo proveedor</h2>
@@ -169,7 +170,7 @@ export function renderSaProvidersPage(opts: BaseOpts & {
     ${liveTestCard}
     ${apiCard}
     <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Proveedor</th><th>Conexión</th><th>Estado</th><th>Base URL</th><th>Sender</th><th>DLR</th><th>Unicode</th><th></th>
+      <th>Proveedor</th><th>Conexión</th><th>Estado</th><th>Base URL</th><th>Sender</th><th>DLR</th><th>Unicode</th><th>Vendor TPS</th><th></th>
     </tr></thead><tbody>${rows}</tbody></table></div>
     ${createForm}`;
   return wrap(opts, "providers", "Proveedores", body);
@@ -220,6 +221,19 @@ export function renderSaProviderDetailPage(opts: BaseOpts & {
           <dt>DLR / Unicode / Flash</dt><dd>${opts.provider.supports_dlr ? "DLR" : "—"} · ${opts.provider.supports_unicode ? "Unicode" : "—"} · ${opts.provider.supports_flash ? "Flash" : "—"}</dd>
           <dt>Prioridad</dt><dd>${opts.provider.priority}</dd>
         </dl>
+        <form method="post" action="/admin/providers/${escapeHtml(opts.provider.id)}/traffic" class="tv-form-grid" style="margin-top:1rem">
+          <h3 style="grid-column:1/-1;margin:0;font-size:0.95rem">Capacidad vendor (TPS proveedor)</h3>
+          <label>Vendor max TPS <input name="max_tps" type="number" step="0.1" min="1" value="${Number(opts.provider.max_tps ?? 1)}" class="tv-input-full" /></label>
+          <label>Concurrencia máx. <input name="max_concurrent_requests" type="number" min="1" value="${Number(opts.provider.max_concurrent_requests ?? 1)}" class="tv-input-full" /></label>
+          <label>Límite diario <input name="daily_limit" type="number" min="0" value="${opts.provider.daily_limit ?? ""}" class="tv-input-full" placeholder="Opcional" /></label>
+          <label>Límite mensual <input name="monthly_limit" type="number" min="0" value="${opts.provider.monthly_limit ?? ""}" class="tv-input-full" placeholder="Opcional" /></label>
+          <label>Failure threshold % <input name="failure_threshold_percent" type="number" step="0.1" value="${Number(opts.provider.failure_threshold_percent ?? 20)}" class="tv-input-full" /></label>
+          <label class="tv-checkbox"><input type="checkbox" name="auto_pause_on_failure" value="1" ${opts.provider.auto_pause_on_failure ? "checked" : ""} /> Auto pause on failure</label>
+          <button type="submit" class="btn btn-secondary">Guardar límites vendor</button>
+        </form>
+        <div class="tv-quick-actions" style="margin-top:0.75rem">
+          <form method="post" action="/admin/providers/${escapeHtml(opts.provider.id)}/pause" style="display:inline"><button type="submit" class="btn btn-ghost btn-sm">Pausar proveedor</button></form>
+        </div>
       </section>
       <section class="tv-panel">
         <h2 class="tv-panel__title">Rutas asociadas</h2>
@@ -296,11 +310,13 @@ export function renderSaRoutesPage(opts: BaseOpts & {
         <td>${r.cost_per_sms} ${escapeHtml(r.currency)}</td>
         <td>${statusBadgeSa(r.status)}</td>
         <td>${r.dlr_enabled ? "Sí" : "No"}</td>
+        <td>${Number(r.max_tps ?? 1)}</td>
         <td>
           <form method="post" action="/admin/routes/${escapeHtml(r.id)}/status" style="display:inline">
             <input type="hidden" name="status" value="${r.status === "active" ? "inactive" : "active"}" />
             <button type="submit" class="btn btn-ghost btn-sm">${r.status === "active" ? "Desactivar" : "Activar"}</button>
           </form>
+          ${r.status === "paused" ? `<form method="post" action="/admin/routes/${escapeHtml(r.id)}/resume" style="display:inline"><button type="submit" class="btn btn-ghost btn-sm">Reanudar</button></form>` : `<form method="post" action="/admin/routes/${escapeHtml(r.id)}/pause" style="display:inline"><button type="submit" class="btn btn-ghost btn-sm">Pausar</button></form>`}
         </td>
       </tr>`,
         )
@@ -347,7 +363,7 @@ export function renderSaRoutesPage(opts: BaseOpts & {
   const body = `${renderSuperadminBanner()}
     ${renderPageHeader({ title: "Route Manager", subtitle: "Rutas por país, operador, proveedor, costo y prioridad." })}
     <div class="table-wrap tv-panel"><table class="tv-table tv-table--compact"><thead><tr>
-      <th>País</th><th>MCC</th><th>MNC</th><th>Operador</th><th>Proveedor</th><th>Tipo</th><th>Tráfico</th><th>Prio.</th><th>Costo</th><th>Estado</th><th>DLR</th><th></th>
+      <th>País</th><th>MCC</th><th>MNC</th><th>Operador</th><th>Proveedor</th><th>Tipo</th><th>Tráfico</th><th>Prio.</th><th>Costo</th><th>Estado</th><th>DLR</th><th>Max TPS</th><th></th>
     </tr></thead><tbody>${rows}</tbody></table></div>
     ${createForm}`;
   return wrap(opts, "routes", "Rutas SMS", body);
@@ -364,6 +380,7 @@ export function renderSaRatePlansPage(opts: BaseOpts & {
         <td><code>${escapeHtml(p.code)}</code></td>
         <td>${escapeHtml(p.currency)}</td>
         <td>${statusBadgeSa(p.status)}</td>
+        <td>${Number(p.default_tps ?? 1)} TPS</td>
         <td>${formatDate(p.created_at)}</td>
         <td><a href="/admin/rate-plans/${escapeHtml(p.id)}" class="row-link">Detalle</a></td>
       </tr>`,
@@ -374,7 +391,7 @@ export function renderSaRatePlansPage(opts: BaseOpts & {
   const body = `${renderSuperadminBanner()}
     ${renderPageHeader({ title: "Planes tarifarios", subtitle: "Rate plans comerciales — precio venta, costo y margen por ruta." })}
     <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Nombre</th><th>Código</th><th>Moneda</th><th>Estado</th><th>Creado</th><th></th>
+      <th>Nombre</th><th>Código</th><th>Moneda</th><th>Estado</th><th>Default TPS</th><th>Creado</th><th></th>
     </tr></thead><tbody>${rows}</tbody></table></div>
     <section class="tv-panel" style="margin-top:1rem">
       <h2 class="tv-panel__title">Nuevo rate plan</h2>
@@ -433,6 +450,13 @@ export function renderSaRatePlanDetailPage(opts: BaseOpts & {
       subtitle: `Código ${escapeHtml(opts.ratePlan.code)}`,
       actions: `<a href="/admin/rate-plans" class="btn btn-ghost btn-sm">← Planes</a>`,
     })}
+    <form method="post" action="/admin/rate-plans/${escapeHtml(opts.ratePlan.id)}/traffic" class="tv-panel tv-form-grid" style="margin-bottom:1rem;padding:1rem">
+      <h2 class="tv-panel__title" style="grid-column:1/-1">Política TPS del plan</h2>
+      <label>Default TPS <input name="default_tps" type="number" step="0.1" min="1" value="${Number(opts.ratePlan.default_tps ?? 1)}" class="tv-input-full" /></label>
+      <label>Límite diario <input name="daily_limit" type="number" value="${opts.ratePlan.daily_limit ?? ""}" class="tv-input-full" placeholder="Opcional" /></label>
+      <label>Límite mensual <input name="monthly_limit" type="number" value="${opts.ratePlan.monthly_limit ?? ""}" class="tv-input-full" placeholder="Opcional" /></label>
+      <button type="submit" class="btn btn-secondary">Guardar TPS plan</button>
+    </form>
     <div class="table-wrap tv-panel"><table class="tv-table tv-table--compact"><thead><tr>
       <th>MCC</th><th>MNC</th><th>País</th><th>Operador</th><th>Tipo SMS</th><th>Ruta</th><th>Proveedor</th><th>Costo</th><th>Venta</th><th>Margen</th><th>Moneda</th><th>Estado</th>
     </tr></thead><tbody>${rows}</tbody></table></div>
@@ -493,8 +517,11 @@ export function renderWalletRatePlanBlock(opts: {
   assignment: CompanyRatePlanView | null;
   ratePlans: SmsRatePlanRow[];
 }): string {
-  const current = opts.assignment
-    ? `<p><strong>${escapeHtml(opts.assignment.rate_plan_name ?? "—")}</strong> · ${escapeHtml(opts.assignment.country)} · ${escapeHtml(opts.assignment.traffic_type)} · ${statusBadgeSa(opts.assignment.status)}<br><span class="field-hint">Asignado ${formatDate(opts.assignment.created_at)}</span></p>`
+  const a = opts.assignment;
+  const current = a
+    ? `<p><strong>${escapeHtml(a.rate_plan_name ?? "—")}</strong> · ${escapeHtml(a.country)} · ${escapeHtml(a.traffic_type)} · ${statusBadgeSa(a.status)}<br>
+      <span class="field-hint">Cliente max TPS: ${Number(a.max_tps ?? 1)} · Live: ${a.live_enabled ? "sí" : "no"} · Campañas: ${a.campaigns_enabled ? "sí" : "no"} · API: ${a.api_enabled ? "sí" : "no"}</span><br>
+      <span class="field-hint">Asignado ${formatDate(a.created_at)}</span></p>`
     : `<p class="badge badge-warn">Cliente sin rate plan asignado para envío real.</p>`;
 
   const planOpts = opts.ratePlans
@@ -516,6 +543,21 @@ export function renderWalletRatePlanBlock(opts: {
         <label>Tipo tráfico <select name="traffic_type" class="tv-input-full"><option value="transactional">Transactional</option><option value="promotional">Promotional</option></select></label>
         <button type="submit" class="btn btn-secondary">Asignar rate plan</button>
       </form>
+      ${
+        a
+          ? `<form method="post" action="/admin/wallets/${escapeHtml(opts.companyId)}/traffic" class="tv-form-grid" style="margin-top:1.5rem;border-top:1px solid var(--border);padding-top:1rem">
+        <h3 style="grid-column:1/-1;margin:0;font-size:0.95rem">Límites comerciales cliente (máx. 20 TPS)</h3>
+        <label>Cliente max TPS <input name="max_tps" type="number" step="0.1" min="1" max="20" value="${Number(a.max_tps ?? 1)}" class="tv-input-full" required /></label>
+        <label>Límite diario <input name="daily_limit" type="number" value="${a.daily_limit ?? ""}" class="tv-input-full" placeholder="Opcional" /></label>
+        <label>Límite mensual <input name="monthly_limit" type="number" value="${a.monthly_limit ?? ""}" class="tv-input-full" placeholder="Opcional" /></label>
+        <label class="tv-checkbox"><input type="checkbox" name="live_enabled" value="1" ${a.live_enabled ? "checked" : ""} /> live_enabled</label>
+        <label class="tv-checkbox"><input type="checkbox" name="campaigns_enabled" value="1" ${a.campaigns_enabled ? "checked" : ""} /> campaigns_enabled</label>
+        <label class="tv-checkbox"><input type="checkbox" name="api_enabled" value="1" ${a.api_enabled ? "checked" : ""} /> api_enabled</label>
+        <button type="submit" class="btn btn-primary">Guardar límites cliente</button>
+        <p class="field-hint" style="grid-column:1/-1">El TPS máximo permitido por cuenta cliente es 20.</p>
+      </form>`
+          : ""
+      }
     </div>
   </section>`;
 }

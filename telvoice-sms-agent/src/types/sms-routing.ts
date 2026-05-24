@@ -18,6 +18,12 @@ export type SmsProviderRow = {
   supports_unicode: boolean;
   supports_flash: boolean;
   priority: number;
+  max_tps?: number;
+  max_concurrent_requests?: number;
+  daily_limit?: number | null;
+  monthly_limit?: number | null;
+  failure_threshold_percent?: number;
+  auto_pause_on_failure?: boolean;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -39,6 +45,11 @@ export type SmsRouteRow = {
   currency: string;
   dlr_enabled: boolean;
   is_default: boolean;
+  max_tps?: number;
+  max_concurrent_requests?: number;
+  daily_limit?: number | null;
+  failure_threshold_percent?: number;
+  auto_pause_on_failure?: boolean;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -51,6 +62,9 @@ export type SmsRatePlanRow = {
   currency: string;
   status: string;
   description: string | null;
+  default_tps?: number;
+  daily_limit?: number | null;
+  monthly_limit?: number | null;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -82,6 +96,12 @@ export type CompanyRatePlanRow = {
   country: string;
   traffic_type: string;
   status: string;
+  max_tps?: number;
+  daily_limit?: number | null;
+  monthly_limit?: number | null;
+  live_enabled?: boolean;
+  campaigns_enabled?: boolean;
+  api_enabled?: boolean;
   created_at: string;
   updated_at: string;
 };
