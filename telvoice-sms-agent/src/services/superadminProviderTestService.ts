@@ -47,13 +47,14 @@ export async function sendSuperadminProviderTest(input: {
     senderId,
     message: input.message,
     segments: segmentInfo.segments || 1,
-    costSms: 0,
+    costSms: segmentInfo.costSms,
     status: "queued",
     mode: "live_test",
     provider: input.provider.code,
     metadata: {
       source: "superadmin_provider_test",
       skip_wallet_debit: true,
+      billing_cost_sms: 0,
       route_id: route.id,
     },
   });
