@@ -139,6 +139,10 @@
   <style>
     html {
       scroll-behavior: smooth;
+      overflow-x: clip;
+    }
+    body {
+      overflow-x: clip;
     }
     .material-symbols-outlined {
       font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
@@ -194,10 +198,11 @@
       color: transparent;
     }
 
-    /* Hero: cielo a todo el ancho + nubes sutiles */
-    #inicio {
+    /* Hero: cielo a todo ancho — evitar overflow-x:hidden (provoca scroll interno en Y) */
+    #inicio,
+    .section-hero-wrap {
       isolation: isolate;
-      overflow-x: hidden;
+      overflow-x: clip;
       overflow-y: visible;
     }
     .hero-atmosphere {
@@ -273,8 +278,9 @@
       z-index: 2;
       width: 100%;
       height: 100%;
-      overflow-x: hidden;
+      overflow-x: clip;
       overflow-y: visible;
+      pointer-events: none;
     }
     .hero-connect-wrap .hero-connect-layer {
       width: 100%;
@@ -2386,7 +2392,7 @@
 
   <main>
     <!-- Hero Section -->
-    <section class="section-hero-wrap relative w-full overflow-x-hidden bg-white" id="inicio">
+    <section class="section-hero-wrap relative w-full bg-white" id="inicio">
       <div class="hero-atmosphere" aria-hidden="true">
         <div class="hero-bg-base"></div>
         <div class="hero-bg-skywash"></div>

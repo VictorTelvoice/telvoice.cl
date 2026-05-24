@@ -519,6 +519,7 @@
       pushStoredMessage("user", text);
       sendToApi({ message: text });
     });
+    bindChatViewportLock();
   }
 
   function togglePanel() {
@@ -531,9 +532,28 @@
 
   function setChatOpenLock(on) {
     try {
-      document.documentElement.classList.toggle("tva-chat-open", on);
+      var mobile = window.matchMedia("(max-width: 640px)").matches;
+      document.documentElement.classList.toggle("tva-chat-open", on && mobile);
     } catch (e) {
       /* ignore */
+    }
+  }
+
+  function bindChatViewportLock() {
+    if (els._chatLockBound) {
+      return;
+    }
+    els._chatLockBound = true;
+    var mq = window.matchMedia("(max-width: 640px)");
+    var sync = function () {
+      if (state.open) {
+        setChatOpenLock(true);
+      }
+    };
+    if (typeof mq.addEventListener === "function") {
+      mq.addEventListener("change", sync);
+    } else if (typeof mq.addListener === "function") {
+      mq.addListener(sync);
     }
   }
 
