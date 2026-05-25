@@ -710,6 +710,9 @@ export function getAppPanelStyles(): string {
     .tv-client-dash-tiles .tv-quick:last-child {
       border-bottom: 1px solid var(--tv-border);
     }
+    .tv-client-dash-tiles .tv-quick__arrow {
+      display: none;
+    }
     .tv-client-dash-table-panel {
       overflow: hidden;
       border-radius: 14px;
