@@ -214,6 +214,31 @@ export async function listPanelMessagesByCompany(
   return (data ?? []) as PanelSmsMessageRow[];
 }
 
+const PANEL_VERIFY_MESSAGE_COLUMNS =
+  "id, company_id, campaign_id, recipient_number, status, created_at, sent_at, metadata";
+
+/** Mensajes recientes para panel de verificación pre-campaña (menos columnas y filas). */
+export async function listRecentPanelMessagesForVerify(
+  companyId: string,
+  limit = 25,
+): Promise<PanelSmsMessageRow[]> {
+  const { data, error } = await getSupabase()
+    .from("panel_sms_messages")
+    .select(PANEL_VERIFY_MESSAGE_COLUMNS)
+    .eq("company_id", companyId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return [];
+    }
+    wrapSupabaseError(error, "listRecentPanelMessagesForVerify");
+  }
+
+  return (data ?? []) as PanelSmsMessageRow[];
+}
+
 export async function listPanelMessagesByCampaign(
   campaignId: string,
   limit = 50,

@@ -137,9 +137,30 @@ export async function processTelsimSmsWebhook(input: {
   };
 }
 
-/** Último SMS entrante para una línea QA (slot configurado, binding auto o teléfono en payload). */
-export async function getTelsimPreviewForVerifyEntry(
+function resolveTelsimPreviewFromShared(
   entry: VerifyNumberEntry,
+  recentInbound: TelsimInboundSmsRow[],
+): TelsimInboundPreview | null {
+  const targetDigits = normalizeTelsimLinePhone(entry.phone);
+  if (!targetDigits) {
+    return null;
+  }
+  for (const row of recentInbound) {
+    const linePhone =
+      row.line_phone?.trim() ||
+      extractLinePhoneFromTelsimBody(
+        (row.raw_payload ?? {}) as Record<string, unknown>,
+      );
+    if (linePhone && normalizeTelsimLinePhone(linePhone) === targetDigits) {
+      return rowToPreview(row);
+    }
+  }
+  return null;
+}
+
+async function resolveTelsimPreviewForEntry(
+  entry: VerifyNumberEntry,
+  recentInbound: TelsimInboundSmsRow[],
 ): Promise<TelsimInboundPreview | null> {
   if (entry.slotId?.trim()) {
     const bySlot = await getLatestTelsimInboundBySlot(entry.slotId.trim());
@@ -161,22 +182,34 @@ export async function getTelsimPreviewForVerifyEntry(
     }
   }
 
-  const targetDigits = normalizeTelsimLinePhone(entry.phone);
-  if (targetDigits) {
-    const recent = await listRecentTelsimInbound(40);
-    for (const row of recent) {
-      const linePhone =
-        row.line_phone?.trim() ||
-        extractLinePhoneFromTelsimBody(
-          (row.raw_payload ?? {}) as Record<string, unknown>,
-        );
-      if (linePhone && normalizeTelsimLinePhone(linePhone) === targetDigits) {
-        return rowToPreview(row);
-      }
-    }
+  return resolveTelsimPreviewFromShared(entry, recentInbound);
+}
+
+/** Último SMS entrante para una línea QA (slot configurado, binding auto o teléfono en payload). */
+export async function getTelsimPreviewForVerifyEntry(
+  entry: VerifyNumberEntry,
+): Promise<TelsimInboundPreview | null> {
+  const recent = await listRecentTelsimInbound(40);
+  return resolveTelsimPreviewForEntry(entry, recent);
+}
+
+/** Previews telsim para todas las líneas QA en una sola pasada (evita N× listRecent). */
+export async function getTelsimPreviewsForVerifyEntries(
+  entries: VerifyNumberEntry[],
+): Promise<Map<string, TelsimInboundPreview | null>> {
+  const result = new Map<string, TelsimInboundPreview | null>();
+  if (entries.length === 0) {
+    return result;
   }
 
-  return null;
+  const recentInbound = await listRecentTelsimInbound(40);
+  const previews = await Promise.all(
+    entries.map((entry) => resolveTelsimPreviewForEntry(entry, recentInbound)),
+  );
+  for (let i = 0; i < entries.length; i++) {
+    result.set(entries[i]!.id, previews[i] ?? null);
+  }
+  return result;
 }
 
 /** @deprecated Usar getTelsimPreviewForVerifyEntry */

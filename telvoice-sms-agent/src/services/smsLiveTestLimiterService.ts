@@ -13,7 +13,7 @@ import {
 } from "./smsLiveTestPolicy.js";
 import { resolveRouteForMessage } from "./smsRoutingService.js";
 import { resolveTrafficPolicy } from "./smsTrafficPolicyService.js";
-import { canSendNow } from "./smsTpsLimiterService.js";
+import { checkTpsWindowAllowed } from "./smsTpsLimiterService.js";
 import { getOrCreateCompanyWallet } from "./smsWalletService.js";
 import { validateRecipientNumber } from "./smsSegmentService.js";
 
@@ -329,31 +329,33 @@ export async function getLiveTestSendPageStatus(
 
   if (globallyEnabled && companyAuthorized) {
     try {
-      const routing = await assertRoutingReady(companyId);
-      routeActive = routing.routeActive;
-      providerActive = routing.providerActive;
-      routeName = routing.routeName;
-      providerName = routing.providerName;
       const resolved = await resolveRouteForMessage({
         companyId,
         country: "CL",
         trafficType: "transactional",
       });
+      const providerStatus = resolved.provider.status;
+      routeActive = resolved.route.status === "active";
+      providerActive = providerStatus === "active";
+      routeName = resolved.route.name;
+      providerName = resolved.provider.name;
       resolvedRouteId = resolved.route.id;
       resolvedProviderId = resolved.provider.id;
       resolvedRatePlanId = resolved.ratePlan.id;
-      const policy = await resolveTrafficPolicy({
-        companyId,
-        routeId: resolvedRouteId,
-        providerId: resolvedProviderId,
-        ratePlanId: resolvedRatePlanId,
-      });
-      effectiveTps = policy.effective_tps;
-      liveEnabledOnPlan = policy.live_enabled;
-      trafficDailyLimit = policy.daily_limit;
-      if (trafficDailyLimit != null) {
-        const used = await countDailyLiveTestMessages(companyId);
-        trafficDailyRemaining = Math.max(0, trafficDailyLimit - used);
+
+      if (!routeActive || !providerActive) {
+        routeActive = false;
+        providerActive = false;
+      } else {
+        const policy = await resolveTrafficPolicy({
+          companyId,
+          routeId: resolvedRouteId,
+          providerId: resolvedProviderId,
+          ratePlanId: resolvedRatePlanId,
+        });
+        effectiveTps = policy.effective_tps;
+        liveEnabledOnPlan = policy.live_enabled;
+        trafficDailyLimit = policy.daily_limit;
       }
     } catch {
       routeActive = false;
@@ -365,6 +367,9 @@ export async function getLiveTestSendPageStatus(
     ? await countDailyLiveTestMessages(companyId)
     : 0;
   const dailyRemaining = Math.max(0, limits.dailyLimit - dailyUsed);
+  if (trafficDailyLimit != null && globallyEnabled) {
+    trafficDailyRemaining = Math.max(0, trafficDailyLimit - dailyUsed);
+  }
 
   let recipientAllowed: boolean | null = null;
   if (opts?.recipientPreview?.trim()) {
@@ -420,13 +425,11 @@ export async function getLiveTestSendPageStatus(
     resolvedRouteId &&
     resolvedProviderId
   ) {
-    const tpsCheck = await canSendNow({
+    const tpsCheck = checkTpsWindowAllowed({
       companyId,
       routeId: resolvedRouteId,
       providerId: resolvedProviderId,
-      ratePlanId: resolvedRatePlanId,
-      flow: "live_test",
-      segmentCost: opts?.segmentCount ?? 1,
+      effectiveTps: effectiveTps ?? 1,
     });
     if (!tpsCheck.allowed && !liveTestBlockReason) {
       liveTestBlockReason =

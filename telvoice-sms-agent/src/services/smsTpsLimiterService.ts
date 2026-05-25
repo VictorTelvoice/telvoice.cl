@@ -112,6 +112,38 @@ function isTpsExceeded(
   return { exceeded: false };
 }
 
+/** Solo ventanas TPS en memoria (sin consultas a BD). Para render del panel Enviar SMS. */
+export function checkTpsWindowAllowed(input: {
+  companyId: string;
+  providerId?: string | null;
+  routeId?: string | null;
+  effectiveTps: number;
+}): { allowed: boolean; reason?: string; waitMs?: number } {
+  const now = Date.now();
+  const scopes = [
+    bucketKey("company", input.companyId),
+    bucketKey("platform", "global"),
+  ];
+  if (input.providerId) {
+    scopes.push(bucketKey("provider", input.providerId));
+  }
+  if (input.routeId) {
+    scopes.push(bucketKey("route", input.routeId));
+  }
+  for (const key of scopes) {
+    const { exceeded, waitMs } = isTpsExceeded(key, input.effectiveTps, now);
+    if (exceeded) {
+      return {
+        allowed: false,
+        waitMs,
+        reason:
+          "Tu cuenta tiene un límite temporal de envío. Intenta nuevamente en unos segundos.",
+      };
+    }
+  }
+  return { allowed: true };
+}
+
 export async function canSendNow(input: {
   companyId: string;
   providerId?: string | null;

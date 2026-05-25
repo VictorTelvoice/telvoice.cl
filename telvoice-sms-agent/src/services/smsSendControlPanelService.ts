@@ -8,13 +8,13 @@ import { buildDlrCallbackUrl, buildTelsimWebhookUrl } from "../config/env.js";
 import type { PanelSmsMessageRow } from "../types/sms-panel.js";
 import { getConfiguredDlrWebhookUrl } from "../utils/dlr-callback.js";
 import { formatDate } from "../utils/html.js";
-import { listPanelMessagesByCompany } from "./panelSmsMessageService.js";
+import { listRecentPanelMessagesForVerify } from "./panelSmsMessageService.js";
 import {
   getLiveTestSendPageStatus,
   type LiveTestSendPageStatus,
 } from "./smsLiveTestLimiterService.js";
 import { isAsmscConfigured } from "./sms-providers/realApiProvider.js";
-import { getTelsimPreviewForVerifyEntry } from "./telsimWebhookService.js";
+import { getTelsimPreviewsForVerifyEntries } from "./telsimWebhookService.js";
 
 export type VerifyNumberStatus = {
   entry: VerifyNumberEntry;
@@ -93,7 +93,10 @@ export async function getSendControlPanelView(
   const resolvedSendStatus =
     sendStatus ?? (await getLiveTestSendPageStatus(companyId));
   const verifyEntries = getRegisteredVerifyNumbers();
-  const recentMessages = await listPanelMessagesByCompany(companyId, 80);
+  const [recentMessages, telsimPreviews] = await Promise.all([
+    listRecentPanelMessagesForVerify(companyId, 25),
+    getTelsimPreviewsForVerifyEntries(verifyEntries),
+  ]);
   const verifyMessages = recentMessages.filter((m) => {
     const src = m.metadata?.source;
     return (
@@ -105,11 +108,10 @@ export async function getSendControlPanelView(
     );
   });
 
-  const verifyNumbers: VerifyNumberStatus[] = await Promise.all(
-    verifyEntries.map(async (entry) => {
+  const verifyNumbers: VerifyNumberStatus[] = verifyEntries.map((entry) => {
       const lastTest = findLastMessageToNumber(verifyMessages, entry.phone);
       const dlrReceived = lastTest?.status === "delivered";
-      const lastTelsimInboundRaw = await getTelsimPreviewForVerifyEntry(entry);
+      const lastTelsimInboundRaw = telsimPreviews.get(entry.id) ?? null;
       const lastTelsimInbound = lastTelsimInboundRaw
         ? {
             content: lastTelsimInboundRaw.content,
@@ -133,8 +135,7 @@ export async function getSendControlPanelView(
         readyForCampaign:
           isVerifyMessageReady(lastTest) || readyFromTelsim,
       };
-    }),
-  );
+  });
 
   const webhookUrl = getConfiguredDlrWebhookUrl();
   const webhookConfigured = Boolean(buildDlrCallbackUrl());

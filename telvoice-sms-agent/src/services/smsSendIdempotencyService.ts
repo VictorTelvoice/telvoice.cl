@@ -58,6 +58,22 @@ export async function issueSendSmsIdempotencyKey(
   createdBy?: string | null,
 ): Promise<string> {
   const id = randomUUID();
+  await ensureSendSmsIdempotencyRow(companyId, id, createdBy);
+  return id;
+}
+
+/** Crea la fila de idempotencia si no existe (p. ej. primera vez que se envía el formulario). */
+export async function ensureSendSmsIdempotencyRow(
+  companyId: string,
+  key: string,
+  createdBy?: string | null,
+): Promise<void> {
+  const id = validateUuidParam(key.trim(), "idempotency_key");
+  const existing = await fetchIdempotencyRow(companyId, id);
+  if (existing) {
+    return;
+  }
+
   const expiresAt = new Date(
     Date.now() + IDEMPOTENCY_TTL_HOURS * 60 * 60 * 1000,
   ).toISOString();
@@ -77,10 +93,11 @@ export async function issueSendSmsIdempotencyKey(
         503,
       );
     }
-    wrapSupabaseError(error, "issueSendSmsIdempotencyKey");
+    if (error.code === "23505") {
+      return;
+    }
+    wrapSupabaseError(error, "ensureSendSmsIdempotencyRow");
   }
-
-  return id;
 }
 
 async function fetchIdempotencyRow(
@@ -111,8 +128,10 @@ function isProcessingStale(updatedAt: string): boolean {
 export async function beginSendSmsIdempotency(
   companyId: string,
   rawKey: string,
+  createdBy?: string | null,
 ): Promise<BeginIdempotencyResult> {
   const key = validateUuidParam(rawKey.trim(), "idempotency_key");
+  await ensureSendSmsIdempotencyRow(companyId, key, createdBy);
   const row = await fetchIdempotencyRow(companyId, key);
   if (!row) {
     throw new AppError(

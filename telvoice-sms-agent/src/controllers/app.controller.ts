@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 import { canOperateClientPanel } from "../types/roles.js";
 import {
@@ -71,7 +72,6 @@ import {
   beginSendSmsIdempotency,
   completeSendSmsIdempotency,
   failSendSmsIdempotency,
-  issueSendSmsIdempotencyKey,
   panelCampaignSendResultFromRow,
   type SendSmsRedirectParams,
 } from "../services/smsSendIdempotencyService.js";
@@ -465,20 +465,22 @@ export async function getAppSendSms(
     const error =
       typeof req.query.error === "string" ? req.query.error : undefined;
     const sendEnabled = canCompanyUseLiveTestUi(ctx.company.id);
-    const liveTestStatus = sendEnabled
-      ? await getLiveTestSendPageStatus(ctx.company.id)
-      : null;
-    const controlPanel = sendEnabled
-      ? await getSendControlPanelView(ctx.company.id, liveTestStatus ?? undefined)
-      : null;
     const { flash: okFlash, error: errFlash } = flash(req);
-    const outcome = await loadSendOutcomeFromQuery(req, ctx.company.id);
-    const idempotencyKey = sendEnabled
-      ? await issueSendSmsIdempotencyKey(
-          ctx.company.id,
-          ctx.profile.profileId ?? ctx.profile.adminUserId ?? null,
-        )
-      : undefined;
+
+    const [liveTestStatus, outcome] = await Promise.all([
+      sendEnabled
+        ? getLiveTestSendPageStatus(ctx.company.id)
+        : Promise.resolve(null),
+      loadSendOutcomeFromQuery(req, ctx.company.id),
+    ]);
+
+    const controlPanel =
+      sendEnabled && liveTestStatus
+        ? await getSendControlPanelView(ctx.company.id, liveTestStatus)
+        : null;
+
+    const idempotencyKey = sendEnabled ? randomUUID() : undefined;
+
     return renderAppSendSmsPage(ctx, {
       error: error ?? errFlash,
       flash: okFlash,
@@ -526,7 +528,11 @@ export async function postAppSendSms(
       return;
     }
 
-    const claim = await beginSendSmsIdempotency(companyId, idempotencyKey);
+    const claim = await beginSendSmsIdempotency(
+      companyId,
+      idempotencyKey,
+      ctx.profile.profileId ?? ctx.profile.adminUserId ?? null,
+    );
     if (claim.action === "replay") {
       redirectSendSmsSuccess(res, claim.redirect);
       return;
