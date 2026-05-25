@@ -97,3 +97,17 @@ export type MockSmsSendResult = {
   providerMessageId: string;
   sendMode?: "mock" | "live_test";
 };
+
+export type PanelCampaignSendResult = {
+  campaignId: string;
+  campaignName: string;
+  mode: "mass" | "scheduled";
+  totalRecipients: number;
+  sent: number;
+  failed: number;
+  queued: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  scheduledAt: string | null;
+  smsConsumed: number;
+};

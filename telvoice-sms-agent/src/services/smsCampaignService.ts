@@ -21,6 +21,7 @@ export async function createSmsCampaign(input: {
   realSmsCost?: number;
   mode?: string;
   createdBy?: string | null;
+  scheduledAt?: string | null;
   metadata?: Record<string, unknown>;
 }): Promise<SmsCampaignRow> {
   const { data, error } = await getSupabase()
@@ -38,6 +39,7 @@ export async function createSmsCampaign(input: {
       real_sms_cost: input.realSmsCost ?? 0,
       mode: input.mode ?? "mock",
       created_by: input.createdBy ?? null,
+      scheduled_at: input.scheduledAt ?? null,
       metadata: input.metadata ?? {},
     })
     .select("*")

@@ -1,4 +1,7 @@
-import type { MockSmsSendResult } from "../../types/sms-panel.js";
+import type {
+  MockSmsSendResult,
+  PanelCampaignSendResult,
+} from "../../types/sms-panel.js";
 import type { SmsCampaignRow } from "../../types/sms-panel.js";
 import type { PanelSmsMessageRow } from "../../types/sms-panel.js";
 import type { ClientSmsReportData } from "../../services/smsPanelReportsService.js";
@@ -6,6 +9,10 @@ import type { LiveTestSendPageStatus } from "../../services/smsLiveTestLimiterSe
 import type { SendControlPanelView } from "../../services/smsSendControlPanelService.js";
 import { formatVerifyLastTest } from "../../services/smsSendControlPanelService.js";
 import { escapeHtml } from "../../utils/html.js";
+import {
+  MOCK_CONTACT_LISTS,
+  MOCK_TEMPLATES,
+} from "../admin-ui/mock-data-stage3.js";
 import {
   renderBtn,
   renderHeroPhonePreview,
@@ -27,11 +34,32 @@ import { formatDate } from "../../utils/html.js";
 
 export type SendSmsPageOptions = {
   error?: string;
+  flash?: string;
+  activeMode?: "single" | "mass" | "scheduled" | "template";
   sendResult?: MockSmsSendResult | null;
+  campaignResult?: PanelCampaignSendResult | null;
   sendEnabled?: boolean;
   liveTestStatus?: LiveTestSendPageStatus | null;
   controlPanel?: SendControlPanelView | null;
 };
+
+function renderContactListOptions(disabled: boolean): string {
+  const dis = disabled ? " disabled" : "";
+  const placeholder = `<option value="" data-sample=""${dis}>— Seleccionar lista —</option>`;
+  const items = MOCK_CONTACT_LISTS.map(
+    (list) =>
+      `<option value="${escapeHtml(list.id)}" data-sample="${escapeHtml(list.sampleNumbers.join("\n"))}">${escapeHtml(list.label ?? list.name)} (${list.count})</option>`,
+  ).join("");
+  return placeholder + items;
+}
+
+function renderTemplateOptions(disabled: boolean): string {
+  const dis = disabled ? " disabled" : "";
+  return `<option value=""${dis}>— Elegir plantilla —</option>${MOCK_TEMPLATES.map(
+    (t) =>
+      `<option value="${escapeHtml(t.id)}" data-message="${escapeHtml(t.message)}"${dis}>${escapeHtml(t.name)}</option>`,
+  ).join("")}`;
+}
 
 function renderChecklistItem(ok: boolean, label: string, hint?: string): string {
   const icon = ok ? "check_circle" : "error";
@@ -152,42 +180,48 @@ export function renderAppSendSmsPage(
       Enviar SMS
     </button>`;
 
+  const activeMode = opts.activeMode ?? "single";
+
   const modes = renderModeCards(
     [
       {
         id: "single",
         label: "SMS individual",
-        description: "Un destinatario, envío inmediato.",
+        description: "Un destinatario, envío inmediato o de prueba.",
         icon: "person",
-      },
-      {
-        id: "verify",
-        label: "Verificación telsim",
-        description: "Prueba DLR antes de campaña.",
-        icon: "science",
       },
       {
         id: "mass",
         label: "Campaña masiva",
-        description: "Listas y envíos programados.",
+        description: "Listas de contactos o carga CSV.",
         icon: "groups",
+      },
+      {
+        id: "scheduled",
+        label: "Envío programado",
+        description: "Define fecha y hora de despacho.",
+        icon: "schedule",
       },
       {
         id: "template",
         label: "Desde plantilla",
-        description: "Mensajes con variables.",
+        description: "Mensajes preaprobados con variables.",
         icon: "description",
       },
     ],
-    "single",
+    activeMode,
   );
 
-  const varChips = ["{{nombre}}", "{{empresa}}"]
+  const varChips = ["{nombre}", "{codigo}", "{empresa}", "{fecha}"]
     .map(
       (v) =>
         `<button type="button" class="tv-var-chip tv-var-btn" data-var="${escapeHtml(v)}">${escapeHtml(v)}</button>`,
     )
     .join("");
+
+  const flashBlock = opts.flash
+    ? `<div class="alert alert-success">${escapeHtml(opts.flash)}</div>`
+    : "";
 
   const telsimVerifyDataJson = panel
     ? JSON.stringify(
@@ -234,7 +268,22 @@ export function renderAppSendSmsPage(
     </div>`
         : "";
 
-  const successBlock = opts.sendResult
+  const successBlock = opts.campaignResult
+    ? `<section class="tv-panel tv-panel--hint tv-send-result">
+      <header class="tv-section-head"><h2 class="tv-section-head__title">Campaña en producción</h2></header>
+      <div class="tv-panel__body">
+        <ul class="tv-send-result__list">
+          <li><strong>Campaña:</strong> ${escapeHtml(opts.campaignResult.campaignName)}</li>
+          <li><strong>Destinatarios:</strong> ${opts.campaignResult.totalRecipients}</li>
+          <li><strong>Enviados:</strong> ${opts.campaignResult.sent}${opts.campaignResult.queued > 0 ? ` · En cola: ${opts.campaignResult.queued}` : ""}${opts.campaignResult.failed > 0 ? ` · Fallidos: ${opts.campaignResult.failed}` : ""}</li>
+          <li><strong>SMS consumidos:</strong> ${opts.campaignResult.smsConsumed}</li>
+          <li><strong>Saldo:</strong> ${fmtSms(opts.campaignResult.balanceBefore)} → ${fmtSms(opts.campaignResult.balanceAfter)} SMS</li>
+          ${opts.campaignResult.scheduledAt ? `<li><strong>Programado:</strong> ${escapeHtml(new Date(opts.campaignResult.scheduledAt).toLocaleString("es-CL"))}</li>` : ""}
+        </ul>
+        <p class="field-hint"><a href="/app/campaigns">Ver campañas</a> · <a href="/app/inbox">Bandeja</a></p>
+      </div>
+    </section>`
+    : opts.sendResult
     ? `<section class="tv-panel tv-panel--hint tv-send-result">
       <header class="tv-section-head"><h2 class="tv-section-head__title">Envío registrado</h2></header>
       <div class="tv-panel__body">
@@ -265,6 +314,8 @@ export function renderAppSendSmsPage(
     ? checklistHtml
     : `
     <form method="post" action="/app/send-sms" id="tv-app-send-form" class="tv-send-layout">
+      <input type="hidden" name="send_mode" id="tv-send-mode" value="${escapeHtml(activeMode)}" />
+      <textarea name="bulk_recipients" id="tv-bulk-recipients" hidden aria-hidden="true"></textarea>
       <div class="tv-send-main">
         ${modes}
         <section class="tv-panel">
@@ -279,9 +330,46 @@ export function renderAppSendSmsPage(
                 <input id="sender_id" class="tv-input-full" name="sender_id" value="TELVOICE" required maxlength="11" ${disabledAttr} />
               </div>
             </div>
-            <div class="form-group">
-              <label for="tv-send-to">Número destinatario</label>
-              <input class="tv-input-full" name="to" id="tv-send-to" placeholder="+56912345678" required ${disabledAttr} />
+            <div data-tv-single-fields${activeMode !== "single" && activeMode !== "template" && activeMode !== "scheduled" ? " hidden" : ""}>
+              <div class="form-group">
+                <label for="tv-send-to">Número destinatario</label>
+                <input class="tv-input-full" name="to" id="tv-send-to" placeholder="+56912345678" ${activeMode === "single" || activeMode === "template" ? "required" : ""} ${disabledAttr} />
+              </div>
+            </div>
+            <div data-tv-mass-fields${activeMode === "mass" ? "" : " hidden"}>
+              <div class="form-group">
+                <label for="contact_list">Lista de contactos</label>
+                <select id="contact_list" name="contact_list" class="tv-input-full" ${disabledAttr}>
+                  ${renderContactListOptions(!canSend)}
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="csv_file">Cargar CSV</label>
+                <input id="csv_file" type="file" accept=".csv,text/csv" class="tv-input-full" ${disabledAttr} />
+                <p class="field-hint">Un número por línea o separados por coma/punto y coma.</p>
+              </div>
+              <p class="field-hint" id="tv-mass-preview">Selecciona una lista o sube un CSV para ver destinatarios.</p>
+            </div>
+            <div data-tv-template-fields${activeMode === "template" ? "" : " hidden"}>
+              <div class="form-group">
+                <label for="template_id">Plantilla</label>
+                <select id="template_id" name="template_id" class="tv-input-full" ${disabledAttr}>
+                  ${renderTemplateOptions(!canSend)}
+                </select>
+              </div>
+            </div>
+            <div data-tv-schedule-fields${activeMode === "scheduled" ? "" : " hidden"}>
+              <div class="tv-form-grid">
+                <div class="form-group">
+                  <label for="schedule_date">Fecha programada</label>
+                  <input id="schedule_date" name="schedule_date" type="date" class="tv-input-full" ${disabledAttr} />
+                </div>
+                <div class="form-group">
+                  <label for="schedule_time">Hora</label>
+                  <input id="schedule_time" name="schedule_time" type="time" class="tv-input-full" ${disabledAttr} />
+                </div>
+              </div>
+              <p class="field-hint">El despacho se activará automáticamente en la fecha indicada (zona Chile).</p>
             </div>
             <div class="form-group">
               <label for="tv-sms-message">Mensaje SMS</label>
@@ -294,6 +382,7 @@ export function renderAppSendSmsPage(
             </div>
             <p class="field-hint tv-live-segment-warn" id="tv-live-segment-warn" hidden>El mensaje supera el máximo de segmentos permitido.</p>
             <p class="field-hint tv-live-number-warn" id="tv-live-number-warn" hidden>El número destino no está autorizado.</p>
+            <p class="field-hint tv-mass-warn" id="tv-mass-warn" hidden>Agrega al menos un destinatario válido (lista o CSV).</p>
             <button type="submit" class="btn btn-primary tv-send-submit" id="tv-send-submit" ${submitDisabled}>Enviar SMS</button>
           </div>
         </section>
@@ -325,9 +414,10 @@ export function renderAppSendSmsPage(
     <div class="tv-app-send-page">
     ${renderPageHeader({
       title: "Enviar SMS",
-      subtitle: "Envío unitario, verificación telsim.io y validación DLR antes de campañas.",
+      subtitle: "Individual, campaña masiva, programación o plantillas preaprobadas.",
       actions: panel ? headerActions : undefined,
     })}
+    ${flashBlock}
     ${errorBlock}
     ${opsChips}
     ${preCampaignBanner}
@@ -339,6 +429,13 @@ export function renderAppSendSmsPage(
       var ta = document.getElementById('tv-sms-message');
       var senderInput = document.getElementById('sender_id');
       var toInput = document.getElementById('tv-send-to');
+      var sendModeInput = document.getElementById('tv-send-mode');
+      var bulkHidden = document.getElementById('tv-bulk-recipients');
+      var contactList = document.getElementById('contact_list');
+      var csvInput = document.getElementById('csv_file');
+      var templateSelect = document.getElementById('template_id');
+      var scheduleDate = document.getElementById('schedule_date');
+      var scheduleTime = document.getElementById('schedule_time');
       var telsimSelect = document.getElementById('tv-telsim-line-select');
       var telsimLines = ${telsimVerifyDataJson};
       var avail = ${avail};
@@ -347,8 +444,10 @@ export function renderAppSendSmsPage(
       var numbersRestricted = ${lt?.authorizedNumbersConfigured ? "true" : "false"};
       var allowedLiveNumbers = ${JSON.stringify(allowedLiveNumbers)};
       var defaultVerifyMsg = ${JSON.stringify(defaultVerifyMsg)};
+      var initialMode = ${JSON.stringify(activeMode)};
       var templateQa = defaultVerifyMsg;
       var templateDlr = '[Telvoice DLR] Test entrega ' + new Date().toISOString().slice(0,16).replace('T',' ') + '.';
+      var csvNumbers = [];
       function gsmBasic(ch){ return /^[@£$¥èéùìòÇ\\nØø\\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&'()*+,\\-./0-9:;<=>?¡A-Za-zäöñüà^{}\\\\\\[\\]~|€]*$/.test(ch); }
       function calc(text){
         var chars = [...text].length;
@@ -366,17 +465,96 @@ export function renderAppSendSmsPage(
         if(d.length===9 && d.charAt(0)==='9') return '56'+d;
         return d;
       }
+      function isValidClMobile(digits){
+        if(!digits) return false;
+        var d = digits.replace(/^\\+/,'');
+        if(d.length===11 && d.indexOf('56')===0) return /^56[29]\\d{8}$/.test(d);
+        if(d.length===9 && d.charAt(0)==='9') return true;
+        return false;
+      }
+      function splitRecipients(raw){
+        return (raw || '').split(/[\\n,;]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+      }
+      function collectMassRecipients(){
+        var list = [];
+        if(contactList && contactList.value){
+          var opt = contactList.options[contactList.selectedIndex];
+          var sample = opt ? (opt.getAttribute('data-sample') || '') : '';
+          list = list.concat(splitRecipients(sample));
+        }
+        list = list.concat(csvNumbers);
+        var seen = {};
+        return list.filter(function(n){
+          var k = normalizePhoneDigits(n);
+          if(seen[k]) return false;
+          seen[k] = true;
+          return true;
+        });
+      }
+      function countMassStats(){
+        var all = collectMassRecipients();
+        var valid = 0, invalid = 0;
+        all.forEach(function(n){
+          if(isValidClMobile(normalizePhoneDigits(n))) valid++;
+          else invalid++;
+        });
+        return { total: all.length, valid: valid, invalid: invalid, all: all };
+      }
+      function syncBulkHidden(){
+        if(!bulkHidden) return;
+        var stats = countMassStats();
+        bulkHidden.value = stats.all.join('\\n');
+      }
+      function getSendMode(){
+        return sendModeInput ? sendModeInput.value : 'single';
+      }
       function isRecipientAllowed(){
+        var mode = getSendMode();
+        if(mode === 'mass') return countMassStats().valid > 0;
+        if(mode === 'scheduled'){
+          var schedTo = toInput && (toInput.value || '').trim();
+          if(!schedTo) return false;
+          if(!numbersRestricted && allowedLiveNumbers.length === 0) return isValidClMobile(normalizePhoneDigits(schedTo));
+        }
         if(!numbersRestricted && allowedLiveNumbers.length === 0) return true;
         if(!toInput) return true;
         var v = (toInput.value || '').trim();
-        if(!v) return true;
+        if(!v) return false;
         if(!allowedLiveNumbers.length && !numbersRestricted) return true;
         var digits = normalizePhoneDigits(v);
         return allowedLiveNumbers.some(function(n){
           var a = normalizePhoneDigits(n);
           return a === digits || a === digits.replace(/^\\+/,'');
         });
+      }
+      function updateSubmitLabel(mode){
+        var btn = document.getElementById('tv-send-submit');
+        var headerBtn = document.getElementById('tv-header-send-btn');
+        var labels = { single: 'Enviar SMS', mass: 'Enviar campaña', scheduled: 'Programar envío', template: 'Enviar SMS' };
+        var label = labels[mode] || 'Enviar SMS';
+        if(btn) btn.textContent = label;
+        if(headerBtn){
+          var icon = headerBtn.querySelector('.material-symbols-outlined');
+          headerBtn.innerHTML = (icon ? icon.outerHTML : '<span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">send</span>') + ' ' + label;
+        }
+      }
+      function applySendMode(mode){
+        if(sendModeInput) sendModeInput.value = mode;
+        var single = document.querySelector('[data-tv-single-fields]');
+        var mass = document.querySelector('[data-tv-mass-fields]');
+        var tpl = document.querySelector('[data-tv-template-fields]');
+        var sched = document.querySelector('[data-tv-schedule-fields]');
+        if(single) single.hidden = mode !== 'single' && mode !== 'template' && mode !== 'scheduled';
+        if(mass) mass.hidden = mode !== 'mass';
+        if(tpl) tpl.hidden = mode !== 'template';
+        if(sched) sched.hidden = mode !== 'scheduled';
+        if(toInput){
+          toInput.required = mode === 'single' || mode === 'template' || mode === 'scheduled';
+          if(mode === 'mass') toInput.removeAttribute('required');
+        }
+        updateSubmitLabel(mode);
+        syncBulkHidden();
+        refresh();
       }
       function setChip(label, value){
         document.querySelectorAll('.tv-validation-chips .tv-stat-chip').forEach(function(chip){
@@ -420,25 +598,41 @@ export function renderAppSendSmsPage(
       }
       function refresh(){
         if(!ta) return;
+        var mode = getSendMode();
         var t = ta.value || '';
         var c = calc(t);
         setChip('Caracteres', String(c.chars));
         setChip('Segmentos', String(c.seg));
-        setChip('Costo est.', c.cost + ' SMS');
+        var massStats = countMassStats();
+        var costEst = mode === 'mass' || mode === 'scheduled'
+          ? (c.cost * Math.max(1, massStats.valid || (toInput && toInput.value.trim() ? 1 : 0))) + ' SMS'
+          : c.cost + ' SMS';
+        setChip('Costo est.', costEst);
         setChip('Codificación', c.enc);
         var bubble = document.querySelector('.tv-phone__bubble');
         var phoneHeader = document.querySelector('.tv-phone__header');
         if(bubble) bubble.textContent = t || 'Hola, tu mensaje aparecerá aquí.';
         if(phoneHeader && senderInput) phoneHeader.textContent = senderInput.value || 'TELVOICE';
-        var overSeg = c.seg > maxLiveSegments;
+        var overSeg = mode !== 'mass' && mode !== 'scheduled' && c.seg > maxLiveSegments;
         var numOk = isRecipientAllowed();
+        var schedOk = mode !== 'scheduled' || (scheduleDate && scheduleDate.value && scheduleTime && scheduleTime.value);
+        var massOk = mode !== 'mass' || massStats.valid > 0;
         var segWarn = document.getElementById('tv-live-segment-warn');
         var numWarn = document.getElementById('tv-live-number-warn');
+        var massWarn = document.getElementById('tv-mass-warn');
+        var massPreview = document.getElementById('tv-mass-preview');
         var submitBtn = document.getElementById('tv-send-submit');
         var headerBtn = document.getElementById('tv-header-send-btn');
         if(segWarn) segWarn.hidden = !overSeg;
-        if(numWarn) numWarn.hidden = numOk || (!numbersRestricted && allowedLiveNumbers.length === 0);
-        var disabled = overSeg || !numOk;
+        if(numWarn) numWarn.hidden = mode === 'mass' || numOk || (!numbersRestricted && allowedLiveNumbers.length === 0);
+        if(massWarn) massWarn.hidden = massOk || mode !== 'mass';
+        if(massPreview && mode === 'mass'){
+          massPreview.textContent = massStats.total
+            ? massStats.valid + ' válidos · ' + massStats.invalid + ' inválidos · ' + massStats.total + ' en lista'
+            : 'Selecciona una lista o sube un CSV para ver destinatarios.';
+        }
+        syncBulkHidden();
+        var disabled = overSeg || !numOk || !schedOk || !massOk;
         if(submitBtn && canSend) submitBtn.disabled = disabled;
         if(headerBtn && canSend) headerBtn.disabled = disabled;
       }
@@ -462,21 +656,47 @@ export function renderAppSendSmsPage(
           refresh();
         });
       });
-      document.querySelectorAll('[data-tv-send-mode]').forEach(function(btn){
-        btn.addEventListener('click', function(){
-          var id = btn.getAttribute('data-tv-send-mode');
-          if(id === 'verify') {
-            var el = document.getElementById('tv-verify-section');
-            if(el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            if(telsimSelect) telsimSelect.focus();
-          }
-          if(id === 'mass') window.location.href = '/app/campaigns';
-          if(id === 'template') window.location.href = '/app/templates';
+      var modeRoot = document.querySelector('[data-tv-send-mode-root]');
+      if(modeRoot){
+        modeRoot.querySelectorAll('[data-tv-send-mode]').forEach(function(btn){
+          btn.addEventListener('click', function(){
+            var id = btn.getAttribute('data-tv-send-mode');
+            modeRoot.querySelectorAll('[data-tv-send-mode]').forEach(function(b){
+              b.classList.toggle('tv-mode-card--active', b === btn);
+            });
+            applySendMode(id || 'single');
+          });
         });
-      });
+      }
+      if(contactList){
+        contactList.addEventListener('change', function(){ syncBulkHidden(); refresh(); });
+      }
+      if(csvInput){
+        csvInput.addEventListener('change', function(){
+          var file = csvInput.files && csvInput.files[0];
+          if(!file){ csvNumbers = []; refresh(); return; }
+          var reader = new FileReader();
+          reader.onload = function(ev){
+            csvNumbers = splitRecipients(String(ev.target && ev.target.result || ''));
+            syncBulkHidden();
+            refresh();
+          };
+          reader.readAsText(file);
+        });
+      }
+      if(templateSelect){
+        templateSelect.addEventListener('change', function(){
+          var opt = templateSelect.options[templateSelect.selectedIndex];
+          var msg = opt ? opt.getAttribute('data-message') : '';
+          if(msg && ta){ ta.value = msg; ta.focus(); refresh(); }
+        });
+      }
+      if(scheduleDate) scheduleDate.addEventListener('change', refresh);
+      if(scheduleTime) scheduleTime.addEventListener('change', refresh);
       if(senderInput) senderInput.addEventListener('input', refresh);
       if(toInput) toInput.addEventListener('input', refresh);
-      if(ta){ ta.addEventListener('input', refresh); refresh(); }
+      if(ta){ ta.addEventListener('input', refresh); }
+      applySendMode(initialMode || 'single');
     })();
     </script>`;
 

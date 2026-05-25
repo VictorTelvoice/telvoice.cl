@@ -44,6 +44,9 @@ import {
   renderAppTemplatesPage,
 } from "../views/app-ui/app-section-pages.js";
 import { listCampaignsByCompany } from "../services/smsCampaignService.js";
+import { sendPanelCampaign } from "../services/smsPanelCampaignSendService.js";
+import { MOCK_CONTACT_LISTS } from "../views/admin-ui/mock-data-stage3.js";
+import type { PanelCampaignSendResult } from "../types/sms-panel.js";
 import { listPanelMessagesByCompany } from "../services/panelSmsMessageService.js";
 import { getClientSmsReportData } from "../services/smsPanelReportsService.js";
 import { getLiveTestSendPageStatus } from "../services/smsLiveTestLimiterService.js";
@@ -54,6 +57,123 @@ import {
 } from "../services/smsSendControlPanelService.js";
 import { sendPanelSms } from "../services/smsSendService.js";
 import { AppError } from "../utils/errors.js";
+
+type AppSendMode = "single" | "mass" | "scheduled" | "template";
+
+function parseBulkRecipients(raw: string): string[] {
+  const lines = raw
+    .split(/[\n,;]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return [...new Set(lines)];
+}
+
+function resolveMockListNumbers(listId: string): string[] {
+  const list = MOCK_CONTACT_LISTS.find((l) => l.id === listId);
+  return list ? [...list.sampleNumbers] : [];
+}
+
+function buildScheduledIso(date: string, time: string): string | null {
+  if (!date.trim() || !time.trim()) return null;
+  const d = new Date(`${date}T${time}:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
+function formatScheduleCl(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString("es-CL", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function collectRecipientsFromSendForm(req: Request): string[] {
+  let recipients = parseBulkRecipients(String(req.body?.bulk_recipients ?? ""));
+  const listId = String(req.body?.contact_list ?? "").trim();
+  if (listId) {
+    recipients = [...recipients, ...resolveMockListNumbers(listId)];
+  }
+  recipients = [...new Set(recipients)];
+  if (recipients.length === 0) {
+    const to = String(req.body?.to ?? "").trim();
+    if (to) recipients = [to];
+  }
+  return recipients;
+}
+
+async function trySendProductionCampaignFromForm(
+  req: Request,
+  ctx: AppPageContext,
+): Promise<{ result: PanelCampaignSendResult; activeMode: AppSendMode } | null> {
+  const sendMode = String(req.body?.send_mode ?? "single") as AppSendMode;
+  if (sendMode !== "mass" && sendMode !== "scheduled") {
+    return null;
+  }
+
+  const recipients = collectRecipientsFromSendForm(req);
+  if (recipients.length === 0) {
+    throw new AppError(
+      sendMode === "mass"
+        ? "Agrega al menos un destinatario válido (lista o CSV)."
+        : "Indica un número destinatario válido.",
+      400,
+    );
+  }
+
+  const messageText = String(req.body?.message ?? "").trim();
+  if (!messageText) {
+    throw new AppError("El mensaje no puede estar vacío.", 400);
+  }
+
+  const senderId = String(req.body?.sender_id ?? "TELVOICE").trim();
+  const campaignName =
+    String(req.body?.campaign_name ?? "").trim() ||
+    (sendMode === "scheduled" ? "Envío programado" : "Campaña masiva");
+
+  let scheduledAt: string | null = null;
+  if (sendMode === "scheduled") {
+    scheduledAt = buildScheduledIso(
+      String(req.body?.schedule_date ?? ""),
+      String(req.body?.schedule_time ?? ""),
+    );
+    if (!scheduledAt) {
+      throw new AppError("Indica una fecha y hora válidas.", 400);
+    }
+  }
+
+  const result = await sendPanelCampaign({
+    companyId: ctx.company.id,
+    senderId,
+    message: messageText,
+    recipients,
+    campaignName,
+    mode: sendMode,
+    scheduledAt,
+    createdBy:
+      ctx.profile.profileId ?? ctx.profile.adminUserId ?? undefined,
+    sendSource: `app_send_sms_${sendMode}`,
+  });
+
+  return { result, activeMode: sendMode };
+}
+
+function campaignResultFlash(
+  result: PanelCampaignSendResult,
+  sendMode: AppSendMode,
+): string {
+  if (sendMode === "scheduled" && result.scheduledAt) {
+    const when = formatScheduleCl(result.scheduledAt);
+    if (result.queued > 0 && result.sent === 0) {
+      return `Envío programado para ${when}: ${result.queued} mensaje(s) en cola. Campaña «${result.campaignName}».`;
+    }
+    return `Programado ${when}: ${result.sent} enviado(s), ${result.failed} fallido(s). Campaña «${result.campaignName}».`;
+  }
+  return `Campaña «${result.campaignName}» procesada: ${result.sent} enviado(s), ${result.failed} fallido(s), ${result.smsConsumed} SMS consumidos.`;
+}
 
 function flash(req: Request): { flash?: string; error?: string } {
   return {
@@ -229,8 +349,10 @@ export async function getAppSendSms(
     const controlPanel = sendEnabled
       ? await getSendControlPanelView(ctx.company.id)
       : null;
+    const { flash: okFlash, error: errFlash } = flash(req);
     return renderAppSendSmsPage(ctx, {
-      error,
+      error: error ?? errFlash,
+      flash: okFlash,
       sendEnabled,
       liveTestStatus,
       controlPanel,
@@ -253,6 +375,30 @@ export async function postAppSendSms(
       res.redirect(
         "/app/send-sms?error=No%20tienes%20permiso%20para%20enviar%20SMS",
       );
+      return;
+    }
+
+    const campaignSend = await trySendProductionCampaignFromForm(req, ctx);
+    if (campaignSend) {
+      const sendEnabled = canCompanyUseLiveTestUi(ctx.company.id);
+      const liveTestStatus = sendEnabled
+        ? await getLiveTestSendPageStatus(ctx.company.id)
+        : null;
+      const controlPanel = sendEnabled
+        ? await getSendControlPanelView(ctx.company.id)
+        : null;
+      const html = renderAppSendSmsPage(ctx, {
+        flash: campaignResultFlash(
+          campaignSend.result,
+          campaignSend.activeMode,
+        ),
+        campaignResult: campaignSend.result,
+        activeMode: campaignSend.activeMode,
+        sendEnabled,
+        liveTestStatus,
+        controlPanel,
+      });
+      res.type("html").send(html);
       return;
     }
 

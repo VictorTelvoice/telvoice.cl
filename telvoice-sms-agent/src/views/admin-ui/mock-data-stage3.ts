@@ -116,13 +116,62 @@ export const MOCK_CONTACTS = [
 ];
 
 export const MOCK_CONTACT_LISTS = [
-  { name: "Clientes activos", count: 2400, updated: "22 may 2026" },
-  { name: "Leads", count: 890, updated: "21 may 2026" },
-  { name: "Cobranza", count: 620, updated: "20 may 2026" },
-  { name: "Recordatorios", count: 1100, updated: "19 may 2026" },
-  { name: "Promociones", count: 3500, updated: "18 may 2026" },
-  { name: "Validaciones OTP", count: 450, updated: "22 may 2026" },
-  { name: "Soporte", count: 120, updated: "17 may 2026" },
+  {
+    id: "cl-active",
+    name: "Clientes activos",
+    label: "Clientes activos CL",
+    count: 2400,
+    updated: "22 may 2026",
+    sampleNumbers: ["56911111111", "56912222222", "56913333333"],
+  },
+  {
+    id: "leads-30d",
+    name: "Leads",
+    label: "Leads últimos 30 días",
+    count: 890,
+    updated: "21 may 2026",
+    sampleNumbers: ["56914444444", "56915555555"],
+  },
+  {
+    id: "cobranza",
+    name: "Cobranza",
+    label: "Cobranza",
+    count: 620,
+    updated: "20 may 2026",
+    sampleNumbers: ["56916666666", "56917777777"],
+  },
+  {
+    id: "recordatorios",
+    name: "Recordatorios",
+    label: "Recordatorios",
+    count: 1100,
+    updated: "19 may 2026",
+    sampleNumbers: ["56918888888", "56919999999"],
+  },
+  {
+    id: "promo",
+    name: "Promociones",
+    label: "Promociones",
+    count: 3500,
+    updated: "18 may 2026",
+    sampleNumbers: ["56910101010", "56912121212"],
+  },
+  {
+    id: "otp",
+    name: "Validaciones OTP",
+    label: "Validaciones OTP",
+    count: 450,
+    updated: "22 may 2026",
+    sampleNumbers: ["56913131313"],
+  },
+  {
+    id: "soporte",
+    name: "Soporte",
+    label: "Soporte",
+    count: 120,
+    updated: "17 may 2026",
+    sampleNumbers: ["56914141414"],
+  },
 ];
 
 export const MOCK_INVOICES = [
