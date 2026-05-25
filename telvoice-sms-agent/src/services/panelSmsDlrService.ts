@@ -1,6 +1,7 @@
 import type { AsmscDlrWebhookBody } from "../types/asmsc.js";
 import type { PanelSmsMessageStatus } from "../types/sms-panel.js";
 import { isDeliveredDlr, normalizeDlrToMessageStatus } from "../utils/dlr-status.js";
+import { extractDlrFields } from "./smsMessageService.js";
 import { sanitizeProviderResponse } from "./sms-providers/sanitize.js";
 import {
   findPanelMessageByAsmscUid,
@@ -26,12 +27,9 @@ function mapDlrToPanelStatus(dlrStatus: string | null | undefined): PanelSmsMess
 export async function processPanelSmsDlrFromAsmsc(
   body: AsmscDlrWebhookBody,
 ): Promise<{ panel_message_id: string | null }> {
-  const providerMessageId =
-    typeof body.message_id === "string" && body.message_id.trim()
-      ? body.message_id.trim()
-      : null;
-  const uid =
-    typeof body.uid === "string" && body.uid.trim() ? body.uid.trim() : null;
+  const fields = extractDlrFields(body);
+  const providerMessageId = fields.provider_message_id;
+  const uid = fields.uid;
 
   let message = providerMessageId
     ? await findPanelMessageByProviderMessageId(providerMessageId)
@@ -45,8 +43,7 @@ export async function processPanelSmsDlrFromAsmsc(
     return { panel_message_id: null };
   }
 
-  const dlrStatus =
-    typeof body.DLRStatus === "string" ? body.DLRStatus : null;
+  const dlrStatus = fields.dlr_status;
   const panelStatus = mapDlrToPanelStatus(dlrStatus);
   const deliveredAt = isDeliveredDlr(dlrStatus)
     ? new Date().toISOString()
@@ -58,13 +55,10 @@ export async function processPanelSmsDlrFromAsmsc(
   await updatePanelSmsMessage(message.id, {
     status: panelStatus,
     delivered_at: deliveredAt,
-    error_code:
-      typeof body.ErrorCode === "string" ? body.ErrorCode : message.error_code,
-    error_message:
-      typeof body.ErrorDescription === "string"
-        ? body.ErrorDescription
-        : message.error_message,
+    error_code: fields.error_code ?? message.error_code,
+    error_message: fields.error_description ?? message.error_message,
     metadata: {
+      asmsc_uid: uid ?? undefined,
       last_dlr_status: dlrStatus,
       last_dlr_at: dlrAt,
       last_dlr_payload: sanitizedDlr,
@@ -77,7 +71,7 @@ export async function processPanelSmsDlrFromAsmsc(
     provider: message.provider,
     providerMessageId: providerMessageId ?? message.provider_message_id,
     status: dlrStatus ?? panelStatus,
-    rawPayload: sanitizeProviderResponse(body as Record<string, unknown>),
+    rawPayload: sanitizedDlr,
   });
 
   return { panel_message_id: message.id };

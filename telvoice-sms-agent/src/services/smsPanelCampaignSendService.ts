@@ -269,6 +269,9 @@ async function sendOneInCampaign(input: {
       cost_price_per_sms: resolved.costPricePerSms,
       currency: resolved.currency,
       margin: resolved.margin,
+      metadata: {
+        asmsc_uid: providerResult.asmsc_uid ?? null,
+      },
     });
 
     await insertPanelDeliveryEvent({
