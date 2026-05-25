@@ -101,7 +101,11 @@ function renderTelsimVerifyPanel(
       ? `Código: ${firstInbound.verificationCode}`
       : "") ||
     firstMsg;
-  const firstSender = first.lastTest?.sender_id?.trim() || "TELVOICE";
+  const firstPreviewSender =
+    firstInbound &&
+    (firstInbound.content.trim() || firstInbound.verificationCode)
+      ? firstInbound.from.trim() || "SMS entrante"
+      : first.lastTest?.sender_id?.trim() || "TELVOICE";
   const disabled = canSend ? "" : "disabled";
 
   const lineOptions = panel.verifyNumbers
@@ -137,7 +141,7 @@ function renderTelsimVerifyPanel(
         </div>
         <div class="tv-telsim-panel__phone" id="tv-telsim-phone-wrap">
           ${renderHeroPhonePreview({
-            senderLabel: firstSender,
+            senderLabel: firstPreviewSender,
             senderSub: "Vía Telvoice A2P",
             message: firstPreview,
             bubbleId: "tv-telsim-bubble",
@@ -261,6 +265,11 @@ export function renderAppSendSmsPage(
             masked: v.maskedPhone,
             message: outbound,
             previewMessage: preview,
+            previewSender:
+              inbound &&
+              (inbound.content.trim() || inbound.verificationCode)
+                ? inbound.from.trim() || "SMS entrante"
+                : v.lastTest?.sender_id?.trim() || "TELVOICE",
             inboundCode: inbound?.verificationCode ?? null,
             inboundAt: inbound?.receivedAt ?? null,
             sender: v.lastTest?.sender_id?.trim() || "TELVOICE",
@@ -617,7 +626,7 @@ export function renderAppSendSmsPage(
         var bubble = document.getElementById('tv-telsim-bubble');
         var title = document.querySelector('#tv-telsim-phone-wrap .tv-hero-phone__app-title');
         if(bubble) bubble.textContent = line.previewMessage || line.message || defaultVerifyMsg;
-        if(title) title.textContent = line.sender || 'TELVOICE';
+        if(title) title.textContent = line.previewSender || line.sender || 'TELVOICE';
         var metaEl = document.getElementById('tv-telsim-meta');
         if(metaEl) {
           var inboundHint = line.inboundAt ? ' · SMS entrante telsim' : '';
@@ -684,6 +693,33 @@ export function renderAppSendSmsPage(
             navigator.clipboard.writeText(val).catch(function(){});
           }
         });
+      }
+      function pollTelsimInbound(){
+        if(!telsimLines.length) return;
+        fetch('/app/send-sms/telsim-preview', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+          .then(function(r){ return r.ok ? r.json() : null; })
+          .then(function(data){
+            if(!data || !data.lines) return;
+            var changed = false;
+            telsimLines.forEach(function(line){
+              var upd = data.lines[line.id];
+              if(!upd) return;
+              if(upd.previewMessage && upd.previewMessage !== line.previewMessage){
+                line.previewMessage = upd.previewMessage;
+                line.previewSender = upd.previewSender || line.previewSender;
+                line.inboundAt = upd.inboundAt;
+                line.inboundCode = upd.inboundCode;
+                line.ready = upd.ready;
+                changed = true;
+              }
+            });
+            if(changed) updateTelsimLine();
+          })
+          .catch(function(){});
+      }
+      if(telsimSelect){
+        setInterval(pollTelsimInbound, 8000);
+        pollTelsimInbound();
       }
       document.querySelectorAll('.tv-var-btn').forEach(function(btn){
         btn.addEventListener('click', function(){

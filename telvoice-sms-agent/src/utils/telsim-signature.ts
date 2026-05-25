@@ -4,15 +4,23 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 export function verifyTelsimSignature(input: {
   secret: string;
   signatureHeader: string | undefined;
-  body: Record<string, unknown>;
+  body?: Record<string, unknown>;
+  /** Body exacto recibido (preferido para coincidir con la firma de Telsim). */
+  rawBody?: string;
 }): boolean {
   const signature = input.signatureHeader?.trim();
   if (!signature || !input.secret) {
     return false;
   }
 
-  const body = JSON.stringify(input.body);
-  const expected = createHmac("sha256", input.secret).update(body).digest("hex");
+  const payload =
+    input.rawBody?.trim() ||
+    (input.body != null ? JSON.stringify(input.body) : "");
+  if (!payload) {
+    return false;
+  }
+
+  const expected = createHmac("sha256", input.secret).update(payload).digest("hex");
 
   try {
     const sigBuf = Buffer.from(signature, "utf8");

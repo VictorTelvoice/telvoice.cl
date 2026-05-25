@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import type { RequestWithRawBody } from "../types/express-request.js";
 import { buildTelsimWebhookUrl } from "../config/env.js";
 import { processTelsimSmsWebhook } from "../services/telsimWebhookService.js";
 import { AppError } from "../utils/errors.js";
@@ -17,6 +18,7 @@ export async function telsimSmsReceivedHandler(
     const result = await processTelsimSmsWebhook({
       headers: req.headers as Record<string, string | string[] | undefined>,
       body,
+      rawBody: (req as RequestWithRawBody).rawBody,
     });
 
     res.status(200).json({

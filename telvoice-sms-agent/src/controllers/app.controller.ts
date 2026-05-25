@@ -55,6 +55,8 @@ import {
   getSendControlPanelView,
   resolveVerifyTestSend,
 } from "../services/smsSendControlPanelService.js";
+import { buildTelsimVerifyLinesPreview } from "../services/telsimWebhookService.js";
+import { getRegisteredVerifyNumbers } from "../config/verifyNumbers.js";
 import { sendPanelSms } from "../services/smsSendService.js";
 import { AppError } from "../utils/errors.js";
 import {
@@ -360,6 +362,25 @@ export async function getAppSendSms(
       controlPanel,
     });
   });
+}
+
+export async function getAppTelsimInboundPreview(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await buildAppContext(req);
+    if (!ctx) {
+      res.status(401).json({ ok: false, error: "No autorizado" });
+      return;
+    }
+    const entries = getRegisteredVerifyNumbers();
+    const lines = await buildTelsimVerifyLinesPreview(entries);
+    res.status(200).json({ ok: true, lines });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Error interno";
+    res.status(500).json({ ok: false, error: msg });
+  }
 }
 
 export async function postAppSendSms(

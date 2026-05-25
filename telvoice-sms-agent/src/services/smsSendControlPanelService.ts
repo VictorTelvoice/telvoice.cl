@@ -14,7 +14,7 @@ import {
   type LiveTestSendPageStatus,
 } from "./smsLiveTestLimiterService.js";
 import { isAsmscConfigured } from "./sms-providers/realApiProvider.js";
-import { getTelsimPreviewForSlot } from "./telsimWebhookService.js";
+import { getTelsimPreviewForVerifyEntry } from "./telsimWebhookService.js";
 
 export type VerifyNumberStatus = {
   entry: VerifyNumberEntry;
@@ -28,6 +28,7 @@ export type VerifyNumberStatus = {
     content: string;
     verificationCode: string | null;
     receivedAt: string;
+    from: string;
   } | null;
 };
 
@@ -106,8 +107,14 @@ export async function getSendControlPanelView(
     verifyEntries.map(async (entry) => {
       const lastTest = findLastMessageToNumber(verifyMessages, entry.phone);
       const dlrReceived = lastTest?.status === "delivered";
-      const lastTelsimInbound = entry.slotId
-        ? await getTelsimPreviewForSlot(entry.slotId)
+      const lastTelsimInboundRaw = await getTelsimPreviewForVerifyEntry(entry);
+      const lastTelsimInbound = lastTelsimInboundRaw
+        ? {
+            content: lastTelsimInboundRaw.content,
+            verificationCode: lastTelsimInboundRaw.verificationCode,
+            receivedAt: lastTelsimInboundRaw.receivedAt,
+            from: lastTelsimInboundRaw.from,
+          }
         : null;
       const readyFromTelsim =
         lastTelsimInbound != null &&

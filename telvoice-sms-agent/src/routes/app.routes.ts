@@ -12,6 +12,7 @@ import {
   getAppReports,
   getAppRoot,
   getAppSendSms,
+  getAppTelsimInboundPreview,
   postAppSendSms,
   getAppSettings,
   getAppSupport,
@@ -62,6 +63,7 @@ appRouter.get("/orders", requireClientPanelPage, getAppOrders);
 appRouter.get("/orders/:id", requireClientPanelPage, getAppOrderDetail);
 
 appRouter.get("/send-sms", requireClientPanelPage, getAppSendSms);
+appRouter.get("/send-sms/telsim-preview", requireClientPanelPage, getAppTelsimInboundPreview);
 appRouter.post("/send-sms", requireClientPanelPage, postAppSendSms);
 appRouter.get("/campaigns", requireClientPanelPage, getAppCampaigns);
 appRouter.get("/inbox", requireClientPanelPage, getAppInbox);

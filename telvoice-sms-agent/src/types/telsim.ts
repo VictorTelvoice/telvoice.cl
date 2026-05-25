@@ -17,6 +17,7 @@ export type TelsimInboundSmsRow = {
   service: string | null;
   slot_id: string | null;
   received_at: string;
+  line_phone: string | null;
   raw_payload: Record<string, unknown>;
   created_at: string;
 };
