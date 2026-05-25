@@ -44,7 +44,11 @@ import {
   renderAppTemplatesPage,
 } from "../views/app-ui/app-section-pages.js";
 import { listCampaignsByCompany } from "../services/smsCampaignService.js";
-import { sendPanelCampaign } from "../services/smsPanelCampaignSendService.js";
+import {
+  sendPanelCampaign,
+  type MassCampaignSendRow,
+} from "../services/smsPanelCampaignSendService.js";
+import { parseMassCampaignRowsJson } from "../utils/csvMassCampaign.js";
 import { MOCK_CONTACT_LISTS } from "../views/admin-ui/mock-data-stage3.js";
 import type { PanelCampaignSendResult } from "../types/sms-panel.js";
 import { listPanelMessagesByCompany } from "../services/panelSmsMessageService.js";
@@ -99,6 +103,29 @@ function collectRecipientsFromSendForm(req: Request): string[] {
   return recipients;
 }
 
+function collectMassCampaignRows(req: Request): {
+  rows: MassCampaignSendRow[];
+  defaultMessage: string;
+  hasPerRowMessages: boolean;
+} {
+  const defaultMessage = String(req.body?.message ?? "").trim();
+  const fromJson = parseMassCampaignRowsJson(
+    String(req.body?.bulk_rows_json ?? ""),
+  );
+
+  if (fromJson?.length) {
+    const hasPerRowMessages = fromJson.some((r) => r.message.trim().length > 0);
+    return { rows: fromJson, defaultMessage, hasPerRowMessages };
+  }
+
+  const recipients = collectRecipientsFromSendForm(req);
+  return {
+    rows: recipients.map((phone) => ({ phone, message: defaultMessage })),
+    defaultMessage,
+    hasPerRowMessages: false,
+  };
+}
+
 async function trySendProductionCampaignFromForm(
   req: Request,
   ctx: AppPageContext,
@@ -108,8 +135,8 @@ async function trySendProductionCampaignFromForm(
     return null;
   }
 
-  const recipients = collectRecipientsFromSendForm(req);
-  if (recipients.length === 0) {
+  const massPayload = collectMassCampaignRows(req);
+  if (massPayload.rows.length === 0) {
     throw new AppError(
       sendMode === "mass"
         ? "Agrega al menos un destinatario válido (lista o CSV)."
@@ -118,9 +145,11 @@ async function trySendProductionCampaignFromForm(
     );
   }
 
-  const messageText = String(req.body?.message ?? "").trim();
-  if (!messageText) {
-    throw new AppError("El mensaje no puede estar vacío.", 400);
+  if (!massPayload.hasPerRowMessages && !massPayload.defaultMessage) {
+    throw new AppError(
+      "Indica un mensaje común o sube un CSV con columnas número y mensaje.",
+      400,
+    );
   }
 
   const senderId = String(req.body?.sender_id ?? "TELVOICE").trim();
@@ -152,8 +181,8 @@ async function trySendProductionCampaignFromForm(
   const result = await sendPanelCampaign({
     companyId: ctx.company.id,
     senderId,
-    message: messageText,
-    recipients,
+    message: massPayload.defaultMessage,
+    rows: massPayload.rows,
     campaignName,
     mode: sendMode,
     scheduledAt,

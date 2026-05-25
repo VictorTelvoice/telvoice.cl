@@ -357,6 +357,7 @@ export function renderAppSendSmsPage(
     <form method="post" action="/app/send-sms" id="tv-app-send-form" class="tv-send-layout">
       <input type="hidden" name="send_mode" id="tv-send-mode" value="${escapeHtml(activeMode)}" />
       <textarea name="bulk_recipients" id="tv-bulk-recipients" hidden aria-hidden="true"></textarea>
+      <input type="hidden" name="bulk_rows_json" id="tv-bulk-rows-json" value="" />
       <div class="tv-send-main">
         ${modes}
         <section class="tv-panel">
@@ -387,9 +388,20 @@ export function renderAppSendSmsPage(
               <div class="form-group">
                 <label for="csv_file">Cargar CSV</label>
                 <input id="csv_file" type="file" accept=".csv,text/csv" class="tv-input-full" ${disabledAttr} />
-                <p class="field-hint">Un número por línea o separados por coma/punto y coma.</p>
+                <p class="field-hint">Columnas <code>numero</code> y <code>mensaje</code> (o solo números + mensaje común abajo). Separador coma o punto y coma.</p>
               </div>
-              <p class="field-hint" id="tv-mass-preview">Selecciona una lista o sube un CSV para ver destinatarios.</p>
+              <p class="field-hint tv-mass-summary" id="tv-mass-summary">Selecciona una lista o sube un CSV para previsualizar la campaña.</p>
+              <div class="tv-mass-table-wrap" id="tv-mass-table-wrap" hidden>
+                <div class="table-wrap tv-panel" style="padding:0;margin-top:0.5rem">
+                  <table class="tv-table tv-table--dense" id="tv-mass-preview-table">
+                    <thead><tr>
+                      <th>Número</th><th>Mensaje</th><th>Seg.</th><th>SMS</th>
+                    </tr></thead>
+                    <tbody id="tv-mass-preview-body"></tbody>
+                  </table>
+                </div>
+                <p class="field-hint" id="tv-mass-preview-more" hidden></p>
+              </div>
             </div>
             <div data-tv-template-fields${activeMode === "template" ? "" : " hidden"}>
               <div class="form-group">
@@ -412,9 +424,9 @@ export function renderAppSendSmsPage(
               </div>
               <p class="field-hint">Hora de Chile (America/Santiago). El envío sale cuando llegue esa hora; no al pulsar el botón.</p>
             </div>
-            <div class="form-group">
-              <label for="tv-sms-message">Mensaje SMS</label>
-              <textarea id="tv-sms-message" class="tv-input-full" name="message" rows="5" required placeholder="Escribe tu mensaje…" ${disabledAttr}></textarea>
+            <div class="form-group" data-tv-message-group>
+              <label for="tv-sms-message">Mensaje SMS <span class="field-hint" id="tv-mass-msg-hint" style="font-weight:400"></span></label>
+              <textarea id="tv-sms-message" class="tv-input-full" name="message" rows="5"${activeMode === "mass" ? "" : " required"} placeholder="Escribe tu mensaje…" ${disabledAttr}></textarea>
               <div class="tv-var-row">
                 <button type="button" class="tv-var-chip tv-template-btn" data-template="qa">QA pre-campaña</button>
                 <button type="button" class="tv-var-chip tv-template-btn" data-template="dlr">Test DLR</button>
@@ -488,7 +500,14 @@ export function renderAppSendSmsPage(
       var initialMode = ${JSON.stringify(activeMode)};
       var templateQa = defaultVerifyMsg;
       var templateDlr = '[Telvoice DLR] Test entrega ' + new Date().toISOString().slice(0,16).replace('T',' ') + '.';
-      var csvNumbers = [];
+      var bulkRowsJson = document.getElementById('tv-bulk-rows-json');
+      var massSummary = document.getElementById('tv-mass-summary');
+      var massTableWrap = document.getElementById('tv-mass-table-wrap');
+      var massPreviewBody = document.getElementById('tv-mass-preview-body');
+      var massPreviewMore = document.getElementById('tv-mass-preview-more');
+      var massMsgHint = document.getElementById('tv-mass-msg-hint');
+      var csvParsedRows = [];
+      var massPreviewRows = [];
       function gsmBasic(ch){ return /^[@£$¥èéùìòÇ\\nØø\\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&'()*+,\\-./0-9:;<=>?¡A-Za-zäöñüà^{}\\\\\\[\\]~|€]*$/.test(ch); }
       function calc(text){
         var chars = [...text].length;
@@ -516,42 +535,169 @@ export function renderAppSendSmsPage(
       function splitRecipients(raw){
         return (raw || '').split(/[\\n,;]+/).map(function(s){ return s.trim(); }).filter(Boolean);
       }
-      function collectMassRecipients(){
-        var list = [];
+      function escHtml(s){
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+      function parseCsvLine(line){
+        var out = [], cur = '', q = false;
+        for(var i=0;i<line.length;i++){
+          var ch = line.charAt(i);
+          if(ch === '"'){ q = !q; continue; }
+          if((ch === ',' || ch === ';') && !q){ out.push(cur.trim()); cur = ''; continue; }
+          cur += ch;
+        }
+        out.push(cur.trim());
+        return out;
+      }
+      function isPhoneHeaderCell(c){
+        return /^(numero|numeros|telefono|phone|destino|celular|movil|to)$/i.test((c||'').toLowerCase().replace(/[áéíóú]/g,function(m){ return {'á':'a','é':'e','í':'i','ó':'o','ú':'u'}[m]||m; }));
+      }
+      function isMessageHeaderCell(c){
+        return /^(mensaje|mensajes|message|texto|sms)$/i.test((c||'').toLowerCase().replace(/[áéíóú]/g,function(m){ return {'á':'a','é':'e','í':'i','ó':'o','ú':'u'}[m]||m; }));
+      }
+      function parseCsvText(text){
+        var lines = (text||'').split(/\\r?\\n/).map(function(l){ return l.trim(); }).filter(Boolean);
+        if(!lines.length) return [];
+        var start = 0;
+        var first = parseCsvLine(lines[0]);
+        if(first.length >= 2 && (isPhoneHeaderCell(first[0]) || isMessageHeaderCell(first[1]))) start = 1;
+        var rows = [];
+        for(var i=start;i<lines.length;i++){
+          var cols = parseCsvLine(lines[i]);
+          if(!cols.length) continue;
+          var phone = (cols[0]||'').trim();
+          if(!phone) continue;
+          var message = cols.length >= 2 ? cols.slice(1).join(',').trim() : '';
+          rows.push({ phone: phone, message: message });
+        }
+        return rows;
+      }
+      function rebuildMassPreviewRows(){
+        var fallback = ta ? (ta.value || '').trim() : '';
+        var combined = [];
         if(contactList && contactList.value){
           var opt = contactList.options[contactList.selectedIndex];
           var sample = opt ? (opt.getAttribute('data-sample') || '') : '';
-          list = list.concat(splitRecipients(sample));
+          splitRecipients(sample).forEach(function(p){
+            combined.push({ phone: p, message: fallback });
+          });
         }
-        list = list.concat(csvNumbers);
+        csvParsedRows.forEach(function(r){ combined.push({ phone: r.phone, message: r.message || fallback }); });
         var seen = {};
-        return list.filter(function(n){
-          var k = normalizePhoneDigits(n);
-          if(seen[k]) return false;
-          seen[k] = true;
-          return true;
+        massPreviewRows = [];
+        combined.forEach(function(r){
+          var key = normalizePhoneDigits(r.phone);
+          if(!key || seen[key]) return;
+          seen[key] = true;
+          var msg = (r.message || fallback).trim();
+          var valid = isValidClMobile(key);
+          var seg = msg ? calc(msg) : { seg: 0, cost: 0 };
+          var hasMsg = !!msg;
+          var rowOk = valid && hasMsg;
+          massPreviewRows.push({
+            phone: r.phone,
+            message: msg || '—',
+            valid: valid,
+            ok: rowOk,
+            seg: seg.seg,
+            cost: seg.cost
+          });
         });
       }
       function countMassStats(){
-        var all = collectMassRecipients();
-        var valid = 0, invalid = 0;
-        all.forEach(function(n){
-          if(isValidClMobile(normalizePhoneDigits(n))) valid++;
+        rebuildMassPreviewRows();
+        var valid = 0, invalid = 0, totalSms = 0, withCsvMsg = false;
+        massPreviewRows.forEach(function(r){
+          if(r.ok){ valid++; totalSms += r.cost; }
           else invalid++;
+          if(csvParsedRows.length && r.message && r.message !== '—') withCsvMsg = true;
         });
-        return { total: all.length, valid: valid, invalid: invalid, all: all };
+        if(csvParsedRows.length){
+          withCsvMsg = csvParsedRows.some(function(r){ return !!(r.message && r.message.trim()); });
+        }
+        return {
+          total: massPreviewRows.length,
+          valid: valid,
+          invalid: invalid,
+          totalSms: totalSms,
+          hasPerRowMessages: withCsvMsg,
+          rows: massPreviewRows
+        };
       }
-      function syncBulkHidden(){
-        if(!bulkHidden) return;
+      function syncBulkPayload(){
+        rebuildMassPreviewRows();
         var stats = countMassStats();
-        bulkHidden.value = stats.all.join('\\n');
+        if(bulkHidden) bulkHidden.value = massPreviewRows.map(function(r){ return r.phone; }).join('\\n');
+        if(bulkRowsJson){
+          var payload = massPreviewRows.filter(function(r){ return r.ok; }).map(function(r){
+            return { phone: r.phone, message: r.message === '—' ? '' : r.message };
+          });
+          bulkRowsJson.value = JSON.stringify(payload);
+        }
+        return stats;
+      }
+      function updateMessageRequired(){
+        if(!ta) return;
+        var mode = getSendMode();
+        var stats = countMassStats();
+        if(mode === 'mass'){
+          if(stats.hasPerRowMessages && stats.valid > 0){
+            ta.removeAttribute('required');
+            if(massMsgHint) massMsgHint.textContent = '(opcional: el CSV ya incluye mensaje por fila)';
+          } else {
+            ta.setAttribute('required','');
+            if(massMsgHint) massMsgHint.textContent = '(mensaje común para todos los números)';
+          }
+        } else {
+          ta.setAttribute('required','');
+          if(massMsgHint) massMsgHint.textContent = '';
+        }
+      }
+      function renderMassPreview(){
+        var stats = syncBulkPayload();
+        updateMessageRequired();
+        if(massSummary){
+          if(!stats.total){
+            massSummary.textContent = 'Selecciona una lista o sube un CSV para previsualizar la campaña.';
+          } else {
+            massSummary.textContent = stats.valid + ' listos · ' + stats.invalid + ' con error · ' + stats.totalSms + ' SMS estimados · ' + stats.total + ' filas';
+          }
+        }
+        if(massTableWrap && massPreviewBody){
+          var show = stats.total > 0;
+          massTableWrap.hidden = !show;
+          if(show){
+            var maxShow = 8;
+            var html = stats.rows.slice(0, maxShow).map(function(r){
+              var cls = r.ok ? '' : ' style="opacity:0.65"';
+              var msgShort = r.message.length > 48 ? r.message.slice(0,48) + '…' : r.message;
+              return '<tr'+cls+'><td><code>'+escHtml(r.phone)+'</code></td><td>'+escHtml(msgShort)+'</td><td>'+r.seg+'</td><td>'+r.cost+'</td></tr>';
+            }).join('');
+            massPreviewBody.innerHTML = html || '<tr><td colspan="4">Sin filas</td></tr>';
+            if(massPreviewMore){
+              if(stats.rows.length > maxShow){
+                massPreviewMore.hidden = false;
+                massPreviewMore.textContent = 'Y ' + (stats.rows.length - maxShow) + ' filas más…';
+              } else {
+                massPreviewMore.hidden = true;
+              }
+            }
+            var firstOk = stats.rows.filter(function(r){ return r.ok; })[0];
+            var bubble = document.querySelector('.tv-phone__bubble');
+            if(bubble && firstOk) bubble.textContent = firstOk.message;
+          }
+        }
+        return stats;
       }
       function getSendMode(){
         return sendModeInput ? sendModeInput.value : 'single';
       }
       function isRecipientAllowed(){
         var mode = getSendMode();
-        if(mode === 'mass') return countMassStats().valid > 0;
+        if(mode === 'mass'){
+          var ms = countMassStats();
+          return ms.valid > 0 && (ms.hasPerRowMessages || (ta && (ta.value || '').trim()));
+        }
         if(mode === 'scheduled'){
           var schedTo = toInput && (toInput.value || '').trim();
           if(!schedTo) return false;
@@ -594,7 +740,8 @@ export function renderAppSendSmsPage(
           if(mode === 'mass') toInput.removeAttribute('required');
         }
         updateSubmitLabel(mode);
-        syncBulkHidden();
+        updateMessageRequired();
+        if(mode === 'mass') renderMassPreview();
         refresh();
       }
       function setChip(label, value){
@@ -643,37 +790,43 @@ export function renderAppSendSmsPage(
         var mode = getSendMode();
         var t = ta.value || '';
         var c = calc(t);
-        setChip('Caracteres', String(c.chars));
-        setChip('Segmentos', String(c.seg));
-        var massStats = countMassStats();
-        var costEst = mode === 'mass' || mode === 'scheduled'
-          ? (c.cost * Math.max(1, massStats.valid || (toInput && toInput.value.trim() ? 1 : 0))) + ' SMS'
-          : c.cost + ' SMS';
-        setChip('Costo est.', costEst);
-        setChip('Codificación', c.enc);
+        var massStats = null;
+        if(mode === 'mass'){
+          massStats = renderMassPreview();
+          setChip('Caracteres', String(massStats.total) + ' filas');
+          setChip('Segmentos', String(massStats.totalSms) + ' SMS');
+          setChip('Costo est.', String(massStats.valid) + ' válidos');
+          setChip('Codificación', String(massStats.invalid) + ' err.');
+        } else {
+          var costEst = mode === 'scheduled'
+            ? (c.cost * Math.max(1, toInput && toInput.value.trim() ? 1 : 0)) + ' SMS'
+            : c.cost + ' SMS';
+          setChip('Caracteres', String(c.chars));
+          setChip('Segmentos', String(c.seg));
+          setChip('Costo est.', costEst);
+          setChip('Codificación', c.enc);
+        }
         var bubble = document.querySelector('.tv-phone__bubble');
         var phoneHeader = document.querySelector('.tv-phone__header');
-        if(bubble) bubble.textContent = t || 'Hola, tu mensaje aparecerá aquí.';
+        if(mode !== 'mass' && bubble) bubble.textContent = t || 'Hola, tu mensaje aparecerá aquí.';
         if(phoneHeader && senderInput) phoneHeader.textContent = senderInput.value || 'TELVOICE';
-        var overSeg = mode !== 'mass' && mode !== 'scheduled' && c.seg > maxLiveSegments;
+        var overSeg = false;
+        if(mode === 'mass' && massStats){
+          massStats.rows.forEach(function(r){ if(r.ok && r.seg > maxLiveSegments) overSeg = true; });
+        } else if(mode !== 'scheduled') {
+          overSeg = c.seg > maxLiveSegments;
+        }
         var numOk = isRecipientAllowed();
         var schedOk = mode !== 'scheduled' || (scheduleDate && scheduleDate.value && scheduleTime && scheduleTime.value);
-        var massOk = mode !== 'mass' || massStats.valid > 0;
+        var massOk = mode !== 'mass' || (massStats && massStats.valid > 0 && (massStats.hasPerRowMessages || (ta && (ta.value || '').trim())));
         var segWarn = document.getElementById('tv-live-segment-warn');
         var numWarn = document.getElementById('tv-live-number-warn');
         var massWarn = document.getElementById('tv-mass-warn');
-        var massPreview = document.getElementById('tv-mass-preview');
         var submitBtn = document.getElementById('tv-send-submit');
         var headerBtn = document.getElementById('tv-header-send-btn');
         if(segWarn) segWarn.hidden = !overSeg;
         if(numWarn) numWarn.hidden = mode === 'mass' || numOk || (!numbersRestricted && allowedLiveNumbers.length === 0);
         if(massWarn) massWarn.hidden = massOk || mode !== 'mass';
-        if(massPreview && mode === 'mass'){
-          massPreview.textContent = massStats.total
-            ? massStats.valid + ' válidos · ' + massStats.invalid + ' inválidos · ' + massStats.total + ' en lista'
-            : 'Selecciona una lista o sube un CSV para ver destinatarios.';
-        }
-        syncBulkHidden();
         var disabled = overSeg || !numOk || !schedOk || !massOk;
         if(submitBtn && canSend) submitBtn.disabled = disabled;
         if(headerBtn && canSend) headerBtn.disabled = disabled;
@@ -750,19 +903,25 @@ export function renderAppSendSmsPage(
         });
       }
       if(contactList){
-        contactList.addEventListener('change', function(){ syncBulkHidden(); refresh(); });
+        contactList.addEventListener('change', function(){ renderMassPreview(); refresh(); });
       }
       if(csvInput){
         csvInput.addEventListener('change', function(){
           var file = csvInput.files && csvInput.files[0];
-          if(!file){ csvNumbers = []; refresh(); return; }
+          if(!file){ csvParsedRows = []; renderMassPreview(); refresh(); return; }
           var reader = new FileReader();
           reader.onload = function(ev){
-            csvNumbers = splitRecipients(String(ev.target && ev.target.result || ''));
-            syncBulkHidden();
+            csvParsedRows = parseCsvText(String(ev.target && ev.target.result || ''));
+            renderMassPreview();
             refresh();
           };
           reader.readAsText(file);
+        });
+      }
+      var sendForm = document.getElementById('tv-app-send-form');
+      if(sendForm){
+        sendForm.addEventListener('submit', function(){
+          if(getSendMode() === 'mass') renderMassPreview();
         });
       }
       if(templateSelect){

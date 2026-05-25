@@ -25,17 +25,93 @@ import { resolveRouteForMessage } from "./smsRoutingService.js";
 import { enqueueMessage } from "./smsQueueService.js";
 import { findCompanyById } from "./companyService.js";
 
+export type MassCampaignSendRow = {
+  phone: string;
+  message: string;
+};
+
 export type SendPanelCampaignInput = {
   companyId: string;
   senderId: string;
-  message: string;
-  recipients: string[];
+  /** Mensaje común (lista sin CSV o filas sin columna mensaje). */
+  message?: string;
+  /** Filas con número y mensaje (CSV o JSON del formulario). */
+  rows?: MassCampaignSendRow[];
+  /** Solo números — usa `message` para todos (compatibilidad). */
+  recipients?: string[];
   campaignName: string;
   mode: "mass" | "scheduled";
   scheduledAt?: string | null;
   createdBy?: string | null;
   sendSource?: string;
 };
+
+type ResolvedCampaignItem = {
+  phone: string;
+  messageText: string;
+  segmentInfo: ReturnType<typeof calculateSmsSegments>;
+};
+
+function resolveCampaignItems(input: SendPanelCampaignInput): {
+  items: ResolvedCampaignItem[];
+  invalid: number;
+  rawCount: number;
+  campaignMessage: string;
+  personalized: boolean;
+} {
+  const defaultMessage = String(input.message ?? "").trim();
+  const rawRows: MassCampaignSendRow[] = [];
+
+  if (input.rows?.length) {
+    rawRows.push(...input.rows);
+  } else if (input.recipients?.length) {
+    for (const phone of input.recipients) {
+      rawRows.push({ phone, message: defaultMessage });
+    }
+  }
+
+  const rawCount = rawRows.length;
+  let invalid = 0;
+  const byPhone = new Map<string, ResolvedCampaignItem>();
+
+  for (const row of rawRows) {
+    const messageText = (row.message?.trim() || defaultMessage).trim();
+    if (!messageText) {
+      invalid += 1;
+      continue;
+    }
+    try {
+      const phone = assertLiveTestSendAllowed({
+        companyId: input.companyId,
+        to: row.phone,
+      });
+      const segmentInfo = calculateSmsSegments(messageText);
+      if (segmentInfo.segments < 1) {
+        invalid += 1;
+        continue;
+      }
+      byPhone.set(phone, { phone, messageText, segmentInfo });
+    } catch {
+      invalid += 1;
+    }
+  }
+
+  const items = [...byPhone.values()];
+  if (items.length === 0) {
+    throw new AppError(
+      "No hay destinatarios válidos con mensaje. Revisa el CSV o el texto común.",
+      400,
+    );
+  }
+
+  const messages = new Set(items.map((i) => i.messageText));
+  const personalized = messages.size > 1;
+  const campaignMessage = personalized
+    ? `Campaña personalizada (${items.length} destinatarios, ${messages.size} variantes)`
+    : items[0]!.messageText;
+
+  return { items, invalid, rawCount, campaignMessage, personalized };
+}
 
 async function assertCompanyCanSend(companyId: string): Promise<void> {
   const company = await findCompanyById(companyId);
@@ -265,10 +341,6 @@ export async function sendPanelCampaign(
   input: SendPanelCampaignInput,
 ): Promise<PanelCampaignSendResult> {
   const sendSource = input.sendSource ?? "app_send_sms_campaign";
-  const messageText = String(input.message ?? "").trim();
-  if (!messageText) {
-    throw new AppError("El mensaje no puede estar vacío.", 400);
-  }
 
   const senderId = String(input.senderId ?? "").trim();
   if (!senderId) {
@@ -277,34 +349,10 @@ export async function sendPanelCampaign(
 
   await assertCompanyCanSend(input.companyId);
 
-  const rawRecipients = input.recipients.filter(Boolean);
-  if (rawRecipients.length === 0) {
-    throw new AppError("No hay destinatarios para enviar.", 400);
-  }
+  const { items, invalid, rawCount, campaignMessage, personalized } =
+    resolveCampaignItems(input);
 
-  const phones: string[] = [];
-  let invalid = 0;
-  for (const r of rawRecipients) {
-    try {
-      const normalized = assertLiveTestSendAllowed({
-        companyId: input.companyId,
-        to: r,
-      });
-      phones.push(normalized);
-    } catch {
-      invalid += 1;
-    }
-  }
-
-  if (phones.length === 0) {
-    throw new AppError(
-      "Ningún destinatario está autorizado o es válido para envío.",
-      400,
-    );
-  }
-
-  const segmentInfo = calculateSmsSegments(messageText);
-  const totalCost = segmentInfo.costSms * phones.length;
+  const totalCost = items.reduce((sum, i) => sum + i.segmentInfo.costSms, 0);
 
   const wallet = await getOrCreateCompanyWallet(input.companyId);
   if (wallet.status !== "active") {
@@ -329,10 +377,10 @@ export async function sendPanelCampaign(
     companyId: input.companyId,
     name: input.campaignName,
     senderId,
-    message: messageText,
+    message: campaignMessage,
     status: "processing",
-    totalRecipients: rawRecipients.length,
-    validRecipients: phones.length,
+    totalRecipients: rawCount,
+    validRecipients: items.length,
     invalidRecipients: invalid,
     estimatedSmsCost: totalCost,
     realSmsCost: 0,
@@ -343,6 +391,7 @@ export async function sendPanelCampaign(
       source: sendSource,
       send_mode: input.mode,
       production: true,
+      personalized_messages: personalized,
     },
   });
 
@@ -352,14 +401,14 @@ export async function sendPanelCampaign(
   let smsConsumed = 0;
 
   if (isScheduled && input.scheduledAt) {
-    for (const phone of phones) {
+    for (const item of items) {
       const result = await queueOneForSchedule({
         companyId: input.companyId,
         campaignId: campaign.id,
         senderId,
-        messageText,
-        phone,
-        segmentInfo,
+        messageText: item.messageText,
+        phone: item.phone,
+        segmentInfo: item.segmentInfo,
         scheduledAt: input.scheduledAt,
         sendSource,
       });
@@ -379,14 +428,14 @@ export async function sendPanelCampaign(
       },
     });
   } else {
-    for (const phone of phones) {
+    for (const item of items) {
       const result = await sendOneInCampaign({
         companyId: input.companyId,
         campaignId: campaign.id,
         senderId,
-        messageText,
-        phone,
-        segmentInfo,
+        messageText: item.messageText,
+        phone: item.phone,
+        segmentInfo: item.segmentInfo,
         sendSource,
         createdBy: input.createdBy,
       });
@@ -399,7 +448,7 @@ export async function sendPanelCampaign(
     }
 
     const finalStatus =
-      sent === 0 ? "failed" : sent < phones.length ? "processing" : "sent";
+      sent === 0 ? "failed" : sent < items.length ? "processing" : "sent";
 
     await updateSmsCampaign(campaign.id, {
       status: finalStatus,
@@ -414,7 +463,7 @@ export async function sendPanelCampaign(
     campaignId: campaign.id,
     campaignName: campaign.name,
     mode: input.mode,
-    totalRecipients: phones.length,
+    totalRecipients: items.length,
     sent,
     failed,
     queued,

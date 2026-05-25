@@ -369,6 +369,11 @@ export function getAppPanelStyles(): string {
       text-align: center;
       color: var(--tv-muted);
     }
+    .tv-mass-summary { margin: 0.35rem 0 0; }
+    .tv-mass-table-wrap .tv-table--dense { font-size: 0.82rem; }
+    .tv-mass-table-wrap .tv-table--dense td,
+    .tv-mass-table-wrap .tv-table--dense th { padding: 0.4rem 0.5rem; }
+    .tv-mass-table-wrap code { font-size: 0.78rem; }
     @media (max-width: 960px) {
       .tv-send-to-row { grid-template-columns: 1fr; }
       .tv-send-submit { max-width: none; }
