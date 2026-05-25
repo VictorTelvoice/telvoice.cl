@@ -6,7 +6,10 @@ import {
   resolveVerifyTestSend,
 } from "../services/smsSendControlPanelService.js";
 import { sendPanelSms } from "../services/smsSendService.js";
-import { buildTelsimVerifyLinesPreview } from "../services/telsimWebhookService.js";
+import {
+  buildTelsimVerifyLinesPreview,
+  listTelsimInboundFeedForVerifyEntry,
+} from "../services/telsimWebhookService.js";
 import { getRegisteredVerifyNumbers } from "../config/verifyNumbers.js";
 import { canCompanyUseLiveTestUi } from "../services/smsProviderStatusService.js";
 import { AppError } from "../utils/errors.js";
@@ -37,6 +40,19 @@ export async function getAdminTestPage(
     const companyId = await resolveAdminTestCompanyId();
     const sendEnabled = canCompanyUseLiveTestUi(companyId);
     const panel = sendEnabled ? await getSendControlPanelView(companyId) : null;
+    const verifyEntries = getRegisteredVerifyNumbers();
+    const lineFeeds: Record<string, Awaited<ReturnType<typeof listTelsimInboundFeedForVerifyEntry>>> = {};
+    if (verifyEntries.length > 0) {
+      const feeds = await Promise.all(
+        verifyEntries.map(async (entry) => ({
+          id: entry.id,
+          messages: await listTelsimInboundFeedForVerifyEntry(entry),
+        })),
+      );
+      for (const f of feeds) {
+        lineFeeds[f.id] = f.messages;
+      }
+    }
     const flash =
       typeof req.query.ok === "string" ? req.query.ok : undefined;
     const error =
@@ -47,6 +63,7 @@ export async function getAdminTestPage(
         admin: req.adminUser!,
         panel,
         sendEnabled,
+        lineFeeds,
         flash,
         error,
       }),
@@ -84,10 +101,22 @@ export async function postAdminTestQaSend(
       return;
     }
 
+    const recipientMode =
+      typeof req.body?.recipient_mode === "string"
+        ? req.body.recipient_mode.trim()
+        : "line";
     const verifyId =
-      typeof req.body?.verify_id === "string" ? req.body.verify_id.trim() : "";
+      recipientMode !== "custom" &&
+      typeof req.body?.verify_id === "string"
+        ? req.body.verify_id.trim()
+        : "";
+    const customTo =
+      recipientMode === "custom" && typeof req.body?.to === "string"
+        ? req.body.to.trim()
+        : "";
     const resolved = resolveVerifyTestSend({
-      verifyId,
+      verifyId: verifyId || undefined,
+      to: customTo || undefined,
       message: req.body?.message,
     });
     if (!resolved) {

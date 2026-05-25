@@ -255,3 +255,53 @@ export async function listRecentTelsimInbound(
 
   return (data ?? []) as TelsimInboundSmsRow[];
 }
+
+export async function listTelsimInboundBySlotAsc(
+  slotId: string,
+  limit = 50,
+): Promise<TelsimInboundSmsRow[]> {
+  const { data, error } = await getSupabase()
+    .from("telsim_inbound_sms")
+    .select("*")
+    .eq("slot_id", slotId.trim())
+    .order("received_at", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return [];
+    }
+    wrapSupabaseError(error, "listTelsimInboundBySlotAsc");
+  }
+
+  return (data ?? []) as TelsimInboundSmsRow[];
+}
+
+export async function listTelsimInboundByLinePhoneAsc(
+  verifyPhone: string,
+  limit = 50,
+): Promise<TelsimInboundSmsRow[]> {
+  const normalized = normalizeTelsimLinePhone(verifyPhone);
+  if (!normalized) {
+    return [];
+  }
+
+  const { data, error } = await getSupabase()
+    .from("telsim_inbound_sms")
+    .select("*")
+    .eq("line_phone", normalized)
+    .order("received_at", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return [];
+    }
+    if (isMissingColumnError(error)) {
+      return [];
+    }
+    wrapSupabaseError(error, "listTelsimInboundByLinePhoneAsc");
+  }
+
+  return (data ?? []) as TelsimInboundSmsRow[];
+}

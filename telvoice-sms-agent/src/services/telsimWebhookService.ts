@@ -2,7 +2,10 @@ import type { VerifyNumberEntry } from "../config/verifyNumbers.js";
 import { env } from "../config/env.js";
 import type { TelsimInboundSmsRow, TelsimSmsReceivedPayload } from "../types/telsim.js";
 import { AppError } from "../utils/errors.js";
-import { extractLinePhoneFromTelsimBody, normalizeTelsimLinePhone } from "../utils/telsim-line-phone.js";
+import {
+  extractLinePhoneFromTelsimBody,
+  normalizeTelsimLinePhone,
+} from "../utils/telsim-line-phone.js";
 import { verifyTelsimSignature } from "../utils/telsim-signature.js";
 import {
   getBoundSlotIdForVerifyPhone,
@@ -10,6 +13,8 @@ import {
   getLatestTelsimInboundBySlot,
   insertTelsimInboundSms,
   listRecentTelsimInbound,
+  listTelsimInboundByLinePhoneAsc,
+  listTelsimInboundBySlotAsc,
 } from "./telsimInboundService.js";
 
 export type TelsimInboundPreview = {
@@ -19,6 +24,24 @@ export type TelsimInboundPreview = {
   from: string;
   slotId: string | null;
 };
+
+export type TelsimInboundFeedItem = {
+  id: string;
+  content: string;
+  from: string;
+  receivedAt: string;
+  verificationCode: string | null;
+};
+
+function rowToFeedItem(row: TelsimInboundSmsRow): TelsimInboundFeedItem {
+  return {
+    id: row.id,
+    content: row.content,
+    from: row.sender_from,
+    receivedAt: row.received_at,
+    verificationCode: row.verification_code,
+  };
+}
 
 function parsePayload(body: Record<string, unknown>): TelsimSmsReceivedPayload {
   const event = String(body.event ?? "").trim();
@@ -230,44 +253,94 @@ export async function getTelsimPreviewForSlot(
   };
 }
 
+/** Historial entrante para una línea QA (cronológico, más reciente al final). */
+export async function listTelsimInboundFeedForVerifyEntry(
+  entry: VerifyNumberEntry,
+  limit = 50,
+): Promise<TelsimInboundFeedItem[]> {
+  const seen = new Set<string>();
+  const merged: TelsimInboundSmsRow[] = [];
+
+  const pushRows = (rows: TelsimInboundSmsRow[]) => {
+    for (const row of rows) {
+      if (seen.has(row.id)) {
+        continue;
+      }
+      seen.add(row.id);
+      merged.push(row);
+    }
+  };
+
+  if (entry.slotId?.trim()) {
+    pushRows(await listTelsimInboundBySlotAsc(entry.slotId.trim(), limit));
+  }
+
+  pushRows(await listTelsimInboundByLinePhoneAsc(entry.phone, limit));
+
+  const boundSlot = await getBoundSlotIdForVerifyPhone(entry.phone);
+  if (boundSlot && boundSlot !== entry.slotId?.trim()) {
+    pushRows(await listTelsimInboundBySlotAsc(boundSlot, limit));
+  }
+
+  const targetDigits = normalizeTelsimLinePhone(entry.phone);
+  if (targetDigits) {
+    const recent = await listRecentTelsimInbound(80);
+    for (const row of recent) {
+      const linePhone =
+        row.line_phone?.trim() ||
+        extractLinePhoneFromTelsimBody(
+          (row.raw_payload ?? {}) as Record<string, unknown>,
+        );
+      if (
+        linePhone &&
+        normalizeTelsimLinePhone(linePhone) === targetDigits
+      ) {
+        pushRows([row]);
+      } else if (entry.slotId?.trim() && row.slot_id === entry.slotId.trim()) {
+        pushRows([row]);
+      }
+    }
+  }
+
+  merged.sort(
+    (a, b) =>
+      new Date(a.received_at).getTime() - new Date(b.received_at).getTime(),
+  );
+
+  return merged.slice(-limit).map(rowToFeedItem);
+}
+
+export type TelsimVerifyLinePollPayload = {
+  previewMessage: string;
+  previewSender: string;
+  inboundAt: string | null;
+  inboundCode: string | null;
+  ready: boolean;
+  inboundMessages: TelsimInboundFeedItem[];
+  latestInboundId: string | null;
+};
+
 export async function buildTelsimVerifyLinesPreview(
   entries: VerifyNumberEntry[],
-): Promise<
-  Record<
-    string,
-    {
-      previewMessage: string;
-      previewSender: string;
-      inboundAt: string | null;
-      inboundCode: string | null;
-      ready: boolean;
-    }
-  >
-> {
-  const out: Record<
-    string,
-    {
-      previewMessage: string;
-      previewSender: string;
-      inboundAt: string | null;
-      inboundCode: string | null;
-      ready: boolean;
-    }
-  > = {};
+): Promise<Record<string, TelsimVerifyLinePollPayload>> {
+  const out: Record<string, TelsimVerifyLinePollPayload> = {};
 
   await Promise.all(
     entries.map(async (entry) => {
-      const inbound = await getTelsimPreviewForVerifyEntry(entry);
-      const previewMessage = inbound
-        ? inbound.content.trim() ||
-          (inbound.verificationCode ? `Código: ${inbound.verificationCode}` : "")
+      const inboundMessages = await listTelsimInboundFeedForVerifyEntry(entry);
+      const latest = inboundMessages[inboundMessages.length - 1] ?? null;
+      const previewMessage = latest
+        ? latest.content.trim() ||
+          (latest.verificationCode ? `Código: ${latest.verificationCode}` : "")
         : "";
       out[entry.id] = {
         previewMessage,
-        previewSender: inbound?.from?.trim() || "SMS entrante",
-        inboundAt: inbound?.receivedAt ?? null,
-        inboundCode: inbound?.verificationCode ?? null,
-        ready: Boolean(previewMessage.length > 0),
+        previewSender: latest?.from?.trim() || "SMS entrante",
+        inboundAt: latest?.receivedAt ?? null,
+        inboundCode: latest?.verificationCode ?? null,
+        ready: inboundMessages.length > 0,
+        inboundMessages,
+        latestInboundId: latest?.id ?? null,
       };
     }),
   );

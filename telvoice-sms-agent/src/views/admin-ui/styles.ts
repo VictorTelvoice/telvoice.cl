@@ -1281,6 +1281,104 @@ export function getAdminStyles(): string {
       gap: 0.35rem;
     }
     .tv-telsim-webhook { margin-bottom: 0.75rem; }
+    .tv-test-workspace {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      width: 100%;
+    }
+    .tv-test-line-pick { margin: 0; }
+    .tv-telsim-line-hint--alert { color: #b45309; font-weight: 600; }
+    .tv-test-workspace__cols {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 1rem;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .tv-test-workspace__cols { grid-template-columns: 1fr; }
+    }
+    .tv-test-send-panel .tv-panel__body { align-items: stretch; }
+    .tv-test-send-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      width: 100%;
+    }
+    .tv-test-recipient-mode {
+      border: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.25rem;
+    }
+    .tv-test-recipient-mode__legend {
+      width: 100%;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--tv-muted);
+      margin-bottom: 0.15rem;
+    }
+    .tv-test-recipient-mode__opt {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.88rem;
+      cursor: pointer;
+    }
+    .tv-test-send-submit {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      align-self: flex-start;
+    }
+    .tv-telsim-phone-feed .tv-hero-phone__messages.tv-telsim-feed {
+      max-height: 320px;
+      overflow-y: auto;
+      padding-right: 0.15rem;
+      gap: 0.65rem;
+    }
+    .tv-telsim-feed__item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      align-items: flex-start;
+    }
+    .tv-telsim-feed__item--latest .tv-hero-phone__bubble--in {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      border: 1px solid #60a5fa;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+    }
+    .tv-telsim-feed__meta {
+      font-size: 0.65rem;
+      color: #64748b;
+      line-height: 1.3;
+      padding-left: 0.15rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.2rem 0.35rem;
+      align-items: center;
+    }
+    .tv-telsim-feed__item--latest .tv-telsim-feed__meta {
+      color: #1d4ed8;
+      font-weight: 600;
+    }
+    .tv-telsim-feed__from { font-weight: 600; }
+    .tv-telsim-feed__empty {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin: 0.5rem 0;
+      line-height: 1.45;
+    }
+    .tv-telsim-panel__phone--pulse {
+      animation: tv-telsim-pulse 0.9s ease-out 1;
+    }
+    @keyframes tv-telsim-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.45); }
+      70% { box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+    }
     .tv-copy-row {
       display: flex;
       gap: 0.5rem;
