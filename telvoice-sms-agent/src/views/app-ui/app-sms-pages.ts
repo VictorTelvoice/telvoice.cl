@@ -12,9 +12,10 @@ import {
   MOCK_CONTACT_LISTS,
   MOCK_TEMPLATES,
 } from "../admin-ui/mock-data-stage3.js";
+import { suggestSenderIdFromCompanyName } from "../../utils/suggestSenderId.js";
 import {
   renderBtn,
-  renderMobilePreview,
+  renderHeroPhonePreview,
   renderModeCards,
   renderPageHeader,
   renderPanel,
@@ -103,6 +104,8 @@ export function renderAppSendSmsPage(
 
   const disabledAttr = canSend ? "" : "disabled";
   const submitDisabled = canSend ? "" : "disabled";
+  const suggestedSenderId = suggestSenderIdFromCompanyName(ctx.company.name);
+  const companyDisplayName = ctx.company.name.trim() || "Tu empresa";
 
   const headerActions = `
     ${renderBtn("Bandeja", { href: "/app/inbox", variant: "ghost" })}
@@ -230,13 +233,15 @@ export function renderAppSendSmsPage(
               </div>
               <div class="form-group">
                 <label for="sender_id">Remitente / Sender ID</label>
-                <input id="sender_id" class="tv-input-full" name="sender_id" value="TELVOICE" required maxlength="11" ${disabledAttr} />
+                <input id="sender_id" class="tv-input-full" name="sender_id" value="${escapeHtml(suggestedSenderId)}" placeholder="${escapeHtml(suggestedSenderId)}" required maxlength="11" pattern="[A-Za-z0-9]+" title="Solo letras y números, máximo 11 caracteres" ${disabledAttr} />
+                <p class="field-hint">Sugerencia según tu empresa registrada: <strong>${escapeHtml(ctx.company.name)}</strong></p>
               </div>
             </div>
             <div data-tv-single-fields${activeMode === "single" || activeMode === "template" ? "" : " hidden"}>
               <div class="form-group">
                 <label for="tv-send-to">Número destinatario</label>
-                <input class="tv-input-full" name="to" id="tv-send-to" placeholder="+56912345678" ${activeMode === "single" || activeMode === "template" ? "required" : ""} ${disabledAttr} />
+                <input class="tv-input-full" name="to" id="tv-send-to" placeholder="56912345678" inputmode="numeric" autocomplete="tel" ${activeMode === "single" || activeMode === "template" ? "required" : ""} ${disabledAttr} />
+                <p class="field-hint">Formato Chile: 569XXXXXXXX (sin signo +)</p>
               </div>
             </div>
             <div data-tv-mass-fields${activeMode === "mass" || activeMode === "scheduled" ? "" : " hidden"}>
@@ -306,7 +311,14 @@ export function renderAppSendSmsPage(
         <section class="tv-panel">
           <header class="tv-section-head"><h2 class="tv-section-head__title">Vista previa móvil</h2></header>
           <div class="tv-panel__body tv-panel__body--center">
-            ${renderMobilePreview("TELVOICE", "Hola, tu mensaje aparecerá aquí.")}
+            <div id="tv-send-preview-phone" class="tv-send-preview-phone">
+              ${renderHeroPhonePreview({
+                senderLabel: suggestedSenderId,
+                senderSub: companyDisplayName,
+                message: "Hola, tu mensaje aparecerá aquí.",
+                bubbleId: "tv-send-preview-bubble",
+              })}
+            </div>
           </div>
         </section>
         <section class="tv-panel tv-validation-panel">
@@ -355,6 +367,7 @@ export function renderAppSendSmsPage(
       var allowedLiveNumbers = ${JSON.stringify(allowedLiveNumbers)};
       var defaultVerifyMsg = ${JSON.stringify(defaultVerifyMsg)};
       var initialMode = ${JSON.stringify(activeMode)};
+      var suggestedSenderId = ${JSON.stringify(suggestedSenderId)};
       var templateQa = defaultVerifyMsg;
       var templateDlr = '[Telvoice DLR] Test entrega ' + new Date().toISOString().slice(0,16).replace('T',' ') + '.';
       var bulkRowsJson = document.getElementById('tv-bulk-rows-json');
@@ -631,10 +644,15 @@ export function renderAppSendSmsPage(
           setChip('Costo est.', costEst);
           setChip('Codificación', c.enc);
         }
-        var bubble = document.querySelector('.tv-phone__bubble');
-        var phoneHeader = document.querySelector('.tv-phone__header');
+        var bubble = document.getElementById('tv-send-preview-bubble');
+        var phoneTitle = document.querySelector('#tv-send-preview-phone .tv-hero-phone__app-title');
+        var phoneAvatar = document.querySelector('#tv-send-preview-phone .tv-hero-phone__avatar');
         if(!isBulkMode(mode) && bubble) bubble.textContent = t || 'Hola, tu mensaje aparecerá aquí.';
-        if(phoneHeader && senderInput) phoneHeader.textContent = senderInput.value || 'TELVOICE';
+        if(senderInput) {
+          var sid = (senderInput.value || '').trim() || suggestedSenderId;
+          if(phoneTitle) phoneTitle.textContent = sid;
+          if(phoneAvatar) phoneAvatar.textContent = (sid.charAt(0) || 'E').toUpperCase();
+        }
         var overSeg = false;
         if(isBulkMode(mode) && massStats){
           massStats.rows.forEach(function(r){ if(r.ok && r.seg > maxLiveSegments) overSeg = true; });

@@ -177,15 +177,98 @@ export function getAppPanelStyles(): string {
       border-style: dashed;
     }
     ${getOrderUiSharedStyles()}
-    .tv-mobile-preview {
-      max-width: 280px;
-      margin: 1rem auto;
-      padding: 1rem;
+    .tv-send-preview-phone {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 0.5rem 0;
+    }
+    .tv-hero-phone {
+      position: relative;
+      width: min(260px, 100%);
+      height: 480px;
+      margin: 0 auto;
       background: #1e293b;
-      color: #f8fafc;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      min-height: 120px;
+      border-radius: 40px;
+      border: 10px solid #cbd5e1;
+      box-shadow: 0 20px 50px -15px rgba(15, 23, 42, 0.35);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .tv-hero-phone__notch {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 36%;
+      height: 22px;
+      background: #cbd5e1;
+      border-radius: 0 0 14px 14px;
+      z-index: 2;
+    }
+    .tv-hero-phone__screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #f8fafc;
+      padding: 2.5rem 1rem 1rem;
+      overflow: hidden;
+    }
+    .tv-hero-phone__app-head {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding-bottom: 0.75rem;
+      margin-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+    }
+    .tv-hero-phone__avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #0ea5e9, #0052cc);
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .tv-hero-phone__app-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+    .tv-hero-phone__app-sub {
+      font-size: 0.68rem;
+      color: #64748b;
+      margin-top: 0.1rem;
+    }
+    .tv-hero-phone__messages {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      overflow-y: auto;
+      padding-top: 0.25rem;
+    }
+    .tv-hero-phone__bubble {
+      max-width: 88%;
+      padding: 0.65rem 0.75rem;
+      font-size: 0.75rem;
+      line-height: 1.45;
+      border-radius: 16px;
+      word-break: break-word;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    }
+    .tv-hero-phone__bubble--in {
+      align-self: flex-start;
+      background: #e2e8f0;
+      color: #0f172a;
+      border-radius: 16px 16px 16px 4px;
     }
     .alert-warn {
       background: #fffbeb;

@@ -82,6 +82,7 @@ import {
   formatScheduleInTimeZone,
   isScheduleAtLeastMinutesAhead,
 } from "../utils/scheduleTime.js";
+import { suggestSenderIdFromCompanyName } from "../utils/suggestSenderId.js";
 
 type AppSendMode = "single" | "mass" | "scheduled" | "template";
 
@@ -166,7 +167,9 @@ async function trySendProductionCampaignFromForm(
     );
   }
 
-  const senderId = String(req.body?.sender_id ?? "TELVOICE").trim();
+  const senderId = String(
+    req.body?.sender_id ?? suggestSenderIdFromCompanyName(ctx.company.name),
+  ).trim();
   const campaignName =
     String(req.body?.campaign_name ?? "").trim() ||
     (sendMode === "scheduled" ? "Envío programado" : "Campaña masiva");
@@ -591,7 +594,10 @@ export async function postAppSendSms(
 
     const result = await sendPanelSms({
       companyId: ctx.company.id,
-      senderId: String(req.body?.sender_id ?? "TELVOICE"),
+      senderId: String(
+        req.body?.sender_id ??
+          suggestSenderIdFromCompanyName(ctx.company.name),
+      ),
       to,
       message,
       campaignName,
