@@ -336,6 +336,19 @@ export function getAppPanelStyles(): string {
       align-items: center;
       gap: 0.35rem;
     }
+    .tv-telsim-webhook {
+      margin-bottom: 0.75rem;
+    }
+    .tv-copy-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: stretch;
+    }
+    .tv-copy-row .tv-input-full {
+      flex: 1;
+      min-width: 0;
+      font-size: 0.8125rem;
+    }
     .tv-validation-panel .tv-panel__body {
       padding-top: 0.5rem;
       padding-bottom: 0.75rem;

@@ -6,6 +6,8 @@ export type VerifyNumberEntry = {
   label: string;
   operator: string;
   channel: "telsim" | "manual";
+  /** ID slot SIM en telsim.io (4º segmento en TELVOICE_VERIFY_NUMBERS). */
+  slotId: string | null;
 };
 
 function slugId(label: string, phone: string): string {
@@ -13,7 +15,7 @@ function slugId(label: string, phone: string): string {
   return base.slice(0, 48) || "verify";
 }
 
-/** Formato env: +569xxx:Etiqueta:Operador|+569yyy:Otra:Entel (operador opcional) */
+/** Formato env: +569xxx:Etiqueta:Operador:slot_id|... (operador y slot_id opcionales) */
 export function parseVerifyNumbersFromEnv(raw: string): VerifyNumberEntry[] {
   if (!raw.trim()) {
     return [];
@@ -34,6 +36,7 @@ export function parseVerifyNumbersFromEnv(raw: string): VerifyNumberEntry[] {
     }
     const label = segments[1] || "Verificación telsim";
     const operator = segments[2] || "—";
+    const slotId = segments[3]?.trim() || null;
     const channel =
       label.toLowerCase().includes("telsim") || operator.toLowerCase().includes("telsim")
         ? "telsim"
@@ -45,6 +48,7 @@ export function parseVerifyNumbersFromEnv(raw: string): VerifyNumberEntry[] {
       label,
       operator,
       channel,
+      slotId,
     });
   }
 
@@ -66,6 +70,14 @@ export function isRegisteredVerifyNumber(normalizedPhone: string): boolean {
 
 export function findVerifyNumberById(id: string): VerifyNumberEntry | null {
   return getRegisteredVerifyNumbers().find((e) => e.id === id) ?? null;
+}
+
+export function findVerifyNumberBySlotId(slotId: string): VerifyNumberEntry | null {
+  const id = slotId.trim();
+  if (!id) {
+    return null;
+  }
+  return getRegisteredVerifyNumbers().find((e) => e.slotId === id) ?? null;
 }
 
 export function maskVerifyPhone(phone: string): string {

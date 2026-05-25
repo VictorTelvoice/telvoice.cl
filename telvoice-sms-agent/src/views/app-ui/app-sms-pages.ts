@@ -94,6 +94,13 @@ function renderTelsimVerifyPanel(
 
   const first = panel.verifyNumbers[0]!;
   const firstMsg = first.lastTest?.message?.trim() || defaultVerifyMessage;
+  const firstInbound = first.lastTelsimInbound;
+  const firstPreview =
+    firstInbound?.content?.trim() ||
+    (firstInbound?.verificationCode
+      ? `Código: ${firstInbound.verificationCode}`
+      : "") ||
+    firstMsg;
   const firstSender = first.lastTest?.sender_id?.trim() || "TELVOICE";
   const disabled = canSend ? "" : "disabled";
 
@@ -104,12 +111,24 @@ function renderTelsimVerifyPanel(
     )
     .join("");
 
+  const webhookBlock = panel.telsimWebhookConfigured
+    ? `<div class="form-group tv-telsim-webhook">
+          <label>Webhook URL (POST en telsim.io)</label>
+          <div class="tv-copy-row">
+            <input type="text" class="tv-input-full" readonly value="${escapeHtml(panel.telsimWebhookUrl)}" id="tv-telsim-webhook-url" aria-label="URL webhook Telsim" />
+            <button type="button" class="btn btn-secondary btn-sm" id="tv-telsim-webhook-copy">Copiar</button>
+          </div>
+          <p class="field-hint">Evento <code>sms.received</code>. Requiere <code>TELSIM_WEBHOOK_SECRET</code> en el servidor.</p>
+        </div>`
+    : `<p class="field-hint tv-telsim-webhook-missing">Define <code>PUBLIC_WEBHOOK_BASE_URL</code> para obtener la URL del webhook.</p>`;
+
   return `<section class="tv-panel tv-telsim-panel" id="tv-verify-section">
       <header class="tv-section-head">
         <h2 class="tv-section-head__title">Verificación telsim.io</h2>
         <p class="tv-section-head__sub">Selecciona operador y envía test QA</p>
       </header>
       <div class="tv-panel__body tv-telsim-panel__body">
+        ${webhookBlock}
         <div class="form-group tv-telsim-panel__select">
           <label for="tv-telsim-line-select">Línea de prueba</label>
           <select id="tv-telsim-line-select" class="tv-input-full" ${disabled} aria-label="Seleccionar línea telsim">
@@ -120,14 +139,14 @@ function renderTelsimVerifyPanel(
           ${renderHeroPhonePreview({
             senderLabel: firstSender,
             senderSub: "Vía Telvoice A2P",
-            message: firstMsg,
+            message: firstPreview,
             bubbleId: "tv-telsim-bubble",
             compact: true,
           })}
         </div>
         <p class="tv-telsim-panel__status field-hint" id="tv-telsim-meta">
           ${renderPanelMessageStatusBadge(first.lastStatus, "live_test")}
-          · ${escapeHtml(formatVerifyLastTest(first.lastTestAt))}${first.dlrReceived ? " · DLR OK" : ""}
+          · ${escapeHtml(formatVerifyLastTest(first.lastTestAt))}${first.dlrReceived ? " · DLR OK" : ""}${firstInbound ? " · SMS entrante telsim" : ""}
         </p>
         <form method="post" action="/app/send-sms" class="tv-telsim-panel__form" id="tv-telsim-qa-form">
           <input type="hidden" name="verify_id" id="tv-telsim-verify-id" value="${escapeHtml(first.entry.id)}" />
@@ -225,19 +244,32 @@ export function renderAppSendSmsPage(
 
   const telsimVerifyDataJson = panel
     ? JSON.stringify(
-        panel.verifyNumbers.map((v) => ({
-          id: v.entry.id,
-          operator: v.entry.operator,
-          label: v.entry.label,
-          masked: v.maskedPhone,
-          message:
-            v.lastTest?.message?.trim() || defaultVerifyMsg,
-          sender: v.lastTest?.sender_id?.trim() || "TELVOICE",
-          status: v.lastStatus,
-          lastTestAt: v.lastTestAt,
-          dlrReceived: v.dlrReceived,
-          ready: v.readyForCampaign,
-        })),
+        panel.verifyNumbers.map((v) => {
+          const outbound =
+            v.lastTest?.message?.trim() || defaultVerifyMsg;
+          const inbound = v.lastTelsimInbound;
+          const preview =
+            inbound?.content?.trim() ||
+            (inbound?.verificationCode
+              ? `Código: ${inbound.verificationCode}`
+              : "") ||
+            outbound;
+          return {
+            id: v.entry.id,
+            operator: v.entry.operator,
+            label: v.entry.label,
+            masked: v.maskedPhone,
+            message: outbound,
+            previewMessage: preview,
+            inboundCode: inbound?.verificationCode ?? null,
+            inboundAt: inbound?.receivedAt ?? null,
+            sender: v.lastTest?.sender_id?.trim() || "TELVOICE",
+            status: v.lastStatus,
+            lastTestAt: v.lastTestAt,
+            dlrReceived: v.dlrReceived,
+            ready: v.readyForCampaign,
+          };
+        }),
       )
     : "[]";
 
@@ -584,11 +616,12 @@ export function renderAppSendSmsPage(
         if(telsimVerifyId) telsimVerifyId.value = line.id;
         var bubble = document.getElementById('tv-telsim-bubble');
         var title = document.querySelector('#tv-telsim-phone-wrap .tv-hero-phone__app-title');
-        if(bubble) bubble.textContent = line.message || defaultVerifyMsg;
+        if(bubble) bubble.textContent = line.previewMessage || line.message || defaultVerifyMsg;
         if(title) title.textContent = line.sender || 'TELVOICE';
         var metaEl = document.getElementById('tv-telsim-meta');
         if(metaEl) {
-          metaEl.innerHTML = statusBadgeHtml(line.status) + ' · ' + formatTelsimLastTest(line.lastTestAt) + (line.dlrReceived ? ' · DLR OK' : '');
+          var inboundHint = line.inboundAt ? ' · SMS entrante telsim' : '';
+          metaEl.innerHTML = statusBadgeHtml(line.status) + ' · ' + formatTelsimLastTest(line.lastTestAt) + (line.dlrReceived ? ' · DLR OK' : '') + inboundHint;
         }
         var wrap = document.getElementById('tv-telsim-phone-wrap');
         if(wrap) {
@@ -639,6 +672,18 @@ export function renderAppSendSmsPage(
       if(telsimSelect){
         telsimSelect.addEventListener('change', updateTelsimLine);
         updateTelsimLine();
+      }
+      var telsimWebhookCopy = document.getElementById('tv-telsim-webhook-copy');
+      var telsimWebhookUrl = document.getElementById('tv-telsim-webhook-url');
+      if(telsimWebhookCopy && telsimWebhookUrl){
+        telsimWebhookCopy.addEventListener('click', function(){
+          telsimWebhookUrl.select();
+          telsimWebhookUrl.setSelectionRange(0, 99999);
+          var val = telsimWebhookUrl.value || '';
+          if(navigator.clipboard && navigator.clipboard.writeText){
+            navigator.clipboard.writeText(val).catch(function(){});
+          }
+        });
       }
       document.querySelectorAll('.tv-var-btn').forEach(function(btn){
         btn.addEventListener('click', function(){

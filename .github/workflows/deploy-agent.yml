@@ -131,9 +131,9 @@ jobs:
               set_env_key SMS_QUEUE_SCHEDULER_ENABLED true
               set_env_key SMS_QUEUE_SCHEDULER_INTERVAL_SECONDS 60
               set_env_key SMS_QUEUE_SCHEDULER_BATCH_SIZE 15
-              if ! grep -q '^TELVOICE_VERIFY_NUMBERS=' "$APP_PATH/.env" 2>/dev/null; then
-                printf '%s\n' 'TELVOICE_VERIFY_NUMBERS=+56934449937:Linea QA 1 telsim:Movistar|+56973824023:Linea QA 2 telsim:Entel' >> "$APP_PATH/.env"
-                echo "TELVOICE_VERIFY_NUMBERS configurado (QA telsim)"
+              set_env_key TELVOICE_VERIFY_NUMBERS '+56974713166:Linea QA 1 telsim:—|+56977109623:Linea QA 2 telsim:—|+56934449937:Linea QA 3 telsim:—'
+              if ! grep -q '^PUBLIC_WEBHOOK_BASE_URL=' "$APP_PATH/.env" 2>/dev/null; then
+                set_env_key PUBLIC_WEBHOOK_BASE_URL 'https://agent.telvoice.cl'
               fi
             fi
 

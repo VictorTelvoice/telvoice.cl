@@ -140,6 +140,12 @@ export const env = {
     intervalSeconds: parsePositiveIntEnv("SMS_QUEUE_SCHEDULER_INTERVAL_SECONDS", 60),
     batchSize: parsePositiveIntEnv("SMS_QUEUE_SCHEDULER_BATCH_SIZE", 15),
   },
+  telsim: {
+    webhookSecret: optionalEnv("TELSIM_WEBHOOK_SECRET"),
+    /** Solo desarrollo: omitir verificación de firma (nunca en producción). */
+    skipSignatureVerify:
+      optionalEnv("TELSIM_WEBHOOK_SKIP_VERIFY", "false") === "true",
+  },
 } as const;
 
 export function isMercadoPagoConfigured(): boolean {
@@ -171,6 +177,14 @@ export function buildDlrCallbackUrl(): string | undefined {
     return undefined;
   }
   return `${env.publicWebhookBaseUrl}/api/webhooks/asmsc/dlr`;
+}
+
+/** Webhook entrante SMS recibidos en líneas telsim.io */
+export function buildTelsimWebhookUrl(): string | undefined {
+  if (!env.publicWebhookBaseUrl) {
+    return undefined;
+  }
+  return `${env.publicWebhookBaseUrl}/api/webhooks/telsim/sms`;
 }
 
 export function isProduction(): boolean {

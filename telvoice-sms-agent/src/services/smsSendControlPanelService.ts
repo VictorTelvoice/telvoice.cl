@@ -4,7 +4,7 @@ import {
   maskVerifyPhone,
   type VerifyNumberEntry,
 } from "../config/verifyNumbers.js";
-import { buildDlrCallbackUrl } from "../config/env.js";
+import { buildDlrCallbackUrl, buildTelsimWebhookUrl } from "../config/env.js";
 import type { PanelSmsMessageRow } from "../types/sms-panel.js";
 import { getConfiguredDlrWebhookUrl } from "../utils/dlr-callback.js";
 import { formatDate } from "../utils/html.js";
@@ -14,6 +14,7 @@ import {
   type LiveTestSendPageStatus,
 } from "./smsLiveTestLimiterService.js";
 import { isAsmscConfigured } from "./sms-providers/realApiProvider.js";
+import { getTelsimPreviewForSlot } from "./telsimWebhookService.js";
 
 export type VerifyNumberStatus = {
   entry: VerifyNumberEntry;
@@ -23,6 +24,11 @@ export type VerifyNumberStatus = {
   lastTestAt: string | null;
   dlrReceived: boolean;
   readyForCampaign: boolean;
+  lastTelsimInbound: {
+    content: string;
+    verificationCode: string | null;
+    receivedAt: string;
+  } | null;
 };
 
 export type PreCampaignCheckItem = {
@@ -41,6 +47,8 @@ export type SendControlPanelView = {
   checklist: PreCampaignCheckItem[];
   allVerifyNumbersReady: boolean;
   defaultVerifyMessage: string;
+  telsimWebhookUrl: string;
+  telsimWebhookConfigured: boolean;
 };
 
 function normalizeDigits(phone: string): string {
@@ -94,19 +102,30 @@ export async function getSendControlPanelView(
     );
   });
 
-  const verifyNumbers: VerifyNumberStatus[] = verifyEntries.map((entry) => {
-    const lastTest = findLastMessageToNumber(verifyMessages, entry.phone);
-    const dlrReceived = lastTest?.status === "delivered";
-    return {
-      entry,
-      maskedPhone: maskVerifyPhone(entry.phone),
-      lastTest,
-      lastStatus: lastTest?.status ?? "—",
-      lastTestAt: lastTest?.created_at ?? null,
-      dlrReceived,
-      readyForCampaign: isVerifyMessageReady(lastTest),
-    };
-  });
+  const verifyNumbers: VerifyNumberStatus[] = await Promise.all(
+    verifyEntries.map(async (entry) => {
+      const lastTest = findLastMessageToNumber(verifyMessages, entry.phone);
+      const dlrReceived = lastTest?.status === "delivered";
+      const lastTelsimInbound = entry.slotId
+        ? await getTelsimPreviewForSlot(entry.slotId)
+        : null;
+      const readyFromTelsim =
+        lastTelsimInbound != null &&
+        (lastTelsimInbound.verificationCode != null ||
+          lastTelsimInbound.content.length > 0);
+      return {
+        entry,
+        maskedPhone: maskVerifyPhone(entry.phone),
+        lastTest,
+        lastStatus: lastTest?.status ?? "—",
+        lastTestAt: lastTest?.created_at ?? null,
+        dlrReceived,
+        lastTelsimInbound,
+        readyForCampaign:
+          isVerifyMessageReady(lastTest) || readyFromTelsim,
+      };
+    }),
+  );
 
   const webhookUrl = getConfiguredDlrWebhookUrl();
   const webhookConfigured = Boolean(buildDlrCallbackUrl());
@@ -124,6 +143,12 @@ export async function getSendControlPanelView(
       label: "Webhook DLR activo",
       ok: webhookConfigured,
       hint: webhookConfigured ? webhookUrl : "PUBLIC_WEBHOOK_BASE_URL",
+    },
+    {
+      id: "telsim_webhook",
+      label: "Webhook telsim.io (SMS entrantes)",
+      ok: Boolean(buildTelsimWebhookUrl()),
+      hint: buildTelsimWebhookUrl() ?? "PUBLIC_WEBHOOK_BASE_URL",
     },
     {
       id: "route",
@@ -167,6 +192,8 @@ export async function getSendControlPanelView(
     checklist,
     allVerifyNumbersReady,
     defaultVerifyMessage: buildDefaultVerifyMessage(),
+    telsimWebhookUrl: buildTelsimWebhookUrl() ?? "(no configurada)",
+    telsimWebhookConfigured: Boolean(buildTelsimWebhookUrl()),
   };
 }
 
