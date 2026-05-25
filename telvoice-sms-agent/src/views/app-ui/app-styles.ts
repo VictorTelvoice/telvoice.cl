@@ -179,7 +179,7 @@ export function getAppPanelStyles(): string {
     ${getOrderUiSharedStyles()}
     .tv-app-send-page .tv-send-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(200px, 212px);
+      grid-template-columns: minmax(0, 1fr) 200px;
       gap: 1rem;
       align-items: start;
     }
@@ -188,7 +188,10 @@ export function getAppPanelStyles(): string {
       flex-direction: column;
       align-items: center;
       gap: 0.5rem;
-      width: 100%;
+      width: 200px;
+      min-width: 200px;
+      max-width: 200px;
+      flex-shrink: 0;
       position: sticky;
       top: 0.75rem;
       align-self: start;
@@ -196,16 +199,26 @@ export function getAppPanelStyles(): string {
     .tv-send-preview-phone {
       display: flex;
       justify-content: center;
+      flex-shrink: 0;
+      width: 200px;
+      min-width: 200px;
+      max-width: 200px;
       padding: 0;
       margin: 0;
       background: none;
       border: none;
       box-shadow: none;
     }
-    /* Mockup hero: base −30 %, luego +10 % → ~77 % del landing */
+    /* Mockup hero: tamaño fijo para que no se deforme al actualizar el mensaje */
     .tv-send-preview-phone .tv-hero-phone {
-      width: min(200px, 100%);
+      box-sizing: border-box;
+      flex-shrink: 0;
+      width: 200px;
+      min-width: 200px;
+      max-width: 200px;
       height: 370px;
+      min-height: 370px;
+      max-height: 370px;
       border-radius: 31px;
       border-width: 8px;
       box-shadow: 0 16px 38px -10px rgba(15, 23, 42, 0.28);
@@ -215,12 +228,27 @@ export function getAppPanelStyles(): string {
       border-radius: 0 0 11px 11px;
     }
     .tv-send-preview-phone .tv-hero-phone__screen {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
       padding: 1.9rem 0.75rem 0.75rem;
     }
     .tv-send-preview-phone .tv-hero-phone__app-head {
+      flex-shrink: 0;
       gap: 0.5rem;
       padding-bottom: 0.55rem;
       margin-bottom: 0.4rem;
+      min-width: 0;
+    }
+    .tv-send-preview-phone .tv-hero-phone__app-head > div:last-child {
+      min-width: 0;
+      overflow: hidden;
+    }
+    .tv-send-preview-phone .tv-hero-phone__app-title,
+    .tv-send-preview-phone .tv-hero-phone__app-sub {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .tv-send-preview-phone .tv-hero-phone__avatar {
       width: 28px;
@@ -235,19 +263,31 @@ export function getAppPanelStyles(): string {
       font-size: 0.53rem;
     }
     .tv-send-preview-phone .tv-hero-phone__messages {
+      flex: 1;
+      min-height: 0;
       gap: 0.4rem;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
     .tv-send-preview-phone .tv-hero-phone__bubble {
+      flex-shrink: 0;
+      max-width: 100%;
       padding: 0.5rem 0.58rem;
       font-size: 0.58rem;
+      line-height: 1.45;
       border-radius: 12px;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
     .tv-send-preview-phone .tv-hero-phone__bubble--in {
       border-radius: 12px 12px 12px 3px;
     }
     .tv-send-validation {
-      width: 100%;
+      box-sizing: border-box;
+      width: 200px;
+      min-width: 200px;
       max-width: 200px;
+      flex-shrink: 0;
       padding: 0.4rem 0.35rem;
       background: var(--tv-surface, #fff);
       border: 1px solid var(--tv-border, #e2e8f0);
@@ -267,9 +307,16 @@ export function getAppPanelStyles(): string {
       font-size: 0.62rem;
       line-height: 1.2;
     }
+    .tv-stat-chips--send-aside .tv-stat-chip {
+      min-width: 0;
+      overflow: hidden;
+    }
     .tv-stat-chips--send-aside .tv-stat-chip__value {
       font-size: 0.75rem;
       line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     @media (max-width: 960px) {
       .tv-app-send-page .tv-send-layout {
