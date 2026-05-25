@@ -254,7 +254,7 @@ export function renderAppSendSmsPage(
   const panelUnavailableHtml = `<p class="alert alert-error">El envío SMS no está disponible. Contacte a soporte Telvoice.</p>`;
 
   const sendForm = !panel
-    ? panelUnavailableHtml
+    ? `${panelUnavailableHtml}${sendOutcomeBlock}`
     : `
     <form method="post" action="/app/send-sms" id="tv-app-send-form" class="tv-send-layout">
       ${opts.idempotencyKey ? `<input type="hidden" name="idempotency_key" value="${escapeHtml(opts.idempotencyKey)}" />` : ""}
@@ -345,6 +345,7 @@ export function renderAppSendSmsPage(
             <button type="submit" class="btn btn-primary tv-send-submit" id="tv-send-submit" ${submitDisabled}>Enviar SMS</button>
           </div>
         </section>
+        ${sendOutcomeBlock}
       </div>
       <aside class="tv-send-aside">
         <div id="tv-send-preview-phone" class="tv-send-preview-phone">
@@ -368,14 +369,11 @@ export function renderAppSendSmsPage(
 
   const body = `
     <div class="tv-app-send-page">
-    <div class="tv-send-page-head">
     ${renderPageHeader({
       title: "Enviar SMS",
       subtitle: "Individual, campaña masiva, programación o plantillas preaprobadas.",
       actions: panel ? headerActions : undefined,
     })}
-    ${sendOutcomeBlock}
-    </div>
     ${errorBlock}
     ${opsChips}
     ${sendForm}

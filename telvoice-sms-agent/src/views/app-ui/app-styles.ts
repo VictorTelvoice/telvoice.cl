@@ -187,6 +187,9 @@ export function getAppPanelStyles(): string {
       position: relative;
       z-index: 1;
       min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
     }
     .tv-app-send-page .tv-send-aside {
       display: flex;
@@ -468,29 +471,8 @@ export function getAppPanelStyles(): string {
     .tv-app-send-page .tv-page-header {
       margin-bottom: 0;
     }
-    .tv-send-page-head {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-    .tv-send-page-head .tv-send-outcome {
+    .tv-send-outcome {
       margin: 0;
-    }
-    @media (min-width: 900px) {
-      .tv-send-page-head:has(.tv-send-outcome) {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 0.75rem 1.25rem;
-        align-items: start;
-      }
-      .tv-send-page-head:has(.tv-send-outcome) > .tv-page-head {
-        grid-column: 1 / -1;
-      }
-      .tv-send-page-head:has(.tv-send-outcome) > .tv-send-outcome {
-        grid-column: 2;
-        justify-self: stretch;
-        width: min(100%, 34rem);
-      }
     }
     .tv-send-outcome__lead {
       margin: 0.35rem 0 0;
