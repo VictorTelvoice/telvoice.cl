@@ -20,4 +20,6 @@ const outPath = path.join(root, "public", "app-panel.css");
 const css = `${MATERIAL_SYMBOLS_FIX}${getAdminStyles()}${getAppPanelStyles()}`;
 
 writeFileSync(outPath, css, "utf8");
+const verPath = path.join(root, "public", "app-panel.ver");
+writeFileSync(verPath, String(Date.now()), "utf8");
 console.info(`[build:app-css] ${outPath} (${css.length} bytes)`);

@@ -1,4 +1,6 @@
+import { readFileSync } from "node:fs";
 import { escapeHtml } from "../../utils/html.js";
+import { getPublicDir } from "../../utils/public-dir.js";
 import {
   brandPageTitle,
   renderFaviconLink,
@@ -10,8 +12,20 @@ import {
   APP_NAV_SEND_SMS,
 } from "./app-nav.js";
 
+function appPanelStylesheetHref(): string {
+  try {
+    const ver = readFileSync(
+      `${getPublicDir()}/app-panel.ver`,
+      "utf8",
+    ).trim();
+    return ver ? `/app-panel.css?v=${encodeURIComponent(ver)}` : "/app-panel.css";
+  } catch {
+    return "/app-panel.css";
+  }
+}
+
 /** CSS estático generado por npm run build:app-css (cacheable). */
-const APP_PANEL_STYLESHEET = "/app-panel.css";
+const APP_PANEL_STYLESHEET = appPanelStylesheetHref();
 
 export type AppLayoutTopbar = {
   companyName: string;
