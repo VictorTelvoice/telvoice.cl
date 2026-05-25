@@ -97,6 +97,15 @@ export async function processTelsimSmsWebhook(input: {
       rawBody: input.rawBody,
     });
     if (!ok) {
+      console.warn(
+        "[telsim] Firma inválida",
+        JSON.stringify({
+          hasRawBody: Boolean(input.rawBody?.length),
+          event: input.body.event,
+          slot_id: input.body.slot_id,
+          sigLen: signature?.length ?? 0,
+        }),
+      );
       throw new AppError("Firma Telsim inválida (X-Telsim-Signature).", 401);
     }
   }
@@ -108,6 +117,16 @@ export async function processTelsimSmsWebhook(input: {
     rawPayload: input.body,
     linePhone,
   });
+
+  console.info(
+    "[telsim] sms.received",
+    JSON.stringify({
+      stored: row != null,
+      slot_id: payload.slot_id,
+      line_phone: row?.line_phone ?? linePhone,
+      from: payload.from,
+    }),
+  );
 
   return {
     stored: row != null,

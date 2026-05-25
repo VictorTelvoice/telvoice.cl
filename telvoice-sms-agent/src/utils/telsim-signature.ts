@@ -5,15 +5,17 @@ function hmacHex(secret: string, payload: string): string {
 }
 
 function safeEqualHex(signature: string, expected: string): boolean {
+  const sig = signature.replace(/^sha256=/i, "").trim();
+  const exp = expected.trim();
   try {
-    const sigBuf = Buffer.from(signature, "utf8");
-    const expBuf = Buffer.from(expected, "utf8");
+    const sigBuf = Buffer.from(sig, "utf8");
+    const expBuf = Buffer.from(exp, "utf8");
     if (sigBuf.length !== expBuf.length) {
       return false;
     }
     return timingSafeEqual(sigBuf, expBuf);
   } catch {
-    return signature === expected;
+    return sig === exp;
   }
 }
 

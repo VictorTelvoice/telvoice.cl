@@ -31,6 +31,9 @@ export async function telsimSmsReceivedHandler(
     });
   } catch (error) {
     if (error instanceof AppError) {
+      if (error.statusCode === 401) {
+        console.warn("[telsim] Webhook rechazado:", error.message);
+      }
       res.status(error.statusCode).json({ error: error.message });
       return;
     }
