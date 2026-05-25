@@ -2,11 +2,8 @@ import type { ClientDashboardData } from "../../services/clientDashboardService.
 import type { WalletTransactionRow } from "../../types/wallet.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 import { APP_SCHEDULE_TIMEZONE } from "../../utils/scheduleTime.js";
-import {
-  renderKpiCard,
-  renderQuickAction,
-} from "../admin-ui/components.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
+import { renderKpiCard } from "../admin-ui/components.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
 import {
@@ -47,14 +44,6 @@ export function renderAppDashboardPage(
   const monthLabel = dashboardMonthLabel();
   const stats = data.stats;
 
-  const pendingAlert =
-    data.pendingOrdersCount > 0
-      ? `<div class="alert alert-warn tv-client-dash-alert" role="status">
-          Tienes ${data.pendingOrdersCount} orden(es) pendiente(s) de pago o acreditación.
-          <a href="/app/orders" class="row-link">Ver órdenes</a>
-        </div>`
-      : "";
-
   const orderRows = data.recentOrders.length
     ? data.recentOrders
         .map(
@@ -93,7 +82,6 @@ export function renderAppDashboardPage(
         icon: "shopping_cart",
       }),
     })}
-    ${pendingAlert}
     <div class="tv-kpi-grid tv-kpi-grid--client">
       ${renderKpiCard({
         label: "SMS enviados",
@@ -124,43 +112,13 @@ export function renderAppDashboardPage(
         variant: "default",
       })}
     </div>
-    <section class="tv-panel tv-client-dash-panel">
-      ${renderDashPanelHead("Acciones rápidas")}
-      <div class="tv-panel__body tv-panel__body--flush">
-        <div class="tv-quick-grid tv-quick-grid--client">
-          ${renderQuickAction({
-            href: "/app/buy-sms",
-            label: "Comprar SMS",
-            description: "Recargar saldo",
-            icon: "shopping_cart",
-          })}
-          ${renderQuickAction({
-            href: "/app/send-sms",
-            label: "Enviar SMS",
-            description: "Individual o campaña",
-            icon: "send",
-          })}
-          ${renderQuickAction({
-            href: "/app/reports",
-            label: "Ver reportes",
-            description: "Métricas de envío",
-            icon: "monitoring",
-          })}
-          ${renderQuickAction({
-            href: "/app/support",
-            label: "Soporte",
-            description: "Ayuda y tickets",
-            icon: "support_agent",
-          })}
-          ${renderQuickAction({
-            href: "/app/api",
-            label: "Solicitar API",
-            description: "Integración REST",
-            icon: "api",
-          })}
-        </div>
-      </div>
-    </section>
+    <div class="tv-client-dash-actions">
+      ${renderBtn("Comprar SMS", { href: "/app/buy-sms", variant: "primary", icon: "shopping_cart" })}
+      ${renderBtn("Enviar SMS", { href: "/app/send-sms", variant: "secondary", icon: "send" })}
+      ${renderBtn("Ver reportes", { href: "/app/reports", variant: "ghost", icon: "monitoring" })}
+      ${renderBtn("Soporte", { href: "/app/support", variant: "ghost", icon: "support_agent" })}
+      ${renderBtn("Solicitar API", { href: "/app/api", variant: "ghost", icon: "api" })}
+    </div>
     <div class="tv-dash-grid tv-dash-grid--2 tv-client-dash-tables">
       <section class="tv-panel">
         ${renderDashPanelHead("Últimas órdenes", {

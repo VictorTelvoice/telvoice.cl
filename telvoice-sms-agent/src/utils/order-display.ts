@@ -48,6 +48,43 @@ export function isQaOrder(
   return /^QA-/i.test(ref) || /QA-E2E/i.test(ref);
 }
 
+/** Órdenes visibles en el panel cliente (excluye QA, manuales pendientes y simulaciones). */
+export function isClientAccountOrder(
+  order: Pick<
+    SmsOrderRow,
+    | "metadata"
+    | "payment_reference"
+    | "payment_status"
+    | "credit_status"
+    | "payment_provider"
+  >,
+): boolean {
+  if (isQaOrder(order)) {
+    return false;
+  }
+  if (
+    order.payment_status === "pending" ||
+    order.payment_status === "cancelled" ||
+    order.payment_status === "rejected"
+  ) {
+    return false;
+  }
+  const meta = order.metadata ?? {};
+  const manualPending =
+    order.payment_provider === "pending_checkout" ||
+    meta.checkout_mode === "manual_pending";
+  if (manualPending) {
+    return false;
+  }
+  return order.credit_status === "credited";
+}
+
+export function filterClientAccountOrders<T extends SmsOrderRow>(
+  orders: T[],
+): T[] {
+  return orders.filter(isClientAccountOrder);
+}
+
 export function isQaTransaction(
   tx: Pick<WalletTransactionRow, "metadata" | "description">,
 ): boolean {

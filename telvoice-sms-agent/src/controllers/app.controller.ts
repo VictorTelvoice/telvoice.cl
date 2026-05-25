@@ -14,7 +14,7 @@ import {
 import { getCompanyBalance } from "../services/smsWalletService.js";
 import { listTransactionsByCompany } from "../services/walletTransactionService.js";
 import { isMercadoPagoConfigured } from "../config/env.js";
-import { parseOrderListFilter } from "../utils/order-display.js";
+import { filterClientAccountOrders, isClientAccountOrder, isQaTransaction, parseOrderListFilter } from "../utils/order-display.js";
 import { validateUuidParam } from "../utils/validation.js";
 import type { AppPageContext } from "../views/app-ui/app-page-wrap.js";
 import {
@@ -422,7 +422,9 @@ export async function getAppWallet(
   next: NextFunction,
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
-    const transactions = await listTransactionsByCompany(ctx.company.id, 50);
+    const transactions = (
+      await listTransactionsByCompany(ctx.company.id, 50)
+    ).filter((t) => !isQaTransaction(t));
     return renderAppWalletPage(ctx, transactions);
   });
 }
@@ -433,7 +435,9 @@ export async function getAppOrders(
   next: NextFunction,
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
-    const orders = await listSmsOrdersByCompany(ctx.company.id, 100);
+    const orders = filterClientAccountOrders(
+      await listSmsOrdersByCompany(ctx.company.id, 100),
+    );
     const filter = parseOrderListFilter(
       typeof req.query.filter === "string" ? req.query.filter : undefined,
     );
@@ -452,7 +456,7 @@ export async function getAppOrderDetail(
       orderId,
       ctx.company.id,
     );
-    if (!order) {
+    if (!order || !isClientAccountOrder(order)) {
       return renderAppOrderNotFoundPage(ctx);
     }
     const showCreatedBanner = req.query.created === "1";

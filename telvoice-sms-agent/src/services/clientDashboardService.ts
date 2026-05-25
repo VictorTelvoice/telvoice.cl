@@ -13,6 +13,10 @@ import type {
 } from "../types/wallet.js";
 import { isMissingTableError } from "../utils/db-table.js";
 import {
+  filterClientAccountOrders,
+  isQaTransaction,
+} from "../utils/order-display.js";
+import {
   APP_SCHEDULE_TIMEZONE,
   monthStartIsoInTimeZone,
 } from "../utils/scheduleTime.js";
@@ -101,21 +105,24 @@ export async function getClientDashboardData(
     throw new Error("Empresa no encontrada");
   }
 
-  const pendingOrdersCount = orders.filter(
+  const visibleOrders = filterClientAccountOrders(orders);
+  const visibleTransactions = transactions.filter((t) => !isQaTransaction(t));
+
+  const pendingOrdersCount = visibleOrders.filter(
     (o) =>
       o.payment_status === "pending" ||
       (o.payment_status === "paid" && o.credit_status === "pending"),
   ).length;
 
-  const credited = orders.filter((o) => o.credit_status === "credited");
+  const credited = visibleOrders.filter((o) => o.credit_status === "credited");
   const lastPurchaseAt = credited[0]?.credited_at ?? credited[0]?.created_at ?? null;
 
   return {
     company,
     balance,
     stats,
-    recentOrders: orders.slice(0, 5),
-    recentTransactions: transactions.slice(0, 5),
+    recentOrders: visibleOrders.slice(0, 5),
+    recentTransactions: visibleTransactions.slice(0, 5),
     pendingOrdersCount,
     packagesAvailable: packages.length,
     lastPurchaseAt,

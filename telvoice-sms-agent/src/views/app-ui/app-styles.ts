@@ -642,37 +642,37 @@ export function getAppPanelStyles(): string {
       gap: 1rem;
     }
     .tv-kpi-grid--client .tv-kpi {
-      min-height: 118px;
-    }
-    .tv-client-dash-panel {
-      margin: 0;
-    }
-    .tv-quick-grid--client {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
-    .tv-quick-grid--client .tv-quick {
+      min-height: 128px;
+      padding: 1.15rem 1.25rem 1.2rem;
+      display: flex;
       flex-direction: column;
-      align-items: flex-start;
-      gap: 0.65rem;
-      padding: 1rem 1.05rem;
-      border-bottom: none;
-      border-right: 1px solid var(--tv-border);
-      min-height: 100%;
     }
-    .tv-quick-grid--client .tv-quick:last-child {
-      border-right: none;
+    .tv-kpi-grid--client .tv-kpi__head {
+      margin-bottom: 0.7rem;
+      gap: 0.45rem;
     }
-    .tv-quick-grid--client .tv-quick:hover {
-      background: linear-gradient(180deg, #fff 0%, #f8fbff 100%);
+    .tv-kpi-grid--client .tv-kpi__label {
+      line-height: 1.25;
     }
-    .tv-quick-grid--client .tv-quick__icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
+    .tv-kpi-grid--client .tv-kpi__value {
+      line-height: 1.15;
+      margin-top: auto;
     }
-    .tv-quick-grid--client .tv-quick__arrow {
-      display: none;
+    .tv-kpi-grid--client .tv-kpi__hint {
+      margin-top: 0.5rem;
+      line-height: 1.35;
+    }
+    .tv-client-dash-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0 0.15rem;
+    }
+    .tv-client-dash-actions .btn,
+    .tv-client-dash-actions .tv-btn-campaign {
+      white-space: nowrap;
     }
     .tv-dash-panel-head {
       display: flex;
@@ -710,18 +710,10 @@ export function getAppPanelStyles(): string {
     }
     @media (max-width: 1100px) {
       .tv-kpi-grid--client { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .tv-quick-grid--client { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .tv-quick-grid--client .tv-quick {
-        border-right: none;
-        border-bottom: 1px solid var(--tv-border);
-      }
-      .tv-quick-grid--client .tv-quick:nth-child(2n) {
-        border-right: none;
-      }
+      .tv-client-dash-actions { justify-content: flex-start; }
     }
     @media (max-width: 640px) {
       .tv-kpi-grid--client { grid-template-columns: 1fr; }
-      .tv-quick-grid--client { grid-template-columns: 1fr; }
     }
     @media (max-width: 960px) {
       .tv-send-to-row { grid-template-columns: 1fr; }
