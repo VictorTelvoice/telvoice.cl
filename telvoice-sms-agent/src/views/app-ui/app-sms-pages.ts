@@ -86,7 +86,7 @@ export function renderAppSendSmsPage(
 
   const lt = opts.liveTestStatus;
   const panel = opts.controlPanel;
-  const canSend = lt?.canSelectLiveTest ?? false;
+  const canSubmit = lt?.canSelectLiveTest ?? false;
   const defaultVerifyMsg = panel?.defaultVerifyMessage ?? "";
 
   const verifyPhonesForJs = panel
@@ -102,8 +102,14 @@ export function renderAppSendSmsPage(
         ? `${lt.dailyRemaining} / ${lt.dailyLimit}`
         : "—";
 
-  const disabledAttr = canSend ? "" : "disabled";
-  const submitDisabled = canSend ? "" : "disabled";
+  const disabledAttr = "";
+  const submitDisabled = canSubmit ? "" : "disabled";
+  const submitBlockAlert =
+    !canSubmit && lt?.liveTestBlockReason
+      ? `<div class="alert alert-warn tv-send-block-reason" role="status">${escapeHtml(lt.liveTestBlockReason)}</div>`
+      : !canSubmit
+        ? `<div class="alert alert-warn tv-send-block-reason" role="status">Puedes preparar el mensaje; el envío se habilitará cuando tu cuenta cumpla los requisitos del checklist.</div>`
+        : "";
   const suggestedSenderId = suggestSenderIdFromCompanyName(ctx.company.name);
   const companyDisplayName = ctx.company.name.trim() || "Tu empresa";
 
@@ -199,19 +205,13 @@ export function renderAppSendSmsPage(
     </section>`
     : "";
 
-  const blockHint =
-    lt?.liveTestBlockReason && !canSend
-      ? `<p class="field-hint tv-send-block-reason">${escapeHtml(lt.liveTestBlockReason)}</p>`
-      : "";
-
   const checklistHtml = panel
     ? `<ul class="tv-checklist">
         ${panel.checklist
           .filter((c) => !CLIENT_CHECKLIST_HIDE.has(c.id))
           .map((c) => renderChecklistItem(c.ok, c.label, c.hint))
           .join("")}
-      </ul>
-      ${blockHint}`
+      </ul>`
     : `<p class="alert alert-error">El envío SMS no está disponible. Contacte a soporte Telvoice.</p>`;
 
   const sendForm = !panel
@@ -248,7 +248,7 @@ export function renderAppSendSmsPage(
               <div class="form-group">
                 <label for="contact_list">Lista de contactos</label>
                 <select id="contact_list" name="contact_list" class="tv-input-full" ${disabledAttr}>
-                  ${renderContactListOptions(!canSend)}
+                  ${renderContactListOptions(false)}
                 </select>
               </div>
               <div class="form-group">
@@ -273,7 +273,7 @@ export function renderAppSendSmsPage(
               <div class="form-group">
                 <label for="template_id">Plantilla</label>
                 <select id="template_id" name="template_id" class="tv-input-full" ${disabledAttr}>
-                  ${renderTemplateOptions(!canSend)}
+                  ${renderTemplateOptions(false)}
                 </select>
               </div>
             </div>
@@ -302,6 +302,7 @@ export function renderAppSendSmsPage(
             <p class="field-hint tv-live-segment-warn" id="tv-live-segment-warn" hidden>El mensaje supera el máximo de segmentos permitido.</p>
             <p class="field-hint tv-live-number-warn" id="tv-live-number-warn" hidden>El número destino no está autorizado.</p>
             <p class="field-hint tv-mass-warn" id="tv-mass-warn" hidden>Agrega al menos un destinatario válido (lista o CSV).</p>
+            ${submitBlockAlert}
             <button type="submit" class="btn btn-primary tv-send-submit" id="tv-send-submit" ${submitDisabled}>Enviar SMS</button>
           </div>
         </section>
@@ -354,7 +355,7 @@ export function renderAppSendSmsPage(
       var scheduleTime = document.getElementById('schedule_time');
       var avail = ${avail};
       var maxLiveSegments = ${lt?.maxSegments ?? 3};
-      var canSend = ${canSend ? "true" : "false"};
+      var canSubmit = ${canSubmit ? "true" : "false"};
       var numbersRestricted = ${lt?.authorizedNumbersConfigured ? "true" : "false"};
       var allowedLiveNumbers = ${JSON.stringify(allowedLiveNumbers)};
       var defaultVerifyMsg = ${JSON.stringify(defaultVerifyMsg)};
@@ -663,8 +664,8 @@ export function renderAppSendSmsPage(
         if(numWarn) numWarn.hidden = isBulkMode(mode) || numOk || (!numbersRestricted && allowedLiveNumbers.length === 0);
         if(massWarn) massWarn.hidden = bulkOk || !isBulkMode(mode);
         var disabled = overSeg || !numOk || !schedOk || !bulkOk;
-        if(submitBtn && canSend) submitBtn.disabled = disabled;
-        if(headerBtn && canSend) headerBtn.disabled = disabled;
+        if(submitBtn) submitBtn.disabled = !canSubmit || disabled;
+        if(headerBtn) headerBtn.disabled = !canSubmit || disabled;
       }
       document.querySelectorAll('.tv-var-btn').forEach(function(btn){
         btn.addEventListener('click', function(){

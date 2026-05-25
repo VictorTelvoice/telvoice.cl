@@ -183,6 +183,11 @@ export function getAppPanelStyles(): string {
       gap: 1rem;
       align-items: start;
     }
+    .tv-app-send-page .tv-send-main {
+      position: relative;
+      z-index: 1;
+      min-width: 0;
+    }
     .tv-app-send-page .tv-send-aside {
       display: flex;
       flex-direction: column;

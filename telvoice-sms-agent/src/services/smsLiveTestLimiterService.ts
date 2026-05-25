@@ -375,6 +375,9 @@ export async function getLiveTestSendPageStatus(
         : false;
   } else if (!numbersRestricted) {
     recipientAllowed = true;
+  } else {
+    /* Lista blanca activa: sin número aún se puede redactar; se valida al enviar */
+    recipientAllowed = true;
   }
 
   const segmentsWithinLimit =
