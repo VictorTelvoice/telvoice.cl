@@ -1281,57 +1281,138 @@ export function getAdminStyles(): string {
       gap: 0.35rem;
     }
     .tv-telsim-webhook { margin-bottom: 0.75rem; }
-    .tv-test-workspace {
+    .tv-test-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .tv-test-workspace { width: 100%; }
+    .tv-test-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+    @media (max-width: 960px) {
+      .tv-test-grid { grid-template-columns: 1fr; }
+    }
+    .tv-section-head--compact { margin-bottom: 0.75rem; }
+    .tv-section-head--compact .tv-section-head__sub { margin-top: 0.15rem; }
+    .tv-test-send-panel__body {
       display: flex;
       flex-direction: column;
       gap: 1rem;
-      width: 100%;
+      align-items: stretch;
     }
-    .tv-test-line-pick { margin: 0; }
-    .tv-telsim-line-hint--alert { color: #b45309; font-weight: 600; }
-    .tv-test-workspace__cols {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 1rem;
-      align-items: start;
-    }
-    @media (max-width: 900px) {
-      .tv-test-workspace__cols { grid-template-columns: 1fr; }
-    }
-    .tv-test-send-panel .tv-panel__body { align-items: stretch; }
     .tv-test-send-form {
       display: flex;
       flex-direction: column;
       gap: 0.85rem;
       width: 100%;
     }
-    .tv-test-recipient-mode {
-      border: none;
+    .tv-test-route-fieldset,
+    .tv-test-recipient-fieldset {
+      border: 1px solid var(--tv-border, #e2e8f0);
+      border-radius: 10px;
       margin: 0;
-      padding: 0;
+      padding: 0.75rem 0.85rem;
       display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem 1.25rem;
+      flex-direction: column;
+      gap: 0.65rem;
     }
-    .tv-test-recipient-mode__legend {
-      width: 100%;
-      font-size: 0.8rem;
+    .tv-test-route-fieldset__legend,
+    .tv-test-recipient-fieldset__legend {
+      font-size: 0.78rem;
       font-weight: 700;
       color: var(--tv-muted);
-      margin-bottom: 0.15rem;
+      padding: 0 0.25rem;
     }
-    .tv-test-recipient-mode__opt {
+    .tv-test-route-mode,
+    .tv-test-recipient-mode {
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
       font-size: 0.88rem;
       cursor: pointer;
     }
+    .tv-test-route-manual {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      padding-top: 0.25rem;
+      border-top: 1px dashed var(--tv-border, #e2e8f0);
+    }
     .tv-test-send-submit {
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
       align-self: flex-start;
+    }
+    .tv-test-send-result {
+      font-size: 0.88rem;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      line-height: 1.45;
+    }
+    .tv-test-send-result--ok {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+    }
+    .tv-test-send-result--err {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+    }
+    .tv-test-checklist-disclosure {
+      border: 1px solid var(--tv-border, #e2e8f0);
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+    .tv-test-checklist-disclosure__summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 0.9rem;
+      font-weight: 700;
+      font-size: 0.9rem;
+      user-select: none;
+    }
+    .tv-test-checklist-disclosure__summary::-webkit-details-marker { display: none; }
+    .tv-test-checklist-disclosure__badge {
+      margin-left: auto;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #334155;
+    }
+    .tv-test-checklist-disclosure__body {
+      padding: 0 0.9rem 0.85rem;
+      border-top: 1px solid var(--tv-border, #e2e8f0);
+    }
+    .tv-telsim-panel__body--stack {
+      align-items: stretch;
+      gap: 0.85rem;
+    }
+    .tv-test-inbound-line { margin: 0; width: 100%; }
+    .tv-telsim-line-hint--alert { color: #b45309; font-weight: 600; }
+    .tv-telsim-webhook--compact {
+      width: 100%;
+      margin: 0;
+      padding-top: 0.5rem;
+      border-top: 1px dashed var(--tv-border, #e2e8f0);
+    }
+    .tv-telsim-webhook__label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--tv-muted);
+      margin-bottom: 0.35rem;
     }
     .tv-telsim-phone-feed .tv-hero-phone__messages.tv-telsim-feed {
       max-height: 320px;

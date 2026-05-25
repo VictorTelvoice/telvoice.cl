@@ -6,6 +6,9 @@ import {
   resolveVerifyTestSend,
 } from "../services/smsSendControlPanelService.js";
 import { sendPanelSms } from "../services/smsSendService.js";
+import { getSmsProviderById, listSmsProviders } from "../services/smsProviderService.js";
+import { listSmsRoutes } from "../services/smsRouteService.js";
+import { sendSuperadminProviderTest } from "../services/superadminProviderTestService.js";
 import {
   buildTelsimVerifyLinesPreview,
   listTelsimInboundFeedForVerifyEntry,
@@ -31,6 +34,25 @@ async function resolveAdminTestCompanyId(): Promise<string> {
   return active.id;
 }
 
+function wantsJsonResponse(req: Request): boolean {
+  const accept = req.get("Accept") ?? "";
+  return accept.includes("application/json");
+}
+
+function respondTestSendResult(
+  req: Request,
+  res: Response,
+  payload: { ok: boolean; message: string; status?: string; recipient?: string },
+  statusCode = 200,
+): void {
+  if (wantsJsonResponse(req)) {
+    res.status(statusCode).json(payload);
+    return;
+  }
+  const key = payload.ok ? "ok" : "error";
+  res.redirect(`/admin/test?${key}=${encodeURIComponent(payload.message)}`);
+}
+
 export async function getAdminTestPage(
   req: Request,
   res: Response,
@@ -41,7 +63,10 @@ export async function getAdminTestPage(
     const sendEnabled = canCompanyUseLiveTestUi(companyId);
     const panel = sendEnabled ? await getSendControlPanelView(companyId) : null;
     const verifyEntries = getRegisteredVerifyNumbers();
-    const lineFeeds: Record<string, Awaited<ReturnType<typeof listTelsimInboundFeedForVerifyEntry>>> = {};
+    const lineFeeds: Record<
+      string,
+      Awaited<ReturnType<typeof listTelsimInboundFeedForVerifyEntry>>
+    > = {};
     if (verifyEntries.length > 0) {
       const feeds = await Promise.all(
         verifyEntries.map(async (entry) => ({
@@ -53,10 +78,11 @@ export async function getAdminTestPage(
         lineFeeds[f.id] = f.messages;
       }
     }
-    const flash =
-      typeof req.query.ok === "string" ? req.query.ok : undefined;
-    const error =
-      typeof req.query.error === "string" ? req.query.error : undefined;
+
+    const [providers, routes] = await Promise.all([
+      listSmsProviders(),
+      listSmsRoutes(),
+    ]);
 
     res.type("html").send(
       renderAdminTestPage({
@@ -64,8 +90,22 @@ export async function getAdminTestPage(
         panel,
         sendEnabled,
         lineFeeds,
-        flash,
-        error,
+        providers: providers.map((p) => ({
+          id: p.id,
+          name: p.name,
+          code: p.code,
+          status: p.status,
+          defaultSenderId: p.default_sender_id,
+        })),
+        routes: routes.map((r) => ({
+          id: r.id,
+          providerId: r.provider_id,
+          name: r.name,
+          country: r.country,
+          status: r.status,
+          isDefault: r.is_default,
+          providerName: r.provider_name ?? r.provider_code ?? "",
+        })),
       }),
     );
   } catch (error) {
@@ -94,9 +134,14 @@ export async function postAdminTestQaSend(
   try {
     const companyId = await resolveAdminTestCompanyId();
     if (!canCompanyUseLiveTestUi(companyId)) {
-      res.redirect(
-        "/admin/test?error=" +
-          encodeURIComponent("Envío live_test no habilitado para la empresa de prueba."),
+      respondTestSendResult(
+        req,
+        res,
+        {
+          ok: false,
+          message: "Envío live_test no habilitado para la empresa de prueba.",
+        },
+        403,
       );
       return;
     }
@@ -120,29 +165,96 @@ export async function postAdminTestQaSend(
       message: req.body?.message,
     });
     if (!resolved) {
-      res.redirect(
-        "/admin/test?error=" +
-          encodeURIComponent("Número de verificación no encontrado."),
+      respondTestSendResult(
+        req,
+        res,
+        { ok: false, message: "Número de verificación no encontrado." },
+        400,
       );
+      return;
+    }
+
+    const senderId = String(req.body?.sender_id ?? "TELVOICE");
+    const message = resolved.message;
+    const routeMode =
+      typeof req.body?.route_mode === "string"
+        ? req.body.route_mode.trim()
+        : "auto";
+    const providerId =
+      typeof req.body?.provider_id === "string"
+        ? req.body.provider_id.trim()
+        : "";
+    const routeId =
+      typeof req.body?.route_id === "string" ? req.body.route_id.trim() : "";
+
+    if (routeMode === "manual") {
+      if (!providerId || !routeId) {
+        respondTestSendResult(
+          req,
+          res,
+          { ok: false, message: "Selecciona proveedor y ruta para el envío manual." },
+          400,
+        );
+        return;
+      }
+      const provider = await getSmsProviderById(providerId);
+      if (!provider) {
+        respondTestSendResult(
+          req,
+          res,
+          { ok: false, message: "Proveedor no encontrado." },
+          404,
+        );
+        return;
+      }
+      const result = await sendSuperadminProviderTest({
+        provider,
+        routeId,
+        to: resolved.to,
+        senderId,
+        message,
+      });
+      if (!result.accepted) {
+        respondTestSendResult(
+          req,
+          res,
+          {
+            ok: false,
+            message:
+              result.errorMessage ??
+              "El proveedor rechazó el envío de prueba.",
+            status: result.status,
+            recipient: resolved.to,
+          },
+          502,
+        );
+        return;
+      }
+      respondTestSendResult(req, res, {
+        ok: true,
+        message: `SMS enviado vía ${provider.name} → ${resolved.to}. Estado: ${result.status}.`,
+        status: result.status,
+        recipient: resolved.to,
+      });
       return;
     }
 
     const result = await sendPanelSms({
       companyId,
-      senderId: String(req.body?.sender_id ?? "TELVOICE"),
+      senderId,
       to: resolved.to,
-      message: resolved.message,
+      message,
       campaignName: `QA Verify — ${resolved.label}`,
       createdBy: req.adminUser?.profileId ?? req.adminUser?.id ?? undefined,
       sendSource: "app_send_sms_verify_test",
     });
 
-    res.redirect(
-      "/admin/test?ok=" +
-        encodeURIComponent(
-          `Test QA enviado a ${result.recipientNumber}. Estado: ${result.status}.`,
-        ),
-    );
+    respondTestSendResult(req, res, {
+      ok: true,
+      message: `SMS enviado a ${result.recipientNumber}. Estado: ${result.status}.`,
+      status: result.status,
+      recipient: result.recipientNumber,
+    });
   } catch (error) {
     const msg =
       error instanceof AppError
@@ -150,6 +262,6 @@ export async function postAdminTestQaSend(
         : error instanceof Error
           ? error.message
           : "No se pudo enviar el test QA";
-    res.redirect(`/admin/test?error=${encodeURIComponent(msg)}`);
+    respondTestSendResult(req, res, { ok: false, message: msg }, 400);
   }
 }
