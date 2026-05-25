@@ -146,10 +146,28 @@ export async function postAdminTestQaSend(
       return;
     }
 
+    const messageRaw =
+      typeof req.body?.message === "string" ? req.body.message.trim() : "";
+    if (!messageRaw) {
+      respondTestSendResult(
+        req,
+        res,
+        { ok: false, message: "Escribe un mensaje para enviar." },
+        400,
+      );
+      return;
+    }
+
     const recipientMode =
       typeof req.body?.recipient_mode === "string"
         ? req.body.recipient_mode.trim()
         : "line";
+    const sendLineIndexRaw =
+      typeof req.body?.send_line_index === "string"
+        ? req.body.send_line_index.trim()
+        : "";
+    const sendLineIndex =
+      sendLineIndexRaw !== "" ? Number.parseInt(sendLineIndexRaw, 10) : NaN;
     const verifyId =
       recipientMode !== "custom" &&
       typeof req.body?.verify_id === "string"
@@ -159,16 +177,32 @@ export async function postAdminTestQaSend(
       recipientMode === "custom" && typeof req.body?.to === "string"
         ? req.body.to.trim()
         : "";
-    const resolved = resolveVerifyTestSend({
-      verifyId: verifyId || undefined,
-      to: customTo || undefined,
-      message: req.body?.message,
-    });
+    const resolved =
+      recipientMode === "custom"
+        ? resolveVerifyTestSend({
+            to: customTo || undefined,
+            message: messageRaw,
+            requireMessage: true,
+          })
+        : resolveVerifyTestSend({
+            verifyId: verifyId || undefined,
+            sendLineIndex: Number.isFinite(sendLineIndex)
+              ? sendLineIndex
+              : undefined,
+            message: messageRaw,
+            requireMessage: true,
+          });
     if (!resolved) {
       respondTestSendResult(
         req,
         res,
-        { ok: false, message: "Número de verificación no encontrado." },
+        {
+          ok: false,
+          message:
+            recipientMode === "custom"
+              ? "Indica un número destino válido."
+              : "Selecciona una línea de verificación registrada.",
+        },
         400,
       );
       return;

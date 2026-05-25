@@ -1,5 +1,6 @@
 import {
   findVerifyNumberById,
+  findVerifyNumberByIndex,
   getRegisteredVerifyNumbers,
   maskVerifyPhone,
   type VerifyNumberEntry,
@@ -216,9 +217,30 @@ export async function getSendControlPanelView(
 
 export function resolveVerifyTestSend(input: {
   verifyId?: string;
+  sendLineIndex?: number;
   to?: string;
   message?: string;
+  requireMessage?: boolean;
 }): { to: string; message: string; label: string } | null {
+  const message = input.message?.trim() ?? "";
+  if (input.requireMessage && !message) {
+    return null;
+  }
+
+  if (
+    input.sendLineIndex != null &&
+    Number.isFinite(input.sendLineIndex)
+  ) {
+    const byIndex = findVerifyNumberByIndex(input.sendLineIndex);
+    if (byIndex) {
+      return {
+        to: byIndex.phone,
+        message: message || buildDefaultVerifyMessage(byIndex.label),
+        label: byIndex.label,
+      };
+    }
+  }
+
   if (input.verifyId) {
     const entry = findVerifyNumberById(input.verifyId);
     if (!entry) {
@@ -226,15 +248,14 @@ export function resolveVerifyTestSend(input: {
     }
     return {
       to: entry.phone,
-      message:
-        input.message?.trim() || buildDefaultVerifyMessage(entry.label),
+      message: message || buildDefaultVerifyMessage(entry.label),
       label: entry.label,
     };
   }
   if (input.to?.trim()) {
     return {
       to: input.to.trim(),
-      message: input.message?.trim() || buildDefaultVerifyMessage(),
+      message: message || buildDefaultVerifyMessage(),
       label: "manual",
     };
   }

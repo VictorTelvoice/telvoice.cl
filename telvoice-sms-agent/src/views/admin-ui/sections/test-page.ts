@@ -164,10 +164,29 @@ function renderProviderRouteFields(
   </fieldset>`;
 }
 
+function indexOfLineWithLatestInbound(
+  verifyNumbers: SendControlPanelView["verifyNumbers"],
+  feeds: Record<string, TelsimInboundFeedItem[]>,
+): number {
+  let bestIdx = 0;
+  let bestTime = 0;
+  verifyNumbers.forEach((v, i) => {
+    const feed = feeds[v.entry.id] ?? [];
+    const last = feed[feed.length - 1];
+    if (last?.receivedAt) {
+      const t = new Date(last.receivedAt).getTime();
+      if (t >= bestTime) {
+        bestTime = t;
+        bestIdx = i;
+      }
+    }
+  });
+  return bestIdx;
+}
+
 function renderTestWorkspace(options: {
   panel: SendControlPanelView;
   canSend: boolean;
-  defaultVerifyMessage: string;
   initialFeeds: Record<string, TelsimInboundFeedItem[]>;
   providers: TestProviderOption[];
   routes: TestRouteOption[];
@@ -178,7 +197,6 @@ function renderTestWorkspace(options: {
   const {
     panel,
     canSend,
-    defaultVerifyMessage,
     initialFeeds,
     providers,
     routes,
@@ -196,14 +214,18 @@ function renderTestWorkspace(options: {
     </section>`;
   }
 
-  const first = panel.verifyNumbers[0]!;
+  const activeLineIndex = indexOfLineWithLatestInbound(
+    panel.verifyNumbers,
+    initialFeeds,
+  );
+  const activeLine = panel.verifyNumbers[activeLineIndex]!;
+  const activeFeed = initialFeeds[activeLine.entry.id] ?? [];
   const disabled = canSend ? "" : "disabled";
-  const firstFeed = initialFeeds[first.entry.id] ?? [];
 
   const lineOptions = panel.verifyNumbers
     .map(
       (v, i) =>
-        `<option value="${i}" data-verify-id="${escapeHtml(v.entry.id)}">${escapeHtml(formatVerifyLineDisplay(v.entry))}</option>`,
+        `<option value="${i}" data-verify-id="${escapeHtml(v.entry.id)}"${i === activeLineIndex ? " selected" : ""}>${escapeHtml(formatVerifyLineDisplay(v.entry))}</option>`,
     )
     .join("");
 
@@ -229,10 +251,10 @@ function renderTestWorkspace(options: {
               </label>
               <div class="form-group" id="tv-recipient-line-wrap">
                 <label for="tv-send-line-select">Número de la lista</label>
-                <select id="tv-send-line-select" class="tv-input-full" ${disabled} aria-label="Línea para envío">
+                <select id="tv-send-line-select" name="send_line_index" class="tv-input-full" ${disabled} aria-label="Línea para envío">
                   ${lineOptions}
                 </select>
-                <input type="hidden" name="verify_id" id="tv-telsim-verify-id" value="${escapeHtml(first.entry.id)}" />
+                <input type="hidden" name="verify_id" id="tv-telsim-verify-id" value="${escapeHtml(activeLine.entry.id)}" />
               </div>
               <div class="form-group" id="tv-recipient-custom-wrap" hidden>
                 <label for="tv-send-custom-to">Número Chile (569…)</label>
@@ -245,7 +267,7 @@ function renderTestWorkspace(options: {
             </div>
             <div class="form-group">
               <label for="tv-send-message">Mensaje</label>
-              <textarea id="tv-send-message" class="tv-input-full" name="message" rows="4" placeholder="Escribe el SMS de prueba…" required ${disabled}>${escapeHtml(defaultVerifyMessage)}</textarea>
+              <textarea id="tv-send-message" class="tv-input-full" name="message" rows="4" placeholder="Escribe el SMS de prueba…" required ${disabled}></textarea>
               <p class="field-hint"><span id="tv-send-chars">0</span> caracteres</p>
             </div>
             <button type="submit" class="btn btn-primary tv-test-send-submit" id="tv-test-send-btn" ${disabled}>
@@ -278,15 +300,15 @@ function renderTestWorkspace(options: {
             <select id="tv-telsim-line-select" class="tv-input-full" aria-label="Seleccionar línea telsim">
               ${lineOptions}
             </select>
-            <p class="field-hint" id="tv-telsim-line-hint">Al llegar un SMS a otra línea, la vista cambia automáticamente.</p>
+            <p class="field-hint" id="tv-telsim-line-hint">Muestra la línea que recibió el último SMS entrante.</p>
           </div>
           <div class="tv-telsim-panel__phone" id="tv-telsim-phone-wrap">
-            ${renderInboundPhone(formatVerifyLineDisplay(first.entry), firstFeed)}
+            ${renderInboundPhone(formatVerifyLineDisplay(activeLine.entry), activeFeed)}
           </div>
           <p class="tv-telsim-panel__status field-hint" id="tv-telsim-meta">
-            ${renderPanelMessageStatusBadge(first.lastStatus, "live_test")}
-            · ${escapeHtml(formatVerifyLastTest(first.lastTestAt))}${first.dlrReceived ? " · DLR OK" : ""}
-            · <span id="tv-telsim-inbound-count">${firstFeed.length}</span> entrante(s)
+            ${renderPanelMessageStatusBadge(activeLine.lastStatus, "live_test")}
+            · ${escapeHtml(formatVerifyLastTest(activeLine.lastTestAt))}${activeLine.dlrReceived ? " · DLR OK" : ""}
+            · <span id="tv-telsim-inbound-count">${activeFeed.length}</span> entrante(s)
           </p>
           ${renderWebhookBlock(panel)}
         </div>
@@ -305,7 +327,6 @@ export function renderAdminTestPage(options: {
 }): string {
   const panel = options.panel;
   const canSend = options.sendEnabled;
-  const defaultVerifyMsg = panel?.defaultVerifyMessage ?? "";
   const initialFeeds = options.lineFeeds ?? {};
   const providers = options.providers ?? [];
   const routes = options.routes ?? [];
@@ -349,6 +370,7 @@ export function renderAdminTestPage(options: {
             masked: v.maskedPhone,
             inboundMessages: feed,
             latestInboundId: latest?.id ?? null,
+            lastInboundAt: latest?.receivedAt ?? null,
             status: v.lastStatus,
             lastTestAt: v.lastTestAt,
             dlrReceived: v.dlrReceived,
@@ -365,7 +387,6 @@ export function renderAdminTestPage(options: {
     ? renderTestWorkspace({
         panel,
         canSend,
-        defaultVerifyMessage: defaultVerifyMsg,
         initialFeeds,
         providers,
         routes,
@@ -389,7 +410,6 @@ export function renderAdminTestPage(options: {
       var telsimLines = ${telsimVerifyDataJson};
       var testRoutes = ${routesJson};
       var testProviders = ${providersJson};
-      var defaultVerifyMsg = ${JSON.stringify(defaultVerifyMsg)};
 
       function statusBadgeHtml(status){
         var map = { delivered:'ok', sent:'ok', pending:'warn', queued:'warn', failed:'err' };
@@ -438,6 +458,29 @@ export function renderAdminTestPage(options: {
           '<div class="tv-hero-phone__app-sub" id="tv-telsim-feed-sub">'+esc(line.displayName || line.label)+'</div></div></div>'+
           '<div class="tv-hero-phone__messages tv-telsim-feed" id="tv-telsim-feed" role="log" aria-live="polite">'+renderFeedHtml(messages)+'</div></div></div>';
       }
+      function latestInboundTimestamp(line){
+        var msgs = line.inboundMessages || [];
+        if (!msgs.length) return 0;
+        return new Date(msgs[msgs.length - 1].receivedAt).getTime();
+      }
+      function indexOfLineWithLatestInbound(){
+        var bestIdx = 0;
+        var bestTs = 0;
+        telsimLines.forEach(function(line, i){
+          var ts = latestInboundTimestamp(line);
+          if (ts >= bestTs) { bestTs = ts; bestIdx = i; }
+        });
+        return bestIdx;
+      }
+      function selectLineWithLatestInbound(scroll){
+        if (!telsimSelect || !telsimLines.length) return false;
+        var bestIdx = indexOfLineWithLatestInbound();
+        var changed = String(telsimSelect.value) !== String(bestIdx);
+        if (changed) telsimSelect.value = String(bestIdx);
+        updateTelsimLine(scroll !== false);
+        syncSendLineToInbound();
+        return changed;
+      }
       function getLineBySelectIndex(selectEl){
         if(!selectEl||!telsimLines.length) return null;
         return telsimLines[Number(selectEl.value)]||telsimLines[0];
@@ -478,7 +521,7 @@ export function renderAdminTestPage(options: {
           if(feed) feed.scrollTop = feed.scrollHeight;
         }
       }
-      var defaultLineHint = 'Al llegar un SMS a otra línea, la vista cambia automáticamente.';
+      var defaultLineHint = 'Muestra la línea que recibió el último SMS entrante.';
       function flashLineHint(text){
         var hint = document.getElementById('tv-telsim-line-hint');
         if(!hint) return;
@@ -487,8 +530,7 @@ export function renderAdminTestPage(options: {
         setTimeout(function(){ hint.classList.remove('tv-telsim-line-hint--alert'); hint.textContent = defaultLineHint; }, 5000);
       }
       if(telsimSelect){
-        telsimSelect.addEventListener('change', function(){ updateTelsimLine(true); syncSendLineToInbound(); });
-        updateTelsimLine(true);
+        selectLineWithLatestInbound(true);
       }
       if(sendLineSelect) sendLineSelect.addEventListener('change', syncInboundToSendLine);
 
@@ -560,7 +602,7 @@ export function renderAdminTestPage(options: {
           .then(function(r){ return r.ok ? r.json() : null; })
           .then(function(data){
             if(!data||!data.lines) return;
-            var lineWithNew = null;
+            var anyNew = false;
             telsimLines.forEach(function(line){
               var upd = data.lines[line.id];
               if(!upd||!upd.inboundMessages) return;
@@ -568,19 +610,18 @@ export function renderAdminTestPage(options: {
               if(result.addedIds.length){
                 line.inboundMessages = result.merged;
                 line.ready = upd.ready;
-                lineWithNew = line;
+                anyNew = true;
               }
             });
-            if(lineWithNew && telsimSelect){
-              var idx = telsimLines.indexOf(lineWithNew);
-              if(String(telsimSelect.value)!==String(idx)){
-                telsimSelect.value = String(idx);
-                flashLineHint('Nuevo SMS en '+(lineWithNew.displayName || lineWithNew.label));
+            if(telsimSelect && anyNew){
+              var switched = selectLineWithLatestInbound(true);
+              var bestIdx = indexOfLineWithLatestInbound();
+              var bestLine = telsimLines[bestIdx];
+              if(switched && bestLine){
+                flashLineHint('Último SMS en '+(bestLine.displayName || bestLine.label));
               }
               var phoneWrap = document.getElementById('tv-telsim-phone-wrap');
               if(phoneWrap) phoneWrap.classList.add('tv-telsim-panel__phone--pulse');
-              updateTelsimLine(true);
-              syncSendLineToInbound();
             }
           }).catch(function(){});
       }

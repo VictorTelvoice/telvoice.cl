@@ -10,7 +10,13 @@ export type VerifyNumberEntry = {
   slotId: string | null;
 };
 
-function slugId(label: string, phone: string): string {
+function stableVerifyId(normalizedPhone: string): string {
+  const digits = normalizedDigits(normalizedPhone);
+  return digits ? `cl-${digits}` : "verify";
+}
+
+/** @deprecated Solo compatibilidad con slugs antiguos basados en etiqueta. */
+function legacySlugId(label: string, phone: string): string {
   const base = `${label}-${phone}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return base.slice(0, 48) || "verify";
 }
@@ -43,7 +49,7 @@ export function parseVerifyNumbersFromEnv(raw: string): VerifyNumberEntry[] {
         : "manual";
 
     entries.push({
-      id: slugId(label, validated.normalized),
+      id: stableVerifyId(validated.normalized),
       phone: validated.normalized,
       label,
       operator,
@@ -69,7 +75,34 @@ export function isRegisteredVerifyNumber(normalizedPhone: string): boolean {
 }
 
 export function findVerifyNumberById(id: string): VerifyNumberEntry | null {
-  return getRegisteredVerifyNumbers().find((e) => e.id === id) ?? null;
+  const trimmed = id.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const entries = getRegisteredVerifyNumbers();
+  const direct = entries.find((e) => e.id === trimmed);
+  if (direct) {
+    return direct;
+  }
+  if (trimmed.startsWith("cl-")) {
+    const digits = trimmed.slice(3);
+    return entries.find((e) => normalizedDigits(e.phone) === digits) ?? null;
+  }
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length >= 10) {
+    const tail = digits.slice(-11);
+    return entries.find((e) => normalizedDigits(e.phone) === tail) ?? null;
+  }
+  return (
+    entries.find((e) => legacySlugId(e.label, e.phone) === trimmed) ?? null
+  );
+}
+
+export function findVerifyNumberByIndex(index: number): VerifyNumberEntry | null {
+  if (!Number.isFinite(index) || index < 0) {
+    return null;
+  }
+  return getRegisteredVerifyNumbers()[Math.floor(index)] ?? null;
 }
 
 export function findVerifyNumberBySlotId(slotId: string): VerifyNumberEntry | null {
