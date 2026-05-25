@@ -222,7 +222,7 @@ export function renderAppSendSmsPage(
       {
         id: "scheduled",
         label: "Envío programado",
-        description: "Define fecha y hora de despacho.",
+        description: "CSV o listas con fecha y hora de despacho.",
         icon: "schedule",
       },
       {
@@ -372,13 +372,13 @@ export function renderAppSendSmsPage(
                 <input id="sender_id" class="tv-input-full" name="sender_id" value="TELVOICE" required maxlength="11" ${disabledAttr} />
               </div>
             </div>
-            <div data-tv-single-fields${activeMode !== "single" && activeMode !== "template" && activeMode !== "scheduled" ? " hidden" : ""}>
+            <div data-tv-single-fields${activeMode === "single" || activeMode === "template" ? "" : " hidden"}>
               <div class="form-group">
                 <label for="tv-send-to">Número destinatario</label>
                 <input class="tv-input-full" name="to" id="tv-send-to" placeholder="+56912345678" ${activeMode === "single" || activeMode === "template" ? "required" : ""} ${disabledAttr} />
               </div>
             </div>
-            <div data-tv-mass-fields${activeMode === "mass" ? "" : " hidden"}>
+            <div data-tv-mass-fields${activeMode === "mass" || activeMode === "scheduled" ? "" : " hidden"}>
               <div class="form-group">
                 <label for="contact_list">Lista de contactos</label>
                 <select id="contact_list" name="contact_list" class="tv-input-full" ${disabledAttr}>
@@ -422,11 +422,11 @@ export function renderAppSendSmsPage(
                   <input id="schedule_time" name="schedule_time" type="time" class="tv-input-full" ${disabledAttr} />
                 </div>
               </div>
-              <p class="field-hint">Hora de Chile (America/Santiago). El envío sale cuando llegue esa hora; no al pulsar el botón.</p>
+              <p class="field-hint">Hora de Chile (America/Santiago). Puedes programar un CSV masivo o una lista; el despacho será a esa hora para todos los destinatarios.</p>
             </div>
             <div class="form-group" data-tv-message-group>
               <label for="tv-sms-message">Mensaje SMS <span class="field-hint" id="tv-mass-msg-hint" style="font-weight:400"></span></label>
-              <textarea id="tv-sms-message" class="tv-input-full" name="message" rows="5"${activeMode === "mass" ? "" : " required"} placeholder="Escribe tu mensaje…" ${disabledAttr}></textarea>
+              <textarea id="tv-sms-message" class="tv-input-full" name="message" rows="5"${activeMode === "mass" || activeMode === "scheduled" ? "" : " required"} placeholder="Escribe tu mensaje…" ${disabledAttr}></textarea>
               <div class="tv-var-row">
                 <button type="button" class="tv-var-chip tv-template-btn" data-template="qa">QA pre-campaña</button>
                 <button type="button" class="tv-var-chip tv-template-btn" data-template="dlr">Test DLR</button>
@@ -640,13 +640,15 @@ export function renderAppSendSmsPage(
         if(!ta) return;
         var mode = getSendMode();
         var stats = countMassStats();
-        if(mode === 'mass'){
+        if(isBulkMode(mode)){
           if(stats.hasPerRowMessages && stats.valid > 0){
             ta.removeAttribute('required');
             if(massMsgHint) massMsgHint.textContent = '(opcional: el CSV ya incluye mensaje por fila)';
           } else {
             ta.setAttribute('required','');
-            if(massMsgHint) massMsgHint.textContent = '(mensaje común para todos los números)';
+            if(massMsgHint) massMsgHint.textContent = mode === 'scheduled'
+              ? '(mensaje común si el CSV solo trae números)'
+              : '(mensaje común para todos los números)';
           }
         } else {
           ta.setAttribute('required','');
@@ -657,10 +659,14 @@ export function renderAppSendSmsPage(
         var stats = syncBulkPayload();
         updateMessageRequired();
         if(massSummary){
+          var bulk = isBulkMode(getSendMode());
           if(!stats.total){
-            massSummary.textContent = 'Selecciona una lista o sube un CSV para previsualizar la campaña.';
+            massSummary.textContent = bulk && getSendMode() === 'scheduled'
+              ? 'Sube un CSV o elige una lista para programar el envío masivo.'
+              : 'Selecciona una lista o sube un CSV para previsualizar la campaña.';
           } else {
-            massSummary.textContent = stats.valid + ' listos · ' + stats.invalid + ' con error · ' + stats.totalSms + ' SMS estimados · ' + stats.total + ' filas';
+            var prefix = getSendMode() === 'scheduled' ? 'A programar: ' : '';
+            massSummary.textContent = prefix + stats.valid + ' listos · ' + stats.invalid + ' con error · ' + stats.totalSms + ' SMS estimados · ' + stats.total + ' filas';
           }
         }
         if(massTableWrap && massPreviewBody){
@@ -692,16 +698,14 @@ export function renderAppSendSmsPage(
       function getSendMode(){
         return sendModeInput ? sendModeInput.value : 'single';
       }
+      function isBulkMode(mode){
+        return mode === 'mass' || mode === 'scheduled';
+      }
       function isRecipientAllowed(){
         var mode = getSendMode();
-        if(mode === 'mass'){
+        if(isBulkMode(mode)){
           var ms = countMassStats();
           return ms.valid > 0 && (ms.hasPerRowMessages || (ta && (ta.value || '').trim()));
-        }
-        if(mode === 'scheduled'){
-          var schedTo = toInput && (toInput.value || '').trim();
-          if(!schedTo) return false;
-          if(!numbersRestricted && allowedLiveNumbers.length === 0) return isValidClMobile(normalizePhoneDigits(schedTo));
         }
         if(!numbersRestricted && allowedLiveNumbers.length === 0) return true;
         if(!toInput) return true;
@@ -731,17 +735,17 @@ export function renderAppSendSmsPage(
         var mass = document.querySelector('[data-tv-mass-fields]');
         var tpl = document.querySelector('[data-tv-template-fields]');
         var sched = document.querySelector('[data-tv-schedule-fields]');
-        if(single) single.hidden = mode !== 'single' && mode !== 'template' && mode !== 'scheduled';
-        if(mass) mass.hidden = mode !== 'mass';
+        if(single) single.hidden = mode !== 'single' && mode !== 'template';
+        if(mass) mass.hidden = !isBulkMode(mode);
         if(tpl) tpl.hidden = mode !== 'template';
         if(sched) sched.hidden = mode !== 'scheduled';
         if(toInput){
-          toInput.required = mode === 'single' || mode === 'template' || mode === 'scheduled';
-          if(mode === 'mass') toInput.removeAttribute('required');
+          toInput.required = mode === 'single' || mode === 'template';
+          if(isBulkMode(mode)) toInput.removeAttribute('required');
         }
         updateSubmitLabel(mode);
         updateMessageRequired();
-        if(mode === 'mass') renderMassPreview();
+        if(isBulkMode(mode)) renderMassPreview();
         refresh();
       }
       function setChip(label, value){
@@ -791,16 +795,14 @@ export function renderAppSendSmsPage(
         var t = ta.value || '';
         var c = calc(t);
         var massStats = null;
-        if(mode === 'mass'){
+        if(isBulkMode(mode)){
           massStats = renderMassPreview();
           setChip('Caracteres', String(massStats.total) + ' filas');
           setChip('Segmentos', String(massStats.totalSms) + ' SMS');
           setChip('Costo est.', String(massStats.valid) + ' válidos');
           setChip('Codificación', String(massStats.invalid) + ' err.');
         } else {
-          var costEst = mode === 'scheduled'
-            ? (c.cost * Math.max(1, toInput && toInput.value.trim() ? 1 : 0)) + ' SMS'
-            : c.cost + ' SMS';
+          var costEst = c.cost + ' SMS';
           setChip('Caracteres', String(c.chars));
           setChip('Segmentos', String(c.seg));
           setChip('Costo est.', costEst);
@@ -808,26 +810,26 @@ export function renderAppSendSmsPage(
         }
         var bubble = document.querySelector('.tv-phone__bubble');
         var phoneHeader = document.querySelector('.tv-phone__header');
-        if(mode !== 'mass' && bubble) bubble.textContent = t || 'Hola, tu mensaje aparecerá aquí.';
+        if(!isBulkMode(mode) && bubble) bubble.textContent = t || 'Hola, tu mensaje aparecerá aquí.';
         if(phoneHeader && senderInput) phoneHeader.textContent = senderInput.value || 'TELVOICE';
         var overSeg = false;
-        if(mode === 'mass' && massStats){
+        if(isBulkMode(mode) && massStats){
           massStats.rows.forEach(function(r){ if(r.ok && r.seg > maxLiveSegments) overSeg = true; });
         } else if(mode !== 'scheduled') {
           overSeg = c.seg > maxLiveSegments;
         }
         var numOk = isRecipientAllowed();
         var schedOk = mode !== 'scheduled' || (scheduleDate && scheduleDate.value && scheduleTime && scheduleTime.value);
-        var massOk = mode !== 'mass' || (massStats && massStats.valid > 0 && (massStats.hasPerRowMessages || (ta && (ta.value || '').trim())));
+        var bulkOk = !isBulkMode(mode) || (massStats && massStats.valid > 0 && (massStats.hasPerRowMessages || (ta && (ta.value || '').trim())));
         var segWarn = document.getElementById('tv-live-segment-warn');
         var numWarn = document.getElementById('tv-live-number-warn');
         var massWarn = document.getElementById('tv-mass-warn');
         var submitBtn = document.getElementById('tv-send-submit');
         var headerBtn = document.getElementById('tv-header-send-btn');
         if(segWarn) segWarn.hidden = !overSeg;
-        if(numWarn) numWarn.hidden = mode === 'mass' || numOk || (!numbersRestricted && allowedLiveNumbers.length === 0);
-        if(massWarn) massWarn.hidden = massOk || mode !== 'mass';
-        var disabled = overSeg || !numOk || !schedOk || !massOk;
+        if(numWarn) numWarn.hidden = isBulkMode(mode) || numOk || (!numbersRestricted && allowedLiveNumbers.length === 0);
+        if(massWarn) massWarn.hidden = bulkOk || !isBulkMode(mode);
+        var disabled = overSeg || !numOk || !schedOk || !bulkOk;
         if(submitBtn && canSend) submitBtn.disabled = disabled;
         if(headerBtn && canSend) headerBtn.disabled = disabled;
       }
@@ -921,7 +923,7 @@ export function renderAppSendSmsPage(
       var sendForm = document.getElementById('tv-app-send-form');
       if(sendForm){
         sendForm.addEventListener('submit', function(){
-          if(getSendMode() === 'mass') renderMassPreview();
+          if(isBulkMode(getSendMode())) renderMassPreview();
         });
       }
       if(templateSelect){

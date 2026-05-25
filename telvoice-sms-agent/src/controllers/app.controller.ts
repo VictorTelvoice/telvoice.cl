@@ -138,9 +138,9 @@ async function trySendProductionCampaignFromForm(
   const massPayload = collectMassCampaignRows(req);
   if (massPayload.rows.length === 0) {
     throw new AppError(
-      sendMode === "mass"
-        ? "Agrega al menos un destinatario válido (lista o CSV)."
-        : "Indica un número destinatario válido.",
+      sendMode === "scheduled"
+        ? "Agrega destinatarios con lista, CSV o archivo con columnas número y mensaje."
+        : "Agrega al menos un destinatario válido (lista o CSV).",
       400,
     );
   }
