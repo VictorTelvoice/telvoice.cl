@@ -25,9 +25,12 @@ import { resolveRouteForMessage } from "./smsRoutingService.js";
 import { enqueueMessage } from "./smsQueueService.js";
 import { findCompanyById } from "./companyService.js";
 import {
+  buildMassCampaignFingerprint,
   findCampaignByIdempotencyKey,
+  findRecentCampaignByMassFingerprint,
   isPostgresUniqueViolation,
   panelCampaignSendResultFromRow,
+  pinIdempotencyCampaignId,
 } from "./smsSendIdempotencyService.js";
 
 export type MassCampaignSendRow = {
@@ -369,6 +372,21 @@ export async function sendPanelCampaign(
   const { items, invalid, rawCount, campaignMessage, personalized } =
     resolveCampaignItems(input);
 
+  const fingerprint = buildMassCampaignFingerprint(
+    input.companyId,
+    items.map((i) => ({ phone: i.phone, message: i.messageText })),
+    campaignMessage,
+    input.mode,
+    input.scheduledAt,
+  );
+  const recentDuplicate = await findRecentCampaignByMassFingerprint(
+    input.companyId,
+    fingerprint,
+  );
+  if (recentDuplicate) {
+    return panelCampaignSendResultFromRow(recentDuplicate, input.companyId);
+  }
+
   const totalCost = items.reduce((sum, i) => sum + i.segmentInfo.costSms, 0);
 
   const wallet = await getOrCreateCompanyWallet(input.companyId);
@@ -395,6 +413,7 @@ export async function sendPanelCampaign(
     send_mode: input.mode,
     production: true,
     personalized_messages: personalized,
+    mass_fingerprint: fingerprint,
   };
   if (input.idempotencyKey?.trim()) {
     campaignMetadata.idempotency_key = input.idempotencyKey.trim();
@@ -432,6 +451,15 @@ export async function sendPanelCampaign(
       }
     }
     throw err;
+  }
+
+  if (input.idempotencyKey?.trim()) {
+    await pinIdempotencyCampaignId({
+      companyId: input.companyId,
+      key: input.idempotencyKey.trim(),
+      campaignId: campaign.id,
+      sendMode: input.mode,
+    });
   }
 
   let sent = 0;

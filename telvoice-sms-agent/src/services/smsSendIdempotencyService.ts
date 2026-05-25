@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { getSupabase } from "../database/supabaseClient.js";
 import type {
   MockSmsSendResult,
@@ -14,6 +14,10 @@ import { listPanelMessagesByCampaign } from "./panelSmsMessageService.js";
 
 const IDEMPOTENCY_TTL_HOURS = 24;
 const PROCESSING_STALE_MS = 15 * 60 * 1000;
+/** Evita reenvío si el usuario recarga la página y obtiene otra clave. */
+const MASS_CAMPAIGN_DEDUP_MINUTES = 30;
+
+export type MassFingerprintRow = { phone: string; message: string };
 
 export type SendSmsRedirectParams = {
   ok: string;
@@ -133,14 +137,22 @@ export async function beginSendSmsIdempotency(
     if (!isProcessingStale(row.updated_at)) {
       const redirect = rowToRedirect(row);
       if (redirect) return { action: "replay", redirect };
+      if (row.campaign_id) {
+        return {
+          action: "replay",
+          redirect: {
+            ok: "Este envío ya está en curso o finalizó. Revisa el resultado abajo.",
+            campaign_id: row.campaign_id,
+            mode: row.send_mode ?? undefined,
+          },
+        };
+      }
       return { action: "busy" };
     }
-    await getSupabase()
-      .from("sms_send_idempotency")
-      .update({ status: "pending" })
-      .eq("id", key)
-      .eq("company_id", companyId)
-      .eq("status", "processing");
+    throw new AppError(
+      "El envío anterior quedó en proceso demasiado tiempo. Recarga Enviar SMS y, si hace falta, revisa Campañas antes de reintentar.",
+      409,
+    );
   }
 
   const { data: claimed, error } = await getSupabase()
@@ -156,7 +168,10 @@ export async function beginSendSmsIdempotency(
 
   if (error) {
     if (isMissingTableError(error)) {
-      return { action: "proceed" };
+      throw new AppError(
+        "Idempotencia de envíos no disponible. Aplica la migración 020 en Supabase.",
+        503,
+      );
     }
     wrapSupabaseError(error, "beginSendSmsIdempotency");
   }
@@ -221,6 +236,75 @@ export async function failSendSmsIdempotency(input: {
 
   if (error && !isMissingTableError(error)) {
     wrapSupabaseError(error, "failSendSmsIdempotency");
+  }
+}
+
+export function buildMassCampaignFingerprint(
+  companyId: string,
+  rows: MassFingerprintRow[],
+  defaultMessage: string,
+  mode: string,
+  scheduledAt?: string | null,
+): string {
+  const lines = rows
+    .map((r) => {
+      const phone = r.phone.replace(/\s+/g, "").trim();
+      const msg = (r.message || defaultMessage).trim();
+      return `${phone}|${msg}`;
+    })
+    .sort()
+    .join("\n");
+  const schedule = scheduledAt?.trim() ?? "";
+  return createHash("sha256")
+    .update(`${companyId}\n${mode}\n${schedule}\n${lines}`)
+    .digest("hex")
+    .slice(0, 40);
+}
+
+export async function findRecentCampaignByMassFingerprint(
+  companyId: string,
+  fingerprint: string,
+): Promise<SmsCampaignRow | null> {
+  const since = new Date(
+    Date.now() - MASS_CAMPAIGN_DEDUP_MINUTES * 60 * 1000,
+  ).toISOString();
+
+  const { data, error } = await getSupabase()
+    .from("sms_campaigns")
+    .select("*")
+    .eq("company_id", companyId)
+    .filter("metadata->>mass_fingerprint", "eq", fingerprint)
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error)) return null;
+    wrapSupabaseError(error, "findRecentCampaignByMassFingerprint");
+  }
+
+  return (data as SmsCampaignRow | null) ?? null;
+}
+
+export async function pinIdempotencyCampaignId(input: {
+  companyId: string;
+  key: string;
+  campaignId: string;
+  sendMode?: string;
+}): Promise<void> {
+  const key = validateUuidParam(input.key.trim(), "idempotency_key");
+  const { error } = await getSupabase()
+    .from("sms_send_idempotency")
+    .update({
+      campaign_id: input.campaignId,
+      send_mode: input.sendMode ?? null,
+    })
+    .eq("id", key)
+    .eq("company_id", input.companyId);
+
+  if (error && !isMissingTableError(error)) {
+    wrapSupabaseError(error, "pinIdempotencyCampaignId");
   }
 }
 
