@@ -369,7 +369,7 @@ export function renderAppSendSmsPage(
                   <input id="schedule_time" name="schedule_time" type="time" class="tv-input-full" ${disabledAttr} />
                 </div>
               </div>
-              <p class="field-hint">El despacho se activará automáticamente en la fecha indicada (zona Chile).</p>
+              <p class="field-hint">Hora de Chile (America/Santiago). El envío sale cuando llegue esa hora; no al pulsar el botón.</p>
             </div>
             <div class="form-group">
               <label for="tv-sms-message">Mensaje SMS</label>

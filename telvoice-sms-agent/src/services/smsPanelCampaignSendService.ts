@@ -24,7 +24,6 @@ import { recordTpsSend } from "./smsTpsLimiterService.js";
 import { resolveRouteForMessage } from "./smsRoutingService.js";
 import { enqueueMessage } from "./smsQueueService.js";
 import { findCompanyById } from "./companyService.js";
-import { processQueueTick } from "./smsDispatchWorkerService.js";
 
 export type SendPanelCampaignInput = {
   companyId: string;
@@ -323,13 +322,8 @@ export async function sendPanelCampaign(
     );
   }
 
-  const scheduleMs = input.scheduledAt
-    ? new Date(input.scheduledAt).getTime()
-    : 0;
   const isScheduled =
-    input.mode === "scheduled" &&
-    scheduleMs > 0 &&
-    scheduleMs > Date.now();
+    input.mode === "scheduled" && Boolean(input.scheduledAt?.trim());
 
   const campaign = await createSmsCampaign({
     companyId: input.companyId,
@@ -373,10 +367,6 @@ export async function sendPanelCampaign(
       else failed += 1;
     }
 
-    const tick = await processQueueTick(Math.min(phones.length, 20));
-    sent += tick.sent;
-    failed += tick.failed;
-
     await updateSmsCampaign(campaign.id, {
       status: queued > 0 ? "processing" : "failed",
       real_sms_cost: smsConsumed,
@@ -385,7 +375,7 @@ export async function sendPanelCampaign(
         send_mode: input.mode,
         production: true,
         queued,
-        dispatch_tick: tick,
+        awaiting_scheduler: true,
       },
     });
   } else {

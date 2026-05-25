@@ -57,6 +57,12 @@ import {
 } from "../services/smsSendControlPanelService.js";
 import { sendPanelSms } from "../services/smsSendService.js";
 import { AppError } from "../utils/errors.js";
+import {
+  APP_SCHEDULE_TIMEZONE,
+  buildScheduledIsoInTimeZone,
+  formatScheduleInTimeZone,
+  isScheduleAtLeastMinutesAhead,
+} from "../utils/scheduleTime.js";
 
 type AppSendMode = "single" | "mass" | "scheduled" | "template";
 
@@ -73,22 +79,8 @@ function resolveMockListNumbers(listId: string): string[] {
   return list ? [...list.sampleNumbers] : [];
 }
 
-function buildScheduledIso(date: string, time: string): string | null {
-  if (!date.trim() || !time.trim()) return null;
-  const d = new Date(`${date}T${time}:00`);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toISOString();
-}
-
 function formatScheduleCl(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString("es-CL", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
-  } catch {
-    return iso;
-  }
+  return formatScheduleInTimeZone(iso, APP_SCHEDULE_TIMEZONE);
 }
 
 function collectRecipientsFromSendForm(req: Request): string[] {
@@ -136,12 +128,22 @@ async function trySendProductionCampaignFromForm(
 
   let scheduledAt: string | null = null;
   if (sendMode === "scheduled") {
-    scheduledAt = buildScheduledIso(
+    scheduledAt = buildScheduledIsoInTimeZone(
       String(req.body?.schedule_date ?? ""),
       String(req.body?.schedule_time ?? ""),
+      APP_SCHEDULE_TIMEZONE,
     );
     if (!scheduledAt) {
-      throw new AppError("Indica una fecha y hora válidas.", 400);
+      throw new AppError(
+        "Indica una fecha y hora válidas (hora Chile).",
+        400,
+      );
+    }
+    if (!isScheduleAtLeastMinutesAhead(scheduledAt, 1)) {
+      throw new AppError(
+        "La fecha programada debe ser al menos 1 minuto en el futuro (hora de Chile).",
+        400,
+      );
     }
   }
 
