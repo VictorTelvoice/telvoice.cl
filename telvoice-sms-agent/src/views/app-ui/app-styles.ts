@@ -181,7 +181,50 @@ export function getAppPanelStyles(): string {
       width: 100%;
       display: flex;
       justify-content: center;
-      padding: 0.5rem 0;
+      padding: 0.25rem 0;
+    }
+    /* Vista previa Enviar SMS: ~30 % más compacto que el hero del landing */
+    .tv-send-preview-phone .tv-hero-phone {
+      width: min(182px, 100%);
+      height: 336px;
+      border-radius: 28px;
+      border-width: 7px;
+      box-shadow: 0 14px 35px -10px rgba(15, 23, 42, 0.3);
+    }
+    .tv-send-preview-phone .tv-hero-phone__notch {
+      height: 15px;
+      border-radius: 0 0 10px 10px;
+    }
+    .tv-send-preview-phone .tv-hero-phone__screen {
+      padding: 1.75rem 0.7rem 0.7rem;
+    }
+    .tv-send-preview-phone .tv-hero-phone__app-head {
+      gap: 0.45rem;
+      padding-bottom: 0.5rem;
+      margin-bottom: 0.35rem;
+    }
+    .tv-send-preview-phone .tv-hero-phone__avatar {
+      width: 25px;
+      height: 25px;
+      border-radius: 7px;
+      font-size: 0.66rem;
+    }
+    .tv-send-preview-phone .tv-hero-phone__app-title {
+      font-size: 0.58rem;
+    }
+    .tv-send-preview-phone .tv-hero-phone__app-sub {
+      font-size: 0.48rem;
+    }
+    .tv-send-preview-phone .tv-hero-phone__messages {
+      gap: 0.35rem;
+    }
+    .tv-send-preview-phone .tv-hero-phone__bubble {
+      padding: 0.45rem 0.53rem;
+      font-size: 0.53rem;
+      border-radius: 11px;
+    }
+    .tv-send-preview-phone .tv-hero-phone__bubble--in {
+      border-radius: 11px 11px 11px 3px;
     }
     .tv-hero-phone {
       position: relative;
