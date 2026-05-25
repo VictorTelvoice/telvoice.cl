@@ -4,7 +4,6 @@ import type {
 } from "../../types/sms-panel.js";
 import type { SmsCampaignRow } from "../../types/sms-panel.js";
 import type { PanelSmsMessageRow } from "../../types/sms-panel.js";
-import type { ClientSmsReportData } from "../../services/smsPanelReportsService.js";
 import type { LiveTestSendPageStatus } from "../../services/smsLiveTestLimiterService.js";
 import { isDailySendLimitEnforced } from "../../services/smsLiveTestLimiterService.js";
 import type { SendControlPanelView } from "../../services/smsSendControlPanelService.js";
@@ -28,7 +27,6 @@ import {
   renderInboxTableRows,
   renderPanelMessageStatusBadge,
 } from "./app-sms-ui.js";
-import { formatDate } from "../../utils/html.js";
 import {
   APP_SCHEDULE_TIMEZONE,
   formatScheduleInTimeZone,
@@ -831,58 +829,4 @@ export function renderAppCampaignsPage(
       </table>
     </div>`;
   return wrapAppPage(ctx, "campaigns", "Campañas", body);
-}
-
-export function renderAppReportsPage(
-  ctx: AppPageContext,
-  report: ClientSmsReportData,
-): string {
-  const dailyRows = report.dailyConsumption.length
-    ? report.dailyConsumption
-        .map(
-          (d) => `<tr><td>${escapeHtml(d.day)}</td><td>${d.sms}</td></tr>`,
-        )
-        .join("")
-    : `<tr><td colspan="2">Sin consumo registrado aún.</td></tr>`;
-
-  const msgRows = report.recentMessages.length
-    ? report.recentMessages
-        .map(
-          (m) => `<tr>
-        <td>${formatDate(m.created_at)}</td>
-        <td><code>${escapeHtml(m.recipient_number)}</code></td>
-        <td>${m.cost_sms}</td>
-        <td>${renderPanelMessageStatusBadge(m.status, m.mode)}</td>
-      </tr>`,
-        )
-        .join("")
-    : `<tr><td colspan="4">Sin mensajes.</td></tr>`;
-
-  const body = `
-    ${renderPageHeader({
-      title: "Reportes",
-      subtitle: "Métricas desde mensajes y movimientos reales.",
-    })}
-    <div class="tv-kpi-grid" style="margin-bottom:1rem">
-      <article class="tv-kpi"><span class="tv-kpi__label">Mensajes enviados</span><span class="tv-kpi__value">${report.messagesSent}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Entregados</span><span class="tv-kpi__value">${report.deliveredCount}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Pendientes</span><span class="tv-kpi__value">${report.pendingCount}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Fallidos</span><span class="tv-kpi__value">${report.failedCount}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">SMS consumidos</span><span class="tv-kpi__value">${report.smsConsumed}</span></article>
-    </div>
-    <div class="tv-dash-grid tv-dash-grid--2">
-      <section class="tv-panel">
-        <h2 class="tv-panel__title">Consumo por día</h2>
-        <div class="table-wrap tv-panel__body" style="padding:0">
-          <table class="tv-table"><thead><tr><th>Día</th><th>SMS</th></tr></thead><tbody>${dailyRows}</tbody></table>
-        </div>
-      </section>
-      <section class="tv-panel">
-        <h2 class="tv-panel__title">Últimos mensajes</h2>
-        <div class="table-wrap tv-panel__body" style="padding:0">
-          <table class="tv-table"><thead><tr><th>Fecha</th><th>Destino</th><th>SMS</th><th>Estado</th></tr></thead><tbody>${msgRows}</tbody></table>
-        </div>
-      </section>
-    </div>`;
-  return wrapAppPage(ctx, "reports", "Reportes", body);
 }

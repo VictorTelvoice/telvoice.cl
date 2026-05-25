@@ -28,8 +28,8 @@ function comingSoon(
 export {
   renderAppCampaignsPage,
   renderAppInboxPage,
-  renderAppReportsPage,
 } from "./app-sms-pages.js";
+export { renderAppReportsPage } from "./app-reports-page.js";
 
 export function renderAppContactsPage(ctx: AppPageContext): string {
   return comingSoon(ctx, "contacts", "Contactos", "Tus listas y contactos.", "contacts", [

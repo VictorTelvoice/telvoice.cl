@@ -37,20 +37,30 @@ function renderDashBlockHead(
   </div>`;
 }
 
-function renderDashActionBtn(options: {
+function renderDashQuickActionsHead(): string {
+  return `<header class="tv-dash-quick-actions__head">
+    <h2 class="tv-dash-quick-actions__title">Acciones rápidas</h2>
+    <p class="tv-dash-quick-actions__sub">Accede rápidamente a las funciones más utilizadas de tu cuenta.</p>
+  </header>`;
+}
+
+function renderDashQuickCard(options: {
   href: string;
   label: string;
   description: string;
   icon: string;
-  variant?: "primary" | "default";
+  variant?: "featured" | "default";
 }): string {
   const variant = options.variant ?? "default";
-  return `<a href="${escapeHtml(options.href)}" class="tv-dash-action-btn tv-dash-action-btn--${variant}">
-    <span class="tv-dash-action-btn__icon" aria-hidden="true">
+  return `<a href="${escapeHtml(options.href)}" class="tv-dash-quick-card tv-dash-quick-card--${variant}">
+    <span class="tv-dash-quick-card__icon" aria-hidden="true">
       <span class="material-symbols-outlined">${escapeHtml(options.icon)}</span>
     </span>
-    <span class="tv-dash-action-btn__label">${escapeHtml(options.label)}</span>
-    <span class="tv-dash-action-btn__desc">${escapeHtml(options.description)}</span>
+    <span class="tv-dash-quick-card__body">
+      <span class="tv-dash-quick-card__label">${escapeHtml(options.label)}</span>
+      <span class="tv-dash-quick-card__desc">${escapeHtml(options.description)}</span>
+    </span>
+    <span class="tv-dash-quick-card__arrow material-symbols-outlined" aria-hidden="true">chevron_right</span>
   </a>`;
 }
 
@@ -143,44 +153,51 @@ export function renderAppDashboardPage(
         variant: "primary",
       })}
     </div>
-    <div class="tv-dash-block">
-      ${renderDashBlockHead("Acciones rápidas")}
-      <section class="tv-panel tv-dash-actions-panel">
-        <div class="tv-dash-action-btns">
-          ${renderDashActionBtn({
+    <section class="tv-dash-quick-actions">
+      ${renderDashQuickActionsHead()}
+      <div class="tv-panel tv-dash-quick-actions__panel">
+        <div class="tv-dash-quick-actions__grid">
+          ${renderDashQuickCard({
             href: "/app/buy-sms",
             label: "Comprar SMS",
-            description: "Recargar saldo",
+            description: "Recarga saldo o adquiere nuevas bolsas",
             icon: "shopping_cart",
-            variant: "primary",
+            variant: "featured",
           })}
-          ${renderDashActionBtn({
+          ${renderDashQuickCard({
             href: "/app/send-sms",
             label: "Enviar SMS",
-            description: "Individual o campaña",
+            description: "Envía mensajes individuales o campañas",
             icon: "send",
+            variant: "featured",
           })}
-          ${renderDashActionBtn({
+          ${renderDashQuickCard({
             href: "/app/reports",
-            label: "Ver reportes",
-            description: "Métricas de envío",
+            label: "Reportes",
+            description: "Revisa métricas y rendimiento",
             icon: "monitoring",
           })}
-          ${renderDashActionBtn({
+          ${renderDashQuickCard({
+            href: "/app/wallet",
+            label: "Mi saldo",
+            description: "Consulta movimientos y balance",
+            icon: "account_balance_wallet",
+          })}
+          ${renderDashQuickCard({
             href: "/app/support",
             label: "Soporte",
-            description: "Ayuda y tickets",
+            description: "Solicita ayuda y seguimiento",
             icon: "support_agent",
           })}
-          ${renderDashActionBtn({
+          ${renderDashQuickCard({
             href: "/app/api",
-            label: "Solicitar API",
-            description: "Integración REST",
+            label: "API",
+            description: "Gestiona integración REST",
             icon: "api",
           })}
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
     <div class="tv-dash-grid tv-dash-grid--2 tv-client-dash-tables">
       <div class="tv-dash-block">
         ${renderDashBlockHead("Últimas órdenes", {

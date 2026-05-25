@@ -27,7 +27,6 @@ import {
 import {
   renderAppCampaignsPage,
   renderAppInboxPage,
-  renderAppReportsPage,
   renderAppSendSmsPage,
 } from "../views/app-ui/app-sms-pages.js";
 import {
@@ -60,7 +59,12 @@ import {
 import { parseMassCampaignRowsJson } from "../utils/csvMassCampaign.js";
 import { MOCK_CONTACT_LISTS } from "../views/admin-ui/mock-data-stage3.js";
 import { listPanelMessagesByCompany } from "../services/panelSmsMessageService.js";
-import { getClientSmsReportData } from "../services/smsPanelReportsService.js";
+import {
+  parseDlrReportFilters,
+  queryDlrReport,
+  dlrReportRowsToCsv,
+} from "../services/smsDlrReportService.js";
+import { renderAppReportsPage } from "../views/app-ui/app-reports-page.js";
 import { getLiveTestSendPageStatus } from "../services/smsLiveTestLimiterService.js";
 import { canCompanyUseLiveTestUi } from "../services/smsProviderStatusService.js";
 import {
@@ -706,9 +710,50 @@ export async function getAppReports(
   next: NextFunction,
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
-    const report = await getClientSmsReportData(ctx.company.id);
-    return renderAppReportsPage(ctx, report);
+    const filters = parseDlrReportFilters(
+      req.query as Record<string, string | string[] | undefined>,
+    );
+    const result = await queryDlrReport(
+      ctx.company.id,
+      ctx.company.name,
+      filters,
+    );
+    return renderAppReportsPage(ctx, result, filters);
   });
+}
+
+export async function getAppReportsExportCsv(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await buildAppContext(req);
+    if (!ctx) {
+      res.status(401).send("No autorizado");
+      return;
+    }
+    const filters = parseDlrReportFilters(
+      req.query as Record<string, string | string[] | undefined>,
+    );
+    filters.page = 1;
+    filters.pageSize = 5000;
+    const result = await queryDlrReport(
+      ctx.company.id,
+      ctx.company.name,
+      filters,
+    );
+    const csv = dlrReportRowsToCsv(result.rows);
+    const stamp = new Date().toISOString().slice(0, 10);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="dlr-report-${stamp}.csv"`,
+    );
+    res.send(`\uFEFF${csv}`);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Error al exportar";
+    res.status(500).send(msg);
+  }
 }
 
 export async function getAppInvoices(

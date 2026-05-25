@@ -10,6 +10,7 @@ import {
   getAppOrderDetail,
   getAppOrders,
   getAppReports,
+  getAppReportsExportCsv,
   getAppRoot,
   getAppSendSms,
   postAppSendSms,
@@ -68,6 +69,7 @@ appRouter.get("/inbox", requireClientPanelPage, getAppInbox);
 appRouter.get("/contacts", requireClientPanelPage, getAppContacts);
 appRouter.get("/templates", requireClientPanelPage, getAppTemplates);
 appRouter.get("/reports", requireClientPanelPage, getAppReports);
+appRouter.get("/reports/export.csv", requireClientPanelPage, getAppReportsExportCsv);
 appRouter.get("/invoices", requireClientPanelPage, getAppInvoices);
 appRouter.get("/api", requireClientPanelPage, getAppApi);
 appRouter.get("/support", requireClientPanelPage, getAppSupport);
