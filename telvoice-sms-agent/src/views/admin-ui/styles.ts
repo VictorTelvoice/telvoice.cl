@@ -1203,6 +1203,94 @@ export function getAdminStyles(): string {
       font-size: 0.85rem;
     }
     .tv-app-placeholder__meta { font-size: 0.82rem; color: var(--tv-muted); margin-bottom: 0.75rem; }
+    .tv-test-layout {
+      display: grid;
+      grid-template-columns: 1fr minmax(280px, 360px);
+      gap: 1.25rem;
+      align-items: start;
+    }
+    @media (max-width: 960px) {
+      .tv-test-layout { grid-template-columns: 1fr; }
+    }
+    .tv-checklist {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+    .tv-checklist__item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      font-size: 0.88rem;
+    }
+    .tv-checklist__icon { font-size: 1.15rem; flex-shrink: 0; }
+    .tv-checklist__item--ok .tv-checklist__icon { color: #059669; }
+    .tv-checklist__item--fail .tv-checklist__icon { color: #dc2626; }
+    .tv-checklist__hint {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--tv-muted);
+      margin-top: 0.1rem;
+      word-break: break-all;
+    }
+    .tv-precampaign-banner--ok {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+      padding: 0.85rem 1rem;
+      border-radius: 10px;
+    }
+    .tv-telsim-panel__body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .tv-telsim-panel__select { width: 100%; align-self: stretch; }
+    .tv-telsim-panel__phone {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 0.25rem 0;
+      border-radius: 12px;
+      transition: box-shadow 0.2s ease;
+    }
+    .tv-telsim-panel__phone--ready { box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.25); }
+    .tv-telsim-panel__phone--pending { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3); }
+    .tv-telsim-panel__status {
+      margin: 0;
+      text-align: center;
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .tv-telsim-panel__form {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+    .tv-telsim-panel__btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .tv-telsim-webhook { margin-bottom: 0.75rem; }
+    .tv-copy-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: stretch;
+    }
+    .tv-copy-row .tv-input-full {
+      flex: 1;
+      min-width: 0;
+      font-size: 0.8125rem;
+    }
     ${getOrderUiSharedStyles()}
   `;
 }

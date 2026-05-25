@@ -7,7 +7,6 @@ import type { PanelSmsMessageRow } from "../../types/sms-panel.js";
 import type { ClientSmsReportData } from "../../services/smsPanelReportsService.js";
 import type { LiveTestSendPageStatus } from "../../services/smsLiveTestLimiterService.js";
 import type { SendControlPanelView } from "../../services/smsSendControlPanelService.js";
-import { formatVerifyLastTest } from "../../services/smsSendControlPanelService.js";
 import { escapeHtml } from "../../utils/html.js";
 import {
   MOCK_CONTACT_LISTS,
@@ -15,10 +14,8 @@ import {
 } from "../admin-ui/mock-data-stage3.js";
 import {
   renderBtn,
-  renderHeroPhonePreview,
   renderMobilePreview,
   renderModeCards,
-  renderNotice,
   renderPageHeader,
   renderPanel,
   renderStatChip,
@@ -75,99 +72,7 @@ function renderChecklistItem(ok: boolean, label: string, hint?: string): string 
   </li>`;
 }
 
-function renderTelsimVerifyPanel(
-  panel: SendControlPanelView,
-  canSend: boolean,
-  defaultVerifyMessage: string,
-  idempotencyKey?: string,
-): string {
-  if (panel.verifyNumbers.length === 0) {
-    return `<section class="tv-panel tv-telsim-panel" id="tv-verify-section">
-      <header class="tv-section-head">
-        <h2 class="tv-section-head__title">Verificación telsim.io</h2>
-      </header>
-      <div class="tv-panel__body">
-        <div class="tv-verify-empty">
-          <p>No hay líneas configuradas.</p>
-          <p class="field-hint">Define <code>TELVOICE_VERIFY_NUMBERS</code> en el servidor.</p>
-        </div>
-      </div>
-    </section>`;
-  }
-
-  const first = panel.verifyNumbers[0]!;
-  const firstMsg = first.lastTest?.message?.trim() || defaultVerifyMessage;
-  const firstInbound = first.lastTelsimInbound;
-  const firstPreview =
-    firstInbound?.content?.trim() ||
-    (firstInbound?.verificationCode
-      ? `Código: ${firstInbound.verificationCode}`
-      : "") ||
-    firstMsg;
-  const firstPreviewSender =
-    firstInbound &&
-    (firstInbound.content.trim() || firstInbound.verificationCode)
-      ? firstInbound.from.trim() || "SMS entrante"
-      : first.lastTest?.sender_id?.trim() || "TELVOICE";
-  const disabled = canSend ? "" : "disabled";
-
-  const lineOptions = panel.verifyNumbers
-    .map(
-      (v, i) =>
-        `<option value="${i}">${escapeHtml(v.entry.operator)} — ${escapeHtml(v.entry.label)} (${escapeHtml(v.maskedPhone)})</option>`,
-    )
-    .join("");
-
-  const webhookBlock = panel.telsimWebhookConfigured
-    ? `<div class="form-group tv-telsim-webhook">
-          <label>Webhook URL (POST en telsim.io)</label>
-          <div class="tv-copy-row">
-            <input type="text" class="tv-input-full" readonly value="${escapeHtml(panel.telsimWebhookUrl)}" id="tv-telsim-webhook-url" aria-label="URL webhook Telsim" />
-            <button type="button" class="btn btn-secondary btn-sm" id="tv-telsim-webhook-copy">Copiar</button>
-          </div>
-          <p class="field-hint">Evento <code>sms.received</code>. Requiere <code>TELSIM_WEBHOOK_SECRET</code> en el servidor.</p>
-        </div>`
-    : `<p class="field-hint tv-telsim-webhook-missing">Define <code>PUBLIC_WEBHOOK_BASE_URL</code> para obtener la URL del webhook.</p>`;
-
-  return `<section class="tv-panel tv-telsim-panel" id="tv-verify-section">
-      <header class="tv-section-head">
-        <h2 class="tv-section-head__title">Verificación telsim.io</h2>
-        <p class="tv-section-head__sub">Selecciona operador y envía test QA</p>
-      </header>
-      <div class="tv-panel__body tv-telsim-panel__body">
-        ${webhookBlock}
-        <div class="form-group tv-telsim-panel__select">
-          <label for="tv-telsim-line-select">Línea de prueba</label>
-          <select id="tv-telsim-line-select" class="tv-input-full" ${disabled} aria-label="Seleccionar línea telsim">
-            ${lineOptions}
-          </select>
-        </div>
-        <div class="tv-telsim-panel__phone" id="tv-telsim-phone-wrap">
-          ${renderHeroPhonePreview({
-            senderLabel: firstPreviewSender,
-            senderSub: "Vía Telvoice A2P",
-            message: firstPreview,
-            bubbleId: "tv-telsim-bubble",
-            compact: true,
-          })}
-        </div>
-        <p class="tv-telsim-panel__status field-hint" id="tv-telsim-meta">
-          ${renderPanelMessageStatusBadge(first.lastStatus, "live_test")}
-          · ${escapeHtml(formatVerifyLastTest(first.lastTestAt))}${first.dlrReceived ? " · DLR OK" : ""}${firstInbound ? " · SMS entrante telsim" : ""}
-        </p>
-        <form method="post" action="/app/send-sms" class="tv-telsim-panel__form" id="tv-telsim-qa-form">
-          ${idempotencyKey ? `<input type="hidden" name="idempotency_key" value="${escapeHtml(idempotencyKey)}" />` : ""}
-          <input type="hidden" name="verify_id" id="tv-telsim-verify-id" value="${escapeHtml(first.entry.id)}" />
-          <input type="hidden" name="sender_id" value="TELVOICE" />
-          <input type="hidden" name="quick_verify" value="1" />
-          <button type="submit" class="btn btn-secondary btn-sm tv-telsim-panel__btn" ${disabled}>
-            <span class="material-symbols-outlined" aria-hidden="true">science</span>
-            Enviar test QA
-          </button>
-        </form>
-      </div>
-    </section>`;
-}
+const CLIENT_CHECKLIST_HIDE = new Set(["telsim_webhook", "verify"]);
 
 export function renderAppSendSmsPage(
   ctx: AppPageContext,
@@ -250,46 +155,6 @@ export function renderAppSendSmsPage(
     ? `<div class="alert alert-success">${escapeHtml(opts.flash)}</div>`
     : "";
 
-  const telsimVerifyDataJson = panel
-    ? JSON.stringify(
-        panel.verifyNumbers.map((v) => {
-          const outbound =
-            v.lastTest?.message?.trim() || defaultVerifyMsg;
-          const inbound = v.lastTelsimInbound;
-          const preview =
-            inbound?.content?.trim() ||
-            (inbound?.verificationCode
-              ? `Código: ${inbound.verificationCode}`
-              : "") ||
-            outbound;
-          return {
-            id: v.entry.id,
-            operator: v.entry.operator,
-            label: v.entry.label,
-            masked: v.maskedPhone,
-            message: outbound,
-            previewMessage: preview,
-            previewSender:
-              inbound &&
-              (inbound.content.trim() || inbound.verificationCode)
-                ? inbound.from.trim() || "SMS entrante"
-                : v.lastTest?.sender_id?.trim() || "TELVOICE",
-            inboundCode: inbound?.verificationCode ?? null,
-            inboundAt: inbound?.receivedAt ?? null,
-            sender: v.lastTest?.sender_id?.trim() || "TELVOICE",
-            status: v.lastStatus,
-            lastTestAt: v.lastTestAt,
-            dlrReceived: v.dlrReceived,
-            ready: v.readyForCampaign,
-          };
-        }),
-      )
-    : "[]";
-
-  const telsimPanel = panel
-    ? renderTelsimVerifyPanel(panel, canSend, defaultVerifyMsg, opts.idempotencyKey)
-    : "";
-
   const opsChips =
     panel && lt
       ? `<div class="tv-stat-chips tv-stat-chips--ops">
@@ -300,18 +165,6 @@ export function renderAppSendSmsPage(
       ${renderStatChip("TPS", lt.effectiveTps != null ? String(lt.effectiveTps) : "—", "default")}
     </div>`
       : "";
-
-  const preCampaignBanner =
-    panel && panel.verifyNumbers.length > 0 && !panel.allVerifyNumbersReady
-      ? renderNotice(
-          "Validación pre-campaña pendiente: envía test QA a cada línea telsim y confirma DLR.",
-          "warn",
-        )
-      : panel && panel.allVerifyNumbersReady && panel.verifyNumbers.length > 0
-        ? `<div class="alert tv-precampaign-banner tv-precampaign-banner--ok">
-      <strong>Listo para campaña.</strong> Todas las líneas de verificación respondieron correctamente.
-    </div>`
-        : "";
 
   const successBlock = opts.campaignResult
     ? `<section class="tv-panel tv-panel--hint tv-send-result">
@@ -350,7 +203,10 @@ export function renderAppSendSmsPage(
 
   const checklistHtml = panel
     ? `<ul class="tv-checklist">
-        ${panel.checklist.map((c) => renderChecklistItem(c.ok, c.label, c.hint)).join("")}
+        ${panel.checklist
+          .filter((c) => !CLIENT_CHECKLIST_HIDE.has(c.id))
+          .map((c) => renderChecklistItem(c.ok, c.label, c.hint))
+          .join("")}
       </ul>
       ${blockHint}`
     : `<p class="alert alert-error">El envío SMS no está disponible. Contacte a soporte Telvoice.</p>`;
@@ -447,7 +303,6 @@ export function renderAppSendSmsPage(
         ${renderPanel("Checklist pre-campaña", checklistHtml)}
       </div>
       <aside class="tv-send-aside">
-        ${telsimPanel}
         <section class="tv-panel">
           <header class="tv-section-head"><h2 class="tv-section-head__title">Vista previa móvil</h2></header>
           <div class="tv-panel__body tv-panel__body--center">
@@ -478,7 +333,6 @@ export function renderAppSendSmsPage(
     ${flashBlock}
     ${errorBlock}
     ${opsChips}
-    ${preCampaignBanner}
     ${successBlock}
     ${sendForm}
     </div>
@@ -494,8 +348,6 @@ export function renderAppSendSmsPage(
       var templateSelect = document.getElementById('template_id');
       var scheduleDate = document.getElementById('schedule_date');
       var scheduleTime = document.getElementById('schedule_time');
-      var telsimSelect = document.getElementById('tv-telsim-line-select');
-      var telsimLines = ${telsimVerifyDataJson};
       var avail = ${avail};
       var maxLiveSegments = ${lt?.maxSegments ?? 3};
       var canSend = ${canSend ? "true" : "false"};
@@ -760,40 +612,6 @@ export function renderAppSendSmsPage(
           if(l && val && l.textContent === label) val.textContent = value;
         });
       }
-      function formatTelsimLastTest(at){
-        if(!at) return 'Sin test reciente';
-        try {
-          var d = new Date(at);
-          return d.toLocaleString('es-CL', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
-        } catch(e) { return at; }
-      }
-      function statusBadgeHtml(status){
-        var map = { delivered:'ok', sent:'ok', pending:'warn', queued:'warn', failed:'err' };
-        var cls = map[status] || 'muted';
-        var label = status || '—';
-        return '<span class="badge badge-'+cls+'">'+label+'</span>';
-      }
-      function updateTelsimLine(){
-        if(!telsimSelect || !telsimLines.length) return;
-        var line = telsimLines[Number(telsimSelect.value)] || telsimLines[0];
-        if(!line) return;
-        var telsimVerifyId = document.getElementById('tv-telsim-verify-id');
-        if(telsimVerifyId) telsimVerifyId.value = line.id;
-        var bubble = document.getElementById('tv-telsim-bubble');
-        var title = document.querySelector('#tv-telsim-phone-wrap .tv-hero-phone__app-title');
-        if(bubble) bubble.textContent = line.previewMessage || line.message || defaultVerifyMsg;
-        if(title) title.textContent = line.previewSender || line.sender || 'TELVOICE';
-        var metaEl = document.getElementById('tv-telsim-meta');
-        if(metaEl) {
-          var inboundHint = line.inboundAt ? ' · SMS entrante telsim' : '';
-          metaEl.innerHTML = statusBadgeHtml(line.status) + ' · ' + formatTelsimLastTest(line.lastTestAt) + (line.dlrReceived ? ' · DLR OK' : '') + inboundHint;
-        }
-        var wrap = document.getElementById('tv-telsim-phone-wrap');
-        if(wrap) {
-          wrap.classList.toggle('tv-telsim-panel__phone--ready', !!line.ready);
-          wrap.classList.toggle('tv-telsim-panel__phone--pending', !line.ready);
-        }
-      }
       function refresh(){
         if(!ta) return;
         var mode = getSendMode();
@@ -837,49 +655,6 @@ export function renderAppSendSmsPage(
         var disabled = overSeg || !numOk || !schedOk || !bulkOk;
         if(submitBtn && canSend) submitBtn.disabled = disabled;
         if(headerBtn && canSend) headerBtn.disabled = disabled;
-      }
-      if(telsimSelect){
-        telsimSelect.addEventListener('change', updateTelsimLine);
-        updateTelsimLine();
-      }
-      var telsimWebhookCopy = document.getElementById('tv-telsim-webhook-copy');
-      var telsimWebhookUrl = document.getElementById('tv-telsim-webhook-url');
-      if(telsimWebhookCopy && telsimWebhookUrl){
-        telsimWebhookCopy.addEventListener('click', function(){
-          telsimWebhookUrl.select();
-          telsimWebhookUrl.setSelectionRange(0, 99999);
-          var val = telsimWebhookUrl.value || '';
-          if(navigator.clipboard && navigator.clipboard.writeText){
-            navigator.clipboard.writeText(val).catch(function(){});
-          }
-        });
-      }
-      function pollTelsimInbound(){
-        if(!telsimLines.length) return;
-        fetch('/app/send-sms/telsim-preview', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
-          .then(function(r){ return r.ok ? r.json() : null; })
-          .then(function(data){
-            if(!data || !data.lines) return;
-            var changed = false;
-            telsimLines.forEach(function(line){
-              var upd = data.lines[line.id];
-              if(!upd) return;
-              if(upd.previewMessage && upd.previewMessage !== line.previewMessage){
-                line.previewMessage = upd.previewMessage;
-                line.previewSender = upd.previewSender || line.previewSender;
-                line.inboundAt = upd.inboundAt;
-                line.inboundCode = upd.inboundCode;
-                line.ready = upd.ready;
-                changed = true;
-              }
-            });
-            if(changed) updateTelsimLine();
-          })
-          .catch(function(){});
-      }
-      if(telsimSelect){
-        setInterval(pollTelsimInbound, 8000);
-        pollTelsimInbound();
       }
       document.querySelectorAll('.tv-var-btn').forEach(function(btn){
         btn.addEventListener('click', function(){

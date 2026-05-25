@@ -53,6 +53,11 @@ import {
   postKnowledgeTest,
 } from "../controllers/admin-knowledge.controller.js";
 import {
+  getAdminTestPage,
+  getAdminTelsimInboundPreview,
+  postAdminTestQaSend,
+} from "../controllers/admin-test.controller.js";
+import {
   getChatPage,
   getContactsPage,
   getInvoicesPage,
@@ -159,6 +164,9 @@ adminRouter.get("/routes", requireAdminPage, getSaRoutesPageTelco);
 adminRouter.post("/routes", requireAdminPage, postCreateRoute);
 adminRouter.post("/routes/:id/status", requireAdminPage, postToggleRoute);
 adminRouter.get("/traffic-control", requireAdminPage, getSaTrafficControlPage);
+adminRouter.get("/test", requireAdminPage, getAdminTestPage);
+adminRouter.get("/test/telsim-preview", requireAdminPage, getAdminTelsimInboundPreview);
+adminRouter.post("/test/qa-send", requireAdminPage, postAdminTestQaSend);
 adminRouter.post(
   "/traffic-control/queue/process-tick",
   requireAdminPage,
