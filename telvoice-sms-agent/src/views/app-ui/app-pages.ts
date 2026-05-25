@@ -1,6 +1,11 @@
 import type { ClientDashboardData } from "../../services/clientDashboardService.js";
 import type { WalletTransactionRow } from "../../types/wallet.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
+import { APP_SCHEDULE_TIMEZONE } from "../../utils/scheduleTime.js";
+import {
+  renderKpiCard,
+  renderQuickAction,
+} from "../admin-ui/components.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
@@ -12,12 +17,43 @@ import {
   renderWalletTxTypeBadge,
 } from "./app-order-ui.js";
 
+function dashboardMonthLabel(): string {
+  const label = new Intl.DateTimeFormat("es-CL", {
+    month: "long",
+    year: "numeric",
+    timeZone: APP_SCHEDULE_TIMEZONE,
+  }).format(new Date());
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function renderDashPanelHead(
+  title: string,
+  link?: { href: string; label: string },
+): string {
+  return `<header class="tv-dash-panel-head">
+    <h2 class="tv-dash-panel-head__title">${escapeHtml(title)}</h2>
+    ${
+      link
+        ? `<a href="${escapeHtml(link.href)}" class="tv-dash-panel-head__link">${escapeHtml(link.label)}</a>`
+        : ""
+    }
+  </header>`;
+}
+
 export function renderAppDashboardPage(
   ctx: AppPageContext,
   data: ClientDashboardData,
 ): string {
-  const deliveryRate = "—";
-  const campaignsMonth = "0";
+  const monthLabel = dashboardMonthLabel();
+  const stats = data.stats;
+
+  const pendingAlert =
+    data.pendingOrdersCount > 0
+      ? `<div class="alert alert-warn tv-client-dash-alert" role="status">
+          Tienes ${data.pendingOrdersCount} orden(es) pendiente(s) de pago o acreditación.
+          <a href="/app/orders" class="row-link">Ver órdenes</a>
+        </div>`
+      : "";
 
   const orderRows = data.recentOrders.length
     ? data.recentOrders
@@ -31,7 +67,7 @@ export function renderAppDashboardPage(
       </tr>`,
         )
         .join("")
-    : `<tr><td colspan="5">Sin órdenes recientes.</td></tr>`;
+    : `<tr><td colspan="5" class="tv-table-empty">Sin órdenes recientes.</td></tr>`;
 
   const txRows = data.recentTransactions.length
     ? data.recentTransactions
@@ -44,51 +80,117 @@ export function renderAppDashboardPage(
       </tr>`,
         )
         .join("")
-    : `<tr><td colspan="4">Sin movimientos recientes.</td></tr>`;
+    : `<tr><td colspan="4" class="tv-table-empty">Sin movimientos recientes.</td></tr>`;
 
   const body = `
+    <div class="tv-client-dashboard">
     ${renderPageHeader({
       title: "Dashboard",
       subtitle: `Resumen de ${escapeHtml(ctx.company.name)}`,
-      actions: renderBtn("Comprar SMS", { href: "/app/buy-sms", variant: "primary", icon: "shopping_cart" }),
+      actions: renderBtn("Comprar SMS", {
+        href: "/app/buy-sms",
+        variant: "primary",
+        icon: "shopping_cart",
+      }),
     })}
-    <div class="tv-kpi-grid">
-      <article class="tv-kpi"><span class="tv-kpi__label">SMS disponibles</span><span class="tv-kpi__value">${fmtSms(data.balance.availableSms)}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">SMS consumidos</span><span class="tv-kpi__value">${fmtSms(data.balance.consumedSms)}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">SMS comprados</span><span class="tv-kpi__value">${fmtSms(data.balance.totalPurchasedSms)}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">SMS reservados</span><span class="tv-kpi__value">${fmtSms(data.balance.reservedSms)}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Órdenes pendientes</span><span class="tv-kpi__value">${data.pendingOrdersCount}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Campañas del mes</span><span class="tv-kpi__value">${campaignsMonth}</span><span class="field-hint">Próximamente</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Tasa de entrega</span><span class="tv-kpi__value">${deliveryRate}</span><span class="field-hint">Próximamente</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Última compra</span><span class="tv-kpi__value" style="font-size:0.95rem">${data.lastPurchaseAt ? escapeHtml(formatDate(data.lastPurchaseAt)) : "—"}</span></article>
+    ${pendingAlert}
+    <div class="tv-kpi-grid tv-kpi-grid--client">
+      ${renderKpiCard({
+        label: "SMS enviados",
+        value: fmtSms(stats.smsSentMonth),
+        hint: `Este mes · ${monthLabel}`,
+        icon: "send",
+        variant: "primary",
+      })}
+      ${renderKpiCard({
+        label: "Costo",
+        value: fmtSms(stats.smsCostMonth),
+        hint: "SMS consumidos este mes",
+        icon: "payments",
+        variant: "warn",
+      })}
+      ${renderKpiCard({
+        label: "Balance",
+        value: fmtSms(data.balance.availableSms),
+        hint: "SMS disponibles para enviar",
+        icon: "account_balance_wallet",
+        variant: "success",
+      })}
+      ${renderKpiCard({
+        label: "Campañas del mes",
+        value: fmtSms(stats.campaignsMonth),
+        hint: `Total en ${monthLabel}`,
+        icon: "campaign",
+        variant: "default",
+      })}
     </div>
-    <section class="tv-panel" style="margin-top:1rem">
-      <h2 class="tv-panel__title">Acciones rápidas</h2>
-      <div class="tv-panel__body tv-quick-actions">
-        ${renderBtn("Comprar SMS", { href: "/app/buy-sms", variant: "primary" })}
-        ${renderBtn("Enviar SMS", { href: "/app/send-sms", variant: "secondary" })}
-        ${renderBtn("Ver reportes", { href: "/app/reports", variant: "ghost" })}
-        ${renderBtn("Soporte", { href: "/app/support", variant: "ghost" })}
-        ${renderBtn("Solicitar API", { href: "/app/api", variant: "ghost" })}
+    <section class="tv-panel tv-client-dash-panel">
+      ${renderDashPanelHead("Acciones rápidas")}
+      <div class="tv-panel__body tv-panel__body--flush">
+        <div class="tv-quick-grid tv-quick-grid--client">
+          ${renderQuickAction({
+            href: "/app/buy-sms",
+            label: "Comprar SMS",
+            description: "Recargar saldo",
+            icon: "shopping_cart",
+          })}
+          ${renderQuickAction({
+            href: "/app/send-sms",
+            label: "Enviar SMS",
+            description: "Individual o campaña",
+            icon: "send",
+          })}
+          ${renderQuickAction({
+            href: "/app/reports",
+            label: "Ver reportes",
+            description: "Métricas de envío",
+            icon: "monitoring",
+          })}
+          ${renderQuickAction({
+            href: "/app/support",
+            label: "Soporte",
+            description: "Ayuda y tickets",
+            icon: "support_agent",
+          })}
+          ${renderQuickAction({
+            href: "/app/api",
+            label: "Solicitar API",
+            description: "Integración REST",
+            icon: "api",
+          })}
+        </div>
       </div>
     </section>
-    <div class="tv-dash-grid tv-dash-grid--2" style="margin-top:1rem">
+    <div class="tv-dash-grid tv-dash-grid--2 tv-client-dash-tables">
       <section class="tv-panel">
-        <h2 class="tv-panel__title">Últimas órdenes <a href="/app/orders" class="row-link" style="font-size:0.85rem;font-weight:500">Ver todas</a></h2>
-        <div class="table-wrap tv-panel__body" style="padding:0">
-          <table class="tv-table tv-table--compact"><thead><tr>
-            <th>Fecha</th><th>Bolsa</th><th>SMS</th><th>Pago</th><th>Acreditación</th>
-          </tr></thead><tbody>${orderRows}</tbody></table>
+        ${renderDashPanelHead("Últimas órdenes", {
+          href: "/app/orders",
+          label: "Ver todas",
+        })}
+        <div class="table-wrap tv-panel__body tv-panel__body--flush">
+          <table class="tv-table tv-table--compact">
+            <thead><tr>
+              <th>Fecha</th><th>Bolsa</th><th>SMS</th><th>Pago</th><th>Acreditación</th>
+            </tr></thead>
+            <tbody>${orderRows}</tbody>
+          </table>
         </div>
       </section>
       <section class="tv-panel">
-        <h2 class="tv-panel__title">Últimos movimientos <a href="/app/wallet" class="row-link" style="font-size:0.85rem;font-weight:500">Ver saldo</a></h2>
-        <div class="table-wrap tv-panel__body" style="padding:0">
-          <table class="tv-table tv-table--compact"><thead><tr>
-            <th>Fecha</th><th>Tipo</th><th>SMS</th><th>Descripción</th>
-          </tr></thead><tbody>${txRows}</tbody></table>
+        ${renderDashPanelHead("Últimos movimientos", {
+          href: "/app/wallet",
+          label: "Ver saldo",
+        })}
+        <div class="table-wrap tv-panel__body tv-panel__body--flush">
+          <table class="tv-table tv-table--compact">
+            <thead><tr>
+              <th>Fecha</th><th>Tipo</th><th>SMS</th><th>Descripción</th>
+            </tr></thead>
+            <tbody>${txRows}</tbody>
+          </table>
         </div>
       </section>
+    </div>
     </div>`;
   return wrapAppPage(ctx, "dashboard", "Dashboard", body);
 }
