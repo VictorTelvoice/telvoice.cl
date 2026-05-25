@@ -2317,6 +2317,209 @@
     .tv-mass-table-wrap .tv-table--dense td,
     .tv-mass-table-wrap .tv-table--dense th { padding: 0.4rem 0.5rem; }
     .tv-mass-table-wrap code { font-size: 0.78rem; }
+    .tv-client-dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      width: 100%;
+      max-width: none;
+    }
+    .tv-client-dash-alert {
+      margin: 0;
+    }
+    .tv-kpi-grid--client {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      margin-bottom: 0;
+      gap: 1rem;
+    }
+    .tv-kpi-grid--client .tv-kpi {
+      min-height: 128px;
+      padding: 1.25rem 1.35rem 1.3rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .tv-kpi-grid--client .tv-kpi__head {
+      margin-bottom: 0.7rem;
+      gap: 0.45rem;
+    }
+    .tv-kpi-grid--client .tv-kpi__label {
+      line-height: 1.25;
+    }
+    .tv-kpi-grid--client .tv-kpi__value {
+      line-height: 1.15;
+      margin-top: auto;
+    }
+    .tv-kpi-grid--client .tv-kpi__hint {
+      margin-top: 0.5rem;
+      line-height: 1.35;
+    }
+    .tv-client-dash-tiles-wrap {
+      margin: 0;
+      width: 100%;
+    }
+    .tv-dash-tiles {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 1rem;
+      padding: 1.25rem 1.5rem 1.5rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .tv-dash-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.85rem;
+      min-height: 122px;
+      padding: 1.15rem 1.25rem 1.2rem;
+      border-radius: 14px;
+      border: 1px solid rgba(0, 82, 204, 0.12);
+      background: linear-gradient(165deg, #ffffff 0%, #f6f9ff 100%);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+      color: inherit;
+      text-decoration: none;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .tv-dash-tile:hover {
+      transform: translateY(-2px);
+      border-color: rgba(0, 82, 204, 0.28);
+      box-shadow: 0 10px 24px rgba(0, 82, 204, 0.1);
+      text-decoration: none;
+    }
+    .tv-dash-tile--primary {
+      border-color: rgba(0, 82, 204, 0.22);
+      background: linear-gradient(165deg, #eef4ff 0%, #f8fbff 52%, #ffffff 100%);
+    }
+    .tv-dash-tile__icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      background: linear-gradient(135deg, rgba(0, 82, 204, 0.12), rgba(14, 165, 233, 0.14));
+      color: var(--tv-primary);
+    }
+    .tv-dash-tile--primary .tv-dash-tile__icon {
+      background: linear-gradient(135deg, #0052cc, #0ea5e9);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(0, 82, 204, 0.28);
+    }
+    .tv-dash-tile__body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      min-width: 0;
+    }
+    .tv-dash-tile__label {
+      display: block;
+      font-weight: 700;
+      font-size: 0.92rem;
+      line-height: 1.3;
+      letter-spacing: -0.01em;
+    }
+    .tv-dash-tile__desc {
+      display: block;
+      font-size: 0.78rem;
+      line-height: 1.4;
+      color: var(--tv-muted);
+    }
+    .tv-client-dash-table-panel {
+      overflow: hidden;
+      border-radius: 14px;
+    }
+    .tv-client-dash-table {
+      padding: 0.5rem 1.1rem 0.85rem;
+    }
+    .tv-client-dash-table-panel .tv-table--dash {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .tv-client-dash-table-panel .tv-table--dash thead th {
+      background: #f1f5f9;
+      color: #64748b;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--tv-border);
+    }
+    .tv-client-dash-table-panel .tv-table--dash tbody td {
+      padding: 0.8rem 1rem;
+      font-size: 0.86rem;
+      vertical-align: middle;
+      border-bottom: 1px solid #eef2f7;
+    }
+    .tv-client-dash-table-panel .tv-table--dash tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .tv-client-dash-table-panel .tv-table--dash tbody tr:hover td {
+      background: #f8fbff;
+    }
+    .tv-client-dash-table-panel .tv-table-empty {
+      padding: 1.5rem 1rem !important;
+    }
+    .tv-dash-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 1rem 1.35rem;
+      border-bottom: 1px solid var(--tv-border);
+      background: linear-gradient(180deg, #fafbfd 0%, #fff 100%);
+    }
+    .tv-dash-panel-head__title {
+      margin: 0;
+      font-size: 0.98rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .tv-dash-panel-head__link {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--tv-primary);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .tv-dash-panel-head__link:hover {
+      text-decoration: underline;
+    }
+    .tv-client-dash-tables {
+      margin-bottom: 0;
+    }
+    .tv-table-empty {
+      color: var(--tv-muted);
+      font-size: 0.88rem;
+      padding: 1.25rem 1rem !important;
+      text-align: center;
+    }
+    @media (max-width: 1280px) {
+      .tv-kpi-grid--client { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 1100px) {
+      .tv-kpi-grid--client { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .tv-dash-tiles {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.7rem;
+        padding: 1.1rem 1.2rem 1.25rem;
+      }
+      .tv-dash-tile {
+        padding: 0.95rem 0.85rem 1rem;
+        min-height: 108px;
+      }
+      .tv-dash-tile__desc {
+        font-size: 0.72rem;
+      }
+    }
+    @media (max-width: 640px) {
+      .tv-kpi-grid--client { grid-template-columns: 1fr; }
+      .tv-dash-tiles {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
     @media (max-width: 960px) {
       .tv-send-to-row { grid-template-columns: 1fr; }
       .tv-send-submit { max-width: none; }

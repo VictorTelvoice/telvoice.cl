@@ -667,51 +667,73 @@ export function getAppPanelStyles(): string {
       margin: 0;
       width: 100%;
     }
-    .tv-client-dash-tiles {
+    .tv-dash-tiles {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
-      align-items: stretch;
-      gap: 0.85rem;
-      padding: 1.15rem 1.35rem 1.35rem;
+      gap: 1rem;
+      padding: 1.25rem 1.5rem 1.5rem;
       width: 100%;
       box-sizing: border-box;
     }
-    .tv-client-dash-tiles .tv-quick {
-      width: 100%;
-      min-width: 0;
+    .tv-dash-tile {
+      display: flex;
       flex-direction: column;
       align-items: flex-start;
-      gap: 0.55rem;
-      padding: 1rem 1.15rem;
-      border: 1px solid var(--tv-border);
+      gap: 0.85rem;
+      min-height: 122px;
+      padding: 1.15rem 1.25rem 1.2rem;
+      border-radius: 14px;
+      border: 1px solid rgba(0, 82, 204, 0.12);
+      background: linear-gradient(165deg, #ffffff 0%, #f6f9ff 100%);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+      color: inherit;
+      text-decoration: none;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .tv-dash-tile:hover {
+      transform: translateY(-2px);
+      border-color: rgba(0, 82, 204, 0.28);
+      box-shadow: 0 10px 24px rgba(0, 82, 204, 0.1);
+      text-decoration: none;
+    }
+    .tv-dash-tile--primary {
+      border-color: rgba(0, 82, 204, 0.22);
+      background: linear-gradient(165deg, #eef4ff 0%, #f8fbff 52%, #ffffff 100%);
+    }
+    .tv-dash-tile__icon {
+      width: 44px;
+      height: 44px;
       border-radius: 12px;
-      background: linear-gradient(180deg, #fff 0%, #f8fbff 100%);
-      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      background: linear-gradient(135deg, rgba(0, 82, 204, 0.12), rgba(14, 165, 233, 0.14));
+      color: var(--tv-primary);
     }
-    .tv-client-dash-tiles .tv-quick:hover {
-      border-color: rgba(0, 82, 204, 0.25);
-      background: linear-gradient(180deg, #fff 0%, #eef4ff 100%);
-      text-decoration: none;
+    .tv-dash-tile--primary .tv-dash-tile__icon {
+      background: linear-gradient(135deg, #0052cc, #0ea5e9);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(0, 82, 204, 0.28);
     }
-    .tv-client-dash-tiles .tv-quick__icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
+    .tv-dash-tile__body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      min-width: 0;
     }
-    .tv-client-dash-tiles .tv-quick__label {
-      font-size: 0.88rem;
-      line-height: 1.25;
+    .tv-dash-tile__label {
+      display: block;
+      font-weight: 700;
+      font-size: 0.92rem;
+      line-height: 1.3;
+      letter-spacing: -0.01em;
     }
-    .tv-client-dash-tiles .tv-quick__desc {
-      font-size: 0.74rem;
-      line-height: 1.35;
-    }
-    .tv-client-dash-tiles .tv-quick:last-child {
-      border-bottom: 1px solid var(--tv-border);
-    }
-    .tv-client-dash-tiles .tv-quick__arrow {
-      display: none;
+    .tv-dash-tile__desc {
+      display: block;
+      font-size: 0.78rem;
+      line-height: 1.4;
+      color: var(--tv-muted);
     }
     .tv-client-dash-table-panel {
       overflow: hidden;
@@ -789,25 +811,23 @@ export function getAppPanelStyles(): string {
     }
     @media (max-width: 1100px) {
       .tv-kpi-grid--client { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .tv-client-dash-tiles {
+      .tv-dash-tiles {
         grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 0.65rem;
-        padding: 1rem 1.1rem 1.15rem;
+        gap: 0.7rem;
+        padding: 1.1rem 1.2rem 1.25rem;
       }
-      .tv-client-dash-tiles .tv-quick {
-        padding: 0.85rem 0.9rem;
+      .tv-dash-tile {
+        padding: 0.95rem 0.85rem 1rem;
+        min-height: 108px;
       }
-      .tv-client-dash-tiles .tv-quick__desc {
-        display: none;
+      .tv-dash-tile__desc {
+        font-size: 0.72rem;
       }
     }
     @media (max-width: 640px) {
       .tv-kpi-grid--client { grid-template-columns: 1fr; }
-      .tv-client-dash-tiles {
-        grid-template-columns: 1fr;
-      }
-      .tv-client-dash-tiles .tv-quick__desc {
-        display: block;
+      .tv-dash-tiles {
+        grid-template-columns: 1fr 1fr;
       }
     }
     @media (max-width: 960px) {

@@ -3,7 +3,7 @@ import type { WalletTransactionRow } from "../../types/wallet.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 import { APP_SCHEDULE_TIMEZONE } from "../../utils/scheduleTime.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
-import { renderKpiCard, renderQuickAction } from "../admin-ui/components.js";
+import { renderKpiCard } from "../admin-ui/components.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
 import {
@@ -35,6 +35,23 @@ function renderDashPanelHead(
         : ""
     }
   </header>`;
+}
+
+function renderDashQuickTile(options: {
+  href: string;
+  label: string;
+  description: string;
+  icon: string;
+  variant?: "primary" | "default";
+}): string {
+  const variant = options.variant ?? "default";
+  return `<a href="${escapeHtml(options.href)}" class="tv-dash-tile tv-dash-tile--${variant}">
+    <span class="material-symbols-outlined tv-dash-tile__icon" aria-hidden="true">${escapeHtml(options.icon)}</span>
+    <span class="tv-dash-tile__body">
+      <span class="tv-dash-tile__label">${escapeHtml(options.label)}</span>
+      <span class="tv-dash-tile__desc">${escapeHtml(options.description)}</span>
+    </span>
+  </a>`;
 }
 
 export function renderAppDashboardPage(
@@ -128,32 +145,33 @@ export function renderAppDashboardPage(
     </div>
     <section class="tv-panel tv-client-dash-tiles-wrap">
       ${renderDashPanelHead("Acciones rápidas")}
-      <div class="tv-client-dash-tiles">
-        ${renderQuickAction({
+      <div class="tv-dash-tiles">
+        ${renderDashQuickTile({
           href: "/app/buy-sms",
           label: "Comprar SMS",
           description: "Recargar saldo",
           icon: "shopping_cart",
+          variant: "primary",
         })}
-        ${renderQuickAction({
+        ${renderDashQuickTile({
           href: "/app/send-sms",
           label: "Enviar SMS",
           description: "Individual o campaña",
           icon: "send",
         })}
-        ${renderQuickAction({
+        ${renderDashQuickTile({
           href: "/app/reports",
           label: "Ver reportes",
           description: "Métricas de envío",
           icon: "monitoring",
         })}
-        ${renderQuickAction({
+        ${renderDashQuickTile({
           href: "/app/support",
           label: "Soporte",
           description: "Ayuda y tickets",
           icon: "support_agent",
         })}
-        ${renderQuickAction({
+        ${renderDashQuickTile({
           href: "/app/api",
           label: "Solicitar API",
           description: "Integración REST",
