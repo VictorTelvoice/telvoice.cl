@@ -11,6 +11,7 @@ import { formatDate } from "../utils/html.js";
 import { listRecentPanelMessagesForVerify } from "./panelSmsMessageService.js";
 import {
   getLiveTestSendPageStatus,
+  isDailySendLimitEnforced,
   type LiveTestSendPageStatus,
 } from "./smsLiveTestLimiterService.js";
 import { isAsmscConfigured } from "./sms-providers/realApiProvider.js";
@@ -172,11 +173,17 @@ export async function getSendControlPanelView(
     },
     {
       id: "balance",
-      label: "Cuota diaria disponible",
-      ok:
-        resolvedSendStatus.dailyRemaining > 0 &&
-        (resolvedSendStatus.trafficDailyRemaining == null ||
-          resolvedSendStatus.trafficDailyRemaining > 0),
+      label: isDailySendLimitEnforced()
+        ? "Cuota diaria disponible"
+        : "Saldo SMS (sin tope diario)",
+      ok: isDailySendLimitEnforced()
+        ? resolvedSendStatus.dailyRemaining > 0 &&
+          (resolvedSendStatus.trafficDailyRemaining == null ||
+            resolvedSendStatus.trafficDailyRemaining > 0)
+        : true,
+      hint: isDailySendLimitEnforced()
+        ? undefined
+        : "Los envíos se limitan por tu bolsa SMS",
     },
   ];
 

@@ -6,6 +6,7 @@ import type { SmsCampaignRow } from "../../types/sms-panel.js";
 import type { PanelSmsMessageRow } from "../../types/sms-panel.js";
 import type { ClientSmsReportData } from "../../services/smsPanelReportsService.js";
 import type { LiveTestSendPageStatus } from "../../services/smsLiveTestLimiterService.js";
+import { isDailySendLimitEnforced } from "../../services/smsLiveTestLimiterService.js";
 import type { SendControlPanelView } from "../../services/smsSendControlPanelService.js";
 import { escapeHtml } from "../../utils/html.js";
 import {
@@ -95,12 +96,13 @@ export function renderAppSendSmsPage(
   const envAllowed = lt?.allowedNumbersNormalized ?? [];
   const allowedLiveNumbers = [...new Set([...envAllowed, ...verifyPhonesForJs])];
 
-  const dailyRemaining =
-    lt?.trafficDailyRemaining != null && lt.trafficDailyLimit != null
-      ? `${lt.trafficDailyRemaining} / ${lt.trafficDailyLimit}`
-      : lt
-        ? `${lt.dailyRemaining} / ${lt.dailyLimit}`
-        : "—";
+  const dailyRemaining = !lt
+    ? "—"
+    : isDailySendLimitEnforced()
+      ? lt.trafficDailyRemaining != null && lt.trafficDailyLimit != null
+        ? `${lt.trafficDailyRemaining} / ${lt.trafficDailyLimit}`
+        : `${lt.dailyRemaining} / ${lt.dailyLimit}`
+      : `${lt.dailyUsed} hoy`;
 
   const disabledAttr = "";
   const submitDisabled = canSubmit ? "" : "disabled";
@@ -170,7 +172,7 @@ export function renderAppSendSmsPage(
       ${renderStatChip("Saldo SMS", fmtSms(avail), "success")}
       ${renderStatChip("Ruta", lt.routeName ?? "—", "primary")}
       ${renderStatChip("Webhook", panel.webhookConfigured ? "Activo" : "Off", panel.webhookConfigured ? "success" : "warn")}
-      ${renderStatChip("Cuota hoy", dailyRemaining, "default")}
+      ${renderStatChip(isDailySendLimitEnforced() ? "Cuota hoy" : "Enviados hoy", dailyRemaining, "default")}
       ${renderStatChip("TPS", lt.effectiveTps != null ? String(lt.effectiveTps) : "—", "default")}
     </div>`
       : "";

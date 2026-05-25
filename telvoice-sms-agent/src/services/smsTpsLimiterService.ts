@@ -21,6 +21,7 @@ import { getOrCreateCompanyWallet } from "./smsWalletService.js";
 import {
   countDailyLiveTestMessages,
   getLiveTestLimiterConfig,
+  isDailySendLimitEnforced,
 } from "./smsLiveTestLimiterService.js";
 import { resolveTrafficPolicy } from "./smsTrafficPolicyService.js";
 
@@ -258,7 +259,8 @@ async function evaluatePolicyBlocks(
     }
   }
 
-  if (policy.daily_limit != null) {
+  const enforceDaily = isDailySendLimitEnforced();
+  if (enforceDaily && policy.daily_limit != null) {
     const used =
       flow === "live_test"
         ? await countDailyLiveTestMessages(input.companyId)
@@ -270,10 +272,10 @@ async function evaluatePolicyBlocks(
     }
   }
 
-  if (flow === "live_test") {
+  if (enforceDaily && flow === "live_test") {
     const envDaily = getLiveTestLimiterConfig().dailyLimit;
     const envUsed = await countDailyLiveTestMessages(input.companyId);
-    if (envUsed >= envDaily) {
+    if (envUsed >= envDaily && envDaily < 999_999) {
       return {
         reason: "El límite diario de envíos reales fue alcanzado.",
       };

@@ -42,6 +42,8 @@ export type SmsProviderConfig = {
   liveTestAllowedCompanyIds: string[];
   liveTestAllowedNumbers: string[];
   liveTestDailyLimit: number;
+  /** Si true, aplica tope diario (env + política telco). Por defecto el panel /app solo limita por saldo SMS. */
+  enforceDailyLimit: boolean;
   liveTestMinSecondsBetweenSends: number;
   liveTestMaxSegments: number;
 };
@@ -126,6 +128,8 @@ export const env = {
     liveTestAllowedCompanyIds: parseCsvEnv("SMS_LIVE_TEST_ALLOWED_COMPANY_IDS"),
     liveTestAllowedNumbers: parseCsvEnv("SMS_LIVE_TEST_ALLOWED_NUMBERS"),
     liveTestDailyLimit: parsePositiveIntEnv("SMS_LIVE_TEST_DAILY_LIMIT", 10_000),
+    enforceDailyLimit:
+      optionalEnv("SMS_ENFORCE_DAILY_LIMIT", "false") === "true",
     liveTestMinSecondsBetweenSends: parsePositiveIntEnv(
       "SMS_LIVE_TEST_MIN_SECONDS_BETWEEN_SENDS",
       5,

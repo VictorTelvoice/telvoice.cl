@@ -109,6 +109,11 @@ export function getLiveTestLimiterConfig(): LiveTestLimiterConfig {
   };
 }
 
+/** Tope diario de panel /app (desactivado por defecto; el límite efectivo es el saldo SMS). */
+export function isDailySendLimitEnforced(): boolean {
+  return env.smsProvider.enforceDailyLimit;
+}
+
 export function maskPhoneForDisplay(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   if (digits.length < 8) {
@@ -283,12 +288,14 @@ export async function assertLiveTestOperationalLimits(input: {
 
   await assertRoutingReady(input.companyId);
 
-  const dailyUsed = await countDailyLiveTestMessages(input.companyId);
-  if (dailyUsed >= limits.dailyLimit && limits.dailyLimit < 999_999) {
-    throw new AppError(
-      "Límite diario de envíos alcanzado.",
-      429,
-    );
+  if (isDailySendLimitEnforced()) {
+    const dailyUsed = await countDailyLiveTestMessages(input.companyId);
+    if (dailyUsed >= limits.dailyLimit && limits.dailyLimit < 999_999) {
+      throw new AppError(
+        "Límite diario de envíos alcanzado.",
+        429,
+      );
+    }
   }
 
   const lastAt = await getLastCountableLiveTestAt(input.companyId);
@@ -309,6 +316,7 @@ export async function getLiveTestSendPageStatus(
   opts?: { recipientPreview?: string; segmentCount?: number },
 ): Promise<LiveTestSendPageStatus> {
   const limits = getLiveTestLimiterConfig();
+  const dailyCapEnforced = isDailySendLimitEnforced();
   const globallyEnabled = isLiveTestGloballyEnabled();
   const companyAuthorized = isCompanyAllowedForLiveTest(companyId);
   const allowedNumbers = env.smsProvider.liveTestAllowedNumbers;
@@ -404,11 +412,16 @@ export async function getLiveTestSendPageStatus(
   } else if (!providerActive) {
     liveTestBlockReason = "La ruta SMS no está disponible temporalmente.";
   } else if (
+    dailyCapEnforced &&
     trafficDailyRemaining != null &&
     trafficDailyRemaining <= 0
   ) {
     liveTestBlockReason = "El límite diario de envíos fue alcanzado.";
-  } else if (dailyRemaining <= 0 && limits.dailyLimit < 999_999) {
+  } else if (
+    dailyCapEnforced &&
+    dailyRemaining <= 0 &&
+    limits.dailyLimit < 999_999
+  ) {
     liveTestBlockReason = "Límite diario de envíos alcanzado.";
   } else if (recipientAllowed === false) {
     liveTestBlockReason =
@@ -444,8 +457,10 @@ export async function getLiveTestSendPageStatus(
     liveEnabledOnPlan &&
     routeActive &&
     providerActive &&
-    dailyRemaining > 0 &&
-    (trafficDailyRemaining == null || trafficDailyRemaining > 0) &&
+    (!dailyCapEnforced || dailyRemaining > 0) &&
+    (!dailyCapEnforced ||
+      trafficDailyRemaining == null ||
+      trafficDailyRemaining > 0) &&
     recipientAllowed !== false &&
     segmentsWithinLimit !== false &&
     !liveTestBlockReason;

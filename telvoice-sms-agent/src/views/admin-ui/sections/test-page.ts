@@ -1,4 +1,5 @@
 import type { AdminSessionUser } from "../../../types/admin.js";
+import { isDailySendLimitEnforced } from "../../../services/smsLiveTestLimiterService.js";
 import {
   formatVerifyLastTest,
   type SendControlPanelView,
@@ -137,12 +138,13 @@ export function renderAdminTestPage(options: {
     : "";
 
   const lt = panel?.sendStatus;
-  const dailyRemaining =
-    lt?.trafficDailyRemaining != null && lt.trafficDailyLimit != null
-      ? `${lt.trafficDailyRemaining} / ${lt.trafficDailyLimit}`
-      : lt
-        ? `${lt.dailyRemaining} / ${lt.dailyLimit}`
-        : "—";
+  const dailyRemaining = !lt
+    ? "—"
+    : isDailySendLimitEnforced()
+      ? lt.trafficDailyRemaining != null && lt.trafficDailyLimit != null
+        ? `${lt.trafficDailyRemaining} / ${lt.trafficDailyLimit}`
+        : `${lt.dailyRemaining} / ${lt.dailyLimit}`
+      : `${lt.dailyUsed} hoy`;
 
   const opsChips =
     panel && lt
@@ -150,7 +152,7 @@ export function renderAdminTestPage(options: {
       ${renderStatChip("Ruta", lt.routeName ?? "—", "primary")}
       ${renderStatChip("Webhook DLR", panel.webhookConfigured ? "Activo" : "Off", panel.webhookConfigured ? "success" : "warn")}
       ${renderStatChip("Webhook telsim", panel.telsimWebhookConfigured ? "Activo" : "Off", panel.telsimWebhookConfigured ? "success" : "warn")}
-      ${renderStatChip("Cuota hoy", dailyRemaining, "default")}
+      ${renderStatChip(isDailySendLimitEnforced() ? "Cuota hoy" : "Enviados hoy", dailyRemaining, "default")}
     </div>`
       : "";
 
