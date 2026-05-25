@@ -43,14 +43,21 @@ import {
   renderAppSupportPage,
   renderAppTemplatesPage,
 } from "../views/app-ui/app-section-pages.js";
-import { listCampaignsByCompany } from "../services/smsCampaignService.js";
+import {
+  getCampaignByIdForCompany,
+  listCampaignsByCompany,
+} from "../services/smsCampaignService.js";
+import { getPanelSmsMessageById } from "../services/panelSmsMessageService.js";
+import type {
+  MockSmsSendResult,
+  PanelCampaignSendResult,
+} from "../types/sms-panel.js";
 import {
   sendPanelCampaign,
   type MassCampaignSendRow,
 } from "../services/smsPanelCampaignSendService.js";
 import { parseMassCampaignRowsJson } from "../utils/csvMassCampaign.js";
 import { MOCK_CONTACT_LISTS } from "../views/admin-ui/mock-data-stage3.js";
-import type { PanelCampaignSendResult } from "../types/sms-panel.js";
 import { listPanelMessagesByCompany } from "../services/panelSmsMessageService.js";
 import { getClientSmsReportData } from "../services/smsPanelReportsService.js";
 import { getLiveTestSendPageStatus } from "../services/smsLiveTestLimiterService.js";
@@ -213,6 +220,98 @@ function flash(req: Request): { flash?: string; error?: string } {
     flash: typeof req.query.ok === "string" ? req.query.ok : undefined,
     error: typeof req.query.error === "string" ? req.query.error : undefined,
   };
+}
+
+/** Evita reenvío duplicado al refrescar (Post-Redirect-Get). */
+function redirectSendSmsSuccess(
+  res: Response,
+  params: Record<string, string | undefined>,
+): void {
+  const q = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value) q.set(key, value);
+  }
+  res.redirect(303, `/app/send-sms?${q.toString()}`);
+}
+
+async function loadSendOutcomeFromQuery(
+  req: Request,
+  companyId: string,
+): Promise<{
+  sendResult?: MockSmsSendResult | null;
+  campaignResult?: PanelCampaignSendResult | null;
+  activeMode?: AppSendMode;
+}> {
+  const activeMode =
+    typeof req.query.mode === "string" &&
+    ["single", "mass", "scheduled", "template"].includes(req.query.mode)
+      ? (req.query.mode as AppSendMode)
+      : undefined;
+
+  let sendResult: MockSmsSendResult | null = null;
+  let campaignResult: PanelCampaignSendResult | null = null;
+
+  const messageIdRaw =
+    typeof req.query.message_id === "string" ? req.query.message_id : "";
+  if (messageIdRaw) {
+    try {
+      const messageId = validateUuidParam(messageIdRaw, "message_id");
+      const m = await getPanelSmsMessageById(messageId);
+      if (m?.company_id === companyId) {
+        const bal = await getCompanyBalance(companyId);
+        sendResult = {
+          messageId: m.id,
+          campaignId: m.campaign_id ?? "",
+          recipientNumber: m.recipient_number,
+          segments: m.segments,
+          balanceBefore: bal.availableSms + m.cost_sms,
+          balanceAfter: bal.availableSms,
+          status: m.status,
+          providerMessageId: m.provider_message_id ?? "",
+          sendMode: "live_test",
+        };
+      }
+    } catch {
+      /* query inválido */
+    }
+  }
+
+  const campaignIdRaw =
+    typeof req.query.campaign_id === "string" ? req.query.campaign_id : "";
+  if (campaignIdRaw) {
+    try {
+      const campaignId = validateUuidParam(campaignIdRaw, "campaign_id");
+      const c = await getCampaignByIdForCompany(campaignId, companyId);
+      if (c) {
+        const meta = (c.metadata ?? {}) as Record<string, unknown>;
+        const queued = typeof meta.queued === "number" ? meta.queued : 0;
+        const sendMode =
+          meta.send_mode === "scheduled" ? "scheduled" : "mass";
+        const bal = await getCompanyBalance(companyId);
+        const sentCount =
+          c.status === "sent"
+            ? c.valid_recipients
+            : Math.max(0, c.valid_recipients - queued);
+        campaignResult = {
+          campaignId: c.id,
+          campaignName: c.name,
+          mode: sendMode,
+          totalRecipients: c.valid_recipients,
+          sent: sentCount,
+          failed: Math.max(0, c.total_recipients - c.valid_recipients),
+          queued,
+          balanceBefore: bal.availableSms + c.real_sms_cost,
+          balanceAfter: bal.availableSms,
+          scheduledAt: c.scheduled_at,
+          smsConsumed: c.real_sms_cost,
+        };
+      }
+    } catch {
+      /* query inválido */
+    }
+  }
+
+  return { sendResult, campaignResult, activeMode };
 }
 
 async function buildAppContext(req: Request): Promise<AppPageContext | null> {
@@ -383,9 +482,13 @@ export async function getAppSendSms(
       ? await getSendControlPanelView(ctx.company.id)
       : null;
     const { flash: okFlash, error: errFlash } = flash(req);
+    const outcome = await loadSendOutcomeFromQuery(req, ctx.company.id);
     return renderAppSendSmsPage(ctx, {
       error: error ?? errFlash,
       flash: okFlash,
+      activeMode: outcome.activeMode,
+      sendResult: outcome.sendResult,
+      campaignResult: outcome.campaignResult,
       sendEnabled,
       liveTestStatus,
       controlPanel,
@@ -432,25 +535,14 @@ export async function postAppSendSms(
 
     const campaignSend = await trySendProductionCampaignFromForm(req, ctx);
     if (campaignSend) {
-      const sendEnabled = canCompanyUseLiveTestUi(ctx.company.id);
-      const liveTestStatus = sendEnabled
-        ? await getLiveTestSendPageStatus(ctx.company.id)
-        : null;
-      const controlPanel = sendEnabled
-        ? await getSendControlPanelView(ctx.company.id)
-        : null;
-      const html = renderAppSendSmsPage(ctx, {
-        flash: campaignResultFlash(
+      redirectSendSmsSuccess(res, {
+        ok: campaignResultFlash(
           campaignSend.result,
           campaignSend.activeMode,
         ),
-        campaignResult: campaignSend.result,
-        activeMode: campaignSend.activeMode,
-        sendEnabled,
-        liveTestStatus,
-        controlPanel,
+        mode: campaignSend.activeMode,
+        campaign_id: campaignSend.result.campaignId,
       });
-      res.type("html").send(html);
       return;
     }
 
@@ -495,20 +587,15 @@ export async function postAppSendSms(
         : "app_send_sms_live_test",
     });
 
-    const sendEnabled = canCompanyUseLiveTestUi(ctx.company.id);
-    const liveTestStatus = sendEnabled
-      ? await getLiveTestSendPageStatus(ctx.company.id)
-      : null;
-    const controlPanel = sendEnabled
-      ? await getSendControlPanelView(ctx.company.id)
-      : null;
-    const html = renderAppSendSmsPage(ctx, {
-      sendResult: result,
-      sendEnabled,
-      liveTestStatus,
-      controlPanel,
+    const okMsg = isVerifyTest
+      ? `Test QA enviado a ${result.recipientNumber}. Estado: ${result.status}.`
+      : `SMS enviado a ${result.recipientNumber}. ${result.segments} segmento(s). Saldo: ${result.balanceAfter} SMS.`;
+
+    redirectSendSmsSuccess(res, {
+      ok: okMsg,
+      mode: "single",
+      message_id: result.messageId,
     });
-    res.type("html").send(html);
   } catch (error) {
     const msg =
       error instanceof AppError

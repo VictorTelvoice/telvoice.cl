@@ -921,9 +921,21 @@ export function renderAppSendSmsPage(
         });
       }
       var sendForm = document.getElementById('tv-app-send-form');
+      var sendSubmit = document.getElementById('tv-send-submit');
+      var headerSendBtn = document.getElementById('tv-header-send-btn');
       if(sendForm){
-        sendForm.addEventListener('submit', function(){
+        sendForm.addEventListener('submit', function(ev){
           if(isBulkMode(getSendMode())) renderMassPreview();
+          if(sendForm.getAttribute('data-tv-submitting') === '1'){
+            ev.preventDefault();
+            return;
+          }
+          sendForm.setAttribute('data-tv-submitting', '1');
+          [sendSubmit, headerSendBtn].forEach(function(btn){
+            if(!btn) return;
+            btn.setAttribute('disabled', 'disabled');
+            if(btn === sendSubmit) btn.textContent = 'Enviando…';
+          });
         });
       }
       if(templateSelect){
