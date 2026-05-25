@@ -23,21 +23,21 @@ function dashboardMonthLabel(): string {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-function renderDashPanelHead(
+function renderDashBlockHead(
   title: string,
   link?: { href: string; label: string },
 ): string {
-  return `<header class="tv-dash-panel-head">
-    <h2 class="tv-dash-panel-head__title">${escapeHtml(title)}</h2>
+  return `<div class="tv-dash-block__head">
+    <h2 class="tv-dash-block__title">${escapeHtml(title)}</h2>
     ${
       link
-        ? `<a href="${escapeHtml(link.href)}" class="tv-dash-panel-head__link">${escapeHtml(link.label)}</a>`
+        ? `<a href="${escapeHtml(link.href)}" class="tv-dash-block__link">${escapeHtml(link.label)}</a>`
         : ""
     }
-  </header>`;
+  </div>`;
 }
 
-function renderDashQuickTile(options: {
+function renderDashActionBtn(options: {
   href: string;
   label: string;
   description: string;
@@ -45,12 +45,12 @@ function renderDashQuickTile(options: {
   variant?: "primary" | "default";
 }): string {
   const variant = options.variant ?? "default";
-  return `<a href="${escapeHtml(options.href)}" class="tv-dash-tile tv-dash-tile--${variant}">
-    <span class="material-symbols-outlined tv-dash-tile__icon" aria-hidden="true">${escapeHtml(options.icon)}</span>
-    <span class="tv-dash-tile__body">
-      <span class="tv-dash-tile__label">${escapeHtml(options.label)}</span>
-      <span class="tv-dash-tile__desc">${escapeHtml(options.description)}</span>
+  return `<a href="${escapeHtml(options.href)}" class="tv-dash-action-btn tv-dash-action-btn--${variant}">
+    <span class="tv-dash-action-btn__icon" aria-hidden="true">
+      <span class="material-symbols-outlined">${escapeHtml(options.icon)}</span>
     </span>
+    <span class="tv-dash-action-btn__label">${escapeHtml(options.label)}</span>
+    <span class="tv-dash-action-btn__desc">${escapeHtml(options.description)}</span>
   </a>`;
 }
 
@@ -143,71 +143,77 @@ export function renderAppDashboardPage(
         variant: "primary",
       })}
     </div>
-    <section class="tv-panel tv-client-dash-tiles-wrap">
-      ${renderDashPanelHead("Acciones rápidas")}
-      <div class="tv-dash-tiles">
-        ${renderDashQuickTile({
-          href: "/app/buy-sms",
-          label: "Comprar SMS",
-          description: "Recargar saldo",
-          icon: "shopping_cart",
-          variant: "primary",
-        })}
-        ${renderDashQuickTile({
-          href: "/app/send-sms",
-          label: "Enviar SMS",
-          description: "Individual o campaña",
-          icon: "send",
-        })}
-        ${renderDashQuickTile({
-          href: "/app/reports",
-          label: "Ver reportes",
-          description: "Métricas de envío",
-          icon: "monitoring",
-        })}
-        ${renderDashQuickTile({
-          href: "/app/support",
-          label: "Soporte",
-          description: "Ayuda y tickets",
-          icon: "support_agent",
-        })}
-        ${renderDashQuickTile({
-          href: "/app/api",
-          label: "Solicitar API",
-          description: "Integración REST",
-          icon: "api",
-        })}
-      </div>
-    </section>
+    <div class="tv-dash-block">
+      ${renderDashBlockHead("Acciones rápidas")}
+      <section class="tv-panel tv-dash-actions-panel">
+        <div class="tv-dash-action-btns">
+          ${renderDashActionBtn({
+            href: "/app/buy-sms",
+            label: "Comprar SMS",
+            description: "Recargar saldo",
+            icon: "shopping_cart",
+            variant: "primary",
+          })}
+          ${renderDashActionBtn({
+            href: "/app/send-sms",
+            label: "Enviar SMS",
+            description: "Individual o campaña",
+            icon: "send",
+          })}
+          ${renderDashActionBtn({
+            href: "/app/reports",
+            label: "Ver reportes",
+            description: "Métricas de envío",
+            icon: "monitoring",
+          })}
+          ${renderDashActionBtn({
+            href: "/app/support",
+            label: "Soporte",
+            description: "Ayuda y tickets",
+            icon: "support_agent",
+          })}
+          ${renderDashActionBtn({
+            href: "/app/api",
+            label: "Solicitar API",
+            description: "Integración REST",
+            icon: "api",
+          })}
+        </div>
+      </section>
+    </div>
     <div class="tv-dash-grid tv-dash-grid--2 tv-client-dash-tables">
-      <section class="tv-panel tv-client-dash-table-panel">
-        ${renderDashPanelHead("Últimas órdenes", {
+      <div class="tv-dash-block">
+        ${renderDashBlockHead("Últimas órdenes", {
           href: "/app/orders",
           label: "Ver todas",
         })}
-        <div class="tv-client-dash-table">
-          <table class="tv-table tv-table--compact tv-table--dash">
-            <thead><tr>
-              <th>Fecha</th><th>Bolsa</th><th>SMS</th><th>Pago</th><th>Acreditación</th>
-            </tr></thead>
-            <tbody>${orderRows}</tbody>
-          </table>
-        </div>
-      </section>
-      <section class="tv-panel tv-client-dash-table-panel">
-        ${renderDashPanelHead("Últimos movimientos", {
+        <section class="tv-panel tv-client-dash-table-panel">
+          <div class="tv-client-dash-table-inner">
+            <table class="tv-table tv-table--dash">
+              <thead><tr>
+                <th>Fecha</th><th>Bolsa</th><th>SMS</th><th>Pago</th><th>Acreditación</th>
+              </tr></thead>
+              <tbody>${orderRows}</tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+      <div class="tv-dash-block">
+        ${renderDashBlockHead("Últimos movimientos", {
           href: "/app/wallet",
           label: "Ver saldo",
         })}
-        <div class="tv-client-dash-table">
-          <table class="tv-table tv-table--compact tv-table--dash">
-            <thead><tr>
-              <th>Fecha</th><th>Tipo</th><th>SMS</th><th>Descripción</th>
-            </tr></thead>
-            <tbody>${txRows}</tbody>
-          </table>
-        </div>
-      </section>
+        <section class="tv-panel tv-client-dash-table-panel">
+          <div class="tv-client-dash-table-inner">
+            <table class="tv-table tv-table--dash">
+              <thead><tr>
+                <th>Fecha</th><th>Tipo</th><th>SMS</th><th>Descripción</th>
+              </tr></thead>
+              <tbody>${txRows}</tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     </div>
     </div>`;
   return wrapAppPage(ctx, "dashboard", "Dashboard", body);

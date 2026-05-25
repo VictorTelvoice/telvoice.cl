@@ -2353,84 +2353,112 @@
       margin-top: 0.5rem;
       line-height: 1.35;
     }
-    .tv-client-dash-tiles-wrap {
-      margin: 0;
+    .tv-dash-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
       width: 100%;
     }
-    .tv-dash-tiles {
+    .tv-dash-block__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0 0.15rem;
+    }
+    .tv-dash-block__title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--tv-text);
+    }
+    .tv-dash-block__link {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--tv-primary);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .tv-dash-block__link:hover {
+      text-decoration: underline;
+    }
+    .tv-dash-actions-panel {
+      overflow: hidden;
+      border-radius: 14px;
+      padding: 0;
+    }
+    .tv-dash-action-btns {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 1rem;
-      padding: 1.25rem 1.5rem 1.5rem;
+      gap: 0.85rem;
+      padding: 1.25rem 1.5rem 1.45rem;
       width: 100%;
       box-sizing: border-box;
     }
-    .tv-dash-tile {
+    .tv-dash-action-btn {
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      gap: 0.85rem;
-      min-height: 122px;
-      padding: 1.15rem 1.25rem 1.2rem;
-      border-radius: 14px;
-      border: 1px solid rgba(0, 82, 204, 0.12);
-      background: linear-gradient(165deg, #ffffff 0%, #f6f9ff 100%);
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+      gap: 0.75rem;
+      min-height: 118px;
+      padding: 1.1rem 1.15rem 1.15rem;
+      border-radius: 12px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
       color: inherit;
       text-decoration: none;
       transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
     }
-    .tv-dash-tile:hover {
-      transform: translateY(-2px);
-      border-color: rgba(0, 82, 204, 0.28);
-      box-shadow: 0 10px 24px rgba(0, 82, 204, 0.1);
+    .tv-dash-action-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(0, 82, 204, 0.22);
+      box-shadow: 0 8px 20px rgba(0, 82, 204, 0.1);
       text-decoration: none;
     }
-    .tv-dash-tile--primary {
-      border-color: rgba(0, 82, 204, 0.22);
-      background: linear-gradient(165deg, #eef4ff 0%, #f8fbff 52%, #ffffff 100%);
+    .tv-dash-action-btn--primary {
+      border-color: rgba(0, 82, 204, 0.18);
+      background: linear-gradient(165deg, #eef4ff 0%, #f8fbff 55%, #ffffff 100%);
     }
-    .tv-dash-tile__icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
+    .tv-dash-action-btn__icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.35rem;
-      background: linear-gradient(135deg, rgba(0, 82, 204, 0.12), rgba(14, 165, 233, 0.14));
+      font-size: 1.3rem;
+      background: rgba(0, 82, 204, 0.08);
       color: var(--tv-primary);
     }
-    .tv-dash-tile--primary .tv-dash-tile__icon {
+    .tv-dash-action-btn--primary .tv-dash-action-btn__icon {
       background: linear-gradient(135deg, #0052cc, #0ea5e9);
       color: #fff;
-      box-shadow: 0 4px 14px rgba(0, 82, 204, 0.28);
+      box-shadow: 0 4px 12px rgba(0, 82, 204, 0.25);
     }
-    .tv-dash-tile__body {
-      display: flex;
-      flex-direction: column;
-      gap: 0.3rem;
-      min-width: 0;
-    }
-    .tv-dash-tile__label {
+    .tv-dash-action-btn__label {
       display: block;
       font-weight: 700;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       line-height: 1.3;
       letter-spacing: -0.01em;
+      color: var(--tv-text);
     }
-    .tv-dash-tile__desc {
+    .tv-dash-action-btn__desc {
       display: block;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       line-height: 1.4;
       color: var(--tv-muted);
+      margin-top: -0.35rem;
     }
     .tv-client-dash-table-panel {
       overflow: hidden;
       border-radius: 14px;
+      padding: 0;
     }
-    .tv-client-dash-table {
-      padding: 0.5rem 1.1rem 0.85rem;
+    .tv-client-dash-table-inner {
+      padding: 1.35rem 1.5rem 1.45rem;
     }
     .tv-client-dash-table-panel .tv-table--dash {
       width: 100%;
@@ -2462,31 +2490,6 @@
     .tv-client-dash-table-panel .tv-table-empty {
       padding: 1.5rem 1rem !important;
     }
-    .tv-dash-panel-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      padding: 1rem 1.35rem;
-      border-bottom: 1px solid var(--tv-border);
-      background: linear-gradient(180deg, #fafbfd 0%, #fff 100%);
-    }
-    .tv-dash-panel-head__title {
-      margin: 0;
-      font-size: 0.98rem;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-    }
-    .tv-dash-panel-head__link {
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--tv-primary);
-      text-decoration: none;
-      white-space: nowrap;
-    }
-    .tv-dash-panel-head__link:hover {
-      text-decoration: underline;
-    }
     .tv-client-dash-tables {
       margin-bottom: 0;
     }
@@ -2501,23 +2504,23 @@
     }
     @media (max-width: 1100px) {
       .tv-kpi-grid--client { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .tv-dash-tiles {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 0.7rem;
+      .tv-dash-action-btns {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.75rem;
         padding: 1.1rem 1.2rem 1.25rem;
       }
-      .tv-dash-tile {
-        padding: 0.95rem 0.85rem 1rem;
+      .tv-dash-action-btn {
         min-height: 108px;
-      }
-      .tv-dash-tile__desc {
-        font-size: 0.72rem;
+        padding: 1rem;
       }
     }
     @media (max-width: 640px) {
       .tv-kpi-grid--client { grid-template-columns: 1fr; }
-      .tv-dash-tiles {
+      .tv-dash-action-btns {
         grid-template-columns: 1fr 1fr;
+      }
+      .tv-client-dash-table-inner {
+        padding: 1rem 1.1rem 1.15rem;
       }
     }
     @media (max-width: 960px) {
