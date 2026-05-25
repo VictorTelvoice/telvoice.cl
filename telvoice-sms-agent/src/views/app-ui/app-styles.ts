@@ -292,67 +292,67 @@ export function getAppPanelStyles(): string {
     }
     .tv-webhook-hint--warn { color: #b45309; }
     .tv-verify-section { margin: 0; }
-    .tv-verify-phones-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 1.25rem;
-      align-items: start;
-    }
-    .tv-verify-phone-col {
+    .tv-telsim-panel__body {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.65rem;
-      padding: 1rem;
-      border-radius: var(--tv-radius);
-      border: 1px solid var(--tv-border);
-      background: #fafbfc;
+      gap: 0.75rem;
     }
-    .tv-verify-phone-col--ready {
-      border-color: #a7f3d0;
-      background: linear-gradient(180deg, #f0fdf4 0%, #fafbfc 100%);
+    .tv-telsim-panel__select {
+      width: 100%;
+      align-self: stretch;
     }
-    .tv-verify-phone-col--pending {
-      border-color: #fde68a;
-      background: linear-gradient(180deg, #fffbeb 0%, #fafbfc 100%);
-    }
-    .tv-verify-phone-col__head {
+    .tv-telsim-panel__phone {
       width: 100%;
       display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 0.5rem;
+      justify-content: center;
+      padding: 0.25rem 0;
+      border-radius: 12px;
+      transition: box-shadow 0.2s ease;
     }
-    .tv-verify-phone-col__meta strong {
-      display: block;
-      font-size: 0.95rem;
+    .tv-telsim-panel__phone--ready {
+      box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.25);
     }
-    .tv-verify-phone-col__badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.35rem;
-      justify-content: flex-end;
+    .tv-telsim-panel__phone--pending {
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
     }
-    .tv-verify-phone-col__foot {
+    .tv-telsim-panel__status {
       margin: 0;
       text-align: center;
       width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 0.35rem;
     }
-    .tv-verify-phone-col__form {
+    .tv-telsim-panel__form {
       width: 100%;
       display: flex;
       justify-content: center;
     }
-    .tv-verify-phone-col__btn {
+    .tv-telsim-panel__btn {
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
     }
+    .tv-validation-panel .tv-panel__body {
+      padding-top: 0.5rem;
+      padding-bottom: 0.75rem;
+    }
+    .tv-stat-chips--compact {
+      grid-template-columns: 1fr 1fr;
+      gap: 0.4rem;
+      margin: 0;
+    }
+    .tv-stat-chips--compact .tv-stat-chip {
+      padding: 0.45rem 0.55rem;
+    }
+    .tv-stat-chips--compact .tv-stat-chip__value {
+      font-size: 0.88rem;
+    }
     .tv-verify-empty {
-      grid-column: 1 / -1;
-      padding: 2rem 1.25rem;
-      border: 1px dashed var(--tv-border);
-      border-radius: var(--tv-radius);
+      padding: 1.25rem;
       text-align: center;
       color: var(--tv-muted);
     }

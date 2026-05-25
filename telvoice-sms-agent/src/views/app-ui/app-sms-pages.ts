@@ -45,59 +45,73 @@ function renderChecklistItem(ok: boolean, label: string, hint?: string): string 
   </li>`;
 }
 
-function renderVerifyPhoneGrid(
+function renderTelsimVerifyPanel(
   panel: SendControlPanelView,
   canSend: boolean,
   defaultVerifyMessage: string,
 ): string {
   if (panel.verifyNumbers.length === 0) {
-    return `<div class="tv-verify-empty">
-      <p>No hay números de verificación configurados.</p>
-      <p class="field-hint">Registra líneas telsim.io en <code>TELVOICE_VERIFY_NUMBERS</code>.</p>
-    </div>`;
+    return `<section class="tv-panel tv-telsim-panel" id="tv-verify-section">
+      <header class="tv-section-head">
+        <h2 class="tv-section-head__title">Verificación telsim.io</h2>
+      </header>
+      <div class="tv-panel__body">
+        <div class="tv-verify-empty">
+          <p>No hay líneas configuradas.</p>
+          <p class="field-hint">Define <code>TELVOICE_VERIFY_NUMBERS</code> en el servidor.</p>
+        </div>
+      </div>
+    </section>`;
   }
 
-  return panel.verifyNumbers
-    .map((v) => {
-      const readyCls = v.readyForCampaign
-        ? "tv-verify-phone-col--ready"
-        : "tv-verify-phone-col--pending";
-      const disabled = canSend ? "" : "disabled";
-      const previewMsg =
-        v.lastTest?.message?.trim() || defaultVerifyMessage;
-      const sender = v.lastTest?.sender_id?.trim() || "TELVOICE";
-      return `<article class="tv-verify-phone-col ${readyCls}">
-        <header class="tv-verify-phone-col__head">
-          <div class="tv-verify-phone-col__meta">
-            <strong>${escapeHtml(v.entry.operator)}</strong>
-            <span class="field-hint">${escapeHtml(v.entry.label)} · ${escapeHtml(v.maskedPhone)}</span>
-          </div>
-          <div class="tv-verify-phone-col__badges">
-            ${renderPanelMessageStatusBadge(v.lastStatus, "live_test")}
-            ${v.entry.channel === "telsim" ? `<span class="badge badge-ok">telsim.io</span>` : ""}
-          </div>
-        </header>
-        ${renderHeroPhonePreview({
-          senderLabel: sender,
-          senderSub: "Vía Telvoice A2P",
-          message: previewMsg,
-          compact: true,
-        })}
-        <p class="field-hint tv-verify-phone-col__foot">
-          ${escapeHtml(formatVerifyLastTest(v.lastTestAt))}${v.dlrReceived ? " · DLR confirmado" : ""}
+  const first = panel.verifyNumbers[0]!;
+  const firstMsg = first.lastTest?.message?.trim() || defaultVerifyMessage;
+  const firstSender = first.lastTest?.sender_id?.trim() || "TELVOICE";
+  const disabled = canSend ? "" : "disabled";
+
+  const lineOptions = panel.verifyNumbers
+    .map(
+      (v, i) =>
+        `<option value="${i}">${escapeHtml(v.entry.operator)} — ${escapeHtml(v.entry.label)} (${escapeHtml(v.maskedPhone)})</option>`,
+    )
+    .join("");
+
+  return `<section class="tv-panel tv-telsim-panel" id="tv-verify-section">
+      <header class="tv-section-head">
+        <h2 class="tv-section-head__title">Verificación telsim.io</h2>
+        <p class="tv-section-head__sub">Selecciona operador y envía test QA</p>
+      </header>
+      <div class="tv-panel__body tv-telsim-panel__body">
+        <div class="form-group tv-telsim-panel__select">
+          <label for="tv-telsim-line-select">Línea de prueba</label>
+          <select id="tv-telsim-line-select" class="tv-input-full" ${disabled} aria-label="Seleccionar línea telsim">
+            ${lineOptions}
+          </select>
+        </div>
+        <div class="tv-telsim-panel__phone" id="tv-telsim-phone-wrap">
+          ${renderHeroPhonePreview({
+            senderLabel: firstSender,
+            senderSub: "Vía Telvoice A2P",
+            message: firstMsg,
+            bubbleId: "tv-telsim-bubble",
+            compact: true,
+          })}
+        </div>
+        <p class="tv-telsim-panel__status field-hint" id="tv-telsim-meta">
+          ${renderPanelMessageStatusBadge(first.lastStatus, "live_test")}
+          · ${escapeHtml(formatVerifyLastTest(first.lastTestAt))}${first.dlrReceived ? " · DLR OK" : ""}
         </p>
-        <form method="post" action="/app/send-sms" class="tv-verify-phone-col__form">
-          <input type="hidden" name="verify_id" value="${escapeHtml(v.entry.id)}" />
+        <form method="post" action="/app/send-sms" class="tv-telsim-panel__form" id="tv-telsim-qa-form">
+          <input type="hidden" name="verify_id" id="tv-telsim-verify-id" value="${escapeHtml(first.entry.id)}" />
           <input type="hidden" name="sender_id" value="TELVOICE" />
           <input type="hidden" name="quick_verify" value="1" />
-          <button type="submit" class="btn btn-sm btn-secondary tv-verify-phone-col__btn" ${disabled}>
+          <button type="submit" class="btn btn-secondary btn-sm tv-telsim-panel__btn" ${disabled}>
             <span class="material-symbols-outlined" aria-hidden="true">science</span>
             Enviar test QA
           </button>
         </form>
-      </article>`;
-    })
-    .join("");
+      </div>
+    </section>`;
 }
 
 export function renderAppSendSmsPage(
@@ -175,13 +189,26 @@ export function renderAppSendSmsPage(
     )
     .join("");
 
-  const verifySelectOptions = panel
-    ? panel.verifyNumbers
-        .map(
-          (v) =>
-            `<option value="${escapeHtml(v.entry.phone)}">${escapeHtml(v.entry.label)} (${escapeHtml(v.maskedPhone)})</option>`,
-        )
-        .join("")
+  const telsimVerifyDataJson = panel
+    ? JSON.stringify(
+        panel.verifyNumbers.map((v) => ({
+          id: v.entry.id,
+          operator: v.entry.operator,
+          label: v.entry.label,
+          masked: v.maskedPhone,
+          message:
+            v.lastTest?.message?.trim() || defaultVerifyMsg,
+          sender: v.lastTest?.sender_id?.trim() || "TELVOICE",
+          status: v.lastStatus,
+          lastTestAt: v.lastTestAt,
+          dlrReceived: v.dlrReceived,
+          ready: v.readyForCampaign,
+        })),
+      )
+    : "[]";
+
+  const telsimPanel = panel
+    ? renderTelsimVerifyPanel(panel, canSend, defaultVerifyMsg)
     : "";
 
   const opsChips =
@@ -254,17 +281,7 @@ export function renderAppSendSmsPage(
             </div>
             <div class="form-group">
               <label for="tv-send-to">Número destinatario</label>
-              <div class="tv-send-to-row">
-                <input class="tv-input-full" name="to" id="tv-send-to" placeholder="+56912345678" required ${disabledAttr} />
-                ${
-                  verifySelectOptions
-                    ? `<select class="tv-input-full tv-send-to-pick" id="tv-verify-pick" ${disabledAttr} aria-label="Línea telsim">
-                  <option value="">Línea telsim…</option>
-                  ${verifySelectOptions}
-                </select>`
-                    : ""
-                }
-              </div>
+              <input class="tv-input-full" name="to" id="tv-send-to" placeholder="+56912345678" required ${disabledAttr} />
             </div>
             <div class="form-group">
               <label for="tv-sms-message">Mensaje SMS</label>
@@ -283,29 +300,22 @@ export function renderAppSendSmsPage(
         ${renderPanel("Checklist pre-campaña", checklistHtml)}
       </div>
       <aside class="tv-send-aside">
-        <section class="tv-panel">
-          <header class="tv-section-head"><h2 class="tv-section-head__title">Validación</h2></header>
-          <div class="tv-panel__body">
-            <div class="tv-stat-chips">
-              ${renderStatChip("Caracteres", "0", "default")}
-              ${renderStatChip("Segmentos", "0", "primary")}
-              ${renderStatChip("Costo est.", "0 SMS", "primary")}
-              ${renderStatChip("Saldo después", fmtSms(avail), "success")}
-              ${renderStatChip("Codificación", "GSM-7", "default")}
-              ${renderStatChip("Saldo actual", fmtSms(avail), "default")}
-            </div>
-            ${renderNotice("Los SMS se descontarán del saldo si el proveedor acepta el envío.")}
-            ${
-              panel.webhookConfigured
-                ? `<p class="field-hint tv-webhook-hint"><code>${escapeHtml(panel.webhookUrl)}</code></p>`
-                : `<p class="field-hint tv-webhook-hint tv-webhook-hint--warn">Configure PUBLIC_WEBHOOK_BASE_URL para DLR.</p>`
-            }
-          </div>
-        </section>
+        ${telsimPanel}
         <section class="tv-panel">
           <header class="tv-section-head"><h2 class="tv-section-head__title">Vista previa móvil</h2></header>
           <div class="tv-panel__body tv-panel__body--center">
             ${renderMobilePreview("TELVOICE", "Hola, tu mensaje aparecerá aquí.")}
+          </div>
+        </section>
+        <section class="tv-panel tv-validation-panel">
+          <header class="tv-section-head"><h2 class="tv-section-head__title">Validación</h2></header>
+          <div class="tv-panel__body">
+            <div class="tv-stat-chips tv-stat-chips--compact tv-validation-chips">
+              ${renderStatChip("Caracteres", "0", "default")}
+              ${renderStatChip("Segmentos", "0", "primary")}
+              ${renderStatChip("Costo est.", "0 SMS", "primary")}
+              ${renderStatChip("Codificación", "GSM-7", "default")}
+            </div>
           </div>
         </section>
       </aside>
@@ -323,24 +333,14 @@ export function renderAppSendSmsPage(
     ${preCampaignBanner}
     ${successBlock}
     ${sendForm}
-    <section class="tv-panel tv-verify-section" id="tv-verify-section">
-      <header class="tv-section-head">
-        <h2 class="tv-section-head__title">Verificación telsim.io</h2>
-        <p class="tv-section-head__sub">Cada línea en un dispositivo de prueba — confirma entrega vía webhook.</p>
-      </header>
-      <div class="tv-panel__body">
-        <div class="tv-verify-phones-grid">
-          ${panel ? renderVerifyPhoneGrid(panel, canSend, defaultVerifyMsg) : ""}
-        </div>
-      </div>
-    </section>
     </div>
     <script>
     (function(){
       var ta = document.getElementById('tv-sms-message');
       var senderInput = document.getElementById('sender_id');
       var toInput = document.getElementById('tv-send-to');
-      var verifyPick = document.getElementById('tv-verify-pick');
+      var telsimSelect = document.getElementById('tv-telsim-line-select');
+      var telsimLines = ${telsimVerifyDataJson};
       var avail = ${avail};
       var maxLiveSegments = ${lt?.maxSegments ?? 3};
       var canSend = ${canSend ? "true" : "false"};
@@ -379,21 +379,52 @@ export function renderAppSendSmsPage(
         });
       }
       function setChip(label, value){
-        document.querySelectorAll('.tv-stat-chip').forEach(function(chip){
+        document.querySelectorAll('.tv-validation-chips .tv-stat-chip').forEach(function(chip){
           var l = chip.querySelector('.tv-stat-chip__label');
           var val = chip.querySelector('.tv-stat-chip__value');
           if(l && val && l.textContent === label) val.textContent = value;
         });
       }
+      function formatTelsimLastTest(at){
+        if(!at) return 'Sin test reciente';
+        try {
+          var d = new Date(at);
+          return d.toLocaleString('es-CL', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+        } catch(e) { return at; }
+      }
+      function statusBadgeHtml(status){
+        var map = { delivered:'ok', sent:'ok', pending:'warn', queued:'warn', failed:'err' };
+        var cls = map[status] || 'muted';
+        var label = status || '—';
+        return '<span class="badge badge-'+cls+'">'+label+'</span>';
+      }
+      function updateTelsimLine(){
+        if(!telsimSelect || !telsimLines.length) return;
+        var line = telsimLines[Number(telsimSelect.value)] || telsimLines[0];
+        if(!line) return;
+        var telsimVerifyId = document.getElementById('tv-telsim-verify-id');
+        if(telsimVerifyId) telsimVerifyId.value = line.id;
+        var bubble = document.getElementById('tv-telsim-bubble');
+        var title = document.querySelector('#tv-telsim-phone-wrap .tv-hero-phone__app-title');
+        if(bubble) bubble.textContent = line.message || defaultVerifyMsg;
+        if(title) title.textContent = line.sender || 'TELVOICE';
+        var metaEl = document.getElementById('tv-telsim-meta');
+        if(metaEl) {
+          metaEl.innerHTML = statusBadgeHtml(line.status) + ' · ' + formatTelsimLastTest(line.lastTestAt) + (line.dlrReceived ? ' · DLR OK' : '');
+        }
+        var wrap = document.getElementById('tv-telsim-phone-wrap');
+        if(wrap) {
+          wrap.classList.toggle('tv-telsim-panel__phone--ready', !!line.ready);
+          wrap.classList.toggle('tv-telsim-panel__phone--pending', !line.ready);
+        }
+      }
       function refresh(){
         if(!ta) return;
         var t = ta.value || '';
         var c = calc(t);
-        var after = Math.max(0, avail - c.cost);
         setChip('Caracteres', String(c.chars));
         setChip('Segmentos', String(c.seg));
         setChip('Costo est.', c.cost + ' SMS');
-        setChip('Saldo después', after.toLocaleString('es-CL'));
         setChip('Codificación', c.enc);
         var bubble = document.querySelector('.tv-phone__bubble');
         var phoneHeader = document.querySelector('.tv-phone__header');
@@ -411,11 +442,9 @@ export function renderAppSendSmsPage(
         if(submitBtn && canSend) submitBtn.disabled = disabled;
         if(headerBtn && canSend) headerBtn.disabled = disabled;
       }
-      if(verifyPick && toInput){
-        verifyPick.addEventListener('change', function(){
-          if(verifyPick.value) toInput.value = verifyPick.value;
-          refresh();
-        });
+      if(telsimSelect){
+        telsimSelect.addEventListener('change', updateTelsimLine);
+        updateTelsimLine();
       }
       document.querySelectorAll('.tv-var-btn').forEach(function(btn){
         btn.addEventListener('click', function(){
@@ -438,7 +467,8 @@ export function renderAppSendSmsPage(
           var id = btn.getAttribute('data-tv-send-mode');
           if(id === 'verify') {
             var el = document.getElementById('tv-verify-section');
-            if(el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if(el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            if(telsimSelect) telsimSelect.focus();
           }
           if(id === 'mass') window.location.href = '/app/campaigns';
           if(id === 'template') window.location.href = '/app/templates';
