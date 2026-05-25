@@ -24,6 +24,11 @@ import { recordTpsSend } from "./smsTpsLimiterService.js";
 import { resolveRouteForMessage } from "./smsRoutingService.js";
 import { enqueueMessage } from "./smsQueueService.js";
 import { findCompanyById } from "./companyService.js";
+import {
+  findCampaignByIdempotencyKey,
+  isPostgresUniqueViolation,
+  panelCampaignSendResultFromRow,
+} from "./smsSendIdempotencyService.js";
 
 export type MassCampaignSendRow = {
   phone: string;
@@ -44,6 +49,8 @@ export type SendPanelCampaignInput = {
   scheduledAt?: string | null;
   createdBy?: string | null;
   sendSource?: string;
+  /** Evita campaña duplicada si el POST se repite. */
+  idempotencyKey?: string | null;
 };
 
 type ResolvedCampaignItem = {
@@ -342,6 +349,16 @@ export async function sendPanelCampaign(
 ): Promise<PanelCampaignSendResult> {
   const sendSource = input.sendSource ?? "app_send_sms_campaign";
 
+  if (input.idempotencyKey?.trim()) {
+    const existing = await findCampaignByIdempotencyKey(
+      input.companyId,
+      input.idempotencyKey.trim(),
+    );
+    if (existing) {
+      return panelCampaignSendResultFromRow(existing, input.companyId);
+    }
+  }
+
   const senderId = String(input.senderId ?? "").trim();
   if (!senderId) {
     throw new AppError("El remitente (Sender ID) es obligatorio.", 400);
@@ -373,27 +390,49 @@ export async function sendPanelCampaign(
   const isScheduled =
     input.mode === "scheduled" && Boolean(input.scheduledAt?.trim());
 
-  const campaign = await createSmsCampaign({
-    companyId: input.companyId,
-    name: input.campaignName,
-    senderId,
-    message: campaignMessage,
-    status: "processing",
-    totalRecipients: rawCount,
-    validRecipients: items.length,
-    invalidRecipients: invalid,
-    estimatedSmsCost: totalCost,
-    realSmsCost: 0,
-    mode: "live_test",
-    createdBy: input.createdBy ?? null,
-    scheduledAt: input.scheduledAt ?? null,
-    metadata: {
-      source: sendSource,
-      send_mode: input.mode,
-      production: true,
-      personalized_messages: personalized,
-    },
-  });
+  const campaignMetadata: Record<string, unknown> = {
+    source: sendSource,
+    send_mode: input.mode,
+    production: true,
+    personalized_messages: personalized,
+  };
+  if (input.idempotencyKey?.trim()) {
+    campaignMetadata.idempotency_key = input.idempotencyKey.trim();
+  }
+
+  let campaign;
+  try {
+    campaign = await createSmsCampaign({
+      companyId: input.companyId,
+      name: input.campaignName,
+      senderId,
+      message: campaignMessage,
+      status: "processing",
+      totalRecipients: rawCount,
+      validRecipients: items.length,
+      invalidRecipients: invalid,
+      estimatedSmsCost: totalCost,
+      realSmsCost: 0,
+      mode: "live_test",
+      createdBy: input.createdBy ?? null,
+      scheduledAt: input.scheduledAt ?? null,
+      metadata: campaignMetadata,
+    });
+  } catch (err) {
+    if (
+      input.idempotencyKey?.trim() &&
+      isPostgresUniqueViolation(err)
+    ) {
+      const existing = await findCampaignByIdempotencyKey(
+        input.companyId,
+        input.idempotencyKey.trim(),
+      );
+      if (existing) {
+        return panelCampaignSendResultFromRow(existing, input.companyId);
+      }
+    }
+    throw err;
+  }
 
   let sent = 0;
   let failed = 0;

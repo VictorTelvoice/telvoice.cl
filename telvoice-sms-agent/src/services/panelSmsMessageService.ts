@@ -214,6 +214,27 @@ export async function listPanelMessagesByCompany(
   return (data ?? []) as PanelSmsMessageRow[];
 }
 
+export async function listPanelMessagesByCampaign(
+  campaignId: string,
+  limit = 50,
+): Promise<PanelSmsMessageRow[]> {
+  const { data, error } = await getSupabase()
+    .from("panel_sms_messages")
+    .select("*")
+    .eq("campaign_id", campaignId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return [];
+    }
+    wrapSupabaseError(error, "listPanelMessagesByCampaign");
+  }
+
+  return (data ?? []) as PanelSmsMessageRow[];
+}
+
 export async function listAllPanelMessagesWithCompany(
   limit = 100,
 ): Promise<PanelSmsMessageWithCompany[]> {

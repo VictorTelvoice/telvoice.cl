@@ -25,6 +25,11 @@ import { assertLiveTestTrafficAllowed } from "./smsDispatchWorkerService.js";
 import { recordTpsSend } from "./smsTpsLimiterService.js";
 import { resolveRouteForMessage } from "./smsRoutingService.js";
 import { AppError } from "../utils/errors.js";
+import {
+  findCampaignByIdempotencyKey,
+  isPostgresUniqueViolation,
+  mockSmsSendResultFromIdempotentCampaign,
+} from "./smsSendIdempotencyService.js";
 
 export type SendMockSmsInput = {
   companyId: string;
@@ -37,6 +42,7 @@ export type SendMockSmsInput = {
 
 export type SendPanelSmsInput = SendMockSmsInput & {
   sendSource?: "app_send_sms_live_test" | "app_send_sms_verify_test";
+  idempotencyKey?: string | null;
 };
 
 async function assertCompanyCanSend(companyId: string): Promise<CompanyRow> {
@@ -124,6 +130,19 @@ export async function sendLiveTestSms(
 ): Promise<MockSmsSendResult> {
   const sendSource = input.sendSource ?? "app_send_sms_live_test";
 
+  if (input.idempotencyKey?.trim()) {
+    const existing = await findCampaignByIdempotencyKey(
+      input.companyId,
+      input.idempotencyKey.trim(),
+    );
+    if (existing) {
+      return mockSmsSendResultFromIdempotentCampaign(
+        existing,
+        input.companyId,
+      );
+    }
+  }
+
   const phone = assertLiveTestSendAllowed({
     companyId: input.companyId,
     to: input.to,
@@ -140,21 +159,49 @@ export async function sendLiveTestSms(
 
   const campaignName = input.campaignName?.trim() || defaultCampaignName();
 
-  const campaign = await createSmsCampaign({
-    companyId: input.companyId,
-    name: campaignName,
-    senderId,
-    message: messageText,
-    status: "processing",
-    totalRecipients: 1,
-    validRecipients: 1,
-    invalidRecipients: 0,
-    estimatedSmsCost: segmentInfo.costSms,
-    realSmsCost: 0,
+  const campaignMetadata: Record<string, unknown> = {
+    source: sendSource,
     mode: "live_test",
-    createdBy: input.createdBy ?? null,
-    metadata: { source: sendSource, mode: "live_test" },
-  });
+  };
+  if (input.idempotencyKey?.trim()) {
+    campaignMetadata.idempotency_key = input.idempotencyKey.trim();
+  }
+
+  let campaign;
+  try {
+    campaign = await createSmsCampaign({
+      companyId: input.companyId,
+      name: campaignName,
+      senderId,
+      message: messageText,
+      status: "processing",
+      totalRecipients: 1,
+      validRecipients: 1,
+      invalidRecipients: 0,
+      estimatedSmsCost: segmentInfo.costSms,
+      realSmsCost: 0,
+      mode: "live_test",
+      createdBy: input.createdBy ?? null,
+      metadata: campaignMetadata,
+    });
+  } catch (err) {
+    if (
+      input.idempotencyKey?.trim() &&
+      isPostgresUniqueViolation(err)
+    ) {
+      const existing = await findCampaignByIdempotencyKey(
+        input.companyId,
+        input.idempotencyKey.trim(),
+      );
+      if (existing) {
+        return mockSmsSendResultFromIdempotentCampaign(
+          existing,
+          input.companyId,
+        );
+      }
+    }
+    throw err;
+  }
 
   const resolved = await resolveRouteForMessage({
     companyId: input.companyId,

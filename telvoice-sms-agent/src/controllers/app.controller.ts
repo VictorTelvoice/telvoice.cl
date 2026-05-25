@@ -69,6 +69,14 @@ import {
 import { buildTelsimVerifyLinesPreview } from "../services/telsimWebhookService.js";
 import { getRegisteredVerifyNumbers } from "../config/verifyNumbers.js";
 import { sendPanelSms } from "../services/smsSendService.js";
+import {
+  beginSendSmsIdempotency,
+  completeSendSmsIdempotency,
+  failSendSmsIdempotency,
+  issueSendSmsIdempotencyKey,
+  panelCampaignSendResultFromRow,
+  type SendSmsRedirectParams,
+} from "../services/smsSendIdempotencyService.js";
 import { AppError } from "../utils/errors.js";
 import {
   APP_SCHEDULE_TIMEZONE,
@@ -136,6 +144,7 @@ function collectMassCampaignRows(req: Request): {
 async function trySendProductionCampaignFromForm(
   req: Request,
   ctx: AppPageContext,
+  idempotencyKey: string,
 ): Promise<{ result: PanelCampaignSendResult; activeMode: AppSendMode } | null> {
   const sendMode = String(req.body?.send_mode ?? "single") as AppSendMode;
   if (sendMode !== "mass" && sendMode !== "scheduled") {
@@ -196,6 +205,7 @@ async function trySendProductionCampaignFromForm(
     createdBy:
       ctx.profile.profileId ?? ctx.profile.adminUserId ?? undefined,
     sendSource: `app_send_sms_${sendMode}`,
+    idempotencyKey,
   });
 
   return { result, activeMode: sendMode };
@@ -225,7 +235,7 @@ function flash(req: Request): { flash?: string; error?: string } {
 /** Evita reenvío duplicado al refrescar (Post-Redirect-Get). */
 function redirectSendSmsSuccess(
   res: Response,
-  params: Record<string, string | undefined>,
+  params: SendSmsRedirectParams | Record<string, string | undefined>,
 ): void {
   const q = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
@@ -283,28 +293,7 @@ async function loadSendOutcomeFromQuery(
       const campaignId = validateUuidParam(campaignIdRaw, "campaign_id");
       const c = await getCampaignByIdForCompany(campaignId, companyId);
       if (c) {
-        const meta = (c.metadata ?? {}) as Record<string, unknown>;
-        const queued = typeof meta.queued === "number" ? meta.queued : 0;
-        const sendMode =
-          meta.send_mode === "scheduled" ? "scheduled" : "mass";
-        const bal = await getCompanyBalance(companyId);
-        const sentCount =
-          c.status === "sent"
-            ? c.valid_recipients
-            : Math.max(0, c.valid_recipients - queued);
-        campaignResult = {
-          campaignId: c.id,
-          campaignName: c.name,
-          mode: sendMode,
-          totalRecipients: c.valid_recipients,
-          sent: sentCount,
-          failed: Math.max(0, c.total_recipients - c.valid_recipients),
-          queued,
-          balanceBefore: bal.availableSms + c.real_sms_cost,
-          balanceAfter: bal.availableSms,
-          scheduledAt: c.scheduled_at,
-          smsConsumed: c.real_sms_cost,
-        };
+        campaignResult = await panelCampaignSendResultFromRow(c, companyId);
       }
     } catch {
       /* query inválido */
@@ -483,6 +472,12 @@ export async function getAppSendSms(
       : null;
     const { flash: okFlash, error: errFlash } = flash(req);
     const outcome = await loadSendOutcomeFromQuery(req, ctx.company.id);
+    const idempotencyKey = sendEnabled
+      ? await issueSendSmsIdempotencyKey(
+          ctx.company.id,
+          ctx.profile.profileId ?? ctx.profile.adminUserId ?? null,
+        )
+      : undefined;
     return renderAppSendSmsPage(ctx, {
       error: error ?? errFlash,
       flash: okFlash,
@@ -492,6 +487,7 @@ export async function getAppSendSms(
       sendEnabled,
       liveTestStatus,
       controlPanel,
+      idempotencyKey,
     });
   });
 }
@@ -519,12 +515,17 @@ export async function postAppSendSms(
   req: Request,
   res: Response,
 ): Promise<void> {
+  const idempotencyKey = String(req.body?.idempotency_key ?? "").trim();
+  let companyId: string | undefined;
+
   try {
     const ctx = await buildAppContext(req);
     if (!ctx) {
       res.redirect("/app/send-sms?error=Empresa%20no%20asociada");
       return;
     }
+
+    companyId = ctx.company.id;
 
     if (!canOperateClientPanel(ctx.profile.role)) {
       res.redirect(
@@ -533,16 +534,51 @@ export async function postAppSendSms(
       return;
     }
 
-    const campaignSend = await trySendProductionCampaignFromForm(req, ctx);
+    if (!idempotencyKey) {
+      res.redirect(
+        "/app/send-sms?error=" +
+          encodeURIComponent(
+            "Sesión de envío inválida. Recarga la página Enviar SMS e intenta de nuevo.",
+          ),
+      );
+      return;
+    }
+
+    const claim = await beginSendSmsIdempotency(companyId, idempotencyKey);
+    if (claim.action === "replay") {
+      redirectSendSmsSuccess(res, claim.redirect);
+      return;
+    }
+    if (claim.action === "busy") {
+      res.redirect(
+        "/app/send-sms?error=" +
+          encodeURIComponent(
+            "Este envío ya se está procesando. Espera unos segundos y revisa Campañas o Bandeja.",
+          ),
+      );
+      return;
+    }
+
+    const campaignSend = await trySendProductionCampaignFromForm(
+      req,
+      ctx,
+      idempotencyKey,
+    );
     if (campaignSend) {
-      redirectSendSmsSuccess(res, {
+      const redirect: SendSmsRedirectParams = {
         ok: campaignResultFlash(
           campaignSend.result,
           campaignSend.activeMode,
         ),
         mode: campaignSend.activeMode,
         campaign_id: campaignSend.result.campaignId,
+      };
+      await completeSendSmsIdempotency({
+        companyId,
+        key: idempotencyKey,
+        redirect,
       });
+      redirectSendSmsSuccess(res, redirect);
       return;
     }
 
@@ -585,17 +621,24 @@ export async function postAppSendSms(
       sendSource: isVerifyTest
         ? "app_send_sms_verify_test"
         : "app_send_sms_live_test",
+      idempotencyKey,
     });
 
     const okMsg = isVerifyTest
       ? `Test QA enviado a ${result.recipientNumber}. Estado: ${result.status}.`
       : `SMS enviado a ${result.recipientNumber}. ${result.segments} segmento(s). Saldo: ${result.balanceAfter} SMS.`;
 
-    redirectSendSmsSuccess(res, {
+    const redirect: SendSmsRedirectParams = {
       ok: okMsg,
       mode: "single",
       message_id: result.messageId,
+    };
+    await completeSendSmsIdempotency({
+      companyId,
+      key: idempotencyKey,
+      redirect,
     });
+    redirectSendSmsSuccess(res, redirect);
   } catch (error) {
     const msg =
       error instanceof AppError
@@ -603,6 +646,17 @@ export async function postAppSendSms(
         : error instanceof Error
           ? error.message
           : "No se pudo enviar el SMS";
+    if (companyId && idempotencyKey) {
+      try {
+        await failSendSmsIdempotency({
+          companyId,
+          key: idempotencyKey,
+          errorText: msg,
+        });
+      } catch {
+        /* no bloquear redirect de error */
+      }
+    }
     res.redirect(`/app/send-sms?error=${encodeURIComponent(msg)}`);
   }
 }

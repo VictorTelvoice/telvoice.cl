@@ -41,6 +41,8 @@ export type SendSmsPageOptions = {
   sendEnabled?: boolean;
   liveTestStatus?: LiveTestSendPageStatus | null;
   controlPanel?: SendControlPanelView | null;
+  /** Clave de un solo uso; evita envíos duplicados en servidor. */
+  idempotencyKey?: string;
 };
 
 function renderContactListOptions(disabled: boolean): string {
@@ -77,6 +79,7 @@ function renderTelsimVerifyPanel(
   panel: SendControlPanelView,
   canSend: boolean,
   defaultVerifyMessage: string,
+  idempotencyKey?: string,
 ): string {
   if (panel.verifyNumbers.length === 0) {
     return `<section class="tv-panel tv-telsim-panel" id="tv-verify-section">
@@ -153,6 +156,7 @@ function renderTelsimVerifyPanel(
           · ${escapeHtml(formatVerifyLastTest(first.lastTestAt))}${first.dlrReceived ? " · DLR OK" : ""}${firstInbound ? " · SMS entrante telsim" : ""}
         </p>
         <form method="post" action="/app/send-sms" class="tv-telsim-panel__form" id="tv-telsim-qa-form">
+          ${idempotencyKey ? `<input type="hidden" name="idempotency_key" value="${escapeHtml(idempotencyKey)}" />` : ""}
           <input type="hidden" name="verify_id" id="tv-telsim-verify-id" value="${escapeHtml(first.entry.id)}" />
           <input type="hidden" name="sender_id" value="TELVOICE" />
           <input type="hidden" name="quick_verify" value="1" />
@@ -283,7 +287,7 @@ export function renderAppSendSmsPage(
     : "[]";
 
   const telsimPanel = panel
-    ? renderTelsimVerifyPanel(panel, canSend, defaultVerifyMsg)
+    ? renderTelsimVerifyPanel(panel, canSend, defaultVerifyMsg, opts.idempotencyKey)
     : "";
 
   const opsChips =
@@ -355,6 +359,7 @@ export function renderAppSendSmsPage(
     ? checklistHtml
     : `
     <form method="post" action="/app/send-sms" id="tv-app-send-form" class="tv-send-layout">
+      ${opts.idempotencyKey ? `<input type="hidden" name="idempotency_key" value="${escapeHtml(opts.idempotencyKey)}" />` : ""}
       <input type="hidden" name="send_mode" id="tv-send-mode" value="${escapeHtml(activeMode)}" />
       <textarea name="bulk_recipients" id="tv-bulk-recipients" hidden aria-hidden="true"></textarea>
       <input type="hidden" name="bulk_rows_json" id="tv-bulk-rows-json" value="" />
