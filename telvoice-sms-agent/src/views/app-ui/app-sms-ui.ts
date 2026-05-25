@@ -79,6 +79,19 @@ export function renderAdminPanelModeBadge(
   return renderSmsModeBadge(mode);
 }
 
+export function renderCampaignModeLabel(campaign: SmsCampaignRow): string {
+  const meta = campaign.metadata as Record<string, unknown> | undefined;
+  const sendMode =
+    meta && typeof meta.send_mode === "string" ? meta.send_mode : null;
+  if (sendMode === "scheduled") {
+    return badge("warn", "PROGRAMADO");
+  }
+  if (sendMode === "mass") {
+    return badge("ok", "MASIVA");
+  }
+  return renderSmsModeBadge(campaign.mode);
+}
+
 export function renderCampaignStatusBadge(status: string): string {
   const map: Record<string, string> = {
     completed: "ok",
@@ -127,7 +140,7 @@ export function renderCampaignsTableRows(campaigns: SmsCampaignRow[]): string {
       <td>${c.valid_recipients}</td>
       <td>${c.real_sms_cost}</td>
       <td>${renderCampaignStatusBadge(c.status)}</td>
-      <td>${renderSmsModeBadge(c.mode)}</td>
+      <td>${renderCampaignModeLabel(c)}</td>
       <td><code class="tv-code-sm">${escapeHtml(c.id.slice(0, 8))}</code></td>
     </tr>`,
     )

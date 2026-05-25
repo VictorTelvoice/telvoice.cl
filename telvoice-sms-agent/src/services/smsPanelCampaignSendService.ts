@@ -233,11 +233,11 @@ async function queueOneForSchedule(input: {
       segments: input.segmentInfo.segments,
       costSms: input.segmentInfo.costSms,
       status: "queued",
-      mode: "scheduled",
+      mode: "live_test",
       provider: resolved.provider.code,
       metadata: {
         source: input.sendSource,
-        mode: "scheduled",
+        send_mode: "scheduled",
         scheduled_at: input.scheduledAt,
       },
     });
@@ -342,7 +342,7 @@ export async function sendPanelCampaign(
     invalidRecipients: invalid,
     estimatedSmsCost: totalCost,
     realSmsCost: 0,
-    mode: input.mode,
+    mode: "live_test",
     createdBy: input.createdBy ?? null,
     scheduledAt: input.scheduledAt ?? null,
     metadata: {
