@@ -88,8 +88,10 @@ export function buildDefaultVerifyMessage(label?: string): string {
 
 export async function getSendControlPanelView(
   companyId: string,
+  sendStatus?: LiveTestSendPageStatus,
 ): Promise<SendControlPanelView> {
-  const sendStatus = await getLiveTestSendPageStatus(companyId);
+  const resolvedSendStatus =
+    sendStatus ?? (await getLiveTestSendPageStatus(companyId));
   const verifyEntries = getRegisteredVerifyNumbers();
   const recentMessages = await listPanelMessagesByCompany(companyId, 80);
   const verifyMessages = recentMessages.filter((m) => {
@@ -160,20 +162,20 @@ export async function getSendControlPanelView(
     {
       id: "route",
       label: "Ruta SMS disponible",
-      ok: sendStatus.routeActive && sendStatus.providerActive,
+      ok: resolvedSendStatus.routeActive && resolvedSendStatus.providerActive,
     },
     {
       id: "live",
       label: "Envío habilitado en cuenta",
-      ok: sendStatus.liveEnabledOnPlan,
+      ok: resolvedSendStatus.liveEnabledOnPlan,
     },
     {
       id: "balance",
       label: "Cuota diaria disponible",
       ok:
-        sendStatus.dailyRemaining > 0 &&
-        (sendStatus.trafficDailyRemaining == null ||
-          sendStatus.trafficDailyRemaining > 0),
+        resolvedSendStatus.dailyRemaining > 0 &&
+        (resolvedSendStatus.trafficDailyRemaining == null ||
+          resolvedSendStatus.trafficDailyRemaining > 0),
     },
   ];
 
@@ -191,7 +193,7 @@ export async function getSendControlPanelView(
     verifyNumbers.every((v) => v.readyForCampaign);
 
   return {
-    sendStatus,
+    sendStatus: resolvedSendStatus,
     verifyNumbers,
     webhookUrl,
     webhookConfigured,

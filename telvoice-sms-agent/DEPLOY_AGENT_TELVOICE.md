@@ -184,6 +184,14 @@ server {
     listen 80;
     server_name agent.telvoice.cl;
 
+    # Compresión HTML/CSS/JSON (panel SSR)
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 5;
+    gzip_min_length 256;
+    gzip_types text/plain text/css text/javascript application/javascript application/json application/xml image/svg+xml;
+
     location / {
         proxy_pass http://127.0.0.1:3001;
         proxy_http_version 1.1;

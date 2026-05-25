@@ -4,13 +4,14 @@ import {
   renderFaviconLink,
   renderSidebarBrand,
 } from "../brand.js";
-import { getAdminStyles } from "../admin-ui/styles.js";
 import {
   APP_NAV_PRIMARY,
   APP_NAV_REST,
   APP_NAV_SEND_SMS,
 } from "./app-nav.js";
-import { getAppPanelStyles } from "./app-styles.js";
+
+/** CSS estático generado por npm run build:app-css (cacheable). */
+const APP_PANEL_STYLESHEET = "/app-panel.css";
 
 export type AppLayoutTopbar = {
   companyName: string;
@@ -139,15 +140,7 @@ export function renderAppLayout(options: AppLayoutOptions): string {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
-  <style>
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-      vertical-align: middle;
-      user-select: none;
-    }
-    ${getAdminStyles()}
-    ${getAppPanelStyles()}
-  </style>
+  <link rel="stylesheet" href="${APP_PANEL_STYLESHEET}" />
 </head>
 <body class="tv-admin tv-app-client">
   <div class="tv-app">
@@ -172,7 +165,7 @@ export function renderAppMinimalPage(title: string, body: string): string {
   <title>${escapeHtml(brandPageTitle(title))}</title>
   ${renderFaviconLink()}
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-  <style>${getAdminStyles()} ${getAppPanelStyles()}</style>
+  <link rel="stylesheet" href="${APP_PANEL_STYLESHEET}" />
 </head>
 <body class="tv-admin tv-app-client">
   <main class="tv-auth-wrap">${body}</main>

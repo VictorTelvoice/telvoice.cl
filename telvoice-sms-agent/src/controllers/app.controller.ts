@@ -4,7 +4,7 @@ import {
   getClientCatalogPackages,
   getClientDashboardData,
 } from "../services/clientDashboardService.js";
-import { findCompanyById } from "../services/companyService.js";
+import { loadAppContextCore } from "../services/appContextCache.js";
 import {
   createOrder,
   getOrderWithDetailsForCompany,
@@ -310,16 +310,13 @@ async function buildAppContext(req: Request): Promise<AppPageContext | null> {
     return null;
   }
 
-  const company = await findCompanyById(profile.companyId);
-  if (!company) {
+  const core = await loadAppContextCore(profile);
+  if (!core) {
     return null;
   }
 
-  const balance = await getCompanyBalance(profile.companyId);
   return {
-    profile,
-    company,
-    balance,
+    ...core,
     ...flash(req),
   };
 }
@@ -357,7 +354,10 @@ export async function getAppDashboard(
   next: NextFunction,
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
-    const data = await getClientDashboardData(ctx.company.id);
+    const data = await getClientDashboardData(ctx.company.id, "CL", {
+      company: ctx.company,
+      balance: ctx.balance,
+    });
     return renderAppDashboardPage(ctx, data);
   });
 }
@@ -469,7 +469,7 @@ export async function getAppSendSms(
       ? await getLiveTestSendPageStatus(ctx.company.id)
       : null;
     const controlPanel = sendEnabled
-      ? await getSendControlPanelView(ctx.company.id)
+      ? await getSendControlPanelView(ctx.company.id, liveTestStatus ?? undefined)
       : null;
     const { flash: okFlash, error: errFlash } = flash(req);
     const outcome = await loadSendOutcomeFromQuery(req, ctx.company.id);

@@ -24,14 +24,17 @@ export type ClientDashboardData = {
 export async function getClientDashboardData(
   companyId: string,
   country = "CL",
+  preloaded?: Pick<ClientDashboardData, "company" | "balance">,
 ): Promise<ClientDashboardData> {
-  const [company, balance, orders, transactions, packages] = await Promise.all([
-    findCompanyById(companyId),
-    getCompanyBalance(companyId, country),
+  const [orders, transactions, packages] = await Promise.all([
     listSmsOrdersByCompany(companyId, 20),
     listTransactionsByCompany(companyId, 10),
     listCustomerVisiblePackages(country),
   ]);
+
+  const company = preloaded?.company ?? (await findCompanyById(companyId));
+  const balance =
+    preloaded?.balance ?? (await getCompanyBalance(companyId, country));
 
   if (!company) {
     throw new Error("Empresa no encontrada");

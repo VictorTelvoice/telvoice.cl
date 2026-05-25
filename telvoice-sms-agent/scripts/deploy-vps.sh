@@ -11,6 +11,7 @@ git pull origin main
 echo "→ npm ci && build"
 npm ci
 npm run build
+test -f public/app-panel.css || { echo "Falta public/app-panel.css — ejecuta npm run build:app-css"; exit 1; }
 
 echo "→ pm2 restart"
 if pm2 describe telvoice-sms-agent >/dev/null 2>&1; then
