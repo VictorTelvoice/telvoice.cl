@@ -3,7 +3,7 @@ import type { WalletTransactionRow } from "../../types/wallet.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 import { APP_SCHEDULE_TIMEZONE } from "../../utils/scheduleTime.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
-import { renderKpiCard } from "../admin-ui/components.js";
+import { renderKpiCard, renderQuickAction } from "../admin-ui/components.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
 import {
@@ -111,22 +111,64 @@ export function renderAppDashboardPage(
         icon: "campaign",
         variant: "default",
       })}
+      ${renderKpiCard({
+        label: "Tasa entrega global",
+        value: stats.globalDeliveryRate,
+        hint: "Entregados vs enviados (DLR)",
+        icon: "check_circle",
+        variant: "success",
+      })}
+      ${renderKpiCard({
+        label: "DLR del día",
+        value: stats.todayDlrRate,
+        hint: stats.todayDlrDetail,
+        icon: "mark_email_read",
+        variant: "primary",
+      })}
     </div>
-    <div class="tv-client-dash-actions">
-      ${renderBtn("Comprar SMS", { href: "/app/buy-sms", variant: "primary", icon: "shopping_cart" })}
-      ${renderBtn("Enviar SMS", { href: "/app/send-sms", variant: "secondary", icon: "send" })}
-      ${renderBtn("Ver reportes", { href: "/app/reports", variant: "ghost", icon: "monitoring" })}
-      ${renderBtn("Soporte", { href: "/app/support", variant: "ghost", icon: "support_agent" })}
-      ${renderBtn("Solicitar API", { href: "/app/api", variant: "ghost", icon: "api" })}
-    </div>
+    <section class="tv-panel tv-client-dash-tiles-wrap">
+      ${renderDashPanelHead("Acciones rápidas")}
+      <div class="tv-client-dash-tiles">
+        ${renderQuickAction({
+          href: "/app/buy-sms",
+          label: "Comprar SMS",
+          description: "Recargar saldo",
+          icon: "shopping_cart",
+        })}
+        ${renderQuickAction({
+          href: "/app/send-sms",
+          label: "Enviar SMS",
+          description: "Individual o campaña",
+          icon: "send",
+        })}
+        ${renderQuickAction({
+          href: "/app/reports",
+          label: "Ver reportes",
+          description: "Métricas de envío",
+          icon: "monitoring",
+        })}
+        ${renderQuickAction({
+          href: "/app/support",
+          label: "Soporte",
+          description: "Ayuda y tickets",
+          icon: "support_agent",
+        })}
+        ${renderQuickAction({
+          href: "/app/api",
+          label: "Solicitar API",
+          description: "Integración REST",
+          icon: "api",
+        })}
+      </div>
+    </section>
     <div class="tv-dash-grid tv-dash-grid--2 tv-client-dash-tables">
-      <section class="tv-panel">
+      <section class="tv-panel tv-client-dash-table-panel">
         ${renderDashPanelHead("Últimas órdenes", {
           href: "/app/orders",
           label: "Ver todas",
         })}
-        <div class="table-wrap tv-panel__body tv-panel__body--flush">
-          <table class="tv-table tv-table--compact">
+        <div class="tv-client-dash-table">
+          <table class="tv-table tv-table--compact tv-table--dash">
             <thead><tr>
               <th>Fecha</th><th>Bolsa</th><th>SMS</th><th>Pago</th><th>Acreditación</th>
             </tr></thead>
@@ -134,13 +176,13 @@ export function renderAppDashboardPage(
           </table>
         </div>
       </section>
-      <section class="tv-panel">
+      <section class="tv-panel tv-client-dash-table-panel">
         ${renderDashPanelHead("Últimos movimientos", {
           href: "/app/wallet",
           label: "Ver saldo",
         })}
-        <div class="table-wrap tv-panel__body tv-panel__body--flush">
-          <table class="tv-table tv-table--compact">
+        <div class="tv-client-dash-table">
+          <table class="tv-table tv-table--compact tv-table--dash">
             <thead><tr>
               <th>Fecha</th><th>Tipo</th><th>SMS</th><th>Descripción</th>
             </tr></thead>

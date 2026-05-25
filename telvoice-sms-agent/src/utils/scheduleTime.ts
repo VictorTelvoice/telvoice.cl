@@ -134,3 +134,20 @@ export function monthStartIsoInTimeZone(
   const month = parts.find((p) => p.type === "month")?.value ?? "01";
   return `${year}-${month}-01`;
 }
+
+/** Inicio del día calendario en la zona indicada (YYYY-MM-DD). */
+export function dayStartIsoInTimeZone(
+  date = new Date(),
+  timeZone = APP_SCHEDULE_TIMEZONE,
+): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const year = parts.find((p) => p.type === "year")?.value ?? "1970";
+  const month = parts.find((p) => p.type === "month")?.value ?? "01";
+  const day = parts.find((p) => p.type === "day")?.value ?? "01";
+  return `${year}-${month}-${day}`;
+}

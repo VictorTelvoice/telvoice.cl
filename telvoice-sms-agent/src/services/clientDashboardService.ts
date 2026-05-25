@@ -18,6 +18,7 @@ import {
 } from "../utils/order-display.js";
 import {
   APP_SCHEDULE_TIMEZONE,
+  dayStartIsoInTimeZone,
   monthStartIsoInTimeZone,
 } from "../utils/scheduleTime.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
@@ -26,6 +27,9 @@ export type ClientDashboardStats = {
   smsSentMonth: number;
   smsCostMonth: number;
   campaignsMonth: number;
+  globalDeliveryRate: string;
+  todayDlrRate: string;
+  todayDlrDetail: string;
 };
 
 export type ClientDashboardData = {
@@ -39,6 +43,29 @@ export type ClientDashboardData = {
   lastPurchaseAt: string | null;
 };
 
+type MessageStatRow = {
+  status: string;
+  mode: string | null;
+  created_at: string;
+  cost_sms: number | null;
+};
+
+function deliveryRatePercent(delivered: number, total: number): string {
+  if (total <= 0) return "—";
+  return `${Math.round((delivered / total) * 100)}%`;
+}
+
+function countDeliveryStats(rows: MessageStatRow[]): {
+  delivered: number;
+  total: number;
+} {
+  const countable = rows.filter(
+    (m) => m.mode !== "mock" && m.status !== "queued",
+  );
+  const delivered = countable.filter((m) => m.status === "delivered").length;
+  return { delivered, total: countable.length };
+}
+
 async function loadDashboardMonthStats(
   companyId: string,
 ): Promise<ClientDashboardStats> {
@@ -46,14 +73,27 @@ async function loadDashboardMonthStats(
     smsSentMonth: 0,
     smsCostMonth: 0,
     campaignsMonth: 0,
+    globalDeliveryRate: "—",
+    todayDlrRate: "—",
+    todayDlrDetail: "Sin envíos hoy",
   };
   const monthStart = monthStartIsoInTimeZone(new Date(), APP_SCHEDULE_TIMEZONE);
+  const dayStart = dayStartIsoInTimeZone(new Date(), APP_SCHEDULE_TIMEZONE);
 
-  const { data: messages, error: msgError } = await getSupabase()
-    .from("panel_sms_messages")
-    .select("cost_sms")
-    .eq("company_id", companyId)
-    .gte("created_at", monthStart);
+  const [{ data: monthMessages, error: msgError }, { data: globalMessages, error: globalError }] =
+    await Promise.all([
+      getSupabase()
+        .from("panel_sms_messages")
+        .select("status, mode, created_at, cost_sms")
+        .eq("company_id", companyId)
+        .gte("created_at", monthStart),
+      getSupabase()
+        .from("panel_sms_messages")
+        .select("status, mode")
+        .eq("company_id", companyId)
+        .neq("mode", "mock")
+        .limit(5000),
+    ]);
 
   if (msgError) {
     if (isMissingTableError(msgError)) {
@@ -61,12 +101,21 @@ async function loadDashboardMonthStats(
     }
     wrapSupabaseError(msgError, "loadDashboardMonthStats.messages");
   }
+  if (globalError && !isMissingTableError(globalError)) {
+    wrapSupabaseError(globalError, "loadDashboardMonthStats.global");
+  }
 
-  const rows = messages ?? [];
-  const smsCostMonth = rows.reduce(
+  const monthRows = (monthMessages ?? []) as MessageStatRow[];
+  const smsCostMonth = monthRows.reduce(
     (sum, row) => sum + (Number(row.cost_sms) || 0),
     0,
   );
+
+  const globalStats = countDeliveryStats(
+    (globalMessages ?? []) as MessageStatRow[],
+  );
+  const todayRows = monthRows.filter((m) => m.created_at >= dayStart);
+  const todayStats = countDeliveryStats(todayRows);
 
   const { count: campaignsMonth, error: campError } = await getSupabase()
     .from("sms_campaigns")
@@ -79,9 +128,18 @@ async function loadDashboardMonthStats(
   }
 
   return {
-    smsSentMonth: rows.length,
+    smsSentMonth: monthRows.length,
     smsCostMonth,
     campaignsMonth: campaignsMonth ?? 0,
+    globalDeliveryRate: deliveryRatePercent(
+      globalStats.delivered,
+      globalStats.total,
+    ),
+    todayDlrRate: deliveryRatePercent(todayStats.delivered, todayStats.total),
+    todayDlrDetail:
+      todayStats.total > 0
+        ? `${todayStats.delivered} de ${todayStats.total} confirmados por DLR`
+        : "Sin envíos hoy",
   };
 }
 

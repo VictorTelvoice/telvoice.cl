@@ -637,7 +637,7 @@ export function getAppPanelStyles(): string {
       margin: 0;
     }
     .tv-kpi-grid--client {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(6, minmax(0, 1fr));
       margin-bottom: 0;
       gap: 1rem;
     }
@@ -662,17 +662,88 @@ export function getAppPanelStyles(): string {
       margin-top: 0.5rem;
       line-height: 1.35;
     }
-    .tv-client-dash-actions {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.25rem 0 0.15rem;
+    .tv-client-dash-tiles-wrap {
+      margin: 0;
     }
-    .tv-client-dash-actions .btn,
-    .tv-client-dash-actions .tv-btn-campaign {
-      white-space: nowrap;
+    .tv-client-dash-tiles {
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: flex-end;
+      align-items: stretch;
+      gap: 0.75rem;
+      padding: 1rem 1.15rem 1.15rem;
+      overflow-x: auto;
+    }
+    .tv-client-dash-tiles .tv-quick {
+      flex: 0 0 auto;
+      width: 168px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.55rem;
+      padding: 0.9rem 1rem;
+      border: 1px solid var(--tv-border);
+      border-radius: 12px;
+      background: linear-gradient(180deg, #fff 0%, #f8fbff 100%);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      text-decoration: none;
+    }
+    .tv-client-dash-tiles .tv-quick:hover {
+      border-color: rgba(0, 82, 204, 0.25);
+      background: linear-gradient(180deg, #fff 0%, #eef4ff 100%);
+      text-decoration: none;
+    }
+    .tv-client-dash-tiles .tv-quick__icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+    .tv-client-dash-tiles .tv-quick__label {
+      font-size: 0.88rem;
+      line-height: 1.25;
+    }
+    .tv-client-dash-tiles .tv-quick__desc {
+      font-size: 0.74rem;
+      line-height: 1.35;
+    }
+    .tv-client-dash-tiles .tv-quick__arrow {
+      display: none;
+    }
+    .tv-client-dash-table-panel {
+      overflow: hidden;
+      border-radius: 14px;
+    }
+    .tv-client-dash-table {
+      padding: 0.35rem 0 0.5rem;
+    }
+    .tv-client-dash-table-panel .tv-table--dash {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .tv-client-dash-table-panel .tv-table--dash thead th {
+      background: #f1f5f9;
+      color: #64748b;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--tv-border);
+    }
+    .tv-client-dash-table-panel .tv-table--dash tbody td {
+      padding: 0.8rem 1rem;
+      font-size: 0.86rem;
+      vertical-align: middle;
+      border-bottom: 1px solid #eef2f7;
+    }
+    .tv-client-dash-table-panel .tv-table--dash tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .tv-client-dash-table-panel .tv-table--dash tbody tr:hover td {
+      background: #f8fbff;
+    }
+    .tv-client-dash-table-panel .tv-table-empty {
+      padding: 1.5rem 1rem !important;
     }
     .tv-dash-panel-head {
       display: flex;
@@ -708,12 +779,23 @@ export function getAppPanelStyles(): string {
       padding: 1.25rem 1rem !important;
       text-align: center;
     }
+    @media (max-width: 1280px) {
+      .tv-kpi-grid--client { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
     @media (max-width: 1100px) {
       .tv-kpi-grid--client { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .tv-client-dash-actions { justify-content: flex-start; }
+      .tv-client-dash-tiles {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+      }
+      .tv-client-dash-tiles .tv-quick {
+        width: calc(50% - 0.4rem);
+        min-width: 150px;
+      }
     }
     @media (max-width: 640px) {
       .tv-kpi-grid--client { grid-template-columns: 1fr; }
+      .tv-client-dash-tiles .tv-quick { width: 100%; }
     }
     @media (max-width: 960px) {
       .tv-send-to-row { grid-template-columns: 1fr; }
