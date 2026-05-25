@@ -19,7 +19,6 @@ import {
   renderHeroPhonePreview,
   renderModeCards,
   renderPageHeader,
-  renderPanel,
   renderStatChip,
 } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
@@ -30,6 +29,10 @@ import {
   renderPanelMessageStatusBadge,
 } from "./app-sms-ui.js";
 import { formatDate } from "../../utils/html.js";
+import {
+  APP_SCHEDULE_TIMEZONE,
+  formatScheduleInTimeZone,
+} from "../../utils/scheduleTime.js";
 
 export type SendSmsPageOptions = {
   error?: string;
@@ -62,19 +65,87 @@ function renderTemplateOptions(disabled: boolean): string {
   ).join("")}`;
 }
 
-function renderChecklistItem(ok: boolean, label: string, hint?: string): string {
-  const icon = ok ? "check_circle" : "error";
-  const cls = ok ? "tv-checklist__item--ok" : "tv-checklist__item--fail";
-  const hintHtml = hint
-    ? `<span class="tv-checklist__hint">${escapeHtml(hint)}</span>`
-    : "";
-  return `<li class="tv-checklist__item ${cls}">
-    <span class="material-symbols-outlined tv-checklist__icon">${icon}</span>
-    <span class="tv-checklist__label">${escapeHtml(label)}${hintHtml}</span>
-  </li>`;
+type AppSendMode = "single" | "mass" | "scheduled" | "template";
+
+function sendOutcomeTitle(
+  activeMode: AppSendMode,
+  campaignResult?: PanelCampaignSendResult | null,
+): string {
+  if (!campaignResult) return "Resultado del envío";
+  const scheduled =
+    activeMode === "scheduled" || campaignResult.mode === "scheduled";
+  if (scheduled && campaignResult.queued > 0 && campaignResult.sent === 0) {
+    return "Envío programado";
+  }
+  if (activeMode === "template") return "Envío desde plantilla";
+  if (scheduled) return "Campaña programada";
+  return "Campaña en producción";
 }
 
-const CLIENT_CHECKLIST_HIDE = new Set(["telsim_webhook", "verify"]);
+function renderSendOutcomeBlock(opts: {
+  flash?: string;
+  activeMode: AppSendMode;
+  campaignResult?: PanelCampaignSendResult | null;
+  sendResult?: MockSmsSendResult | null;
+}): string {
+  const { flash, activeMode, campaignResult, sendResult } = opts;
+  if (!flash && !campaignResult && !sendResult) return "";
+
+  if (campaignResult) {
+    const title = sendOutcomeTitle(activeMode, campaignResult);
+    const scheduledLabel = campaignResult.scheduledAt
+      ? formatScheduleInTimeZone(
+          campaignResult.scheduledAt,
+          APP_SCHEDULE_TIMEZONE,
+        )
+      : "";
+    const lead = flash
+      ? `<p class="tv-send-outcome__lead">${escapeHtml(flash)}</p>`
+      : "";
+    return `<section class="tv-panel tv-panel--hint tv-send-outcome" role="status" aria-live="polite">
+      <header class="tv-section-head">
+        <h2 class="tv-section-head__title">${escapeHtml(title)}</h2>
+        ${lead}
+      </header>
+      <div class="tv-panel__body">
+        <ul class="tv-send-result__list">
+          <li><strong>Campaña:</strong> ${escapeHtml(campaignResult.campaignName)}</li>
+          <li><strong>Destinatarios:</strong> ${campaignResult.totalRecipients}</li>
+          <li><strong>Enviados:</strong> ${campaignResult.sent}${campaignResult.queued > 0 ? ` · En cola: ${campaignResult.queued}` : ""}${campaignResult.failed > 0 ? ` · Fallidos: ${campaignResult.failed}` : ""}</li>
+          <li><strong>SMS consumidos:</strong> ${campaignResult.smsConsumed}</li>
+          <li><strong>Saldo:</strong> ${fmtSms(campaignResult.balanceBefore)} → ${fmtSms(campaignResult.balanceAfter)} SMS</li>
+          ${scheduledLabel ? `<li><strong>Programado:</strong> ${escapeHtml(scheduledLabel)}</li>` : ""}
+        </ul>
+        <p class="field-hint"><a href="/app/campaigns">Ver campañas</a> · <a href="/app/inbox">Bandeja</a></p>
+      </div>
+    </section>`;
+  }
+
+  if (sendResult) {
+    const lead = flash
+      ? `<p class="tv-send-outcome__lead">${escapeHtml(flash)}</p>`
+      : "";
+    return `<section class="tv-panel tv-panel--hint tv-send-outcome" role="status" aria-live="polite">
+      <header class="tv-section-head">
+        <h2 class="tv-section-head__title">Envío registrado</h2>
+        ${lead}
+      </header>
+      <div class="tv-panel__body">
+        <ul class="tv-send-result__list">
+          <li><strong>Destino:</strong> ${escapeHtml(sendResult.recipientNumber)}</li>
+          <li><strong>Segmentos:</strong> ${sendResult.segments}</li>
+          <li><strong>Saldo:</strong> ${fmtSms(sendResult.balanceBefore)} → ${fmtSms(sendResult.balanceAfter)} SMS</li>
+          <li><strong>Estado:</strong> ${renderPanelMessageStatusBadge(sendResult.status, sendResult.sendMode)}</li>
+        </ul>
+        <p class="field-hint">«Entregado» se actualiza cuando el operador confirma vía webhook DLR. <a href="/app/inbox">Bandeja</a></p>
+      </div>
+    </section>`;
+  }
+
+  return `<section class="tv-send-outcome tv-send-outcome--flash" role="status" aria-live="polite">
+    <div class="alert alert-success">${escapeHtml(flash ?? "")}</div>
+  </section>`;
+}
 
 export function renderAppSendSmsPage(
   ctx: AppPageContext,
@@ -162,9 +233,12 @@ export function renderAppSendSmsPage(
     )
     .join("");
 
-  const flashBlock = opts.flash
-    ? `<div class="alert alert-success">${escapeHtml(opts.flash)}</div>`
-    : "";
+  const sendOutcomeBlock = renderSendOutcomeBlock({
+    flash: opts.flash,
+    activeMode,
+    campaignResult: opts.campaignResult,
+    sendResult: opts.sendResult,
+  });
 
   const opsChips =
     panel && lt
@@ -177,47 +251,10 @@ export function renderAppSendSmsPage(
     </div>`
       : "";
 
-  const successBlock = opts.campaignResult
-    ? `<section class="tv-panel tv-panel--hint tv-send-result">
-      <header class="tv-section-head"><h2 class="tv-section-head__title">Campaña en producción</h2></header>
-      <div class="tv-panel__body">
-        <ul class="tv-send-result__list">
-          <li><strong>Campaña:</strong> ${escapeHtml(opts.campaignResult.campaignName)}</li>
-          <li><strong>Destinatarios:</strong> ${opts.campaignResult.totalRecipients}</li>
-          <li><strong>Enviados:</strong> ${opts.campaignResult.sent}${opts.campaignResult.queued > 0 ? ` · En cola: ${opts.campaignResult.queued}` : ""}${opts.campaignResult.failed > 0 ? ` · Fallidos: ${opts.campaignResult.failed}` : ""}</li>
-          <li><strong>SMS consumidos:</strong> ${opts.campaignResult.smsConsumed}</li>
-          <li><strong>Saldo:</strong> ${fmtSms(opts.campaignResult.balanceBefore)} → ${fmtSms(opts.campaignResult.balanceAfter)} SMS</li>
-          ${opts.campaignResult.scheduledAt ? `<li><strong>Programado:</strong> ${escapeHtml(new Date(opts.campaignResult.scheduledAt).toLocaleString("es-CL"))}</li>` : ""}
-        </ul>
-        <p class="field-hint"><a href="/app/campaigns">Ver campañas</a> · <a href="/app/inbox">Bandeja</a></p>
-      </div>
-    </section>`
-    : opts.sendResult
-    ? `<section class="tv-panel tv-panel--hint tv-send-result">
-      <header class="tv-section-head"><h2 class="tv-section-head__title">Envío registrado</h2></header>
-      <div class="tv-panel__body">
-        <ul class="tv-send-result__list">
-          <li><strong>Destino:</strong> ${escapeHtml(opts.sendResult.recipientNumber)}</li>
-          <li><strong>Segmentos:</strong> ${opts.sendResult.segments}</li>
-          <li><strong>Saldo:</strong> ${fmtSms(opts.sendResult.balanceBefore)} → ${fmtSms(opts.sendResult.balanceAfter)} SMS</li>
-          <li><strong>Estado:</strong> ${renderPanelMessageStatusBadge(opts.sendResult.status, opts.sendResult.sendMode)}</li>
-        </ul>
-        <p class="field-hint">«Entregado» se actualiza cuando el operador confirma vía webhook DLR.</p>
-      </div>
-    </section>`
-    : "";
-
-  const checklistHtml = panel
-    ? `<ul class="tv-checklist">
-        ${panel.checklist
-          .filter((c) => !CLIENT_CHECKLIST_HIDE.has(c.id))
-          .map((c) => renderChecklistItem(c.ok, c.label, c.hint))
-          .join("")}
-      </ul>`
-    : `<p class="alert alert-error">El envío SMS no está disponible. Contacte a soporte Telvoice.</p>`;
+  const panelUnavailableHtml = `<p class="alert alert-error">El envío SMS no está disponible. Contacte a soporte Telvoice.</p>`;
 
   const sendForm = !panel
-    ? checklistHtml
+    ? panelUnavailableHtml
     : `
     <form method="post" action="/app/send-sms" id="tv-app-send-form" class="tv-send-layout">
       ${opts.idempotencyKey ? `<input type="hidden" name="idempotency_key" value="${escapeHtml(opts.idempotencyKey)}" />` : ""}
@@ -308,7 +345,6 @@ export function renderAppSendSmsPage(
             <button type="submit" class="btn btn-primary tv-send-submit" id="tv-send-submit" ${submitDisabled}>Enviar SMS</button>
           </div>
         </section>
-        ${renderPanel("Checklist pre-campaña", checklistHtml)}
       </div>
       <aside class="tv-send-aside">
         <div id="tv-send-preview-phone" class="tv-send-preview-phone">
@@ -332,15 +368,16 @@ export function renderAppSendSmsPage(
 
   const body = `
     <div class="tv-app-send-page">
+    <div class="tv-send-page-head">
     ${renderPageHeader({
       title: "Enviar SMS",
       subtitle: "Individual, campaña masiva, programación o plantillas preaprobadas.",
       actions: panel ? headerActions : undefined,
     })}
-    ${flashBlock}
+    ${sendOutcomeBlock}
+    </div>
     ${errorBlock}
     ${opsChips}
-    ${successBlock}
     ${sendForm}
     </div>
     <script>
@@ -747,7 +784,12 @@ export function renderAppSendSmsPage(
     })();
     </script>`;
 
-  return wrapAppPage(ctx, "send-sms", "Enviar SMS", body);
+  return wrapAppPage(
+    { ...ctx, flash: undefined, error: undefined },
+    "send-sms",
+    "Enviar SMS",
+    body,
+  );
 }
 
 export function renderAppInboxPage(
