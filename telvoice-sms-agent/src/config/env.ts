@@ -134,6 +134,12 @@ export const env = {
   } satisfies SmsProviderConfig,
   /** TPS global de plataforma (techo superior; no sustituye MAX_CLIENT_TPS). */
   smsPlatformMaxTps: parsePositiveIntEnv("SMS_PLATFORM_MAX_TPS", 100),
+  /** Procesa automáticamente la cola de envíos programados (scheduled_at). */
+  smsQueueScheduler: {
+    enabled: optionalEnv("SMS_QUEUE_SCHEDULER_ENABLED", "true") === "true",
+    intervalSeconds: parsePositiveIntEnv("SMS_QUEUE_SCHEDULER_INTERVAL_SECONDS", 60),
+    batchSize: parsePositiveIntEnv("SMS_QUEUE_SCHEDULER_BATCH_SIZE", 15),
+  },
 } as const;
 
 export function isMercadoPagoConfigured(): boolean {

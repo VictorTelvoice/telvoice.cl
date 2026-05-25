@@ -128,6 +128,9 @@ jobs:
               }
               set_env_key SMS_PROVIDER_MODE live_test
               set_env_key SMS_LIVE_TEST_ENABLED true
+              set_env_key SMS_QUEUE_SCHEDULER_ENABLED true
+              set_env_key SMS_QUEUE_SCHEDULER_INTERVAL_SECONDS 60
+              set_env_key SMS_QUEUE_SCHEDULER_BATCH_SIZE 15
               if ! grep -q '^TELVOICE_VERIFY_NUMBERS=' "$APP_PATH/.env" 2>/dev/null; then
                 printf '%s\n' 'TELVOICE_VERIFY_NUMBERS=+56934449937:Linea QA 1 telsim:Movistar|+56973824023:Linea QA 2 telsim:Entel' >> "$APP_PATH/.env"
                 echo "TELVOICE_VERIFY_NUMBERS configurado (QA telsim)"

@@ -1,10 +1,17 @@
 /**
- * Worker de cola — solo invocado manualmente (POST process-tick).
- * No inicia loop automático. Opción B: descontar saldo al aceptar proveedor.
- *
- * Campañas masivas: conviene reservar saldo al encolar (futuro).
+ * Worker de cola — process-tick manual (superadmin) o scheduler automático.
+ * Descontar saldo y actualizar mensaje panel al aceptar proveedor.
  */
-import { getPanelSmsMessageById } from "./panelSmsMessageService.js";
+import type { PanelSmsMessageStatus } from "../types/sms-panel.js";
+import {
+  getPanelSmsMessageById,
+  insertPanelDeliveryEvent,
+  updatePanelSmsMessage,
+} from "./panelSmsMessageService.js";
+import {
+  getCampaignByIdForCompany,
+  updateSmsCampaign,
+} from "./smsCampaignService.js";
 import { dispatchProviderSend } from "./smsProviderDispatchService.js";
 import { getSmsProviderById } from "./smsProviderService.js";
 import {
@@ -12,7 +19,10 @@ import {
   markFailed,
   markProcessing,
   markSent,
+  requeueForRetry,
 } from "./smsQueueService.js";
+import { debitSmsUsage, getCompanyBalance } from "./smsWalletService.js";
+import { hasSmsDebitForMessage } from "./walletTransactionService.js";
 import {
   assertCanSendNow,
   canSendNow,
@@ -29,9 +39,79 @@ export type QueueTickResult = {
   details: string[];
 };
 
-const WORKER_ID = "manual-tick";
+async function finalizeQueuedSend(input: {
+  companyId: string;
+  messageId: string;
+  campaignId: string | null;
+  costSms: number;
+  panelStatus: PanelSmsMessageStatus;
+  provider: string;
+  providerMessageId: string | null;
+  providerResult: Awaited<ReturnType<typeof dispatchProviderSend>>;
+}): Promise<void> {
+  const balance = await getCompanyBalance(input.companyId);
+  if (balance.availableSms < input.costSms) {
+    await updatePanelSmsMessage(input.messageId, {
+      status: "failed",
+      error_code: "INSUFFICIENT_BALANCE",
+      error_message: "Saldo SMS insuficiente al procesar cola.",
+    });
+    throw new Error("Saldo SMS insuficiente");
+  }
 
-export async function processQueueTick(limit = 5): Promise<QueueTickResult> {
+  if (!(await hasSmsDebitForMessage(input.messageId))) {
+    await debitSmsUsage({
+      companyId: input.companyId,
+      amount: input.costSms,
+      referenceType: "sms_message",
+      referenceId: input.messageId,
+      description: "Consumo por envío SMS desde cola programada",
+      metadata: {
+        mode: "queue",
+        provider: input.provider,
+      },
+    });
+  }
+
+  const sentAt = new Date().toISOString();
+  await updatePanelSmsMessage(input.messageId, {
+    status: input.panelStatus,
+    provider: input.provider,
+    provider_message_id: input.providerMessageId,
+    sent_at: sentAt,
+  });
+
+  await insertPanelDeliveryEvent({
+    companyId: input.companyId,
+    messageId: input.messageId,
+    provider: input.provider,
+    providerMessageId: input.providerMessageId,
+    status: input.panelStatus,
+    rawPayload: {
+      ...input.providerResult.raw_response,
+      event: "queue_submit_accepted",
+    },
+  });
+
+  if (input.campaignId) {
+    const campaign = await getCampaignByIdForCompany(
+      input.campaignId,
+      input.companyId,
+    );
+    if (campaign) {
+      await updateSmsCampaign(input.campaignId, {
+        real_sms_cost: (campaign.real_sms_cost ?? 0) + input.costSms,
+        status: "processing",
+        sent_at: campaign.sent_at ?? sentAt,
+      });
+    }
+  }
+}
+
+export async function processQueueTick(
+  limit = 5,
+  workerId = "manual-tick",
+): Promise<QueueTickResult> {
   const result: QueueTickResult = {
     processed: 0,
     sent: 0,
@@ -73,7 +153,7 @@ export async function processQueueTick(limit = 5): Promise<QueueTickResult> {
     }
 
     try {
-      await markProcessing(item.id, WORKER_ID);
+      await markProcessing(item.id, workerId);
     } catch {
       result.deferred += 1;
       continue;
@@ -113,11 +193,49 @@ export async function processQueueTick(limit = 5): Promise<QueueTickResult> {
             code: providerResult.error_code ?? "REJECTED",
             message: providerResult.error_message ?? "Proveedor rechazó",
           });
+          await updatePanelSmsMessage(message.id, {
+            status: "failed",
+            error_code: providerResult.error_code ?? "PROVIDER_REJECTED",
+            error_message:
+              providerResult.error_message ?? "Proveedor rechazó el envío",
+          });
           result.failed += 1;
         } else {
+          await requeueForRetry(item.id);
           result.deferred += 1;
           result.details.push(`${item.id}: reintento pendiente`);
         }
+        releaseConcurrency({
+          companyId: item.company_id,
+          providerId: item.provider_id,
+          routeId: item.route_id,
+        });
+        continue;
+      }
+
+      const panelStatus: PanelSmsMessageStatus =
+        providerResult.status === "pending" ? "pending" : "sent";
+
+      try {
+        await finalizeQueuedSend({
+          companyId: item.company_id,
+          messageId: message.id,
+          campaignId: message.campaign_id,
+          costSms: message.cost_sms,
+          panelStatus,
+          provider: providerResult.provider,
+          providerMessageId: providerResult.provider_message_id ?? null,
+          providerResult,
+        });
+      } catch (finalizeErr) {
+        await markFailed(item.id, {
+          code: "FINALIZE_FAILED",
+          message:
+            finalizeErr instanceof Error
+              ? finalizeErr.message
+              : "Error al finalizar envío",
+        });
+        result.failed += 1;
         releaseConcurrency({
           companyId: item.company_id,
           providerId: item.provider_id,
@@ -140,6 +258,13 @@ export async function processQueueTick(limit = 5): Promise<QueueTickResult> {
         code: "DISPATCH_ERROR",
         message: err instanceof Error ? err.message : "Error",
       });
+      if (message) {
+        await updatePanelSmsMessage(message.id, {
+          status: "failed",
+          error_code: "DISPATCH_ERROR",
+          error_message: err instanceof Error ? err.message : "Error de envío",
+        });
+      }
       result.failed += 1;
     } finally {
       releaseConcurrency({

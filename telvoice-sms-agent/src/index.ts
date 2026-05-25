@@ -2,6 +2,7 @@ import { createApp } from "./app.js";
 import { setBootstrapWarning } from "./config/bootstrap-status.js";
 import { env } from "./config/env.js";
 import { ensureTestClientSetup } from "./services/clientService.js";
+import { startSmsQueueScheduler } from "./services/smsQueueScheduler.js";
 import { startTelegramPollingIfEnabled } from "./services/telegramPolling.js";
 import { DatabaseError } from "./utils/errors.js";
 import {
@@ -71,4 +72,6 @@ app.listen(env.port, () => {
   } else {
     console.warn("[telegram] TELEGRAM_BOT_TOKEN no configurado — bot deshabilitado.");
   }
+
+  startSmsQueueScheduler();
 });

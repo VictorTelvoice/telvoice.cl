@@ -79,11 +79,35 @@ Servicio: `src/services/smsLiveTestLimiterService.ts`
 - `/admin/messages` — badges MOCK / LIVE TEST / SUPERADMIN TEST y columna origen.
 - `/app/reports` — KPIs mock vs live_test vs estados.
 
+## Cola de envíos programados (scheduler automático)
+
+Los envíos **programados** (modo «Envío programado» en `/app/send-sms`) se encolan en `sms_send_queue`.
+El agente procesa la cola en segundo plano (no hace falta cron del sistema ni pulsar *process-tick* en superadmin).
+
+```env
+SMS_QUEUE_SCHEDULER_ENABLED=true
+SMS_QUEUE_SCHEDULER_INTERVAL_SECONDS=60
+SMS_QUEUE_SCHEDULER_BATCH_SIZE=15
+```
+
+| Variable | Descripción |
+|----------|-------------|
+| `SMS_QUEUE_SCHEDULER_ENABLED` | `true` (default) inicia el loop al arrancar PM2 |
+| `SMS_QUEUE_SCHEDULER_INTERVAL_SECONDS` | Cada cuántos segundos revisa mensajes con `scheduled_at <= ahora` |
+| `SMS_QUEUE_SCHEDULER_BATCH_SIZE` | Máximo de mensajes por tick |
+
+Requisitos: Supabase configurado, `SMS_LIVE_TEST_ENABLED=true`, migración `016` (tabla `sms_send_queue`).
+
+En logs del servidor: `[sms-queue] Scheduler activo` y `tick: N enviados` cuando despacha.
+
+El tick manual en `/admin/traffic-control` sigue disponible para diagnóstico.
+
 ## Desactivar
 
 ```env
 SMS_PROVIDER_MODE=mock
 SMS_LIVE_TEST_ENABLED=false
+SMS_QUEUE_SCHEDULER_ENABLED=false
 ```
 
 Reiniciar el agente. El panel vuelve a solo simulación.
