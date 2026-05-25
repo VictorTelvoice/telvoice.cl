@@ -237,7 +237,7 @@ function renderTestWorkspace(options: {
           <p class="tv-section-head__sub">Saliente · líneas QA, otro número o ruta de proveedor</p>
         </header>
         <div class="tv-panel__body tv-test-send-panel__body">
-          <form method="post" action="/admin/test/qa-send" class="tv-test-send-form" id="tv-test-send-form">
+          <form method="post" action="/admin/test/qa-send" class="tv-test-send-form" id="tv-test-send-form" enctype="application/x-www-form-urlencoded">
             ${renderProviderRouteFields(providers, routes, disabled)}
             <fieldset class="tv-test-recipient-fieldset">
               <legend class="tv-test-recipient-fieldset__legend">Destinatario</legend>
@@ -641,6 +641,16 @@ export function renderAdminTestPage(options: {
         sendBtn.removeAttribute('disabled');
         sendBtn.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">send</span> Enviar SMS';
       }
+      function serializeSendForm(form){
+        var params = new URLSearchParams();
+        Array.prototype.forEach.call(form.elements, function(el){
+          if(!el.name || el.disabled) return;
+          var type = (el.type || '').toLowerCase();
+          if((type === 'radio' || type === 'checkbox') && !el.checked) return;
+          params.append(el.name, el.value);
+        });
+        return params;
+      }
       if(sendForm){
         sendForm.addEventListener('submit', function(ev){
           ev.preventDefault();
@@ -649,8 +659,11 @@ export function renderAdminTestPage(options: {
           fetch('/admin/test/qa-send', {
             method: 'POST',
             credentials: 'same-origin',
-            headers: { Accept: 'application/json' },
-            body: new FormData(sendForm)
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+            },
+            body: serializeSendForm(sendForm).toString()
           })
           .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, body: j }; }); })
           .then(function(res){
