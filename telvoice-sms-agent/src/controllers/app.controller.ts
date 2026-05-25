@@ -216,11 +216,17 @@ function campaignResultFlash(
   result: PanelCampaignSendResult,
   sendMode: AppSendMode,
 ): string {
+  if (result.queued > 0 && result.sent === 0) {
+    const when =
+      sendMode === "scheduled" && result.scheduledAt
+        ? ` para ${formatScheduleCl(result.scheduledAt)}`
+        : "";
+    const failNote =
+      result.failed > 0 ? ` (${result.failed} filas no encoladas)` : "";
+    return `Campaña «${result.campaignName}»: ${result.queued} mensaje(s) en cola${when}. El despacho corre en segundo plano (~20 SMS/s según TPS).${failNote}`;
+  }
   if (sendMode === "scheduled" && result.scheduledAt) {
     const when = formatScheduleCl(result.scheduledAt);
-    if (result.queued > 0 && result.sent === 0) {
-      return `Envío programado para ${when}: ${result.queued} mensaje(s) en cola. Campaña «${result.campaignName}».`;
-    }
     return `Programado ${when}: ${result.sent} enviado(s), ${result.failed} fallido(s). Campaña «${result.campaignName}».`;
   }
   return `Campaña «${result.campaignName}» procesada: ${result.sent} enviado(s), ${result.failed} fallido(s), ${result.smsConsumed} SMS consumidos.`;

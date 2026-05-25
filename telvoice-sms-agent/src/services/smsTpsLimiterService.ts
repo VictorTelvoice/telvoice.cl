@@ -214,7 +214,11 @@ async function evaluatePolicyBlocks(
     };
   }
 
-  if (flow === "campaign" && !policy.campaigns_enabled) {
+  if (
+    flow === "campaign" &&
+    !policy.campaigns_enabled &&
+    !policy.live_enabled
+  ) {
     return { reason: "Las campañas masivas no están habilitadas para tu cuenta." };
   }
 

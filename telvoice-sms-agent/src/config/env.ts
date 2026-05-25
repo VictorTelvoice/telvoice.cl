@@ -48,6 +48,15 @@ export type SmsProviderConfig = {
   liveTestMaxSegments: number;
 };
 
+export type SmsCampaignConfig = {
+  enabled: boolean;
+  /** Vacío = todos los números válidos CL; false = respeta SMS_LIVE_TEST_ALLOWED_NUMBERS */
+  skipNumberWhitelist: boolean;
+  /** Modo mass: encolar en cola si destinatarios >= este umbral (1 = siempre cola). */
+  bulkQueueMinRecipients: number;
+  trafficType: string;
+};
+
 function parsePositiveIntEnv(name: string, fallback: number): number {
   const raw = optionalEnv(name, String(fallback));
   const n = Number.parseInt(raw, 10);
@@ -136,13 +145,23 @@ export const env = {
     ),
     liveTestMaxSegments: parsePositiveIntEnv("SMS_LIVE_TEST_MAX_SEGMENTS", 3),
   } satisfies SmsProviderConfig,
+  smsCampaign: {
+    enabled: optionalEnv("SMS_CAMPAIGN_ENABLED", "true") === "true",
+    skipNumberWhitelist:
+      optionalEnv("SMS_CAMPAIGN_SKIP_NUMBER_WHITELIST", "true") === "true",
+    bulkQueueMinRecipients: parsePositiveIntEnv(
+      "SMS_CAMPAIGN_BULK_QUEUE_MIN_RECIPIENTS",
+      1,
+    ),
+    trafficType: optionalEnv("SMS_CAMPAIGN_TRAFFIC_TYPE", "promotional"),
+  } satisfies SmsCampaignConfig,
   /** TPS global de plataforma (techo superior; no sustituye MAX_CLIENT_TPS). */
   smsPlatformMaxTps: parsePositiveIntEnv("SMS_PLATFORM_MAX_TPS", 100),
   /** Procesa automáticamente la cola de envíos programados (scheduled_at). */
   smsQueueScheduler: {
     enabled: optionalEnv("SMS_QUEUE_SCHEDULER_ENABLED", "true") === "true",
-    intervalSeconds: parsePositiveIntEnv("SMS_QUEUE_SCHEDULER_INTERVAL_SECONDS", 60),
-    batchSize: parsePositiveIntEnv("SMS_QUEUE_SCHEDULER_BATCH_SIZE", 15),
+    intervalSeconds: parsePositiveIntEnv("SMS_QUEUE_SCHEDULER_INTERVAL_SECONDS", 1),
+    batchSize: parsePositiveIntEnv("SMS_QUEUE_SCHEDULER_BATCH_SIZE", 20),
   },
   telsim: {
     webhookSecret: optionalEnv("TELSIM_WEBHOOK_SECRET"),

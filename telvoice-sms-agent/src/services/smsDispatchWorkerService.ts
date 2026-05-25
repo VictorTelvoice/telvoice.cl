@@ -14,6 +14,7 @@ import {
 } from "./smsCampaignService.js";
 import { dispatchProviderSend } from "./smsProviderDispatchService.js";
 import { getSmsProviderById } from "./smsProviderService.js";
+import type { SmsSendQueueRow } from "../types/sms-traffic.js";
 import {
   getNextQueuedMessages,
   markFailed,
@@ -108,6 +109,150 @@ async function finalizeQueuedSend(input: {
   }
 }
 
+type ItemProcessOutcome = {
+  sent: boolean;
+  deferred: boolean;
+  failed: boolean;
+  detail?: string;
+};
+
+async function processOneQueuedItem(
+  item: SmsSendQueueRow,
+  workerId: string,
+): Promise<ItemProcessOutcome> {
+  if (!item.provider_id || !item.route_id || !item.company_id) {
+    await markFailed(item.id, {
+      code: "MISSING_ROUTING",
+      message: "Falta proveedor o ruta en cola",
+    });
+    return { sent: false, deferred: false, failed: true, detail: `${item.id}: sin routing` };
+  }
+
+  const queueFlow = item.campaign_id ? "campaign" : "queue";
+
+  const canSend = await canSendNow({
+    companyId: item.company_id,
+    providerId: item.provider_id,
+    routeId: item.route_id,
+    ratePlanId: item.rate_plan_id,
+    trafficType: item.traffic_type,
+    flow: queueFlow,
+  });
+
+  if (!canSend.allowed) {
+    return {
+      sent: false,
+      deferred: true,
+      failed: false,
+      detail: `${item.id}: diferido — ${canSend.reason ?? "límite TPS"}`,
+    };
+  }
+
+  try {
+    await markProcessing(item.id, workerId);
+  } catch {
+    return { sent: false, deferred: true, failed: false };
+  }
+
+  const provider = await getSmsProviderById(item.provider_id);
+  if (!provider) {
+    await markFailed(item.id, { code: "NO_PROVIDER", message: "Proveedor no encontrado" });
+    return { sent: false, deferred: false, failed: true };
+  }
+
+  const message = item.message_id
+    ? await getPanelSmsMessageById(item.message_id)
+    : null;
+
+  if (!message) {
+    await markFailed(item.id, {
+      code: "NO_MESSAGE",
+      message: "Mensaje panel no encontrado",
+    });
+    return { sent: false, deferred: false, failed: true };
+  }
+
+  try {
+    const providerResult = await dispatchProviderSend(provider, {
+      to: message.recipient_number,
+      message: message.message,
+      senderId: message.sender_id ?? "TELVOICE",
+      metadata: { panel_message_id: message.id, queue_id: item.id },
+    });
+
+    if (!providerResult.accepted) {
+      if (item.attempts >= item.max_attempts) {
+        await markFailed(item.id, {
+          code: providerResult.error_code ?? "REJECTED",
+          message: providerResult.error_message ?? "Proveedor rechazó",
+        });
+        await updatePanelSmsMessage(message.id, {
+          status: "failed",
+          error_code: providerResult.error_code ?? "PROVIDER_REJECTED",
+          error_message:
+            providerResult.error_message ?? "Proveedor rechazó el envío",
+        });
+        return { sent: false, deferred: false, failed: true };
+      }
+      await requeueForRetry(item.id);
+      return {
+        sent: false,
+        deferred: true,
+        failed: false,
+        detail: `${item.id}: reintento pendiente`,
+      };
+    }
+
+    const panelStatus: PanelSmsMessageStatus =
+      providerResult.status === "pending" ? "pending" : "sent";
+
+    try {
+      await finalizeQueuedSend({
+        companyId: item.company_id,
+        messageId: message.id,
+        campaignId: message.campaign_id,
+        costSms: message.cost_sms,
+        panelStatus,
+        provider: providerResult.provider,
+        providerMessageId: providerResult.provider_message_id ?? null,
+        providerResult,
+      });
+    } catch {
+      await markFailed(item.id, {
+        code: "FINALIZE_FAILED",
+        message: "Error al finalizar envío",
+      });
+      return { sent: false, deferred: false, failed: true };
+    }
+
+    await markSent(item.id);
+    recordTpsSend({
+      companyId: item.company_id,
+      providerId: item.provider_id,
+      routeId: item.route_id,
+      ratePlanId: item.rate_plan_id,
+    });
+    return { sent: true, deferred: false, failed: false, detail: `${item.id}: enviado` };
+  } catch (err) {
+    await markFailed(item.id, {
+      code: "DISPATCH_ERROR",
+      message: err instanceof Error ? err.message : "Error",
+    });
+    await updatePanelSmsMessage(message.id, {
+      status: "failed",
+      error_code: "DISPATCH_ERROR",
+      error_message: err instanceof Error ? err.message : "Error de envío",
+    });
+    return { sent: false, deferred: false, failed: true };
+  } finally {
+    releaseConcurrency({
+      companyId: item.company_id,
+      providerId: item.provider_id,
+      routeId: item.route_id,
+    });
+  }
+}
+
 export async function processQueueTick(
   limit = 5,
   workerId = "manual-tick",
@@ -121,158 +266,16 @@ export async function processQueueTick(
   };
 
   const batch = await getNextQueuedMessages(limit);
+  const outcomes = await Promise.all(
+    batch.map((item) => processOneQueuedItem(item, workerId)),
+  );
 
-  for (const item of batch) {
+  for (const outcome of outcomes) {
     result.processed += 1;
-
-    if (!item.provider_id || !item.route_id || !item.company_id) {
-      await markFailed(item.id, {
-        code: "MISSING_ROUTING",
-        message: "Falta proveedor o ruta en cola",
-      });
-      result.failed += 1;
-      result.details.push(`${item.id}: sin routing`);
-      continue;
-    }
-
-    const canSend = await canSendNow({
-      companyId: item.company_id,
-      providerId: item.provider_id,
-      routeId: item.route_id,
-      ratePlanId: item.rate_plan_id,
-      trafficType: item.traffic_type,
-      flow: "queue",
-    });
-
-    if (!canSend.allowed) {
-      result.deferred += 1;
-      result.details.push(
-        `${item.id}: diferido — ${canSend.reason ?? "límite TPS"}`,
-      );
-      continue;
-    }
-
-    try {
-      await markProcessing(item.id, workerId);
-    } catch {
-      result.deferred += 1;
-      continue;
-    }
-
-    const provider = await getSmsProviderById(item.provider_id);
-    if (!provider) {
-      await markFailed(item.id, { code: "NO_PROVIDER", message: "Proveedor no encontrado" });
-      result.failed += 1;
-      continue;
-    }
-
-    const message = item.message_id
-      ? await getPanelSmsMessageById(item.message_id)
-      : null;
-
-    if (!message) {
-      await markFailed(item.id, {
-        code: "NO_MESSAGE",
-        message: "Mensaje panel no encontrado",
-      });
-      result.failed += 1;
-      continue;
-    }
-
-    try {
-      const providerResult = await dispatchProviderSend(provider, {
-        to: message.recipient_number,
-        message: message.message,
-        senderId: message.sender_id ?? "TELVOICE",
-        metadata: { panel_message_id: message.id, queue_id: item.id },
-      });
-
-      if (!providerResult.accepted) {
-        if (item.attempts >= item.max_attempts) {
-          await markFailed(item.id, {
-            code: providerResult.error_code ?? "REJECTED",
-            message: providerResult.error_message ?? "Proveedor rechazó",
-          });
-          await updatePanelSmsMessage(message.id, {
-            status: "failed",
-            error_code: providerResult.error_code ?? "PROVIDER_REJECTED",
-            error_message:
-              providerResult.error_message ?? "Proveedor rechazó el envío",
-          });
-          result.failed += 1;
-        } else {
-          await requeueForRetry(item.id);
-          result.deferred += 1;
-          result.details.push(`${item.id}: reintento pendiente`);
-        }
-        releaseConcurrency({
-          companyId: item.company_id,
-          providerId: item.provider_id,
-          routeId: item.route_id,
-        });
-        continue;
-      }
-
-      const panelStatus: PanelSmsMessageStatus =
-        providerResult.status === "pending" ? "pending" : "sent";
-
-      try {
-        await finalizeQueuedSend({
-          companyId: item.company_id,
-          messageId: message.id,
-          campaignId: message.campaign_id,
-          costSms: message.cost_sms,
-          panelStatus,
-          provider: providerResult.provider,
-          providerMessageId: providerResult.provider_message_id ?? null,
-          providerResult,
-        });
-      } catch (finalizeErr) {
-        await markFailed(item.id, {
-          code: "FINALIZE_FAILED",
-          message:
-            finalizeErr instanceof Error
-              ? finalizeErr.message
-              : "Error al finalizar envío",
-        });
-        result.failed += 1;
-        releaseConcurrency({
-          companyId: item.company_id,
-          providerId: item.provider_id,
-          routeId: item.route_id,
-        });
-        continue;
-      }
-
-      await markSent(item.id);
-      recordTpsSend({
-        companyId: item.company_id,
-        providerId: item.provider_id,
-        routeId: item.route_id,
-        ratePlanId: item.rate_plan_id,
-      });
-      result.sent += 1;
-      result.details.push(`${item.id}: enviado`);
-    } catch (err) {
-      await markFailed(item.id, {
-        code: "DISPATCH_ERROR",
-        message: err instanceof Error ? err.message : "Error",
-      });
-      if (message) {
-        await updatePanelSmsMessage(message.id, {
-          status: "failed",
-          error_code: "DISPATCH_ERROR",
-          error_message: err instanceof Error ? err.message : "Error de envío",
-        });
-      }
-      result.failed += 1;
-    } finally {
-      releaseConcurrency({
-        companyId: item.company_id,
-        providerId: item.provider_id,
-        routeId: item.route_id,
-      });
-    }
+    if (outcome.sent) result.sent += 1;
+    if (outcome.deferred) result.deferred += 1;
+    if (outcome.failed) result.failed += 1;
+    if (outcome.detail) result.details.push(outcome.detail);
   }
 
   return result;
@@ -299,6 +302,31 @@ export async function assertLiveTestTrafficAllowed(input: {
     routeId: input.routeId,
     ratePlanId: input.ratePlanId,
     flow: "live_test",
+    segmentCost: input.segmentCost,
+  });
+}
+
+/** Campaña masiva por cola: política comercial + TPS (sin pacing entre destinos). */
+export async function assertCampaignTrafficAllowed(input: {
+  companyId: string;
+  routeId: string;
+  providerId: string;
+  ratePlanId: string;
+  segmentCost: number;
+}): Promise<void> {
+  await resolveTrafficPolicy({
+    companyId: input.companyId,
+    routeId: input.routeId,
+    providerId: input.providerId,
+    ratePlanId: input.ratePlanId,
+  });
+
+  await assertCanSendNow({
+    companyId: input.companyId,
+    providerId: input.providerId,
+    routeId: input.routeId,
+    ratePlanId: input.ratePlanId,
+    flow: "campaign",
     segmentCost: input.segmentCost,
   });
 }

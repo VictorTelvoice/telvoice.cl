@@ -22,7 +22,7 @@ export function createApp() {
   app.use(cookieParser());
   app.use(
     express.json({
-      limit: "1mb",
+      limit: "16mb",
       verify: (req: Request, _res, buf) => {
         const path = req.originalUrl ?? req.url ?? "";
         if (path.includes("/webhooks/telsim")) {

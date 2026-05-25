@@ -43,6 +43,54 @@ export async function enqueueMessage(input: {
   return data as SmsSendQueueRow;
 }
 
+export async function enqueueMessagesBulk(
+  inputs: {
+    companyId: string;
+    messageId?: string | null;
+    campaignId?: string | null;
+    providerId?: string | null;
+    routeId?: string | null;
+    ratePlanId?: string | null;
+    priority?: number;
+    trafficType?: string;
+    scheduledAt?: string;
+    metadata?: Record<string, unknown>;
+  }[],
+): Promise<SmsSendQueueRow[]> {
+  if (inputs.length === 0) {
+    return [];
+  }
+
+  const now = new Date().toISOString();
+  const rows = inputs.map((input) => ({
+    company_id: input.companyId,
+    message_id: input.messageId ?? null,
+    campaign_id: input.campaignId ?? null,
+    provider_id: input.providerId ?? null,
+    route_id: input.routeId ?? null,
+    rate_plan_id: input.ratePlanId ?? null,
+    priority: input.priority ?? 100,
+    traffic_type: input.trafficType ?? "transactional",
+    status: "queued",
+    scheduled_at: input.scheduledAt ?? now,
+    metadata: input.metadata ?? {},
+  }));
+
+  const { data, error } = await getSupabase()
+    .from("sms_send_queue")
+    .insert(rows)
+    .select("*");
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      throw new AppError("Migración 016 no aplicada (sms_send_queue).", 503);
+    }
+    wrapSupabaseError(error, "enqueueMessagesBulk");
+  }
+
+  return (data ?? []) as SmsSendQueueRow[];
+}
+
 export async function getNextQueuedMessages(
   limit = 10,
 ): Promise<SmsSendQueueRow[]> {

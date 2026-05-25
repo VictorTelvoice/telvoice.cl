@@ -52,6 +52,57 @@ export async function createPanelSmsMessage(input: {
   return data as PanelSmsMessageRow;
 }
 
+export async function createPanelSmsMessagesBulk(
+  inputs: {
+    companyId: string;
+    campaignId?: string | null;
+    recipientNumber: string;
+    senderId?: string | null;
+    message: string;
+    segments: number;
+    costSms: number;
+    provider?: string;
+    status?: PanelSmsMessageStatus;
+    mode?: string;
+    metadata?: Record<string, unknown>;
+  }[],
+): Promise<PanelSmsMessageRow[]> {
+  if (inputs.length === 0) {
+    return [];
+  }
+
+  const rows = inputs.map((input) => ({
+    company_id: input.companyId,
+    campaign_id: input.campaignId ?? null,
+    recipient_number: input.recipientNumber,
+    sender_id: input.senderId ?? null,
+    message: input.message,
+    segments: input.segments,
+    cost_sms: input.costSms,
+    provider: input.provider ?? "mock",
+    status: input.status ?? "queued",
+    mode: input.mode ?? "mock",
+    metadata: input.metadata ?? {},
+  }));
+
+  const { data, error } = await getSupabase()
+    .from("panel_sms_messages")
+    .insert(rows)
+    .select("*");
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      throw new AppError(
+        "Tabla panel_sms_messages no disponible. Aplica la migración 012.",
+        503,
+      );
+    }
+    wrapSupabaseError(error, "createPanelSmsMessagesBulk");
+  }
+
+  return (data ?? []) as PanelSmsMessageRow[];
+}
+
 function asMetadataRecord(
   value: unknown,
 ): Record<string, unknown> {

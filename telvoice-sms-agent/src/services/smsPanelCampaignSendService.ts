@@ -17,12 +17,23 @@ import {
 } from "./smsWalletService.js";
 import { hasSmsDebitForMessage } from "./walletTransactionService.js";
 import { assertLiveTestOperationalLimits } from "./smsLiveTestLimiterService.js";
-import { assertLiveTestSendAllowed } from "./smsLiveTestPolicy.js";
+import {
+  assertCampaignDispatchEnabled,
+  assertCampaignRecipientAllowed,
+} from "./smsCampaignPolicy.js";
+import {
+  bulkEnqueueCampaignRecipients,
+  shouldEnqueueCampaignViaBulk,
+  type BulkCampaignItem,
+} from "./smsCampaignBulkEnqueueService.js";
 import { dispatchProviderSend } from "./smsProviderDispatchService.js";
-import { assertLiveTestTrafficAllowed } from "./smsDispatchWorkerService.js";
+import {
+  assertCampaignTrafficAllowed,
+  assertLiveTestTrafficAllowed,
+} from "./smsDispatchWorkerService.js";
+import { env } from "../config/env.js";
 import { recordTpsSend } from "./smsTpsLimiterService.js";
 import { resolveRouteForMessage } from "./smsRoutingService.js";
-import { enqueueMessage } from "./smsQueueService.js";
 import { findCompanyById } from "./companyService.js";
 import {
   buildMassCampaignFingerprint,
@@ -91,7 +102,7 @@ function resolveCampaignItems(input: SendPanelCampaignInput): {
       continue;
     }
     try {
-      const phone = assertLiveTestSendAllowed({
+      const phone = assertCampaignRecipientAllowed({
         companyId: input.companyId,
         to: row.phone,
       });
@@ -288,69 +299,11 @@ async function sendOneInCampaign(input: {
   }
 }
 
-async function queueOneForSchedule(input: {
-  companyId: string;
-  campaignId: string;
-  senderId: string;
-  messageText: string;
-  phone: string;
-  segmentInfo: ReturnType<typeof calculateSmsSegments>;
-  scheduledAt: string;
-  sendSource: string;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
-  try {
-    const resolved = await resolveRouteForMessage({
-      companyId: input.companyId,
-      country: "CL",
-      phone: input.phone,
-      trafficType: "transactional",
-    });
-
-    const effectiveSender =
-      input.senderId || resolved.provider.default_sender_id || "TELVOICE";
-
-    const pendingMessage = await createPanelSmsMessage({
-      companyId: input.companyId,
-      campaignId: input.campaignId,
-      recipientNumber: input.phone,
-      senderId: effectiveSender,
-      message: input.messageText,
-      segments: input.segmentInfo.segments,
-      costSms: input.segmentInfo.costSms,
-      status: "queued",
-      mode: "live_test",
-      provider: resolved.provider.code,
-      metadata: {
-        source: input.sendSource,
-        send_mode: "scheduled",
-        scheduled_at: input.scheduledAt,
-      },
-    });
-
-    await enqueueMessage({
-      companyId: input.companyId,
-      messageId: pendingMessage.id,
-      campaignId: input.campaignId,
-      providerId: resolved.provider.id,
-      routeId: resolved.route.id,
-      ratePlanId: resolved.ratePlan.id,
-      scheduledAt: input.scheduledAt,
-      metadata: { source: input.sendSource, panel_message_id: pendingMessage.id },
-    });
-
-    return { ok: true };
-  } catch (err) {
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : "Error al encolar",
-    };
-  }
-}
-
 export async function sendPanelCampaign(
   input: SendPanelCampaignInput,
 ): Promise<PanelCampaignSendResult> {
   const sendSource = input.sendSource ?? "app_send_sms_campaign";
+  assertCampaignDispatchEnabled();
 
   if (input.idempotencyKey?.trim()) {
     const existing = await findCampaignByIdempotencyKey(
@@ -407,6 +360,11 @@ export async function sendPanelCampaign(
 
   const isScheduled =
     input.mode === "scheduled" && Boolean(input.scheduledAt?.trim());
+  const useBulkQueue = shouldEnqueueCampaignViaBulk(input.mode, items.length);
+  const scheduledAt =
+    isScheduled && input.scheduledAt?.trim()
+      ? input.scheduledAt.trim()
+      : new Date().toISOString();
 
   const campaignMetadata: Record<string, unknown> = {
     source: sendSource,
@@ -467,31 +425,53 @@ export async function sendPanelCampaign(
   let queued = 0;
   let smsConsumed = 0;
 
-  if (isScheduled && input.scheduledAt) {
-    for (const item of items) {
-      const result = await queueOneForSchedule({
-        companyId: input.companyId,
-        campaignId: campaign.id,
-        senderId,
-        messageText: item.messageText,
-        phone: item.phone,
-        segmentInfo: item.segmentInfo,
-        scheduledAt: input.scheduledAt,
-        sendSource,
-      });
-      if (result.ok) queued += 1;
-      else failed += 1;
-    }
+  if (useBulkQueue) {
+    const resolved = await resolveRouteForMessage({
+      companyId: input.companyId,
+      country: "CL",
+      trafficType: env.smsCampaign.trafficType,
+    });
+
+    await assertCampaignTrafficAllowed({
+      companyId: input.companyId,
+      routeId: resolved.route.id,
+      providerId: resolved.provider.id,
+      ratePlanId: resolved.ratePlan.id,
+      segmentCost: 1,
+    });
+
+    const bulkItems: BulkCampaignItem[] = items.map((item) => ({
+      phone: item.phone,
+      messageText: item.messageText,
+      segments: item.segmentInfo.segments,
+      costSms: item.segmentInfo.costSms,
+      encoding: item.segmentInfo.encoding,
+      characters: item.segmentInfo.characters,
+    }));
+
+    const bulk = await bulkEnqueueCampaignRecipients({
+      companyId: input.companyId,
+      campaignId: campaign.id,
+      senderId,
+      items: bulkItems,
+      scheduledAt,
+      resolved,
+    });
+    queued = bulk.queued;
+    failed = bulk.failed + invalid;
 
     await updateSmsCampaign(campaign.id, {
       status: queued > 0 ? "processing" : "failed",
-      real_sms_cost: smsConsumed,
+      real_sms_cost: 0,
       metadata: {
         source: sendSource,
         send_mode: input.mode,
         production: true,
         queued,
+        failed_enqueue: failed,
         awaiting_scheduler: true,
+        bulk_queue: true,
+        target_tps: env.smsQueueScheduler.batchSize,
       },
     });
   } else {
