@@ -631,7 +631,8 @@ export function getAppPanelStyles(): string {
       display: flex;
       flex-direction: column;
       gap: 1.25rem;
-      max-width: 1280px;
+      width: 100%;
+      max-width: none;
     }
     .tv-client-dash-alert {
       margin: 0;
@@ -643,7 +644,7 @@ export function getAppPanelStyles(): string {
     }
     .tv-kpi-grid--client .tv-kpi {
       min-height: 128px;
-      padding: 1.15rem 1.25rem 1.2rem;
+      padding: 1.25rem 1.35rem 1.3rem;
       display: flex;
       flex-direction: column;
     }
@@ -664,23 +665,24 @@ export function getAppPanelStyles(): string {
     }
     .tv-client-dash-tiles-wrap {
       margin: 0;
+      width: 100%;
     }
     .tv-client-dash-tiles {
-      display: flex;
-      flex-wrap: nowrap;
-      justify-content: flex-end;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       align-items: stretch;
-      gap: 0.75rem;
-      padding: 1rem 1.15rem 1.15rem;
-      overflow-x: auto;
+      gap: 0.85rem;
+      padding: 1.15rem 1.35rem 1.35rem;
+      width: 100%;
+      box-sizing: border-box;
     }
     .tv-client-dash-tiles .tv-quick {
-      flex: 0 0 auto;
-      width: 168px;
+      width: 100%;
+      min-width: 0;
       flex-direction: column;
       align-items: flex-start;
       gap: 0.55rem;
-      padding: 0.9rem 1rem;
+      padding: 1rem 1.15rem;
       border: 1px solid var(--tv-border);
       border-radius: 12px;
       background: linear-gradient(180deg, #fff 0%, #f8fbff 100%);
@@ -705,15 +707,15 @@ export function getAppPanelStyles(): string {
       font-size: 0.74rem;
       line-height: 1.35;
     }
-    .tv-client-dash-tiles .tv-quick__arrow {
-      display: none;
+    .tv-client-dash-tiles .tv-quick:last-child {
+      border-bottom: 1px solid var(--tv-border);
     }
     .tv-client-dash-table-panel {
       overflow: hidden;
       border-radius: 14px;
     }
     .tv-client-dash-table {
-      padding: 0.35rem 0 0.5rem;
+      padding: 0.5rem 1.1rem 0.85rem;
     }
     .tv-client-dash-table-panel .tv-table--dash {
       width: 100%;
@@ -750,7 +752,7 @@ export function getAppPanelStyles(): string {
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem;
-      padding: 0.95rem 1.15rem;
+      padding: 1rem 1.35rem;
       border-bottom: 1px solid var(--tv-border);
       background: linear-gradient(180deg, #fafbfd 0%, #fff 100%);
     }
@@ -785,17 +787,25 @@ export function getAppPanelStyles(): string {
     @media (max-width: 1100px) {
       .tv-kpi-grid--client { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .tv-client-dash-tiles {
-        justify-content: flex-start;
-        flex-wrap: wrap;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.65rem;
+        padding: 1rem 1.1rem 1.15rem;
       }
       .tv-client-dash-tiles .tv-quick {
-        width: calc(50% - 0.4rem);
-        min-width: 150px;
+        padding: 0.85rem 0.9rem;
+      }
+      .tv-client-dash-tiles .tv-quick__desc {
+        display: none;
       }
     }
     @media (max-width: 640px) {
       .tv-kpi-grid--client { grid-template-columns: 1fr; }
-      .tv-client-dash-tiles .tv-quick { width: 100%; }
+      .tv-client-dash-tiles {
+        grid-template-columns: 1fr;
+      }
+      .tv-client-dash-tiles .tv-quick__desc {
+        display: block;
+      }
     }
     @media (max-width: 960px) {
       .tv-send-to-row { grid-template-columns: 1fr; }
