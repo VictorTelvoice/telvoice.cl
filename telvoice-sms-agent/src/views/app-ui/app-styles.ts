@@ -177,54 +177,115 @@ export function getAppPanelStyles(): string {
       border-style: dashed;
     }
     ${getOrderUiSharedStyles()}
-    .tv-send-preview-phone {
+    .tv-app-send-page .tv-send-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(200px, 212px);
+      gap: 1rem;
+      align-items: start;
+    }
+    .tv-app-send-page .tv-send-aside {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
       width: 100%;
+      position: sticky;
+      top: 0.75rem;
+      align-self: start;
+    }
+    .tv-send-preview-phone {
       display: flex;
       justify-content: center;
-      padding: 0.25rem 0;
+      padding: 0;
+      margin: 0;
+      background: none;
+      border: none;
+      box-shadow: none;
     }
-    /* Vista previa Enviar SMS: ~30 % más compacto que el hero del landing */
+    /* Mockup hero: base −30 %, luego +10 % → ~77 % del landing */
     .tv-send-preview-phone .tv-hero-phone {
-      width: min(182px, 100%);
-      height: 336px;
-      border-radius: 28px;
-      border-width: 7px;
-      box-shadow: 0 14px 35px -10px rgba(15, 23, 42, 0.3);
+      width: min(200px, 100%);
+      height: 370px;
+      border-radius: 31px;
+      border-width: 8px;
+      box-shadow: 0 16px 38px -10px rgba(15, 23, 42, 0.28);
     }
     .tv-send-preview-phone .tv-hero-phone__notch {
-      height: 15px;
-      border-radius: 0 0 10px 10px;
+      height: 17px;
+      border-radius: 0 0 11px 11px;
     }
     .tv-send-preview-phone .tv-hero-phone__screen {
-      padding: 1.75rem 0.7rem 0.7rem;
+      padding: 1.9rem 0.75rem 0.75rem;
     }
     .tv-send-preview-phone .tv-hero-phone__app-head {
-      gap: 0.45rem;
-      padding-bottom: 0.5rem;
-      margin-bottom: 0.35rem;
+      gap: 0.5rem;
+      padding-bottom: 0.55rem;
+      margin-bottom: 0.4rem;
     }
     .tv-send-preview-phone .tv-hero-phone__avatar {
-      width: 25px;
-      height: 25px;
-      border-radius: 7px;
-      font-size: 0.66rem;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      font-size: 0.72rem;
     }
     .tv-send-preview-phone .tv-hero-phone__app-title {
-      font-size: 0.58rem;
+      font-size: 0.64rem;
     }
     .tv-send-preview-phone .tv-hero-phone__app-sub {
-      font-size: 0.48rem;
+      font-size: 0.53rem;
     }
     .tv-send-preview-phone .tv-hero-phone__messages {
-      gap: 0.35rem;
+      gap: 0.4rem;
     }
     .tv-send-preview-phone .tv-hero-phone__bubble {
-      padding: 0.45rem 0.53rem;
-      font-size: 0.53rem;
-      border-radius: 11px;
+      padding: 0.5rem 0.58rem;
+      font-size: 0.58rem;
+      border-radius: 12px;
     }
     .tv-send-preview-phone .tv-hero-phone__bubble--in {
-      border-radius: 11px 11px 11px 3px;
+      border-radius: 12px 12px 12px 3px;
+    }
+    .tv-send-validation {
+      width: 100%;
+      max-width: 200px;
+      padding: 0.4rem 0.35rem;
+      background: var(--tv-surface, #fff);
+      border: 1px solid var(--tv-border, #e2e8f0);
+      border-radius: 10px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    .tv-stat-chips--send-aside {
+      grid-template-columns: 1fr 1fr;
+      gap: 0.3rem;
+      margin: 0;
+    }
+    .tv-stat-chips--send-aside .tv-stat-chip {
+      padding: 0.3rem 0.4rem;
+      min-height: 0;
+    }
+    .tv-stat-chips--send-aside .tv-stat-chip__label {
+      font-size: 0.62rem;
+      line-height: 1.2;
+    }
+    .tv-stat-chips--send-aside .tv-stat-chip__value {
+      font-size: 0.75rem;
+      line-height: 1.2;
+    }
+    @media (max-width: 960px) {
+      .tv-app-send-page .tv-send-layout {
+        grid-template-columns: 1fr;
+      }
+      .tv-app-send-page .tv-send-aside {
+        position: static;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: none;
+      }
+      .tv-send-validation {
+        max-width: min(320px, 100%);
+        flex: 1 1 200px;
+      }
     }
     .tv-hero-phone {
       position: relative;
@@ -474,10 +535,6 @@ export function getAppPanelStyles(): string {
       flex: 1;
       min-width: 0;
       font-size: 0.8125rem;
-    }
-    .tv-validation-panel .tv-panel__body {
-      padding-top: 0.5rem;
-      padding-bottom: 0.75rem;
     }
     .tv-stat-chips--compact {
       grid-template-columns: 1fr 1fr;

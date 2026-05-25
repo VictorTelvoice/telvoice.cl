@@ -308,30 +308,22 @@ export function renderAppSendSmsPage(
         ${renderPanel("Checklist pre-campaña", checklistHtml)}
       </div>
       <aside class="tv-send-aside">
-        <section class="tv-panel">
-          <header class="tv-section-head"><h2 class="tv-section-head__title">Vista previa móvil</h2></header>
-          <div class="tv-panel__body tv-panel__body--center">
-            <div id="tv-send-preview-phone" class="tv-send-preview-phone">
-              ${renderHeroPhonePreview({
-                senderLabel: suggestedSenderId,
-                senderSub: companyDisplayName,
-                message: "Hola, tu mensaje aparecerá aquí.",
-                bubbleId: "tv-send-preview-bubble",
-              })}
-            </div>
+        <div id="tv-send-preview-phone" class="tv-send-preview-phone">
+          ${renderHeroPhonePreview({
+            senderLabel: suggestedSenderId,
+            senderSub: companyDisplayName,
+            message: "Hola, tu mensaje aparecerá aquí.",
+            bubbleId: "tv-send-preview-bubble",
+          })}
+        </div>
+        <div class="tv-send-validation">
+          <div class="tv-stat-chips tv-stat-chips--send-aside tv-validation-chips">
+            ${renderStatChip("Caracteres", "0", "default")}
+            ${renderStatChip("Segmentos", "0", "primary")}
+            ${renderStatChip("Costo est.", "0 SMS", "primary")}
+            ${renderStatChip("Codificación", "GSM-7", "default")}
           </div>
-        </section>
-        <section class="tv-panel tv-validation-panel">
-          <header class="tv-section-head"><h2 class="tv-section-head__title">Validación</h2></header>
-          <div class="tv-panel__body">
-            <div class="tv-stat-chips tv-stat-chips--compact tv-validation-chips">
-              ${renderStatChip("Caracteres", "0", "default")}
-              ${renderStatChip("Segmentos", "0", "primary")}
-              ${renderStatChip("Costo est.", "0 SMS", "primary")}
-              ${renderStatChip("Codificación", "GSM-7", "default")}
-            </div>
-          </div>
-        </section>
+        </div>
       </aside>
     </form>`;
 
