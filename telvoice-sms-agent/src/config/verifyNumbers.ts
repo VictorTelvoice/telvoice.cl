@@ -80,6 +80,35 @@ export function findVerifyNumberBySlotId(slotId: string): VerifyNumberEntry | nu
   return getRegisteredVerifyNumbers().find((e) => e.slotId === id) ?? null;
 }
 
+function normalizedDigits(phone: string): string {
+  return phone.replace(/\D/g, "");
+}
+
+/** Operador por defecto si el env trae «—» (líneas QA Telvoice). */
+const DEFAULT_OPERATOR_BY_DIGITS: Record<string, string> = {
+  "56934449937": "Entel",
+  "56974713166": "Movistar",
+  "56977109623": "Movistar",
+};
+
+export function resolveVerifyOperatorName(entry: VerifyNumberEntry): string {
+  const fromEnv = entry.operator.trim();
+  if (fromEnv && fromEnv !== "—" && fromEnv !== "-") {
+    return fromEnv;
+  }
+  return DEFAULT_OPERATOR_BY_DIGITS[normalizedDigits(entry.phone)] ?? "Chile";
+}
+
+/** Etiqueta legible: «Chile Entel 56934449937», «Chile Movistar 569…». */
+export function formatVerifyLineDisplay(entry: VerifyNumberEntry): string {
+  const operator = resolveVerifyOperatorName(entry);
+  const phone = normalizedDigits(entry.phone);
+  if (operator === "Chile") {
+    return `Chile ${phone}`;
+  }
+  return `Chile ${operator} ${phone}`;
+}
+
 export function maskVerifyPhone(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   if (digits.length < 8) {

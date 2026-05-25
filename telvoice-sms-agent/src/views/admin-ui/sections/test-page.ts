@@ -1,4 +1,5 @@
 import type { AdminSessionUser } from "../../../types/admin.js";
+import { formatVerifyLineDisplay } from "../../../config/verifyNumbers.js";
 import type { TelsimInboundFeedItem } from "../../../services/telsimWebhookService.js";
 import { isDailySendLimitEnforced } from "../../../services/smsLiveTestLimiterService.js";
 import {
@@ -77,8 +78,7 @@ function renderInboundFeedHtml(messages: TelsimInboundFeedItem[]): string {
 }
 
 function renderInboundPhone(
-  lineLabel: string,
-  operator: string,
+  displayLine: string,
   messages: TelsimInboundFeedItem[],
 ): string {
   const latest = messages[messages.length - 1];
@@ -91,7 +91,7 @@ function renderInboundPhone(
         <div class="tv-hero-phone__avatar" aria-hidden="true">${escapeHtml(initial)}</div>
         <div>
           <div class="tv-hero-phone__app-title" id="tv-telsim-feed-title">${escapeHtml(headFrom)}</div>
-          <div class="tv-hero-phone__app-sub" id="tv-telsim-feed-sub">${escapeHtml(lineLabel)} · ${escapeHtml(operator)}</div>
+          <div class="tv-hero-phone__app-sub" id="tv-telsim-feed-sub">${escapeHtml(displayLine)}</div>
         </div>
       </div>
       <div class="tv-hero-phone__messages tv-telsim-feed" id="tv-telsim-feed" role="log" aria-live="polite" aria-relevant="additions">
@@ -203,7 +203,7 @@ function renderTestWorkspace(options: {
   const lineOptions = panel.verifyNumbers
     .map(
       (v, i) =>
-        `<option value="${i}" data-verify-id="${escapeHtml(v.entry.id)}">${escapeHtml(v.entry.operator)} — ${escapeHtml(v.entry.label)} (${escapeHtml(v.maskedPhone)})</option>`,
+        `<option value="${i}" data-verify-id="${escapeHtml(v.entry.id)}">${escapeHtml(formatVerifyLineDisplay(v.entry))}</option>`,
     )
     .join("");
 
@@ -281,7 +281,7 @@ function renderTestWorkspace(options: {
             <p class="field-hint" id="tv-telsim-line-hint">Al llegar un SMS a otra línea, la vista cambia automáticamente.</p>
           </div>
           <div class="tv-telsim-panel__phone" id="tv-telsim-phone-wrap">
-            ${renderInboundPhone(first.entry.label, first.entry.operator, firstFeed)}
+            ${renderInboundPhone(formatVerifyLineDisplay(first.entry), firstFeed)}
           </div>
           <p class="tv-telsim-panel__status field-hint" id="tv-telsim-meta">
             ${renderPanelMessageStatusBadge(first.lastStatus, "live_test")}
@@ -343,6 +343,7 @@ export function renderAdminTestPage(options: {
           const latest = feed[feed.length - 1];
           return {
             id: v.entry.id,
+            displayName: formatVerifyLineDisplay(v.entry),
             operator: v.entry.operator,
             label: v.entry.label,
             masked: v.maskedPhone,
@@ -434,7 +435,7 @@ export function renderAdminTestPage(options: {
           '<div class="tv-hero-phone__notch"></div><div class="tv-hero-phone__screen">'+
           '<div class="tv-hero-phone__app-head"><div class="tv-hero-phone__avatar">'+esc((headFrom.charAt(0)||'S').toUpperCase())+'</div><div>'+
           '<div class="tv-hero-phone__app-title" id="tv-telsim-feed-title">'+esc(headFrom)+'</div>'+
-          '<div class="tv-hero-phone__app-sub" id="tv-telsim-feed-sub">'+esc(line.label)+' · '+esc(line.operator)+'</div></div></div>'+
+          '<div class="tv-hero-phone__app-sub" id="tv-telsim-feed-sub">'+esc(line.displayName || line.label)+'</div></div></div>'+
           '<div class="tv-hero-phone__messages tv-telsim-feed" id="tv-telsim-feed" role="log" aria-live="polite">'+renderFeedHtml(messages)+'</div></div></div>';
       }
       function getLineBySelectIndex(selectEl){
@@ -574,7 +575,7 @@ export function renderAdminTestPage(options: {
               var idx = telsimLines.indexOf(lineWithNew);
               if(String(telsimSelect.value)!==String(idx)){
                 telsimSelect.value = String(idx);
-                flashLineHint('Nuevo SMS en '+lineWithNew.label+' ('+lineWithNew.masked+')');
+                flashLineHint('Nuevo SMS en '+(lineWithNew.displayName || lineWithNew.label));
               }
               var phoneWrap = document.getElementById('tv-telsim-phone-wrap');
               if(phoneWrap) phoneWrap.classList.add('tv-telsim-panel__phone--pulse');
