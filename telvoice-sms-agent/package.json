@@ -21,6 +21,7 @@
     "seed:sms-routing": "node scripts/seed-sms-routing.mjs",
     "seed:chile-3-providers": "node scripts/seed-chile-3-providers.mjs",
     "migrate:017": "node scripts/apply-migration-017.mjs",
+    "migrate:telsim": "node scripts/apply-migration-telsim.mjs",
     "telegram:get-me": "tsx scripts/telegram-get-me.ts"
   },
   "dependencies": {
