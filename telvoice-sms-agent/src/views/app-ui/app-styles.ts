@@ -915,27 +915,33 @@ export function getAppPanelStyles(): string {
     .tv-dlr-report__filters-form {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: 0.85rem;
     }
-    .tv-dlr-report__filters-grid {
+    .tv-dlr-report__filters-row {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 0.85rem 1rem;
       align-items: end;
     }
-    .tv-dlr-report__filters-grid .tv-filter-field {
+    .tv-dlr-report__filters-row--primary {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+    .tv-dlr-report__filters-row--secondary {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+      align-items: end;
+    }
+    .tv-dlr-report__filters-row .tv-filter-field {
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
       min-width: 0;
     }
-    .tv-dlr-report__filters-grid .tv-filter-field__label {
+    .tv-dlr-report__filters-row .tv-filter-field__label {
       font-size: 0.68rem;
       font-weight: 700;
       text-transform: uppercase;
       color: var(--tv-muted, #64748b);
     }
-    .tv-dlr-report__filters-grid .tv-filter-input {
+    .tv-dlr-report__filters-row .tv-filter-input {
       width: 100%;
       padding: 0.45rem 0.6rem;
       border: 1px solid var(--tv-border, #cbd5e1);
@@ -944,16 +950,13 @@ export function getAppPanelStyles(): string {
       background: #fff;
       box-sizing: border-box;
     }
-    .tv-dlr-report__status-field {
-      grid-column: span 2;
-    }
     .tv-dlr-report__filter-actions {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
       align-items: center;
-      padding-top: 0.25rem;
-      border-top: 1px solid var(--tv-border, #e2e8f0);
+      justify-content: flex-end;
+      margin-left: auto;
     }
     .tv-dlr-report__status-chips {
       display: flex;
@@ -982,7 +985,55 @@ export function getAppPanelStyles(): string {
       overflow-x: auto;
       max-height: 58vh;
     }
-    .tv-dlr-report__table { min-width: 1100px; }
+    .tv-dlr-report__table {
+      min-width: 1100px;
+      table-layout: fixed;
+      width: 100%;
+    }
+    .tv-dlr-report__table--resizable thead th {
+      position: relative;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding-right: 1.1rem;
+      user-select: none;
+    }
+    .tv-col-resize-handle {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 8px;
+      height: 100%;
+      cursor: col-resize;
+      touch-action: none;
+    }
+    .tv-col-resize-handle::after {
+      content: "";
+      position: absolute;
+      top: 20%;
+      bottom: 20%;
+      right: 3px;
+      width: 2px;
+      border-radius: 1px;
+      background: var(--tv-border, #cbd5e1);
+      opacity: 0.7;
+    }
+    .tv-col-resize-handle:hover::after,
+    body.tv-col-resizing .tv-col-resize-handle::after {
+      background: var(--tv-primary, #0052cc);
+      opacity: 1;
+    }
+    body.tv-col-resizing {
+      cursor: col-resize;
+      user-select: none;
+    }
+    body.tv-col-resizing * {
+      cursor: col-resize !important;
+    }
+    .tv-dlr-report__table--resizable td {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .tv-dlr-report__mono { font-family: ui-monospace, monospace; font-size: 0.78rem; }
     .tv-dlr-report__msg { max-width: 220px; }
     .tv-dlr-report__date { white-space: nowrap; font-size: 0.8rem; }
@@ -1002,22 +1053,30 @@ export function getAppPanelStyles(): string {
       gap: 0.5rem;
     }
     @media (max-width: 1280px) {
-      .tv-dlr-report__filters-grid {
+      .tv-dlr-report__filters-row--primary {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .tv-dlr-report__filters-row--secondary {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .tv-dlr-report__filter-actions {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+        margin-left: 0;
       }
       .tv-kpi-grid--report { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     @media (max-width: 900px) {
-      .tv-dlr-report__filters-grid {
+      .tv-dlr-report__filters-row--primary,
+      .tv-dlr-report__filters-row--secondary {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
-      .tv-dlr-report__status-field { grid-column: span 2; }
     }
     @media (max-width: 640px) {
-      .tv-dlr-report__filters-grid {
+      .tv-dlr-report__filters-row--primary,
+      .tv-dlr-report__filters-row--secondary {
         grid-template-columns: 1fr;
       }
-      .tv-dlr-report__status-field { grid-column: span 1; }
       .tv-kpi-grid--report { grid-template-columns: 1fr; }
     }
   `;
