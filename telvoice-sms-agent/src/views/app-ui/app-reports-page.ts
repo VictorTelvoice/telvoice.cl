@@ -269,7 +269,7 @@ export function renderAppReportsPage(
       </header>
       <div class="tv-panel__body tv-dlr-report__filters-body">
         <form method="get" action="/app/reports" class="tv-dlr-report__filters-form">
-          <div class="tv-dlr-report__filters-row tv-dlr-report__filters-row--primary">
+          <div class="tv-dlr-report__filters-grid">
             ${renderFilterField("Start Date", `<input type="date" name="start_date" class="tv-filter-input" value="${escapeHtml(filters.startDate ?? "")}" />`)}
             ${renderFilterField("End Date", `<input type="date" name="end_date" class="tv-filter-input" value="${escapeHtml(filters.endDate ?? "")}" />`)}
             ${renderFilterField("Sender ID", `<input type="text" name="sender_id" class="tv-filter-input" placeholder="Sender ID (opcional)" value="${escapeHtml(filters.senderId ?? "")}" />`)}
@@ -279,8 +279,6 @@ export function renderAppReportsPage(
               <span class="tv-filter-field__label">DLR Status</span>
               ${renderStatusFilters(selectedStatus)}
             </div>
-          </div>
-          <div class="tv-dlr-report__filters-row tv-dlr-report__filters-row--secondary">
             ${renderFilterField("Country", `<select name="country" class="tv-filter-input">${countryOpts}</select>`)}
             ${renderFilterField("MCC", `<select name="mcc" class="tv-filter-input">${mccOpts}</select>`)}
             ${renderFilterField("MNC", `<select name="mnc" class="tv-filter-input">${mncOpts}</select>`)}
