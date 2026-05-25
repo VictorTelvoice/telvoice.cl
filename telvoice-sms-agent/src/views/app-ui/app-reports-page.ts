@@ -4,13 +4,10 @@ import type {
 } from "../../services/smsDlrReportService.js";
 import { formatDisplayDate } from "../../services/smsDlrReportService.js";
 import { escapeHtml } from "../../utils/html.js";
-import {
-  renderFilterBar,
-  renderFilterField,
-  renderPageHeader,
-} from "../admin-ui/page-kit.js";
+import { renderKpiCard } from "../admin-ui/components.js";
+import { renderFilterField, renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
-import { wrapAppPage } from "./app-page-wrap.js";
+import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
 
 const DLR_STATUS_OPTIONS = [
   "Delivered",
@@ -130,6 +127,60 @@ function renderPagination(
   </div>`;
 }
 
+function deliveryRatePercent(summary: DlrReportResult["summary"]): string {
+  if (summary.total === 0) {
+    return "—";
+  }
+  return `${Math.round((summary.delivered / summary.total) * 100)}%`;
+}
+
+function renderReportKpis(summary: DlrReportResult["summary"]): string {
+  return `<div class="tv-kpi-grid tv-kpi-grid--client tv-kpi-grid--report">
+      ${renderKpiCard({
+        label: "Registros",
+        value: fmtSms(summary.total),
+        hint: "Con filtros aplicados",
+        icon: "summarize",
+        variant: "primary",
+      })}
+      ${renderKpiCard({
+        label: "Entregados",
+        value: fmtSms(summary.delivered),
+        hint: "DLR confirmado",
+        icon: "check_circle",
+        variant: "success",
+      })}
+      ${renderKpiCard({
+        label: "Tasa de entrega",
+        value: deliveryRatePercent(summary),
+        hint: "Entregados vs registros",
+        icon: "percent",
+        variant: "success",
+      })}
+      ${renderKpiCard({
+        label: "Enviados (sin DLR)",
+        value: fmtSms(summary.sent),
+        hint: "Aún en tránsito o pendiente",
+        icon: "schedule",
+        variant: "warn",
+      })}
+      ${renderKpiCard({
+        label: "Fallidos",
+        value: fmtSms(summary.failed),
+        hint: "Rechazados o error",
+        icon: "error",
+        variant: "danger",
+      })}
+      ${renderKpiCard({
+        label: "Pendientes",
+        value: fmtSms(summary.pending),
+        hint: "En cola o sin confirmar",
+        icon: "hourglass_empty",
+        variant: "default",
+      })}
+    </div>`;
+}
+
 export function renderAppReportsPage(
   ctx: AppPageContext,
   result: DlrReportResult,
@@ -146,7 +197,7 @@ export function renderAppReportsPage(
   ].join("");
 
   const mccOpts = [
-    `<option value="">${escapeHtml("Todos")}</option>`,
+    `<option value="">Todos</option>`,
     ...result.filterOptions.mccs.map(
       (m) =>
         `<option value="${escapeHtml(m)}"${filters.mcc === m ? " selected" : ""}>${escapeHtml(m)}</option>`,
@@ -154,71 +205,72 @@ export function renderAppReportsPage(
   ].join("");
 
   const mncOpts = [
-    `<option value="">${escapeHtml("Todos")}</option>`,
+    `<option value="">Todos</option>`,
     ...result.filterOptions.mncs.map(
       (m) =>
         `<option value="${escapeHtml(m)}"${filters.mnc === m ? " selected" : ""}>${escapeHtml(m)}</option>`,
     ),
   ].join("");
 
-  const filtersForm = `
-    <form method="get" action="/app/reports" class="tv-dlr-report__filters-form">
-      ${renderFilterBar(`
-        ${renderFilterField("Desde", `<input type="date" name="start_date" class="tv-filter-input" value="${escapeHtml(filters.startDate ?? "")}" />`)}
-        ${renderFilterField("Hasta", `<input type="date" name="end_date" class="tv-filter-input" value="${escapeHtml(filters.endDate ?? "")}" />`)}
-        ${renderFilterField("Sender ID", `<input type="text" name="sender_id" class="tv-filter-input" placeholder="Ej. TELVOICE" value="${escapeHtml(filters.senderId ?? "")}" />`)}
-        ${renderFilterField("Teléfono", `<input type="text" name="phone" class="tv-filter-input" placeholder="569…" value="${escapeHtml(filters.phoneNumber ?? "")}" />`)}
-        ${renderFilterField("Job / Campaña", `<input type="text" name="job_id" class="tv-filter-input" placeholder="ID campaña (opcional)" value="${escapeHtml(filters.jobId ?? "")}" />`)}
-        ${renderFilterField("Estado DLR", renderStatusFilters(selectedStatus))}
-        ${renderFilterField("País", `<select name="country" class="tv-filter-input">${countryOpts}</select>`)}
-        ${renderFilterField("MCC", `<select name="mcc" class="tv-filter-input">${mccOpts}</select>`)}
-        ${renderFilterField("MNC", `<select name="mnc" class="tv-filter-input">${mncOpts}</select>`)}
-        <div class="tv-filter-actions tv-dlr-report__filter-actions">
-          <button type="submit" class="btn btn-primary btn-sm">Ver reporte DLR</button>
-          <a class="btn btn-secondary btn-sm" href="/app/reports/export.csv${exportQs}">Descargar CSV</a>
-          <a class="btn btn-ghost btn-sm" href="/app/reports">Limpiar</a>
-        </div>
-      `)}
-    </form>`;
-
-  const summary = result.summary;
-  const body = `
-    <div class="tv-dlr-report">
-    ${renderPageHeader({
-      title: "Reporte DLR",
-      subtitle: "Detalle de envíos y confirmaciones de entrega (estilo operador).",
-    })}
-    ${filtersForm}
-    <div class="tv-kpi-grid tv-kpi-grid--client" style="margin-bottom:1rem">
-      <article class="tv-kpi"><span class="tv-kpi__label">Registros</span><span class="tv-kpi__value">${summary.total}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Entregados</span><span class="tv-kpi__value">${summary.delivered}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Enviados (sin DLR)</span><span class="tv-kpi__value">${summary.sent}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Fallidos</span><span class="tv-kpi__value">${summary.failed}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Pendientes</span><span class="tv-kpi__value">${summary.pending}</span></article>
-    </div>
-    <section class="tv-panel tv-dlr-report__table-panel">
-      <header class="tv-section-head">
-        <h2 class="tv-section-head__title">DLR Report</h2>
-        <p class="tv-section-head__sub">Campos alineados con exportación aSMSC / Amuqeet</p>
+  const filtersPanel = `
+    <section class="tv-panel tv-dlr-report__filters-panel">
+      <header class="tv-section-head tv-dlr-report__filters-head">
+        <h2 class="tv-section-head__title">Filtros de búsqueda</h2>
+        <p class="tv-section-head__sub">Ajusta el período y criterios del reporte DLR</p>
       </header>
-      <div class="table-wrap tv-panel__body tv-dlr-report__table-wrap">
-        <table class="tv-table tv-table--dense tv-dlr-report__table">
-          <thead><tr>
-            <th>SMS ID</th><th>Sender ID</th><th>DLR Status</th><th>Message</th><th>Number</th>
-            <th>MCC</th><th>MNC</th><th>Type</th><th>SMS Type</th><th>Parts</th><th>Cost</th><th>DLR Date</th>
-          </tr></thead>
-          <tbody>${renderDlrTableRows(result)}</tbody>
-        </table>
+      <div class="tv-panel__body tv-dlr-report__filters-body">
+        <form method="get" action="/app/reports" class="tv-dlr-report__filters-form">
+          <div class="tv-dlr-report__filters-grid">
+            ${renderFilterField("Desde", `<input type="date" name="start_date" class="tv-filter-input" value="${escapeHtml(filters.startDate ?? "")}" />`)}
+            ${renderFilterField("Hasta", `<input type="date" name="end_date" class="tv-filter-input" value="${escapeHtml(filters.endDate ?? "")}" />`)}
+            ${renderFilterField("Sender ID", `<input type="text" name="sender_id" class="tv-filter-input" placeholder="Ej. TELVOICE" value="${escapeHtml(filters.senderId ?? "")}" />`)}
+            ${renderFilterField("Teléfono", `<input type="text" name="phone" class="tv-filter-input" placeholder="569…" value="${escapeHtml(filters.phoneNumber ?? "")}" />`)}
+            ${renderFilterField("Job / Campaña", `<input type="text" name="job_id" class="tv-filter-input" placeholder="ID campaña (opcional)" value="${escapeHtml(filters.jobId ?? "")}" />`)}
+            ${renderFilterField("País", `<select name="country" class="tv-filter-input">${countryOpts}</select>`)}
+            ${renderFilterField("MCC", `<select name="mcc" class="tv-filter-input">${mccOpts}</select>`)}
+            ${renderFilterField("MNC", `<select name="mnc" class="tv-filter-input">${mncOpts}</select>`)}
+            <div class="tv-filter-field tv-dlr-report__status-field">
+              <span class="tv-filter-field__label">Estado DLR</span>
+              ${renderStatusFilters(selectedStatus)}
+            </div>
+          </div>
+          <div class="tv-dlr-report__filter-actions">
+            <button type="submit" class="btn btn-primary btn-sm">Ver reporte DLR</button>
+            <a class="btn btn-secondary btn-sm" href="/app/reports/export.csv${exportQs}">Descargar CSV</a>
+            <a class="btn btn-ghost btn-sm" href="/app/reports">Limpiar</a>
+          </div>
+        </form>
       </div>
-      ${renderPagination(result, filters)}
-      <details class="tv-dlr-report__columns">
-        <summary>Ver todas las columnas del CSV (${CSV_COLUMN_HINT})</summary>
-        <p class="field-hint">La descarga CSV incluye: JobID, SMSID, CustomerName, SenderID, DLRStatus, PhoneNumber, MCC, MNC, CountryRealName, OperatorName, SMSSource, MessageType, MessageLength, MessageParts, ClientRate, ClientCost, SubmitDateUTC, SentDateUTC, DLRDateUTC, ErrorCode, CharactersAdded, SMSMessage, SMSType.</p>
-      </details>
-    </section>
+    </section>`;
+
+  const body = `
+    <div class="tv-dlr-report tv-client-dashboard">
+    ${renderPageHeader({
+      title: "Reportes",
+      subtitle: `Resumen de ${escapeHtml(ctx.company.name)}`,
+    })}
+    ${renderReportKpis(result.summary)}
+    ${filtersPanel}
+    <div class="tv-dash-block tv-dlr-report__table-block">
+      <div class="tv-dash-block__head">
+        <h2 class="tv-dash-block__title">DLR Report</h2>
+      </div>
+      <section class="tv-panel tv-client-dash-table-panel tv-dlr-report__table-panel">
+        <div class="tv-client-dash-table-inner tv-dlr-report__table-inner">
+          <div class="table-wrap tv-dlr-report__table-wrap">
+            <table class="tv-table tv-table--dash tv-dlr-report__table">
+              <thead><tr>
+                <th>SMS ID</th><th>Sender ID</th><th>DLR Status</th><th>Message</th><th>Number</th>
+                <th>MCC</th><th>MNC</th><th>Type</th><th>SMS Type</th><th>Parts</th><th>Cost</th><th>DLR Date</th>
+              </tr></thead>
+              <tbody>${renderDlrTableRows(result)}</tbody>
+            </table>
+          </div>
+          ${renderPagination(result, filters)}
+        </div>
+      </section>
+    </div>
     </div>`;
 
   return wrapAppPage(ctx, "reports", "Reportes", body);
 }
-
-const CSV_COLUMN_HINT = "22 columnas";
