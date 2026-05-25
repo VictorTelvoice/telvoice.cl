@@ -8,7 +8,6 @@ import {
 import { escapeHtml } from "../../../utils/html.js";
 import { wrapAdminPage } from "../admin-page-wrap.js";
 import { renderPageHeader, renderStatChip } from "../page-kit.js";
-import { renderSuperadminBanner } from "../superadmin-kit.js";
 import { renderPanelMessageStatusBadge } from "../../app-ui/app-sms-ui.js";
 
 export type TestProviderOption = {
@@ -268,7 +267,7 @@ function renderTestWorkspace(options: {
         </div>
       </section>
 
-      <section class="tv-panel tv-telsim-panel" id="tv-verify-section">
+      <section class="tv-panel tv-telsim-panel tv-telsim-panel--narrow" id="tv-verify-section">
         <header class="tv-section-head tv-section-head--compact">
           <h2 class="tv-section-head__title">SMS entrantes</h2>
           <p class="tv-section-head__sub">Webhook telsim · cola en vivo</p>
@@ -376,7 +375,6 @@ export function renderAdminTestPage(options: {
     : "";
 
   const body = `
-    ${renderSuperadminBanner("Pruebas telsim y QA pre-campaña. Solo operación interna.")}
     ${renderPageHeader({
       title: "Test",
       subtitle: "Envío SMS, rutas de proveedor y bandeja entrante telsim.",

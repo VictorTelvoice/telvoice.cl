@@ -1290,12 +1290,59 @@ export function getAdminStyles(): string {
     .tv-test-workspace { width: 100%; }
     .tv-test-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: 1.25rem;
       align-items: start;
     }
     @media (max-width: 960px) {
       .tv-test-grid { grid-template-columns: 1fr; }
+      .tv-telsim-panel--narrow {
+        width: min(220px, 100%);
+        justify-self: center;
+      }
+    }
+    .tv-telsim-panel--narrow {
+      width: 220px;
+      max-width: 100%;
+      justify-self: start;
+    }
+    .tv-telsim-panel--narrow .tv-section-head__sub {
+      font-size: 0.72rem;
+      line-height: 1.35;
+    }
+    .tv-telsim-panel--narrow .tv-telsim-panel__body--stack {
+      padding-left: 0.65rem;
+      padding-right: 0.65rem;
+    }
+    .tv-telsim-panel--narrow .tv-test-inbound-line,
+    .tv-telsim-panel--narrow .tv-telsim-webhook--compact {
+      width: 100%;
+    }
+    .tv-telsim-panel--narrow .tv-input-full,
+    .tv-telsim-panel--narrow .tv-copy-row {
+      width: 100%;
+      min-width: 0;
+    }
+    .tv-telsim-panel--narrow .tv-copy-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .tv-telsim-panel--narrow .tv-telsim-panel__phone {
+      width: 100%;
+      padding: 0;
+      justify-content: center;
+    }
+    .tv-telsim-panel--narrow .tv-hero-phone--compact {
+      width: 100%;
+      max-width: 220px;
+    }
+    .tv-telsim-panel--narrow .tv-telsim-panel__status {
+      font-size: 0.72rem;
+      text-align: center;
+    }
+    .tv-telsim-panel--narrow .field-hint {
+      font-size: 0.68rem;
+      line-height: 1.35;
     }
     .tv-section-head--compact { margin-bottom: 0.75rem; }
     .tv-section-head--compact .tv-section-head__sub { margin-top: 0.15rem; }
