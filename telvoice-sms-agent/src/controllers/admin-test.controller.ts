@@ -281,6 +281,7 @@ export async function postAdminTestQaSend(
       campaignName: `QA Verify — ${resolved.label}`,
       createdBy: req.adminUser?.profileId ?? req.adminUser?.id ?? undefined,
       sendSource: "app_send_sms_verify_test",
+      skipInterSendCooldown: true,
     });
 
     respondTestSendResult(req, res, {

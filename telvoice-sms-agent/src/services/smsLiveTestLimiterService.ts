@@ -230,6 +230,8 @@ export async function assertLiveTestOperationalLimits(input: {
   companyId: string;
   to: string;
   segmentCount: number;
+  /** Panel Test superadmin: sin espera entre envíos QA. */
+  skipInterSendCooldown?: boolean;
 }): Promise<void> {
   const limits = getLiveTestLimiterConfig();
 
@@ -298,15 +300,17 @@ export async function assertLiveTestOperationalLimits(input: {
     }
   }
 
-  const lastAt = await getLastCountableLiveTestAt(input.companyId);
-  if (lastAt) {
-    const elapsed =
-      (Date.now() - new Date(lastAt).getTime()) / 1000;
-    if (elapsed < limits.minSecondsBetweenSends) {
-      throw new AppError(
-        "Debes esperar al menos 1 minuto entre envíos reales controlados.",
-        429,
-      );
+  if (!input.skipInterSendCooldown) {
+    const lastAt = await getLastCountableLiveTestAt(input.companyId);
+    if (lastAt) {
+      const elapsed =
+        (Date.now() - new Date(lastAt).getTime()) / 1000;
+      if (elapsed < limits.minSecondsBetweenSends) {
+        throw new AppError(
+          "Debes esperar al menos 1 minuto entre envíos reales controlados.",
+          429,
+        );
+      }
     }
   }
 }

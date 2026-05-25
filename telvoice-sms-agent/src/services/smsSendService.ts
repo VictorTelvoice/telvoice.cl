@@ -43,6 +43,8 @@ export type SendMockSmsInput = {
 export type SendPanelSmsInput = SendMockSmsInput & {
   sendSource?: "app_send_sms_live_test" | "app_send_sms_verify_test";
   idempotencyKey?: string | null;
+  /** Sin cooldown de 1 min (p. ej. /admin/test superadmin). */
+  skipInterSendCooldown?: boolean;
 };
 
 async function assertCompanyCanSend(companyId: string): Promise<CompanyRow> {
@@ -155,6 +157,7 @@ export async function sendLiveTestSms(
     companyId: input.companyId,
     to: phone,
     segmentCount: segmentInfo.segments,
+    skipInterSendCooldown: input.skipInterSendCooldown,
   });
 
   const campaignName = input.campaignName?.trim() || defaultCampaignName();
