@@ -1256,5 +1256,100 @@ export function getAppPanelStyles(): string {
       letter-spacing: 0.05em;
       color: var(--tv-muted);
     }
+    .tv-contacts-quick-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0.85rem;
+    }
+    .tv-contacts-grid {
+      align-items: start;
+    }
+    .tv-contacts-agendas__list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .tv-contacts-agenda {
+      display: block;
+      padding: 0.85rem 0.9rem;
+      border-radius: 12px;
+      border: 1px solid var(--tv-border);
+      background: #fff;
+      color: inherit;
+      text-decoration: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    }
+    .tv-contacts-agenda:hover {
+      text-decoration: none;
+      border-color: rgba(0, 82, 204, 0.22);
+      box-shadow: 0 10px 24px rgba(0, 82, 204, 0.08);
+      transform: translateY(-1px);
+    }
+    .tv-contacts-agenda--active {
+      border-color: rgba(0, 82, 204, 0.32);
+      background: #f8fbff;
+    }
+    .tv-contacts-agenda__head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.25rem;
+    }
+    .tv-contacts-agenda__name { font-size: 0.92rem; }
+    .tv-contacts-agenda__desc {
+      margin: 0;
+      font-size: 0.78rem;
+      color: var(--tv-muted);
+      line-height: 1.4;
+    }
+    .tv-contacts-agenda__meta {
+      margin: 0.55rem 0 0;
+      font-size: 0.72rem;
+      color: var(--tv-muted);
+    }
+    .tv-contacts-agendas__cta { margin-top: 0.75rem; }
+    .tv-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .tv-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: rgba(0, 82, 204, 0.08);
+      border: 1px solid rgba(0, 82, 204, 0.12);
+      color: var(--tv-primary);
+      white-space: nowrap;
+    }
+    .tv-tag--muted {
+      background: rgba(100, 116, 139, 0.08);
+      border-color: rgba(100, 116, 139, 0.12);
+      color: var(--tv-muted);
+    }
+    .tv-contacts-date { white-space: nowrap; font-size: 0.82rem; }
+    .tv-contacts-actions { white-space: nowrap; }
+    .tv-contacts-bulk {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid rgba(0, 82, 204, 0.15);
+      border-radius: 12px;
+      background: #f8fbff;
+      margin-bottom: 0.75rem;
+    }
+    .tv-contacts-bulk__right { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
+    .tv-contacts-table-wrap { overflow-x: auto; }
+    @media (max-width: 1280px) {
+      .tv-contacts-quick-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 900px) {
+      .tv-contacts-quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 640px) {
+      .tv-contacts-quick-grid { grid-template-columns: 1fr; }
+    }
   `;
 }

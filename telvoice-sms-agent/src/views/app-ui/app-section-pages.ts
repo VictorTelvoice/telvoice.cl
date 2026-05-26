@@ -30,14 +30,10 @@ export {
   renderAppInboxPage,
 } from "./app-sms-pages.js";
 export { renderAppReportsPage } from "./app-reports-page.js";
-
-export function renderAppContactsPage(ctx: AppPageContext): string {
-  return comingSoon(ctx, "contacts", "Contactos", "Tus listas y contactos.", "contacts", [
-    "Importar contactos",
-    "Segmentación por etiquetas",
-    "Solo contactos de tu empresa",
-  ]);
-}
+export {
+  parseContactsPageFilters,
+  renderAppContactsPage,
+} from "./app-contacts-page.js";
 
 export function renderAppTemplatesPage(ctx: AppPageContext): string {
   return comingSoon(ctx, "templates", "Plantillas", "Plantillas de mensaje aprobadas.", "description", [

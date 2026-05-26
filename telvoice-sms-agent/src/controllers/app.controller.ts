@@ -48,6 +48,7 @@ import {
   renderAppApiPage,
   renderAppContactsPage,
   renderAppInvoicesPage,
+  parseContactsPageFilters,
   renderAppSettingsPage,
   renderAppSupportPage,
   renderAppTemplatesPage,
@@ -866,7 +867,12 @@ export async function getAppContacts(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  await withAppContext(req, res, next, (ctx) => renderAppContactsPage(ctx));
+  await withAppContext(req, res, next, (ctx) =>
+    renderAppContactsPage(
+      ctx,
+      parseContactsPageFilters(req.query as Record<string, string | string[] | undefined>),
+    ),
+  );
 }
 
 export async function getAppTemplates(
