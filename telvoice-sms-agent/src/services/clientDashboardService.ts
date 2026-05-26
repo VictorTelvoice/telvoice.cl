@@ -133,7 +133,6 @@ function last7DaysVolumeTemplate(timeZone: string): DayVolumeBucket[] {
       timeZone,
       weekday: "short",
       day: "numeric",
-      month: "short",
     }).format(d);
     days.push({ key, label, count: 0 });
   }
@@ -179,10 +178,15 @@ async function loadDashboardCharts(
     .eq("company_id", companyId)
     .gte("created_at", rangeStart);
 
+  const todayKey = dayStartIsoInTimeZone(new Date(), APP_SCHEDULE_TIMEZONE);
+  const todayRows = monthRows.filter(
+    (m) => dateKeyInTimeZone(m.created_at, APP_SCHEDULE_TIMEZONE) === todayKey,
+  );
+
   if (error) {
     if (isMissingTableError(error)) {
       return {
-        dlrBreakdown: breakdownFromMessages(monthRows),
+        dlrBreakdown: breakdownFromMessages(todayRows),
         last7Days: emptyDays,
       };
     }
@@ -190,7 +194,7 @@ async function loadDashboardCharts(
   }
 
   return {
-    dlrBreakdown: breakdownFromMessages(monthRows),
+    dlrBreakdown: breakdownFromMessages(todayRows),
     last7Days: countByDayInLast7(
       (weekMessages ?? []) as MessageStatRow[],
       APP_SCHEDULE_TIMEZONE,

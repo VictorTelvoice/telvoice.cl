@@ -726,12 +726,44 @@ export function getAppPanelStyles(): string {
     .tv-dash-charts__body {
       padding: 1rem 1.25rem 1.25rem;
     }
-    .tv-dash-charts__body--bars .tv-chart {
-      min-height: 200px;
-      align-items: flex-end;
+    .tv-dash-charts__body--bars {
+      padding-bottom: 0.75rem;
     }
-    .tv-dash-charts__body--bars .tv-chart__bar {
-      background: linear-gradient(180deg, #3b82f6, var(--tv-primary, #0052cc));
+    .tv-chart--dashboard {
+      height: 220px;
+      gap: 0.4rem;
+      padding-top: 0.25rem;
+      position: relative;
+      padding-bottom: 1.5rem;
+    }
+    .tv-chart--dashboard .tv-chart__bar-wrap {
+      max-width: 56px;
+    }
+    .tv-chart--dashboard .tv-chart__bar {
+      background: linear-gradient(180deg, #60a5fa, var(--tv-primary, #0052cc));
+      min-height: 0;
+      border-radius: 8px 8px 4px 4px;
+    }
+    .tv-chart--dashboard .tv-chart__col--has-value .tv-chart__bar {
+      min-height: 10px;
+    }
+    .tv-chart--dashboard .tv-chart__label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+    .tv-chart--dashboard .tv-chart__val {
+      font-size: 0.8rem;
+      color: var(--tv-primary, #0052cc);
+    }
+    .tv-chart--dashboard__scale {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      margin: 0;
+      text-align: center;
+      font-size: 0.72rem;
     }
     .tv-dash-chart-empty {
       padding: 2rem 1rem;

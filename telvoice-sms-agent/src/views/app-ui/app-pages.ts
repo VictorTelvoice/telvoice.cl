@@ -1,13 +1,14 @@
 import type {
   ClientDashboardCharts,
   ClientDashboardData,
+  ClientDashboardDayVolume,
   ClientDashboardDlrBreakdown,
 } from "../../services/clientDashboardService.js";
 import type { WalletTransactionRow } from "../../types/wallet.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 import { APP_SCHEDULE_TIMEZONE } from "../../utils/scheduleTime.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
-import { renderChartBars, renderKpiCard } from "../admin-ui/components.js";
+import { renderKpiCard } from "../admin-ui/components.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
 import {
@@ -22,6 +23,16 @@ function dashboardMonthLabel(): string {
   const label = new Intl.DateTimeFormat("es-CL", {
     month: "long",
     year: "numeric",
+    timeZone: APP_SCHEDULE_TIMEZONE,
+  }).format(new Date());
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function dashboardTodayLabel(): string {
+  const label = new Intl.DateTimeFormat("es-CL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
     timeZone: APP_SCHEDULE_TIMEZONE,
   }).format(new Date());
   return label.charAt(0).toUpperCase() + label.slice(1);
@@ -43,7 +54,7 @@ function renderDashBlockHead(
 
 function renderDlrPieChart(
   breakdown: ClientDashboardDlrBreakdown,
-  monthLabel: string,
+  todayLabel: string,
 ): string {
   const slices = [
     {
@@ -64,7 +75,7 @@ function renderDlrPieChart(
   ];
   const total = slices.reduce((sum, s) => sum + s.value, 0);
   if (total <= 0) {
-    return `<div class="tv-dash-chart-empty">Sin envíos registrados en ${escapeHtml(monthLabel)}.</div>`;
+    return `<div class="tv-dash-chart-empty">Sin SMS enviados hoy (${escapeHtml(todayLabel)}).</div>`;
   }
 
   let acc = 0;
@@ -98,7 +109,7 @@ function renderDlrPieChart(
       <div class="tv-dash-pie__chart" style="background:conic-gradient(${gradientStops})" role="img" aria-label="${escapeHtml(ariaLabel)}">
         <div class="tv-dash-pie__center">
           <span class="tv-dash-pie__center-val">${fmtSms(total)}</span>
-          <span class="tv-dash-pie__center-label">SMS</span>
+          <span class="tv-dash-pie__center-label">Hoy</span>
         </div>
       </div>
     </div>
@@ -106,23 +117,57 @@ function renderDlrPieChart(
   </div>`;
 }
 
+/** Barras con altura mínima para que valores bajos sigan siendo visibles. */
+function renderDashboardBarChart(days: ClientDashboardDayVolume[]): string {
+  const values = days.map((d) => d.count);
+  const max = Math.max(...values, 1);
+  const minBarPct = 18;
+
+  const bars = days
+    .map((day, i) => {
+      const v = values[i] ?? 0;
+      let pct = Math.round((v / max) * 100);
+      if (v > 0 && pct < minBarPct) {
+        pct = minBarPct;
+      }
+      const colClass =
+        v > 0 ? "tv-chart__col tv-chart__col--has-value" : "tv-chart__col";
+      return `<div class="${colClass}">
+        <div class="tv-chart__bar-wrap">
+          <div class="tv-chart__bar" style="height:${pct}%"></div>
+        </div>
+        <span class="tv-chart__label">${escapeHtml(day.label)}</span>
+        <span class="tv-chart__val">${escapeHtml(String(v))}</span>
+      </div>`;
+    })
+    .join("");
+
+  const peak = Math.max(...values);
+  return `<div class="tv-chart tv-chart--dashboard" role="img" aria-label="Envíos por día últimos 7 días">
+    ${bars}
+    <p class="tv-chart--dashboard__scale field-hint">Escala relativa al día pico (${fmtSms(peak)} SMS)</p>
+  </div>`;
+}
+
 function renderDashboardCharts(
   charts: ClientDashboardCharts,
-  monthLabel: string,
+  todayLabel: string,
 ): string {
-  const barLabels = charts.last7Days.map((d) => d.label);
-  const barValues = charts.last7Days.map((d) => d.count);
-  const barTotal = barValues.reduce((a, b) => a + b, 0);
+  const barTotal = charts.last7Days.reduce((sum, d) => sum + d.count, 0);
+  const pieTotal =
+    charts.dlrBreakdown.sent +
+    charts.dlrBreakdown.delivered +
+    charts.dlrBreakdown.failed;
 
   return `<section class="tv-dash-charts">
     <div class="tv-dash-charts__grid">
       <div class="tv-dash-charts__card tv-panel">
         <header class="tv-dash-charts__head">
-          <h2 class="tv-dash-charts__title">Estado de envíos</h2>
-          <p class="tv-dash-charts__sub">Distribución del mes · ${escapeHtml(monthLabel)}</p>
+          <h2 class="tv-dash-charts__title">Estado de envíos de hoy</h2>
+          <p class="tv-dash-charts__sub">SMS enviados hoy · ${escapeHtml(todayLabel)}${pieTotal > 0 ? ` · ${fmtSms(pieTotal)} en total` : ""}</p>
         </header>
         <div class="tv-dash-charts__body">
-          ${renderDlrPieChart(charts.dlrBreakdown, monthLabel)}
+          ${renderDlrPieChart(charts.dlrBreakdown, todayLabel)}
         </div>
       </div>
       <div class="tv-dash-charts__card tv-panel">
@@ -131,11 +176,7 @@ function renderDashboardCharts(
           <p class="tv-dash-charts__sub">${barTotal > 0 ? `${fmtSms(barTotal)} SMS en el período` : "Sin envíos en los últimos 7 días"}</p>
         </header>
         <div class="tv-dash-charts__body tv-dash-charts__body--bars">
-          ${
-            barTotal > 0
-              ? renderChartBars(barLabels, barValues)
-              : `<div class="tv-dash-chart-empty">No hay envíos en los últimos 7 días.</div>`
-          }
+          ${renderDashboardBarChart(charts.last7Days)}
         </div>
       </div>
     </div>
@@ -231,7 +272,7 @@ export function renderAppDashboardPage(
         variant: "primary",
       })}
     </div>
-    ${renderDashboardCharts(data.charts, monthLabel)}
+    ${renderDashboardCharts(data.charts, dashboardTodayLabel())}
     <div class="tv-dash-grid tv-dash-grid--2 tv-client-dash-tables">
       <div class="tv-dash-block">
         ${renderDashBlockHead("Últimas órdenes", {
