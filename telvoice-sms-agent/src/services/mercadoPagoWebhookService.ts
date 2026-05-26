@@ -10,6 +10,7 @@ import {
   patchOrderFields,
 } from "./smsOrderService.js";
 import { hasPurchaseCreditForOrder } from "./walletTransactionService.js";
+import { syncPaymentCardFromOrderMetadata } from "./companyPaymentCardService.js";
 import type { MercadoPagoPaymentRecord } from "./mercadoPagoService.js";
 import type { SmsOrderRow } from "../types/wallet.js";
 
@@ -163,7 +164,13 @@ export async function processClientPanelMercadoPagoWebhook(
       return { handled: true, orderId, result: "amount_mismatch" };
     }
 
-    return creditApprovedOrder(orderId, order, metaPatch);
+    const creditResult = await creditApprovedOrder(orderId, order, metaPatch);
+    await syncPaymentCardFromOrderMetadata(
+      order.company_id,
+      order.metadata,
+      payment,
+    );
+    return creditResult;
   }
 
   if (payment.status === "rejected") {

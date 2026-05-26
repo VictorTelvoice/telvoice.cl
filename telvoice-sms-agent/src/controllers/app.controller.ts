@@ -14,6 +14,9 @@ import {
 import { getCompanyBalance } from "../services/smsWalletService.js";
 import { listTransactionsByCompany } from "../services/walletTransactionService.js";
 import { isMercadoPagoConfigured } from "../config/env.js";
+import { getCompanyPaymentCard, saveCompanyPaymentCardPreferences } from "../services/companyPaymentCardService.js";
+import { startPaymentCardSetupCheckout } from "../services/mercadoPagoClientPanelService.js";
+import type { PaymentBillingMode } from "../types/company-payment-card.js";
 import { filterClientAccountOrders, isClientAccountOrder, isQaTransaction, parseOrderListFilter } from "../utils/order-display.js";
 import { validateUuidParam } from "../utils/validation.js";
 import type { AppPageContext } from "../views/app-ui/app-page-wrap.js";
@@ -27,6 +30,9 @@ import {
   renderAppWalletPage,
   parseWalletPageFilters,
 } from "../views/app-ui/app-wallet-page.js";
+import {
+  renderAppWalletPaymentCardPage,
+} from "../views/app-ui/app-wallet-payment-card-ui.js";
 import {
   renderAppCampaignsPage,
   renderAppInboxPage,
@@ -439,8 +445,132 @@ export async function getAppWallet(
         endDate: filters.endDate,
       })
     ).filter((t) => !isQaTransaction(t));
-    return renderAppWalletPage(ctx, transactions, filters);
+    const paymentCard = await getCompanyPaymentCard(ctx.company.id);
+    const packages = await getClientCatalogPackages(ctx.company.country);
+    const defaultPackage =
+      packages.find((p) => p.id === paymentCard.defaultPackageId) ??
+      packages[0] ??
+      null;
+    return renderAppWalletPage(ctx, transactions, filters, {
+      paymentCard,
+      mercadoPagoAvailable: isMercadoPagoConfigured(),
+      defaultPackage,
+    });
   });
+}
+
+function parseBillingMode(raw: unknown): PaymentBillingMode {
+  return raw === "recurring" ? "recurring" : "on_demand";
+}
+
+export async function getAppWalletPaymentCard(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  await withAppContext(req, res, next, async (ctx) => {
+    const card = await getCompanyPaymentCard(ctx.company.id);
+    const packages = await getClientCatalogPackages(ctx.company.country);
+    const ok =
+      typeof req.query.ok === "string" ? req.query.ok : undefined;
+    const error =
+      typeof req.query.error === "string" ? req.query.error : undefined;
+    return renderAppWalletPaymentCardPage(
+      ctx,
+      card,
+      packages,
+      isMercadoPagoConfigured(),
+      { ok, error },
+    );
+  });
+}
+
+export async function postAppWalletPaymentCard(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const profile = req.userProfile;
+    if (!profile?.companyId) {
+      res.redirect("/app/wallet/payment-card?error=Empresa%20no%20asociada");
+      return;
+    }
+    if (!canOperateClientPanel(profile.role)) {
+      res.redirect(
+        "/app/wallet/payment-card?error=No%20tienes%20permiso%20para%20configurar",
+      );
+      return;
+    }
+    const billingMode = parseBillingMode(req.body?.billing_mode);
+    const autoRecharge = req.body?.auto_recharge === "1";
+    const packageId = String(req.body?.default_package_id ?? "").trim() || null;
+
+    await saveCompanyPaymentCardPreferences(profile.companyId, {
+      billingMode,
+      autoRechargeEnabled: autoRecharge,
+      defaultPackageId: packageId,
+    });
+
+    res.redirect("/app/wallet/payment-card?ok=Preferencias%20guardadas");
+  } catch (error) {
+    const msg =
+      error instanceof Error ? error.message : "No se pudo guardar";
+    res.redirect(
+      `/app/wallet/payment-card?error=${encodeURIComponent(msg)}`,
+    );
+  }
+}
+
+export async function postAppWalletPaymentCardLink(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const profile = req.userProfile;
+    if (!profile?.companyId) {
+      res.redirect("/app/wallet/payment-card?error=Empresa%20no%20asociada");
+      return;
+    }
+    if (!canOperateClientPanel(profile.role)) {
+      res.redirect(
+        "/app/wallet/payment-card?error=No%20tienes%20permiso%20para%20comprar",
+      );
+      return;
+    }
+    if (!isMercadoPagoConfigured()) {
+      res.redirect(
+        "/app/wallet/payment-card?error=Mercado%20Pago%20no%20disponible",
+      );
+      return;
+    }
+
+    const packageId = validateUuidParam(
+      String(req.body?.package_id ?? ""),
+      "package_id",
+    );
+    const card = await getCompanyPaymentCard(profile.companyId);
+
+    const checkout = await startPaymentCardSetupCheckout({
+      companyId: profile.companyId,
+      packageId,
+      createdBy: profile.profileId ?? profile.adminUserId ?? undefined,
+      payer: {
+        email: profile.email,
+        name: profile.fullName,
+        phone: null,
+      },
+      billingMode: card.billingMode,
+      autoRechargeEnabled: card.autoRechargeEnabled,
+    });
+
+    res.redirect(checkout.checkoutUrl);
+  } catch (error) {
+    const msg =
+      error instanceof Error ? error.message : "No se pudo vincular tarjeta";
+    res.redirect(
+      `/app/wallet/payment-card?error=${encodeURIComponent(msg)}`,
+    );
+  }
 }
 
 export async function getAppOrders(

@@ -18,6 +18,9 @@ import {
   getAppSupport,
   getAppTemplates,
   getAppWallet,
+  getAppWalletPaymentCard,
+  postAppWalletPaymentCard,
+  postAppWalletPaymentCardLink,
   postAppBuySms,
 } from "../controllers/app.controller.js";
 import {
@@ -59,6 +62,13 @@ appRouter.get(
 );
 
 appRouter.get("/wallet", requireClientPanelPage, getAppWallet);
+appRouter.get("/wallet/payment-card", requireClientPanelPage, getAppWalletPaymentCard);
+appRouter.post("/wallet/payment-card", requireClientPanelPage, postAppWalletPaymentCard);
+appRouter.post(
+  "/wallet/payment-card/link",
+  requireClientPanelPage,
+  postAppWalletPaymentCardLink,
+);
 appRouter.get("/orders", requireClientPanelPage, getAppOrders);
 appRouter.get("/orders/:id", requireClientPanelPage, getAppOrderDetail);
 

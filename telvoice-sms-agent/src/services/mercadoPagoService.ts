@@ -40,6 +40,12 @@ export type MercadoPagoPaymentRecord = {
   date_approved?: string | null;
   payment_method_id?: string | null;
   payer?: { email?: string };
+  card?: {
+    last_four_digits?: string;
+    expiration_month?: number;
+    expiration_year?: number;
+    cardholder?: { name?: string };
+  };
   metadata?: Record<string, unknown>;
 };
 

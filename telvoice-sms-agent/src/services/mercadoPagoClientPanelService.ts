@@ -8,6 +8,7 @@ import {
   getOrderById,
   patchOrderFields,
 } from "./smsOrderService.js";
+import { saveCompanyPaymentCardPreferences } from "./companyPaymentCardService.js";
 import {
   createClientPanelCheckoutPreference,
   type MercadoPagoPayerInput,
@@ -128,4 +129,42 @@ export async function loadOrderForWebhook(orderId: string) {
     return null;
   }
   return order;
+}
+
+/** Checkout Mercado Pago para vincular tarjeta y acreditar bolsa (misma orden). */
+export async function startPaymentCardSetupCheckout(input: {
+  companyId: string;
+  packageId: string;
+  createdBy?: string | null;
+  payer: MercadoPagoPayerInput;
+  billingMode: "recurring" | "on_demand";
+  autoRechargeEnabled: boolean;
+}): Promise<ClientPanelCheckoutResult> {
+  const result = await startClientPanelMercadoPagoCheckout({
+    companyId: input.companyId,
+    packageId: input.packageId,
+    createdBy: input.createdBy,
+    payer: input.payer,
+  });
+
+  const order = await getOrderById(result.orderId);
+  if (order) {
+    await patchOrderFields(order.id, {
+      metadata: {
+        ...(order.metadata ?? {}),
+        ...CLIENT_PANEL_ORDER_METADATA,
+        payment_card_setup: true,
+        payment_card_billing_mode: input.billingMode,
+        payment_card_auto_recharge: input.autoRechargeEnabled,
+        payment_card_default_package_id: input.packageId,
+      },
+    });
+    await saveCompanyPaymentCardPreferences(input.companyId, {
+      billingMode: input.billingMode,
+      autoRechargeEnabled: input.autoRechargeEnabled,
+      defaultPackageId: input.packageId,
+    });
+  }
+
+  return result;
 }
