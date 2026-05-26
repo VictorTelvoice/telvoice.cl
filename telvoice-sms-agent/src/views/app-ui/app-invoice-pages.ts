@@ -9,7 +9,7 @@ import type {
 } from "../../types/billing.js";
 import type { SmsOrderRow } from "../../types/wallet.js";
 import { paymentMethodLabel } from "../../utils/order-display.js";
-import { escapeHtml, formatDate } from "../../utils/html.js";
+import { escapeHtml, formatDate, formatDateShort } from "../../utils/html.js";
 import { renderKpiCard } from "../admin-ui/components.js";
 import { renderBtn, renderFilterField, renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
@@ -215,7 +215,7 @@ function renderInfoNotice(): string {
 
 function renderInvoiceKpis(summary: AppInvoiceListContext["summary"]): string {
   const lastDoc = summary.lastDocumentAt
-    ? formatDate(summary.lastDocumentAt)
+    ? formatDateShort(summary.lastDocumentAt)
     : "—";
   const totalFmt = fmtMoney(summary.totalAmount, "CLP");
 
@@ -258,7 +258,7 @@ function renderInvoiceKpis(summary: AppInvoiceListContext["summary"]): string {
     ${renderKpiCard({
       label: "Último documento",
       value: lastDoc,
-      hint: "Fecha de creación",
+      hint: "Solo fecha (ver detalle para hora)",
       icon: "event",
       variant: "default",
     })}
@@ -378,7 +378,7 @@ function renderInvoiceTable(invoices: BillingInvoice[]): string {
   const rows = invoices
     .map((inv) => {
       const doc = documentNumber(inv);
-      const date = formatDate(inv.issued_at ?? inv.created_at);
+      const date = formatDateShort(inv.issued_at ?? inv.created_at);
       const orderHref = `/app/orders/${escapeHtml(inv.order_id)}`;
       const detailHref = `/app/invoices/${escapeHtml(inv.id)}`;
 

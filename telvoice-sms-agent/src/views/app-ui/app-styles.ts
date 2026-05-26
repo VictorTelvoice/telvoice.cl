@@ -1263,6 +1263,12 @@ export function getAppPanelStyles(): string {
       width: 100%;
       max-width: none;
     }
+    .tv-invoice-page .tv-kpi-grid--report .tv-kpi__value {
+      font-size: clamp(1rem, 2.2vw, 1.55rem);
+      line-height: 1.15;
+      word-break: keep-all;
+      overflow-wrap: normal;
+    }
     .tv-invoice-notice .tv-panel__body {
       padding: 1rem 1.25rem;
     }

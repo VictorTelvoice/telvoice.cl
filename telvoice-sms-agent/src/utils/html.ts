@@ -26,3 +26,20 @@ export function formatDate(value: string | null | undefined): string {
   }
   return date.toLocaleString("es-CL", { timeZone: "America/Santiago" });
 }
+
+/** Fecha corta para KPIs y tablas (sin hora). */
+export function formatDateShort(value: string | null | undefined): string {
+  if (!value) {
+    return "—";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return escapeHtml(value);
+  }
+  return date.toLocaleDateString("es-CL", {
+    timeZone: "America/Santiago",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
