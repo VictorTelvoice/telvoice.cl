@@ -4,6 +4,8 @@ import {
   getAppBuySms,
   getAppCampaigns,
   getAppContacts,
+  postAppCreateContact,
+  postAppCreateContactList,
   getAppDashboard,
   getAppInbox,
   getAppInvoices,
@@ -79,6 +81,8 @@ appRouter.post("/send-sms", requireClientPanelPage, postAppSendSms);
 appRouter.get("/campaigns", requireClientPanelPage, getAppCampaigns);
 appRouter.get("/inbox", requireClientPanelPage, getAppInbox);
 appRouter.get("/contacts", requireClientPanelPage, getAppContacts);
+appRouter.post("/contacts", requireClientPanelPage, postAppCreateContact);
+appRouter.post("/contacts/lists", requireClientPanelPage, postAppCreateContactList);
 appRouter.get("/templates", requireClientPanelPage, getAppTemplates);
 appRouter.get("/reports", requireClientPanelPage, getAppReports);
 appRouter.get("/reports/export.csv", requireClientPanelPage, getAppReportsExportCsv);

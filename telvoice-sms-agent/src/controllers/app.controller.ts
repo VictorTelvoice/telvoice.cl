@@ -53,6 +53,16 @@ import {
   renderAppSupportPage,
   renderAppTemplatesPage,
 } from "../views/app-ui/app-section-pages.js";
+import type { ContactSummary } from "../types/contacts.js";
+import {
+  createContact,
+  createContactList,
+  getContactSummary,
+  getContactsModuleState,
+  listContactLists,
+  listContacts,
+  listContactTags,
+} from "../services/contactService.js";
 import {
   getCampaignByIdForCompany,
   listCampaignsByCompany,
@@ -882,17 +892,146 @@ export async function getAppInbox(
   });
 }
 
+const EMPTY_CONTACT_SUMMARY: ContactSummary = {
+  totalContacts: 0,
+  activeLists: 0,
+  validContacts: 0,
+  duplicateContacts: 0,
+  blockedOrOptOut: 0,
+  lastUpdatedAt: null,
+};
+
 export async function getAppContacts(
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  await withAppContext(req, res, next, (ctx) =>
-    renderAppContactsPage(
-      ctx,
-      parseContactsPageFilters(req.query as Record<string, string | string[] | undefined>),
-    ),
-  );
+  await withAppContext(req, res, next, async (ctx) => {
+    const filters = parseContactsPageFilters(
+      req.query as Record<string, string | string[] | undefined>,
+    );
+    const showNewContact = req.query.new === "contact";
+    const showNewList = req.query.new === "agenda";
+
+    const module = await getContactsModuleState();
+    if (!module.available) {
+      return renderAppContactsPage(ctx, {
+        module,
+        filters,
+        contacts: [],
+        lists: [],
+        tags: [],
+        summary: EMPTY_CONTACT_SUMMARY,
+        showNewContact,
+        showNewList,
+      });
+    }
+
+    const serviceFilters = {
+      q: filters.q,
+      listId: filters.agenda,
+      tagId: filters.tag,
+      status: filters.status || undefined,
+      source: filters.source || undefined,
+      startDate: filters.startDate,
+      endDate: filters.endDate,
+    };
+
+    const [contacts, lists, tags, summary] = await Promise.all([
+      listContacts(ctx.company.id, serviceFilters),
+      listContactLists(ctx.company.id),
+      listContactTags(ctx.company.id),
+      getContactSummary(ctx.company.id),
+    ]);
+
+    return renderAppContactsPage(ctx, {
+      module,
+      filters,
+      contacts,
+      lists,
+      tags,
+      summary,
+      showNewContact,
+      showNewList,
+    });
+  });
+}
+
+export async function postAppCreateContact(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await buildAppContext(req);
+    if (!ctx) {
+      res.redirect("/app/contacts?error=Empresa%20no%20asociada");
+      return;
+    }
+    if (!canOperateClientPanel(ctx.profile.role)) {
+      res.redirect(
+        "/app/contacts?error=No%20tienes%20permiso%20para%20gestionar%20contactos",
+      );
+      return;
+    }
+
+    const body = req.body as Record<string, string | undefined>;
+    await createContact(ctx.company.id, {
+      display_name: body.display_name,
+      phone: body.phone ?? "",
+      email: body.email,
+      list_id: body.list_id,
+      notes: body.notes,
+      source: "manual",
+    });
+
+    res.redirect(303, "/app/contacts?ok=Contacto%20creado%20correctamente");
+  } catch (error) {
+    const msg =
+      error instanceof AppError
+        ? error.message
+        : "No se pudo crear el contacto";
+    res.redirect(
+      303,
+      `/app/contacts?error=${encodeURIComponent(msg)}&new=contact`,
+    );
+  }
+}
+
+export async function postAppCreateContactList(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await buildAppContext(req);
+    if (!ctx) {
+      res.redirect("/app/contacts?error=Empresa%20no%20asociada");
+      return;
+    }
+    if (!canOperateClientPanel(ctx.profile.role)) {
+      res.redirect(
+        "/app/contacts?error=No%20tienes%20permiso%20para%20gestionar%20contactos",
+      );
+      return;
+    }
+
+    const body = req.body as Record<string, string | undefined>;
+    await createContactList(ctx.company.id, {
+      name: body.name ?? "",
+      description: body.description,
+      color: body.color,
+    });
+
+    res.redirect(303, "/app/contacts?ok=Agenda%20creada%20correctamente");
+  } catch (error) {
+    const msg =
+      error instanceof AppError
+        ? error.message
+        : "No se pudo crear la agenda";
+    res.redirect(
+      303,
+      `/app/contacts?error=${encodeURIComponent(msg)}&new=agenda`,
+    );
+  }
 }
 
 export async function getAppTemplates(
