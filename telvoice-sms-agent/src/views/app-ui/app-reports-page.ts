@@ -74,7 +74,26 @@ function renderStatusSelect(selected: string[]): string {
   return `<select name="status" class="tv-filter-input">${opts}</select>`;
 }
 
-const DLR_TABLE_COL_COUNT = 13;
+const DLR_TABLE_COL_COUNT = 16;
+
+function formatErrorDisplay(code: string, description: string): string {
+  const c = (code || "0").trim();
+  const d = description.trim();
+  if (!d || d === c) {
+    return c || "0";
+  }
+  if (c === "0" || c === "") {
+    return d;
+  }
+  return `${c} — ${d}`;
+}
+
+function renderErrorDescCell(code: string, description: string): string {
+  const full = formatErrorDisplay(code, description);
+  const show = full === "0" ? "—" : full;
+  const short = show.length > 56 ? `${show.slice(0, 56)}…` : show;
+  return `<td class="tv-dlr-report__error-desc" title="${escapeHtml(show)}">${escapeHtml(short)}</td>`;
+}
 
 function renderDlrTableRows(result: DlrReportResult): string {
   if (!result.rows.length) {
@@ -92,6 +111,7 @@ function renderDlrTableRows(result: DlrReportResult): string {
         <td class="tv-dlr-report__mono" title="${escapeHtml(r.smsId)}">${escapeHtml(r.smsId.length > 28 ? `${r.smsId.slice(0, 28)}…` : r.smsId)}</td>
         <td>${escapeHtml(r.senderId)}</td>
         <td><span class="badge badge-${statusCls}">${escapeHtml(r.dlrStatus)}</span></td>
+        <td class="tv-dlr-report__date">${escapeHtml(formatDisplayDate(r.sentAtIso || r.sentDateUtc))}</td>
         <td class="tv-dlr-report__msg">${escapeHtml(r.smsMessage.length > 48 ? `${r.smsMessage.slice(0, 48)}…` : r.smsMessage)}</td>
         <td><code>${escapeHtml(r.phoneNumber)}</code></td>
         <td>${escapeHtml(r.mcc)}</td>
@@ -101,7 +121,9 @@ function renderDlrTableRows(result: DlrReportResult): string {
         <td>${escapeHtml(r.smsType)}</td>
         <td class="tv-dlr-report__num">${r.messageParts}</td>
         <td>${escapeHtml(r.clientCost)}</td>
-        <td class="tv-dlr-report__date">${escapeHtml(formatDisplayDate(r.dlrDateUtc || r.sentDateUtc || r.submitDateUtc))}</td>
+        <td class="tv-dlr-report__date">${escapeHtml(formatDisplayDate(r.dlrAtIso || r.dlrDateUtc))}</td>
+        <td class="tv-dlr-report__mono tv-dlr-report__error-code">${escapeHtml(r.errorCode || "0")}</td>
+        ${renderErrorDescCell(r.errorCode, r.errorDescription)}
       </tr>`;
     })
     .join("");
@@ -261,8 +283,9 @@ export function renderAppReportsPage(
           <div class="table-wrap tv-dlr-report__table-wrap">
             <table class="tv-table tv-table--dash tv-dlr-report__table">
               <thead><tr>
-                <th>SMS ID</th><th>Sender ID</th><th>DLR Status</th><th>Message</th><th>Number</th>
+                <th>SMS ID</th><th>Sender ID</th><th>DLR Status</th><th>Sent Date</th><th>Message</th><th>Number</th>
                 <th>MCC</th><th>MNC</th><th>País</th><th>Type</th><th>SMS Type</th><th>Parts</th><th>Cost</th><th>DLR Date</th>
+                <th>Error Code</th><th>Error / Motivo</th>
               </tr></thead>
               <tbody>${renderDlrTableRows(result)}</tbody>
             </table>

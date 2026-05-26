@@ -35,9 +35,12 @@ export type DlrReportRow = {
   clientRate: string;
   clientCost: string;
   submitDateUtc: string;
+  sentAtIso: string;
   sentDateUtc: string;
+  dlrAtIso: string;
   dlrDateUtc: string;
   errorCode: string;
+  errorDescription: string;
   charactersAdded: string;
   smsMessage: string;
   smsType: string;
@@ -86,6 +89,7 @@ const CSV_HEADERS = [
   "SentDateUTC",
   "DLRDateUTC",
   "ErrorCode",
+  "ErrorDescription",
   "CharactersAdded",
   "SMSMessage",
   "SMSType",
@@ -133,6 +137,7 @@ function formatCsvDate(iso: string | null | undefined): string {
   });
 }
 
+/** Fecha/hora completa para tablas del reporte DLR (día, mes, año, hora, minuto, segundo). */
 function formatDisplayDate(iso: string | null | undefined): string {
   if (!iso) {
     return "—";
@@ -142,12 +147,14 @@ function formatDisplayDate(iso: string | null | undefined): string {
     return "—";
   }
   return d.toLocaleString("es-CL", {
+    weekday: "short",
     day: "2-digit",
-    month: "2-digit",
+    month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
+    hour12: false,
   });
 }
 
@@ -248,12 +255,19 @@ function buildRow(
     clientRate,
     clientCost: clientCostNum.toFixed(5),
     submitDateUtc: formatCsvDate(msg.created_at),
+    sentAtIso: sentIso ?? "",
     sentDateUtc: formatCsvDate(sentIso),
+    dlrAtIso: dlrIso ?? "",
     dlrDateUtc: formatCsvDate(dlrIso),
     errorCode:
       pickStr(dlrPayload, "ErrorCode", "error_code") ||
       msg.error_code ||
       "0",
+    errorDescription:
+      pickStr(dlrPayload, "ErrorDescription", "error_description") ||
+      msg.error_message ||
+      pickStr(meta, "remarks") ||
+      "",
     charactersAdded: pickStr(dlrPayload, "CharactersAdded") || "",
     smsMessage:
       pickStr(dlrPayload, "SMSMessage", "sms_message") || msg.message,
@@ -496,6 +510,7 @@ export function dlrReportRowsToCsv(rows: DlrReportRow[]): string {
         r.sentDateUtc,
         r.dlrDateUtc,
         r.errorCode,
+        r.errorDescription,
         r.charactersAdded,
         r.smsMessage,
         r.smsType,

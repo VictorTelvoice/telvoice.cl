@@ -2651,7 +2651,15 @@
       overflow-x: auto;
       max-height: 58vh;
     }
-    .tv-dlr-report__table { min-width: 1100px; }
+    .tv-dlr-report__table { min-width: 1280px; }
+    .tv-dlr-report__error-desc {
+      max-width: 200px;
+      font-size: 0.8rem;
+      color: var(--tv-muted, #64748b);
+    }
+    .tv-dlr-report__error-code {
+      white-space: nowrap;
+    }
     .tv-dlr-report__mono { font-family: ui-monospace, monospace; font-size: 0.78rem; }
     .tv-dlr-report__msg { max-width: 220px; }
     .tv-dlr-report__date { white-space: nowrap; font-size: 0.8rem; }
