@@ -80,14 +80,22 @@ export async function bulkEnqueueCampaignRecipients(input: {
       continue;
     }
 
-    const queuePayloads = messages.map((m) => {
-      const scheduledAt = staggeredQueueScheduledAt(
-        input.scheduledAt,
-        queueIndex,
-        effectiveTps,
-      );
+    // Supabase insert().select() no garantiza el mismo orden que el input.
+    const messageByPhone = new Map(
+      messages.map((m) => [m.recipient_number, m]),
+    );
+
+    const queuePayloads: Parameters<typeof enqueueMessagesBulk>[0] = [];
+    for (let i = 0; i < chunk.length; i += 1) {
+      const item = chunk[i]!;
+      const m = messageByPhone.get(item.phone);
+      if (!m) {
+        failed += 1;
+        continue;
+      }
+      const paceIndex = queueIndex;
       queueIndex += 1;
-      return {
+      queuePayloads.push({
         companyId: input.companyId,
         messageId: m.id,
         campaignId: input.campaignId,
@@ -95,23 +103,27 @@ export async function bulkEnqueueCampaignRecipients(input: {
         routeId: input.resolved.route.id,
         ratePlanId: input.resolved.ratePlan.id,
         trafficType,
-        scheduledAt,
+        scheduledAt: staggeredQueueScheduledAt(
+          input.scheduledAt,
+          paceIndex,
+          effectiveTps,
+        ),
         priority: 50,
         metadata: {
           source: APP_CAMPAIGN_SEND_SOURCE,
           panel_message_id: m.id,
           flow: "campaign",
-          queue_pace_index: queueIndex - 1,
+          queue_pace_index: paceIndex,
         },
-      };
-    });
+      });
+    }
 
     try {
       await enqueueMessagesBulk(queuePayloads);
-      queued += messages.length;
-      failed += chunk.length - messages.length;
+      queued += queuePayloads.length;
+      failed += chunk.length - queuePayloads.length;
     } catch {
-      failed += messages.length;
+      failed += queuePayloads.length;
     }
   }
 

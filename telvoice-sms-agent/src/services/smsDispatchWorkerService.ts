@@ -228,9 +228,9 @@ async function handleProviderRejection(input: {
     // Test12/13: un envío cada ~3s. «IP not Whitelisted» suele ser ráfaga concurrente;
     // reintentar con el mismo pacing antes de marcar fallo terminal.
     if (attemptAfterProcessing < maxAttempts) {
-      const nextAt = new Date(
-        Date.now() + env.smsCampaign.queueMinPaceMs,
-      ).toISOString();
+      const retryDelayMs =
+        env.smsCampaign.queueMinPaceMs * Math.max(1, attemptAfterProcessing);
+      const nextAt = new Date(Date.now() + retryDelayMs).toISOString();
       await requeueForRetry(item.id, nextAt);
       await updatePanelSmsMessage(message.id, {
         status: "queued",

@@ -36,6 +36,19 @@ function deriveCampaignStatusFromMessages(
   }
 
   const sentLike = statuses.filter((s) => SENT_LIKE_STATUSES.has(s)).length;
+  const failedLike = statuses.filter(
+    (s) => s === "failed" || s === "rejected" || s === "expired",
+  ).length;
+
+  if (failedLike > 0 && sentLike < statuses.length) {
+    return "failed";
+  }
+  if (sentLike === statuses.length) {
+    return "sent";
+  }
+  if (failedLike === statuses.length) {
+    return "failed";
+  }
   return sentLike > 0 ? "sent" : "failed";
 }
 
