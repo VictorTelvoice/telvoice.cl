@@ -534,20 +534,37 @@ export function renderSaClientsPage(opts: BaseOpts & {
 export function renderWalletRatePlanBlock(opts: {
   companyId: string;
   assignment: CompanyRatePlanView | null;
+  assignments?: CompanyRatePlanView[];
   ratePlans: SmsRatePlanRow[];
   providers?: SmsProviderRow[];
 }): string {
   const a = opts.assignment;
+  const all = opts.assignments?.length ? opts.assignments : a ? [a] : [];
   const policy = companyRoutingPolicyFromAssignment(a);
   const providerPolicyHint =
     policy.allowedProviderIds.length > 0 || policy.blockedProviderIds.length > 0
       ? `<br><span class="field-hint">Proveedores permitidos: ${policy.allowedProviderIds.length || "todos"} · bloqueados: ${policy.blockedProviderIds.length}</span>`
       : "";
 
+  const trafficLines =
+    all.length > 0
+      ? all
+          .map(
+            (row) =>
+              `<span class="field-hint"><strong>${escapeHtml(row.traffic_type)}:</strong> Live ${row.live_enabled ? "sí" : "no"} · Campañas ${row.campaigns_enabled ? "sí" : "no"} · API ${row.api_enabled ? "sí" : "no"}</span>`,
+          )
+          .join("<br>")
+      : "";
+
+  const mergedLive = all.some((row) => row.live_enabled);
+  const mergedCampaigns = all.some((row) => row.campaigns_enabled);
+  const mergedApi = all.some((row) => row.api_enabled);
+
   const current = a
-    ? `<p><strong>${escapeHtml(a.rate_plan_name ?? "—")}</strong> · ${escapeHtml(a.country)} · ${escapeHtml(a.traffic_type)} · ${statusBadgeSa(a.status)}<br>
-      <span class="field-hint">Cliente max TPS: ${Number(a.max_tps ?? 1)} · Live: ${a.live_enabled ? "sí" : "no"} · Campañas: ${a.campaigns_enabled ? "sí" : "no"} · API: ${a.api_enabled ? "sí" : "no"}</span>${providerPolicyHint}<br>
-      <span class="field-hint">Asignado ${formatDate(a.created_at)}</span></p>`
+    ? `<p><strong>${escapeHtml(a.rate_plan_name ?? "—")}</strong> · ${escapeHtml(a.country)} · ${statusBadgeSa(a.status)}<br>
+      ${trafficLines}
+      <span class="field-hint">Efectivo para la app (cualquier tipo): Live ${mergedLive ? "sí" : "no"} · Campañas ${mergedCampaigns ? "sí" : "no"} · API ${mergedApi ? "sí" : "no"}</span>${providerPolicyHint}<br>
+      <span class="field-hint">Cliente max TPS: ${Number(a.max_tps ?? 1)} · Asignado ${formatDate(a.created_at)}</span></p>`
     : `<p class="badge badge-warn">Cliente sin rate plan asignado para envío real.</p>`;
 
   const planOpts = opts.ratePlans
@@ -592,7 +609,13 @@ export function renderWalletRatePlanBlock(opts: {
           <select name="rate_plan_id" required class="tv-input-full">${planOpts}</select>
         </label>
         <label>País <input name="country" value="CL" class="tv-input-full" /></label>
-        <label>Tipo tráfico <select name="traffic_type" class="tv-input-full"><option value="transactional">Transactional</option><option value="promotional">Promotional</option></select></label>
+        <label>Tipo tráfico
+          <select name="traffic_type" class="tv-input-full">
+            <option value="both" selected>Ambos (transactional + promotional)</option>
+            <option value="transactional">Solo transactional</option>
+            <option value="promotional">Solo promotional</option>
+          </select>
+        </label>
         <button type="submit" class="btn btn-secondary">Asignar rate plan</button>
       </form>
       ${
@@ -606,7 +629,9 @@ export function renderWalletRatePlanBlock(opts: {
         <label class="tv-checkbox"><input type="checkbox" name="campaigns_enabled" value="1" ${a.campaigns_enabled ? "checked" : ""} /> campaigns_enabled</label>
         <label class="tv-checkbox"><input type="checkbox" name="api_enabled" value="1" ${a.api_enabled ? "checked" : ""} /> api_enabled</label>
         ${providerSection}
+        <input type="hidden" name="apply_all_traffic_types" value="1" />
         <button type="submit" class="btn btn-primary">Guardar límites cliente</button>
+        <p class="field-hint" style="grid-column:1/-1">Los límites y checkboxes se aplican a <strong>transactional</strong> y <strong>promotional</strong> (las campañas usan promotional).</p>
         <p class="field-hint" style="grid-column:1/-1">El TPS máximo permitido por cuenta cliente es 20.</p>
       </form>`
           : ""

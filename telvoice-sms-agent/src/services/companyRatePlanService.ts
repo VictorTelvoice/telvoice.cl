@@ -92,6 +92,38 @@ export async function getCompanyRatePlan(
   return null;
 }
 
+/** Todas las asignaciones activas de la empresa en un país (transactional + promotional). */
+export async function listActiveCompanyRatePlans(
+  companyId: string,
+  country = "CL",
+): Promise<CompanyRatePlanView[]> {
+  const normCountry = (country || "CL").trim().toUpperCase();
+  const { data, error } = await getSupabase()
+    .from("company_rate_plans")
+    .select("*, sms_rate_plans(*)")
+    .eq("company_id", companyId)
+    .eq("country", normCountry)
+    .eq("status", "active")
+    .order("traffic_type", { ascending: true });
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return [];
+    }
+    wrapSupabaseError(error, "listActiveCompanyRatePlans");
+  }
+
+  return (data ?? []).map((row) => {
+    const r = row as CompanyRatePlanRow & { sms_rate_plans?: SmsRatePlanRow | null };
+    return {
+      ...r,
+      rate_plan: r.sms_rate_plans ?? null,
+      rate_plan_name: r.sms_rate_plans?.name,
+      rate_plan_code: r.sms_rate_plans?.code,
+    };
+  });
+}
+
 export async function updateCompanyRatePlanTraffic(
   companyId: string,
   input: {
@@ -105,83 +137,106 @@ export async function updateCompanyRatePlanTraffic(
     blockedProviderIds?: string[];
     country?: string;
     trafficType?: string;
+    /** Por defecto aplica los mismos límites a transactional y promotional. */
+    applyToAllTrafficTypes?: boolean;
   },
 ): Promise<CompanyRatePlanRow> {
   const country = input.country ?? "CL";
   const trafficType = input.trafficType ?? "transactional";
-  const current = await getCompanyRatePlan(companyId, country, trafficType);
-  if (!current) {
+  const applyAll = input.applyToAllTrafficTypes !== false;
+
+  const targets = applyAll
+    ? await listActiveCompanyRatePlans(companyId, country)
+    : [
+        (await getCompanyRatePlan(companyId, country, trafficType)) ??
+          null,
+      ].filter((r): r is CompanyRatePlanView => r != null);
+
+  if (targets.length === 0) {
     throw new AppError(
       "Asigne un rate plan antes de configurar límites de tráfico.",
       400,
     );
   }
 
+  const primary =
+    targets.find((t) => t.traffic_type === trafficType) ?? targets[0]!;
+
   const tpsCheck = validateClientMaxTpsInput(
-    input.maxTps ?? current.max_tps ?? 1,
+    input.maxTps ?? primary.max_tps ?? 1,
   );
   if (tpsCheck.error && input.maxTps != null && Number(input.maxTps) > 20) {
     throw new AppError(CLIENT_TPS_CAP_ERROR, 400);
   }
 
-  const patch: Record<string, unknown> = {};
-  if (input.maxTps != null) {
-    patch.max_tps = normalizeClientMaxTps(input.maxTps);
-  }
-  if (input.dailyLimit !== undefined) {
-    patch.daily_limit = input.dailyLimit;
-  }
-  if (input.monthlyLimit !== undefined) {
-    patch.monthly_limit = input.monthlyLimit;
-  }
-  if (input.liveEnabled !== undefined) {
-    patch.live_enabled = input.liveEnabled;
-  }
-  if (input.campaignsEnabled !== undefined) {
-    patch.campaigns_enabled = input.campaignsEnabled;
-  }
-  if (input.apiEnabled !== undefined) {
-    patch.api_enabled = input.apiEnabled;
-  }
-
-  if (
+  const routingMeta =
     input.allowedProviderIds !== undefined ||
     input.blockedProviderIds !== undefined
-  ) {
-    const currentMeta = (current.metadata ?? {}) as Record<string, unknown>;
-    const routingMeta = buildCompanyRoutingMetadata({
-      allowedProviderIds: input.allowedProviderIds,
-      blockedProviderIds: input.blockedProviderIds,
-    });
-    const nextMeta = { ...currentMeta };
-    if (input.allowedProviderIds !== undefined) {
-      if (routingMeta.allowed_provider_ids) {
-        nextMeta.allowed_provider_ids = routingMeta.allowed_provider_ids;
-      } else {
-        delete nextMeta.allowed_provider_ids;
-      }
+      ? buildCompanyRoutingMetadata({
+          allowedProviderIds: input.allowedProviderIds,
+          blockedProviderIds: input.blockedProviderIds,
+        })
+      : null;
+
+  let lastRow: CompanyRatePlanRow = primary;
+
+  for (const current of targets) {
+    const patch: Record<string, unknown> = {};
+    if (input.maxTps != null) {
+      patch.max_tps = normalizeClientMaxTps(input.maxTps);
     }
-    if (input.blockedProviderIds !== undefined) {
-      if (routingMeta.blocked_provider_ids) {
-        nextMeta.blocked_provider_ids = routingMeta.blocked_provider_ids;
-      } else {
-        delete nextMeta.blocked_provider_ids;
-      }
+    if (input.dailyLimit !== undefined) {
+      patch.daily_limit = input.dailyLimit;
     }
-    patch.metadata = nextMeta;
+    if (input.monthlyLimit !== undefined) {
+      patch.monthly_limit = input.monthlyLimit;
+    }
+    if (input.liveEnabled !== undefined) {
+      patch.live_enabled = input.liveEnabled;
+    }
+    if (input.campaignsEnabled !== undefined) {
+      patch.campaigns_enabled = input.campaignsEnabled;
+    }
+    if (input.apiEnabled !== undefined) {
+      patch.api_enabled = input.apiEnabled;
+    }
+
+    if (routingMeta) {
+      const currentMeta = (current.metadata ?? {}) as Record<string, unknown>;
+      const nextMeta = { ...currentMeta };
+      if (input.allowedProviderIds !== undefined) {
+        if (routingMeta.allowed_provider_ids) {
+          nextMeta.allowed_provider_ids = routingMeta.allowed_provider_ids;
+        } else {
+          delete nextMeta.allowed_provider_ids;
+        }
+      }
+      if (input.blockedProviderIds !== undefined) {
+        if (routingMeta.blocked_provider_ids) {
+          nextMeta.blocked_provider_ids = routingMeta.blocked_provider_ids;
+        } else {
+          delete nextMeta.blocked_provider_ids;
+        }
+      }
+      patch.metadata = nextMeta;
+    }
+
+    const { data, error } = await getSupabase()
+      .from("company_rate_plans")
+      .update(patch)
+      .eq("id", current.id)
+      .select("*")
+      .single();
+
+    if (error) {
+      wrapSupabaseError(error, "updateCompanyRatePlanTraffic");
+    }
+    if (current.id === primary.id) {
+      lastRow = data as CompanyRatePlanRow;
+    }
   }
 
-  const { data, error } = await getSupabase()
-    .from("company_rate_plans")
-    .update(patch)
-    .eq("id", current.id)
-    .select("*")
-    .single();
-
-  if (error) {
-    wrapSupabaseError(error, "updateCompanyRatePlanTraffic");
-  }
-  return data as CompanyRatePlanRow;
+  return lastRow;
 }
 
 export async function assignCompanyRatePlan(input: {

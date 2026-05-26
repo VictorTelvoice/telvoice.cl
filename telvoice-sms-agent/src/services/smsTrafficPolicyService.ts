@@ -4,7 +4,10 @@ import {
   MAX_CLIENT_TPS,
 } from "../constants/sms-traffic.js";
 import type { ResolvedTrafficPolicy } from "../types/sms-traffic.js";
-import { getCompanyRatePlan } from "./companyRatePlanService.js";
+import {
+  getCompanyRatePlan,
+  listActiveCompanyRatePlans,
+} from "./companyRatePlanService.js";
 import { getSmsProviderById } from "./smsProviderService.js";
 import { getSmsRouteById } from "./smsRouteService.js";
 import { getSmsRatePlanById } from "./smsRatePlanService.js";
@@ -95,10 +98,24 @@ export async function resolveTrafficPolicy(input: {
     trafficType,
   );
 
-  let clientMaxTps = safeTps(assignment?.max_tps, DEFAULT_TPS);
-  let liveEnabled = assignment?.live_enabled ?? false;
-  let campaignsEnabled = assignment?.campaigns_enabled ?? false;
-  let apiEnabled = assignment?.api_enabled ?? false;
+  const allAssignments = await listActiveCompanyRatePlans(
+    input.companyId,
+    country,
+  );
+  const mergeFrom = allAssignments.length > 0 ? allAssignments : assignment ? [assignment] : [];
+
+  let clientMaxTps = safeTps(
+    mergeFrom.reduce(
+      (max, row) => Math.max(max, safeTps(row.max_tps, DEFAULT_TPS)),
+      safeTps(assignment?.max_tps, DEFAULT_TPS),
+    ),
+    DEFAULT_TPS,
+  );
+  let liveEnabled = mergeFrom.some((row) => row.live_enabled === true);
+  let campaignsEnabled = mergeFrom.some(
+    (row) => row.campaigns_enabled === true,
+  );
+  let apiEnabled = mergeFrom.some((row) => row.api_enabled === true);
   let ratePlanId = input.ratePlanId ?? assignment?.rate_plan_id ?? null;
   let ratePlanTps = DEFAULT_TPS;
   let ratePlanDaily: number | null = null;

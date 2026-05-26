@@ -413,6 +413,7 @@ export async function postUpdateCompanyTraffic(
       apiEnabled: req.body.api_enabled === "1",
       allowedProviderIds: parseUuidListField(req.body.allowed_provider_ids),
       blockedProviderIds: parseUuidListField(req.body.blocked_provider_ids),
+      applyToAllTrafficTypes: req.body.apply_all_traffic_types !== "0",
     });
     redirectQuery(res, `/admin/wallets/${companyId}`, {
       ok: "Límites de tráfico del cliente actualizados",

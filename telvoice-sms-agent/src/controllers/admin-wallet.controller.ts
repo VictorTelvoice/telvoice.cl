@@ -34,7 +34,7 @@ import {
   manualDebitWallet,
 } from "../services/smsWalletService.js";
 import { listTransactionsByCompany } from "../services/walletTransactionService.js";
-import { getCompanyRatePlan } from "../services/companyRatePlanService.js";
+import { listActiveCompanyRatePlans } from "../services/companyRatePlanService.js";
 import { listSmsRatePlans } from "../services/smsRatePlanService.js";
 import { listSmsProviders } from "../services/smsProviderService.js";
 import { isMissingTableError } from "../utils/db-table.js";
@@ -316,14 +316,18 @@ export async function getSaWalletDetailPage(
 
     const balance = await getCompanyBalance(companyId);
     const transactions = await listTransactionsByCompany(companyId, 30);
-    const [ratePlanAssignment, ratePlans, providers] = await Promise.all([
-      getCompanyRatePlan(companyId),
+    const [ratePlanAssignments, ratePlans, providers] = await Promise.all([
+      listActiveCompanyRatePlans(companyId),
       listSmsRatePlans(),
       listSmsProviders(),
     ]);
     const ratePlanHtml = renderWalletRatePlanBlock({
       companyId,
-      assignment: ratePlanAssignment,
+      assignment:
+        ratePlanAssignments.find((a) => a.traffic_type === "transactional") ??
+        ratePlanAssignments[0] ??
+        null,
+      assignments: ratePlanAssignments,
       ratePlans,
       providers,
     });
