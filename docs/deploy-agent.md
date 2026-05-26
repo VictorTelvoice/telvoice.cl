@@ -50,59 +50,132 @@ Ruta donde está `package.json` del agente, por ejemplo:
 /var/www/telvoice-sms-agent
 ```
 
-Si el proyecto vive en un subdirectio del monorepo clonado, el workflow ya sincroniza solo `telvoice-sms-agent/` dentro de esa ruta.
+Si el proyecto vive en un subdirectorio del monorepo clonado, el workflow ya sincroniza solo `telvoice-sms-agent/` dentro de esa ruta.
 
 ---
 
-## 2. Qué hace el workflow
+## 2. Incidente: fallo con `appleboy/ssh-action` (2026-05)
 
-En cada push a `main` que toque `telvoice-sms-agent/**` o el propio workflow:
+Durante el deploy del commit `9301ae5`, GitHub Actions falló en el paso **Set up job** (antes de ejecutar cualquier script del workflow), al intentar descargar la action de terceros desde `codeload.github.com`:
 
-1. Valida que existan `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` (sin imprimir valores).
-2. Prueba SSH: `whoami`, comprueba que existe `VPS_APP_PATH` y `package.json`.
-3. En el servidor:
-   - Respalda `.env` → `/tmp/telvoice-agent-env.backup.*`
+```
+Failed to download archive https://codeload.github.com/appleboy/ssh-action/...
+An action could not be found at the URI ...
+Internal server error
+```
+
+### Qué se probó sin éxito
+
+| Intento | Resultado |
+|---------|-----------|
+| `appleboy/ssh-action@v1.2.0` (tag fijo) | Fallo en Set up job |
+| Pin a SHA / `v1.2.5` | Fallo en Set up job |
+| Precarga del tarball con reintentos en un paso `run` | Fallo en Set up job |
+
+La precarga en un paso previo **no** evita el fallo: GitHub descarga las actions declaradas en `uses:` durante el **setup del job**, en un proceso aparte del script del runner.
+
+### Por qué se eliminó `appleboy/ssh-action`
+
+- El fallo era de **infraestructura de GitHub / codeload**, no del código de la aplicación.
+- Depender del marketplace para el paso crítico de deploy dejaba el pipeline bloqueado ante incidentes transitorios.
+- El comportamiento deseado (ejecutar scripts en el VPS por SSH) se puede lograr con **OpenSSH ya instalado** en `ubuntu-latest`.
+
+### Solución adoptada (desde commit `25e06a9`)
+
+El workflow usa **SSH nativo** del runner. No hay `uses:` de actions de terceros en el job de deploy.
+
+---
+
+## 3. Cómo funciona el deploy con SSH nativo
+
+En el runner `ubuntu-latest`:
+
+1. **Validar secretos** — Comprueba que `VPS_HOST`, `VPS_USER` y `VPS_SSH_KEY` existan (sin imprimir valores).
+2. **Configurar SSH para deploy** — Escribe `VPS_SSH_KEY` en `~/.ssh/deploy_key`, `chmod 600`, y añade el host con `ssh-keyscan` (puerto `VPS_SSH_PORT` o `22`).
+3. **Comprobar conexión SSH y ruta** — `ssh` al VPS: `whoami`, `hostname`, existe `VPS_APP_PATH`, `package.json`, `node`, `npm`, `pm2`.
+4. **Desplegar aplicación** — Mismo script remoto que antes (timeout 15 min):
+   - Respalda `.env` en `/tmp`
    - `git clone --depth 1` del repo en `/tmp`
    - `rsync` de `telvoice-sms-agent/` al `APP_PATH` (excluye `node_modules`, `.env`, `dist`)
-   - Restaura `.env`
+   - Restaura `.env` y aplica claves operativas conocidas (sin sobrescribir el archivo completo)
    - `npm ci` → `npm run build`
    - `pm2 restart telvoice-sms-agent` (o `pm2 start` si no existe)
-   - Espera 3 s tras `pm2 restart`, luego hasta **10 intentos** (cada 3 s) a `http://127.0.0.1:PORT/health` (default puerto `3001`, leído de `.env` si existe `PORT=`).
-4. Paso aparte en GitHub: hasta 10 intentos a `https://agent.telvoice.cl/health`.
-5. Si falla el health local, el workflow imprime `pm2 status`, `pm2 logs` (80 líneas) y `curl -v` sin secretos.
+   - Health local: hasta 10 intentos a `http://127.0.0.1:PORT/health`
+5. **Verificar health público** — Hasta 10 intentos a `https://agent.telvoice.cl/health`.
 
-El `.env` de producción **no** se sobrescribe ni se commitea.
+El `.env` de producción **no** se commitea ni se reemplaza por el del repositorio; solo se respalda y restaura en el VPS.
 
----
+### Ventajas del enfoque actual
 
-## 3. Causas habituales de fallo
-
-| Síntoma | Causa probable |
-|---------|----------------|
-| Fallo en &lt; 10 s en “Deploy via SSH” | `VPS_HOST`, `VPS_USER` o `VPS_SSH_KEY` vacíos o incorrectos |
-| `Permission denied (publickey)` | Clave privada mal copiada o pública no en `authorized_keys` |
-| `Directorio no existe` | `VPS_APP_PATH` incorrecto |
-| `git clone` falla en servidor | Sin `git` instalado o sin salida a GitHub desde el VPS |
-| `npm ci` falla | Node/npm no instalados o versión incompatible |
-| Health falla tras deploy | `.env` ausente o variables inválidas en el VPS |
-
-Revisa el run en **Actions** → workflow **Deploy agent.telvoice.cl** → paso que falló. Los secretos aparecen enmascarados (`***`).
+| Ventaja | Descripción |
+|---------|-------------|
+| Menos dependencias externas | No requiere descargar actions desde codeload/marketplace |
+| Mayor resiliencia | Evita fallos en “Set up job” por indisponibilidad de `appleboy/ssh-action` |
+| Comportamiento equivalente | Mismos pasos en el VPS que con `appleboy/ssh-action` |
+| Logs claros | Cada fase es un paso con nombre en GitHub Actions |
+| Mismos secretos | `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, opcionales `VPS_APP_PATH` y `VPS_SSH_PORT` |
 
 ---
 
-## 4. Probar conexión SSH (local)
+## 4. Disparadores del workflow
+
+En cada push a `main` que modifique:
+
+- `telvoice-sms-agent/**`
+- `.github/workflows/deploy-agent.yml`
+- `docs/deploy-agent.md`
+
+También manualmente: **Actions** → **Deploy agent.telvoice.cl** → **Run workflow** (`workflow_dispatch`).
+
+Un push que **solo** actualice esta documentación puede disparar un deploy (por el filtro `paths`). Eso es esperado si quieres validar el pipeline; no cambia el `.env` del servidor.
+
+---
+
+## 5. Troubleshooting
+
+Revisa el run en **Actions** → **Deploy agent.telvoice.cl** → paso que falló. Los secretos aparecen enmascarados (`***`).
+
+### SSH y claves
+
+| Síntoma | Causa probable | Qué revisar |
+|---------|----------------|-------------|
+| Fallo en “Validar secretos” | Falta `VPS_HOST`, `VPS_USER` o `VPS_SSH_KEY` | Secrets en GitHub Actions |
+| `Permission denied (publickey)` | Clave privada mal copiada o pública no en `authorized_keys` | Formato completo de `VPS_SSH_KEY`; entrada en `~/.ssh/authorized_keys` del `VPS_USER` |
+| `chmod` / permiso denegado | Clave con permisos incorrectos en el runner | El workflow usa `chmod 600` en `deploy_key`; no pegues permisos extra en el secreto |
+| Timeout en SSH | Host/puerto incorrectos o firewall | `VPS_HOST`, `VPS_SSH_PORT`, reglas del VPS y del proveedor |
+| `Directorio no existe` / falta `package.json` | `VPS_APP_PATH` incorrecto | Ruta real del agente en el servidor |
+
+### Deploy en el VPS
+
+| Síntoma | Causa probable | Qué revisar |
+|---------|----------------|-------------|
+| `git clone` falla | Sin `git` o sin salida a GitHub desde el VPS | Instalar `git`; conectividad del servidor |
+| `npm ci` / `npm run build` falla | Node/npm ausentes o versión incompatible | `node -v`, `npm -v` en el VPS; logs del paso “Desplegar aplicación” |
+| `pm2` no encontrado | PM2 no instalado o fuera del `PATH` del usuario SSH | `npm i -g pm2` o ruta en el perfil del usuario |
+| Health local falla | `.env` ausente, `PORT` distinto o app no arranca | `pm2 logs telvoice-sms-agent`; `curl` local en el VPS; variables en `.env` |
+| Health público falla pero local OK | Proxy, DNS, firewall o servicio no expuesto | Nginx/reverse proxy; que el proceso escuche en el puerto esperado |
+
+### Incidentes de GitHub (histórico)
+
+| Síntoma | Causa probable | Acción |
+|---------|----------------|--------|
+| Fallo en **Set up job** con mensaje de `codeload.github.com` y `appleboy/ssh-action` | Indisponibilidad al descargar actions (workflow antiguo) | Usar el workflow actual con SSH nativo; si persiste en otro job, **Re-run jobs** o esperar estado de GitHub |
+
+---
+
+## 6. Probar conexión SSH (local)
 
 Desde tu máquina (sustituye usuario y host; **no** guardes contraseñas en el repo):
 
 ```bash
-ssh -i ~/.ssh/tu_clave_privada USUARIO@HOST "whoami && ls -la /var/www/telvoice-sms-agent/package.json"
+ssh -i ~/.ssh/tu_clave_privada -p 22 USUARIO@HOST "whoami && ls -la /var/www/telvoice-sms-agent/package.json"
 ```
 
-Si usas contraseña en lugar de clave, configura `VPS_SSH_KEY` en GitHub (el workflow **no** admite contraseña por defecto en `appleboy/ssh-action`).
+El workflow **solo admite autenticación por clave** (`VPS_SSH_KEY`), no contraseña interactiva.
 
 ---
 
-## 5. Deploy manual de emergencia
+## 7. Deploy manual de emergencia
 
 Si GitHub Actions no está disponible, en el VPS (o vía SSH):
 
@@ -112,7 +185,7 @@ cp /var/www/telvoice-sms-agent/.env "$ENV_BACKUP" 2>/dev/null || true
 cd /var/www
 rm -rf /tmp/telvoice-clone
 git clone --depth 1 https://github.com/VictorTelvoice/telvoice.cl.git /tmp/telvoice-clone
-rsync -a --exclude node_modules --exclude .env \
+rsync -a --exclude node_modules --exclude .env --exclude dist \
   /tmp/telvoice-clone/telvoice-sms-agent/ /var/www/telvoice-sms-agent/
 cp "$ENV_BACKUP" /var/www/telvoice-sms-agent/.env 2>/dev/null || true
 cd /var/www/telvoice-sms-agent
@@ -133,7 +206,7 @@ bash scripts/deploy-vps.sh
 
 ---
 
-## 6. Verificar PM2 y logs
+## 8. Verificar PM2 y logs
 
 ```bash
 pm2 list
@@ -145,7 +218,7 @@ Estado esperado: `online`.
 
 ---
 
-## 7. Verificación post-deploy
+## 9. Verificación post-deploy
 
 | URL | Esperado |
 |-----|----------|
@@ -155,18 +228,13 @@ Estado esperado: `online`.
 
 ---
 
-## 8. Disparar deploy sin push
-
-En GitHub: **Actions** → **Deploy agent.telvoice.cl** → **Run workflow** (requiere `workflow_dispatch` y secretos configurados).
-
----
-
-## 9. Seguridad
+## 10. Seguridad
 
 - No imprimir secretos en logs del workflow.
 - No commitear `.env`, claves SSH ni contraseñas.
 - Rotar `VPS_SSH_KEY` si pudo haberse expuesto.
 - Usar usuario SSH dedicado con permisos mínimos cuando sea posible (en lugar de `root`).
+- La clave del workflow vive solo en el runner efímero (`~/.ssh/deploy_key`) durante el job.
 
 ---
 
@@ -174,3 +242,4 @@ En GitHub: **Actions** → **Deploy agent.telvoice.cl** → **Run workflow** (re
 
 - Workflow: `.github/workflows/deploy-agent.yml`
 - Guía VPS completa: `telvoice-sms-agent/DEPLOY_AGENT_TELVOICE.md`
+- Deploy exitoso con SSH nativo (ejemplo): run [26448532081](https://github.com/VictorTelvoice/telvoice.cl/actions/runs/26448532081) — commit `25e06a9`
