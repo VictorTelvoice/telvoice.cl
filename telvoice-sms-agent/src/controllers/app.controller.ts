@@ -40,6 +40,10 @@ import {
   renderAppSendSmsPage,
 } from "../views/app-ui/app-sms-pages.js";
 import {
+  renderAppCampaignDetailPage,
+  renderAppCampaignNotFoundPage,
+} from "../views/app-ui/app-campaign-detail-page.js";
+import {
   renderAppBuySmsPage,
   renderAppOrderDetailPage,
   renderAppOrderNotFoundPage,
@@ -80,6 +84,7 @@ import {
   createCampaignDraftFromPreview,
 } from "../services/campaignPreviewService.js";
 import { executeContactsAudienceCampaignMock } from "../services/campaignMockExecuteService.js";
+import { loadCampaignDetailView } from "../services/campaignDetailService.js";
 import { parseAudienceSourceFromQuery } from "../services/campaignAudienceService.js";
 import {
   getCampaignByIdForCompany,
@@ -974,7 +979,7 @@ export async function postAppCampaignDraft(
     );
     res.redirect(
       303,
-      `/app/campaigns?ok=${encodeURIComponent(`Borrador «${draft.name}» guardado.`)}&status=draft`,
+      `/app/campaigns/${draft.id}?ok=${encodeURIComponent(`Borrador «${draft.name}» guardado.`)}`,
     );
   } catch (error) {
     const msg =
@@ -987,13 +992,13 @@ export async function postAppCampaignExecuteMock(
   req: Request,
   res: Response,
 ): Promise<void> {
+  const campaignId = validateUuidParam(String(req.params.id), "id");
   try {
     const ctx = await requireContactsWriteContext(req);
     if (!ctx) {
       res.redirect("/app/campaigns?error=Sin%20permiso");
       return;
     }
-    const campaignId = validateUuidParam(String(req.params.id), "id");
     const result = await executeContactsAudienceCampaignMock({
       companyId: ctx.company.id,
       campaignId,
@@ -1004,14 +1009,45 @@ export async function postAppCampaignExecuteMock(
       : result.status === "completed"
         ? `Campaña simulada: ${result.sent} mensaje(s) mock, ${result.realSmsCost} SMS descontados (sin envío real).`
         : `La simulación no generó envíos (${result.failed} fallo(s)).`;
-    res.redirect(303, `/app/campaigns?ok=${encodeURIComponent(okMsg)}`);
+    res.redirect(
+      303,
+      `/app/campaigns/${campaignId}?ok=${encodeURIComponent(okMsg)}`,
+    );
   } catch (error) {
     const msg =
       error instanceof AppError
         ? error.message
         : "No se pudo ejecutar la campaña en modo simulación";
-    res.redirect(303, `/app/campaigns?error=${encodeURIComponent(msg)}`);
+    res.redirect(
+      303,
+      `/app/campaigns/${campaignId}?error=${encodeURIComponent(msg)}`,
+    );
   }
+}
+
+export async function getAppCampaignDetail(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  await withAppContext(req, res, next, async (ctx) => {
+    const campaignId = validateUuidParam(String(req.params.id), "id");
+    const campaign = await getCampaignByIdForCompany(
+      campaignId,
+      ctx.company.id,
+    );
+    if (!campaign) {
+      return renderAppCampaignNotFoundPage(ctx);
+    }
+    const detail = await loadCampaignDetailView(ctx.company.id, campaign);
+    const ok = typeof req.query.ok === "string" ? req.query.ok : undefined;
+    const err =
+      typeof req.query.error === "string" ? req.query.error : undefined;
+    return renderAppCampaignDetailPage(
+      { ...ctx, flash: ok, error: err },
+      detail,
+    );
+  });
 }
 
 export async function getAppCampaigns(

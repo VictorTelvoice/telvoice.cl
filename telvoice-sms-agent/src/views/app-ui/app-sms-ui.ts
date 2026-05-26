@@ -1,4 +1,5 @@
 import type { PanelSmsMessageRow, SmsCampaignRow } from "../../types/sms-panel.js";
+import { canSimulateCampaignMock } from "../../services/campaignDetailService.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 
 function badge(cls: string, label: string): string {
@@ -104,6 +105,34 @@ export function renderCampaignStatusBadge(status: string): string {
   return badge(map[status] ?? "muted", status);
 }
 
+/** Etiqueta operativa para el panel cliente (listado y detalle). */
+export function renderCampaignClientStatusBadge(campaign: SmsCampaignRow): string {
+  const meta = campaign.metadata ?? {};
+  if (campaign.status === "draft") {
+    return badge("muted", "Borrador");
+  }
+  if (campaign.status === "failed") {
+    return badge("err", "Fallida");
+  }
+  if (campaign.status === "processing") {
+    return badge("warn", "En curso");
+  }
+  if (
+    campaign.status === "completed" &&
+    campaign.mode === "mock" &&
+    (meta.mock_executed_at || meta.simulated)
+  ) {
+    return badge("ok", "Simulada");
+  }
+  if (campaign.status === "completed" || campaign.status === "sent") {
+    return badge("ok", "Completada");
+  }
+  if (campaign.status === "cancelled") {
+    return badge("muted", "Cancelada");
+  }
+  return renderCampaignStatusBadge(campaign.status);
+}
+
 export function renderInboxTableRows(messages: PanelSmsMessageRow[]): string {
   if (!messages.length) {
     return `<tr><td colspan="10">Aún no hay mensajes enviados.</td></tr>`;
@@ -126,40 +155,39 @@ export function renderInboxTableRows(messages: PanelSmsMessageRow[]): string {
     .join("");
 }
 
-function canExecuteCampaignMock(c: SmsCampaignRow): boolean {
-  if (c.status !== "draft" || c.mode !== "mock") {
-    return false;
-  }
-  const meta = c.metadata ?? {};
-  return meta.source === "contacts_audience";
-}
-
 function renderCampaignMockExecuteAction(c: SmsCampaignRow): string {
-  if (!canExecuteCampaignMock(c)) {
-    return `<span class="field-hint">—</span>`;
+  if (!canSimulateCampaignMock(c)) {
+    return "";
   }
-  return `<form method="post" action="/app/campaigns/${escapeHtml(c.id)}/execute-mock" style="display:inline">
-    <button type="submit" class="btn btn-secondary btn-sm" title="Simula envío y DLR sin proveedor real">Simular envío</button>
+  return `<form method="post" action="/app/campaigns/${escapeHtml(c.id)}/execute-mock" style="display:inline;margin-left:0.25rem">
+    <button type="submit" class="btn btn-secondary btn-sm" title="Simula envío y DLR sin proveedor real">Simular campaña</button>
   </form>`;
 }
 
 export function renderCampaignsTableRows(campaigns: SmsCampaignRow[]): string {
   if (!campaigns.length) {
-    return `<tr><td colspan="9">Aún no hay campañas.</td></tr>`;
+    return `<tr><td colspan="10">Aún no hay campañas.</td></tr>`;
   }
   return campaigns
     .map(
       (c) => `<tr>
       <td>${formatDate(c.created_at)}</td>
-      <td>${escapeHtml(c.name)}</td>
+      <td><a href="/app/campaigns/${escapeHtml(c.id)}">${escapeHtml(c.name)}</a></td>
       <td>${escapeHtml(c.sender_id ?? "—")}</td>
-      <td>${c.total_recipients}</td>
       <td>${c.valid_recipients}</td>
-      <td>${c.real_sms_cost}</td>
-      <td>${renderCampaignStatusBadge(c.status)}</td>
+      <td>${fmtSmsCost(c)}</td>
+      <td>${renderCampaignClientStatusBadge(c)}</td>
       <td>${renderCampaignModeLabel(c)}</td>
-      <td>${renderCampaignMockExecuteAction(c)}</td>
+      <td>
+        <a class="btn btn-ghost btn-sm" href="/app/campaigns/${escapeHtml(c.id)}">Ver detalle</a>
+        ${renderCampaignMockExecuteAction(c)}
+      </td>
     </tr>`,
     )
     .join("");
+}
+
+function fmtSmsCost(c: SmsCampaignRow): string {
+  const n = c.status === "draft" ? c.estimated_sms_cost : c.real_sms_cost;
+  return String(n);
 }

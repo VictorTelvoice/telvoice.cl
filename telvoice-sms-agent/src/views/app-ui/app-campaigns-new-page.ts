@@ -123,7 +123,7 @@ function confirmStep(preview: CampaignPreviewResult): string {
           <a class="btn btn-secondary btn-sm" href="/app/campaigns">Ir a campañas</a>
         </div>
       </form>
-      <p class="field-hint" style="margin-top:0.5rem">Tras guardar, usa «Simular envío» en Campañas. No contacta operadores ni aSMSC.</p>
+      <p class="field-hint" style="margin-top:0.5rem">Tras guardar, abre el detalle o usa «Simular campaña» en el listado. No contacta operadores ni aSMSC.</p>
     </div>
   </section>`;
 }

@@ -155,6 +155,9 @@ export async function createCampaignDraftFromPreview(
       send_enabled: false,
       segments_per_message: preview.segmentsPerMessage,
       encoding: preview.encoding,
+      duplicates_omitted: preview.audience.duplicatesOmitted,
+      blocked_count: preview.audience.blockedCount,
+      opt_out_count: preview.audience.optOutCount,
     },
   });
 

@@ -3,6 +3,7 @@ import {
   getAppApi,
   getAppBuySms,
   getAppCampaigns,
+  getAppCampaignDetail,
   getAppCampaignNew,
   postAppCampaignNewPreview,
   postAppCampaignDraft,
@@ -101,6 +102,7 @@ appRouter.post(
   requireClientPanelPage,
   postAppCampaignExecuteMock,
 );
+appRouter.get("/campaigns/:id", requireClientPanelPage, getAppCampaignDetail);
 appRouter.get("/campaigns", requireClientPanelPage, getAppCampaigns);
 appRouter.get("/inbox", requireClientPanelPage, getAppInbox);
 appRouter.get("/contacts/import", requireClientPanelPage, getAppContactsImport);

@@ -898,8 +898,8 @@ export function renderAppCampaignsPage(
             <div class="table-wrap tv-dlr-report__table-wrap">
               <table class="tv-table tv-table--dash">
                 <thead><tr>
-                  <th>Fecha</th><th>Nombre</th><th>Remitente</th><th>Total dest.</th>
-                  <th>Válidos</th><th>Costo SMS</th><th>Estado</th><th>Modo</th><th>Acción</th>
+                  <th>Fecha</th><th>Nombre</th><th>Remitente</th><th>Destinatarios</th>
+                  <th>SMS</th><th>Estado</th><th>Modo</th><th>Acciones</th>
                 </tr></thead>
                 <tbody>${renderCampaignsTableRows(campaigns)}</tbody>
               </table>
