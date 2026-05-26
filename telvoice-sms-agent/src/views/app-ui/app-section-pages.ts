@@ -43,14 +43,6 @@ export function renderAppTemplatesPage(ctx: AppPageContext): string {
   ]);
 }
 
-export function renderAppInvoicesPage(ctx: AppPageContext): string {
-  return comingSoon(ctx, "invoices", "Facturas", "Documentos tributarios de tu cuenta.", "receipt_long", [
-    "Facturas por compra de bolsas",
-    "Descarga PDF",
-    "Historial de pagos",
-  ]);
-}
-
 export function renderAppApiPage(ctx: AppPageContext): string {
   return comingSoon(ctx, "api", "API", "Integra Telvoice con tus sistemas.", "api", [
     "API key por empresa",

@@ -70,6 +70,16 @@ function normalizeSmsProviderMode(value: string): SmsProviderMode {
   return value.trim().toLowerCase() === "live_test" ? "live_test" : "mock";
 }
 
+export type BillingEmailMode = "mock" | "resend" | "sendgrid" | "smtp";
+
+function normalizeBillingEmailMode(value: string): BillingEmailMode {
+  const v = value.trim().toLowerCase();
+  if (v === "resend" || v === "sendgrid" || v === "smtp") {
+    return v;
+  }
+  return "mock";
+}
+
 export const env = {
   nodeEnv: optionalEnv("NODE_ENV", "development"),
   port: Number.parseInt(optionalEnv("PORT", "3001"), 10),
@@ -169,7 +179,17 @@ export const env = {
     skipSignatureVerify:
       optionalEnv("TELSIM_WEBHOOK_SKIP_VERIFY", "false") === "true",
   },
+  billingEmail: {
+    mode: normalizeBillingEmailMode(optionalEnv("BILLING_EMAIL_MODE", "mock")),
+    from: optionalEnv("BILLING_EMAIL_FROM", "facturacion@telvoice.cl"),
+    provider: optionalEnv("BILLING_EMAIL_PROVIDER"),
+    replyTo: optionalEnv("BILLING_EMAIL_REPLY_TO", "soporte@telvoice.cl"),
+  },
 } as const;
+
+export function isBillingEmailMock(): boolean {
+  return env.billingEmail.mode === "mock";
+}
 
 export function isMercadoPagoConfigured(): boolean {
   return Boolean(env.mercadopago.accessToken);

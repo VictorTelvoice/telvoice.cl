@@ -61,6 +61,10 @@ import {
   getChatPage,
   getContactsPage,
   getInvoicesPage,
+  getAdminInvoiceDetailPage,
+  getAdminInvoicePreviewPage,
+  postAdminInvoiceResendEmail,
+  postAdminInvoiceSendEmail,
   getReportsPage,
   getTemplatesPage,
   redirectSendSmsAlias,
@@ -221,6 +225,18 @@ adminRouter.get("/inbox", requireAdminPage, getInboxPage);
 adminRouter.get("/reports", requireAdminPage, getReportsPage);
 adminRouter.get("/contacts", requireAdminPage, getContactsPage);
 adminRouter.get("/invoices", requireAdminPage, getInvoicesPage);
+adminRouter.get("/invoices/:id/preview", requireAdminPage, getAdminInvoicePreviewPage);
+adminRouter.post(
+  "/invoices/:id/send-email",
+  requireAdminPage,
+  postAdminInvoiceSendEmail,
+);
+adminRouter.post(
+  "/invoices/:id/resend-email",
+  requireAdminPage,
+  postAdminInvoiceResendEmail,
+);
+adminRouter.get("/invoices/:id", requireAdminPage, getAdminInvoiceDetailPage);
 adminRouter.get("/templates", requireAdminPage, getTemplatesPage);
 adminRouter.get("/chat", requireAdminPage, getChatPage);
 adminRouter.get("/send-sms", requireAdminPage, redirectSendSmsAlias);

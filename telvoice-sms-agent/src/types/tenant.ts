@@ -12,6 +12,7 @@ export interface CompanyRow {
   contact_phone: string | null;
   country: string;
   status: CompanyStatus;
+  metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }

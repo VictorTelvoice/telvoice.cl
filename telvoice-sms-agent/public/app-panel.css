@@ -2946,6 +2946,77 @@
       letter-spacing: 0.05em;
       color: var(--tv-muted);
     }
+    .tv-invoice-page.tv-client-dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      width: 100%;
+      max-width: none;
+    }
+    .tv-invoice-notice .tv-panel__body {
+      padding: 1rem 1.25rem;
+    }
+    .tv-app-client .tv-invoice__filters-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+    .tv-app-client .tv-invoice__filters-grid .tv-dlr-report__filter-actions {
+      grid-column: 1 / -1;
+      justify-content: flex-start;
+    }
+    .tv-invoice-sent {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      font-size: 0.82rem;
+    }
+    .tv-invoice-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      white-space: nowrap;
+    }
+    .tv-invoice-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+    .tv-invoice-events {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+    .tv-invoice-event {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.25rem 0.75rem;
+      padding: 0.65rem 0.75rem;
+      border: 1px solid var(--tv-border, #e2e8f0);
+      border-radius: 8px;
+      background: #fafbfc;
+      font-size: 0.85rem;
+    }
+    .tv-invoice-event time {
+      grid-column: 1;
+      color: var(--tv-muted);
+      font-size: 0.78rem;
+      white-space: nowrap;
+    }
+    .tv-invoice-event strong {
+      grid-column: 2;
+      font-weight: 600;
+    }
+    .tv-invoice-event span {
+      grid-column: 2;
+      color: var(--tv-muted);
+    }
+    @media (max-width: 900px) {
+      .tv-invoice-detail-grid {
+        grid-template-columns: 1fr;
+      }
+    }
     .tv-contacts-quick-grid {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));

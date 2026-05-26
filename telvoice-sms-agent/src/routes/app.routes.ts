@@ -7,6 +7,8 @@ import {
   getAppDashboard,
   getAppInbox,
   getAppInvoices,
+  getAppInvoiceDetail,
+  getAppInvoicePreview,
   getAppOrderDetail,
   getAppOrders,
   getAppReports,
@@ -81,6 +83,8 @@ appRouter.get("/templates", requireClientPanelPage, getAppTemplates);
 appRouter.get("/reports", requireClientPanelPage, getAppReports);
 appRouter.get("/reports/export.csv", requireClientPanelPage, getAppReportsExportCsv);
 appRouter.get("/invoices", requireClientPanelPage, getAppInvoices);
+appRouter.get("/invoices/:id/preview", requireClientPanelPage, getAppInvoicePreview);
+appRouter.get("/invoices/:id", requireClientPanelPage, getAppInvoiceDetail);
 appRouter.get("/api", requireClientPanelPage, getAppApi);
 appRouter.get("/support", requireClientPanelPage, getAppSupport);
 appRouter.get("/settings", requireClientPanelPage, getAppSettings);

@@ -8,6 +8,7 @@ import {
 import { loadAppContextCore } from "../services/appContextCache.js";
 import {
   createOrder,
+  getOrderById,
   getOrderWithDetailsForCompany,
   listSmsOrdersByCompany,
 } from "../services/smsOrderService.js";
@@ -47,7 +48,6 @@ import {
 import {
   renderAppApiPage,
   renderAppContactsPage,
-  renderAppInvoicesPage,
   parseContactsPageFilters,
   renderAppSettingsPage,
   renderAppSupportPage,
@@ -62,6 +62,7 @@ import type {
   MockSmsSendResult,
   PanelCampaignSendResult,
 } from "../types/sms-panel.js";
+import type { SmsOrderRow } from "../types/wallet.js";
 import {
   sendPanelCampaign,
   type MassCampaignSendRow,
@@ -75,6 +76,21 @@ import {
   dlrReportRowsToCsv,
 } from "../services/smsDlrReportService.js";
 import { renderAppReportsPage } from "../views/app-ui/app-reports-page.js";
+import {
+  parseAppInvoiceFilters,
+  renderAppInvoiceDetailPage,
+  renderAppInvoiceNotFoundPage,
+  renderAppInvoicesPage,
+} from "../views/app-ui/app-invoice-pages.js";
+import {
+  getCompanyInvoiceById,
+  listCompanyInvoices,
+  summarizeCompanyInvoices,
+} from "../services/billingInvoiceService.js";
+import {
+  generateInvoiceHtmlFromData,
+  sanitizeInvoiceDocumentData,
+} from "../services/billingDocumentService.js";
 import { getLiveTestSendPageStatus } from "../services/smsLiveTestLimiterService.js";
 import { canCompanyUseLiveTestUi } from "../services/smsProviderStatusService.js";
 import {
@@ -97,6 +113,7 @@ import {
   isScheduleAtLeastMinutesAhead,
 } from "../utils/scheduleTime.js";
 import { suggestSenderIdFromCompanyName } from "../utils/suggestSenderId.js";
+import { escapeHtml } from "../utils/html.js";
 
 type AppSendMode = "single" | "mass" | "scheduled" | "template";
 
@@ -940,7 +957,103 @@ export async function getAppInvoices(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  await withAppContext(req, res, next, (ctx) => renderAppInvoicesPage(ctx));
+  await withAppContext(req, res, next, async (ctx) => {
+    const filters = parseAppInvoiceFilters(
+      req.query as Record<string, string | string[] | undefined>,
+    );
+    const invoices = await listCompanyInvoices(ctx.company.id, {
+      status: filters.status,
+      documentType: filters.documentType,
+      fromDate: filters.fromDate,
+      toDate: filters.toDate,
+      search: filters.search,
+      limit: 200,
+    });
+
+    const orderById = new Map<string, SmsOrderRow>();
+    const orderIds = [...new Set(invoices.map((i) => i.order_id))];
+    await Promise.all(
+      orderIds.map(async (orderId) => {
+        const order = await getOrderById(orderId);
+        if (order && order.company_id === ctx.company.id) {
+          orderById.set(orderId, order);
+        }
+      }),
+    );
+
+    const summary = summarizeCompanyInvoices(invoices);
+
+    return renderAppInvoicesPage(ctx, {
+      invoices,
+      filters,
+      summary,
+      orderById,
+    });
+  });
+}
+
+export async function getAppInvoiceDetail(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  await withAppContext(req, res, next, async (ctx) => {
+    const invoiceId = validateUuidParam(String(req.params.id), "id");
+    const invoice = await getCompanyInvoiceById(ctx.company.id, invoiceId);
+    if (!invoice) {
+      return renderAppInvoiceNotFoundPage(ctx);
+    }
+
+    let order = await getOrderById(invoice.order_id);
+    if (order && order.company_id !== ctx.company.id) {
+      order = null;
+    }
+
+    return renderAppInvoiceDetailPage(ctx, invoice, order);
+  });
+}
+
+export async function getAppInvoicePreview(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await buildAppContext(req);
+    if (!ctx) {
+      res.status(401).type("html").send("<p>No autorizado.</p>");
+      return;
+    }
+
+    const invoiceId = validateUuidParam(String(req.params.id), "id");
+    const invoice = await getCompanyInvoiceById(ctx.company.id, invoiceId);
+    if (!invoice) {
+      res
+        .status(404)
+        .type("html")
+        .send(
+          "<!DOCTYPE html><html lang=\"es\"><body style=\"font-family:system-ui;padding:2rem\"><h1>Comprobante no encontrado</h1><p>El documento no existe o no pertenece a tu empresa.</p><p><a href=\"/app/invoices\">Volver a facturación</a></p></body></html>",
+        );
+      return;
+    }
+
+    let order = await getOrderById(invoice.order_id);
+    if (order && order.company_id !== ctx.company.id) {
+      order = null;
+    }
+
+    const html = generateInvoiceHtmlFromData(
+      sanitizeInvoiceDocumentData({
+        invoice,
+        company: ctx.company,
+        order,
+      }),
+    );
+
+    res.type("html").send(html);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Error al generar comprobante";
+    res.status(500).type("html").send(`<p>${escapeHtml(msg)}</p>`);
+  }
 }
 
 export async function getAppApi(
