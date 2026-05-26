@@ -88,13 +88,38 @@ export async function updateSmsCampaign(
 export async function listCampaignsByCompany(
   companyId: string,
   limit = 50,
+  filters?: {
+    q?: string;
+    status?: SmsCampaignStatus;
+    senderId?: string;
+    startDate?: string;
+    endDate?: string;
+  },
 ): Promise<SmsCampaignRow[]> {
-  const { data, error } = await getSupabase()
+  let q = getSupabase()
     .from("sms_campaigns")
     .select("*")
-    .eq("company_id", companyId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+    .eq("company_id", companyId);
+
+  const text = filters?.q?.trim();
+  if (text) {
+    q = q.ilike("name", `%${text}%`);
+  }
+  if (filters?.status) {
+    q = q.eq("status", filters.status);
+  }
+  const sender = filters?.senderId?.trim();
+  if (sender) {
+    q = q.eq("sender_id", sender);
+  }
+  if (filters?.startDate) {
+    q = q.gte("created_at", `${filters.startDate}T00:00:00.000Z`);
+  }
+  if (filters?.endDate) {
+    q = q.lte("created_at", `${filters.endDate}T23:59:59.999Z`);
+  }
+
+  const { data, error } = await q.order("created_at", { ascending: false }).limit(limit);
 
   if (error) {
     if (isMissingTableError(error)) {

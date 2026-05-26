@@ -8,6 +8,7 @@ import type { LiveTestSendPageStatus } from "../../services/smsLiveTestLimiterSe
 import { isDailySendLimitEnforced } from "../../services/smsLiveTestLimiterService.js";
 import type { SendControlPanelView } from "../../services/smsSendControlPanelService.js";
 import { escapeHtml } from "../../utils/html.js";
+import { renderKpiCard } from "../admin-ui/components.js";
 import {
   MOCK_CONTACT_LISTS,
   MOCK_TEMPLATES,
@@ -18,6 +19,7 @@ import {
   renderHeroPhonePreview,
   renderModeCards,
   renderPageHeader,
+  renderFilterField,
   renderStatChip,
 } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
@@ -812,21 +814,96 @@ export function renderAppInboxPage(
 export function renderAppCampaignsPage(
   ctx: AppPageContext,
   campaigns: SmsCampaignRow[],
+  filters?: {
+    q?: string;
+    status?: string;
+    senderId?: string;
+    startDate?: string;
+    endDate?: string;
+  },
 ): string {
+  const f = filters ?? {};
+  const status = (f.status ?? "").trim();
+  const statusOpts = [
+    ["", "Todos"],
+    ["draft", "Borrador"],
+    ["processing", "Procesando"],
+    ["sent", "Enviada"],
+    ["completed", "Completada"],
+    ["failed", "Fallida"],
+    ["cancelled", "Cancelada"],
+  ]
+    .map(([v, label]) => {
+      const on = v === status;
+      return `<option value="${escapeHtml(v)}"${on ? " selected" : ""}>${escapeHtml(label)}</option>`;
+    })
+    .join("");
+
+  const total = campaigns.length;
+  const count = (s: string) => campaigns.filter((c) => c.status === s).length;
+  const drafts = count("draft");
+  const processing = count("processing");
+  const ok = count("completed") + count("sent");
+  const failed = count("failed") + count("cancelled");
+
+  const kpis = `<div class="tv-kpi-grid tv-kpi-grid--client tv-kpi-grid--report">
+      ${renderKpiCard({ label: "Campañas", value: fmtSms(total), hint: "Con filtros aplicados", icon: "campaign", variant: "primary" })}
+      ${renderKpiCard({ label: "Completadas", value: fmtSms(ok), hint: "Enviadas / finalizadas", icon: "check_circle", variant: "success" })}
+      ${renderKpiCard({ label: "En curso", value: fmtSms(processing), hint: "Procesando", icon: "schedule", variant: "warn" })}
+      ${renderKpiCard({ label: "Borradores", value: fmtSms(drafts), hint: "Aún no enviadas", icon: "edit", variant: "default" })}
+      ${renderKpiCard({ label: "Fallidas", value: fmtSms(failed), hint: "Fallidas / canceladas", icon: "error", variant: "danger" })}
+    </div>`;
+
+  const filtersPanel = `
+    <section class="tv-panel tv-dlr-report__filters-panel">
+      <header class="tv-section-head tv-dlr-report__filters-head">
+        <h2 class="tv-section-head__title">Filtros de búsqueda</h2>
+        <p class="tv-section-head__sub">Filtra campañas por período, estado y nombre</p>
+      </header>
+      <div class="tv-panel__body tv-dlr-report__filters-body">
+        <form method="get" action="/app/campaigns" class="tv-dlr-report__filters-form">
+          <div class="tv-dlr-report__filters-grid">
+            ${renderFilterField("Desde", `<input type="date" name="start_date" class="tv-filter-input" value="${escapeHtml(f.startDate ?? "")}" />`)}
+            ${renderFilterField("Hasta", `<input type="date" name="end_date" class="tv-filter-input" value="${escapeHtml(f.endDate ?? "")}" />`)}
+            ${renderFilterField("Estado", `<select name="status" class="tv-filter-input">${statusOpts}</select>`)}
+            ${renderFilterField("Remitente", `<input type="text" name="sender_id" class="tv-filter-input" placeholder="Ej. TELVOICE" value="${escapeHtml(f.senderId ?? "")}" />`)}
+            ${renderFilterField("Nombre", `<input type="text" name="q" class="tv-filter-input" placeholder="Buscar por nombre" value="${escapeHtml(f.q ?? "")}" />`)}
+            <div class="tv-dlr-report__filter-actions">
+              <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+              <a class="btn btn-ghost btn-sm" href="/app/campaigns">Limpiar</a>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>`;
+
   const body = `
     ${renderPageHeader({
       title: "Campañas",
       subtitle: "Campañas SMS registradas en tu cuenta.",
       actions: renderBtn("Nuevo envío", { href: "/app/send-sms", variant: "primary" }),
     })}
-    <div class="table-wrap tv-panel">
-      <table class="tv-table">
-        <thead><tr>
-          <th>Fecha</th><th>Nombre</th><th>Remitente</th><th>Total dest.</th>
-          <th>Válidos</th><th>Costo SMS</th><th>Estado</th><th>Modo</th><th>Acción</th>
-        </tr></thead>
-        <tbody>${renderCampaignsTableRows(campaigns)}</tbody>
-      </table>
+    <div class="tv-client-dashboard tv-dlr-report tv-campaigns-report">
+      ${kpis}
+      ${filtersPanel}
+      <div class="tv-dash-block tv-dlr-report__table-block">
+        <div class="tv-dash-block__head">
+          <h2 class="tv-dash-block__title">Últimas campañas</h2>
+        </div>
+        <section class="tv-panel tv-client-dash-table-panel tv-dlr-report__table-panel">
+          <div class="tv-client-dash-table-inner tv-dlr-report__table-inner">
+            <div class="table-wrap tv-dlr-report__table-wrap">
+              <table class="tv-table tv-table--dash">
+                <thead><tr>
+                  <th>Fecha</th><th>Nombre</th><th>Remitente</th><th>Total dest.</th>
+                  <th>Válidos</th><th>Costo SMS</th><th>Estado</th><th>Modo</th><th>Acción</th>
+                </tr></thead>
+                <tbody>${renderCampaignsTableRows(campaigns)}</tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>`;
   return wrapAppPage(ctx, "campaigns", "Campañas", body);
 }

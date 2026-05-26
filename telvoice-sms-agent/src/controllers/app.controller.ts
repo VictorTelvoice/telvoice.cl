@@ -812,8 +812,41 @@ export async function getAppCampaigns(
   next: NextFunction,
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
-    const campaigns = await listCampaignsByCompany(ctx.company.id, 100);
-    return renderAppCampaignsPage(ctx, campaigns);
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const status =
+      typeof req.query.status === "string" ? req.query.status.trim() : "";
+    const senderId =
+      typeof req.query.sender_id === "string" ? req.query.sender_id.trim() : "";
+    const startDate =
+      typeof req.query.start_date === "string" ? req.query.start_date.trim() : "";
+    const endDate =
+      typeof req.query.end_date === "string" ? req.query.end_date.trim() : "";
+
+    const allowed = new Set([
+      "draft",
+      "processing",
+      "sent",
+      "completed",
+      "failed",
+      "cancelled",
+    ]);
+    const safeStatus = allowed.has(status) ? (status as any) : undefined;
+
+    const campaigns = await listCampaignsByCompany(ctx.company.id, 100, {
+      q: q || undefined,
+      status: safeStatus,
+      senderId: senderId || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    });
+
+    return renderAppCampaignsPage(ctx, campaigns, {
+      q: q || undefined,
+      status: status || undefined,
+      senderId: senderId || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    });
   });
 }
 
