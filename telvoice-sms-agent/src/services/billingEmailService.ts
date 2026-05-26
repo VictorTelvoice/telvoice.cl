@@ -25,6 +25,12 @@ export type SendInvoiceEmailOptions = {
   actorId?: string | null;
   source?: string;
   isResend?: boolean;
+  /** En automatización: omitir si ya hay email sent. Default true en sendInvoiceEmailIfNeeded. */
+  skipIfAlreadySent?: boolean;
+};
+
+export type SendInvoiceEmailIfNeededResult = SendInvoiceEmailResult & {
+  skipped?: boolean;
 };
 
 function shortDocId(id: string): string {
@@ -163,6 +169,24 @@ Ver comprobante: ${previewUrl}
 Este documento es un comprobante interno de compra (no tributario). No es factura electrónica ni documento ante el SII.
 
 Telvoice — www.telvoice.cl — soporte@telvoice.cl`;
+}
+
+/** True si ya hay al menos un envío exitoso (mock o real) para la invoice. */
+export async function hasSuccessfulBillingEmail(
+  invoiceId: string,
+): Promise<boolean> {
+  const { data, error } = await getSupabase()
+    .from("billing_email_logs")
+    .select("id")
+    .eq("invoice_id", invoiceId)
+    .eq("status", "sent")
+    .limit(1);
+
+  if (error) {
+    console.warn("[billing-email] hasSuccessfulBillingEmail failed", error);
+    return false;
+  }
+  return (data?.length ?? 0) > 0;
 }
 
 export async function getLatestEmailStatus(
@@ -343,6 +367,26 @@ async function deliverMockEmail(
       ? "Reenvío simulado registrado correctamente (modo mock, sin correo real)."
       : "Email simulado registrado correctamente (modo mock, sin correo real).",
   };
+}
+
+export async function sendInvoiceEmailIfNeeded(
+  invoiceId: string,
+  options: SendInvoiceEmailOptions = {},
+): Promise<SendInvoiceEmailIfNeededResult> {
+  const skipIfAlreadySent = options.skipIfAlreadySent !== false;
+  if (skipIfAlreadySent && (await hasSuccessfulBillingEmail(invoiceId))) {
+    return {
+      success: true,
+      skipped: true,
+      mode: getBillingEmailMode(),
+      message: "Email ya registrado como enviado; omitido en sincronización automática.",
+    };
+  }
+  const result = await sendInvoiceEmail(invoiceId, {
+    ...options,
+    actorType: options.actorType ?? "system",
+  });
+  return result;
 }
 
 export async function sendInvoiceEmail(

@@ -9,6 +9,10 @@ import {
   markOrderPaid,
 } from "../services/smsOrderService.js";
 import { listTransactionsForOrder } from "../services/walletTransactionService.js";
+import {
+  ensureBillingForCreditedOrder,
+  getBillingOrderSummary,
+} from "../services/billingSyncService.js";
 import { insertAuditLog } from "../services/auditLogService.js";
 import {
   buildPricingCatalogSummary,
@@ -484,9 +488,10 @@ export async function getSaOrderDetailPage(
       redirectWith(res, "/admin/orders", { error: "Orden no encontrada." });
       return;
     }
-    const [transactions, company] = await Promise.all([
+    const [transactions, company, billingSummary] = await Promise.all([
       listTransactionsForOrder(orderId),
       findCompanyById(order.company_id),
+      getBillingOrderSummary(orderId),
     ]);
     res.type("html").send(
       renderSaOrderDetailPage({
@@ -494,6 +499,7 @@ export async function getSaOrderDetailPage(
         order,
         transactions,
         company,
+        billingSummary,
         ...flash(req),
       }),
     );
@@ -531,10 +537,66 @@ export async function postCreditOrder(
     const msg = result.alreadyCredited
       ? "La orden ya estaba acreditada (sin duplicar saldo)."
       : `Orden acreditada: ${result.order.sms_quantity} SMS.`;
+    const syncResult = await ensureBillingForCreditedOrder(orderId, {
+      source: "admin_manual_credit",
+      actorType: "superadmin",
+      actorId: req.adminUser?.id ?? null,
+    });
+    if (!syncResult.ok) {
+      console.error(
+        "[billing-sync] admin_manual_credit failed",
+        orderId,
+        syncResult.error ?? "unknown",
+      );
+    }
     redirectWith(res, `/admin/orders/${orderId}`, { ok: msg });
   } catch (error) {
     redirectWith(res, `/admin/orders/${req.params.id}`, {
       error: error instanceof Error ? error.message : "Error al acreditar",
+    });
+  }
+}
+
+export async function postSyncOrderBilling(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const orderId = validateUuidParam(String(req.params.id), "id");
+    const result = await ensureBillingForCreditedOrder(orderId, {
+      source: "admin_manual_sync",
+      actorType: "superadmin",
+      actorId: req.adminUser?.id ?? null,
+    });
+    if (!result.ok) {
+      const errMsg =
+        result.error === "order_not_paid_or_credited"
+          ? "La orden debe estar pagada y acreditada para sincronizar Billing."
+          : result.error === "order_not_found"
+            ? "Orden no encontrada."
+            : `No se pudo sincronizar Billing (${result.error ?? "error"}).`;
+      redirectWith(res, `/admin/orders/${orderId}`, { error: errMsg });
+      return;
+    }
+    const parts: string[] = [];
+    if (result.invoiceCreated) {
+      parts.push("comprobante creado");
+    } else {
+      parts.push("comprobante ya existía");
+    }
+    if (result.emailSent) {
+      parts.push("email mock registrado");
+    } else if (result.emailSkipped) {
+      parts.push("email omitido (ya enviado)");
+    } else if (result.emailFailed) {
+      parts.push("email mock falló (revisar email de facturación)");
+    }
+    redirectWith(res, `/admin/orders/${orderId}`, {
+      ok: `Billing sincronizado: ${parts.join(" · ")}.`,
+    });
+  } catch (error) {
+    redirectWith(res, `/admin/orders/${req.params.id}`, {
+      error: error instanceof Error ? error.message : "Error al sincronizar Billing",
     });
   }
 }

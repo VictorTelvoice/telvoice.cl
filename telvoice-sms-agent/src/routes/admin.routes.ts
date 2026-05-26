@@ -113,6 +113,7 @@ import {
   postCreateOrder,
   postCreateSmsPackage,
   postCreditOrder,
+  postSyncOrderBilling,
   postMarkOrderPaid,
   postToggleSmsPackage,
   postUpdateSmsPackage,
@@ -214,6 +215,11 @@ adminRouter.post(
   postCancelPendingOrder,
 );
 adminRouter.post("/orders/:id/credit", requireAdminPage, postCreditOrder);
+adminRouter.post(
+  "/orders/:id/sync-billing",
+  requireAdminPage,
+  postSyncOrderBilling,
+);
 adminRouter.get("/wallets", requireAdminPage, getSaWalletsPage);
 adminRouter.post("/wallets/quick-credit", requireAdminPage, postWalletQuickCredit);
 adminRouter.get("/wallets/:companyId", requireAdminPage, getSaWalletDetailPage);

@@ -84,6 +84,7 @@ import {
 } from "../views/app-ui/app-invoice-pages.js";
 import {
   getCompanyInvoiceById,
+  getInvoiceByOrderId,
   listCompanyInvoices,
   summarizeCompanyInvoices,
 } from "../services/billingInvoiceService.js";
@@ -622,8 +623,10 @@ export async function getAppOrderDetail(
       return renderAppOrderNotFoundPage(ctx);
     }
     const showCreatedBanner = req.query.created === "1";
+    const invoice = await getInvoiceByOrderId(orderId);
     return renderAppOrderDetailPage(ctx, order, {
       showCreatedBanner: showCreatedBanner,
+      invoiceId: invoice?.id ?? null,
     });
   });
 }

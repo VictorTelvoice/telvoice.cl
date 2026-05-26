@@ -111,7 +111,7 @@ function renderOrderCreatedConfirmation(order: SmsOrderWithDetails): string {
 export function renderAppOrderDetailPage(
   ctx: AppPageContext,
   order: SmsOrderWithDetails,
-  options?: { showCreatedBanner?: boolean },
+  options?: { showCreatedBanner?: boolean; invoiceId?: string | null },
 ): string {
   const timeline = buildOrderTimeline(order);
   const showBanner = options?.showCreatedBanner === true;
@@ -140,12 +140,29 @@ export function renderAppOrderDetailPage(
        </div>`
     : "";
 
-  const receiptBlock = `
-    <section class="tv-panel tv-panel--hint" style="margin-top:1rem">
+  const invoiceId = options?.invoiceId?.trim() || null;
+  const receiptBlock = invoiceId
+    ? `<section class="tv-panel tv-panel--hint" style="margin-top:1rem">
+      <h2 class="tv-panel__title">Comprobante de compra</h2>
+      <div class="tv-panel__body">
+        <p style="margin:0 0 0.75rem">Documento interno no tributario asociado a esta orden.</p>
+        <div class="tv-quick-actions">
+          <a class="btn btn-primary btn-sm" href="/app/invoices/${escapeHtml(invoiceId)}">Ver comprobante</a>
+          <a class="btn btn-ghost btn-sm" href="/app/invoices/${escapeHtml(invoiceId)}/preview" target="_blank" rel="noopener">Vista previa</a>
+        </div>
+      </div>
+    </section>`
+    : isCredited
+      ? `<section class="tv-panel tv-panel--hint" style="margin-top:1rem">
       <h2 class="tv-panel__title">Comprobante</h2>
       <div class="tv-panel__body">
-        <button type="button" class="btn btn-secondary btn-sm" disabled>Descargar comprobante</button>
-        <p class="field-hint" style="margin:0.5rem 0 0">El comprobante estará disponible cuando la facturación electrónica sea habilitada.</p>
+        <p class="field-hint" style="margin:0">Tu comprobante se generará automáticamente en breve. Si no aparece, contacta a soporte.</p>
+      </div>
+    </section>`
+      : `<section class="tv-panel tv-panel--hint" style="margin-top:1rem">
+      <h2 class="tv-panel__title">Comprobante</h2>
+      <div class="tv-panel__body">
+        <p class="field-hint" style="margin:0">Disponible cuando el pago esté confirmado y acreditado.</p>
       </div>
     </section>`;
 

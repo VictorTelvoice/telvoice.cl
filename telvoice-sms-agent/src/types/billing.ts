@@ -33,7 +33,10 @@ export type BillingEventType =
   | "invoice.email_pending"
   | "invoice.email_sent"
   | "invoice.email_failed"
-  | "invoice.previewed";
+  | "invoice.previewed"
+  | "billing.sync.started"
+  | "billing.sync.completed"
+  | "billing.sync.failed";
 
 export type BillingPaymentStatus =
   | "pending"
@@ -194,5 +197,19 @@ export type AdminInvoiceListRow = BillingInvoice & {
 export type AdminInvoiceDetail = BillingInvoiceWithDetails & {
   company: CompanyRow | null;
   order: SmsOrderRow | null;
+};
+
+export type BillingOrderBillingState =
+  | "no_invoice"
+  | "invoice_ready"
+  | "email_sent"
+  | "email_failed";
+
+export type BillingOrderSummary = {
+  invoiceId: string | null;
+  invoiceNumber: string | null;
+  invoiceStatus: string | null;
+  billingState: BillingOrderBillingState;
+  lastEmailError: string | null;
 };
 

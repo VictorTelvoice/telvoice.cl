@@ -1,5 +1,6 @@
 import type { AdminSessionUser } from "../../../types/admin.js";
 import type { CompanyRow } from "../../../types/tenant.js";
+import type { BillingOrderSummary } from "../../../types/billing.js";
 import type {
   PricingCatalogSummary,
   SmsOrderWithDetails,
@@ -518,11 +519,61 @@ function renderSaOrderTimeline(
   return `<ol class="tv-timeline">${items}</ol>`;
 }
 
+function billingStateLabel(state: BillingOrderSummary["billingState"]): string {
+  const map: Record<BillingOrderSummary["billingState"], string> = {
+    no_invoice: "Sin comprobante",
+    invoice_ready: "Comprobante emitido",
+    email_sent: "Email mock enviado",
+    email_failed: "Email falló",
+  };
+  return map[state] ?? state;
+}
+
+function renderBillingOrderPanel(
+  order: SmsOrderWithDetails,
+  billing: BillingOrderSummary,
+): string {
+  const canSync =
+    order.payment_status === "paid" && order.credit_status === "credited";
+  const stateLabel = billingStateLabel(billing.billingState);
+  const invoiceLink = billing.invoiceId
+    ? `<a href="/admin/invoices/${escapeHtml(billing.invoiceId)}" class="btn btn-ghost btn-sm">Ver comprobante</a>
+       <a href="/admin/invoices/${escapeHtml(billing.invoiceId)}/preview" class="btn btn-ghost btn-sm" target="_blank" rel="noopener">Vista previa HTML</a>`
+    : `<span class="field-hint">Aún no hay comprobante vinculado a esta orden.</span>`;
+
+  const syncForm = canSync
+    ? `<form method="post" action="/admin/orders/${escapeHtml(order.id)}/sync-billing" style="margin-top:0.75rem">
+         <button type="submit" class="btn btn-secondary btn-sm">Sincronizar billing</button>
+       </form>
+       <p class="field-hint" style="margin:0.5rem 0 0">Crea el comprobante y registra email mock si falta. No duplica invoice ni email automático ya enviado.</p>`
+    : `<p class="field-hint" style="margin:0.5rem 0 0">Disponible cuando la orden esté pagada y acreditada.</p>`;
+
+  return `<section class="tv-panel tv-panel--hint" style="margin-top:1rem">
+    <h2 class="tv-panel__title">Billing (comprobante interno)</h2>
+    <div class="tv-panel__body">
+      <dl class="tv-detail-dl">
+        <div><dt>Estado</dt><dd><strong>${escapeHtml(stateLabel)}</strong></dd></div>
+        <div><dt>Documento</dt><dd>${escapeHtml(billing.invoiceNumber ?? "—")}</dd></div>
+        <div><dt>Estado invoice</dt><dd>${escapeHtml(billing.invoiceStatus ?? "—")}</dd></div>
+        ${
+          billing.lastEmailError
+            ? `<div><dt>Último error email</dt><dd class="text-danger">${escapeHtml(billing.lastEmailError)}</dd></div>`
+            : ""
+        }
+      </dl>
+      <div class="tv-quick-actions" style="margin-top:0.5rem">${invoiceLink}</div>
+      ${syncForm}
+      <p class="field-hint" style="margin:0.75rem 0 0">Modo email mock: no se envía correo real.</p>
+    </div>
+  </section>`;
+}
+
 export function renderSaOrderDetailPage(
   opts: PageOpts & {
     order: SmsOrderWithDetails;
     transactions: WalletTransactionRow[];
     company: CompanyRow | null;
+    billingSummary: BillingOrderSummary;
   },
 ): string {
   const o = opts.order;
@@ -627,12 +678,7 @@ export function renderSaOrderDetailPage(
     </section>`
         : ""
     }
-    <section class="tv-panel tv-panel--hint" style="margin-top:1rem">
-      <h2 class="tv-panel__title">Facturación</h2>
-      <div class="tv-panel__body">
-        <p class="field-hint" style="margin:0">Adjuntar comprobante / factura — próximamente.</p>
-      </div>
-    </section>
+    ${renderBillingOrderPanel(o, opts.billingSummary)}
     <section class="tv-panel" style="margin-top:1rem">
       <h2 class="tv-panel__title">Movimientos wallet (orden)</h2>
       <div class="table-wrap tv-panel__body" style="padding:0">
