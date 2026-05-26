@@ -17,10 +17,15 @@ import { dispatchProviderSend } from "./smsProviderDispatchService.js";
 import { getSmsProviderById } from "./smsProviderService.js";
 import type { SmsSendQueueRow } from "../types/sms-traffic.js";
 import {
+  refreshCampaignStatusFromQueue,
+  refreshProcessingCampaignsFromQueue,
+} from "./smsCampaignQueueFinalizeService.js";
+import {
   getNextQueuedMessages,
   markFailed,
   markProcessing,
   markSent,
+  releaseStaleProcessingQueueItems,
   requeueForRetry,
 } from "./smsQueueService.js";
 import { debitSmsUsage, getCompanyBalance } from "./smsWalletService.js";
@@ -106,6 +111,7 @@ async function finalizeQueuedSend(input: {
         status: "processing",
         sent_at: campaign.sent_at ?? sentAt,
       });
+      await refreshCampaignStatusFromQueue(input.campaignId, input.companyId);
     }
   }
 }
@@ -266,6 +272,11 @@ export async function processQueueTick(
     details: [],
   };
 
+  const released = await releaseStaleProcessingQueueItems();
+  if (released > 0) {
+    result.details.push(`${released} ítem(s) processing liberados a cola`);
+  }
+
   const batch = await getNextQueuedMessages(limit);
   const outcomes = await Promise.all(
     batch.map((item) => processOneQueuedItem(item, workerId)),
@@ -277,6 +288,23 @@ export async function processQueueTick(
     if (outcome.deferred) result.deferred += 1;
     if (outcome.failed) result.failed += 1;
     if (outcome.detail) result.details.push(outcome.detail);
+  }
+
+  const campaignIds = new Set(
+    batch
+      .map((item) => item.campaign_id)
+      .filter((id): id is string => Boolean(id)),
+  );
+  for (const campaignId of campaignIds) {
+    const companyId = batch.find((i) => i.campaign_id === campaignId)?.company_id;
+    if (companyId) {
+      await refreshCampaignStatusFromQueue(campaignId, companyId);
+    }
+  }
+
+  const finalized = await refreshProcessingCampaignsFromQueue();
+  if (finalized > 0) {
+    result.details.push(`${finalized} campaña(s) finalizadas desde cola`);
   }
 
   return result;

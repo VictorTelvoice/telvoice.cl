@@ -256,6 +256,54 @@ export async function pauseQueueByProvider(providerId: string): Promise<number> 
   return data?.length ?? 0;
 }
 
+const DEFAULT_STALE_PROCESSING_MS = 5 * 60 * 1000;
+
+/** Reencola ítems en processing con lock antiguo (crash o tick interrumpido). */
+export async function releaseStaleProcessingQueueItems(
+  maxAgeMs = DEFAULT_STALE_PROCESSING_MS,
+): Promise<number> {
+  const cutoff = new Date(Date.now() - maxAgeMs).toISOString();
+  const { data, error } = await getSupabase()
+    .from("sms_send_queue")
+    .update({
+      status: "queued",
+      locked_at: null,
+      locked_by: null,
+      processed_at: null,
+      error_code: null,
+      error_message: null,
+    })
+    .eq("status", "processing")
+    .lt("locked_at", cutoff)
+    .select("id");
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return 0;
+    }
+    wrapSupabaseError(error, "releaseStaleProcessingQueueItems");
+  }
+  return data?.length ?? 0;
+}
+
+export async function countPendingQueueForCampaign(
+  campaignId: string,
+): Promise<number> {
+  const { count, error } = await getSupabase()
+    .from("sms_send_queue")
+    .select("id", { count: "exact", head: true })
+    .eq("campaign_id", campaignId)
+    .in("status", ["queued", "processing"]);
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return 0;
+    }
+    wrapSupabaseError(error, "countPendingQueueForCampaign");
+  }
+  return count ?? 0;
+}
+
 export async function countQueueByStatus(): Promise<Record<string, number>> {
   const statuses = ["queued", "processing", "sent", "failed", "paused"] as const;
   const out: Record<string, number> = {};

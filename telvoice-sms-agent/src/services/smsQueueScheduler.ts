@@ -21,11 +21,17 @@ export function startSmsQueueScheduler(): void {
     return;
   }
 
-  if (!env.smsProvider.liveTestEnabled) {
+  if (!env.smsCampaign.enabled && !env.smsProvider.liveTestEnabled) {
     console.warn(
-      "[sms-queue] Scheduler no iniciado: SMS_LIVE_TEST_ENABLED=false.",
+      "[sms-queue] Scheduler no iniciado: SMS_CAMPAIGN_ENABLED=false y SMS_LIVE_TEST_ENABLED=false.",
     );
     return;
+  }
+
+  if (!env.smsProvider.liveTestEnabled && env.smsCampaign.enabled) {
+    console.info(
+      "[sms-queue] Scheduler activo para campañas (SMS_LIVE_TEST_ENABLED=false).",
+    );
   }
 
   const intervalMs = env.smsQueueScheduler.intervalSeconds * 1000;
