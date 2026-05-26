@@ -119,15 +119,20 @@ El `.env` de producción **no** se commitea ni se reemplaza por el del repositor
 
 ## 4. Disparadores del workflow
 
-En cada push a `main` que modifique:
+En cada push a `main` que modifique rutas con impacto en build o runtime, por ejemplo:
 
-- `telvoice-sms-agent/**`
+- `telvoice-sms-agent/src/**`
+- `telvoice-sms-agent/scripts/**`
+- `telvoice-sms-agent/supabase/**`
+- `telvoice-sms-agent/package.json`, `package-lock.json`, `tsconfig.json`
+- `telvoice-sms-agent/public/**`, `.env.example`
 - `.github/workflows/deploy-agent.yml`
-- `docs/deploy-agent.md`
+
+**No** se dispara por cambios solo en documentación (`docs/**`, `telvoice-sms-agent/docs/**`, `*.md` fuera de las rutas anteriores).
+
+Si un commit mezcla código y docs, **sí** despliega (cualquier archivo bajo `src/**`, `scripts/**`, etc. activa el workflow).
 
 También manualmente: **Actions** → **Deploy agent.telvoice.cl** → **Run workflow** (`workflow_dispatch`).
-
-Un push que **solo** actualice esta documentación puede disparar un deploy (por el filtro `paths`). Eso es esperado si quieres validar el pipeline; no cambia el `.env` del servidor.
 
 ---
 

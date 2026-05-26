@@ -13,10 +13,18 @@ name: Deploy agent.telvoice.cl
 on:
   push:
     branches: [main]
+    # Rutas que afectan build/runtime. No incluir docs/** ni *.md sueltos:
+    # un push solo-documentación no debe desplegar a producción.
     paths:
-      - "telvoice-sms-agent/**"
+      - "telvoice-sms-agent/src/**"
+      - "telvoice-sms-agent/scripts/**"
+      - "telvoice-sms-agent/supabase/**"
+      - "telvoice-sms-agent/package.json"
+      - "telvoice-sms-agent/package-lock.json"
+      - "telvoice-sms-agent/tsconfig.json"
+      - "telvoice-sms-agent/public/**"
+      - "telvoice-sms-agent/.env.example"
       - ".github/workflows/deploy-agent.yml"
-      - "docs/deploy-agent.md"
   workflow_dispatch:
 
 concurrency:

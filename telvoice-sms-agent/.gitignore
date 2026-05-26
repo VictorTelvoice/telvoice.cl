@@ -3,3 +3,6 @@ dist/
 .env
 *.log
 .DS_Store
+
+# QA visual puntual en producción (credenciales locales en .env)
+scripts/verify-billing-visual-prod.mjs
