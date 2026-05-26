@@ -1207,144 +1207,30 @@ export function getAppPanelStyles(): string {
         grid-column: 1 / -1;
       }
     }
-    .tv-wallet-pay-card {
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      min-height: 128px;
-      overflow: hidden;
-    }
-    .tv-wallet-pay-card__visual {
-      display: block;
-      flex: 1;
-      text-decoration: none;
-      color: inherit;
-      min-height: 0;
-    }
-    .tv-wallet-pay-card__visual:hover {
-      text-decoration: none;
-    }
-    .tv-wallet-pay-card__visual-inner {
-      margin: 1rem 1.1rem 0.65rem;
-      padding: 1rem 1.1rem 1.05rem;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #0a2458 0%, #0052cc 48%, #0ea5e9 100%);
-      color: #fff;
-      min-height: 118px;
+    .tv-wallet-pay-kpi {
       position: relative;
-      box-shadow: 0 8px 24px rgba(0, 82, 204, 0.28);
+      display: block;
+      color: inherit;
+      text-decoration: none;
     }
-    .tv-wallet-pay-card--empty .tv-wallet-pay-card__visual-inner {
-      background: linear-gradient(135deg, #1e293b 0%, #334155 55%, #475569 100%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      gap: 0.35rem;
+    .tv-wallet-pay-kpi:hover { text-decoration: none; }
+    .tv-wallet-pay-kpi:focus-visible {
+      outline: 2px solid rgba(0, 82, 204, 0.35);
+      outline-offset: 3px;
+      border-radius: var(--tv-radius);
     }
-    .tv-wallet-pay-card__chip {
-      width: 36px;
-      height: 26px;
-      border-radius: 5px;
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      opacity: 0.95;
-      margin-bottom: 0.65rem;
-    }
-    .tv-wallet-pay-card__brand {
+    .tv-wallet-pay-kpi__cta {
       position: absolute;
-      top: 1rem;
-      right: 1.1rem;
-      font-size: 0.72rem;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      opacity: 0.92;
-    }
-    .tv-wallet-pay-card__pan {
-      font-size: 1.05rem;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      font-family: ui-monospace, monospace;
-      margin-bottom: 0.75rem;
-    }
-    .tv-wallet-pay-card__meta {
-      display: flex;
-      gap: 1.25rem;
-      font-size: 0.72rem;
-    }
-    .tv-wallet-pay-card__meta-label {
-      display: block;
-      opacity: 0.72;
-      font-size: 0.62rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .tv-wallet-pay-card__meta-value {
-      display: block;
-      font-weight: 600;
-      font-size: 0.8rem;
-      max-width: 120px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .tv-wallet-pay-card__badge {
-      display: inline-block;
-      margin-top: 0.55rem;
-      margin-right: 0.35rem;
-      padding: 0.2rem 0.5rem;
-      border-radius: 6px;
-      font-size: 0.62rem;
+      right: 1rem;
+      bottom: 0.95rem;
+      font-size: 0.78rem;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      background: rgba(255, 255, 255, 0.18);
-    }
-    .tv-wallet-pay-card__badge--recurring {
-      background: rgba(16, 185, 129, 0.35);
-    }
-    .tv-wallet-pay-card__badge--auto {
-      background: rgba(14, 165, 233, 0.35);
-    }
-    .tv-wallet-pay-card__quick-form {
-      margin-top: 0.65rem;
-    }
-    .tv-wallet-pay-card__quick-btn {
-      width: 100%;
-    }
-    .tv-wallet-pay-card__empty-icon {
-      font-size: 2.2rem;
-      opacity: 0.85;
-    }
-    .tv-wallet-pay-card__empty-title {
-      margin: 0;
-      font-weight: 700;
-      font-size: 0.88rem;
-    }
-    .tv-wallet-pay-card__empty-desc {
-      margin: 0;
-      font-size: 0.72rem;
-      line-height: 1.4;
-      opacity: 0.88;
-      max-width: 220px;
-    }
-    .tv-wallet-pay-card__foot {
-      padding: 0.55rem 1.1rem 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.45rem;
-    }
-    .tv-wallet-pay-card__hint {
-      margin: 0;
-      font-size: 0.72rem;
-      color: var(--tv-muted);
-    }
-    .tv-wallet-pay-card__configure-btn {
-      width: 100%;
-      justify-content: center;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
+      color: var(--tv-primary);
+      background: rgba(0, 82, 204, 0.08);
+      border: 1px solid rgba(0, 82, 204, 0.14);
+      padding: 0.25rem 0.5rem;
+      border-radius: 999px;
+      pointer-events: none;
     }
     .tv-wallet-billing-mode {
       display: flex;
