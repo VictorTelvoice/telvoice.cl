@@ -3,6 +3,7 @@ import { env } from "../config/env.js";
 import { createPanelSmsMessagesBulk } from "./panelSmsMessageService.js";
 import { enqueueMessagesBulk } from "./smsQueueService.js";
 import { APP_CAMPAIGN_SEND_SOURCE } from "./smsCampaignPolicy.js";
+import { staggeredQueueScheduledAt } from "../utils/campaignQueuePace.js";
 
 export type BulkCampaignItem = {
   phone: string;
@@ -22,6 +23,8 @@ export async function bulkEnqueueCampaignRecipients(input: {
   items: BulkCampaignItem[];
   scheduledAt: string;
   resolved: ResolvedSmsRoute;
+  /** TPS efectivo (política) para espaciar scheduled_at como Test12/13 (~3s). */
+  effectiveTps?: number;
 }): Promise<{ queued: number; failed: number }> {
   if (input.items.length === 0) {
     return { queued: 0, failed: 0 };
@@ -32,6 +35,8 @@ export async function bulkEnqueueCampaignRecipients(input: {
     input.resolved.provider.default_sender_id ||
     "TELVOICE";
   const trafficType = env.smsCampaign.trafficType;
+  const effectiveTps = Math.max(1, input.effectiveTps ?? 1);
+  let queueIndex = 0;
   // panel_sms_messages.mode solo permite: mock | live | live_test
   const panelMessageMode =
     env.smsProvider.mode === "mock" ? "mock" : "live_test";
@@ -75,22 +80,31 @@ export async function bulkEnqueueCampaignRecipients(input: {
       continue;
     }
 
-    const queuePayloads = messages.map((m) => ({
-      companyId: input.companyId,
-      messageId: m.id,
-      campaignId: input.campaignId,
-      providerId: input.resolved.provider.id,
-      routeId: input.resolved.route.id,
-      ratePlanId: input.resolved.ratePlan.id,
-      trafficType,
-      scheduledAt: input.scheduledAt,
-      priority: 50,
-      metadata: {
-        source: APP_CAMPAIGN_SEND_SOURCE,
-        panel_message_id: m.id,
-        flow: "campaign",
-      },
-    }));
+    const queuePayloads = messages.map((m) => {
+      const scheduledAt = staggeredQueueScheduledAt(
+        input.scheduledAt,
+        queueIndex,
+        effectiveTps,
+      );
+      queueIndex += 1;
+      return {
+        companyId: input.companyId,
+        messageId: m.id,
+        campaignId: input.campaignId,
+        providerId: input.resolved.provider.id,
+        routeId: input.resolved.route.id,
+        ratePlanId: input.resolved.ratePlan.id,
+        trafficType,
+        scheduledAt,
+        priority: 50,
+        metadata: {
+          source: APP_CAMPAIGN_SEND_SOURCE,
+          panel_message_id: m.id,
+          flow: "campaign",
+          queue_pace_index: queueIndex - 1,
+        },
+      };
+    });
 
     try {
       await enqueueMessagesBulk(queuePayloads);

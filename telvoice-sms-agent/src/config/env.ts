@@ -55,6 +55,8 @@ export type SmsCampaignConfig = {
   /** Modo mass: encolar en cola si destinatarios >= este umbral (1 = siempre cola). */
   bulkQueueMinRecipients: number;
   trafficType: string;
+  /** Separación mínima entre ítems en cola (ms). Alineado con ~3s entre envíos en Test12/13. */
+  queueMinPaceMs: number;
 };
 
 export type SmsLiveCampaignConfig = {
@@ -169,6 +171,8 @@ export const env = {
       1,
     ),
     trafficType: optionalEnv("SMS_CAMPAIGN_TRAFFIC_TYPE", "promotional"),
+    queueMinPaceMs:
+      parsePositiveIntEnv("SMS_CAMPAIGN_QUEUE_MIN_PACE_SECONDS", 3) * 1000,
   } satisfies SmsCampaignConfig,
   smsLiveCampaign: {
     maxRecipients: parsePositiveIntEnv("SMS_LIVE_CAMPAIGN_MAX_RECIPIENTS", 50),

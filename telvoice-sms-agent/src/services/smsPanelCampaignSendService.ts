@@ -469,6 +469,7 @@ export async function sendPanelCampaign(
       items: bulkItems,
       scheduledAt,
       resolved,
+      effectiveTps: trafficPolicy.effective_tps,
     });
     queued = bulk.queued;
     failed = bulk.failed + invalid;

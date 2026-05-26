@@ -225,6 +225,29 @@ async function handleProviderRejection(input: {
   });
 
   if (strategy === "fail_fast_ip_whitelist") {
+    // Test12/13: un envío cada ~3s. «IP not Whitelisted» suele ser ráfaga concurrente;
+    // reintentar con el mismo pacing antes de marcar fallo terminal.
+    if (attemptAfterProcessing < maxAttempts) {
+      const nextAt = new Date(
+        Date.now() + env.smsCampaign.queueMinPaceMs,
+      ).toISOString();
+      await requeueForRetry(item.id, nextAt);
+      await updatePanelSmsMessage(message.id, {
+        status: "queued",
+        error_code: null,
+        error_message: null,
+        metadata: {
+          ...(message.metadata ?? {}),
+          provider_rejection_retry: "ip_whitelist_pace",
+        },
+      });
+      return {
+        sent: false,
+        deferred: true,
+        failed: false,
+        detail: `${item.id}: IP whitelist — reintento en ${nextAt}`,
+      };
+    }
     const failCode = providerResult.error_code ?? "F";
     const failMsg = errMsg ?? "IP not Whitelisted";
     await failQueueAndPanelMessage(item, failCode, failMsg, {
@@ -234,7 +257,7 @@ async function handleProviderRejection(input: {
       sent: false,
       deferred: false,
       failed: true,
-      detail: `${item.id}: fail-fast IP whitelist (sin reintento)`,
+      detail: `${item.id}: IP whitelist — intentos agotados`,
     };
   }
 
@@ -476,7 +499,22 @@ export async function processQueueTick(
 
   const batch = await getNextQueuedMessages(limit);
   const outcomes: ItemProcessOutcome[] = [];
+  let asmscDispatchedThisTick = false;
   for (const item of batch) {
+    if (item.provider_id) {
+      const provider = await getSmsProviderById(item.provider_id);
+      if (provider?.code === "asmsc") {
+        const inflight = await countProcessingByProvider(item.provider_id);
+        if (inflight > 0 || asmscDispatchedThisTick) {
+          result.deferred += 1;
+          result.details.push(
+            `${item.id}: diferido — turno aSMSC (como Test12/13, un envío a la vez)`,
+          );
+          continue;
+        }
+        asmscDispatchedThisTick = true;
+      }
+    }
     outcomes.push(await processOneQueuedItem(item, workerId));
   }
 
