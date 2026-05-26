@@ -1,9 +1,13 @@
-import type { ClientDashboardData } from "../../services/clientDashboardService.js";
+import type {
+  ClientDashboardCharts,
+  ClientDashboardData,
+  ClientDashboardDlrBreakdown,
+} from "../../services/clientDashboardService.js";
 import type { WalletTransactionRow } from "../../types/wallet.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 import { APP_SCHEDULE_TIMEZONE } from "../../utils/scheduleTime.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
-import { renderKpiCard } from "../admin-ui/components.js";
+import { renderChartBars, renderKpiCard } from "../admin-ui/components.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
 import {
@@ -37,31 +41,105 @@ function renderDashBlockHead(
   </div>`;
 }
 
-function renderDashQuickActionsHead(): string {
-  return `<header class="tv-dash-quick-actions__head">
-    <h2 class="tv-dash-quick-actions__title">Acciones rápidas</h2>
-    <p class="tv-dash-quick-actions__sub">Accede rápidamente a las funciones más utilizadas de tu cuenta.</p>
-  </header>`;
+function renderDlrPieChart(
+  breakdown: ClientDashboardDlrBreakdown,
+  monthLabel: string,
+): string {
+  const slices = [
+    {
+      label: "Entregados",
+      value: breakdown.delivered,
+      color: "#22c55e",
+    },
+    {
+      label: "Enviados",
+      value: breakdown.sent,
+      color: "#0052cc",
+    },
+    {
+      label: "Fallidos",
+      value: breakdown.failed,
+      color: "#ef4444",
+    },
+  ];
+  const total = slices.reduce((sum, s) => sum + s.value, 0);
+  if (total <= 0) {
+    return `<div class="tv-dash-chart-empty">Sin envíos registrados en ${escapeHtml(monthLabel)}.</div>`;
+  }
+
+  let acc = 0;
+  const gradientStops = slices
+    .filter((s) => s.value > 0)
+    .map((s) => {
+      const pct = (s.value / total) * 100;
+      const start = acc;
+      acc += pct;
+      return `${s.color} ${start}% ${acc}%`;
+    })
+    .join(", ");
+
+  const legend = slices
+    .map((s) => {
+      const pct = total > 0 ? Math.round((s.value / total) * 100) : 0;
+      return `<li class="tv-dash-pie__legend-item">
+        <span class="tv-dash-pie__swatch" style="background:${s.color}"></span>
+        <span class="tv-dash-pie__legend-label">${escapeHtml(s.label)}</span>
+        <span class="tv-dash-pie__legend-val">${fmtSms(s.value)} <span class="tv-dash-pie__legend-pct">(${pct}%)</span></span>
+      </li>`;
+    })
+    .join("");
+
+  const ariaLabel = slices
+    .map((s) => `${s.label}: ${s.value}`)
+    .join(", ");
+
+  return `<div class="tv-dash-pie">
+    <div class="tv-dash-pie__chart-wrap">
+      <div class="tv-dash-pie__chart" style="background:conic-gradient(${gradientStops})" role="img" aria-label="${escapeHtml(ariaLabel)}">
+        <div class="tv-dash-pie__center">
+          <span class="tv-dash-pie__center-val">${fmtSms(total)}</span>
+          <span class="tv-dash-pie__center-label">SMS</span>
+        </div>
+      </div>
+    </div>
+    <ul class="tv-dash-pie__legend">${legend}</ul>
+  </div>`;
 }
 
-function renderDashQuickCard(options: {
-  href: string;
-  label: string;
-  description: string;
-  icon: string;
-  variant?: "featured" | "default";
-}): string {
-  const variant = options.variant ?? "default";
-  return `<a href="${escapeHtml(options.href)}" class="tv-dash-quick-card tv-dash-quick-card--${variant}">
-    <span class="tv-dash-quick-card__icon" aria-hidden="true">
-      <span class="material-symbols-outlined">${escapeHtml(options.icon)}</span>
-    </span>
-    <span class="tv-dash-quick-card__body">
-      <span class="tv-dash-quick-card__label">${escapeHtml(options.label)}</span>
-      <span class="tv-dash-quick-card__desc">${escapeHtml(options.description)}</span>
-    </span>
-    <span class="tv-dash-quick-card__arrow material-symbols-outlined" aria-hidden="true">chevron_right</span>
-  </a>`;
+function renderDashboardCharts(
+  charts: ClientDashboardCharts,
+  monthLabel: string,
+): string {
+  const barLabels = charts.last7Days.map((d) => d.label);
+  const barValues = charts.last7Days.map((d) => d.count);
+  const barTotal = barValues.reduce((a, b) => a + b, 0);
+
+  return `<section class="tv-dash-charts">
+    <div class="tv-dash-charts__grid">
+      <div class="tv-dash-charts__card tv-panel">
+        <header class="tv-dash-charts__head">
+          <h2 class="tv-dash-charts__title">Estado de envíos</h2>
+          <p class="tv-dash-charts__sub">Distribución del mes · ${escapeHtml(monthLabel)}</p>
+        </header>
+        <div class="tv-dash-charts__body">
+          ${renderDlrPieChart(charts.dlrBreakdown, monthLabel)}
+        </div>
+      </div>
+      <div class="tv-dash-charts__card tv-panel">
+        <header class="tv-dash-charts__head">
+          <h2 class="tv-dash-charts__title">Envíos últimos 7 días</h2>
+          <p class="tv-dash-charts__sub">${barTotal > 0 ? `${fmtSms(barTotal)} SMS en el período` : "Sin envíos en los últimos 7 días"}</p>
+        </header>
+        <div class="tv-dash-charts__body tv-dash-charts__body--bars">
+          ${
+            barTotal > 0
+              ? renderChartBars(barLabels, barValues)
+              : `<div class="tv-dash-chart-empty">No hay envíos en los últimos 7 días.</div>`
+          }
+        </div>
+      </div>
+    </div>
+  </section>`;
 }
 
 export function renderAppDashboardPage(
@@ -153,51 +231,7 @@ export function renderAppDashboardPage(
         variant: "primary",
       })}
     </div>
-    <section class="tv-dash-quick-actions">
-      ${renderDashQuickActionsHead()}
-      <div class="tv-panel tv-dash-quick-actions__panel">
-        <div class="tv-dash-quick-actions__grid">
-          ${renderDashQuickCard({
-            href: "/app/buy-sms",
-            label: "Comprar SMS",
-            description: "Recarga saldo o adquiere nuevas bolsas",
-            icon: "shopping_cart",
-            variant: "featured",
-          })}
-          ${renderDashQuickCard({
-            href: "/app/send-sms",
-            label: "Enviar SMS",
-            description: "Envía mensajes individuales o campañas",
-            icon: "send",
-            variant: "featured",
-          })}
-          ${renderDashQuickCard({
-            href: "/app/reports",
-            label: "Reportes",
-            description: "Revisa métricas y rendimiento",
-            icon: "monitoring",
-          })}
-          ${renderDashQuickCard({
-            href: "/app/wallet",
-            label: "Mi saldo",
-            description: "Consulta movimientos y balance",
-            icon: "account_balance_wallet",
-          })}
-          ${renderDashQuickCard({
-            href: "/app/support",
-            label: "Soporte",
-            description: "Solicita ayuda y seguimiento",
-            icon: "support_agent",
-          })}
-          ${renderDashQuickCard({
-            href: "/app/api",
-            label: "API",
-            description: "Gestiona integración REST",
-            icon: "api",
-          })}
-        </div>
-      </div>
-    </section>
+    ${renderDashboardCharts(data.charts, monthLabel)}
     <div class="tv-dash-grid tv-dash-grid--2 tv-client-dash-tables">
       <div class="tv-dash-block">
         ${renderDashBlockHead("Últimas órdenes", {

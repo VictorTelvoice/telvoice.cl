@@ -18,6 +18,7 @@ import {
 } from "../utils/order-display.js";
 import {
   APP_SCHEDULE_TIMEZONE,
+  buildScheduledIsoInTimeZone,
   dayStartIsoInTimeZone,
   monthStartIsoInTimeZone,
 } from "../utils/scheduleTime.js";
@@ -32,10 +33,28 @@ export type ClientDashboardStats = {
   todayDlrDetail: string;
 };
 
+/** Reparto DLR del mes (excluye mock y cola). */
+export type ClientDashboardDlrBreakdown = {
+  sent: number;
+  delivered: number;
+  failed: number;
+};
+
+export type ClientDashboardDayVolume = {
+  label: string;
+  count: number;
+};
+
+export type ClientDashboardCharts = {
+  dlrBreakdown: ClientDashboardDlrBreakdown;
+  last7Days: ClientDashboardDayVolume[];
+};
+
 export type ClientDashboardData = {
   company: CompanyRow;
   balance: CompanyBalanceView;
   stats: ClientDashboardStats;
+  charts: ClientDashboardCharts;
   recentOrders: SmsOrderWithDetails[];
   recentTransactions: WalletTransactionRow[];
   pendingOrdersCount: number;
@@ -66,9 +85,123 @@ function countDeliveryStats(rows: MessageStatRow[]): {
   return { delivered, total: countable.length };
 }
 
-async function loadDashboardMonthStats(
+const FAILED_STATUSES = new Set(["failed", "rejected", "expired"]);
+
+function isCountableMessage(row: MessageStatRow): boolean {
+  return row.mode !== "mock" && row.status !== "queued";
+}
+
+function breakdownFromMessages(rows: MessageStatRow[]): ClientDashboardDlrBreakdown {
+  const breakdown: ClientDashboardDlrBreakdown = {
+    sent: 0,
+    delivered: 0,
+    failed: 0,
+  };
+  for (const row of rows) {
+    if (!isCountableMessage(row)) {
+      continue;
+    }
+    if (row.status === "delivered") {
+      breakdown.delivered += 1;
+    } else if (FAILED_STATUSES.has(row.status)) {
+      breakdown.failed += 1;
+    } else {
+      breakdown.sent += 1;
+    }
+  }
+  return breakdown;
+}
+
+function dateKeyInTimeZone(iso: string, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(iso));
+}
+
+type DayVolumeBucket = ClientDashboardDayVolume & { key: string };
+
+function last7DaysVolumeTemplate(timeZone: string): DayVolumeBucket[] {
+  const days: DayVolumeBucket[] = [];
+  const now = Date.now();
+  for (let offset = 6; offset >= 0; offset -= 1) {
+    const d = new Date(now - offset * 86_400_000);
+    const key = dateKeyInTimeZone(d.toISOString(), timeZone);
+    const label = new Intl.DateTimeFormat("es-CL", {
+      timeZone,
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    }).format(d);
+    days.push({ key, label, count: 0 });
+  }
+  return days;
+}
+
+function countByDayInLast7(
+  rows: MessageStatRow[],
+  timeZone: string,
+): ClientDashboardDayVolume[] {
+  const template = last7DaysVolumeTemplate(timeZone);
+  const indexByKey = new Map(template.map((d, i) => [d.key, i]));
+  for (const row of rows) {
+    if (!isCountableMessage(row)) {
+      continue;
+    }
+    const key = dateKeyInTimeZone(row.created_at, timeZone);
+    const idx = indexByKey.get(key);
+    if (idx !== undefined) {
+      template[idx]!.count += 1;
+    }
+  }
+  return template.map(({ label, count }) => ({ label, count }));
+}
+
+async function loadDashboardCharts(
   companyId: string,
-): Promise<ClientDashboardStats> {
+  monthRows: MessageStatRow[],
+): Promise<ClientDashboardCharts> {
+  const emptyDays = last7DaysVolumeTemplate(APP_SCHEDULE_TIMEZONE);
+
+  const firstDayKey = dateKeyInTimeZone(
+    new Date(Date.now() - 6 * 86_400_000).toISOString(),
+    APP_SCHEDULE_TIMEZONE,
+  );
+  const rangeStart =
+    buildScheduledIsoInTimeZone(firstDayKey, "00:00") ??
+    dayStartIsoInTimeZone(new Date(), APP_SCHEDULE_TIMEZONE);
+
+  const { data: weekMessages, error } = await getSupabase()
+    .from("panel_sms_messages")
+    .select("status, mode, created_at")
+    .eq("company_id", companyId)
+    .gte("created_at", rangeStart);
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return {
+        dlrBreakdown: breakdownFromMessages(monthRows),
+        last7Days: emptyDays,
+      };
+    }
+    wrapSupabaseError(error, "loadDashboardCharts.week");
+  }
+
+  return {
+    dlrBreakdown: breakdownFromMessages(monthRows),
+    last7Days: countByDayInLast7(
+      (weekMessages ?? []) as MessageStatRow[],
+      APP_SCHEDULE_TIMEZONE,
+    ),
+  };
+}
+
+async function loadDashboardMonthStats(companyId: string): Promise<{
+  stats: ClientDashboardStats;
+  monthRows: MessageStatRow[];
+}> {
   const empty: ClientDashboardStats = {
     smsSentMonth: 0,
     smsCostMonth: 0,
@@ -97,7 +230,7 @@ async function loadDashboardMonthStats(
 
   if (msgError) {
     if (isMissingTableError(msgError)) {
-      return empty;
+      return { stats: empty, monthRows: [] };
     }
     wrapSupabaseError(msgError, "loadDashboardMonthStats.messages");
   }
@@ -128,18 +261,21 @@ async function loadDashboardMonthStats(
   }
 
   return {
-    smsSentMonth: monthRows.length,
-    smsCostMonth,
-    campaignsMonth: campaignsMonth ?? 0,
-    globalDeliveryRate: deliveryRatePercent(
-      globalStats.delivered,
-      globalStats.total,
-    ),
-    todayDlrRate: deliveryRatePercent(todayStats.delivered, todayStats.total),
-    todayDlrDetail:
-      todayStats.total > 0
-        ? `${todayStats.delivered} de ${todayStats.total} confirmados por DLR`
-        : "Sin envíos hoy",
+    stats: {
+      smsSentMonth: monthRows.length,
+      smsCostMonth,
+      campaignsMonth: campaignsMonth ?? 0,
+      globalDeliveryRate: deliveryRatePercent(
+        globalStats.delivered,
+        globalStats.total,
+      ),
+      todayDlrRate: deliveryRatePercent(todayStats.delivered, todayStats.total),
+      todayDlrDetail:
+        todayStats.total > 0
+          ? `${todayStats.delivered} de ${todayStats.total} confirmados por DLR`
+          : "Sin envíos hoy",
+    },
+    monthRows,
   };
 }
 
@@ -148,11 +284,13 @@ export async function getClientDashboardData(
   country = "CL",
   preloaded?: Pick<ClientDashboardData, "company" | "balance">,
 ): Promise<ClientDashboardData> {
-  const [orders, transactions, packages, stats] = await Promise.all([
+  const { stats, monthRows } = await loadDashboardMonthStats(companyId);
+
+  const [orders, transactions, packages, charts] = await Promise.all([
     listSmsOrdersByCompany(companyId, 20),
     listTransactionsByCompany(companyId, 10),
     listCustomerVisiblePackages(country),
-    loadDashboardMonthStats(companyId),
+    loadDashboardCharts(companyId, monthRows),
   ]);
 
   const company = preloaded?.company ?? (await findCompanyById(companyId));
@@ -179,6 +317,7 @@ export async function getClientDashboardData(
     company,
     balance,
     stats,
+    charts,
     recentOrders: visibleOrders.slice(0, 5),
     recentTransactions: visibleTransactions.slice(0, 5),
     pendingOrdersCount,
