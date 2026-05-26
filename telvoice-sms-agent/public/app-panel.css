@@ -2857,4 +2857,44 @@
       }
       .tv-kpi-grid--report { grid-template-columns: 1fr; }
     }
+    .tv-wallet-report.tv-client-dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      width: 100%;
+      max-width: none;
+    }
+    .tv-app-client .tv-wallet-report__filters-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+    .tv-app-client .tv-wallet-report__filters-grid .tv-dlr-report__filter-actions {
+      grid-column: 4 / -1;
+    }
+    .tv-wallet-report__filter-hint {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--tv-muted);
+    }
+    .tv-wallet-report__table-wrap {
+      max-height: 58vh;
+    }
+    .tv-wallet-report__table {
+      min-width: 720px;
+    }
+    .tv-wallet-report__date {
+      white-space: nowrap;
+      font-size: 0.84rem;
+    }
+    .tv-wallet-report__num {
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    @media (max-width: 900px) {
+      .tv-app-client .tv-wallet-report__filters-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+      .tv-app-client .tv-wallet-report__filters-grid .tv-dlr-report__filter-actions {
+        grid-column: 1 / -1;
+      }
+    }
   

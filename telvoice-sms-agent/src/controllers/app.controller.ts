@@ -22,8 +22,11 @@ import {
 } from "../views/app-ui/app-page-wrap.js";
 import {
   renderAppDashboardPage,
-  renderAppWalletPage,
 } from "../views/app-ui/app-pages.js";
+import {
+  renderAppWalletPage,
+  parseWalletPageFilters,
+} from "../views/app-ui/app-wallet-page.js";
 import {
   renderAppCampaignsPage,
   renderAppInboxPage,
@@ -426,10 +429,17 @@ export async function getAppWallet(
   next: NextFunction,
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
+    const filters = parseWalletPageFilters(
+      req.query as Record<string, string | string[] | undefined>,
+    );
     const transactions = (
-      await listTransactionsByCompany(ctx.company.id, 50)
+      await listTransactionsByCompany(ctx.company.id, 200, {
+        type: filters.type,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+      })
     ).filter((t) => !isQaTransaction(t));
-    return renderAppWalletPage(ctx, transactions);
+    return renderAppWalletPage(ctx, transactions, filters);
   });
 }
 

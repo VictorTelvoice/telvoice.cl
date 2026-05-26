@@ -4,7 +4,6 @@ import type {
   ClientDashboardDayVolume,
   ClientDashboardDlrBreakdown,
 } from "../../services/clientDashboardService.js";
-import type { WalletTransactionRow } from "../../types/wallet.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 import { APP_SCHEDULE_TIMEZONE } from "../../utils/scheduleTime.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
@@ -309,50 +308,6 @@ export function renderAppDashboardPage(
     </div>
     </div>`;
   return wrapAppPage(ctx, "dashboard", "Dashboard", body);
-}
-
-export function renderAppWalletPage(
-  ctx: AppPageContext,
-  transactions: WalletTransactionRow[],
-): string {
-  const b = ctx.balance;
-  const txRows = transactions.length
-    ? transactions
-        .map(
-          (t) => `<tr>
-        <td>${formatDate(t.created_at)}</td>
-        <td>${renderWalletTxTypeBadge(t.type)}${renderTxQaBadgeIfNeeded(t)}</td>
-        <td>${fmtSms(t.sms_amount)}</td>
-        <td>${fmtSms(t.balance_before)}</td>
-        <td>${fmtSms(t.balance_after)}</td>
-        <td>${escapeHtml(t.description ?? "—")}</td>
-      </tr>`,
-        )
-        .join("")
-    : `<tr><td colspan="6">Sin movimientos registrados.</td></tr>`;
-
-  const body = `
-    ${renderPageHeader({
-      title: "Mi saldo",
-      subtitle: "Saldo SMS de tu empresa (solo lectura).",
-      actions: renderBtn("Comprar SMS", { href: "/app/buy-sms", variant: "primary" }),
-    })}
-    <div class="tv-kpi-grid">
-      <article class="tv-kpi"><span class="tv-kpi__label">Disponible</span><span class="tv-kpi__value">${fmtSms(b.availableSms)}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Reservado</span><span class="tv-kpi__value">${fmtSms(b.reservedSms)}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Consumido</span><span class="tv-kpi__value">${fmtSms(b.consumedSms)}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Total comprado</span><span class="tv-kpi__value">${fmtSms(b.totalPurchasedSms)}</span></article>
-      <article class="tv-kpi"><span class="tv-kpi__label">Estado wallet</span><span class="tv-kpi__value" style="font-size:1rem">${escapeHtml(b.status)}</span></article>
-    </div>
-    <section class="tv-panel" style="margin-top:1rem">
-      <h2 class="tv-panel__title">Movimientos de saldo</h2>
-      <div class="table-wrap tv-panel__body" style="padding:0">
-        <table class="tv-table"><thead><tr>
-          <th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Antes</th><th>Después</th><th>Descripción</th>
-        </tr></thead><tbody>${txRows}</tbody></table>
-      </div>
-    </section>`;
-  return wrapAppPage(ctx, "wallet", "Mi saldo", body);
 }
 
 export { renderAppSendSmsPage } from "./app-sms-pages.js";

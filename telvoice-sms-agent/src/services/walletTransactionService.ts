@@ -44,14 +44,33 @@ export async function insertWalletTransaction(input: {
   return data as WalletTransactionRow;
 }
 
+export type WalletTransactionListFilters = {
+  type?: string;
+  startDate?: string;
+  endDate?: string;
+};
+
 export async function listTransactionsByCompany(
   companyId: string,
   limit = 50,
+  filters?: WalletTransactionListFilters,
 ): Promise<WalletTransactionRow[]> {
-  const { data, error } = await getSupabase()
+  let q = getSupabase()
     .from("wallet_transactions")
     .select("*")
-    .eq("company_id", companyId)
+    .eq("company_id", companyId);
+
+  if (filters?.type) {
+    q = q.eq("type", filters.type);
+  }
+  if (filters?.startDate) {
+    q = q.gte("created_at", `${filters.startDate}T00:00:00.000Z`);
+  }
+  if (filters?.endDate) {
+    q = q.lte("created_at", `${filters.endDate}T23:59:59.999Z`);
+  }
+
+  const { data, error } = await q
     .order("created_at", { ascending: false })
     .limit(limit);
 
