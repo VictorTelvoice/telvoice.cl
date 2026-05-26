@@ -20,6 +20,7 @@ import { renderKpiCard } from "../components.js";
 import { renderBtn, renderFilterBar, renderPageHeader } from "../page-kit.js";
 import { renderAdminPanelModeBadge, renderPanelMessageSourceBadge } from "../../app-ui/app-sms-ui.js";
 import { renderSuperadminBanner, statusBadgeSa } from "../superadmin-kit.js";
+import { interpretCampaignTpsMetadata } from "../../../utils/campaignTpsMetadata.js";
 
 type PageOpts = {
   admin: AdminSessionUser;
@@ -92,7 +93,25 @@ export function renderSaCampaignsPage(opts: PageOpts): string {
             const tr = trafficMap?.get(c.company_id);
             const liveFlag = tr?.liveEnabled ? "Sí" : "No";
             const campFlag = tr?.campaignsEnabled ? "Sí" : "No";
-            const tps = tr?.effectiveTps != null ? String(tr.effectiveTps) : "—";
+            const tpsMeta = interpretCampaignTpsMetadata(
+              (c.metadata ?? {}) as Record<string, unknown>,
+            );
+            const tpsEff =
+              tpsMeta.effectiveTps ?? tr?.effectiveTps ?? null;
+            const tpsParts: string[] = [];
+            if (tpsEff != null) {
+              tpsParts.push(String(tpsEff));
+            }
+            if (tpsMeta.schedulerBatchSize != null) {
+              tpsParts.push(`batch ${tpsMeta.schedulerBatchSize}`);
+            }
+            const tps = tpsParts.length ? tpsParts.join(" · ") : "—";
+            const tpsTitle = [
+              tpsMeta.legacyTargetTpsWarning,
+              tpsMeta.requestedLimitedWarning,
+            ]
+              .filter(Boolean)
+              .join(" ");
             return `<tr>
       <td>${escapeHtml(c.company_name ?? "—")}</td>
       <td>${escapeHtml(c.name)}</td>
@@ -102,7 +121,7 @@ export function renderSaCampaignsPage(opts: PageOpts): string {
       <td>${statusBadgeSa(c.mode)}</td>
       <td>${campFlag}</td>
       <td>${liveFlag}</td>
-      <td>${escapeHtml(tps)}</td>
+      <td${tpsTitle ? ` title="${escapeHtml(tpsTitle)}"` : ""}>${escapeHtml(tps)}${tpsMeta.legacyTargetTpsWarning ? ' <span class="badge badge-warn" title="Metadata legacy">!</span>' : ""}</td>
       <td>${formatDate(c.created_at)}</td>
       <td><code class="tv-code-sm">${escapeHtml(c.id.slice(0, 8))}</code></td>
     </tr>`;

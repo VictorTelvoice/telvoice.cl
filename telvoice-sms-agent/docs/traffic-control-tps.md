@@ -317,6 +317,62 @@ Ejecutar **en el VPS** para comparar IPv4 con whitelist aSMSC.
 
 **No** llama al proveedor real. **No** envía SMS.
 
+### QA Etapa 7.2 — metadata TPS y fail-fast whitelist
+
+```bash
+npm run build
+node scripts/verify-campaign-tps-metadata-qa.mjs
+node scripts/verify-provider-whitelist-failfast-qa.mjs
+```
+
+| Script | Qué valida |
+|--------|------------|
+| `verify-campaign-tps-metadata-qa.mjs` | `effective_tps`, `scheduler_batch_size`, `scheduler_interval_seconds`, semántica de `target_tps`, cap de `requested_tps`, detección metadata legacy |
+| `verify-provider-whitelist-failfast-qa.mjs` | Estrategia `fail_fast_ip_whitelist`, un solo intento simulado, logs sanitizados, sin wallet/billing |
+
+**No** envía SMS. **No** ejecuta tick.
+
+---
+
+## 8.1 Metadata TPS en campañas (Etapa 7.2)
+
+Al encolar campañas programadas/masivas por cola, la metadata de campaña incluye:
+
+| Campo | Significado |
+|-------|-------------|
+| `requested_tps` | TPS pedido por el usuario (si aplica), limitado por política |
+| `effective_tps` | TPS real tras `resolveTrafficPolicy` (cliente, ruta, proveedor, plataforma, cap 20) |
+| `scheduler_batch_size` | `SMS_QUEUE_SCHEDULER_BATCH_SIZE` (mensajes por tick del scheduler) |
+| `scheduler_interval_seconds` | Intervalo del scheduler |
+| `tps_policy` | Snapshot sanitizado de la política |
+| `target_tps` | **Deprecated como batch:** en campañas nuevas = `effective_tps`; en campañas antiguas pudo coincidir con el batch (p. ej. 15) |
+
+En UI superadmin (`/admin/campaigns`) y detalle de campaña en panel se muestra TPS efectivo y batch por separado. Si `requested_tps > effective_tps`, aparece advertencia.
+
+---
+
+## 8.2 Errores aSMSC «IP not Whitelisted»
+
+**No siempre** significa que la IP del VPS no esté habilitada en aSMSC. Si hay envíos individuales o campañas recientes exitosas con la misma API/ruta, el mensaje puede deberse a **ráfaga, concurrencia o reglas del proveedor** (varios `SendSMS` en poco tiempo).
+
+Qué revisar:
+
+- IP egress del VPS (IPv4/IPv6) vs whitelist en aSMSC
+- API ID y sender usados
+- Ruta, proveedor y rate plan
+- `scheduler_batch_size` vs `effective_tps` (batch alto ≠ TPS alto)
+- Logs del proveedor y del worker (`[sms-dispatch]` con `retry_policy: fail_fast_ip_whitelist`)
+
+**Política en worker (Etapa 7.2):** ante `IP not Whitelisted` → **fail-fast**: cola y mensaje en `failed`, sin segundo/tercer reintento automático, sin débito wallet si el proveedor no aceptó. Metadata en mensaje: `provider_hint`, `retry_policy: fail_fast_ip_whitelist`.
+
+Acción recomendada operativa:
+
+1. No relanzar masivamente la misma campaña sin corregir concurrencia/TPS.
+2. Pedir trazas a aSMSC con hora, API ID y IP egress.
+3. Usar `node scripts/diagnose-asmsc-egress.mjs` en el VPS (sin SMS).
+
+Otros errores transitorios siguen usando backoff (`60s`, `180s`) hasta `max_attempts`.
+
 ---
 
 ## 9. Operación segura

@@ -51,7 +51,11 @@ import {
   logProviderDispatchIssue,
   maskDispatchApiId,
 } from "../utils/smsProviderDispatchLog.js";
-import { responseTextIncludesIpWhitelist } from "../utils/asmsc-hints.js";
+import {
+  IP_WHITELIST_FAIL_FAST_PANEL_METADATA,
+  responseTextIncludesIpWhitelist,
+} from "../utils/asmsc-hints.js";
+import { resolveProviderRejectionStrategy } from "./providerRejectionPolicy.js";
 
 export type QueueTickResult = {
   processed: number;
@@ -67,6 +71,7 @@ async function failQueueAndPanelMessage(
   item: SmsSendQueueRow,
   code: string,
   message: string,
+  options?: { panelMetadata?: Record<string, unknown> },
 ): Promise<void> {
   await markFailed(item.id, { code, message });
   if (item.message_id) {
@@ -74,6 +79,9 @@ async function failQueueAndPanelMessage(
       status: "failed",
       error_code: code,
       error_message: message,
+      ...(options?.panelMetadata
+        ? { metadata: options.panelMetadata }
+        : {}),
     });
   }
 }
@@ -172,6 +180,7 @@ async function handleProviderRejection(input: {
   provider: NonNullable<Awaited<ReturnType<typeof getSmsProviderById>>>;
   workerId: string;
   providerResult: Awaited<ReturnType<typeof dispatchProviderSend>>;
+  effectiveTps?: number;
 }): Promise<ItemProcessOutcome> {
   const { item, processingRow, message, provider, workerId, providerResult } =
     input;
@@ -179,10 +188,9 @@ async function handleProviderRejection(input: {
   const attemptAfterProcessing = processingRow.attempts ?? 0;
   const creds = resolveHttpApiCredentials(provider);
   const errMsg = providerResult.error_message ?? null;
+  const rawResponse = providerResult.raw_response ?? {};
 
-  if (
-    shouldLogProviderIssue(errMsg, providerResult.raw_response ?? {})
-  ) {
+  if (shouldLogProviderIssue(errMsg, rawResponse)) {
     logProviderDispatchIssue({
       providerId: item.provider_id!,
       routeId: item.route_id,
@@ -198,14 +206,37 @@ async function handleProviderRejection(input: {
       workerSource: workerId,
       errorCode: providerResult.error_code ?? "REJECTED",
       errorMessage: errMsg,
+      effectiveTps: input.effectiveTps,
+      schedulerBatchSize: env.smsQueueScheduler.batchSize,
       remarks:
-        typeof providerResult.raw_response?.remarks === "string"
-          ? providerResult.raw_response.remarks
+        typeof rawResponse.remarks === "string"
+          ? rawResponse.remarks
           : null,
     });
   }
 
-  if (attemptAfterProcessing >= maxAttempts) {
+  const strategy = resolveProviderRejectionStrategy({
+    errorMessage: errMsg,
+    rawResponse,
+    attemptAfterProcessing,
+    maxAttempts,
+  });
+
+  if (strategy === "fail_fast_ip_whitelist") {
+    const failCode = providerResult.error_code ?? "F";
+    const failMsg = errMsg ?? "IP not Whitelisted";
+    await failQueueAndPanelMessage(item, failCode, failMsg, {
+      panelMetadata: IP_WHITELIST_FAIL_FAST_PANEL_METADATA,
+    });
+    return {
+      sent: false,
+      deferred: false,
+      failed: true,
+      detail: `${item.id}: fail-fast IP whitelist (sin reintento)`,
+    };
+  }
+
+  if (strategy === "fail_terminal") {
     await failQueueAndPanelMessage(
       item,
       providerResult.error_code ?? "REJECTED",
@@ -332,6 +363,7 @@ async function processOneQueuedItem(
           provider,
           workerId,
           providerResult,
+          effectiveTps: canSend.effectiveTps,
         });
       }
 

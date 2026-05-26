@@ -43,5 +43,23 @@ export function responseTextIncludesIpWhitelist(
   return text.toLowerCase().includes(IP_NOT_WHITELISTED);
 }
 
+export function isIpWhitelistProviderError(
+  errorMessage: string | null | undefined,
+  rawResponse?: Record<string, unknown> | string | null,
+): boolean {
+  if (responseTextIncludesIpWhitelist(errorMessage)) {
+    return true;
+  }
+  if (rawResponse != null) {
+    return responseTextIncludesIpWhitelist(rawResponse);
+  }
+  return false;
+}
+
+export const IP_WHITELIST_FAIL_FAST_PANEL_METADATA = {
+  provider_hint: "aSMSC whitelist/rate/concurrency rejection",
+  retry_policy: "fail_fast_ip_whitelist",
+} as const;
+
 export const SMS_TYPE_HELP_TEXT =
   "Si aSMSC responde \"Transactional SMS is Not Allowed For Your Account\", usa P o solicita habilitación transaccional al proveedor.";

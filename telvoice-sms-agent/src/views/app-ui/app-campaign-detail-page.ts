@@ -13,6 +13,7 @@ import {
   renderPanelMessageStatusBadge,
   renderSmsModeBadge,
 } from "./app-sms-ui.js";
+import { interpretCampaignTpsMetadata } from "../../utils/campaignTpsMetadata.js";
 
 function renderReadinessStateBadge(
   label: CampaignLiveReadinessResult["readinessLabel"],
@@ -176,6 +177,37 @@ function renderCampaignMessageModeBadge(
     return `<span class="badge badge-ok">PRODUCCIÓN</span>`;
   }
   return renderSmsModeBadge(mode);
+}
+
+function renderCampaignTpsTraceabilityBlock(
+  metadata: Record<string, unknown>,
+): string {
+  const tps = interpretCampaignTpsMetadata(metadata);
+  if (
+    tps.effectiveTps == null &&
+    tps.schedulerBatchSize == null &&
+    !tps.legacyTargetTpsWarning &&
+    !tps.requestedLimitedWarning
+  ) {
+    return "";
+  }
+  const warnings = [tps.legacyTargetTpsWarning, tps.requestedLimitedWarning]
+    .filter(Boolean)
+    .map(
+      (w) =>
+        `<p class="field-hint" style="margin:0.5rem 0 0;color:var(--tv-warn,#b45309)">${escapeHtml(w!)}</p>`,
+    )
+    .join("");
+  return `<section class="tv-panel" style="margin-top:1rem">
+    <h2 class="tv-panel__title">Tráfico (TPS)</h2>
+    <dl class="tv-detail-dl tv-panel__body">
+      <div><dt>TPS efectivo</dt><dd>${tps.effectiveTps ?? "—"}</dd></div>
+      <div><dt>TPS solicitado</dt><dd>${tps.requestedTps ?? "—"}</dd></div>
+      <div><dt>Batch scheduler</dt><dd>${tps.schedulerBatchSize ?? "—"}</dd></div>
+      <div><dt>Intervalo scheduler</dt><dd>${tps.schedulerIntervalSeconds != null ? `${tps.schedulerIntervalSeconds}s` : "—"}</dd></div>
+    </dl>
+    ${warnings}
+  </section>`;
 }
 
 function renderCampaignMessagesTable(
@@ -394,6 +426,7 @@ export function renderAppCampaignDetailPage(
     ${showLiveReadiness ? renderLiveReadinessBlock(liveReadiness) : ""}
     ${showLiveLaunch ? renderLiveLaunchBlock(detail, liveReadiness, c.id) : ""}
     ${showQueueStatus ? renderQueueStatusBlock(detail) : ""}
+    ${isProduction ? renderCampaignTpsTraceabilityBlock(meta as Record<string, unknown>) : ""}
     ${messagesSection}
   </div>`;
 

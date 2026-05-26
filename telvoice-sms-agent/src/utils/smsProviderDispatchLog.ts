@@ -48,6 +48,8 @@ export type ProviderDispatchLogInput = {
   workerSource: string;
   errorCode: string | null;
   errorMessage: string | null;
+  effectiveTps?: number;
+  schedulerBatchSize?: number;
   remarks?: string | null;
 };
 
@@ -75,10 +77,20 @@ export function logProviderDispatchIssue(input: ProviderDispatchLogInput): void 
     error_message: input.errorMessage ?? input.remarks,
   };
 
+  if (input.effectiveTps != null) {
+    payload.effective_tps = input.effectiveTps;
+  }
+  if (input.schedulerBatchSize != null) {
+    payload.scheduler_batch_size = input.schedulerBatchSize;
+  }
+
   if (isIpHint) {
     payload.hint =
       getAsmscRemarksHint("IP not Whitelisted") ??
       "Puede ser ráfaga/concurrencia si envíos individuales funcionan.";
+    payload.retry_policy = "fail_fast_ip_whitelist";
+    payload.operational_action =
+      "No reintentar en ráfaga; revisar whitelist/concurrencia aSMSC y logs del proveedor.";
   }
 
   console.warn("[sms-dispatch]", JSON.stringify(payload));

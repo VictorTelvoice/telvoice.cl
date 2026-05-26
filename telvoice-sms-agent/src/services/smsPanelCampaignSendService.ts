@@ -43,6 +43,8 @@ import {
   panelCampaignSendResultFromRow,
   pinIdempotencyCampaignId,
 } from "./smsSendIdempotencyService.js";
+import { buildCampaignTpsMetadataFields } from "../utils/campaignTpsMetadata.js";
+import { resolveTrafficPolicy } from "./smsTrafficPolicyService.js";
 
 export type MassCampaignSendRow = {
   phone: string;
@@ -443,6 +445,14 @@ export async function sendPanelCampaign(
       segmentCost: 1,
     });
 
+    const trafficPolicy = await resolveTrafficPolicy({
+      companyId: input.companyId,
+      routeId: resolved.route.id,
+      providerId: resolved.provider.id,
+      ratePlanId: resolved.ratePlan.id,
+      trafficType: env.smsCampaign.trafficType,
+    });
+
     const bulkItems: BulkCampaignItem[] = items.map((item) => ({
       phone: item.phone,
       messageText: item.messageText,
@@ -474,7 +484,10 @@ export async function sendPanelCampaign(
         failed_enqueue: failed,
         awaiting_scheduler: true,
         bulk_queue: true,
-        target_tps: env.smsQueueScheduler.batchSize,
+        ...buildCampaignTpsMetadataFields({
+          policy: trafficPolicy,
+          requestedTps: null,
+        }),
       },
     });
   } else {
