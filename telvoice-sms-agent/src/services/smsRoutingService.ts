@@ -22,8 +22,12 @@ export async function resolveRouteForMessage(input: {
   );
 
   if (!assignment?.rate_plan_id) {
+    const trafficHint =
+      trafficType === "promotional"
+        ? "promocionales / campañas"
+        : trafficType;
     throw new AppError(
-      "Cliente sin rate plan asignado para envío real. Asigne un plan en Superadmin.",
+      `Tu cuenta no tiene plan de tarifas activo para envíos ${trafficHint}. En Superadmin → Cartera del cliente, asigne un rate plan (transactional y promotional) y active campañas.`,
       400,
     );
   }

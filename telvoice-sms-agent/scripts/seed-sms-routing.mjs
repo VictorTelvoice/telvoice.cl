@@ -152,28 +152,34 @@ async function upsertDetail(ratePlanId, routeId) {
 }
 
 async function assignDemo(ratePlanId) {
-  const { data: existing } = await supabase
-    .from("company_rate_plans")
-    .select("id")
-    .eq("company_id", DEMO_COMPANY_ID)
-    .eq("status", "active")
-    .maybeSingle();
+  for (const trafficType of ["transactional", "promotional"]) {
+    const { data: existing } = await supabase
+      .from("company_rate_plans")
+      .select("id")
+      .eq("company_id", DEMO_COMPANY_ID)
+      .eq("country", "CL")
+      .eq("traffic_type", trafficType)
+      .eq("status", "active")
+      .maybeSingle();
 
-  if (existing?.id) {
-    console.log("Empresa Demo ya tiene rate plan activo:", existing.id);
-    return;
+    if (existing?.id) {
+      console.log(`Empresa Demo ya tiene rate plan (${trafficType}):`, existing.id);
+      continue;
+    }
+
+    const { error } = await supabase.from("company_rate_plans").insert({
+      company_id: DEMO_COMPANY_ID,
+      rate_plan_id: ratePlanId,
+      country: "CL",
+      traffic_type: trafficType,
+      status: "active",
+      live_enabled: true,
+      campaigns_enabled: true,
+    });
+
+    if (error) throw error;
+    console.log(`Rate plan asignado a Empresa Demo (${trafficType})`);
   }
-
-  const { error } = await supabase.from("company_rate_plans").insert({
-    company_id: DEMO_COMPANY_ID,
-    rate_plan_id: ratePlanId,
-    country: "CL",
-    traffic_type: "transactional",
-    status: "active",
-  });
-
-  if (error) throw error;
-  console.log("Rate plan asignado a Empresa Demo");
 }
 
 async function main() {

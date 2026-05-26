@@ -2,6 +2,7 @@
  * Worker de cola — process-tick manual (superadmin) o scheduler automático.
  * Descontar saldo y actualizar mensaje panel al aceptar proveedor.
  */
+import { env } from "../config/env.js";
 import type { PanelSmsMessageStatus } from "../types/sms-panel.js";
 import {
   getPanelSmsMessageById,
@@ -314,11 +315,14 @@ export async function assertCampaignTrafficAllowed(input: {
   ratePlanId: string;
   segmentCost: number;
 }): Promise<void> {
+  const trafficType = env.smsCampaign.trafficType;
+
   await resolveTrafficPolicy({
     companyId: input.companyId,
     routeId: input.routeId,
     providerId: input.providerId,
     ratePlanId: input.ratePlanId,
+    trafficType,
   });
 
   await assertCanSendNow({
@@ -326,6 +330,7 @@ export async function assertCampaignTrafficAllowed(input: {
     providerId: input.providerId,
     routeId: input.routeId,
     ratePlanId: input.ratePlanId,
+    trafficType,
     flow: "campaign",
     segmentCost: input.segmentCost,
   });

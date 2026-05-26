@@ -21,10 +21,10 @@ export type CompanyRatePlanView = CompanyRatePlanRow & {
   rate_plan_code?: string;
 };
 
-export async function getCompanyRatePlan(
+async function fetchCompanyRatePlanRow(
   companyId: string,
-  country = "CL",
-  trafficType = "transactional",
+  country: string,
+  trafficType: string,
 ): Promise<CompanyRatePlanView | null> {
   const { data, error } = await getSupabase()
     .from("company_rate_plans")
@@ -53,6 +53,32 @@ export async function getCompanyRatePlan(
     rate_plan_name: row.sms_rate_plans?.name,
     rate_plan_code: row.sms_rate_plans?.code,
   };
+}
+
+/** Tipos de tráfico alternativos (campañas usan promotional; muchos clientes solo tienen transactional). */
+const RATE_PLAN_TRAFFIC_FALLBACKS: Record<string, string[]> = {
+  promotional: ["transactional"],
+  transactional: ["promotional"],
+};
+
+export async function getCompanyRatePlan(
+  companyId: string,
+  country = "CL",
+  trafficType = "transactional",
+): Promise<CompanyRatePlanView | null> {
+  const direct = await fetchCompanyRatePlanRow(companyId, country, trafficType);
+  if (direct?.rate_plan_id) {
+    return direct;
+  }
+
+  for (const alt of RATE_PLAN_TRAFFIC_FALLBACKS[trafficType] ?? []) {
+    const fallback = await fetchCompanyRatePlanRow(companyId, country, alt);
+    if (fallback?.rate_plan_id) {
+      return fallback;
+    }
+  }
+
+  return null;
 }
 
 export async function updateCompanyRatePlanTraffic(
@@ -160,42 +186,56 @@ export async function assignCompanyRatePlan(input: {
   apiEnabled?: boolean;
 }): Promise<CompanyRatePlanRow> {
   const country = input.country ?? "CL";
-  const trafficType = input.trafficType ?? "transactional";
-
-  await getSupabase()
-    .from("company_rate_plans")
-    .update({ status: "inactive" })
-    .eq("company_id", input.companyId)
-    .eq("country", country)
-    .eq("traffic_type", trafficType);
+  const primaryTraffic = input.trafficType ?? "transactional";
+  const trafficTypes = [...new Set([primaryTraffic, "transactional", "promotional"])];
 
   const tps =
     input.maxTps != null
       ? normalizeClientMaxTps(input.maxTps)
       : 1;
 
-  const { data, error } = await getSupabase()
-    .from("company_rate_plans")
-    .insert({
-      company_id: input.companyId,
-      rate_plan_id: input.ratePlanId,
-      country,
-      traffic_type: trafficType,
-      status: "active",
-      max_tps: tps,
-      daily_limit: input.dailyLimit ?? null,
-      monthly_limit: input.monthlyLimit ?? null,
-      live_enabled: input.liveEnabled ?? false,
-      campaigns_enabled: input.campaignsEnabled ?? false,
-      api_enabled: input.apiEnabled ?? false,
-    })
-    .select("*")
-    .single();
+  const liveEnabled = input.liveEnabled ?? true;
+  const campaignsEnabled = input.campaignsEnabled ?? true;
+  const apiEnabled = input.apiEnabled ?? false;
 
-  if (error) {
-    wrapSupabaseError(error, "assignCompanyRatePlan");
+  let lastRow: CompanyRatePlanRow | null = null;
+
+  for (const trafficType of trafficTypes) {
+    await getSupabase()
+      .from("company_rate_plans")
+      .update({ status: "inactive" })
+      .eq("company_id", input.companyId)
+      .eq("country", country)
+      .eq("traffic_type", trafficType);
+
+    const { data, error } = await getSupabase()
+      .from("company_rate_plans")
+      .insert({
+        company_id: input.companyId,
+        rate_plan_id: input.ratePlanId,
+        country,
+        traffic_type: trafficType,
+        status: "active",
+        max_tps: tps,
+        daily_limit: input.dailyLimit ?? null,
+        monthly_limit: input.monthlyLimit ?? null,
+        live_enabled: liveEnabled,
+        campaigns_enabled: campaignsEnabled,
+        api_enabled: apiEnabled,
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      wrapSupabaseError(error, "assignCompanyRatePlan");
+    }
+    if (trafficType === primaryTraffic) {
+      lastRow = data as CompanyRatePlanRow;
+    }
+    lastRow ??= data as CompanyRatePlanRow;
   }
-  return data as CompanyRatePlanRow;
+
+  return lastRow!;
 }
 
 export async function listCompanyRatePlansByPlan(
