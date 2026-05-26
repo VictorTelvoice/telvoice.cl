@@ -85,8 +85,8 @@ export async function resolveTrafficPolicy(input: {
   trafficType?: string;
   country?: string;
 }): Promise<ResolvedTrafficPolicy> {
-  const trafficType = input.trafficType ?? "transactional";
-  const country = input.country ?? "CL";
+  const trafficType = (input.trafficType ?? "transactional").trim().toLowerCase();
+  const country = (input.country ?? "CL").trim().toUpperCase();
   const platformTps = safeTps(env.smsPlatformMaxTps, 100);
 
   const assignment = await getCompanyRatePlan(

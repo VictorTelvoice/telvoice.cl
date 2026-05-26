@@ -66,13 +66,24 @@ export async function getCompanyRatePlan(
   country = "CL",
   trafficType = "transactional",
 ): Promise<CompanyRatePlanView | null> {
-  const direct = await fetchCompanyRatePlanRow(companyId, country, trafficType);
+  const normCountry = (country || "CL").trim().toUpperCase();
+  const normTrafficType = (trafficType || "transactional").trim().toLowerCase();
+
+  const direct = await fetchCompanyRatePlanRow(
+    companyId,
+    normCountry,
+    normTrafficType,
+  );
   if (direct?.rate_plan_id) {
     return direct;
   }
 
-  for (const alt of RATE_PLAN_TRAFFIC_FALLBACKS[trafficType] ?? []) {
-    const fallback = await fetchCompanyRatePlanRow(companyId, country, alt);
+  for (const alt of RATE_PLAN_TRAFFIC_FALLBACKS[normTrafficType] ?? []) {
+    const fallback = await fetchCompanyRatePlanRow(
+      companyId,
+      normCountry,
+      alt,
+    );
     if (fallback?.rate_plan_id) {
       return fallback;
     }

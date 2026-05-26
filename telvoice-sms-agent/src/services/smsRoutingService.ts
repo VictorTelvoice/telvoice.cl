@@ -12,8 +12,8 @@ export async function resolveRouteForMessage(input: {
   phone?: string;
   trafficType?: string;
 }): Promise<ResolvedSmsRoute> {
-  const country = input.country ?? "CL";
-  const trafficType = input.trafficType ?? "transactional";
+  const country = (input.country ?? "CL").trim().toUpperCase();
+  const trafficType = (input.trafficType ?? "transactional").trim().toLowerCase();
 
   const assignment = await getCompanyRatePlan(
     input.companyId,
