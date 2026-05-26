@@ -23,10 +23,19 @@ concurrency:
   group: deploy-agent-production
   cancel-in-progress: false
 
+# appleboy/ssh-action v1.2.5 — pin por SHA (no usar @master ni tags flotantes).
+# Si falla "Set up job" al descargar desde codeload.github.com, suele ser incidente
+# transitorio de GitHub: Re-run jobs o workflow_dispatch desde Actions.
+env:
+  SSH_ACTION_VERSION: "v1.2.5"
+  SSH_ACTION_SHA: "0ff4204d59e8e51228ff73bce53f80d53301dee2"
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
     steps:
       - name: Validar secretos requeridos
         env:
@@ -47,8 +56,25 @@ jobs:
           fi
           echo "Secretos obligatorios presentes (valores no mostrados)."
 
+      - name: Precargar appleboy/ssh-action (reintento codeload)
+        run: |
+          set -euo pipefail
+          url="https://codeload.github.com/appleboy/ssh-action/tar.gz/${SSH_ACTION_SHA}"
+          echo "Precarga ${SSH_ACTION_VERSION} (${SSH_ACTION_SHA})"
+          for attempt in $(seq 1 6); do
+            if curl -fsSL --connect-timeout 20 --max-time 120 -o /tmp/appleboy-ssh-action.tar.gz "$url"; then
+              echo "Precarga codeload OK (intento ${attempt}/6)"
+              exit 0
+            fi
+            wait=$((attempt * 10))
+            echo "::warning::codeload falló (intento ${attempt}/6); reintento en ${wait}s..."
+            sleep "$wait"
+          done
+          echo "::error::No se pudo descargar appleboy/ssh-action desde codeload tras 6 intentos"
+          exit 1
+
       - name: Comprobar conexión SSH y ruta
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
@@ -72,7 +98,7 @@ jobs:
             pm2 -v 2>/dev/null || echo "ADVERTENCIA: pm2 no encontrado en PATH"
 
       - name: Desplegar aplicación
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
