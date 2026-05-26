@@ -151,13 +151,38 @@ try {
   campaignId = draft.id;
 
   const campaignsPage = await get("/app/campaigns", cookie);
-  if (!campaignsPage.html.includes("Simular envío")) {
-    throw new Error('UI: falta botón "Simular envío" en /app/campaigns');
+  if (!campaignsPage.html.includes("Simular campaña")) {
+    throw new Error('UI: falta botón "Simular campaña" en /app/campaigns');
   }
   if (!campaignsPage.html.includes(campaignId.slice(0, 8))) {
     throw new Error("UI: borrador no visible en listado");
   }
   console.log('UI: botón "Simular envío" presente (borrador mock)');
+
+  // 1) Detalle ANTES de ejecutar (Etapa 5.1)
+  const detailBefore = await get(`/app/campaigns/${campaignId}`, cookie);
+  if (!detailBefore.html.includes("Simular campaña")) {
+    throw new Error('Detalle: falta botón "Simular campaña" antes de ejecutar');
+  }
+  for (const must of [
+    "Audiencia",
+    "Mensaje",
+    "Wallet",
+    "Mensajes simulados",
+    "Timeline",
+  ]) {
+    if (!detailBefore.html.includes(must)) {
+      throw new Error(`Detalle: falta bloque "${must}" antes de ejecutar`);
+    }
+  }
+  if (
+    !detailBefore.html.includes("sms_debit") ||
+    !detailBefore.html.includes("sms_campaign")
+  ) {
+    throw new Error(
+      "Detalle: no se reflejan referencias wallet esperadas (sms_debit/sms_campaign) antes de ejecutar",
+    );
+  }
 
   const balBefore = (await getCompanyBalance(COMPANY_ID)).availableSms;
 
@@ -219,6 +244,35 @@ try {
   const balAfter1 = (await getCompanyBalance(COMPANY_ID)).availableSms;
   if (balBefore - balAfter1 !== c.real_sms_cost) {
     throw new Error("saldo no coincide con real_sms_cost");
+  }
+
+  // 2) Detalle DESPUÉS de ejecutar (Etapa 5.1)
+  const detailAfter = await get(`/app/campaigns/${campaignId}`, cookie);
+  if (detailAfter.html.includes("Simular campaña")) {
+    throw new Error(
+      'Detalle: no debería aparecer "Simular campaña" tras ejecutar',
+    );
+  }
+  for (const must of [
+    "Audiencia",
+    "Mensaje",
+    "Wallet",
+    "Mensajes simulados",
+    "Timeline",
+  ]) {
+    if (!detailAfter.html.includes(must)) {
+      throw new Error(`Detalle: falta bloque "${must}" después de ejecutar`);
+    }
+  }
+  for (const must of [
+    "Mensajes mock generados",
+    "Débito wallet registrado",
+    "sms_campaign",
+    "sms_debit",
+  ]) {
+    if (!detailAfter.html.includes(must)) {
+      throw new Error(`Detalle: falta marcador "${must}" después de ejecutar`);
+    }
   }
 
   const second = await executeSvc.executeContactsAudienceCampaignMock({

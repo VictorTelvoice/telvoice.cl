@@ -278,9 +278,12 @@ export async function processQueueTick(
   }
 
   const batch = await getNextQueuedMessages(limit);
-  const outcomes = await Promise.all(
-    batch.map((item) => processOneQueuedItem(item, workerId)),
-  );
+  // Un envío a la vez: aSMSC puede devolver «IP not Whitelisted» si llegan varios
+  // SendSMS en paralelo aunque la IP esté autorizada (envíos individuales /app OK).
+  const outcomes: ItemProcessOutcome[] = [];
+  for (const item of batch) {
+    outcomes.push(await processOneQueuedItem(item, workerId));
+  }
 
   for (const outcome of outcomes) {
     result.processed += 1;

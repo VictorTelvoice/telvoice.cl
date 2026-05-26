@@ -23,7 +23,11 @@ export function getAsmscRemarksHint(remarks: string | null | undefined): string 
   }
 
   if (text.includes(IP_NOT_WHITELISTED)) {
-    return "La IP pública del servidor no está autorizada en aSMSC. Agrega la IP en API → Add Whitelist IP.";
+    return (
+      "aSMSC respondió «IP not Whitelisted». Si el envío individual en /app funciona con la misma API, " +
+      "la IP suele estar bien y el mensaje puede ser engañoso (p. ej. varios SendSMS en paralelo en campañas). " +
+      "Reintenta la campaña o confirma whitelist en aSMSC → Add Whitelist IP."
+    );
   }
 
   return null;
