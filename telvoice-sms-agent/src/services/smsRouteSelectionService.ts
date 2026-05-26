@@ -14,6 +14,22 @@ export type CompanyRoutingPolicy = {
 
 const rrCounters = new Map<string, number>();
 
+/** Campañas usan promotional; muchos planes solo tienen detalles transactional. */
+const TRAFFIC_DETAIL_FALLBACKS: Record<string, string[]> = {
+  promotional: ["transactional", "mixed"],
+  transactional: ["promotional", "mixed"],
+};
+
+function normalizeTrafficType(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function trafficTypesForSelection(requested: string): string[] {
+  const norm = normalizeTrafficType(requested);
+  const order = [norm, ...(TRAFFIC_DETAIL_FALLBACKS[norm] ?? []), "mixed"];
+  return [...new Set(order)];
+}
+
 function parseUuidList(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
@@ -102,10 +118,9 @@ export function filterDetailsForCompany(
     if (detail.country.toUpperCase() !== country) {
       return false;
     }
-    if (
-      detail.traffic_type !== input.trafficType &&
-      detail.traffic_type !== "mixed"
-    ) {
+    const detailTraffic = normalizeTrafficType(detail.traffic_type);
+    const requestedTraffic = normalizeTrafficType(input.trafficType);
+    if (detailTraffic !== requestedTraffic && detailTraffic !== "mixed") {
       return false;
     }
 
@@ -197,11 +212,23 @@ export function selectRatePlanDetail(input: {
   companyId: string;
 }): SmsRatePlanDetailEnriched {
   const policy = companyRoutingPolicyFromAssignment(input.assignment);
-  const candidates = filterDetailsForCompany(input.details, {
-    country: input.country,
-    trafficType: input.trafficType,
-    policy,
-  });
+  const requestedTraffic = normalizeTrafficType(input.trafficType);
+
+  let candidates: SmsRatePlanDetailEnriched[] = [];
+  let selectedTraffic = requestedTraffic;
+
+  for (const trafficType of trafficTypesForSelection(requestedTraffic)) {
+    const filtered = filterDetailsForCompany(input.details, {
+      country: input.country,
+      trafficType,
+      policy,
+    });
+    if (filtered.length > 0) {
+      candidates = filtered;
+      selectedTraffic = trafficType;
+      break;
+    }
+  }
 
   if (candidates.length === 0) {
     throw new AppError(
@@ -217,7 +244,7 @@ export function selectRatePlanDetail(input: {
   }
 
   if (mode === "round_robin") {
-    const bucketKey = `${input.companyId}:${input.ratePlan.id}:${input.country}:${input.trafficType}`;
+    const bucketKey = `${input.companyId}:${input.ratePlan.id}:${input.country}:${selectedTraffic}`;
     return pickRoundRobinRoute(candidates, bucketKey);
   }
 

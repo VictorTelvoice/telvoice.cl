@@ -4,7 +4,10 @@ import { getCompanyRatePlan } from "./companyRatePlanService.js";
 import { getSmsProviderById } from "./smsProviderService.js";
 import { findDefaultRouteForCountry, getSmsRouteById } from "./smsRouteService.js";
 import { getSmsRatePlanById, listRatePlanDetails } from "./smsRatePlanService.js";
-import { selectRatePlanDetail } from "./smsRouteSelectionService.js";
+import {
+  companyRoutingPolicyFromAssignment,
+  selectRatePlanDetail,
+} from "./smsRouteSelectionService.js";
 
 export async function resolveRouteForMessage(input: {
   companyId: string;
@@ -40,28 +43,54 @@ export async function resolveRouteForMessage(input: {
   const details = await listRatePlanDetails(ratePlan.id);
   const activeDetails = details.filter((d) => d.status === "active");
 
-  let detail = activeDetails.length
-    ? selectRatePlanDetail({
+  let detail: Awaited<ReturnType<typeof selectRatePlanDetail>> | null = null;
+  if (activeDetails.length > 0) {
+    try {
+      detail = selectRatePlanDetail({
         ratePlan,
         details: activeDetails,
         assignment,
         country,
         trafficType,
         companyId: input.companyId,
-      })
-  : null;
+      });
+    } catch (err) {
+      if (!(err instanceof AppError) || err.statusCode !== 400) {
+        throw err;
+      }
+      detail = null;
+    }
+  }
 
   if (!detail?.route_id) {
     const fallbackRoute = await findDefaultRouteForCountry(country);
     if (!fallbackRoute) {
       throw new AppError(
-        "No hay ruta SMS activa para este cliente/destino.",
+        activeDetails.length > 0
+          ? "No hay rutas SMS disponibles para este cliente/destino (revise rate plan y proveedores permitidos)."
+          : "No hay ruta SMS activa para este cliente/destino.",
         400,
       );
     }
     const provider = await getSmsProviderById(fallbackRoute.provider_id);
     if (!provider || provider.status !== "active") {
       throw new AppError("El proveedor de la ruta default no está activo.", 400);
+    }
+    const policy = companyRoutingPolicyFromAssignment(assignment);
+    if (policy.blockedProviderIds.includes(provider.id)) {
+      throw new AppError(
+        "El proveedor de la ruta default está bloqueado para este cliente.",
+        400,
+      );
+    }
+    if (
+      policy.allowedProviderIds.length > 0 &&
+      !policy.allowedProviderIds.includes(provider.id)
+    ) {
+      throw new AppError(
+        "No hay rutas SMS disponibles: el proveedor default no está en la lista permitida del cliente.",
+        400,
+      );
     }
     return {
       provider,
