@@ -185,17 +185,25 @@ export async function markSent(queueId: string): Promise<SmsSendQueueRow> {
 }
 
 /** Devuelve un ítem de processing a queued para reintento (TPS / proveedor). */
-export async function requeueForRetry(queueId: string): Promise<SmsSendQueueRow> {
+export async function requeueForRetry(
+  queueId: string,
+  scheduledAt?: string,
+): Promise<SmsSendQueueRow> {
+  const patch: Record<string, unknown> = {
+    status: "queued",
+    locked_at: null,
+    locked_by: null,
+    processed_at: null,
+    error_code: null,
+    error_message: null,
+  };
+  if (scheduledAt) {
+    patch.scheduled_at = scheduledAt;
+  }
+
   const { data, error } = await getSupabase()
     .from("sms_send_queue")
-    .update({
-      status: "queued",
-      locked_at: null,
-      locked_by: null,
-      processed_at: null,
-      error_code: null,
-      error_message: null,
-    })
+    .update(patch)
     .eq("id", queueId)
     .select("*")
     .single();

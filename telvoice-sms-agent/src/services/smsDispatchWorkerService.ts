@@ -14,6 +14,7 @@ import {
   updateSmsCampaign,
 } from "./smsCampaignService.js";
 import { dispatchProviderSend } from "./smsProviderDispatchService.js";
+import { resolveHttpApiCredentials } from "./providerCredentialsService.js";
 import { getSmsProviderById } from "./smsProviderService.js";
 import type { SmsSendQueueRow } from "../types/sms-traffic.js";
 import {
@@ -28,6 +29,14 @@ import {
   releaseStaleProcessingQueueItems,
   requeueForRetry,
 } from "./smsQueueService.js";
+import {
+  computeNextScheduledAt,
+  isAttemptExhausted,
+} from "./smsQueueRetryService.js";
+import {
+  releaseProviderDispatchLock,
+  tryAcquireProviderDispatchLock,
+} from "./smsProviderDispatchLock.js";
 import { debitSmsUsage, getCompanyBalance } from "./smsWalletService.js";
 import { hasSmsDebitForMessage } from "./walletTransactionService.js";
 import {
@@ -37,6 +46,12 @@ import {
   releaseConcurrency,
 } from "./smsTpsLimiterService.js";
 import { resolveTrafficPolicy } from "./smsTrafficPolicyService.js";
+import {
+  extractEndpointHost,
+  logProviderDispatchIssue,
+  maskDispatchApiId,
+} from "../utils/smsProviderDispatchLog.js";
+import { responseTextIncludesIpWhitelist } from "../utils/asmsc-hints.js";
 
 export type QueueTickResult = {
   processed: number;
@@ -45,6 +60,23 @@ export type QueueTickResult = {
   failed: number;
   details: string[];
 };
+
+const MAX_ATTEMPTS_EXHAUSTED_MSG = "Max attempts reached before provider call";
+
+async function failQueueAndPanelMessage(
+  item: SmsSendQueueRow,
+  code: string,
+  message: string,
+): Promise<void> {
+  await markFailed(item.id, { code, message });
+  if (item.message_id) {
+    await updatePanelSmsMessage(item.message_id, {
+      status: "failed",
+      error_code: code,
+      error_message: message,
+    });
+  }
+}
 
 async function finalizeQueuedSend(input: {
   companyId: string;
@@ -123,6 +155,75 @@ type ItemProcessOutcome = {
   detail?: string;
 };
 
+function shouldLogProviderIssue(
+  errorMessage: string | null | undefined,
+  rawResponse: Record<string, unknown>,
+): boolean {
+  if (responseTextIncludesIpWhitelist(errorMessage)) {
+    return true;
+  }
+  return responseTextIncludesIpWhitelist(JSON.stringify(rawResponse));
+}
+
+async function handleProviderRejection(input: {
+  item: SmsSendQueueRow;
+  processingRow: SmsSendQueueRow;
+  message: NonNullable<Awaited<ReturnType<typeof getPanelSmsMessageById>>>;
+  provider: NonNullable<Awaited<ReturnType<typeof getSmsProviderById>>>;
+  workerId: string;
+  providerResult: Awaited<ReturnType<typeof dispatchProviderSend>>;
+}): Promise<ItemProcessOutcome> {
+  const { item, processingRow, message, provider, workerId, providerResult } =
+    input;
+  const maxAttempts = item.max_attempts ?? 3;
+  const attemptAfterProcessing = processingRow.attempts ?? 0;
+  const creds = resolveHttpApiCredentials(provider);
+  const errMsg = providerResult.error_message ?? null;
+
+  if (
+    shouldLogProviderIssue(errMsg, providerResult.raw_response ?? {})
+  ) {
+    logProviderDispatchIssue({
+      providerId: item.provider_id!,
+      routeId: item.route_id,
+      queueId: item.id,
+      messageId: message.id,
+      campaignId: item.campaign_id,
+      senderId: message.sender_id,
+      phone: message.recipient_number,
+      apiIdMasked: maskDispatchApiId(creds.apiId),
+      endpointHost: extractEndpointHost(creds.baseUrl),
+      attempt: attemptAfterProcessing,
+      maxAttempts,
+      workerSource: workerId,
+      errorCode: providerResult.error_code ?? "REJECTED",
+      errorMessage: errMsg,
+      remarks:
+        typeof providerResult.raw_response?.remarks === "string"
+          ? providerResult.raw_response.remarks
+          : null,
+    });
+  }
+
+  if (attemptAfterProcessing >= maxAttempts) {
+    await failQueueAndPanelMessage(
+      item,
+      providerResult.error_code ?? "REJECTED",
+      errMsg ?? "Proveedor rechazó",
+    );
+    return { sent: false, deferred: false, failed: true };
+  }
+
+  const nextAt = computeNextScheduledAt(attemptAfterProcessing);
+  await requeueForRetry(item.id, nextAt);
+  return {
+    sent: false,
+    deferred: true,
+    failed: false,
+    detail: `${item.id}: reintento en ${nextAt}`,
+  };
+}
+
 async function processOneQueuedItem(
   item: SmsSendQueueRow,
   workerId: string,
@@ -132,7 +233,29 @@ async function processOneQueuedItem(
       code: "MISSING_ROUTING",
       message: "Falta proveedor o ruta en cola",
     });
-    return { sent: false, deferred: false, failed: true, detail: `${item.id}: sin routing` };
+    return {
+      sent: false,
+      deferred: false,
+      failed: true,
+      detail: `${item.id}: sin routing`,
+    };
+  }
+
+  const maxAttempts = item.max_attempts ?? 3;
+  const attemptsBefore = item.attempts ?? 0;
+
+  if (isAttemptExhausted(attemptsBefore, maxAttempts)) {
+    await failQueueAndPanelMessage(
+      item,
+      "MAX_ATTEMPTS",
+      MAX_ATTEMPTS_EXHAUSTED_MSG,
+    );
+    return {
+      sent: false,
+      deferred: false,
+      failed: true,
+      detail: `${item.id}: ${MAX_ATTEMPTS_EXHAUSTED_MSG}`,
+    };
   }
 
   const queueFlow = item.campaign_id ? "campaign" : "queue";
@@ -155,108 +278,129 @@ async function processOneQueuedItem(
     };
   }
 
-  try {
-    await markProcessing(item.id, workerId);
-  } catch {
-    return { sent: false, deferred: true, failed: false };
-  }
-
-  const provider = await getSmsProviderById(item.provider_id);
-  if (!provider) {
-    await markFailed(item.id, { code: "NO_PROVIDER", message: "Proveedor no encontrado" });
-    return { sent: false, deferred: false, failed: true };
-  }
-
-  const message = item.message_id
-    ? await getPanelSmsMessageById(item.message_id)
-    : null;
-
-  if (!message) {
-    await markFailed(item.id, {
-      code: "NO_MESSAGE",
-      message: "Mensaje panel no encontrado",
-    });
-    return { sent: false, deferred: false, failed: true };
+  if (!tryAcquireProviderDispatchLock(item.provider_id)) {
+    return {
+      sent: false,
+      deferred: true,
+      failed: false,
+      detail: `${item.id}: diferido — proveedor ocupado (serialización)`,
+    };
   }
 
   try {
-    const providerResult = await dispatchProviderSend(provider, {
-      to: message.recipient_number,
-      message: message.message,
-      senderId: message.sender_id ?? "TELVOICE",
-      metadata: { panel_message_id: message.id, queue_id: item.id },
-    });
-
-    if (!providerResult.accepted) {
-      if (item.attempts >= item.max_attempts) {
-        await markFailed(item.id, {
-          code: providerResult.error_code ?? "REJECTED",
-          message: providerResult.error_message ?? "Proveedor rechazó",
-        });
-        await updatePanelSmsMessage(message.id, {
-          status: "failed",
-          error_code: providerResult.error_code ?? "PROVIDER_REJECTED",
-          error_message:
-            providerResult.error_message ?? "Proveedor rechazó el envío",
-        });
-        return { sent: false, deferred: false, failed: true };
-      }
-      await requeueForRetry(item.id);
-      return {
-        sent: false,
-        deferred: true,
-        failed: false,
-        detail: `${item.id}: reintento pendiente`,
-      };
+    let processingRow: SmsSendQueueRow;
+    try {
+      processingRow = await markProcessing(item.id, workerId);
+    } catch {
+      return { sent: false, deferred: true, failed: false };
     }
 
-    const panelStatus: PanelSmsMessageStatus =
-      providerResult.status === "pending" ? "pending" : "sent";
-
-    try {
-      await finalizeQueuedSend({
-        companyId: item.company_id,
-        messageId: message.id,
-        campaignId: message.campaign_id,
-        costSms: message.cost_sms,
-        panelStatus,
-        provider: providerResult.provider,
-        providerMessageId: providerResult.provider_message_id ?? null,
-        providerResult,
-      });
-    } catch {
+    const provider = await getSmsProviderById(item.provider_id);
+    if (!provider) {
       await markFailed(item.id, {
-        code: "FINALIZE_FAILED",
-        message: "Error al finalizar envío",
+        code: "NO_PROVIDER",
+        message: "Proveedor no encontrado",
       });
       return { sent: false, deferred: false, failed: true };
     }
 
-    await markSent(item.id);
-    recordTpsSend({
-      companyId: item.company_id,
-      providerId: item.provider_id,
-      routeId: item.route_id,
-      ratePlanId: item.rate_plan_id,
-    });
-    return { sent: true, deferred: false, failed: false, detail: `${item.id}: enviado` };
-  } catch (err) {
-    await markFailed(item.id, {
-      code: "DISPATCH_ERROR",
-      message: err instanceof Error ? err.message : "Error",
-    });
-    await updatePanelSmsMessage(message.id, {
-      status: "failed",
-      error_code: "DISPATCH_ERROR",
-      error_message: err instanceof Error ? err.message : "Error de envío",
-    });
-    return { sent: false, deferred: false, failed: true };
+    const message = item.message_id
+      ? await getPanelSmsMessageById(item.message_id)
+      : null;
+
+    if (!message) {
+      await markFailed(item.id, {
+        code: "NO_MESSAGE",
+        message: "Mensaje panel no encontrado",
+      });
+      return { sent: false, deferred: false, failed: true };
+    }
+
+    try {
+      const providerResult = await dispatchProviderSend(provider, {
+        to: message.recipient_number,
+        message: message.message,
+        senderId: message.sender_id ?? "TELVOICE",
+        metadata: { panel_message_id: message.id, queue_id: item.id },
+      });
+
+      if (!providerResult.accepted) {
+        return handleProviderRejection({
+          item,
+          processingRow,
+          message,
+          provider,
+          workerId,
+          providerResult,
+        });
+      }
+
+      const panelStatus: PanelSmsMessageStatus =
+        providerResult.status === "pending" ? "pending" : "sent";
+
+      try {
+        await finalizeQueuedSend({
+          companyId: item.company_id,
+          messageId: message.id,
+          campaignId: message.campaign_id,
+          costSms: message.cost_sms,
+          panelStatus,
+          provider: providerResult.provider,
+          providerMessageId: providerResult.provider_message_id ?? null,
+          providerResult,
+        });
+      } catch {
+        await markFailed(item.id, {
+          code: "FINALIZE_FAILED",
+          message: "Error al finalizar envío",
+        });
+        return { sent: false, deferred: false, failed: true };
+      }
+
+      await markSent(item.id);
+      recordTpsSend({
+        companyId: item.company_id,
+        providerId: item.provider_id,
+        routeId: item.route_id,
+        ratePlanId: item.rate_plan_id,
+      });
+      return {
+        sent: true,
+        deferred: false,
+        failed: false,
+        detail: `${item.id}: enviado`,
+      };
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : "Error";
+      const attemptAfterProcessing = processingRow.attempts ?? 0;
+
+      if (attemptAfterProcessing >= maxAttempts) {
+        await failQueueAndPanelMessage(item, "DISPATCH_ERROR", errMsg);
+        return { sent: false, deferred: false, failed: true };
+      }
+
+      const nextAt = computeNextScheduledAt(attemptAfterProcessing);
+      await requeueForRetry(item.id, nextAt);
+      await updatePanelSmsMessage(message.id, {
+        status: "queued",
+        error_code: null,
+        error_message: null,
+      });
+      return {
+        sent: false,
+        deferred: true,
+        failed: false,
+        detail: `${item.id}: error dispatch, reintento en ${nextAt}`,
+      };
+    } finally {
+      releaseConcurrency({
+        companyId: item.company_id,
+        providerId: item.provider_id,
+        routeId: item.route_id,
+      });
+    }
   } finally {
-    releaseConcurrency({
-      companyId: item.company_id,
-      providerId: item.provider_id,
-      routeId: item.route_id,
-    });
+    releaseProviderDispatchLock(item.provider_id);
   }
 }
 
@@ -278,8 +422,6 @@ export async function processQueueTick(
   }
 
   const batch = await getNextQueuedMessages(limit);
-  // Un envío a la vez: aSMSC puede devolver «IP not Whitelisted» si llegan varios
-  // SendSMS en paralelo aunque la IP esté autorizada (envíos individuales /app OK).
   const outcomes: ItemProcessOutcome[] = [];
   for (const item of batch) {
     outcomes.push(await processOneQueuedItem(item, workerId));
@@ -365,4 +507,17 @@ export async function assertCampaignTrafficAllowed(input: {
     flow: "campaign",
     segmentCost: input.segmentCost,
   });
+}
+
+/** Configuración del scheduler (lectura para UI/diagnóstico). */
+export function getSmsQueueSchedulerConfig(): {
+  enabled: boolean;
+  intervalSeconds: number;
+  batchSize: number;
+} {
+  return {
+    enabled: env.smsQueueScheduler.enabled,
+    intervalSeconds: env.smsQueueScheduler.intervalSeconds,
+    batchSize: env.smsQueueScheduler.batchSize,
+  };
 }

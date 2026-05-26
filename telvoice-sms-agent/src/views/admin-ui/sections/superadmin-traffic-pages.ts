@@ -36,6 +36,10 @@ export function renderSaTrafficControlPage(
 ): string {
   const d = opts.dashboard;
   const q = d.queueCounts;
+  const sch = d.queueScheduler;
+  const schedulerLabel = sch.enabled
+    ? `Activo — cada ${sch.intervalSeconds}s, batch ${sch.batchSize}`
+    : "Inactivo (solo tick manual)";
 
   const clientRows = d.clientPolicies.length
     ? d.clientPolicies
@@ -66,13 +70,18 @@ export function renderSaTrafficControlPage(
     ${renderPageHeader({
       title: "Control de tráfico SMS",
       subtitle:
-        "TPS, cola y capacidad — worker manual (sin proceso automático continuo).",
+        "TPS, cola y capacidad — worker manual o scheduler automático según SMS_QUEUE_SCHEDULER_ENABLED.",
       actions: `<form method="post" action="/admin/traffic-control/queue/process-tick" style="display:inline">
         <input type="hidden" name="limit" value="5" />
         <button type="submit" class="btn btn-secondary btn-sm">Procesar tick cola (manual)</button>
       </form>`,
     })}
     <p class="field-hint">Hard cap cliente: <strong>${d.maxClientTpsCap} TPS</strong> · Plataforma: <strong>${d.platformMaxTps} TPS</strong> · Limitador en memoria por proceso (ver docs en código).</p>
+    <section class="tv-panel" style="margin-top:0.75rem">
+      <h2 class="tv-panel__title">Scheduler de cola</h2>
+      <p><strong>${escapeHtml(schedulerLabel)}</strong></p>
+      <p class="field-hint">Para QA live controlada: <code>SMS_QUEUE_SCHEDULER_ENABLED=false</code> en el VPS (solo tick manual). No modificar .env de producción sin revisión operativa.</p>
+    </section>
     <div class="tv-kpi-grid">
       <article class="tv-kpi"><span class="tv-kpi__label">Cola queued</span><span class="tv-kpi__value">${q.queued ?? 0}</span></article>
       <article class="tv-kpi"><span class="tv-kpi__label">Processing</span><span class="tv-kpi__value">${q.processing ?? 0}</span></article>

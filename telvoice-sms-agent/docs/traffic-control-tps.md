@@ -288,6 +288,33 @@ Requisitos: `DATABASE_URL` en `.env`, migración 016 aplicada, build generado en
 | `daily_limit` comercial | Bloquea si corresponde |
 | `max_tps = 25` en BD | Rechazado por constraint |
 
+### QA worker hardening (Etapa 7.1)
+
+```bash
+npm run build
+node scripts/verify-sms-worker-hardening-qa.mjs
+```
+
+Valida attempts/max_attempts, backoff, lock por proveedor, scheduler config y logs sanitizados — **sin SMS real**.
+
+### Scheduler para QA live controlada
+
+En el VPS, desactivar temporalmente el procesamiento automático:
+
+```bash
+SMS_QUEUE_SCHEDULER_ENABLED=false
+```
+
+Solo entonces usar `POST /admin/traffic-control/queue/process-tick` manual. Ver estado en `/admin/traffic-control`. El deploy fuerza `SMS_QUEUE_SCHEDULER_ENABLED=true` e intervalo 60s; para QA pedir cambio operativo explícito.
+
+### Diagnóstico IP egress (sin SMS)
+
+```bash
+node scripts/diagnose-asmsc-egress.mjs
+```
+
+Ejecutar **en el VPS** para comparar IPv4 con whitelist aSMSC.
+
 **No** llama al proveedor real. **No** envía SMS.
 
 ---

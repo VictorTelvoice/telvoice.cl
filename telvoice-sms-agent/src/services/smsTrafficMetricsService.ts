@@ -28,6 +28,11 @@ export type TrafficControlDashboard = {
     effectiveTps: number;
     liveEnabled: boolean;
   }[];
+  queueScheduler: {
+    enabled: boolean;
+    intervalSeconds: number;
+    batchSize: number;
+  };
 };
 
 function fiveMinutesAgoIso(): string {
@@ -161,5 +166,10 @@ export async function getTrafficControlDashboard(): Promise<TrafficControlDashbo
     providerUsage,
     routeUsage,
     clientPolicies,
+    queueScheduler: {
+      enabled: env.smsQueueScheduler.enabled,
+      intervalSeconds: env.smsQueueScheduler.intervalSeconds,
+      batchSize: env.smsQueueScheduler.batchSize,
+    },
   };
 }
