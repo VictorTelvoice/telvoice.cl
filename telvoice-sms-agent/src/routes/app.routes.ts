@@ -3,6 +3,9 @@ import {
   getAppApi,
   getAppBuySms,
   getAppCampaigns,
+  getAppCampaignNew,
+  postAppCampaignNewPreview,
+  postAppCampaignDraft,
   getAppContacts,
   getAppContactsImport,
   postAppContactsImportPreview,
@@ -85,6 +88,13 @@ appRouter.get("/orders/:id", requireClientPanelPage, getAppOrderDetail);
 
 appRouter.get("/send-sms", requireClientPanelPage, getAppSendSms);
 appRouter.post("/send-sms", requireClientPanelPage, postAppSendSms);
+appRouter.get("/campaigns/new", requireClientPanelPage, getAppCampaignNew);
+appRouter.post(
+  "/campaigns/new/preview",
+  requireClientPanelPage,
+  postAppCampaignNewPreview,
+);
+appRouter.post("/campaigns/drafts", requireClientPanelPage, postAppCampaignDraft);
 appRouter.get("/campaigns", requireClientPanelPage, getAppCampaigns);
 appRouter.get("/inbox", requireClientPanelPage, getAppInbox);
 appRouter.get("/contacts/import", requireClientPanelPage, getAppContactsImport);

@@ -72,6 +72,14 @@ import {
 } from "../services/contactImportService.js";
 import { createContactTag, bulkAssignTag } from "../services/contactTagService.js";
 import { renderAppContactsImportPage } from "../views/app-ui/app-contacts-import-page.js";
+import { renderAppCampaignNewPage } from "../views/app-ui/app-campaigns-new-page.js";
+import { suggestSenderIdFromCompanyName } from "../utils/suggestSenderId.js";
+import {
+  audienceHiddenFields,
+  buildCampaignPreviewFromRequest,
+  createCampaignDraftFromPreview,
+} from "../services/campaignPreviewService.js";
+import { parseAudienceSourceFromQuery } from "../services/campaignAudienceService.js";
 import {
   getCampaignByIdForCompany,
   listCampaignsByCompany,
@@ -132,7 +140,6 @@ import {
   formatScheduleInTimeZone,
   isScheduleAtLeastMinutesAhead,
 } from "../utils/scheduleTime.js";
-import { suggestSenderIdFromCompanyName } from "../utils/suggestSenderId.js";
 import { escapeHtml } from "../utils/html.js";
 
 type AppSendMode = "single" | "mass" | "scheduled" | "template";
@@ -843,6 +850,135 @@ export async function postAppSendSms(
       }
     }
     res.redirect(`/app/send-sms?error=${encodeURIComponent(msg)}`);
+  }
+}
+
+function audienceParamsFromRequest(
+  req: Request | { query?: Record<string, unknown>; body?: Record<string, string | undefined> },
+): Record<string, string | undefined> {
+  const q = req.query as Record<string, string | string[] | undefined> | undefined;
+  const b = (req as Request).body as Record<string, string | undefined> | undefined;
+  const str = (src: Record<string, string | string[] | undefined> | undefined, key: string) => {
+    const v = src?.[key];
+    return typeof v === "string" ? v : undefined;
+  };
+  return {
+    contacts: str(q, "contacts") ?? b?.contacts,
+    list_id: str(q, "list_id") ?? b?.list_id,
+    tag_id: str(q, "tag_id") ?? b?.tag_id,
+    sender_id: str(q, "sender_id") ?? b?.sender_id,
+    message: str(q, "message") ?? b?.message,
+    campaign_name: str(q, "campaign_name") ?? b?.campaign_name,
+  };
+}
+
+export async function getAppCampaignNew(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  await withAppContext(req, res, next, async (ctx) => {
+    const params = audienceParamsFromRequest(req);
+    const source = parseAudienceSourceFromQuery(params);
+    const defaultSenderId = suggestSenderIdFromCompanyName(ctx.company.name);
+
+    if (!source) {
+      return renderAppCampaignNewPage(ctx, {
+        preview: {
+          audience: {
+            sourceType: "contacts",
+            sourceLabel: "—",
+            sourceRef: "",
+            totalFound: 0,
+            validCount: 0,
+            invalidCount: 0,
+            blockedCount: 0,
+            optOutCount: 0,
+            duplicatesOmitted: 0,
+            validRecipients: [],
+            allMembers: [],
+          },
+          campaignName: `Campaña ${new Date().toISOString().slice(0, 10)}`,
+          senderId: defaultSenderId,
+          message: "",
+          characters: 0,
+          encoding: "GSM-7",
+          segmentsPerMessage: 0,
+          validRecipientCount: 0,
+          totalSmsEstimated: 0,
+          balanceAvailable: ctx.balance.availableSms,
+          balanceAfter: ctx.balance.availableSms,
+          canProceed: false,
+          blockReason: "Selecciona una audiencia desde Contactos.",
+          sendEnabled: false,
+        },
+        defaultSenderId,
+        noAudience: true,
+      });
+    }
+
+    const preview = await buildCampaignPreviewFromRequest(ctx.company.id, {
+      ...params,
+      sender_id: params.sender_id ?? defaultSenderId,
+      message: params.message ?? "",
+    });
+
+    return renderAppCampaignNewPage(ctx, {
+      preview,
+      defaultSenderId,
+    });
+  });
+}
+
+export async function postAppCampaignNewPreview(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireContactsWriteContext(req);
+    if (!ctx) {
+      res.redirect("/app/campaigns/new?error=Sin%20permiso");
+      return;
+    }
+    const params = audienceParamsFromRequest(req);
+    const preview = await buildCampaignPreviewFromRequest(ctx.company.id, params);
+    const q = new URLSearchParams(audienceHiddenFields(preview.audience));
+    q.set("sender_id", preview.senderId);
+    q.set("message", preview.message);
+    q.set("campaign_name", preview.campaignName);
+    res.redirect(303, `/app/campaigns/new?${q.toString()}&ok=Previsualizaci%C3%B3n%20actualizada`);
+  } catch (error) {
+    const msg =
+      error instanceof AppError ? error.message : "No se pudo calcular la previsualización";
+    res.redirect(303, `/app/campaigns/new?error=${encodeURIComponent(msg)}`);
+  }
+}
+
+export async function postAppCampaignDraft(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireContactsWriteContext(req);
+    if (!ctx) {
+      res.redirect("/app/campaigns?error=Sin%20permiso");
+      return;
+    }
+    const params = audienceParamsFromRequest(req);
+    const preview = await buildCampaignPreviewFromRequest(ctx.company.id, params);
+    const draft = await createCampaignDraftFromPreview(
+      ctx.company.id,
+      preview,
+      ctx.profile.profileId ?? ctx.profile.adminUserId ?? null,
+    );
+    res.redirect(
+      303,
+      `/app/campaigns?ok=${encodeURIComponent(`Borrador «${draft.name}» guardado.`)}&status=draft`,
+    );
+  } catch (error) {
+    const msg =
+      error instanceof AppError ? error.message : "No se pudo guardar el borrador";
+    res.redirect(303, `/app/campaigns/new?error=${encodeURIComponent(msg)}`);
   }
 }
 

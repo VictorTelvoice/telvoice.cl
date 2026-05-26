@@ -241,7 +241,10 @@ function tagsPanel(tags: ContactTagRow[]): string {
     ? tags
         .map(
           (t) =>
-            `<span class="tv-tag" style="${t.color ? `border-color:${escapeHtml(t.color)}` : ""}">${escapeHtml(t.name)}</span>`,
+            `<span class="tv-tags__item">
+              <a class="tv-tag" href="/app/contacts?tag=${encodeURIComponent(t.id)}" style="${t.color ? `border-color:${escapeHtml(t.color)}` : ""}">${escapeHtml(t.name)}</a>
+              <a class="btn btn-ghost btn-sm" style="padding:0.1rem 0.35rem;font-size:0.68rem" href="/app/campaigns/new?tag_id=${encodeURIComponent(t.id)}" title="Crear campaña con este tag">Campaña</a>
+            </span>`,
         )
         .join("")
     : `<p class="field-hint" style="margin:0">Aún no tienes tags.</p>`;
@@ -363,14 +366,18 @@ function agendaPanel(lists: ContactListWithCount[], selectedAgenda?: string): st
     .map((a) => {
       const active = selectedAgenda === a.id;
       const href = `/app/contacts?agenda=${encodeURIComponent(a.id)}`;
-      return `<a href="${href}" class="tv-contacts-agenda${active ? " tv-contacts-agenda--active" : ""}">
-        <div class="tv-contacts-agenda__head">
-          <strong class="tv-contacts-agenda__name">${escapeHtml(a.name)}</strong>
-          <span class="badge badge-muted">${a.contacts_count} contacto${a.contacts_count === 1 ? "" : "s"}</span>
-        </div>
-        <p class="tv-contacts-agenda__desc">${escapeHtml(a.description ?? "")}</p>
-        <p class="tv-contacts-agenda__meta">Actualizada: ${escapeHtml(formatDate(a.updated_at))}</p>
-      </a>`;
+      const campaignHref = `/app/campaigns/new?list_id=${encodeURIComponent(a.id)}`;
+      return `<div class="tv-contacts-agenda${active ? " tv-contacts-agenda--active" : ""}">
+        <a href="${href}" class="tv-contacts-agenda__link">
+          <div class="tv-contacts-agenda__head">
+            <strong class="tv-contacts-agenda__name">${escapeHtml(a.name)}</strong>
+            <span class="badge badge-muted">${a.contacts_count} contacto${a.contacts_count === 1 ? "" : "s"}</span>
+          </div>
+          <p class="tv-contacts-agenda__desc">${escapeHtml(a.description ?? "")}</p>
+          <p class="tv-contacts-agenda__meta">Actualizada: ${escapeHtml(formatDate(a.updated_at))}</p>
+        </a>
+        <a class="btn btn-ghost btn-sm tv-contacts-agenda__campaign" href="${campaignHref}">Crear campaña</a>
+      </div>`;
     })
     .join("");
 
@@ -486,7 +493,7 @@ function contactsTable(
         <button type="submit" class="btn btn-ghost btn-sm">Bloquear</button>
       </form>
       <button type="button" class="btn btn-ghost btn-sm" disabled title="Próximamente">Exportar CSV</button>
-      <button type="button" class="btn btn-primary btn-sm" disabled title="Próximamente — sin campaña real">Usar en campaña</button>
+      <a class="btn btn-primary btn-sm" href="#" data-tv-campaign-link role="button">Usar en campaña</a>
     </div>
   </div>`;
 
@@ -624,6 +631,15 @@ export function renderAppContactsPage(
             if(!selectedIds().length){ ev.preventDefault(); alert('Selecciona al menos un contacto.'); }
           });
         });
+        var campLink = document.querySelector('[data-tv-campaign-link]');
+        if(campLink){
+          campLink.addEventListener('click', function(ev){
+            ev.preventDefault();
+            var ids = selectedIds();
+            if(!ids.length){ alert('Selecciona al menos un contacto.'); return; }
+            window.location.href = '/app/campaigns/new?contacts=' + encodeURIComponent(ids.join(','));
+          });
+        }
       })();
     </script>`;
 

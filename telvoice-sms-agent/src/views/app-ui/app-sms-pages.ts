@@ -880,8 +880,11 @@ export function renderAppCampaignsPage(
   const body = `
     ${renderPageHeader({
       title: "Campañas",
-      subtitle: "Campañas SMS registradas en tu cuenta.",
-      actions: renderBtn("Nuevo envío", { href: "/app/send-sms", variant: "primary" }),
+      subtitle: "Borradores y campañas SMS. El envío masivo real se habilitará en una etapa posterior.",
+      actions: [
+        renderBtn("Nueva campaña", { href: "/app/campaigns/new", variant: "primary", icon: "campaign" }),
+        renderBtn("Envío SMS", { href: "/app/send-sms", variant: "secondary" }),
+      ].join(" "),
     })}
     <div class="tv-client-dashboard tv-dlr-report tv-campaigns-report">
       ${kpis}

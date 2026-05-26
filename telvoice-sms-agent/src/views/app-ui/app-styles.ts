@@ -1341,21 +1341,29 @@ export function getAppPanelStyles(): string {
       gap: 0.6rem;
     }
     .tv-contacts-agenda {
-      display: block;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
       padding: 0.85rem 0.9rem;
       border-radius: 12px;
       border: 1px solid var(--tv-border);
       background: #fff;
       color: inherit;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .tv-contacts-agenda__link {
+      display: block;
+      color: inherit;
       text-decoration: none;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    }
+    .tv-contacts-agenda__link:hover {
+      text-decoration: none;
     }
     .tv-contacts-agenda:hover {
-      text-decoration: none;
       border-color: rgba(0, 82, 204, 0.22);
       box-shadow: 0 10px 24px rgba(0, 82, 204, 0.08);
-      transform: translateY(-1px);
     }
+    .tv-contacts-agenda__campaign { align-self: flex-start; }
     .tv-contacts-agenda--active {
       border-color: rgba(0, 82, 204, 0.32);
       background: #f8fbff;
@@ -1381,6 +1389,16 @@ export function getAppPanelStyles(): string {
     }
     .tv-contacts-agendas__cta { margin-top: 0.75rem; }
     .tv-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .tv-tags__item { display: inline-flex; align-items: center; gap: 0.2rem; }
+    .tv-tag-action {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      color: var(--tv-muted);
+      text-decoration: none;
+      padding: 0.1rem 0.25rem;
+    }
+    .tv-tag-action:hover { color: var(--tv-primary); }
     .tv-tag {
       display: inline-flex;
       align-items: center;
