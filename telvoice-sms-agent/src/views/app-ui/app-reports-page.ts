@@ -62,15 +62,16 @@ function queryStringFromFilters(
   return s ? `?${s}` : "";
 }
 
-function renderStatusFilters(selected: string[]): string {
-  const chips = DLR_STATUS_OPTIONS.map((s) => {
-    const on = selected.some((x) => x.toLowerCase() === s.toLowerCase());
-    return `<label class="tv-dlr-report__status-chip">
-      <input type="checkbox" name="status" value="${escapeHtml(s)}"${on ? " checked" : ""} />
-      <span>${escapeHtml(s)}</span>
-    </label>`;
-  }).join("");
-  return `<div class="tv-dlr-report__status-chips">${chips}</div>`;
+function renderStatusSelect(selected: string[]): string {
+  const current = selected[0] ?? "";
+  const opts = [
+    `<option value="">Todos</option>`,
+    ...DLR_STATUS_OPTIONS.map((s) => {
+      const on = current.toLowerCase() === s.toLowerCase();
+      return `<option value="${escapeHtml(s)}"${on ? " selected" : ""}>${escapeHtml(s)}</option>`;
+    }),
+  ].join("");
+  return `<select name="status" class="tv-filter-input">${opts}</select>`;
 }
 
 const DLR_TABLE_COL_COUNT = 13;
@@ -105,52 +106,6 @@ function renderDlrTableRows(result: DlrReportResult): string {
     })
     .join("");
 }
-
-const DLR_REPORT_RESIZE_SCRIPT = `<script>
-(function () {
-  var table = document.querySelector(".tv-dlr-report__table--resizable");
-  if (!table) return;
-  var storageKey = "telvoice:dlr-report-col-widths";
-  var saved = {};
-  try {
-    var raw = localStorage.getItem(storageKey);
-    if (raw) saved = JSON.parse(raw);
-  } catch (e) {}
-  var ths = table.querySelectorAll("thead th");
-  ths.forEach(function (th, idx) {
-    var key = th.getAttribute("data-col-key") || String(idx);
-    if (saved[key]) th.style.width = saved[key];
-    var grip = document.createElement("span");
-    grip.className = "tv-col-resize-handle";
-    grip.setAttribute("aria-hidden", "true");
-    grip.title = "Arrastrar para cambiar ancho";
-    th.appendChild(grip);
-    var startX = 0;
-    var startW = 0;
-    function onMove(ev) {
-      var w = Math.max(56, startW + ev.pageX - startX);
-      th.style.width = w + "px";
-      th.style.minWidth = w + "px";
-      th.style.maxWidth = w + "px";
-    }
-    function onUp() {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-      document.body.classList.remove("tv-col-resizing");
-      saved[key] = th.style.width;
-      try { localStorage.setItem(storageKey, JSON.stringify(saved)); } catch (e) {}
-    }
-    grip.addEventListener("mousedown", function (ev) {
-      ev.preventDefault();
-      startX = ev.pageX;
-      startW = th.offsetWidth;
-      document.body.classList.add("tv-col-resizing");
-      document.addEventListener("mousemove", onMove);
-      document.addEventListener("mouseup", onUp);
-    });
-  });
-})();
-</script>`;
 
 function renderPagination(
   result: DlrReportResult,
@@ -275,10 +230,7 @@ export function renderAppReportsPage(
             ${renderFilterField("Sender ID", `<input type="text" name="sender_id" class="tv-filter-input" placeholder="Sender ID (opcional)" value="${escapeHtml(filters.senderId ?? "")}" />`)}
             ${renderFilterField("Phone Number", `<input type="text" name="phone" class="tv-filter-input" placeholder="Número de teléfono" value="${escapeHtml(filters.phoneNumber ?? "")}" />`)}
             ${renderFilterField("Job ID", `<input type="text" name="job_id" class="tv-filter-input" placeholder="Job ID (opcional)" value="${escapeHtml(filters.jobId ?? "")}" />`)}
-            <div class="tv-filter-field tv-dlr-report__status-field">
-              <span class="tv-filter-field__label">DLR Status</span>
-              ${renderStatusFilters(selectedStatus)}
-            </div>
+            ${renderFilterField("DLR Status", renderStatusSelect(selectedStatus))}
             ${renderFilterField("Country", `<select name="country" class="tv-filter-input">${countryOpts}</select>`)}
             ${renderFilterField("MCC", `<select name="mcc" class="tv-filter-input">${mccOpts}</select>`)}
             ${renderFilterField("MNC", `<select name="mnc" class="tv-filter-input">${mncOpts}</select>`)}
@@ -307,21 +259,10 @@ export function renderAppReportsPage(
       <section class="tv-panel tv-client-dash-table-panel tv-dlr-report__table-panel">
         <div class="tv-client-dash-table-inner tv-dlr-report__table-inner">
           <div class="table-wrap tv-dlr-report__table-wrap">
-            <table class="tv-table tv-table--dash tv-dlr-report__table tv-dlr-report__table--resizable">
+            <table class="tv-table tv-table--dash tv-dlr-report__table">
               <thead><tr>
-                <th data-col-key="smsId">SMS ID</th>
-                <th data-col-key="senderId">Sender ID</th>
-                <th data-col-key="dlrStatus">DLR Status</th>
-                <th data-col-key="message">Message</th>
-                <th data-col-key="number">Number</th>
-                <th data-col-key="mcc">MCC</th>
-                <th data-col-key="mnc">MNC</th>
-                <th data-col-key="country">País</th>
-                <th data-col-key="type">Type</th>
-                <th data-col-key="smsType">SMS Type</th>
-                <th data-col-key="parts">Parts</th>
-                <th data-col-key="cost">Cost</th>
-                <th data-col-key="dlrDate">DLR Date</th>
+                <th>SMS ID</th><th>Sender ID</th><th>DLR Status</th><th>Message</th><th>Number</th>
+                <th>MCC</th><th>MNC</th><th>País</th><th>Type</th><th>SMS Type</th><th>Parts</th><th>Cost</th><th>DLR Date</th>
               </tr></thead>
               <tbody>${renderDlrTableRows(result)}</tbody>
             </table>
@@ -330,8 +271,7 @@ export function renderAppReportsPage(
         </div>
       </section>
     </div>
-    </div>
-    ${DLR_REPORT_RESIZE_SCRIPT}`;
+    </div>`;
 
   return wrapAppPage(ctx, "reports", "Reportes", body);
 }

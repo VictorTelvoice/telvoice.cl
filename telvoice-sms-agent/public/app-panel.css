@@ -2416,8 +2416,8 @@
     }
     .tv-dash-quick-actions__grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.85rem;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 0.75rem;
       padding: 1.25rem 1.35rem 1.35rem;
       width: 100%;
       box-sizing: border-box;
@@ -2551,11 +2551,6 @@
     }
     @media (max-width: 1100px) {
       .tv-kpi-grid--client { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .tv-dash-quick-actions__grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.75rem;
-        padding: 1.1rem 1.15rem 1.2rem;
-      }
       .tv-dash-quick-card {
         min-height: 86px;
         padding: 0.95rem 1rem;
@@ -2614,8 +2609,7 @@
       width: 100%;
       box-sizing: border-box;
     }
-    .tv-app-client .tv-dlr-report__filters-grid > .tv-filter-field,
-    .tv-app-client .tv-dlr-report__filters-grid > .tv-dlr-report__status-field {
+    .tv-app-client .tv-dlr-report__filters-grid > .tv-filter-field {
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
@@ -2647,23 +2641,6 @@
       justify-content: flex-end;
       align-self: end;
     }
-    .tv-dlr-report__status-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.35rem;
-    }
-    .tv-dlr-report__status-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      font-size: 0.75rem;
-      padding: 0.25rem 0.5rem;
-      border: 1px solid var(--tv-border, #e2e8f0);
-      border-radius: 6px;
-      cursor: pointer;
-      background: #f8fafc;
-    }
-    .tv-dlr-report__status-chip input { margin: 0; }
     .tv-dlr-report__table-block {
       margin-bottom: 0;
     }
@@ -2674,55 +2651,7 @@
       overflow-x: auto;
       max-height: 58vh;
     }
-    .tv-dlr-report__table {
-      min-width: 1100px;
-      table-layout: fixed;
-      width: 100%;
-    }
-    .tv-dlr-report__table--resizable thead th {
-      position: relative;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      padding-right: 1.1rem;
-      user-select: none;
-    }
-    .tv-col-resize-handle {
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 8px;
-      height: 100%;
-      cursor: col-resize;
-      touch-action: none;
-    }
-    .tv-col-resize-handle::after {
-      content: "";
-      position: absolute;
-      top: 20%;
-      bottom: 20%;
-      right: 3px;
-      width: 2px;
-      border-radius: 1px;
-      background: var(--tv-border, #cbd5e1);
-      opacity: 0.7;
-    }
-    .tv-col-resize-handle:hover::after,
-    body.tv-col-resizing .tv-col-resize-handle::after {
-      background: var(--tv-primary, #0052cc);
-      opacity: 1;
-    }
-    body.tv-col-resizing {
-      cursor: col-resize;
-      user-select: none;
-    }
-    body.tv-col-resizing * {
-      cursor: col-resize !important;
-    }
-    .tv-dlr-report__table--resizable td {
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+    .tv-dlr-report__table { min-width: 1100px; }
     .tv-dlr-report__mono { font-family: ui-monospace, monospace; font-size: 0.78rem; }
     .tv-dlr-report__msg { max-width: 220px; }
     .tv-dlr-report__date { white-space: nowrap; font-size: 0.8rem; }
