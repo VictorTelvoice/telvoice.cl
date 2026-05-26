@@ -43,7 +43,9 @@ export type BillingEventType =
   | "invoice.email_retry_started"
   | "invoice.email_retry_completed"
   | "invoice.email_retry_failed"
-  | "invoice.marked_reviewed";
+  | "invoice.marked_reviewed"
+  | "billing.recovery.order_marked_reviewed"
+  | "billing.recovery.order_unmarked_reviewed";
 
 export type BillingPaymentStatus =
   | "pending"
@@ -220,8 +222,32 @@ export type BillingOrderSummary = {
   lastEmailError: string | null;
 };
 
+export const BILLING_RECOVERY_EXCLUSION_REASONS = [
+  "demo_qa_order",
+  "duplicate_test",
+  "manual_pending_demo",
+  "customer_request",
+  "other",
+] as const;
+
+export type BillingRecoveryExclusionReason =
+  (typeof BILLING_RECOVERY_EXCLUSION_REASONS)[number];
+
+export type BillingOrderRecoveryMetadata = {
+  reviewed: boolean;
+  excluded: boolean;
+  reason: string;
+  reviewed_at: string;
+  reviewed_by: string;
+  reviewed_by_id?: string | null;
+  reviewed_by_type?: string | null;
+  notes?: string | null;
+  unmarked_at?: string | null;
+};
+
 export type BillingRecoverySummary = {
   ordersWithoutInvoice: number;
+  ordersExcludedFromRecovery: number;
   invoicesWithoutEmail: number;
   failedEmails: number;
   failedEmailsUnreviewed: number;
@@ -236,12 +262,16 @@ export type OrderWithoutInvoiceRow = {
   company_id: string;
   company_name: string;
   payment_provider: string | null;
+  payment_reference: string | null;
   amount: number;
   currency: string;
   payment_status: string;
   credit_status: string;
   created_at: string;
   credited_at: string | null;
+  billing_recovery_excluded: boolean;
+  billing_recovery_reviewed: boolean;
+  billing_recovery_reason: string | null;
 };
 
 export type InvoiceWithoutEmailRow = {

@@ -6,6 +6,7 @@ import type {
   InvoiceWithoutEmailRow,
   OrderWithoutInvoiceRow,
 } from "../../../types/billing.js";
+import { BILLING_RECOVERY_EXCLUSION_REASONS } from "../../../types/billing.js";
 import { formatOrderShortId, paymentMethodLabel } from "../../../utils/order-display.js";
 import { escapeHtml, formatDate } from "../../../utils/html.js";
 import { renderKpiCard } from "../components.js";
@@ -21,10 +22,54 @@ import { renderSuperadminBanner } from "../superadmin-kit.js";
 export type AdminBillingRecoveryContext = {
   summary: BillingRecoverySummary;
   ordersWithout: OrderWithoutInvoiceRow[];
+  ordersExcluded: OrderWithoutInvoiceRow[];
+  showExcluded: boolean;
   invoicesWithout: InvoiceWithoutEmailRow[];
   failedEmails: FailedBillingEmailRow[];
   failedSyncs: FailedBillingSyncRow[];
 };
+
+const RECOVERY_REASON_LABELS: Record<string, string> = {
+  demo_qa_order: "Demo / QA",
+  duplicate_test: "Prueba duplicada",
+  manual_pending_demo: "Checkout manual demo",
+  customer_request: "Solicitud cliente",
+  other: "Otro",
+};
+
+function recoveryReasonLabel(reason: string | null): string {
+  if (!reason) return "—";
+  return RECOVERY_REASON_LABELS[reason] ?? reason;
+}
+
+function renderOrderRecoveryBadges(r: OrderWithoutInvoiceRow): string {
+  const parts: string[] = [];
+  if (r.billing_recovery_reviewed) {
+    parts.push(`<span class="badge badge-muted">Revisada</span>`);
+  }
+  if (r.billing_recovery_excluded) {
+    parts.push(`<span class="badge badge-warn">Excluida billing</span>`);
+  }
+  return parts.join(" ");
+}
+
+function renderMarkReviewedForm(orderId: string): string {
+  const reasonOptions = BILLING_RECOVERY_EXCLUSION_REASONS.map(
+    (code) =>
+      `<option value="${escapeHtml(code)}">${escapeHtml(RECOVERY_REASON_LABELS[code] ?? code)}</option>`,
+  ).join("");
+  return `<details class="recovery-mark-form" style="margin-top:0.35rem">
+    <summary class="btn btn-ghost btn-sm" style="cursor:pointer;list-style:none">Marcar revisada</summary>
+    <form method="post" action="/admin/billing/recovery/orders/${escapeHtml(orderId)}/mark-reviewed" style="margin-top:0.5rem;padding:0.5rem;border:1px solid var(--border);border-radius:6px;max-width:22rem">
+      <label class="field-label">Motivo</label>
+      <select name="reason" class="input input-sm" style="width:100%;margin-bottom:0.35rem">${reasonOptions}</select>
+      <label class="field-label">Notas</label>
+      <textarea name="notes" class="input input-sm" rows="2" style="width:100%;margin-bottom:0.35rem" placeholder="Opcional"></textarea>
+      <input type="hidden" name="excluded" value="true" />
+      <button type="submit" class="btn btn-secondary btn-sm">Excluir de recuperación</button>
+    </form>
+  </details>`;
+}
 
 function fmtMoney(amount: number, currency = "CLP"): string {
   return new Intl.NumberFormat("es-CL", {
@@ -41,10 +86,16 @@ function docNum(inv: { invoice_number: string | null; invoice_id: string }): str
 function renderRecoveryKpis(summary: BillingRecoverySummary): string {
   return `<div class="tv-kpi-grid">
     ${renderKpiCard({
-      label: "Sin comprobante",
+      label: "Sin comprobante (activas)",
       value: String(summary.ordersWithoutInvoice),
       icon: "shopping_cart",
       variant: summary.ordersWithoutInvoice > 0 ? "warn" : "success",
+    })}
+    ${renderKpiCard({
+      label: "Revisadas / excluidas",
+      value: String(summary.ordersExcludedFromRecovery),
+      icon: "visibility_off",
+      variant: summary.ordersExcludedFromRecovery > 0 ? "default" : "success",
     })}
     ${renderKpiCard({
       label: "Sin email mock",
@@ -80,34 +131,57 @@ function renderRecoveryKpis(summary: BillingRecoverySummary): string {
   </div>`;
 }
 
-function renderOrdersWithoutTable(rows: OrderWithoutInvoiceRow[]): string {
+function renderOrdersWithoutTable(
+  rows: OrderWithoutInvoiceRow[],
+  options: {
+    excludedSection?: boolean;
+    showExcludedLink?: boolean;
+    excludedCount?: number;
+  } = {},
+): string {
   if (!rows.length) {
-    return `<p class="field-hint" style="margin:0">No hay órdenes pagadas y acreditadas sin comprobante.</p>`;
+    const empty = options.excludedSection
+      ? "No hay órdenes revisadas o excluidas de recuperación."
+      : "No hay órdenes pagadas y acreditadas sin comprobante pendientes de revisión.";
+    return `<p class="field-hint" style="margin:0">${empty}</p>`;
   }
   const body = rows
-    .map(
-      (r) => `<tr>
+    .map((r) => {
+      const badges = renderOrderRecoveryBadges(r);
+      const refCell = r.payment_reference
+        ? `<code title="${escapeHtml(r.payment_reference)}">${escapeHtml(r.payment_reference.slice(0, 18))}${r.payment_reference.length > 18 ? "…" : ""}</code>`
+        : "—";
+      const actions = options.excludedSection
+        ? `<form method="post" action="/admin/billing/recovery/orders/${escapeHtml(r.order_id)}/unmark-reviewed?show_excluded=1" style="display:inline">
+             <button type="submit" class="btn btn-ghost btn-sm">Quitar revisión</button>
+           </form>`
+        : `<form method="post" action="/admin/billing/recovery/orders/${escapeHtml(r.order_id)}/sync" style="display:inline">
+             <button type="submit" class="btn btn-primary btn-sm">Generar comprobante</button>
+           </form>
+           ${renderMarkReviewedForm(r.order_id)}`;
+      return `<tr>
         <td>${escapeHtml(formatDate(r.created_at))}</td>
         <td>${escapeHtml(r.company_name)}</td>
         <td><a href="/admin/orders/${escapeHtml(r.order_id)}"><code>${escapeHtml(formatOrderShortId(r.order_id))}</code></a></td>
         <td>${escapeHtml(paymentMethodLabel(r.payment_provider))}</td>
+        <td>${refCell}</td>
         <td>${fmtMoney(r.amount, r.currency)}</td>
-        <td>${escapeHtml(r.payment_status)}</td>
-        <td>${escapeHtml(r.credit_status)}</td>
-        <td>
-          <form method="post" action="/admin/billing/recovery/orders/${escapeHtml(r.order_id)}/sync" style="display:inline">
-            <button type="submit" class="btn btn-primary btn-sm">Generar comprobante</button>
-          </form>
-        </td>
-      </tr>`,
-    )
+        <td>${badges || "—"}</td>
+        <td>${options.excludedSection ? escapeHtml(recoveryReasonLabel(r.billing_recovery_reason)) : `${escapeHtml(r.payment_status)} / ${escapeHtml(r.credit_status)}`}</td>
+        <td style="min-width:11rem">${actions}</td>
+      </tr>`;
+    })
     .join("");
-  return `<div class="table-wrap" style="padding:0;overflow-x:auto">
+  const excludedN = options.excludedCount ?? 0;
+  const showLink = options.showExcludedLink
+    ? `<p class="field-hint" style="margin:0 0 0.75rem"><a href="/admin/invoices/recovery?show_excluded=1">Ver revisadas / excluidas (${excludedN})</a></p>`
+    : "";
+  const headers = options.excludedSection
+    ? `<th>Fecha</th><th>Cliente</th><th>Orden</th><th>Pago</th><th>Ref.</th><th>Monto</th><th>Estado</th><th>Motivo</th><th>Acción</th>`
+    : `<th>Fecha</th><th>Cliente</th><th>Orden</th><th>Pago</th><th>Ref.</th><th>Monto</th><th></th><th>Estado</th><th>Acción</th>`;
+  return `${showLink}<div class="table-wrap" style="padding:0;overflow-x:auto">
     <table class="tv-table">
-      <thead><tr>
-        <th>Fecha</th><th>Cliente</th><th>Orden</th><th>Pago</th><th>Monto</th>
-        <th>Estado pago</th><th>Crédito</th><th>Acción</th>
-      </tr></thead>
+      <thead><tr>${headers}</tr></thead>
       <tbody>${body}</tbody>
     </table>
   </div>`;
@@ -249,7 +323,25 @@ export function renderAdminBillingRecoveryPage(
       </div>
     </section>
     ${renderRecoveryKpis(ctx.summary)}
-    ${renderPanel("A. Órdenes pagadas/acreditadas sin comprobante", renderOrdersWithoutTable(ctx.ordersWithout))}
+    ${renderPanel(
+      "A. Órdenes pagadas/acreditadas sin comprobante (incidencias activas)",
+      renderOrdersWithoutTable(ctx.ordersWithout, {
+        showExcludedLink: ctx.summary.ordersExcludedFromRecovery > 0 && !ctx.showExcluded,
+        excludedCount: ctx.summary.ordersExcludedFromRecovery,
+      }),
+    )}
+    ${
+      ctx.showExcluded || ctx.ordersExcluded.length > 0
+        ? renderPanel(
+            "A.2 Revisadas / excluidas de recuperación",
+            `${
+              ctx.showExcluded
+                ? `<p class="field-hint" style="margin:0 0 0.75rem"><a href="/admin/invoices/recovery">Volver a incidencias activas</a></p>`
+                : `<p class="field-hint" style="margin:0 0 0.75rem"><a href="/admin/invoices/recovery?show_excluded=1">Mostrar todas las revisadas / excluidas</a></p>`
+            }${renderOrdersWithoutTable(ctx.ordersExcluded, { excludedSection: true })}`,
+          )
+        : ""
+    }
     ${renderPanel("B. Comprobantes sin email mock enviado", renderInvoicesWithoutEmailTable(ctx.invoicesWithout))}
     ${renderPanel("C. Emails fallidos", renderFailedEmailsTable(ctx.failedEmails))}
     ${renderPanel("D. Syncs fallidos (billing.sync.failed)", renderFailedSyncTable(ctx.failedSyncs))}

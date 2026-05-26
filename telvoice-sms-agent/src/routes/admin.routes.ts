@@ -74,7 +74,9 @@ import {
   postRecoveryEmailMarkReviewed,
   postRecoveryEmailRetry,
   postRecoveryInvoiceSendEmail,
+  postRecoveryOrderMarkReviewed,
   postRecoveryOrderSync,
+  postRecoveryOrderUnmarkReviewed,
 } from "../controllers/admin-billing-recovery.controller.js";
 import {
   getSaApiKeysPage,
@@ -243,6 +245,16 @@ adminRouter.post(
   "/billing/recovery/orders/:orderId/sync",
   requireAdminPage,
   postRecoveryOrderSync,
+);
+adminRouter.post(
+  "/billing/recovery/orders/:orderId/mark-reviewed",
+  requireAdminPage,
+  postRecoveryOrderMarkReviewed,
+);
+adminRouter.post(
+  "/billing/recovery/orders/:orderId/unmark-reviewed",
+  requireAdminPage,
+  postRecoveryOrderUnmarkReviewed,
 );
 adminRouter.post(
   "/billing/recovery/invoices/:invoiceId/send-email",

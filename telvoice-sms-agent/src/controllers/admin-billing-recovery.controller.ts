@@ -3,15 +3,21 @@ import { getBalanceByClientId } from "../services/balanceService.js";
 import { getTestClientBundle } from "../services/clientService.js";
 import { getBillingEmailMode } from "../services/billingEmailService.js";
 import {
+  BILLING_RECOVERY_EXCLUSION_REASONS,
+} from "../types/billing.js";
+import {
   findFailedBillingEmails,
   findFailedBillingSyncEvents,
   findInvoicesWithoutSuccessfulEmail,
   findPaidCreditedOrdersWithoutInvoice,
   getBillingRecoverySummary,
+  isValidBillingRecoveryReason,
   markEmailLogReviewed,
+  markOrderBillingReviewed,
   retryBillingSyncForOrder,
   retryFailedEmailLog,
   retryInvoiceEmail,
+  unmarkOrderBillingReviewed,
 } from "../services/billingRecoveryService.js";
 import { validateUuidParam } from "../utils/validation.js";
 import { renderAdminBillingRecoveryPage } from "../views/admin-ui/sections/admin-billing-recovery-pages.js";
@@ -55,10 +61,12 @@ export async function getAdminBillingRecoveryPage(
 ): Promise<void> {
   try {
     const smsBalance = await loadSmsBalance();
-    const [summary, ordersWithout, invoicesWithout, failedEmails, failedSyncs] =
+    const showExcluded = req.query.show_excluded === "1";
+    const [summary, ordersWithout, ordersExcluded, invoicesWithout, failedEmails, failedSyncs] =
       await Promise.all([
         getBillingRecoverySummary(),
         findPaidCreditedOrdersWithoutInvoice({ limit: 100 }),
+        findPaidCreditedOrdersWithoutInvoice({ limit: 100, onlyExcluded: true }),
         findInvoicesWithoutSuccessfulEmail({ limit: 100 }),
         findFailedBillingEmails({ limit: 100 }),
         findFailedBillingSyncEvents({ limit: 50 }),
@@ -68,6 +76,8 @@ export async function getAdminBillingRecoveryPage(
       renderAdminBillingRecoveryPage(pageOpts(req, smsBalance), {
         summary,
         ordersWithout,
+        ordersExcluded,
+        showExcluded,
         invoicesWithout,
         failedEmails,
         failedSyncs,
@@ -136,6 +146,65 @@ export async function postRecoveryEmailMarkReviewed(
     const emailLogId = validateUuidParam(String(req.params.emailLogId), "emailLogId");
     const result = await markEmailLogReviewed(emailLogId, actorFromReq(req));
     redirectRecovery(res, result);
+  } catch (error) {
+    redirectRecovery(res, {
+      ok: false,
+      message: error instanceof Error ? error.message : "Error",
+    });
+  }
+}
+
+export async function postRecoveryOrderMarkReviewed(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const orderId = validateUuidParam(String(req.params.orderId), "orderId");
+    const reason = String(req.body?.reason ?? "demo_qa_order").trim();
+    const notes = typeof req.body?.notes === "string" ? req.body.notes.trim() : undefined;
+    const excluded =
+      req.body?.excluded === undefined ||
+      req.body?.excluded === "true" ||
+      req.body?.excluded === true;
+
+    if (!isValidBillingRecoveryReason(reason)) {
+      redirectRecovery(res, {
+        ok: false,
+        message: `Motivo inválido. Use: ${BILLING_RECOVERY_EXCLUSION_REASONS.join(", ")}`,
+      });
+      return;
+    }
+
+    const admin = req.adminUser;
+    const result = await markOrderBillingReviewed({
+      orderId,
+      reviewedBy: admin?.email ?? "superadmin",
+      actor: actorFromReq(req),
+      reason,
+      notes,
+      excluded,
+    });
+    redirectRecovery(res, result);
+  } catch (error) {
+    redirectRecovery(res, {
+      ok: false,
+      message: error instanceof Error ? error.message : "Error",
+    });
+  }
+}
+
+export async function postRecoveryOrderUnmarkReviewed(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const orderId = validateUuidParam(String(req.params.orderId), "orderId");
+    const result = await unmarkOrderBillingReviewed(orderId, actorFromReq(req));
+    const q = result.ok ? "ok" : "error";
+    const show = req.query.show_excluded === "1" ? "&show_excluded=1" : "";
+    res.redirect(
+      `/admin/invoices/recovery?${q}=${encodeURIComponent(result.message)}${show}`,
+    );
   } catch (error) {
     redirectRecovery(res, {
       ok: false,
