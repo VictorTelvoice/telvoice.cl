@@ -5,7 +5,13 @@ import { isMissingTableError } from "../utils/db-table.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 import { calculateSmsSegments } from "./smsSegmentService.js";
 import { listPanelMessagesByCampaign } from "./panelSmsMessageService.js";
-import { getSmsDebitForCampaign } from "./walletTransactionService.js";
+import {
+  getSmsDebitForCampaign,
+  sumSmsDebitsForCampaignMessages,
+} from "./walletTransactionService.js";
+import type { LiveCampaignLaunchStatus } from "./campaignLiveLaunchService.js";
+import { getLiveLaunchStatus } from "./campaignLiveLaunchService.js";
+import { countQueueByCampaignStatus } from "./smsQueueService.js";
 
 export type CampaignTimelineStep = {
   title: string;
@@ -48,6 +54,9 @@ export type CampaignDetailView = {
   };
   timeline: CampaignTimelineStep[];
   canSimulate: boolean;
+  liveLaunch?: LiveCampaignLaunchStatus;
+  queueByStatus?: Record<string, number>;
+  walletDebitedFromMessages?: number;
 };
 
 async function resolveAudienceLabel(
@@ -106,6 +115,16 @@ function numMeta(metadata: Record<string, unknown>, key: string): number {
   return typeof v === "number" && Number.isFinite(v) ? v : 0;
 }
 
+function messageByStatusFromMessages(
+  messages: PanelSmsMessageRow[],
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const m of messages) {
+    out[m.status] = (out[m.status] ?? 0) + 1;
+  }
+  return out;
+}
+
 /** Envío real (programado/masivo por cola), no simulación mock de contactos. */
 export function isCampaignRealSend(campaign: SmsCampaignRow): boolean {
   const meta = campaign.metadata ?? {};
@@ -114,9 +133,19 @@ export function isCampaignRealSend(campaign: SmsCampaignRow): boolean {
   }
   const source = String(meta.source ?? "");
   return (
+    meta.execution_mode === "live_campaign" ||
+    source === "campaign_live_launch" ||
     source === "app_send_sms_scheduled" ||
     source === "app_send_sms_mass" ||
     source === "app_send_sms_campaign"
+  );
+}
+
+export function isContactsLiveLaunchCampaign(campaign: SmsCampaignRow): boolean {
+  const meta = campaign.metadata ?? {};
+  return (
+    meta.execution_mode === "live_campaign" ||
+    String(meta.source ?? "") === "campaign_live_launch"
   );
 }
 
@@ -244,6 +273,7 @@ function buildProductionCampaignTimeline(input: {
   campaign: SmsCampaignRow;
   messages: PanelSmsMessageRow[];
   walletDebit: WalletTransactionRow | null;
+  walletDebitedFromMessages?: number;
 }): CampaignTimelineStep[] {
   const meta = input.campaign.metadata ?? {};
   const sendMode =
@@ -276,12 +306,37 @@ function buildProductionCampaignTimeline(input: {
     },
   ];
 
-  if (queued > 0 || meta.bulk_queue === true) {
+  const liveLaunchedAt =
+    typeof meta.live_launched_at === "string"
+      ? meta.live_launched_at.trim() || null
+      : null;
+
+  if (isContactsLiveLaunchCampaign(input.campaign) && liveLaunchedAt) {
+    steps.push({
+      title: "Campaña enviada a cola",
+      detail: "Mensajes live en cola; el worker enviará respetando TPS.",
+      at: liveLaunchedAt,
+      state: "done",
+    });
+  } else if (queued > 0 || meta.bulk_queue === true) {
     steps.push({
       title: "Destinatarios encolados",
       detail: `${queued || messageCount} destinatario(s) en cola de envío.`,
       at: input.campaign.created_at,
       state: "done",
+    });
+  }
+
+  if (
+    isContactsLiveLaunchCampaign(input.campaign) &&
+    messageCount > 0 &&
+    (messageByStatusFromMessages(input.messages).queued ?? 0) > 0
+  ) {
+    steps.push({
+      title: "Mensajes en cola",
+      detail: `${messageByStatusFromMessages(input.messages).queued ?? 0} mensaje(s) queued en panel.`,
+      at: liveLaunchedAt,
+      state: input.campaign.status === "processing" ? "current" : "done",
     });
   }
 
@@ -312,6 +367,16 @@ function buildProductionCampaignTimeline(input: {
       detail: `${input.walletDebit.sms_amount} SMS — referencia sms_campaign.`,
       at: debitAt,
       state: "done",
+    });
+  } else if (
+    isContactsLiveLaunchCampaign(input.campaign) &&
+    (input.walletDebitedFromMessages ?? 0) > 0
+  ) {
+    steps.push({
+      title: "Débitos por mensajes aceptados",
+      detail: `${input.walletDebitedFromMessages} SMS — referencia sms_message (cola).`,
+      at: null,
+      state: input.campaign.status === "processing" ? "current" : "done",
     });
   }
 
@@ -354,6 +419,7 @@ export function buildCampaignTimeline(input: {
   campaign: SmsCampaignRow;
   messages: PanelSmsMessageRow[];
   walletDebit: WalletTransactionRow | null;
+  walletDebitedFromMessages?: number;
 }): CampaignTimelineStep[] {
   if (isCampaignRealSend(input.campaign)) {
     return buildProductionCampaignTimeline(input);
@@ -376,6 +442,12 @@ export async function loadCampaignDetailView(
   const meta = campaign.metadata ?? {};
   const messages = await listPanelMessagesByCampaign(campaign.id, 500);
   const walletDebit = await getSmsDebitForCampaign(campaign.id, companyId);
+  const walletDebitedFromMessages = await sumSmsDebitsForCampaignMessages(
+    campaign.id,
+    companyId,
+  );
+  const queueByStatus = await countQueueByCampaignStatus(campaign.id);
+  const liveLaunch = await getLiveLaunchStatus(companyId, campaign.id);
 
   const segmentInfo = calculateSmsSegments(campaign.message ?? "");
   const audienceLabels = await resolveAudienceLabel(companyId, meta);
@@ -390,11 +462,13 @@ export async function loadCampaignDetailView(
     typeof meta.send_mode === "string" ? meta.send_mode.trim() : "";
   const modeKpi =
     viewKind === "production"
-      ? sendMode === "scheduled"
-        ? "PROGRAMADO"
-        : sendMode === "mass"
-          ? "MASIVA"
-          : "PRODUCCIÓN"
+      ? isContactsLiveLaunchCampaign(campaign)
+        ? "LIVE"
+        : sendMode === "scheduled"
+          ? "PROGRAMADO"
+          : sendMode === "mass"
+            ? "MASIVA"
+            : "PRODUCCIÓN"
       : campaign.mode === "mock"
         ? "MOCK"
         : campaign.mode.toUpperCase();
@@ -430,10 +504,18 @@ export async function loadCampaignDetailView(
       messagesGenerated: messages.length,
       smsConsumed: campaign.real_sms_cost,
       deliveredCount,
-      walletDebited: walletDebit?.sms_amount ?? 0,
+      walletDebited: walletDebit?.sms_amount ?? walletDebitedFromMessages,
       simulationMode: modeKpi,
     },
-    timeline: buildCampaignTimeline({ campaign, messages, walletDebit }),
+    timeline: buildCampaignTimeline({
+      campaign,
+      messages,
+      walletDebit,
+      walletDebitedFromMessages,
+    }),
     canSimulate: canSimulateCampaignMock(campaign),
+    liveLaunch,
+    queueByStatus,
+    walletDebitedFromMessages,
   };
 }

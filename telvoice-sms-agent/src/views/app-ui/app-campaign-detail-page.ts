@@ -1,5 +1,6 @@
 import type { CampaignDetailView } from "../../services/campaignDetailService.js";
 import type { CampaignLiveReadinessResult } from "../../services/campaignReadinessService.js";
+import { LIVE_CAMPAIGN_CONFIRM_TEXT } from "../../services/campaignLiveLaunchService.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 import { renderKpiCard } from "../admin-ui/components.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
@@ -53,7 +54,7 @@ function renderLiveReadinessBlock(
   return `<section class="tv-panel tv-dash-block" style="margin-top:1rem">
     <header class="tv-section-head" style="padding:1rem 1.25rem 0">
       <h2 class="tv-section-head__title">Preparación para envío real</h2>
-      <p class="tv-section-head__sub">Gate operativo — solo lectura, sin envío SMS real en esta etapa</p>
+      <p class="tv-section-head__sub">Gate operativo — validación de ruta, TPS, saldo y permisos</p>
     </header>
     <div class="tv-panel__body">
       <dl class="tv-detail-dl">
@@ -72,11 +73,98 @@ function renderLiveReadinessBlock(
         ${blockedList}
         ${warningsBlock}
       </div>
-      <div class="tv-quick-actions" style="margin-top:1.25rem;align-items:center;gap:0.75rem">
-        <button type="button" class="btn btn-primary btn-sm" disabled title="Etapa 6 — envío real no activo">Enviar campaña real</button>
-        <span class="field-hint" style="margin:0">El envío real será habilitado por Telvoice después de la validación operativa.</span>
-      </div>
     </div>
+  </section>`;
+}
+
+function renderLiveLaunchBlock(
+  detail: CampaignDetailView,
+  readiness: CampaignLiveReadinessResult,
+  campaignId: string,
+): string {
+  const launch = detail.liveLaunch;
+  const canLaunch =
+    launch?.canLaunch === true &&
+    readiness.canGoLive &&
+    detail.campaign.status === "draft" &&
+    (launch.liveMessageCount ?? 0) === 0;
+
+  const blockReasons = [
+    ...(launch?.launchBlockReasons ?? []),
+    ...readiness.blockedReasons.filter(
+      (r) => !(launch?.launchBlockReasons ?? []).includes(r),
+    ),
+  ];
+  const blockList = blockReasons.length
+    ? `<ul class="tv-readiness-list">${blockReasons
+        .map((r) => `<li>${escapeHtml(r)}</li>`)
+        .join("")}</ul>`
+    : "";
+
+  const balanceAfter =
+    readiness.availableSms - readiness.requiredSms;
+
+  const form = canLaunch
+    ? `<form method="post" action="/app/campaigns/${escapeHtml(campaignId)}/launch-live" class="tv-form-grid" style="margin-top:1rem">
+        <label class="tv-checkbox-row">
+          <input type="checkbox" name="consent_confirmed" value="1" required />
+          Confirmo que tengo autorización para contactar a esta audiencia y entiendo que esta campaña enviará SMS reales.
+        </label>
+        <label>
+          <span class="field-hint">Escribe <strong>${LIVE_CAMPAIGN_CONFIRM_TEXT}</strong> para confirmar</span>
+          <input type="text" name="confirm_text" class="tv-input-full" autocomplete="off" required placeholder="${LIVE_CAMPAIGN_CONFIRM_TEXT}" />
+        </label>
+        <div class="tv-quick-actions">
+          <button type="submit" class="btn btn-primary">Enviar campaña real</button>
+        </div>
+      </form>`
+    : `<div class="tv-quick-actions" style="margin-top:1rem">
+        <button type="button" class="btn btn-primary" disabled>Enviar campaña real</button>
+        ${blockList}
+      </div>`;
+
+  return `<section class="tv-panel tv-dash-block" style="margin-top:1rem;border-color:var(--tv-warn-border, #f59e0b)">
+    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
+      <h2 class="tv-section-head__title">Enviar campaña real</h2>
+      <p class="tv-section-head__sub tv-text-warn">Esta acción enviará SMS reales y descontará saldo según mensajes aceptados por el proveedor.</p>
+    </header>
+    <div class="tv-panel__body">
+      <dl class="tv-detail-dl">
+        <div><dt>Destinatarios válidos</dt><dd>${detail.audience.validCount}</dd></div>
+        <div><dt>SMS estimados</dt><dd>${fmtSms(readiness.requiredSms)}</dd></div>
+        <div><dt>Saldo disponible</dt><dd>${fmtSms(readiness.availableSms)}</dd></div>
+        <div><dt>Saldo posterior est.</dt><dd>${fmtSms(Math.max(0, balanceAfter))}</dd></div>
+        <div><dt>TPS efectivo</dt><dd>${readiness.effectiveTps ?? "—"}</dd></div>
+      </dl>
+      ${form}
+      <p class="field-hint" style="margin:1rem 0 0">Los mensajes entrarán a cola; Telvoice los procesará respetando TPS. No se llama al proveedor desde esta pantalla.</p>
+    </div>
+  </section>`;
+}
+
+function renderQueueStatusBlock(detail: CampaignDetailView): string {
+  const q = detail.queueByStatus ?? {};
+  const m = detail.liveLaunch?.messageByStatus ?? {};
+  const rows = [
+    ["Cola queued", q.queued ?? 0],
+    ["Cola processing", q.processing ?? 0],
+    ["Cola sent", q.sent ?? 0],
+    ["Cola failed", q.failed ?? 0],
+    ["Mensajes queued", m.queued ?? 0],
+    ["Mensajes sent", m.sent ?? 0],
+    ["Mensajes delivered", m.delivered ?? 0],
+    ["Mensajes failed", m.failed ?? 0],
+    ["Mensajes pending DLR", m.pending ?? 0],
+  ]
+    .map(
+      ([label, val]) =>
+        `<div><dt>${escapeHtml(String(label))}</dt><dd>${val}</dd></div>`,
+    )
+    .join("");
+
+  return `<section class="tv-panel" style="margin-top:1rem">
+    <h2 class="tv-panel__title">Estado de cola y envío</h2>
+    <dl class="tv-detail-dl tv-panel__body">${rows}</dl>
   </section>`;
 }
 
@@ -162,6 +250,10 @@ export function renderAppCampaignDetailPage(
     : (typeof meta.mock_executed_at === "string" && meta.mock_executed_at) ||
       c.sent_at;
   const showLiveReadiness = !isProduction && c.status === "draft";
+  const showLiveLaunch =
+    !isProduction && c.status === "draft" && !(detail.liveLaunch?.launched);
+  const showQueueStatus =
+    isProduction || detail.liveLaunch?.launched || (detail.queueByStatus?.queued ?? 0) > 0;
 
   const simulateBtn = detail.canSimulate
     ? `<form method="post" action="/app/campaigns/${escapeHtml(c.id)}/execute-mock" style="display:inline">
@@ -205,7 +297,13 @@ export function renderAppCampaignDetailPage(
         <div><dt>Fecha</dt><dd>${formatDate(detail.walletDebit.created_at)}</dd></div>
         <div><dt>Origen</dt><dd>${escapeHtml(String(detail.walletDebit.metadata?.source ?? "—"))}</dd></div>
       </dl>`
-    : `<p class="field-hint" style="margin:0">Sin débito wallet aún. Al simular la campaña se registrará un único movimiento <code>sms_debit</code> con referencia <code>sms_campaign</code>.</p>`;
+    : isProduction && (detail.walletDebitedFromMessages ?? 0) > 0
+      ? `<dl class="tv-detail-dl">
+        <div><dt>Costo estimado</dt><dd>${fmtSms(c.estimated_sms_cost)} SMS</dd></div>
+        <div><dt>Consumo real (mensajes)</dt><dd>${fmtSms(detail.walletDebitedFromMessages ?? 0)} SMS</dd></div>
+        <div><dt>Referencia</dt><dd><code>sms_message</code> por mensaje aceptado</dd></div>
+      </dl>`
+      : `<p class="field-hint" style="margin:0">${isProduction ? "El consumo se debitará por cada mensaje aceptado por el proveedor (cola)." : "Sin débito wallet aún. Al simular la campaña se registrará un único movimiento <code>sms_debit</code> con referencia <code>sms_campaign</code>."}</p>`;
 
   const timelineSteps = detail.timeline.map((s) => ({
     title: s.title,
@@ -294,6 +392,8 @@ export function renderAppCampaignDetailPage(
       <div class="tv-panel__body">${walletBlock}</div>
     </section>
     ${showLiveReadiness ? renderLiveReadinessBlock(liveReadiness) : ""}
+    ${showLiveLaunch ? renderLiveLaunchBlock(detail, liveReadiness, c.id) : ""}
+    ${showQueueStatus ? renderQueueStatusBlock(detail) : ""}
     ${messagesSection}
   </div>`;
 

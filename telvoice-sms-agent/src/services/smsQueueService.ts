@@ -286,6 +286,49 @@ export async function releaseStaleProcessingQueueItems(
   return data?.length ?? 0;
 }
 
+export async function countQueueItemsForCampaign(
+  campaignId: string,
+): Promise<number> {
+  const { count, error } = await getSupabase()
+    .from("sms_send_queue")
+    .select("id", { count: "exact", head: true })
+    .eq("campaign_id", campaignId);
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return 0;
+    }
+    wrapSupabaseError(error, "countQueueItemsForCampaign");
+  }
+  return count ?? 0;
+}
+
+export async function countQueueByCampaignStatus(
+  campaignId: string,
+): Promise<Record<string, number>> {
+  const statuses = [
+    "queued",
+    "processing",
+    "sent",
+    "failed",
+    "cancelled",
+    "paused",
+  ] as const;
+  const out: Record<string, number> = {};
+  for (const status of statuses) {
+    const { count, error } = await getSupabase()
+      .from("sms_send_queue")
+      .select("id", { count: "exact", head: true })
+      .eq("campaign_id", campaignId)
+      .eq("status", status);
+    if (error && !isMissingTableError(error)) {
+      wrapSupabaseError(error, "countQueueByCampaignStatus");
+    }
+    out[status] = count ?? 0;
+  }
+  return out;
+}
+
 export async function countPendingQueueForCampaign(
   campaignId: string,
 ): Promise<number> {

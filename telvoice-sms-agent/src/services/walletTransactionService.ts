@@ -170,6 +170,50 @@ export async function getSmsDebitForCampaign(
   return (data as WalletTransactionRow) ?? null;
 }
 
+/** Suma débitos sms_debit por mensaje de una campaña (cola live). */
+export async function sumSmsDebitsForCampaignMessages(
+  campaignId: string,
+  companyId: string,
+): Promise<number> {
+  const { data: messages, error: msgErr } = await getSupabase()
+    .from("panel_sms_messages")
+    .select("id")
+    .eq("campaign_id", campaignId)
+    .eq("company_id", companyId);
+
+  if (msgErr) {
+    if (isMissingTableError(msgErr)) {
+      return 0;
+    }
+    wrapSupabaseError(msgErr, "sumSmsDebitsForCampaignMessages.messages");
+  }
+
+  const messageIds = (messages ?? []).map((r) => r.id as string);
+  if (messageIds.length === 0) {
+    return 0;
+  }
+
+  const { data, error } = await getSupabase()
+    .from("wallet_transactions")
+    .select("sms_amount")
+    .eq("company_id", companyId)
+    .eq("type", "sms_debit")
+    .eq("reference_type", "sms_message")
+    .in("reference_id", messageIds);
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return 0;
+    }
+    wrapSupabaseError(error, "sumSmsDebitsForCampaignMessages");
+  }
+
+  return (data ?? []).reduce(
+    (sum, row) => sum + (Number(row.sms_amount) || 0),
+    0,
+  );
+}
+
 export async function hasSmsDebitForCampaign(
   campaignId: string,
 ): Promise<boolean> {

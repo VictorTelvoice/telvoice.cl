@@ -57,6 +57,11 @@ export type SmsCampaignConfig = {
   trafficType: string;
 };
 
+export type SmsLiveCampaignConfig = {
+  maxRecipients: number;
+  maxSegments: number;
+};
+
 function parsePositiveIntEnv(name: string, fallback: number): number {
   const raw = optionalEnv(name, String(fallback));
   const n = Number.parseInt(raw, 10);
@@ -165,6 +170,10 @@ export const env = {
     ),
     trafficType: optionalEnv("SMS_CAMPAIGN_TRAFFIC_TYPE", "promotional"),
   } satisfies SmsCampaignConfig,
+  smsLiveCampaign: {
+    maxRecipients: parsePositiveIntEnv("SMS_LIVE_CAMPAIGN_MAX_RECIPIENTS", 50),
+    maxSegments: parsePositiveIntEnv("SMS_LIVE_CAMPAIGN_MAX_SEGMENTS", 3),
+  } satisfies SmsLiveCampaignConfig,
   /** TPS global de plataforma (techo superior; no sustituye MAX_CLIENT_TPS). */
   smsPlatformMaxTps: parsePositiveIntEnv("SMS_PLATFORM_MAX_TPS", 100),
   /** Procesa automáticamente la cola de envíos programados (scheduled_at). */

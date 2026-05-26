@@ -4,6 +4,7 @@ import { env } from "../config/env.js";
 import { getBalanceByClientId } from "../services/balanceService.js";
 import { getTestClientBundle } from "../services/clientService.js";
 import { listAllCampaignsWithCompany } from "../services/smsCampaignService.js";
+import { getCampaignTrafficReadiness } from "../services/campaignReadinessService.js";
 import { listAllPanelMessagesWithCompany } from "../services/panelSmsMessageService.js";
 import { getSmsProviderStatusView } from "../services/smsProviderStatusService.js";
 import {
@@ -59,6 +60,21 @@ export async function getSaCampaignsPage(
   try {
     const smsBalance = await loadGlobalSmsHint();
     const campaigns = await listAllCampaignsWithCompany(150);
+    const companyIds = [
+      ...new Set(campaigns.map((c) => c.company_id).filter(Boolean)),
+    ].slice(0, 40);
+    const trafficByCompany = new Map<
+      string,
+      Awaited<ReturnType<typeof getCampaignTrafficReadiness>>
+    >();
+    await Promise.all(
+      companyIds.map(async (companyId) => {
+        trafficByCompany.set(
+          companyId,
+          await getCampaignTrafficReadiness(companyId),
+        );
+      }),
+    );
     res
       .type("html")
       .send(
@@ -66,6 +82,7 @@ export async function getSaCampaignsPage(
           admin: req.adminUser!,
           smsBalance,
           campaigns,
+          trafficByCompany,
         }),
       );
   } catch (error) {

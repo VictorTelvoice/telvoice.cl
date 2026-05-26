@@ -311,6 +311,24 @@ export async function listPanelMessagesByCampaign(
   return (data ?? []) as PanelSmsMessageRow[];
 }
 
+export async function countLiveMessagesForCampaign(
+  campaignId: string,
+): Promise<number> {
+  const { count, error } = await getSupabase()
+    .from("panel_sms_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("campaign_id", campaignId)
+    .eq("mode", "live");
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return 0;
+    }
+    wrapSupabaseError(error, "countLiveMessagesForCampaign");
+  }
+  return count ?? 0;
+}
+
 export async function listAllPanelMessagesWithCompany(
   limit = 100,
 ): Promise<PanelSmsMessageWithCompany[]> {

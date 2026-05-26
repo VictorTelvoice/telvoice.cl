@@ -62,6 +62,7 @@ export async function updateSmsCampaign(
   id: string,
   patch: Partial<{
     status: SmsCampaignStatus;
+    mode: string;
     total_recipients: number;
     valid_recipients: number;
     invalid_recipients: number;

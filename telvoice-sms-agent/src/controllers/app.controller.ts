@@ -84,7 +84,9 @@ import {
   createCampaignDraftFromPreview,
 } from "../services/campaignPreviewService.js";
 import { executeContactsAudienceCampaignMock } from "../services/campaignMockExecuteService.js";
+import { launchLiveCampaign } from "../services/campaignLiveLaunchService.js";
 import { loadCampaignDetailView } from "../services/campaignDetailService.js";
+import { getCampaignLiveReadiness } from "../services/campaignReadinessService.js";
 import { parseAudienceSourceFromQuery } from "../services/campaignAudienceService.js";
 import {
   getCampaignByIdForCompany,
@@ -1025,6 +1027,47 @@ export async function postAppCampaignExecuteMock(
   }
 }
 
+export async function postAppCampaignLaunchLive(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const campaignId = validateUuidParam(String(req.params.id), "id");
+  try {
+    const ctx = await requireContactsWriteContext(req);
+    if (!ctx) {
+      res.redirect("/app/campaigns?error=Sin%20permiso");
+      return;
+    }
+    const consentConfirmed =
+      req.body?.consent_confirmed === "1" ||
+      req.body?.consent_confirmed === true ||
+      req.body?.consent_confirmed === "on";
+    const confirmText =
+      typeof req.body?.confirm_text === "string" ? req.body.confirm_text : "";
+
+    const result = await launchLiveCampaign(ctx.company.id, campaignId, {
+      consentConfirmed,
+      confirmText,
+      launchedBy: ctx.profile.profileId ?? ctx.profile.adminUserId ?? null,
+    });
+
+    const okMsg = `Campaña enviada a cola: ${result.messagesQueued} mensaje(s) live queued · TPS ${result.effectiveTps}. Procesamiento vía cola (sin envío directo desde esta acción).`;
+    res.redirect(
+      303,
+      `/app/campaigns/${campaignId}?ok=${encodeURIComponent(okMsg)}`,
+    );
+  } catch (error) {
+    const msg =
+      error instanceof AppError
+        ? error.message
+        : "No se pudo lanzar la campaña en modo real";
+    res.redirect(
+      303,
+      `/app/campaigns/${campaignId}?error=${encodeURIComponent(msg)}`,
+    );
+  }
+}
+
 export async function getAppCampaignDetail(
   req: Request,
   res: Response,
@@ -1040,12 +1083,17 @@ export async function getAppCampaignDetail(
       return renderAppCampaignNotFoundPage(ctx);
     }
     const detail = await loadCampaignDetailView(ctx.company.id, campaign);
+    const liveReadiness = await getCampaignLiveReadiness(
+      ctx.company.id,
+      campaignId,
+    );
     const ok = typeof req.query.ok === "string" ? req.query.ok : undefined;
     const err =
       typeof req.query.error === "string" ? req.query.error : undefined;
     return renderAppCampaignDetailPage(
       { ...ctx, flash: ok, error: err },
       detail,
+      liveReadiness,
     );
   });
 }

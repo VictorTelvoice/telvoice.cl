@@ -4,6 +4,7 @@ import type {
   PanelSmsMessageWithCompany,
   SmsCampaignWithCompany,
 } from "../../../types/sms-panel.js";
+import type { CampaignTrafficReadinessResult } from "../../../services/campaignReadinessService.js";
 import { escapeHtml, formatDate } from "../../../utils/html.js";
 import { wrapAdminPage } from "../admin-page-wrap.js";
 import {
@@ -26,6 +27,7 @@ type PageOpts = {
   campaigns?: SmsCampaignWithCompany[];
   messages?: PanelSmsMessageWithCompany[];
   providerStatus?: SmsProviderStatusView;
+  trafficByCompany?: Map<string, CampaignTrafficReadinessResult>;
 };
 
 function wrap(
@@ -82,19 +84,29 @@ export function renderSaClientsPage(opts: PageOpts): string {
 
 export function renderSaCampaignsPage(opts: PageOpts): string {
   const real = opts.campaigns ?? [];
+  const trafficMap = opts.trafficByCompany;
   const rows = real.length
     ? real
         .map(
-          (c) => `<tr>
+          (c) => {
+            const tr = trafficMap?.get(c.company_id);
+            const liveFlag = tr?.liveEnabled ? "Sí" : "No";
+            const campFlag = tr?.campaignsEnabled ? "Sí" : "No";
+            const tps = tr?.effectiveTps != null ? String(tr.effectiveTps) : "—";
+            return `<tr>
       <td>${escapeHtml(c.company_name ?? "—")}</td>
       <td>${escapeHtml(c.name)}</td>
       <td>${escapeHtml(c.sender_id ?? "—")}</td>
       <td>${c.real_sms_cost}</td>
       <td>${statusBadgeSa(c.status)}</td>
       <td>${statusBadgeSa(c.mode)}</td>
+      <td>${campFlag}</td>
+      <td>${liveFlag}</td>
+      <td>${escapeHtml(tps)}</td>
       <td>${formatDate(c.created_at)}</td>
       <td><code class="tv-code-sm">${escapeHtml(c.id.slice(0, 8))}</code></td>
-    </tr>`,
+    </tr>`;
+          },
         )
         .join("")
     : MOCK_SA_CAMPAIGNS.map(
@@ -111,7 +123,7 @@ export function renderSaCampaignsPage(opts: PageOpts): string {
     ${renderSuperadminBanner()}
     ${renderPageHeader({ title: "Campañas globales", subtitle: "Monitorea campañas de todos los clientes en la plataforma.", actions: renderBtn("Nueva campaña", { disabled: true, variant: "primary" }) })}
     <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Cliente</th><th>Campaña</th><th>Remitente</th><th>SMS consumidos</th><th>Estado</th><th>Modo</th><th>Fecha</th><th></th>
+      <th>Cliente</th><th>Campaña</th><th>Remitente</th><th>SMS consumidos</th><th>Estado</th><th>Modo</th><th>Campaigns</th><th>Live</th><th>TPS eff.</th><th>Fecha</th><th></th>
     </tr></thead><tbody>${rows}</tbody></table></div>
     ${hint}`;
   return wrap(opts, "campaigns", "Campañas", body);
