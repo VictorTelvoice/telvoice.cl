@@ -354,7 +354,7 @@ export function renderSaWalletDetailPage(opts: PageOpts & {
     ${renderSuperadminBanner()}
     ${renderPageHeader({
       title: escapeHtml(opts.company.name),
-      subtitle: `Wallet ${escapeHtml(opts.balance.country)} · ${statusBadgeSa(opts.balance.status)}`,
+      subtitleHtml: `Wallet ${escapeHtml(opts.balance.country)} · ${statusBadgeSa(opts.balance.status)}`,
       actions: `<a href="/admin/wallets" class="btn btn-ghost btn-sm">← Saldos</a>`,
     })}
     <div class="tv-kpi-grid">

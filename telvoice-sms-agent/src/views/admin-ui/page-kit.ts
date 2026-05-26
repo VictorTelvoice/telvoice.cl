@@ -2,13 +2,19 @@ import { escapeHtml } from "../../utils/html.js";
 
 export function renderPageHeader(options: {
   title: string;
-  subtitle: string;
+  /** Texto plano (se escapa). */
+  subtitle?: string;
+  /** HTML interno de confianza (badges, etc.). No usar con input de usuario. */
+  subtitleHtml?: string;
   actions?: string;
 }): string {
+  const sub =
+    options.subtitleHtml ??
+    escapeHtml(options.subtitle ?? "");
   return `<header class="tv-page-head tv-page-head--row">
     <div>
       <h1 class="tv-page-title">${escapeHtml(options.title)}</h1>
-      <p class="tv-page-sub">${escapeHtml(options.subtitle)}</p>
+      <p class="tv-page-sub">${sub}</p>
     </div>
     ${options.actions ? `<div class="tv-page-actions">${options.actions}</div>` : ""}
   </header>`;
