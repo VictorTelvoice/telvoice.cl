@@ -14,7 +14,10 @@ export type CampaignTimelineStep = {
   state: "done" | "current" | "upcoming";
 };
 
+export type CampaignDetailViewKind = "mock" | "production";
+
 export type CampaignDetailView = {
+  viewKind: CampaignDetailViewKind;
   campaign: SmsCampaignRow;
   messages: PanelSmsMessageRow[];
   walletDebit: WalletTransactionRow | null;
@@ -103,7 +106,39 @@ function numMeta(metadata: Record<string, unknown>, key: string): number {
   return typeof v === "number" && Number.isFinite(v) ? v : 0;
 }
 
-export function buildCampaignTimeline(input: {
+/** Envío real (programado/masivo por cola), no simulación mock de contactos. */
+export function isCampaignRealSend(campaign: SmsCampaignRow): boolean {
+  const meta = campaign.metadata ?? {};
+  if (meta.production === true) {
+    return true;
+  }
+  const source = String(meta.source ?? "");
+  return (
+    source === "app_send_sms_scheduled" ||
+    source === "app_send_sms_mass" ||
+    source === "app_send_sms_campaign"
+  );
+}
+
+export function isCampaignMockOnly(campaign: SmsCampaignRow): boolean {
+  if (isCampaignRealSend(campaign)) {
+    return false;
+  }
+  return campaign.mode === "mock";
+}
+
+function providerTimelineLabel(provider: string | null | undefined): string {
+  const code = (provider ?? "").trim().toLowerCase();
+  if (code === "asmsc") {
+    return "aSMSC";
+  }
+  if (!code) {
+    return "operador";
+  }
+  return code;
+}
+
+function buildMockCampaignTimeline(input: {
   campaign: SmsCampaignRow;
   messages: PanelSmsMessageRow[];
   walletDebit: WalletTransactionRow | null;
@@ -205,6 +240,127 @@ export function buildCampaignTimeline(input: {
   return steps;
 }
 
+function buildProductionCampaignTimeline(input: {
+  campaign: SmsCampaignRow;
+  messages: PanelSmsMessageRow[];
+  walletDebit: WalletTransactionRow | null;
+}): CampaignTimelineStep[] {
+  const meta = input.campaign.metadata ?? {};
+  const sendMode =
+    typeof meta.send_mode === "string" ? meta.send_mode.trim() : "";
+  const sendLabel =
+    sendMode === "scheduled"
+      ? "programado"
+      : sendMode === "mass"
+        ? "masivo"
+        : "real";
+  const queued = numMeta(meta, "queued");
+  const messageCount = input.messages.length;
+  const deliveredCount = input.messages.filter(
+    (m) => m.status === "delivered",
+  ).length;
+  const failedCount = input.messages.filter((m) => m.status === "failed").length;
+  const providerLabel = providerTimelineLabel(input.messages[0]?.provider);
+  const finalizedAt =
+    typeof meta.queue_finalized_at === "string"
+      ? meta.queue_finalized_at.trim() || null
+      : null;
+  const debitAt = input.walletDebit?.created_at ?? null;
+
+  const steps: CampaignTimelineStep[] = [
+    {
+      title: "Campaña creada",
+      detail: `Envío ${sendLabel} registrado en el panel.`,
+      at: input.campaign.created_at,
+      state: "done",
+    },
+  ];
+
+  if (queued > 0 || meta.bulk_queue === true) {
+    steps.push({
+      title: "Destinatarios encolados",
+      detail: `${queued || messageCount} destinatario(s) en cola de envío.`,
+      at: input.campaign.created_at,
+      state: "done",
+    });
+  }
+
+  if (messageCount > 0) {
+    const lastMsg = input.messages.reduce((a, b) =>
+      a.created_at > b.created_at ? a : b,
+    );
+    const failNote =
+      failedCount > 0 ? ` · ${failedCount} fallido(s)` : "";
+    steps.push({
+      title: "Mensajes enviados",
+      detail: `${messageCount} envío(s) · ${deliveredCount} entregado(s) vía ${providerLabel}${failNote}.`,
+      at: lastMsg.created_at,
+      state: input.campaign.status === "processing" ? "current" : "done",
+    });
+  } else if (input.campaign.status === "processing") {
+    steps.push({
+      title: "Mensajes en envío",
+      detail: "Procesando destinatarios en cola.",
+      at: null,
+      state: "current",
+    });
+  }
+
+  if (input.walletDebit) {
+    steps.push({
+      title: "Débito wallet registrado",
+      detail: `${input.walletDebit.sms_amount} SMS — referencia sms_campaign.`,
+      at: debitAt,
+      state: "done",
+    });
+  }
+
+  if (
+    input.campaign.status === "sent" ||
+    input.campaign.status === "completed"
+  ) {
+    steps.push({
+      title: "Campaña completada",
+      detail:
+        messageCount > 0
+          ? `Envío finalizado · ${deliveredCount}/${messageCount} entregados.`
+          : "Envío finalizado.",
+      at: input.campaign.sent_at ?? finalizedAt,
+      state: "done",
+    });
+  } else if (input.campaign.status === "failed") {
+    steps.push({
+      title: "Campaña fallida",
+      detail:
+        failedCount > 0
+          ? `${failedCount} mensaje(s) rechazado(s) por el operador.`
+          : "No se completó el envío.",
+      at: input.campaign.sent_at ?? finalizedAt,
+      state: "done",
+    });
+  } else if (input.campaign.status === "processing") {
+    steps.push({
+      title: "Campaña en proceso",
+      detail: "Esperando finalización de la cola de envío.",
+      at: null,
+      state: "current",
+    });
+  }
+
+  return steps;
+}
+
+export function buildCampaignTimeline(input: {
+  campaign: SmsCampaignRow;
+  messages: PanelSmsMessageRow[];
+  walletDebit: WalletTransactionRow | null;
+}): CampaignTimelineStep[] {
+  if (isCampaignRealSend(input.campaign)) {
+    return buildProductionCampaignTimeline(input);
+  }
+  return buildMockCampaignTimeline(input);
+}
+
 export function canSimulateCampaignMock(campaign: SmsCampaignRow): boolean {
   if (campaign.status !== "draft" || campaign.mode !== "mock") {
     return false;
@@ -227,8 +383,24 @@ export async function loadCampaignDetailView(
   const estimatedRecipients =
     numMeta(meta, "estimated_recipients") || campaign.valid_recipients;
   const deliveredCount = messages.filter((m) => m.status === "delivered").length;
+  const viewKind: CampaignDetailViewKind = isCampaignRealSend(campaign)
+    ? "production"
+    : "mock";
+  const sendMode =
+    typeof meta.send_mode === "string" ? meta.send_mode.trim() : "";
+  const modeKpi =
+    viewKind === "production"
+      ? sendMode === "scheduled"
+        ? "PROGRAMADO"
+        : sendMode === "mass"
+          ? "MASIVA"
+          : "PRODUCCIÓN"
+      : campaign.mode === "mock"
+        ? "MOCK"
+        : campaign.mode.toUpperCase();
 
   return {
+    viewKind,
     campaign,
     messages,
     walletDebit,
@@ -259,7 +431,7 @@ export async function loadCampaignDetailView(
       smsConsumed: campaign.real_sms_cost,
       deliveredCount,
       walletDebited: walletDebit?.sms_amount ?? 0,
-      simulationMode: campaign.mode === "mock" ? "MOCK" : campaign.mode.toUpperCase(),
+      simulationMode: modeKpi,
     },
     timeline: buildCampaignTimeline({ campaign, messages, walletDebit }),
     canSimulate: canSimulateCampaignMock(campaign),

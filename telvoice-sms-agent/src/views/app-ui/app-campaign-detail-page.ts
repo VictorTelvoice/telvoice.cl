@@ -1,4 +1,5 @@
 import type { CampaignDetailView } from "../../services/campaignDetailService.js";
+import type { CampaignLiveReadinessResult } from "../../services/campaignReadinessService.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 import { renderKpiCard } from "../admin-ui/components.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
@@ -12,20 +13,102 @@ import {
   renderSmsModeBadge,
 } from "./app-sms-ui.js";
 
+function renderReadinessStateBadge(
+  label: CampaignLiveReadinessResult["readinessLabel"],
+): string {
+  if (label === "ready") {
+    return `<span class="badge badge-ok">Listo</span>`;
+  }
+  if (label === "not_enabled") {
+    return `<span class="badge badge-muted">No habilitado</span>`;
+  }
+  return `<span class="badge badge-warn">Bloqueado</span>`;
+}
+
+function renderLiveReadinessBlock(
+  readiness: CampaignLiveReadinessResult,
+): string {
+  const blockedList = readiness.blockedReasons.length
+    ? `<ul class="tv-readiness-list">${readiness.blockedReasons
+        .map((r) => `<li>${escapeHtml(r)}</li>`)
+        .join("")}</ul>`
+    : `<p class="field-hint" style="margin:0">Sin bloqueos operativos detectados.</p>`;
+
+  const warningsBlock = readiness.warnings.length
+    ? `<div style="margin-top:0.75rem">
+        <p class="field-hint" style="margin:0 0 0.35rem"><strong>Advertencias</strong></p>
+        <ul class="tv-readiness-list tv-readiness-list--warn">${readiness.warnings
+          .map((w) => `<li>${escapeHtml(w)}</li>`)
+          .join("")}</ul>
+      </div>`
+    : "";
+
+  const permLive = readiness.liveEnabled
+    ? `<span class="badge badge-ok">Sí</span>`
+    : `<span class="badge badge-muted">No</span>`;
+  const permCampaigns = readiness.campaignsEnabled
+    ? `<span class="badge badge-ok">Sí</span>`
+    : `<span class="badge badge-muted">No</span>`;
+
+  return `<section class="tv-panel tv-dash-block" style="margin-top:1rem">
+    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
+      <h2 class="tv-section-head__title">Preparación para envío real</h2>
+      <p class="tv-section-head__sub">Gate operativo — solo lectura, sin envío SMS real en esta etapa</p>
+    </header>
+    <div class="tv-panel__body">
+      <dl class="tv-detail-dl">
+        <div><dt>Estado</dt><dd>${renderReadinessStateBadge(readiness.readinessLabel)}</dd></div>
+        <div><dt>Saldo requerido</dt><dd>${fmtSms(readiness.requiredSms)} SMS</dd></div>
+        <div><dt>Saldo disponible</dt><dd>${fmtSms(readiness.availableSms)} SMS (${escapeHtml(readiness.balanceStatus)})</dd></div>
+        <div><dt>TPS asignado</dt><dd>${readiness.clientMaxTps ?? "—"} (efectivo: ${readiness.effectiveTps ?? "—"})</dd></div>
+        <div><dt>Ruta</dt><dd>${escapeHtml(readiness.routeLabel)} <span class="badge badge-muted">${escapeHtml(readiness.routeStatus)}</span></dd></div>
+        <div><dt>Proveedor</dt><dd>${escapeHtml(readiness.providerLabel)} <span class="badge badge-muted">${escapeHtml(readiness.providerStatus)}</span></dd></div>
+        <div><dt>Rate plan</dt><dd>${escapeHtml(readiness.ratePlanLabel)}</dd></div>
+        <div><dt>Permiso campañas reales</dt><dd>${permCampaigns}</dd></div>
+        <div><dt>Permiso live_enabled</dt><dd>${permLive}</dd></div>
+      </dl>
+      <div style="margin-top:1rem">
+        <p class="field-hint" style="margin:0 0 0.35rem"><strong>Motivos de bloqueo</strong></p>
+        ${blockedList}
+        ${warningsBlock}
+      </div>
+      <div class="tv-quick-actions" style="margin-top:1.25rem;align-items:center;gap:0.75rem">
+        <button type="button" class="btn btn-primary btn-sm" disabled title="Etapa 6 — envío real no activo">Enviar campaña real</button>
+        <span class="field-hint" style="margin:0">El envío real será habilitado por Telvoice después de la validación operativa.</span>
+      </div>
+    </div>
+  </section>`;
+}
+
+function renderCampaignMessageModeBadge(
+  detail: CampaignDetailView,
+  mode: string | null | undefined,
+): string {
+  if (detail.viewKind === "production") {
+    return `<span class="badge badge-ok">PRODUCCIÓN</span>`;
+  }
+  return renderSmsModeBadge(mode);
+}
+
 function renderCampaignMessagesTable(
   detail: CampaignDetailView,
 ): string {
   const rows = detail.messages;
+  const isProduction = detail.viewKind === "production";
   if (!rows.length) {
-    return `<p class="field-hint" style="margin:0">Aún no hay mensajes. Usa «Simular campaña» para generar la simulación mock.</p>`;
+    const emptyHint = isProduction
+      ? "Aún no hay mensajes registrados para esta campaña."
+      : `Aún no hay mensajes. Usa «Simular campaña» para generar la simulación mock.`;
+    return `<p class="field-hint" style="margin:0">${emptyHint}</p>`;
   }
+  const refCol = isProduction ? "Ref. proveedor" : "Ref. mock";
   const body = rows
     .map(
       (m) => `<tr>
       <td><code>${escapeHtml(m.recipient_number)}</code></td>
-      <td>${renderPanelMessageStatusBadge(m.status, m.mode)}</td>
-      <td>${renderSmsModeBadge(m.mode)}</td>
-      <td>mock</td>
+      <td>${renderPanelMessageStatusBadge(m.status, isProduction ? "live" : m.mode)}</td>
+      <td>${renderCampaignMessageModeBadge(detail, m.mode)}</td>
+      <td>${escapeHtml(m.provider ?? "—")}</td>
       <td>${m.segments}</td>
       <td>${m.cost_sms}</td>
       <td><code class="tv-code-sm" title="${escapeHtml(m.provider_message_id ?? "")}">${escapeHtml((m.provider_message_id ?? "—").slice(0, 14))}</code></td>
@@ -37,7 +120,7 @@ function renderCampaignMessagesTable(
     <table class="tv-table tv-table--dash">
       <thead><tr>
         <th>Destinatario</th><th>Estado</th><th>Modo</th><th>Proveedor</th>
-        <th>Seg.</th><th>Costo SMS</th><th>Ref. mock</th><th>Creado</th>
+        <th>Seg.</th><th>Costo SMS</th><th>${refCol}</th><th>Creado</th>
       </tr></thead>
       <tbody>${body}</tbody>
     </table>
@@ -66,12 +149,19 @@ export function renderAppCampaignNotFoundPage(ctx: AppPageContext): string {
 export function renderAppCampaignDetailPage(
   ctx: AppPageContext,
   detail: CampaignDetailView,
+  liveReadiness: CampaignLiveReadinessResult,
 ): string {
   const c = detail.campaign;
   const meta = c.metadata ?? {};
-  const executedAt =
-    (typeof meta.mock_executed_at === "string" && meta.mock_executed_at) ||
-    c.sent_at;
+  const isProduction = detail.viewKind === "production";
+  const executedAt = isProduction
+    ? c.sent_at ||
+      (typeof meta.queue_finalized_at === "string"
+        ? meta.queue_finalized_at
+        : null)
+    : (typeof meta.mock_executed_at === "string" && meta.mock_executed_at) ||
+      c.sent_at;
+  const showLiveReadiness = !isProduction && c.status === "draft";
 
   const simulateBtn = detail.canSimulate
     ? `<form method="post" action="/app/campaigns/${escapeHtml(c.id)}/execute-mock" style="display:inline">
@@ -85,7 +175,7 @@ export function renderAppCampaignDetailPage(
     ${renderKpiCard({ label: "SMS consumidos", value: fmtSms(detail.kpis.smsConsumed), icon: "calculate", variant: "primary" })}
     ${renderKpiCard({ label: "Delivered", value: String(detail.kpis.deliveredCount), icon: "check_circle", variant: "success" })}
     ${renderKpiCard({ label: "Saldo descontado", value: fmtSms(detail.kpis.walletDebited), icon: "account_balance_wallet", variant: "default" })}
-    ${renderKpiCard({ label: "Modo", value: detail.kpis.simulationMode, icon: "science", variant: "default" })}
+    ${renderKpiCard({ label: "Modo", value: detail.kpis.simulationMode, icon: isProduction ? "send" : "science", variant: isProduction ? "success" : "default" })}
   </div>`;
 
   const audienceOmitted = [
@@ -123,10 +213,30 @@ export function renderAppCampaignDetailPage(
     state: s.state,
   }));
 
+  const pageSubtitle = isProduction
+    ? `Envío real · ${renderCampaignClientStatusBadge(c)} ${renderCampaignModeLabel(c)}`
+    : `Campaña mock · ${renderCampaignClientStatusBadge(c)} ${renderCampaignModeLabel(c)}`;
+
+  const messagesSection = isProduction
+    ? `<section class="tv-panel tv-dash-block" style="margin-top:1rem">
+      <header class="tv-section-head" style="padding:1rem 1.25rem 0">
+        <h2 class="tv-section-head__title">Mensajes enviados</h2>
+        <p class="tv-section-head__sub">Registro en panel — operador y DLR según proveedor</p>
+      </header>
+      <div class="tv-panel__body">${renderCampaignMessagesTable(detail)}</div>
+    </section>`
+    : `<section class="tv-panel tv-dash-block" style="margin-top:1rem">
+      <header class="tv-section-head" style="padding:1rem 1.25rem 0">
+        <h2 class="tv-section-head__title">Mensajes simulados</h2>
+        <p class="tv-section-head__sub">Solo mock — sin operador ni aSMSC</p>
+      </header>
+      <div class="tv-panel__body">${renderCampaignMessagesTable(detail)}</div>
+    </section>`;
+
   const body = `
     ${renderPageHeader({
       title: escapeHtml(c.name),
-      subtitle: `Campaña mock · ${renderCampaignClientStatusBadge(c)} ${renderCampaignModeLabel(c)}`,
+      subtitleHtml: pageSubtitle,
       actions: [
         simulateBtn,
         renderBtn("Ver reportes", { href: "/app/reports", variant: "secondary" }),
@@ -145,9 +255,9 @@ export function renderAppCampaignDetailPage(
           <div><dt>Estado</dt><dd>${renderCampaignClientStatusBadge(c)}</dd></div>
           <div><dt>Modo</dt><dd>${renderCampaignModeLabel(c)}</dd></div>
           <div><dt>Creada</dt><dd>${formatDate(c.created_at)}</dd></div>
-          <div><dt>Simulación</dt><dd>${executedAt ? formatDate(executedAt) : "—"}</dd></div>
+          <div><dt>${isProduction ? "Enviada" : "Simulación"}</dt><dd>${executedAt ? formatDate(executedAt) : "—"}</dd></div>
           <div><dt>Costo estimado</dt><dd>${fmtSms(c.estimated_sms_cost)} SMS</dd></div>
-          <div><dt>Costo real (mock)</dt><dd>${fmtSms(c.real_sms_cost)} SMS</dd></div>
+          <div><dt>${isProduction ? "Costo real" : "Costo real (mock)"}</dt><dd>${fmtSms(c.real_sms_cost)} SMS</dd></div>
         </dl>
       </section>
       <section class="tv-panel">
@@ -183,13 +293,8 @@ export function renderAppCampaignDetailPage(
       <h2 class="tv-panel__title">Wallet</h2>
       <div class="tv-panel__body">${walletBlock}</div>
     </section>
-    <section class="tv-panel tv-dash-block" style="margin-top:1rem">
-      <header class="tv-section-head" style="padding:1rem 1.25rem 0">
-        <h2 class="tv-section-head__title">Mensajes simulados</h2>
-        <p class="tv-section-head__sub">Solo mock — sin operador ni aSMSC</p>
-      </header>
-      <div class="tv-panel__body">${renderCampaignMessagesTable(detail)}</div>
-    </section>
+    ${showLiveReadiness ? renderLiveReadinessBlock(liveReadiness) : ""}
+    ${messagesSection}
   </div>`;
 
   return wrapAppPage(ctx, "campaigns", c.name, body);
