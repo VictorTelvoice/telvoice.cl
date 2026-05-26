@@ -224,6 +224,38 @@ export async function markFailed(
   });
 }
 
+export async function countProcessingByProvider(providerId: string): Promise<number> {
+  const { count, error } = await getSupabase()
+    .from("sms_send_queue")
+    .select("id", { count: "exact", head: true })
+    .eq("provider_id", providerId)
+    .eq("status", "processing");
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return 0;
+    }
+    wrapSupabaseError(error, "countProcessingByProvider");
+  }
+  return count ?? 0;
+}
+
+export async function countProcessingByRoute(routeId: string): Promise<number> {
+  const { count, error } = await getSupabase()
+    .from("sms_send_queue")
+    .select("id", { count: "exact", head: true })
+    .eq("route_id", routeId)
+    .eq("status", "processing");
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return 0;
+    }
+    wrapSupabaseError(error, "countProcessingByRoute");
+  }
+  return count ?? 0;
+}
+
 export async function cancelQueuedMessage(
   queueId: string,
 ): Promise<SmsSendQueueRow> {

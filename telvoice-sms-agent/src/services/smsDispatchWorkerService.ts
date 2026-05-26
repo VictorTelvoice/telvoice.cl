@@ -23,6 +23,8 @@ import {
 } from "./smsCampaignQueueFinalizeService.js";
 import {
   getNextQueuedMessages,
+  countProcessingByProvider,
+  countProcessingByRoute,
   markFailed,
   markProcessing,
   markSent,
@@ -333,6 +335,25 @@ async function processOneQueuedItem(
         message: "Proveedor no encontrado",
       });
       return { sent: false, deferred: false, failed: true };
+    }
+
+    // Protección multi-instancia: el lock por proveedor (in-process) no evita
+    // que 2 procesos distintos envíen en paralelo. aSMSC suele responder
+    // «IP not Whitelisted» en ráfagas concurrentes aunque la IP esté OK.
+    if (provider.code === "asmsc") {
+      const [provInFlight, routeInFlight] = await Promise.all([
+        countProcessingByProvider(item.provider_id),
+        item.route_id ? countProcessingByRoute(item.route_id) : Promise.resolve(0),
+      ]);
+      if (provInFlight > 1 || routeInFlight > 1) {
+        await requeueForRetry(item.id, new Date(Date.now() + 1_000).toISOString());
+        return {
+          sent: false,
+          deferred: true,
+          failed: false,
+          detail: `${item.id}: diferido — control concurrencia aSMSC`,
+        };
+      }
     }
 
     const message = item.message_id
