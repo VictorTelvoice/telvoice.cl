@@ -23,12 +23,9 @@ concurrency:
   group: deploy-agent-production
   cancel-in-progress: false
 
-# appleboy/ssh-action v1.2.5 — pin por SHA (no usar @master ni tags flotantes).
-# Si falla "Set up job" al descargar desde codeload.github.com, suele ser incidente
-# transitorio de GitHub: Re-run jobs o workflow_dispatch desde Actions.
-env:
-  SSH_ACTION_VERSION: "v1.2.5"
-  SSH_ACTION_SHA: "0ff4204d59e8e51228ff73bce53f80d53301dee2"
+# Deploy por SSH nativo (openssh en ubuntu-latest). Evita depender de codeload.github.com
+# para descargar appleboy/ssh-action (fallos transitorios en "Set up job").
+# Si el job falla por infraestructura de GitHub: Re-run jobs o workflow_dispatch.
 
 jobs:
   deploy:
@@ -56,163 +53,165 @@ jobs:
           fi
           echo "Secretos obligatorios presentes (valores no mostrados)."
 
-      - name: Precargar appleboy/ssh-action (reintento codeload)
+      - name: Configurar SSH para deploy
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
           set -euo pipefail
-          url="https://codeload.github.com/appleboy/ssh-action/tar.gz/${SSH_ACTION_SHA}"
-          echo "Precarga ${SSH_ACTION_VERSION} (${SSH_ACTION_SHA})"
-          for attempt in $(seq 1 6); do
-            if curl -fsSL --connect-timeout 20 --max-time 120 -o /tmp/appleboy-ssh-action.tar.gz "$url"; then
-              echo "Precarga codeload OK (intento ${attempt}/6)"
-              exit 0
-            fi
-            wait=$((attempt * 10))
-            echo "::warning::codeload falló (intento ${attempt}/6); reintento en ${wait}s..."
-            sleep "$wait"
-          done
-          echo "::error::No se pudo descargar appleboy/ssh-action desde codeload tras 6 intentos"
-          exit 1
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          PORT="${{ secrets.VPS_SSH_PORT || 22 }}"
+          ssh-keyscan -p "$PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Comprobar conexión SSH y ruta
-        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT || 22 }}
-          script_stop: true
-          script: |
-            set -euo pipefail
-            APP_PATH="${{ secrets.VPS_APP_PATH }}"
-            if [ -z "$APP_PATH" ]; then APP_PATH="/var/www/telvoice-sms-agent"; fi
-            echo "=== SSH conectado ==="
-            whoami
-            hostname
-            echo "APP_PATH=${APP_PATH}"
-            test -d "$APP_PATH" || { echo "::error::Directorio no existe: ${APP_PATH}"; exit 1; }
-            test -f "$APP_PATH/package.json" || { echo "::error::Falta package.json en ${APP_PATH}"; exit 1; }
-            command -v node >/dev/null
-            command -v npm >/dev/null
-            node -v
-            npm -v
-            pm2 -v 2>/dev/null || echo "ADVERTENCIA: pm2 no encontrado en PATH"
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_APP_PATH: ${{ secrets.VPS_APP_PATH }}
+        run: |
+          set -euo pipefail
+          PORT="${{ secrets.VPS_SSH_PORT || 22 }}"
+          APP_PATH="${VPS_APP_PATH:-/var/www/telvoice-sms-agent}"
+          ssh -i ~/.ssh/deploy_key -p "$PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
+            "${VPS_USER}@${VPS_HOST}" env APP_PATH="$APP_PATH" bash -s <<'REMOTE'
+          set -euo pipefail
+          if [ -z "$APP_PATH" ]; then APP_PATH="/var/www/telvoice-sms-agent"; fi
+          echo "=== SSH conectado ==="
+          whoami
+          hostname
+          echo "APP_PATH=${APP_PATH}"
+          test -d "$APP_PATH" || { echo "::error::Directorio no existe: ${APP_PATH}"; exit 1; }
+          test -f "$APP_PATH/package.json" || { echo "::error::Falta package.json en ${APP_PATH}"; exit 1; }
+          command -v node >/dev/null
+          command -v npm >/dev/null
+          node -v
+          npm -v
+          pm2 -v 2>/dev/null || echo "ADVERTENCIA: pm2 no encontrado en PATH"
+          REMOTE
 
       - name: Desplegar aplicación
-        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT || 22 }}
-          command_timeout: 15m
-          script_stop: true
-          script: |
-            set -euo pipefail
-            APP_PATH="${{ secrets.VPS_APP_PATH }}"
-            if [ -z "$APP_PATH" ]; then APP_PATH="/var/www/telvoice-sms-agent"; fi
-            REPO="https://github.com/${{ github.repository }}.git"
-            CLONE_DIR="/tmp/telvoice-deploy-$$"
-            ENV_BACKUP="/tmp/telvoice-agent-env.backup.$$"
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_APP_PATH: ${{ secrets.VPS_APP_PATH }}
+          DEPLOY_SHA: ${{ github.sha }}
+          DEPLOY_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          PORT="${{ secrets.VPS_SSH_PORT || 22 }}"
+          APP_PATH="${VPS_APP_PATH:-/var/www/telvoice-sms-agent}"
+          timeout 15m ssh -i ~/.ssh/deploy_key -p "$PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=60 \
+            "${VPS_USER}@${VPS_HOST}" \
+            env APP_PATH="$APP_PATH" DEPLOY_SHA="$DEPLOY_SHA" DEPLOY_REPO="$DEPLOY_REPO" bash -s <<'REMOTE'
+          set -euo pipefail
+          if [ -z "$APP_PATH" ]; then APP_PATH="/var/www/telvoice-sms-agent"; fi
+          REPO="https://github.com/${DEPLOY_REPO}.git"
+          CLONE_DIR="/tmp/telvoice-deploy-$$"
+          ENV_BACKUP="/tmp/telvoice-agent-env.backup.$$"
 
-            echo "=== Deploy Etapa agent.telvoice.cl ==="
-            echo "Commit: ${{ github.sha }}"
-            echo "APP_PATH=${APP_PATH}"
+          echo "=== Deploy Etapa agent.telvoice.cl ==="
+          echo "Commit: ${DEPLOY_SHA}"
+          echo "APP_PATH=${APP_PATH}"
 
-            # Preservar .env de producción (nunca commitear)
-            if [ -f "$APP_PATH/.env" ]; then
-              cp "$APP_PATH/.env" "$ENV_BACKUP"
-              echo ".env respaldado"
-            else
-              echo "ADVERTENCIA: no hay .env en ${APP_PATH}; el servicio puede no arrancar."
-            fi
+          if [ -f "$APP_PATH/.env" ]; then
+            cp "$APP_PATH/.env" "$ENV_BACKUP"
+            echo ".env respaldado"
+          else
+            echo "ADVERTENCIA: no hay .env en ${APP_PATH}; el servicio puede no arrancar."
+          fi
 
-            rm -rf "$CLONE_DIR"
-            git clone --depth 1 --branch main "$REPO" "$CLONE_DIR"
+          rm -rf "$CLONE_DIR"
+          git clone --depth 1 --branch main "$REPO" "$CLONE_DIR"
 
-            rsync -a \
-              --exclude node_modules \
-              --exclude .env \
-              --exclude dist \
-              "$CLONE_DIR/telvoice-sms-agent/" "$APP_PATH/"
+          rsync -a \
+            --exclude node_modules \
+            --exclude .env \
+            --exclude dist \
+            "$CLONE_DIR/telvoice-sms-agent/" "$APP_PATH/"
 
-            if [ -f "$ENV_BACKUP" ]; then
-              cp "$ENV_BACKUP" "$APP_PATH/.env"
-              rm -f "$ENV_BACKUP"
-              echo ".env restaurado"
-            fi
+          if [ -f "$ENV_BACKUP" ]; then
+            cp "$ENV_BACKUP" "$APP_PATH/.env"
+            rm -f "$ENV_BACKUP"
+            echo ".env restaurado"
+          fi
 
-            # Ajustes operativos en .env (POSIX sh — sin local/sed frágil)
-            if [ -f "$APP_PATH/.env" ]; then
-              set_env_key() {
-                _key="$1"
-                _val="$2"
-                _file="$APP_PATH/.env"
-                if grep -q "^${_key}=" "$_file" 2>/dev/null; then
-                  grep -v "^${_key}=" "$_file" > "${_file}.tmp" && mv "${_file}.tmp" "$_file"
-                fi
-                printf '%s=%s\n' "$_key" "$_val" >> "$_file"
-              }
-              set_env_key SMS_PROVIDER_MODE live_test
-              set_env_key SMS_LIVE_TEST_ENABLED true
-              set_env_key SMS_QUEUE_SCHEDULER_ENABLED true
-              set_env_key SMS_QUEUE_SCHEDULER_INTERVAL_SECONDS 60
-              set_env_key SMS_QUEUE_SCHEDULER_BATCH_SIZE 15
-              set_env_key TELVOICE_VERIFY_NUMBERS '+56974713166:Linea QA 1 telsim:—|+56977109623:Linea QA 2 telsim:—|+56934449937:Linea QA 3 telsim:—'
-              if ! grep -q '^PUBLIC_WEBHOOK_BASE_URL=' "$APP_PATH/.env" 2>/dev/null; then
-                set_env_key PUBLIC_WEBHOOK_BASE_URL 'https://agent.telvoice.cl'
+          if [ -f "$APP_PATH/.env" ]; then
+            set_env_key() {
+              _key="$1"
+              _val="$2"
+              _file="$APP_PATH/.env"
+              if grep -q "^${_key}=" "$_file" 2>/dev/null; then
+                grep -v "^${_key}=" "$_file" > "${_file}.tmp" && mv "${_file}.tmp" "$_file"
               fi
+              printf '%s=%s\n' "$_key" "$_val" >> "$_file"
+            }
+            set_env_key SMS_PROVIDER_MODE live_test
+            set_env_key SMS_LIVE_TEST_ENABLED true
+            set_env_key SMS_QUEUE_SCHEDULER_ENABLED true
+            set_env_key SMS_QUEUE_SCHEDULER_INTERVAL_SECONDS 60
+            set_env_key SMS_QUEUE_SCHEDULER_BATCH_SIZE 15
+            set_env_key TELVOICE_VERIFY_NUMBERS '+56974713166:Linea QA 1 telsim:—|+56977109623:Linea QA 2 telsim:—|+56934449937:Linea QA 3 telsim:—'
+            if ! grep -q '^PUBLIC_WEBHOOK_BASE_URL=' "$APP_PATH/.env" 2>/dev/null; then
+              set_env_key PUBLIC_WEBHOOK_BASE_URL 'https://agent.telvoice.cl'
             fi
+          fi
 
-            rm -rf "$CLONE_DIR"
+          rm -rf "$CLONE_DIR"
 
-            cd "$APP_PATH"
-            npm ci
-            npm run build
+          cd "$APP_PATH"
+          npm ci
+          npm run build
 
-            if pm2 describe telvoice-sms-agent >/dev/null 2>&1; then
-              pm2 restart telvoice-sms-agent --update-env
-            else
-              pm2 start dist/index.js --name telvoice-sms-agent
+          if pm2 describe telvoice-sms-agent >/dev/null 2>&1; then
+            pm2 restart telvoice-sms-agent --update-env
+          else
+            pm2 start dist/index.js --name telvoice-sms-agent
+          fi
+          pm2 save 2>/dev/null || true
+
+          echo "=== PM2 ==="
+          pm2 list | head -8
+
+          HEALTH_PORT=3001
+          if [ -f "$APP_PATH/.env" ]; then
+            env_port=$(grep -E '^PORT=' "$APP_PATH/.env" | tail -1 | cut -d= -f2- | tr -d '"' | tr -d "'" || true)
+            if [ -n "$env_port" ]; then HEALTH_PORT="$env_port"; fi
+          fi
+          HEALTH_URL="http://127.0.0.1:${HEALTH_PORT}/health"
+          echo "=== Health local (${HEALTH_URL}) ==="
+          echo "Esperando arranque tras pm2 restart..."
+          sleep 3
+
+          health_ok=0
+          for attempt in $(seq 1 10); do
+            if curl -sf --connect-timeout 5 --max-time 15 "$HEALTH_URL"; then
+              echo ""
+              echo "Health local OK (intento ${attempt}/10)"
+              health_ok=1
+              break
             fi
-            pm2 save 2>/dev/null || true
-
-            echo "=== PM2 ==="
-            pm2 list | head -8
-
-            HEALTH_PORT=3001
-            if [ -f "$APP_PATH/.env" ]; then
-              env_port=$(grep -E '^PORT=' "$APP_PATH/.env" | tail -1 | cut -d= -f2- | tr -d '"' | tr -d "'" || true)
-              if [ -n "$env_port" ]; then HEALTH_PORT="$env_port"; fi
-            fi
-            HEALTH_URL="http://127.0.0.1:${HEALTH_PORT}/health"
-            echo "=== Health local (${HEALTH_URL}) ==="
-            echo "Esperando arranque tras pm2 restart..."
+            echo "Health local intento ${attempt}/10 falló; reintento en 3s..."
             sleep 3
+          done
 
-            health_ok=0
-            for attempt in $(seq 1 10); do
-              if curl -sf --connect-timeout 5 --max-time 15 "$HEALTH_URL"; then
-                echo ""
-                echo "Health local OK (intento ${attempt}/10)"
-                health_ok=1
-                break
-              fi
-              echo "Health local intento ${attempt}/10 falló; reintento en 3s..."
-              sleep 3
-            done
+          if [ "$health_ok" -ne 1 ]; then
+            echo "::error::Health local no respondió tras 10 intentos"
+            echo "=== pm2 status ==="
+            pm2 status || true
+            echo "=== pm2 logs (últimas 80 líneas) ==="
+            pm2 logs telvoice-sms-agent --lines 80 --nostream 2>&1 || true
+            echo "=== curl -v health local (sin credenciales) ==="
+            curl -sv --connect-timeout 5 --max-time 15 "$HEALTH_URL" 2>&1 | head -60 || true
+            exit 1
+          fi
 
-            if [ "$health_ok" -ne 1 ]; then
-              echo "::error::Health local no respondió tras 10 intentos"
-              echo "=== pm2 status ==="
-              pm2 status || true
-              echo "=== pm2 logs (últimas 80 líneas) ==="
-              pm2 logs telvoice-sms-agent --lines 80 --nostream 2>&1 || true
-              echo "=== curl -v health local (sin credenciales) ==="
-              curl -sv --connect-timeout 5 --max-time 15 "$HEALTH_URL" 2>&1 | head -60 || true
-              exit 1
-            fi
-
-            test -f dist/index.js && echo "DEPLOY_OK=dist/index.js"
+          test -f dist/index.js && echo "DEPLOY_OK=dist/index.js"
+          REMOTE
 
       - name: Verificar health público
         run: |
