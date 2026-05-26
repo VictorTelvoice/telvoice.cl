@@ -106,12 +106,12 @@ function confirmStep(preview: CampaignPreviewResult): string {
   return `<section class="tv-panel" id="paso-confirmar">
     <header class="tv-section-head" style="padding:1rem 1.25rem 0">
       <h2 class="tv-section-head__title">4. Confirmación</h2>
-      <p class="tv-section-head__sub">Guarda un borrador o espera el envío real en una etapa posterior</p>
+      <p class="tv-section-head__sub">Guarda un borrador; luego simúlalo desde Campañas (modo mock, sin proveedor real)</p>
     </header>
     <div class="tv-panel__body">
       <p class="alert alert-warn">
-        El envío real de campañas será habilitado en una etapa posterior.
-        No se enviarán SMS ni se descontará saldo al guardar el borrador.
+        Guardar borrador no envía SMS ni descuenta saldo.
+        La simulación mock (desde la lista de campañas) registra mensajes ficticios y puede descontar saldo de prueba.
       </p>
       <form method="post" action="/app/campaigns/drafts" class="tv-dlr-report__filters-form">
         ${hidden}
@@ -120,10 +120,10 @@ function confirmStep(preview: CampaignPreviewResult): string {
         <textarea name="message" hidden>${escapeHtml(preview.message)}</textarea>
         <div class="tv-dlr-report__filter-actions" style="margin-top:0.75rem">
           <button type="submit" class="btn btn-primary btn-sm" ${preview.validRecipientCount === 0 ? "disabled" : ""}>Guardar borrador</button>
-          <button type="button" class="btn btn-secondary btn-sm" disabled title="Próximamente">Enviar campaña</button>
+          <a class="btn btn-secondary btn-sm" href="/app/campaigns">Ir a campañas</a>
         </div>
       </form>
-      <p class="field-hint" style="margin-top:0.5rem">El envío real de campañas todavía no está habilitado.</p>
+      <p class="field-hint" style="margin-top:0.5rem">Tras guardar, usa «Simular envío» en Campañas. No contacta operadores ni aSMSC.</p>
     </div>
   </section>`;
 }

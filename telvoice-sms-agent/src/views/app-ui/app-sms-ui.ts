@@ -126,6 +126,23 @@ export function renderInboxTableRows(messages: PanelSmsMessageRow[]): string {
     .join("");
 }
 
+function canExecuteCampaignMock(c: SmsCampaignRow): boolean {
+  if (c.status !== "draft" || c.mode !== "mock") {
+    return false;
+  }
+  const meta = c.metadata ?? {};
+  return meta.source === "contacts_audience";
+}
+
+function renderCampaignMockExecuteAction(c: SmsCampaignRow): string {
+  if (!canExecuteCampaignMock(c)) {
+    return `<span class="field-hint">—</span>`;
+  }
+  return `<form method="post" action="/app/campaigns/${escapeHtml(c.id)}/execute-mock" style="display:inline">
+    <button type="submit" class="btn btn-secondary btn-sm" title="Simula envío y DLR sin proveedor real">Simular envío</button>
+  </form>`;
+}
+
 export function renderCampaignsTableRows(campaigns: SmsCampaignRow[]): string {
   if (!campaigns.length) {
     return `<tr><td colspan="9">Aún no hay campañas.</td></tr>`;
@@ -141,7 +158,7 @@ export function renderCampaignsTableRows(campaigns: SmsCampaignRow[]): string {
       <td>${c.real_sms_cost}</td>
       <td>${renderCampaignStatusBadge(c.status)}</td>
       <td>${renderCampaignModeLabel(c)}</td>
-      <td><code class="tv-code-sm">${escapeHtml(c.id.slice(0, 8))}</code></td>
+      <td>${renderCampaignMockExecuteAction(c)}</td>
     </tr>`,
     )
     .join("");

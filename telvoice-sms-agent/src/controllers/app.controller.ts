@@ -79,6 +79,7 @@ import {
   buildCampaignPreviewFromRequest,
   createCampaignDraftFromPreview,
 } from "../services/campaignPreviewService.js";
+import { executeContactsAudienceCampaignMock } from "../services/campaignMockExecuteService.js";
 import { parseAudienceSourceFromQuery } from "../services/campaignAudienceService.js";
 import {
   getCampaignByIdForCompany,
@@ -979,6 +980,37 @@ export async function postAppCampaignDraft(
     const msg =
       error instanceof AppError ? error.message : "No se pudo guardar el borrador";
     res.redirect(303, `/app/campaigns/new?error=${encodeURIComponent(msg)}`);
+  }
+}
+
+export async function postAppCampaignExecuteMock(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireContactsWriteContext(req);
+    if (!ctx) {
+      res.redirect("/app/campaigns?error=Sin%20permiso");
+      return;
+    }
+    const campaignId = validateUuidParam(String(req.params.id), "id");
+    const result = await executeContactsAudienceCampaignMock({
+      companyId: ctx.company.id,
+      campaignId,
+      createdBy: ctx.profile.profileId ?? ctx.profile.adminUserId ?? null,
+    });
+    const okMsg = result.alreadyExecuted
+      ? "Esta campaña mock ya fue ejecutada; no se descontó saldo nuevamente."
+      : result.status === "completed"
+        ? `Campaña simulada: ${result.sent} mensaje(s) mock, ${result.realSmsCost} SMS descontados (sin envío real).`
+        : `La simulación no generó envíos (${result.failed} fallo(s)).`;
+    res.redirect(303, `/app/campaigns?ok=${encodeURIComponent(okMsg)}`);
+  } catch (error) {
+    const msg =
+      error instanceof AppError
+        ? error.message
+        : "No se pudo ejecutar la campaña en modo simulación";
+    res.redirect(303, `/app/campaigns?error=${encodeURIComponent(msg)}`);
   }
 }
 

@@ -880,7 +880,7 @@ export function renderAppCampaignsPage(
   const body = `
     ${renderPageHeader({
       title: "Campañas",
-      subtitle: "Borradores y campañas SMS. El envío masivo real se habilitará en una etapa posterior.",
+      subtitle: "Borradores y campañas SMS. Los borradores desde Contactos pueden simularse en modo mock (sin SMS real).",
       actions: [
         renderBtn("Nueva campaña", { href: "/app/campaigns/new", variant: "primary", icon: "campaign" }),
         renderBtn("Envío SMS", { href: "/app/send-sms", variant: "secondary" }),

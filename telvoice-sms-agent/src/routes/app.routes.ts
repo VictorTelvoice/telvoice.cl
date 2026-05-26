@@ -6,6 +6,7 @@ import {
   getAppCampaignNew,
   postAppCampaignNewPreview,
   postAppCampaignDraft,
+  postAppCampaignExecuteMock,
   getAppContacts,
   getAppContactsImport,
   postAppContactsImportPreview,
@@ -95,6 +96,11 @@ appRouter.post(
   postAppCampaignNewPreview,
 );
 appRouter.post("/campaigns/drafts", requireClientPanelPage, postAppCampaignDraft);
+appRouter.post(
+  "/campaigns/:id/execute-mock",
+  requireClientPanelPage,
+  postAppCampaignExecuteMock,
+);
 appRouter.get("/campaigns", requireClientPanelPage, getAppCampaigns);
 appRouter.get("/inbox", requireClientPanelPage, getAppInbox);
 appRouter.get("/contacts/import", requireClientPanelPage, getAppContactsImport);

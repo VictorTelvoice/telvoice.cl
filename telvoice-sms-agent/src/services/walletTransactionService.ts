@@ -147,6 +147,27 @@ export async function hasSmsDebitForMessage(
   return Boolean(data);
 }
 
+export async function hasSmsDebitForCampaign(
+  campaignId: string,
+): Promise<boolean> {
+  const { data, error } = await getSupabase()
+    .from("wallet_transactions")
+    .select("id")
+    .eq("reference_type", "sms_campaign")
+    .eq("reference_id", campaignId)
+    .eq("type", "sms_debit")
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return false;
+    }
+    wrapSupabaseError(error, "hasSmsDebitForCampaign");
+  }
+
+  return Boolean(data);
+}
+
 export async function listTransactionsForOrder(
   orderId: string,
 ): Promise<WalletTransactionRow[]> {

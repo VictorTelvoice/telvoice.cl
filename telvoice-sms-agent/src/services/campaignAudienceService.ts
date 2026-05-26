@@ -274,6 +274,37 @@ export function validateCampaignAudience(
   return summary;
 }
 
+/** Reconstruye la audiencia guardada en metadata de un borrador (Etapa 5). */
+export function parseAudienceSourceFromCampaignMetadata(
+  metadata: Record<string, unknown>,
+): CampaignAudienceSource | null {
+  if (metadata.source !== "contacts_audience") {
+    return null;
+  }
+  const audienceType = metadata.audience_type;
+  const ref = String(metadata.audience_ref ?? "").trim();
+  if (!ref) {
+    return null;
+  }
+  if (audienceType === "contacts") {
+    const contactIds = ref
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (!contactIds.length) {
+      return null;
+    }
+    return { type: "contacts", contactIds };
+  }
+  if (audienceType === "list") {
+    return { type: "list", listId: ref };
+  }
+  if (audienceType === "tag") {
+    return { type: "tag", tagId: ref };
+  }
+  return null;
+}
+
 export function parseAudienceSourceFromQuery(query: {
   contacts?: string;
   list_id?: string;
