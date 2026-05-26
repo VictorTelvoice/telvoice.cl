@@ -32,6 +32,9 @@ export async function bulkEnqueueCampaignRecipients(input: {
     input.resolved.provider.default_sender_id ||
     "TELVOICE";
   const trafficType = env.smsCampaign.trafficType;
+  // panel_sms_messages.mode solo permite: mock | live | live_test
+  const panelMessageMode =
+    env.smsProvider.mode === "mock" ? "mock" : "live_test";
   let queued = 0;
   let failed = 0;
 
@@ -47,7 +50,7 @@ export async function bulkEnqueueCampaignRecipients(input: {
       costSms: item.costSms,
       provider: input.resolved.provider.code,
       status: "queued" as const,
-      mode: "campaign",
+      mode: panelMessageMode,
       metadata: {
         source: APP_CAMPAIGN_SEND_SOURCE,
         send_mode: "bulk_queue",
