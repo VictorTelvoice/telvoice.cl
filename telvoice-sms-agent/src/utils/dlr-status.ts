@@ -19,7 +19,7 @@ export function normalizeDlrToMessageStatus(
 
   const key = dlrStatus.trim().toLowerCase();
 
-  if (key === "delivered") {
+  if (key === "delivered" || key === "delivrd") {
     return "delivered";
   }
 
@@ -35,5 +35,6 @@ export function normalizeDlrToMessageStatus(
 }
 
 export function isDeliveredDlr(dlrStatus: string | null | undefined): boolean {
-  return dlrStatus?.trim().toLowerCase() === "delivered";
+  const key = dlrStatus?.trim().toLowerCase();
+  return key === "delivered" || key === "delivrd";
 }

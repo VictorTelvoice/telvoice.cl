@@ -206,6 +206,57 @@ export async function findPanelMessageByAsmscUid(
   return data as PanelSmsMessageRow | null;
 }
 
+export async function findPanelMessageByAsmscUidInRawResponse(
+  uid: string,
+): Promise<PanelSmsMessageRow | null> {
+  const { data, error } = await getSupabase()
+    .from("panel_sms_messages")
+    .select("*")
+    .filter("metadata->raw_response->>uid", "eq", uid)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return null;
+    }
+    wrapSupabaseError(error, "findPanelMessageByAsmscUidInRawResponse");
+  }
+
+  return data as PanelSmsMessageRow | null;
+}
+
+/** Resuelve mensaje panel desde DLR aSMSC (provider id, uid en metadata o raw_response). */
+export async function findPanelMessageForAsmscDlr(input: {
+  providerMessageId: string | null;
+  uid: string | null;
+}): Promise<PanelSmsMessageRow | null> {
+  const providerIds = new Set<string>();
+  if (input.providerMessageId) {
+    const raw = input.providerMessageId.trim();
+    if (raw) {
+      providerIds.add(raw);
+      providerIds.add(String(raw));
+    }
+  }
+
+  for (const providerMessageId of providerIds) {
+    const byProvider = await findPanelMessageByProviderMessageId(providerMessageId);
+    if (byProvider) {
+      return byProvider;
+    }
+  }
+
+  if (input.uid) {
+    const byUid = await findPanelMessageByAsmscUid(input.uid);
+    if (byUid) {
+      return byUid;
+    }
+    return findPanelMessageByAsmscUidInRawResponse(input.uid);
+  }
+
+  return null;
+}
+
 export async function getLastLiveTestPanelMessage(): Promise<PanelSmsMessageRow | null> {
   const { data, error } = await getSupabase()
     .from("panel_sms_messages")

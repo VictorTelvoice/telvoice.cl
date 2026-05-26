@@ -1,16 +1,29 @@
 import type { AsmscDlrWebhookBody } from "../types/asmsc.js";
-import type { PanelSmsMessageStatus } from "../types/sms-panel.js";
+import type { PanelSmsMessageRow, PanelSmsMessageStatus } from "../types/sms-panel.js";
 import { isDeliveredDlr, normalizeDlrToMessageStatus } from "../utils/dlr-status.js";
 import { extractDlrFields } from "./smsMessageService.js";
 import { sanitizeProviderResponse } from "./sms-providers/sanitize.js";
 import {
-  findPanelMessageByAsmscUid,
-  findPanelMessageByProviderMessageId,
+  findPanelMessageForAsmscDlr,
   insertPanelDeliveryEvent,
   updatePanelSmsMessage,
 } from "./panelSmsMessageService.js";
 
-function mapDlrToPanelStatus(dlrStatus: string | null | undefined): PanelSmsMessageStatus {
+/** Modos panel que deben persistir DLR (campaña live y pruebas live_test). */
+export const PANEL_DLR_ELIGIBLE_MODES = new Set(["live", "live_test"]);
+
+export function isPanelMessageEligibleForAsmscDlr(
+  message: Pick<PanelSmsMessageRow, "mode"> | null | undefined,
+): boolean {
+  if (!message?.mode) {
+    return false;
+  }
+  return PANEL_DLR_ELIGIBLE_MODES.has(message.mode);
+}
+
+export function mapDlrToPanelStatus(
+  dlrStatus: string | null | undefined,
+): PanelSmsMessageStatus {
   const mapped = normalizeDlrToMessageStatus(dlrStatus);
   if (mapped === "delivered") {
     return "delivered";
@@ -28,18 +41,25 @@ export async function processPanelSmsDlrFromAsmsc(
   body: AsmscDlrWebhookBody,
 ): Promise<{ panel_message_id: string | null }> {
   const fields = extractDlrFields(body);
-  const providerMessageId = fields.provider_message_id;
-  const uid = fields.uid;
-
-  let message = providerMessageId
-    ? await findPanelMessageByProviderMessageId(providerMessageId)
+  const providerMessageId = fields.provider_message_id
+    ? String(fields.provider_message_id).trim()
     : null;
+  const uid = fields.uid?.trim() || null;
 
-  if (!message && uid) {
-    message = await findPanelMessageByAsmscUid(uid);
+  const message = await findPanelMessageForAsmscDlr({
+    providerMessageId,
+    uid,
+  });
+
+  if (!message) {
+    return { panel_message_id: null };
   }
 
-  if (!message || message.mode !== "live_test") {
+  if (!isPanelMessageEligibleForAsmscDlr(message)) {
+    console.info("[DLR] Panel omitido (mode no elegible para DLR)", {
+      panel_message_id: message.id,
+      mode: message.mode,
+    });
     return { panel_message_id: null };
   }
 
@@ -52,9 +72,12 @@ export async function processPanelSmsDlrFromAsmsc(
   const dlrAt = new Date().toISOString();
   const sanitizedDlr = sanitizeProviderResponse(body as Record<string, unknown>);
 
+  const alreadyDelivered =
+    message.status === "delivered" && panelStatus === "delivered";
+
   await updatePanelSmsMessage(message.id, {
     status: panelStatus,
-    delivered_at: deliveredAt,
+    delivered_at: deliveredAt ?? message.delivered_at,
     error_code: fields.error_code ?? message.error_code,
     error_message: fields.error_description ?? message.error_message,
     metadata: {
@@ -65,14 +88,16 @@ export async function processPanelSmsDlrFromAsmsc(
     },
   });
 
-  await insertPanelDeliveryEvent({
-    companyId: message.company_id,
-    messageId: message.id,
-    provider: message.provider,
-    providerMessageId: providerMessageId ?? message.provider_message_id,
-    status: dlrStatus ?? panelStatus,
-    rawPayload: sanitizedDlr,
-  });
+  if (!alreadyDelivered) {
+    await insertPanelDeliveryEvent({
+      companyId: message.company_id,
+      messageId: message.id,
+      provider: message.provider,
+      providerMessageId: providerMessageId ?? message.provider_message_id,
+      status: panelStatus === "delivered" ? "delivered" : (dlrStatus ?? panelStatus),
+      rawPayload: sanitizedDlr,
+    });
+  }
 
   return { panel_message_id: message.id };
 }
