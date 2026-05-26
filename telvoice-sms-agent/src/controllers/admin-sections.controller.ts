@@ -19,6 +19,11 @@ import {
   resendInvoiceEmail,
   sendInvoiceEmail,
 } from "../services/billingEmailService.js";
+import {
+  getBillingRecoverySummary,
+  getInvoiceRecoveryHints,
+} from "../services/billingRecoveryService.js";
+import { renderInvoiceRecoveryAlerts } from "../views/admin-ui/sections/admin-billing-recovery-pages.js";
 import { validateUuidParam } from "../utils/validation.js";
 import { renderContactsPage } from "../views/admin-ui/sections/contacts-page.js";
 import { renderChatPage } from "../views/admin-ui/sections/chat-page.js";
@@ -97,7 +102,7 @@ export async function getInvoicesPage(
       req.query as Record<string, string | string[] | undefined>,
     );
 
-    const [invoices, companies] = await Promise.all([
+    const [invoices, companies, recoverySummary] = await Promise.all([
       listAdminInvoices({
         status: filters.status,
         documentType: filters.documentType,
@@ -108,6 +113,7 @@ export async function getInvoicesPage(
         limit: 300,
       }),
       listCompanies(200),
+      getBillingRecoverySummary(),
     ]);
 
     const orderById = new Map<string, SmsOrderRow>();
@@ -123,14 +129,23 @@ export async function getInvoicesPage(
 
     const summary = summarizeAdminInvoices(invoices, orderById);
 
+    const recoveryIssueCount =
+      recoverySummary.ordersWithoutInvoice +
+      recoverySummary.invoicesWithoutEmail +
+      recoverySummary.failedEmailsUnreviewed +
+      recoverySummary.failedSyncs;
+
     res.type("html").send(
-      renderAdminInvoicesPage(pageOpts(req, smsBalance), {
-        invoices,
-        filters,
-        summary,
-        companies,
-        orderById,
-      }),
+      renderAdminInvoicesPage(
+        { ...pageOpts(req, smsBalance), recoveryIssueCount },
+        {
+          invoices,
+          filters,
+          summary,
+          companies,
+          orderById,
+        },
+      ),
     );
   } catch (error) {
     next(error);
@@ -145,15 +160,20 @@ export async function getAdminInvoiceDetailPage(
   try {
     const smsBalance = await loadSmsBalance();
     const invoiceId = validateUuidParam(String(req.params.id), "id");
-    const detail = await getAdminInvoiceById(invoiceId);
+    const [detail, recoveryHints] = await Promise.all([
+      getAdminInvoiceById(invoiceId),
+      getInvoiceRecoveryHints(invoiceId),
+    ]);
 
     if (!detail) {
       res.type("html").send(renderAdminInvoiceNotFoundPage(pageOpts(req, smsBalance)));
       return;
     }
 
+    const recoveryAlerts = renderInvoiceRecoveryAlerts(recoveryHints, invoiceId);
+
     res.type("html").send(
-      renderAdminInvoiceDetailPage(pageOpts(req, smsBalance), detail),
+      renderAdminInvoiceDetailPage(pageOpts(req, smsBalance), detail, recoveryAlerts),
     );
   } catch (error) {
     next(error);

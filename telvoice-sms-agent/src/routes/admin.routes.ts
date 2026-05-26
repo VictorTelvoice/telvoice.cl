@@ -70,6 +70,13 @@ import {
   redirectSendSmsAlias,
 } from "../controllers/admin-sections.controller.js";
 import {
+  getAdminBillingRecoveryPage,
+  postRecoveryEmailMarkReviewed,
+  postRecoveryEmailRetry,
+  postRecoveryInvoiceSendEmail,
+  postRecoveryOrderSync,
+} from "../controllers/admin-billing-recovery.controller.js";
+import {
   getSaApiKeysPage,
   getSaCampaignsPage,
   getSaDlrPage,
@@ -231,6 +238,27 @@ adminRouter.get("/inbox", requireAdminPage, getInboxPage);
 adminRouter.get("/reports", requireAdminPage, getReportsPage);
 adminRouter.get("/contacts", requireAdminPage, getContactsPage);
 adminRouter.get("/invoices", requireAdminPage, getInvoicesPage);
+adminRouter.get("/invoices/recovery", requireAdminPage, getAdminBillingRecoveryPage);
+adminRouter.post(
+  "/billing/recovery/orders/:orderId/sync",
+  requireAdminPage,
+  postRecoveryOrderSync,
+);
+adminRouter.post(
+  "/billing/recovery/invoices/:invoiceId/send-email",
+  requireAdminPage,
+  postRecoveryInvoiceSendEmail,
+);
+adminRouter.post(
+  "/billing/recovery/emails/:emailLogId/retry",
+  requireAdminPage,
+  postRecoveryEmailRetry,
+);
+adminRouter.post(
+  "/billing/recovery/emails/:emailLogId/mark-reviewed",
+  requireAdminPage,
+  postRecoveryEmailMarkReviewed,
+);
 adminRouter.get("/invoices/:id/preview", requireAdminPage, getAdminInvoicePreviewPage);
 adminRouter.post(
   "/invoices/:id/send-email",

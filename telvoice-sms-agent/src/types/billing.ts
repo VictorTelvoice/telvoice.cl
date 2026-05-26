@@ -36,7 +36,14 @@ export type BillingEventType =
   | "invoice.previewed"
   | "billing.sync.started"
   | "billing.sync.completed"
-  | "billing.sync.failed";
+  | "billing.sync.failed"
+  | "billing.recovery.started"
+  | "billing.recovery.completed"
+  | "billing.recovery.failed"
+  | "invoice.email_retry_started"
+  | "invoice.email_retry_completed"
+  | "invoice.email_retry_failed"
+  | "invoice.marked_reviewed";
 
 export type BillingPaymentStatus =
   | "pending"
@@ -211,5 +218,76 @@ export type BillingOrderSummary = {
   invoiceStatus: string | null;
   billingState: BillingOrderBillingState;
   lastEmailError: string | null;
+};
+
+export type BillingRecoverySummary = {
+  ordersWithoutInvoice: number;
+  invoicesWithoutEmail: number;
+  failedEmails: number;
+  failedEmailsUnreviewed: number;
+  failedSyncs: number;
+  pendingDocuments: number;
+  lastRecoveryAt: string | null;
+  hasIssues: boolean;
+};
+
+export type OrderWithoutInvoiceRow = {
+  order_id: string;
+  company_id: string;
+  company_name: string;
+  payment_provider: string | null;
+  amount: number;
+  currency: string;
+  payment_status: string;
+  credit_status: string;
+  created_at: string;
+  credited_at: string | null;
+};
+
+export type InvoiceWithoutEmailRow = {
+  invoice_id: string;
+  invoice_number: string | null;
+  company_id: string;
+  company_name: string;
+  order_id: string;
+  status: string;
+  billing_email: string | null;
+  customer_email: string | null;
+  total_amount: number;
+  currency: string;
+};
+
+export type FailedBillingEmailRow = {
+  email_log_id: string;
+  invoice_id: string;
+  invoice_number: string | null;
+  company_id: string | null;
+  company_name: string;
+  to_email: string;
+  error_message: string | null;
+  created_at: string;
+  reviewed: boolean;
+};
+
+export type FailedBillingSyncRow = {
+  event_id: string;
+  invoice_id: string;
+  invoice_number: string | null;
+  order_id: string | null;
+  company_name: string;
+  error_message: string | null;
+  created_at: string;
+};
+
+export type BillingRecoveryActor = {
+  actorType: string;
+  actorId: string | null;
+};
+
+export type InvoiceRecoveryHints = {
+  hasFailedEmail: boolean;
+  hasSuccessfulEmail: boolean;
+  hasSyncFailed: boolean;
+  latestFailedEmailLogId: string | null;
 };
 

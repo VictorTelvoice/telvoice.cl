@@ -33,6 +33,7 @@ export type AdminInvoicePageOpts = {
   flash?: string;
   error?: string;
   billingEmailMode?: string;
+  recoveryIssueCount?: number;
 };
 
 export type AdminInvoicePageFilters = {
@@ -479,7 +480,14 @@ export function renderAdminInvoicesPage(
       subtitle:
         "Gestiona comprobantes, documentos de compra, estados de envío y trazabilidad billing de todos los clientes.",
       actions: `
-        <button type="button" class="btn btn-secondary btn-sm" disabled title="Próximamente">Sincronizar órdenes pagadas</button>
+        <a href="/admin/invoices/recovery" class="btn btn-secondary btn-sm">
+          Recuperación Billing
+          ${
+            (opts.recoveryIssueCount ?? 0) > 0
+              ? `<span class="badge badge-warn" style="margin-left:0.35rem">${opts.recoveryIssueCount}</span>`
+              : ""
+          }
+        </a>
         <button type="button" class="btn btn-ghost btn-sm" disabled title="Próximamente">Exportar CSV</button>
         <a href="/admin/invoices?errors=1" class="btn btn-ghost btn-sm">Ver errores</a>
         <button type="button" class="btn btn-ghost btn-sm" disabled title="Próximamente">Crear comprobante manual</button>
@@ -632,6 +640,7 @@ export function renderAdminInvoiceNotFoundPage(opts: AdminInvoicePageOpts): stri
 export function renderAdminInvoiceDetailPage(
   opts: AdminInvoicePageOpts,
   detail: AdminInvoiceDetail,
+  recoveryAlertsHtml = "",
 ): string {
   const doc = documentNumber(detail);
   const company = detail.company;
@@ -649,6 +658,7 @@ export function renderAdminInvoiceDetailPage(
     })}
     ${renderInfoNotice()}
     ${renderBillingEmailModeNotice(opts.billingEmailMode)}
+    ${recoveryAlertsHtml}
 
     <div class="tv-kpi-grid" style="margin-bottom:1rem">
       ${renderKpiCard({ label: "Total", value: fmtMoney(Number(detail.total_amount), detail.currency), icon: "payments", variant: "primary" })}
