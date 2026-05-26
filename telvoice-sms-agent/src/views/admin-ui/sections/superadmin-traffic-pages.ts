@@ -37,9 +37,40 @@ export function renderSaTrafficControlPage(
   const d = opts.dashboard;
   const q = d.queueCounts;
   const sch = d.queueScheduler;
+  const rt = d.queueRuntime;
+  const healthBadge =
+    rt.health === "ok"
+      ? `<span class="badge badge-ok">OK</span>`
+      : rt.health === "slow"
+        ? `<span class="badge badge-warn">Lento</span>`
+        : rt.health === "critical"
+          ? `<span class="badge badge-err">Crítico</span>`
+          : `<span class="badge badge-muted">Manual</span>`;
   const schedulerLabel = sch.enabled
     ? `Activo — cada ${sch.intervalSeconds}s, batch ${sch.batchSize}`
     : "Inactivo (solo tick manual)";
+
+  const warningsBlock = rt.warnings.length
+    ? `<ul class="tv-readiness-list tv-readiness-list--warn" style="margin:0.75rem 0 0">${rt.warnings
+        .map((w) => `<li>${escapeHtml(w)}</li>`)
+        .join("")}</ul>`
+    : `<p class="field-hint" style="margin:0.75rem 0 0">Config alineada con referencia Test13.</p>`;
+
+  const snapshotRows = rt.recentCampaignSnapshots.length
+    ? rt.recentCampaignSnapshots
+        .map(
+          (c) => `<tr>
+        <td>${escapeHtml(c.name)}</td>
+        <td><code>${escapeHtml(c.source ?? "—")}</code></td>
+        <td>${escapeHtml(c.sendMode ?? "—")}</td>
+        <td>${c.schedulerIntervalSeconds ?? "—"}</td>
+        <td>${c.schedulerBatchSize ?? "—"}</td>
+        <td>${c.effectiveTps ?? "—"}</td>
+        <td>${escapeHtml(c.createdAt ? new Date(c.createdAt).toLocaleString("es-CL") : "—")}</td>
+      </tr>`,
+        )
+        .join("")
+    : `<tr><td colspan="7">Sin campañas recientes.</td></tr>`;
 
   const clientRows = d.clientPolicies.length
     ? d.clientPolicies
@@ -78,9 +109,28 @@ export function renderSaTrafficControlPage(
     })}
     <p class="field-hint">Hard cap cliente: <strong>${d.maxClientTpsCap} TPS</strong> · Plataforma: <strong>${d.platformMaxTps} TPS</strong> · Limitador en memoria por proceso (ver docs en código).</p>
     <section class="tv-panel" style="margin-top:0.75rem">
-      <h2 class="tv-panel__title">Scheduler de cola</h2>
-      <p><strong>${escapeHtml(schedulerLabel)}</strong></p>
-      <p class="field-hint">Para QA live controlada: <code>SMS_QUEUE_SCHEDULER_ENABLED=false</code> en el VPS (solo tick manual). No modificar .env de producción sin revisión operativa.</p>
+      <h2 class="tv-panel__title">Scheduler de cola (config efectiva del proceso)</h2>
+      <p style="margin:0"><strong>${escapeHtml(schedulerLabel)}</strong> ${healthBadge}</p>
+      <p class="field-hint" style="margin:0.35rem 0 0">${escapeHtml(rt.estimatedThroughput.description)}</p>
+      ${warningsBlock}
+      <dl class="tv-detail-dl" style="margin-top:1rem">
+        <div><dt>Estado salud</dt><dd>${healthBadge}</dd></div>
+        <div><dt>Referencia Test13</dt><dd>intervalo <strong>${rt.referenceTest13.intervalSeconds}s</strong>, batch <strong>${rt.referenceTest13.batchSize}</strong>, pacing <strong>${rt.referenceTest13.queueMinPaceSeconds}s</strong> entre destinatarios</dd></div>
+        <div><dt>Variables scheduler</dt><dd><code>${rt.scheduler.env.enabled}</code>=${rt.scheduler.enabled ? "true" : "false"} · <code>${rt.scheduler.env.intervalSeconds}</code>=<strong>${rt.scheduler.intervalSeconds}</strong> · <code>${rt.scheduler.env.batchSize}</code>=<strong>${rt.scheduler.batchSize}</strong></dd></div>
+        <div><dt>Cola campañas</dt><dd><code>${rt.campaignQueue.env.trafficType}</code>=${escapeHtml(rt.campaignQueue.trafficType)} · <code>${rt.campaignQueue.env.queueMinPaceSeconds}</code>=${rt.campaignQueue.queueMinPaceSeconds}s (~${rt.campaignQueue.queueMinPaceMs}ms entre ítems encolados)</dd></div>
+        <div><dt>Guards despacho</dt><dd>1 aSMSC/tick · lock in-process · stagger en encolado · reintentos IP con backoff</dd></div>
+      </dl>
+      <p class="field-hint">${escapeHtml(rt.referenceTest13.note)}</p>
+      <p style="margin-top:0.75rem">
+        <a class="btn btn-ghost btn-sm" href="/admin/traffic-control/scheduler-config.json" target="_blank" rel="noopener">Ver JSON (API diagnóstico)</a>
+      </p>
+    </section>
+    <section class="tv-panel" style="margin-top:1rem">
+      <h2 class="tv-panel__title">Snapshot scheduler en campañas recientes</h2>
+      <p class="field-hint" style="margin:0 0 0.5rem">Valor guardado al crear la campaña (confirma qué tenía el VPS en ese momento). Test23 con <code>60</code> explica la lentitud.</p>
+      <table class="tv-table tv-table--compact"><thead><tr>
+        <th>Campaña</th><th>Source</th><th>Modo</th><th>Interval (snap)</th><th>Batch (snap)</th><th>TPS efect.</th><th>Creada</th>
+      </tr></thead><tbody>${snapshotRows}</tbody></table>
     </section>
     <div class="tv-kpi-grid">
       <article class="tv-kpi"><span class="tv-kpi__label">Cola queued</span><span class="tv-kpi__value">${q.queued ?? 0}</span></article>

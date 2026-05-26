@@ -8,6 +8,7 @@ import {
 } from "../services/smsProviderService.js";
 import { pauseSmsRoute, resumeSmsRoute } from "../services/smsRouteService.js";
 import { getTrafficControlDashboard } from "../services/smsTrafficMetricsService.js";
+import { getSmsQueueRuntimeConfig } from "../services/smsQueueRuntimeConfigService.js";
 import { validateUuidParam } from "../utils/validation.js";
 import { renderSaTrafficControlPage } from "../views/admin-ui/sections/superadmin-traffic-pages.js";
 
@@ -21,6 +22,19 @@ function flash(req: Request): { flash?: string; error?: string } {
 function redirectQuery(res: Response, path: string, params: Record<string, string>): void {
   const q = new URLSearchParams(params).toString();
   res.redirect(302, q ? `${path}?${q}` : path);
+}
+
+export async function getSaQueueSchedulerConfigJson(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const config = await getSmsQueueRuntimeConfig();
+    res.json(config);
+  } catch (e) {
+    next(e);
+  }
 }
 
 export async function getSaTrafficControlPage(

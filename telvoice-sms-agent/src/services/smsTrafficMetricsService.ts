@@ -9,6 +9,10 @@ import { countQueueByStatus } from "./smsQueueService.js";
 import { listSmsProviders } from "./smsProviderService.js";
 import { listSmsRoutes } from "./smsRouteService.js";
 import { resolveTrafficPolicy } from "./smsTrafficPolicyService.js";
+import {
+  getSmsQueueRuntimeConfig,
+  type SmsQueueRuntimeConfig,
+} from "./smsQueueRuntimeConfigService.js";
 
 export type TrafficControlDashboard = {
   platformMaxTps: number;
@@ -33,6 +37,7 @@ export type TrafficControlDashboard = {
     intervalSeconds: number;
     batchSize: number;
   };
+  queueRuntime: SmsQueueRuntimeConfig;
 };
 
 function fiveMinutesAgoIso(): string {
@@ -154,6 +159,8 @@ export async function getTrafficControlDashboard(): Promise<TrafficControlDashbo
     });
   }
 
+  const queueRuntime = await getSmsQueueRuntimeConfig();
+
   return {
     platformMaxTps: env.smsPlatformMaxTps,
     maxClientTpsCap: MAX_CLIENT_TPS,
@@ -167,9 +174,10 @@ export async function getTrafficControlDashboard(): Promise<TrafficControlDashbo
     routeUsage,
     clientPolicies,
     queueScheduler: {
-      enabled: env.smsQueueScheduler.enabled,
-      intervalSeconds: env.smsQueueScheduler.intervalSeconds,
-      batchSize: env.smsQueueScheduler.batchSize,
+      enabled: queueRuntime.scheduler.enabled,
+      intervalSeconds: queueRuntime.scheduler.intervalSeconds,
+      batchSize: queueRuntime.scheduler.batchSize,
     },
+    queueRuntime,
   };
 }

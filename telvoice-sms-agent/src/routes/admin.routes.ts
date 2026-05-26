@@ -87,6 +87,7 @@ import {
 } from "../controllers/admin-superadmin.controller.js";
 import {
   getSaTrafficControlPage,
+  getSaQueueSchedulerConfigJson,
   postPauseProvider,
   postPauseRoute,
   postResumeProvider,
@@ -178,6 +179,11 @@ adminRouter.get("/routes", requireAdminPage, getSaRoutesPageTelco);
 adminRouter.post("/routes", requireAdminPage, postCreateRoute);
 adminRouter.post("/routes/:id/status", requireAdminPage, postToggleRoute);
 adminRouter.get("/traffic-control", requireAdminPage, getSaTrafficControlPage);
+adminRouter.get(
+  "/traffic-control/scheduler-config.json",
+  requireAdminPage,
+  getSaQueueSchedulerConfigJson,
+);
 adminRouter.get("/test", requireAdminPage, getAdminTestPage);
 adminRouter.get("/test/telsim-preview", requireAdminPage, getAdminTelsimInboundPreview);
 adminRouter.post("/test/qa-send", requireAdminPage, postAdminTestQaSend);
