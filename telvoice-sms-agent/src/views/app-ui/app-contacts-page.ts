@@ -32,6 +32,7 @@ export type AppContactsPageData = {
   summary: ContactSummary;
   showNewContact: boolean;
   showNewList: boolean;
+  showNewTag: boolean;
 };
 
 const SOURCE_LABELS: Record<ContactSource, string> = {
@@ -138,11 +139,18 @@ function kpis(summary: ContactSummary): string {
         variant: "success",
       })}
       ${renderKpiCard({
-        label: "Duplicados",
-        value: String(summary.duplicateContacts),
-        hint: "Estado duplicate",
-        icon: "content_copy",
-        variant: summary.duplicateContacts > 0 ? "warn" : "default",
+        label: "Tags activos",
+        value: String(summary.activeTags),
+        hint: "Etiquetas en tu empresa",
+        icon: "label",
+        variant: "default",
+      })}
+      ${renderKpiCard({
+        label: "Importados (mes)",
+        value: String(summary.importedThisMonth),
+        hint: "Alta por CSV este mes",
+        icon: "upload_file",
+        variant: "default",
       })}
       ${renderKpiCard({
         label: "Bloqueados / opt-out",
@@ -171,7 +179,7 @@ function quickActions(): string {
       <div class="tv-contacts-quick-grid">
         ${renderQuickAction({ href: "/app/contacts?new=contact", label: "Crear contacto", description: "Alta manual", icon: "person_add" })}
         ${renderQuickAction({ href: "/app/contacts?new=agenda", label: "Crear agenda", description: "Organiza por audiencia", icon: "create_new_folder" })}
-        ${renderQuickAction({ href: "/app/contacts?import=1", label: "Importar CSV", description: "Próximamente", icon: "upload_file" })}
+        ${renderQuickAction({ href: "/app/contacts/import", label: "Importar CSV", description: "Con vista previa", icon: "upload_file" })}
         ${renderQuickAction({ href: "/app/send-sms", label: "Crear campaña", description: "Envío SMS (sin audiencia aún)", icon: "campaign" })}
       </div>
     </div>
@@ -204,6 +212,51 @@ function createContactForm(lists: ContactListWithCount[]): string {
           </div>
         </div>
       </form>
+    </div>
+  </section>`;
+}
+
+function createTagForm(): string {
+  return `<section class="tv-panel" id="nuevo-tag">
+    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
+      <h2 class="tv-section-head__title">Nuevo tag</h2>
+    </header>
+    <div class="tv-panel__body">
+      <form method="post" action="/app/contacts/tags" class="tv-dlr-report__filters-form">
+        <div class="tv-dlr-report__filters-grid tv-contacts__filters-grid">
+          ${renderFilterField("Nombre", `<input type="text" name="name" class="tv-filter-input" placeholder="Ej. VIP" required />`)}
+          ${renderFilterField("Color", `<input type="text" name="color" class="tv-filter-input" placeholder="#0052CC opcional" />`)}
+          <div class="tv-dlr-report__filter-actions">
+            <button type="submit" class="btn btn-primary btn-sm">Guardar tag</button>
+            <a class="btn btn-ghost btn-sm" href="/app/contacts">Cancelar</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>`;
+}
+
+function tagsPanel(tags: ContactTagRow[]): string {
+  const chips = tags.length
+    ? tags
+        .map(
+          (t) =>
+            `<span class="tv-tag" style="${t.color ? `border-color:${escapeHtml(t.color)}` : ""}">${escapeHtml(t.name)}</span>`,
+        )
+        .join("")
+    : `<p class="field-hint" style="margin:0">Aún no tienes tags.</p>`;
+
+  return `<section class="tv-panel">
+    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
+      <h2 class="tv-section-head__title">Tags</h2>
+      <p class="tv-section-head__sub">Etiqueta contactos para segmentar audiencias</p>
+    </header>
+    <div class="tv-panel__body">
+      <div class="tv-tags" style="margin-bottom:0.75rem">${chips}</div>
+      <a class="btn btn-secondary btn-sm" href="/app/contacts?new=tag">
+        <span class="material-symbols-outlined" aria-hidden="true">label</span>
+        Nuevo tag
+      </a>
     </div>
   </section>`;
 }
@@ -362,7 +415,12 @@ function listsCell(listNames: string[]): string {
   return escapeHtml(listNames.join(", "));
 }
 
-function contactsTable(rows: ContactWithListsAndTags[], filters: ContactsPageFilters): string {
+function contactsTable(
+  rows: ContactWithListsAndTags[],
+  filters: ContactsPageFilters,
+  lists: ContactListWithCount[],
+  tags: ContactTagRow[],
+): string {
   const empty =
     rows.length === 0
       ? `<tr><td colspan="9" class="tv-table-empty">No hay contactos con los filtros aplicados.</td></tr>`
@@ -396,16 +454,39 @@ function contactsTable(rows: ContactWithListsAndTags[], filters: ContactsPageFil
   );
 
   const qs = queryStringFromFilters(filters);
+  const listOpts =
+    `<option value="">Selecciona agenda</option>` +
+    lists
+      .map((l) => `<option value="${escapeHtml(l.id)}">${escapeHtml(l.name)}</option>`)
+      .join("");
+  const tagOpts =
+    `<option value="">Selecciona tag</option>` +
+    tags
+      .map((t) => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)}</option>`)
+      .join("");
+
   const bulkBar = `<div class="tv-contacts-bulk" data-tv-bulk hidden>
     <div class="tv-contacts-bulk__left">
       <strong data-tv-bulk-count>0</strong> seleccionados
-      <span class="field-hint">· Acciones masivas (próximamente)</span>
     </div>
     <div class="tv-contacts-bulk__right">
-      <button type="button" class="btn btn-secondary btn-sm" disabled>Mover a agenda</button>
-      <button type="button" class="btn btn-secondary btn-sm" disabled>Asignar tag</button>
-      <button type="button" class="btn btn-ghost btn-sm" disabled>Exportar</button>
-      <a class="btn btn-primary btn-sm" href="/app/send-sms" title="Sin audiencia vinculada aún">Usar para campaña</a>
+      <form method="post" action="/app/contacts/bulk/move-list" class="tv-contacts-bulk-form" style="display:inline-flex;gap:0.35rem;align-items:center">
+        <input type="hidden" name="contact_ids" value="" data-tv-bulk-ids />
+        <select name="list_id" class="tv-filter-input" style="min-width:140px" required>${listOpts}</select>
+        <button type="submit" class="btn btn-secondary btn-sm">Mover a agenda</button>
+      </form>
+      <form method="post" action="/app/contacts/bulk/assign-tag" class="tv-contacts-bulk-form" style="display:inline-flex;gap:0.35rem;align-items:center">
+        <input type="hidden" name="contact_ids" value="" data-tv-bulk-ids />
+        <select name="tag_id" class="tv-filter-input" style="min-width:120px" required>${tagOpts}</select>
+        <button type="submit" class="btn btn-secondary btn-sm">Asignar tag</button>
+      </form>
+      <form method="post" action="/app/contacts/bulk/status" class="tv-contacts-bulk-form" style="display:inline-flex;gap:0.35rem;align-items:center">
+        <input type="hidden" name="contact_ids" value="" data-tv-bulk-ids />
+        <input type="hidden" name="status" value="blocked" />
+        <button type="submit" class="btn btn-ghost btn-sm">Bloquear</button>
+      </form>
+      <button type="button" class="btn btn-ghost btn-sm" disabled title="Próximamente">Exportar CSV</button>
+      <button type="button" class="btn btn-primary btn-sm" disabled title="Próximamente — sin campaña real">Usar en campaña</button>
     </div>
   </div>`;
 
@@ -450,7 +531,7 @@ function emptyStateReal(): string {
       <div class="tv-quick-actions">
         ${renderBtn("Nuevo contacto", { href: "/app/contacts?new=contact", variant: "primary" })}
         ${renderBtn("Nueva agenda", { href: "/app/contacts?new=agenda", variant: "secondary" })}
-        ${renderBtn("Importar CSV", { href: "/app/contacts?import=1", variant: "ghost", disabled: true })}
+        ${renderBtn("Importar CSV", { href: "/app/contacts/import", variant: "ghost" })}
       </div>
       <p class="field-hint" style="margin-top:0.75rem">La importación CSV estará disponible en una próxima etapa.</p>
     </div>
@@ -501,21 +582,20 @@ export function renderAppContactsPage(
       actions: [
         renderBtn("Nuevo contacto", { href: "/app/contacts?new=contact", variant: "primary", icon: "person_add" }),
         renderBtn("Nueva agenda", { href: "/app/contacts?new=agenda", variant: "secondary", icon: "create_new_folder" }),
-        renderBtn("Importar CSV", { href: "/app/contacts?import=1", variant: "ghost", icon: "upload_file", disabled: true }),
+        renderBtn("Importar CSV", { href: "/app/contacts/import", variant: "ghost", icon: "upload_file" }),
       ].join(" "),
     })}
     ${module.available ? kpis(summary) : ""}
     ${module.available ? quickActions() : ""}
     ${data.showNewContact && module.available ? createContactForm(lists) : ""}
     ${data.showNewList && module.available ? createListForm() : ""}
+    ${data.showNewTag && module.available ? createTagForm() : ""}
     ${module.available ? filtersPanel(lists, tags, filters) : ""}
-    <div class="tv-dash-grid tv-dash-grid--2 tv-contacts-grid">
-      ${module.available ? agendaPanel(lists, filters.agenda) : ""}
-      <div>
-        ${showEmptyReal ? emptyStateReal() : ""}
-        ${showNoResults ? noResultsState() : ""}
-        ${showTable ? contactsTable(contacts, filters) : ""}
-      </div>
+    ${module.available ? `<div class="tv-dash-grid tv-dash-grid--2 tv-contacts-grid">${agendaPanel(lists, filters.agenda)}${tagsPanel(tags)}</div>` : ""}
+    <div>
+      ${showEmptyReal ? emptyStateReal() : ""}
+      ${showNoResults ? noResultsState() : ""}
+      ${showTable ? contactsTable(contacts, filters, lists, tags) : ""}
     </div>
     </div>
     <script>
@@ -523,13 +603,27 @@ export function renderAppContactsPage(
         var checks = Array.prototype.slice.call(document.querySelectorAll('.tv-contacts-check'));
         var bulk = document.querySelector('[data-tv-bulk]');
         var countEl = document.querySelector('[data-tv-bulk-count]');
+        var bulkForms = Array.prototype.slice.call(document.querySelectorAll('.tv-contacts-bulk-form'));
+        function selectedIds(){
+          return checks.filter(function(c){ return c && c.checked; }).map(function(c){ return c.getAttribute('data-id'); }).filter(Boolean);
+        }
         function update(){
           if(!bulk || !countEl) return;
-          var n = checks.filter(function(c){ return c && c.checked; }).length;
-          countEl.textContent = String(n);
-          bulk.hidden = n === 0;
+          var ids = selectedIds();
+          countEl.textContent = String(ids.length);
+          bulk.hidden = ids.length === 0;
+          var joined = ids.join(',');
+          bulkForms.forEach(function(f){
+            var hid = f.querySelector('[data-tv-bulk-ids]');
+            if(hid) hid.value = joined;
+          });
         }
         checks.forEach(function(c){ c.addEventListener('change', update); });
+        bulkForms.forEach(function(f){
+          f.addEventListener('submit', function(ev){
+            if(!selectedIds().length){ ev.preventDefault(); alert('Selecciona al menos un contacto.'); }
+          });
+        });
       })();
     </script>`;
 

@@ -53,8 +53,10 @@ import {
   renderAppSupportPage,
   renderAppTemplatesPage,
 } from "../views/app-ui/app-section-pages.js";
-import type { ContactSummary } from "../types/contacts.js";
+import type { ContactStatus, ContactSummary } from "../types/contacts.js";
 import {
+  bulkMoveContactsToList,
+  bulkUpdateContactStatus,
   createContact,
   createContactList,
   getContactSummary,
@@ -63,6 +65,13 @@ import {
   listContacts,
   listContactTags,
 } from "../services/contactService.js";
+import {
+  createContactImportJob,
+  getContactImportJob,
+  importValidatedContacts,
+} from "../services/contactImportService.js";
+import { createContactTag, bulkAssignTag } from "../services/contactTagService.js";
+import { renderAppContactsImportPage } from "../views/app-ui/app-contacts-import-page.js";
 import {
   getCampaignByIdForCompany,
   listCampaignsByCompany,
@@ -898,8 +907,27 @@ const EMPTY_CONTACT_SUMMARY: ContactSummary = {
   validContacts: 0,
   duplicateContacts: 0,
   blockedOrOptOut: 0,
+  activeTags: 0,
+  importedThisMonth: 0,
   lastUpdatedAt: null,
 };
+
+function parseContactIdsFromBody(
+  body: Record<string, string | undefined>,
+): string[] {
+  const raw = (body.contact_ids ?? "").trim();
+  if (!raw) return [];
+  return raw.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+async function requireContactsWriteContext(
+  req: Request,
+): Promise<AppPageContext | null> {
+  const ctx = await buildAppContext(req);
+  if (!ctx) return null;
+  if (!canOperateClientPanel(ctx.profile.role)) return null;
+  return ctx;
+}
 
 export async function getAppContacts(
   req: Request,
@@ -912,6 +940,7 @@ export async function getAppContacts(
     );
     const showNewContact = req.query.new === "contact";
     const showNewList = req.query.new === "agenda";
+    const showNewTag = req.query.new === "tag";
 
     const module = await getContactsModuleState();
     if (!module.available) {
@@ -924,6 +953,7 @@ export async function getAppContacts(
         summary: EMPTY_CONTACT_SUMMARY,
         showNewContact,
         showNewList,
+        showNewTag,
       });
     }
 
@@ -953,8 +983,184 @@ export async function getAppContacts(
       summary,
       showNewContact,
       showNewList,
+      showNewTag,
     });
   });
+}
+
+export async function getAppContactsImport(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  await withAppContext(req, res, next, async (ctx) => {
+    const module = await getContactsModuleState();
+    const jobId = typeof req.query.job === "string" ? req.query.job : "";
+    let preview;
+    if (jobId && module.importAvailable) {
+      preview = (await getContactImportJob(ctx.company.id, jobId)) ?? undefined;
+    }
+    return renderAppContactsImportPage(ctx, {
+      preview,
+      showForm: !preview,
+    });
+  });
+}
+
+export async function postAppContactsImportPreview(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireContactsWriteContext(req);
+    if (!ctx) {
+      res.redirect("/app/contacts/import?error=Sin%20permiso%20o%20empresa");
+      return;
+    }
+    const body = req.body as Record<string, string | undefined>;
+    const csvText = (body.csv_text ?? "").trim();
+    if (!csvText) {
+      res.redirect(
+        "/app/contacts/import?error=" +
+          encodeURIComponent("El CSV está vacío."),
+      );
+      return;
+    }
+    const preview = await createContactImportJob(ctx.company.id, {
+      csv_text: csvText,
+      filename: body.filename,
+      create_tags: body.create_tags === "1",
+    });
+    res.redirect(303, `/app/contacts/import?job=${preview.job.id}`);
+  } catch (error) {
+    const msg =
+      error instanceof AppError ? error.message : "Error al previsualizar CSV";
+    res.redirect(303, `/app/contacts/import?error=${encodeURIComponent(msg)}`);
+  }
+}
+
+export async function postAppContactsImportConfirm(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireContactsWriteContext(req);
+    if (!ctx) {
+      res.redirect("/app/contacts?error=Sin%20permiso");
+      return;
+    }
+    const jobId = (req.body as Record<string, string>).job_id ?? "";
+    const result = await importValidatedContacts(ctx.company.id, jobId);
+    const extra =
+      result.errors.length > 0
+        ? ` Algunas filas fueron omitidas por errores.`
+        : "";
+    res.redirect(
+      303,
+      `/app/contacts?ok=${encodeURIComponent(`${result.imported} contacto(s) importado(s).${extra}`)}`,
+    );
+  } catch (error) {
+    const msg =
+      error instanceof AppError ? error.message : "Error al importar contactos";
+    res.redirect(303, `/app/contacts?error=${encodeURIComponent(msg)}`);
+  }
+}
+
+export async function postAppCreateContactTag(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireContactsWriteContext(req);
+    if (!ctx) {
+      res.redirect("/app/contacts?error=Sin%20permiso");
+      return;
+    }
+    const body = req.body as Record<string, string | undefined>;
+    await createContactTag(ctx.company.id, {
+      name: body.name ?? "",
+      color: body.color,
+    });
+    res.redirect(303, "/app/contacts?ok=Tag%20creado%20correctamente");
+  } catch (error) {
+    const msg = error instanceof AppError ? error.message : "No se pudo crear el tag";
+    res.redirect(
+      303,
+      `/app/contacts?error=${encodeURIComponent(msg)}&new=tag`,
+    );
+  }
+}
+
+export async function postAppBulkAssignTag(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireContactsWriteContext(req);
+    if (!ctx) {
+      res.redirect("/app/contacts?error=Sin%20permiso");
+      return;
+    }
+    const body = req.body as Record<string, string | undefined>;
+    const ids = parseContactIdsFromBody(body);
+    const tagId = body.tag_id ?? "";
+    const n = await bulkAssignTag(ctx.company.id, ids, tagId);
+    res.redirect(
+      303,
+      `/app/contacts?ok=${encodeURIComponent(`Tag asignado a ${n} contacto(s).`)}`,
+    );
+  } catch (error) {
+    const msg = error instanceof AppError ? error.message : "Error en acción masiva";
+    res.redirect(303, `/app/contacts?error=${encodeURIComponent(msg)}`);
+  }
+}
+
+export async function postAppBulkMoveList(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireContactsWriteContext(req);
+    if (!ctx) {
+      res.redirect("/app/contacts?error=Sin%20permiso");
+      return;
+    }
+    const body = req.body as Record<string, string | undefined>;
+    const ids = parseContactIdsFromBody(body);
+    const listId = body.list_id ?? "";
+    const n = await bulkMoveContactsToList(ctx.company.id, ids, listId);
+    res.redirect(
+      303,
+      `/app/contacts?ok=${encodeURIComponent(`${n} contacto(s) movidos a la agenda.`)}`,
+    );
+  } catch (error) {
+    const msg = error instanceof AppError ? error.message : "Error al mover contactos";
+    res.redirect(303, `/app/contacts?error=${encodeURIComponent(msg)}`);
+  }
+}
+
+export async function postAppBulkContactStatus(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireContactsWriteContext(req);
+    if (!ctx) {
+      res.redirect("/app/contacts?error=Sin%20permiso");
+      return;
+    }
+    const body = req.body as Record<string, string | undefined>;
+    const ids = parseContactIdsFromBody(body);
+    const status = (body.status ?? "blocked") as ContactStatus;
+    const n = await bulkUpdateContactStatus(ctx.company.id, ids, status);
+    res.redirect(
+      303,
+      `/app/contacts?ok=${encodeURIComponent(`Estado actualizado en ${n} contacto(s).`)}`,
+    );
+  } catch (error) {
+    const msg = error instanceof AppError ? error.message : "Error al cambiar estado";
+    res.redirect(303, `/app/contacts?error=${encodeURIComponent(msg)}`);
+  }
 }
 
 export async function postAppCreateContact(

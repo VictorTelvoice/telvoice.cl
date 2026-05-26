@@ -42,7 +42,19 @@ const {
   findContactByPhone,
   listContacts,
   getContactSummary,
+  bulkMoveContactsToList,
 } = await import(pathToFileURL(distPath).toString());
+
+const tagDist = join(__dirname, "../dist/services/contactTagService.js");
+const importDist = join(__dirname, "../dist/services/contactImportService.js");
+const { createContactTag, bulkAssignTag, assignTagToContact } = await import(
+  pathToFileURL(tagDist).toString(),
+);
+const {
+  parseContactsCsv,
+  createContactImportJob,
+  importValidatedContacts,
+} = await import(pathToFileURL(importDist).toString());
 
 const { AppError } = await import(
   pathToFileURL(join(__dirname, "../dist/utils/errors.js")).toString(),
@@ -65,7 +77,8 @@ const CONTACT_TABLES = [
   "contact_tag_assignments",
 ];
 
-const TEST_PHONE = "+56911112222";
+const QA_SUFFIX = String(Date.now()).slice(-8);
+const TEST_PHONE = `+56911${QA_SUFFIX}`.slice(0, 12);
 const TEST_LIST = `QA Contacts ${Date.now()}`;
 
 await client.connect();
@@ -187,15 +200,97 @@ try {
   );
   console.log("Wallet sin cambios: OK");
 
-  // Limpieza QA (contacto y agenda de prueba)
+  // --- Etapa 3: tags ---
+  const tag = await createContactTag(companyId, { name: `QA Tag ${Date.now()}` });
+  await assignTagToContact(companyId, contact.id, tag.id);
+  const nBulk = await bulkAssignTag(companyId, [contact.id], tag.id);
+  assert(nBulk === 1, "bulkAssignTag");
+  console.log("Tags create/assign/bulk: OK");
+
+  const list2 = await createContactList(companyId, {
+    name: `QA List 2 ${Date.now()}`,
+  });
+  const moved = await bulkMoveContactsToList(companyId, [contact.id], list2.id);
+  assert(moved === 1, "bulkMoveContactsToList");
+  console.log("Bulk move list: OK");
+
+  // --- Etapa 3: import CSV ---
+  const { rows: importTables } = await client.query(
+    `SELECT table_name FROM information_schema.tables
+     WHERE table_schema='public' AND table_name = ANY($1::text[])`,
+    [["contact_import_jobs", "contact_import_rows"]],
+  );
+  assert(importTables.length === 2, "Aplica migración 024");
+  console.log("Tablas import 024: OK");
+
+  const importPhone = `+56922${QA_SUFFIX}`.slice(0, 12);
+  const csv = `nombre,telefono,email,tags\nImport QA,${importPhone},qa@import.test,${tag.name}`;
+  const parsed = parseContactsCsv(csv);
+  assert(parsed.length === 1, "parseContactsCsv");
+
+  const preview = await createContactImportJob(companyId, {
+    csv_text: csv,
+    filename: "qa.csv",
+    create_tags: true,
+  });
+  assert(preview.summary.valid === 1, "import preview valid");
+  console.log("Import preview:", preview.job.id);
+
+  let badCols = false;
+  try {
+    parseContactsCsv("nombre,email\nJuan,juan@test.com");
+  } catch (e) {
+    badCols = e instanceof AppError;
+  }
+  assert(badCols, "CSV sin columnas reconocibles");
+
+  const dupCsv = `nombre,telefono\nDup A,${importPhone}\nDup B,${importPhone}`;
+  const dupPreview = await createContactImportJob(companyId, {
+    csv_text: dupCsv,
+    filename: "dup.csv",
+  });
+  assert(dupPreview.summary.duplicate >= 1, "duplicado en CSV");
+
+  const result = await importValidatedContacts(companyId, preview.job.id);
+  assert(result.imported === 1, "import confirm");
+  const imported = await findContactByPhone(companyId, importPhone);
+  assert(imported?.source === "import", "contacto importado");
+  console.log("Import confirm: OK");
+
+  // Limpieza QA
+  await client.query(`DELETE FROM contact_tag_assignments WHERE contact_id = $1`, [
+    contact.id,
+  ]);
+  if (imported) {
+    await client.query(`DELETE FROM contact_tag_assignments WHERE contact_id = $1`, [
+      imported.id,
+    ]);
+    await client.query(`DELETE FROM contacts WHERE id = $1`, [imported.id]);
+  }
+  await client.query(`DELETE FROM contact_import_rows WHERE job_id = $1`, [
+    preview.job.id,
+  ]);
+  await client.query(`DELETE FROM contact_import_jobs WHERE id = $1`, [
+    preview.job.id,
+  ]);
+  await client.query(`DELETE FROM contact_import_rows WHERE job_id = $1`, [
+    dupPreview.job.id,
+  ]);
+  await client.query(`DELETE FROM contact_import_jobs WHERE id = $1`, [
+    dupPreview.job.id,
+  ]);
   await client.query(`DELETE FROM contact_list_members WHERE contact_id = $1`, [
     contact.id,
   ]);
   await client.query(`DELETE FROM contacts WHERE id = $1`, [contact.id]);
-  await client.query(`DELETE FROM contact_lists WHERE id = $1`, [list.id]);
+  await client.query(`DELETE FROM contact_lists WHERE id IN ($1, $2)`, [
+    list.id,
+    list2.id,
+  ]);
+  await client.query(`DELETE FROM contact_tags WHERE id = $1`, [tag.id]);
   console.log("Limpieza datos QA: OK");
 
-  console.log("\nverify-contacts-qa: TODO OK");
+  console.log("\nverify-contacts-qa: TODO OK (Etapa 2 + 3)");
 } catch (err) {
   console.error("FAIL:", err?.message ?? err);
   process.exit(1);

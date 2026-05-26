@@ -43,13 +43,20 @@ export function normalizeContactPhone(phone: string): string {
 export async function getContactsModuleState(): Promise<ContactsModuleState> {
   const { error } = await getSupabase().from("contacts").select("id").limit(1);
   if (error && isMissingTableError(error)) {
-    return { available: false, migrationPending: true };
+    return { available: false, migrationPending: true, importAvailable: false };
   }
   if (error) {
     console.warn("[contacts] getContactsModuleState", error);
-    return { available: false, migrationPending: false };
+    return { available: false, migrationPending: false, importAvailable: false };
   }
-  return { available: true, migrationPending: false };
+
+  const { error: importErr } = await getSupabase()
+    .from("contact_import_jobs")
+    .select("id")
+    .limit(1);
+  const importAvailable = !importErr || !isMissingTableError(importErr);
+
+  return { available: true, migrationPending: false, importAvailable };
 }
 
 function resolveDisplayName(input: CreateContactInput): string {
@@ -485,6 +492,8 @@ export async function getContactSummary(companyId: string): Promise<ContactSumma
     validContacts: 0,
     duplicateContacts: 0,
     blockedOrOptOut: 0,
+    activeTags: 0,
+    importedThisMonth: 0,
     lastUpdatedAt: null,
   };
 
@@ -538,14 +547,118 @@ export async function getContactSummary(companyId: string): Promise<ContactSumma
     wrapSupabaseError(listErr, "getContactSummary.lists");
   }
 
+  const { count: tagCount, error: tagErr } = await getSupabase()
+    .from("contact_tags")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", companyId);
+
+  if (tagErr && !isMissingTableError(tagErr)) {
+    wrapSupabaseError(tagErr, "getContactSummary.tags");
+  }
+
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+
+  const { count: importedMonth, error: importErr } = await getSupabase()
+    .from("contacts")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", companyId)
+    .eq("source", "import")
+    .gte("created_at", monthStart.toISOString());
+
+  if (importErr && !isMissingTableError(importErr)) {
+    wrapSupabaseError(importErr, "getContactSummary.imported");
+  }
+
   return {
     totalContacts: contacts.length,
     activeLists: listCount ?? 0,
     validContacts,
     duplicateContacts,
     blockedOrOptOut,
+    activeTags: tagCount ?? 0,
+    importedThisMonth: importedMonth ?? 0,
     lastUpdatedAt,
   };
+}
+
+export async function bulkMoveContactsToList(
+  companyId: string,
+  contactIds: string[],
+  listId: string,
+): Promise<number> {
+  if (!contactIds.length) {
+    throw new AppError("Selecciona al menos un contacto.", 400);
+  }
+
+  await assertListBelongsToCompany(companyId, listId);
+
+  const { data, error } = await getSupabase()
+    .from("contacts")
+    .select("id")
+    .eq("company_id", companyId)
+    .in("id", contactIds);
+
+  if (error) {
+    wrapSupabaseError(error, "bulkMoveContactsToList");
+  }
+  const found = (data ?? []).map((r) => r.id as string);
+  if (found.length !== contactIds.length) {
+    throw new AppError("No puedes modificar contactos de otra empresa.", 403);
+  }
+
+  let moved = 0;
+  for (const contactId of found) {
+    const { error: memberErr } = await getSupabase()
+      .from("contact_list_members")
+      .upsert(
+        {
+          company_id: companyId,
+          contact_id: contactId,
+          list_id: listId,
+          metadata: {},
+        },
+        { onConflict: "list_id,contact_id", ignoreDuplicates: false },
+      );
+    if (memberErr && !isDuplicateKeyError(memberErr)) {
+      wrapSupabaseError(memberErr, "bulkMoveContactsToList.member");
+    }
+    moved += 1;
+  }
+  return moved;
+}
+
+export async function bulkUpdateContactStatus(
+  companyId: string,
+  contactIds: string[],
+  status: ContactStatus,
+): Promise<number> {
+  if (!contactIds.length) {
+    throw new AppError("Selecciona al menos un contacto.", 400);
+  }
+
+  const allowed: ContactStatus[] = ["active", "blocked", "opt_out"];
+  if (!allowed.includes(status)) {
+    throw new AppError("Estado no permitido para acción masiva.", 400);
+  }
+
+  const { data, error } = await getSupabase()
+    .from("contacts")
+    .update({ status })
+    .eq("company_id", companyId)
+    .in("id", contactIds)
+    .select("id");
+
+  if (error) {
+    wrapSupabaseError(error, "bulkUpdateContactStatus");
+  }
+
+  const updated = (data ?? []).length;
+  if (updated !== contactIds.length) {
+    throw new AppError("No puedes modificar contactos de otra empresa.", 403);
+  }
+  return updated;
 }
 
 export { CONTACT_TABLES };

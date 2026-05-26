@@ -6,3 +6,4 @@ dist/
 
 # QA visual puntual en producción (credenciales locales en .env)
 scripts/verify-billing-visual-prod.mjs
+scripts/verify-contacts-visual-prod.mjs

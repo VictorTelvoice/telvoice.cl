@@ -4,6 +4,13 @@ import {
   getAppBuySms,
   getAppCampaigns,
   getAppContacts,
+  getAppContactsImport,
+  postAppContactsImportPreview,
+  postAppContactsImportConfirm,
+  postAppCreateContactTag,
+  postAppBulkAssignTag,
+  postAppBulkMoveList,
+  postAppBulkContactStatus,
   postAppCreateContact,
   postAppCreateContactList,
   getAppDashboard,
@@ -80,6 +87,33 @@ appRouter.get("/send-sms", requireClientPanelPage, getAppSendSms);
 appRouter.post("/send-sms", requireClientPanelPage, postAppSendSms);
 appRouter.get("/campaigns", requireClientPanelPage, getAppCampaigns);
 appRouter.get("/inbox", requireClientPanelPage, getAppInbox);
+appRouter.get("/contacts/import", requireClientPanelPage, getAppContactsImport);
+appRouter.post(
+  "/contacts/import/preview",
+  requireClientPanelPage,
+  postAppContactsImportPreview,
+);
+appRouter.post(
+  "/contacts/import/confirm",
+  requireClientPanelPage,
+  postAppContactsImportConfirm,
+);
+appRouter.post("/contacts/tags", requireClientPanelPage, postAppCreateContactTag);
+appRouter.post(
+  "/contacts/bulk/assign-tag",
+  requireClientPanelPage,
+  postAppBulkAssignTag,
+);
+appRouter.post(
+  "/contacts/bulk/move-list",
+  requireClientPanelPage,
+  postAppBulkMoveList,
+);
+appRouter.post(
+  "/contacts/bulk/status",
+  requireClientPanelPage,
+  postAppBulkContactStatus,
+);
 appRouter.get("/contacts", requireClientPanelPage, getAppContacts);
 appRouter.post("/contacts", requireClientPanelPage, postAppCreateContact);
 appRouter.post("/contacts/lists", requireClientPanelPage, postAppCreateContactList);

@@ -11,6 +11,21 @@ export type ContactConsentStatus = "unknown" | "granted" | "denied";
 
 export type ContactListStatus = "active" | "archived";
 
+export type ContactImportStatus =
+  | "draft"
+  | "validated"
+  | "imported"
+  | "failed"
+  | "cancelled";
+
+export type ContactImportRowStatus =
+  | "pending"
+  | "valid"
+  | "invalid"
+  | "duplicate"
+  | "imported"
+  | "skipped";
+
 export type ContactRow = {
   id: string;
   company_id: string;
@@ -67,6 +82,39 @@ export type ContactTagAssignmentRow = {
   created_at: string;
 };
 
+export type ContactImportJobRow = {
+  id: string;
+  company_id: string;
+  status: ContactImportStatus;
+  filename: string | null;
+  total_rows: number;
+  valid_rows: number;
+  invalid_rows: number;
+  duplicate_rows: number;
+  imported_rows: number;
+  error_message: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ContactImportRow = {
+  id: string;
+  job_id: string;
+  company_id: string;
+  row_number: number;
+  raw_data: Record<string, unknown>;
+  display_name: string | null;
+  phone: string | null;
+  phone_normalized: string | null;
+  email: string | null;
+  status: ContactImportRowStatus;
+  error_message: string | null;
+  duplicate_contact_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};
+
 export type ContactFilters = {
   q?: string;
   listId?: string;
@@ -84,6 +132,8 @@ export type ContactSummary = {
   validContacts: number;
   duplicateContacts: number;
   blockedOrOptOut: number;
+  activeTags: number;
+  importedThisMonth: number;
   lastUpdatedAt: string | null;
 };
 
@@ -104,6 +154,59 @@ export type CreateContactListInput = {
   color?: string | null;
 };
 
+export type CreateContactTagInput = {
+  name: string;
+  color?: string | null;
+};
+
+export type AssignContactTagInput = {
+  contact_id: string;
+  tag_id: string;
+};
+
+export type BulkContactActionInput = {
+  contact_ids: string[];
+  list_id?: string;
+  tag_id?: string;
+  status?: ContactStatus;
+};
+
+export type ParsedContactCsvRow = {
+  row_number: number;
+  display_name: string;
+  phone: string;
+  email?: string;
+  list_name?: string;
+  tag_names?: string[];
+  notes?: string;
+  raw: Record<string, string>;
+};
+
+export type ValidatedContactImportRow = ParsedContactCsvRow & {
+  phone_normalized?: string;
+  status: ContactImportRowStatus;
+  error_message?: string;
+  duplicate_contact_id?: string;
+};
+
+export type ContactImportPreview = {
+  job: ContactImportJobRow;
+  rows: ValidatedContactImportRow[];
+  summary: {
+    total: number;
+    valid: number;
+    invalid: number;
+    duplicate: number;
+  };
+};
+
+export type ContactImportResult = {
+  job: ContactImportJobRow;
+  imported: number;
+  skipped: number;
+  errors: string[];
+};
+
 export type ContactWithListsAndTags = ContactRow & {
   list_ids: string[];
   list_names: string[];
@@ -118,4 +221,5 @@ export type ContactListWithCount = ContactListRow & {
 export type ContactsModuleState = {
   available: boolean;
   migrationPending: boolean;
+  importAvailable: boolean;
 };
