@@ -851,6 +851,47 @@
     };
 
     if (suggestionsEl) {
+      // Botón de pruebas: bolsa fija (no depende del slider/tramos).
+      // Total fijo IVA incl. para QA del flujo de compra/login.
+      (function addTestCalcChip() {
+        var sms = 200;
+        var totalInclIva = 1000;
+        var net = Math.round(totalInclIva / (1 + IVA_RATE));
+        var tax = totalInclIva - net;
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "calc-tier-chip calc-tier-chip--test";
+        btn.setAttribute("data-volume", String(sms));
+        btn.setAttribute("aria-pressed", "false");
+        btn.setAttribute(
+          "aria-label",
+          "Bolsa prueba " + sms + " SMS · $" + fmt(totalInclIva) + " IVA incl."
+        );
+        btn.appendChild(document.createTextNode(String(sms) + " SMS"));
+        var sub = document.createElement("span");
+        sub.className = "calc-tier-chip-sub";
+        sub.textContent = "$" + fmt(totalInclIva);
+        btn.appendChild(sub);
+        btn.addEventListener("click", function () {
+          openCompraModal({
+            planId: "calc",
+            calcSms: sms,
+            planName: "Bolsa prueba — " + sms + " SMS",
+            sms: sms,
+            net_amount: net,
+            tax_amount: tax,
+            total_amount: totalInclIva,
+            source: "calculadora-test",
+          });
+          trackEvent("click_comprar_online", {
+            planId: "calc",
+            source: "calculadora-test",
+            volume: sms,
+          });
+        });
+        suggestionsEl.appendChild(btn);
+      })();
+
       tierSuggestions.forEach(function (item) {
         var vol = item.vol;
         var idx = volumeToSliderIndex(vol);
