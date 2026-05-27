@@ -212,7 +212,9 @@ export function generateInvoiceHtmlFromData(data: BillingDocumentData): string {
       background: linear-gradient(135deg, #0052cc 0%, #003d99 100%);
       color: #fff;
     }
-    .brand { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
+    .brand-lockup { display: flex; align-items: center; gap: 10px; }
+    .brand-logo { width: 36px; height: 36px; display: block; object-fit: contain; }
+    .brand-word { font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em; text-transform: lowercase; line-height: 1; }
     .brand-sub { opacity: 0.9; font-size: 0.85rem; margin-top: 4px; }
     .doc-meta { text-align: right; }
     .doc-meta .num { font-size: 1.1rem; font-weight: 700; }
@@ -336,7 +338,10 @@ export function generateInvoiceHtmlFromData(data: BillingDocumentData): string {
   <article class="sheet">
     <header class="head">
       <div>
-        <div class="brand">Telvoice</div>
+        <div class="brand-lockup">
+          <img class="brand-logo" src="/assets/telvoice-isotipo.png" alt="" width="36" height="36" decoding="async" aria-hidden="true" />
+          <div class="brand-word">telvoice</div>
+        </div>
         <div class="brand-sub">Comprobante interno de compra</div>
       </div>
       <div class="doc-meta">
