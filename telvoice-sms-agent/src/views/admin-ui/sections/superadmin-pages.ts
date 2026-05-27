@@ -140,7 +140,7 @@ export function renderSaCampaignsPage(opts: PageOpts): string {
     : `<p class="field-hint tv-mock-tag">Sin campañas en BD · mostrando datos de ejemplo.</p>`;
   const body = `
     ${renderSuperadminBanner()}
-    ${renderPageHeader({ title: "Campañas globales", subtitle: "Monitorea campañas de todos los clientes en la plataforma.", actions: renderBtn("Nueva campaña", { disabled: true, variant: "primary" }) })}
+    ${renderPageHeader({ title: "Campañas globales", subtitle: "Monitorea campañas de todos los clientes en la plataforma.", actions: renderBtn("Nueva campaña", { href: "/admin/campaigns/send", variant: "primary", icon: "upload_file" }) })}
     <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
       <th>Cliente</th><th>Campaña</th><th>Remitente</th><th>SMS consumidos</th><th>Estado</th><th>Modo</th><th>Campaigns</th><th>Live</th><th>TPS eff.</th><th>Fecha</th><th></th>
     </tr></thead><tbody>${rows}</tbody></table></div>

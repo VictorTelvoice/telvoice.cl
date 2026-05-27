@@ -47,8 +47,8 @@ export function renderSendSmsPageBody(options: {
   const headerActions = `
     ${renderBtn("Guardar borrador", { variant: "ghost", disabled: true, title: "Próximamente" })}
     <button type="submit" form="tv-send-form" class="btn btn-secondary"><span class="material-symbols-outlined" style="font-size:1.1rem">science</span>Enviar prueba</button>
-    ${renderBtn("Programar envío", { variant: "ghost", disabled: true, title: "Próximamente" })}
-    <button type="submit" form="tv-send-form" class="tv-btn-campaign"><span class="material-symbols-outlined" style="font-size:1.1rem">send</span>Enviar campaña</button>
+    ${renderBtn("Enviar campaña (CSV)", { href: "/admin/campaigns/send", variant: "primary", icon: "upload_file" })}
+    ${renderBtn("Programar campaña (CSV)", { href: "/admin/campaigns/send?mode=scheduled", variant: "ghost", icon: "schedule" })}
   `;
 
   const modes = renderModeCards(
@@ -111,18 +111,11 @@ export function renderSendSmsPageBody(options: {
               </div>
             </div>
             <div data-tv-mass-fields hidden>
-              <div class="form-group">
-                <label for="contact_list">Lista de contactos</label>
-                <select id="contact_list" disabled class="tv-input-full">
-                  <option>Clientes activos CL (mock · 2.400)</option>
-                  <option>Leads últimos 30 días (mock · 890)</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="csv_file">Cargar CSV</label>
-                <input id="csv_file" type="file" accept=".csv" disabled class="tv-input-full" />
-                <p class="field-hint">Formato: número;mensaje o número en primera columna.</p>
-              </div>
+              ${renderNotice(
+                "Campañas masivas y envíos programados con CSV y vista previa están en el flujo dedicado de superadmin.",
+                "info",
+              )}
+              <p style="margin-top:0.75rem">${renderBtn("Ir a enviar campaña (CSV)", { href: "/admin/campaigns/send", variant: "primary", icon: "upload_file" })}</p>
             </div>
             <div data-tv-template-fields hidden>
               <div class="form-group">
@@ -135,16 +128,11 @@ export function renderSendSmsPageBody(options: {
               </div>
             </div>
             <div data-tv-schedule-fields hidden>
-              <div class="tv-form-grid">
-                <div class="form-group">
-                  <label for="schedule_date">Fecha programada</label>
-                  <input id="schedule_date" type="date" disabled />
-                </div>
-                <div class="form-group">
-                  <label for="schedule_time">Hora</label>
-                  <input id="schedule_time" type="time" disabled />
-                </div>
-              </div>
+              ${renderNotice(
+                "Programa envíos masivos con CSV desde Enviar campaña.",
+                "info",
+              )}
+              <p style="margin-top:0.75rem">${renderBtn("Programar campaña CSV", { href: "/admin/campaigns/send?mode=scheduled", variant: "primary", icon: "schedule" })}</p>
             </div>
             <div class="form-group">
               <label for="textmessage">Mensaje SMS</label>
