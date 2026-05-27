@@ -1,5 +1,6 @@
 /** Scripts inline del navegador para login Supabase (Google + Magic Link) y /auth/callback. */
 
+/** Cliente Supabase compartido (misma URL, key y storage en /login y /auth/callback). */
 export function renderSupabaseBrowserClientInit(url: string, key: string): string {
   return `
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -7,8 +8,9 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true,
+      detectSessionInUrl: false,
       flowType: "pkce",
+      storage: window.localStorage,
     },
   });
   function tvAuthDebug(...args) {
@@ -17,11 +19,14 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
   function tvAuthFail(reason, detail) {
     if (detail) console.error("[tv-auth]", reason, detail);
     else console.error("[tv-auth]", reason);
-    const q = reason === "exchange_failed" && detail
-      ? "auth_failed"
-      : "google_auth_failed";
+    const q =
+      reason === "exchange_failed" || reason === "oauth_error"
+        ? "auth_failed"
+        : "google_auth_failed";
     const msg = detail && typeof detail === "string" ? detail : "";
-    window.location.href = "/login?error=" + encodeURIComponent(q) +
+    window.location.href =
+      "/login?error=" +
+      encodeURIComponent(q) +
       (msg ? "&detail=" + encodeURIComponent(msg.slice(0, 200)) : "");
   }
   function maskUrl(href) {
@@ -33,6 +38,38 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
       return href;
     }
   }
+  async function tvResolveSessionAfterCallback() {
+    const { data: sessionRes, error: sessionError } = await supabase.auth.getSession();
+    tvAuthDebug("getSession_error", sessionError?.message || null);
+    tvAuthDebug("has_session", Boolean(sessionRes?.session));
+
+    const { data: userRes, error: userError } = await supabase.auth.getUser();
+    tvAuthDebug("getUser_error", userError?.message || null);
+    tvAuthDebug("getUser_id", userRes?.user?.id || null);
+
+    const session = sessionRes?.session;
+    const user = session?.user || userRes?.user;
+    return session && user ? session : null;
+  }
+  async function tvTrySessionFromHash() {
+    const raw = (window.location.hash || "").replace(/^#/, "");
+    if (!raw || !/access_token|refresh_token/.test(raw)) return null;
+    const params = new URLSearchParams(raw);
+    const access_token = params.get("access_token");
+    const refresh_token = params.get("refresh_token");
+    if (!access_token || !refresh_token) return null;
+    tvAuthDebug("magic_link_hash", true);
+    const { data, error } = await supabase.auth.setSession({
+      access_token,
+      refresh_token,
+    });
+    if (error) {
+      tvAuthDebug("setSession_from_hash_error", error.message);
+      return null;
+    }
+    window.history.replaceState({}, document.title, "/auth/callback");
+    return data.session ?? null;
+  }
   async function tvRunPostAuth(session) {
     const user = session?.user;
     const accessToken = session?.access_token;
@@ -41,7 +78,9 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
       return;
     }
     const statusEl = document.getElementById("tv-auth-status");
-    function setStatus(t) { if (statusEl) statusEl.textContent = t; }
+    function setStatus(t) {
+      if (statusEl) statusEl.textContent = t;
+    }
 
     setStatus("Creando cuenta en Telvoice…");
     const payload = {
@@ -65,8 +104,13 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
     });
     if (!boot.ok) {
       let errBody = "";
-      try { errBody = await boot.text(); } catch {}
-      tvAuthFail("bootstrap_failed", "HTTP " + boot.status + (errBody ? " " + errBody.slice(0, 120) : ""));
+      try {
+        errBody = await boot.text();
+      } catch {}
+      tvAuthFail(
+        "bootstrap_failed",
+        "HTTP " + boot.status + (errBody ? " " + errBody.slice(0, 120) : ""),
+      );
       return;
     }
 
@@ -97,8 +141,16 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
     window.location.href = "/app/dashboard?welcome=1";
   }
   async function tvCompleteAuthCallback() {
+    if (window.__tvAuthCallbackRunning) {
+      tvAuthDebug("callback_skipped", "already_running");
+      return;
+    }
+    window.__tvAuthCallbackRunning = true;
+
     const statusEl = document.getElementById("tv-auth-status");
-    function setStatus(t) { if (statusEl) statusEl.textContent = t; }
+    function setStatus(t) {
+      if (statusEl) statusEl.textContent = t;
+    }
 
     const href = window.location.href;
     const params = new URLSearchParams(window.location.search);
@@ -108,6 +160,7 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
 
     tvAuthDebug("callback_url", maskUrl(href));
     tvAuthDebug("has_code", Boolean(code));
+    tvAuthDebug("detectSessionInUrl", false);
     tvAuthDebug("oauth_error", oauthError || null);
 
     if (oauthError) {
@@ -117,31 +170,39 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
 
     setStatus("Obteniendo sesión…");
 
+    let session = null;
+
     if (code) {
+      tvAuthDebug("exchange_start", true);
       const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
       tvAuthDebug("exchange_ok", !exchangeError);
+
       if (exchangeError) {
-        tvAuthFail("exchange_failed", exchangeError.message);
-        return;
+        tvAuthDebug("exchange_error", exchangeError.message);
+        session = await tvResolveSessionAfterCallback();
+        if (session) {
+          tvAuthDebug("exchange_failed_but_session_ok", true);
+        } else {
+          const detail =
+            exchangeError.message && /code verifier/i.test(exchangeError.message)
+              ? "La sesión de inicio expiró. Vuelve a intentar con Google."
+              : exchangeError.message || "No se pudo validar el acceso.";
+          tvAuthFail("exchange_failed", detail);
+          return;
+        }
+      } else {
+        window.history.replaceState({}, document.title, "/auth/callback");
+        session = await tvResolveSessionAfterCallback();
       }
-    } else if (window.location.hash && /access_token|refresh_token/.test(window.location.hash)) {
-      tvAuthDebug("hash_tokens", true);
-      await new Promise((r) => setTimeout(r, 300));
+    } else {
+      session = await tvTrySessionFromHash();
+      if (!session) {
+        session = await tvResolveSessionAfterCallback();
+      }
     }
 
-    const { data: sessionRes, error: sessionError } = await supabase.auth.getSession();
-    tvAuthDebug("getSession_error", sessionError?.message || null);
-    tvAuthDebug("has_session", Boolean(sessionRes?.session));
-    tvAuthDebug("session_user_id", sessionRes?.session?.user?.id || null);
-
-    const { data: userRes, error: userError } = await supabase.auth.getUser();
-    tvAuthDebug("getUser_error", userError?.message || null);
-    tvAuthDebug("getUser_id", userRes?.user?.id || null);
-
-    const session = sessionRes?.session;
-    const user = session?.user || userRes?.user;
-    if (!session || !user) {
-      tvAuthFail("no_session");
+    if (!session) {
+      tvAuthFail("no_session", "No hay sesión activa. Intenta iniciar sesión de nuevo.");
       return;
     }
 
@@ -161,8 +222,10 @@ ${renderSupabaseBrowserClientInit(url, key)}
         const { error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: window.location.origin + "/auth/callback",
-            queryParams: { prompt: "select_account" },
+            redirectTo: \`\${window.location.origin}/auth/callback\`,
+            queryParams: {
+              prompt: "select_account",
+            },
           },
         });
         if (error) {
@@ -205,7 +268,7 @@ ${renderSupabaseBrowserClientInit(url, key)}
         const { error } = await supabase.auth.signInWithOtp({
           email,
           options: {
-            emailRedirectTo: window.location.origin + "/auth/callback",
+            emailRedirectTo: \`\${window.location.origin}/auth/callback\`,
             shouldCreateUser: true,
           },
         });
