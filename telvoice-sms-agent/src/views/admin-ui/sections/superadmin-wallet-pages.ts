@@ -26,6 +26,8 @@ import { wrapAdminPage } from "../admin-page-wrap.js";
 import { MOCK_SA_BAGS, MOCK_SA_ORDERS, MOCK_SA_WALLETS } from "../mock-data-superadmin.js";
 import { renderBtn, renderCollapsible, renderPageHeader } from "../page-kit.js";
 import { renderSuperadminBanner, statusBadgeSa } from "../superadmin-kit.js";
+import type { SmsQueueRuntimeConfig } from "../../../services/smsQueueRuntimeConfigService.js";
+import { renderSchedulerRuntimeCompactPanel } from "./superadmin-traffic-pages.js";
 
 type PageOpts = {
   admin: AdminSessionUser;
@@ -335,6 +337,7 @@ export function renderSaWalletDetailPage(opts: PageOpts & {
   balance: WalletListRow;
   transactions: WalletTransactionRow[];
   ratePlanHtml?: string;
+  queueRuntime?: SmsQueueRuntimeConfig;
 }): string {
   const txRows = opts.transactions.length
     ? opts.transactions
@@ -363,6 +366,7 @@ export function renderSaWalletDetailPage(opts: PageOpts & {
       <article class="tv-kpi"><span class="tv-kpi__label">Consumido</span><span class="tv-kpi__value">${fmtSms(opts.balance.consumedSms)}</span></article>
       <article class="tv-kpi"><span class="tv-kpi__label">Total comprado</span><span class="tv-kpi__value">${fmtSms(opts.balance.totalPurchasedSms)}</span></article>
     </div>
+    ${opts.queueRuntime ? renderSchedulerRuntimeCompactPanel(opts.queueRuntime) : ""}
     ${opts.ratePlanHtml ?? ""}
     <div class="tv-dash-grid tv-dash-grid--2">
       <section class="tv-panel">

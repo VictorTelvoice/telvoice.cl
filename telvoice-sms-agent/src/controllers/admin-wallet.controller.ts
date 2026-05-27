@@ -38,6 +38,7 @@ import { listActiveCompanyRatePlans } from "../services/companyRatePlanService.j
 import { listSmsRatePlans } from "../services/smsRatePlanService.js";
 import { listSmsProviders } from "../services/smsProviderService.js";
 import { isMissingTableError } from "../utils/db-table.js";
+import { getSmsQueueRuntimeConfig } from "../services/smsQueueRuntimeConfigService.js";
 import { renderWalletRatePlanBlock } from "../views/admin-ui/sections/superadmin-telco-pages.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
@@ -337,6 +338,7 @@ export async function getSaWalletDetailPage(
       companyName: company.name,
       lastTransactionAt: transactions[0]?.created_at ?? null,
     };
+    const queueRuntime = await getSmsQueueRuntimeConfig();
 
     res.type("html").send(
       renderSaWalletDetailPage({
@@ -345,6 +347,7 @@ export async function getSaWalletDetailPage(
         balance: walletRow,
         transactions,
         ratePlanHtml,
+        queueRuntime,
         ...flash(req),
       }),
     );

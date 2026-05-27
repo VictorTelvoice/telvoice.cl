@@ -1,5 +1,6 @@
 import type { AdminSessionUser } from "../../../types/admin.js";
 import type { TrafficControlDashboard } from "../../../services/smsTrafficMetricsService.js";
+import type { SmsQueueRuntimeConfig } from "../../../services/smsQueueRuntimeConfigService.js";
 import { escapeHtml } from "../../../utils/html.js";
 import { wrapAdminPage } from "../admin-page-wrap.js";
 import { renderPageHeader } from "../page-kit.js";
@@ -11,6 +12,38 @@ type BaseOpts = {
   flash?: string;
   error?: string;
 };
+
+/** Panel compacto reutilizable (wallet, dashboard, etc.). */
+export function renderSchedulerRuntimeCompactPanel(
+  rt: SmsQueueRuntimeConfig,
+): string {
+  const healthBadge =
+    rt.health === "ok"
+      ? `<span class="badge badge-ok">Scheduler OK</span>`
+      : rt.health === "slow"
+        ? `<span class="badge badge-warn">Scheduler lento</span>`
+        : rt.health === "critical"
+          ? `<span class="badge badge-err">Scheduler crítico</span>`
+          : `<span class="badge badge-muted">Scheduler manual</span>`;
+
+  const warn =
+    rt.warnings.length > 0
+      ? `<p class="field-hint" style="margin:0.5rem 0 0;color:var(--err,#b91c1c)">${escapeHtml(rt.warnings[0] ?? "")}</p>`
+      : "";
+
+  return `<section class="tv-panel" style="margin-top:0.75rem;border-left:4px solid var(--primary,#2563eb)">
+    <h2 class="tv-panel__title">Despacho de campañas (servidor)</h2>
+    <div class="tv-panel__body">
+      <p style="margin:0">${healthBadge} · intervalo <strong>${rt.scheduler.intervalSeconds}s</strong> · batch <strong>${rt.scheduler.batchSize}</strong> · pacing <strong>${rt.campaignQueue.queueMinPaceSeconds}s</strong>/destinatario</p>
+      <p class="field-hint" style="margin:0.35rem 0 0">Referencia Test13: intervalo <strong>1s</strong>, batch <strong>20</strong>. Si ves <strong>60s</strong>, las masivas tardan ~1 SMS/min.</p>
+      ${warn}
+      <p style="margin:0.75rem 0 0">
+        <a href="/admin/traffic-control" class="btn btn-primary btn-sm">Abrir Tráfico / TPS (detalle completo)</a>
+        <a href="/admin/traffic-control/scheduler-config.json" class="btn btn-ghost btn-sm" target="_blank" rel="noopener">JSON</a>
+      </p>
+    </div>
+  </section>`;
+}
 
 function wrap(opts: BaseOpts, body: string): string {
   const alerts = [
