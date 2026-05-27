@@ -51,7 +51,6 @@ jobs:
           set -e
           missing=""
           [ "$HAS_HOST" = "true" ] || missing="${missing}VPS_HOST "
-          [ "$HAS_USER" = "true" ] || missing="${missing}VPS_USER "
           [ "$HAS_KEY" = "true" ] || missing="${missing}VPS_SSH_KEY "
           if [ -n "$missing" ]; then
             echo "::error::Faltan secretos en GitHub Actions: ${missing}"
@@ -60,6 +59,9 @@ jobs:
             exit 1
           fi
           echo "Secretos obligatorios presentes (valores no mostrados)."
+          if [ "$HAS_USER" != "true" ]; then
+            echo "ADVERTENCIA: VPS_USER no está definido; se intentará fallback a root."
+          fi
 
       - name: Configurar SSH para deploy
         env:
@@ -83,9 +85,18 @@ jobs:
           set -euo pipefail
           PORT="${{ secrets.VPS_SSH_PORT || 22 }}"
           APP_PATH="${VPS_APP_PATH:-/var/www/telvoice-sms-agent}"
-          ssh -i ~/.ssh/deploy_key -p "$PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes \
-            -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
-            "${VPS_USER}@${VPS_HOST}" env APP_PATH="$APP_PATH" bash -s <<'REMOTE'
+          # Resolver usuario SSH: primero VPS_USER (si existe), luego root (fallback).
+          SSH_USER=""
+          if [ -n "${VPS_USER:-}" ]; then
+            SSH_USER="$VPS_USER"
+          fi
+          SSH_OK_USER=""
+          for candidate in "$SSH_USER" root; do
+            [ -n "$candidate" ] || continue
+            echo "Probando SSH con usuario: ${candidate}"
+            if ssh -i ~/.ssh/deploy_key -p "$PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes \
+              -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
+              "${candidate}@${VPS_HOST}" env APP_PATH="$APP_PATH" bash -s <<'REMOTE'
           set -euo pipefail
           if [ -z "$APP_PATH" ]; then APP_PATH="/var/www/telvoice-sms-agent"; fi
           echo "=== SSH conectado ==="
@@ -100,6 +111,16 @@ jobs:
           npm -v
           pm2 -v 2>/dev/null || echo "ADVERTENCIA: pm2 no encontrado en PATH"
           REMOTE
+            then
+              SSH_OK_USER="$candidate"
+              echo "SSH_OK_USER=${candidate}" >> "$GITHUB_ENV"
+              break
+            fi
+          done
+          if [ -z "$SSH_OK_USER" ]; then
+            echo "::error::No se pudo autenticar por SSH con VPS_USER ni con root."
+            exit 1
+          fi
 
       - name: Desplegar aplicación
         env:
@@ -112,9 +133,11 @@ jobs:
           set -euo pipefail
           PORT="${{ secrets.VPS_SSH_PORT || 22 }}"
           APP_PATH="${VPS_APP_PATH:-/var/www/telvoice-sms-agent}"
+          SSH_USER="${SSH_OK_USER:-${VPS_USER:-root}}"
+          echo "Usando usuario SSH: ${SSH_USER}"
           timeout 15m ssh -i ~/.ssh/deploy_key -p "$PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes \
             -o ServerAliveInterval=30 -o ServerAliveCountMax=60 \
-            "${VPS_USER}@${VPS_HOST}" \
+            "${SSH_USER}@${VPS_HOST}" \
             env APP_PATH="$APP_PATH" DEPLOY_SHA="$DEPLOY_SHA" DEPLOY_REPO="$DEPLOY_REPO" bash -s <<'REMOTE'
           set -euo pipefail
           if [ -z "$APP_PATH" ]; then APP_PATH="/var/www/telvoice-sms-agent"; fi
