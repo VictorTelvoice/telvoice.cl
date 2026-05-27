@@ -660,12 +660,30 @@
         });
     }
 
+    function allowLegacyFallback() {
+      var cfg = window.TELVOICE_CONFIG || {};
+      if (cfg.allowLegacyCheckoutFallback === true) return true;
+      var pub = window.__TELVOICE_PUBLIC_ENV__ || {};
+      var v = pub.NEXT_PUBLIC_ALLOW_LEGACY_CHECKOUT_FALLBACK;
+      if (typeof v === "string") {
+        v = v.trim().toLowerCase();
+        return v === "true" || v === "1" || v === "yes";
+      }
+      if (v === true) return true;
+      return false;
+    }
+
     // Nuevo flujo: intentamos primero el checkout público del agent.
-    // Fallback: mantenemos el flujo antiguo si el agent no responde / no hay paquete equivalente.
+    // Fallback legacy: SOLO si está explícitamente habilitado.
     startAgentCheckout()
       .catch(function (err) {
-        console.warn("[checkout] agent checkout fallback", err && (err.message || err));
-        return startLegacyCheckout();
+        if (allowLegacyFallback()) {
+          console.warn("[checkout] agent checkout fallback (legacy enabled)", err && (err.message || err));
+          return startLegacyCheckout();
+        }
+        throw new Error(
+          "No pudimos iniciar el checkout en este momento. Por favor intenta nuevamente o contacta a soporte."
+        );
       })
       .then(function (checkoutUrl) {
         trackEvent("click_comprar_online", { planId: planId, source: compraState.source });

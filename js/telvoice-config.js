@@ -19,6 +19,13 @@ window.TELVOICE_CONFIG = {
     tel: "+56997980116",
   },
   checkoutUrl: null,
+  /**
+   * Por defecto NO permitimos fallback automático al checkout legacy.
+   * Se puede habilitar explícitamente (por ejemplo en staging) inyectando:
+   * window.__TELVOICE_PUBLIC_ENV__ = { NEXT_PUBLIC_ALLOW_LEGACY_CHECKOUT_FALLBACK: "true" }
+   * o configurando allowLegacyCheckoutFallback=true aquí.
+   */
+  allowLegacyCheckoutFallback: false,
   ivaRate: 0.19,
   quoteVolumeMin: 100001,
   hero: {
