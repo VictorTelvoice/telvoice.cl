@@ -680,6 +680,7 @@ export function getAppPanelStyles(): string {
       padding: 1.25rem 1.35rem 1.3rem;
       display: flex;
       flex-direction: column;
+      justify-content: flex-start;
     }
     .tv-kpi-grid--client .tv-kpi__head {
       margin-bottom: 0.7rem;
@@ -690,7 +691,7 @@ export function getAppPanelStyles(): string {
     }
     .tv-kpi-grid--client .tv-kpi__value {
       line-height: 1.15;
-      margin-top: auto;
+      margin-top: 0;
     }
     .tv-kpi-grid--client .tv-kpi__hint {
       margin-top: 0.5rem;
