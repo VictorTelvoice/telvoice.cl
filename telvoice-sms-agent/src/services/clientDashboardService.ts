@@ -25,6 +25,7 @@ import {
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 
 export type ClientDashboardStats = {
+  smsTodayTotal: number;
   smsSentMonth: number;
   smsCostMonth: number;
   campaignsMonth: number;
@@ -207,6 +208,7 @@ async function loadDashboardMonthStats(companyId: string): Promise<{
   monthRows: MessageStatRow[];
 }> {
   const empty: ClientDashboardStats = {
+    smsTodayTotal: 0,
     smsSentMonth: 0,
     smsCostMonth: 0,
     campaignsMonth: 0,
@@ -243,6 +245,7 @@ async function loadDashboardMonthStats(companyId: string): Promise<{
   }
 
   const monthRows = (monthMessages ?? []) as MessageStatRow[];
+  const monthCountable = monthRows.filter(isCountableMessage);
   const smsCostMonth = monthRows.reduce(
     (sum, row) => sum + (Number(row.cost_sms) || 0),
     0,
@@ -252,6 +255,11 @@ async function loadDashboardMonthStats(companyId: string): Promise<{
     (globalMessages ?? []) as MessageStatRow[],
   );
   const todayRows = monthRows.filter((m) => m.created_at >= dayStart);
+  const todaySmsTotal = todayRows.reduce(
+    (sum, row) =>
+      !isCountableMessage(row) ? sum : sum + (Number(row.cost_sms) || 0),
+    0,
+  );
   const todayStats = countDeliveryStats(todayRows);
 
   const { count: campaignsMonth, error: campError } = await getSupabase()
@@ -266,7 +274,8 @@ async function loadDashboardMonthStats(companyId: string): Promise<{
 
   return {
     stats: {
-      smsSentMonth: monthRows.length,
+      smsTodayTotal: todaySmsTotal,
+      smsSentMonth: monthCountable.length,
       smsCostMonth,
       campaignsMonth: campaignsMonth ?? 0,
       globalDeliveryRate: deliveryRatePercent(

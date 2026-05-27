@@ -230,16 +230,18 @@ export function renderAppDashboardPage(
     })}
     <div class="tv-kpi-grid tv-kpi-grid--client">
       ${renderKpiCard({
-        label: "Mensajes (panel)",
-        value: fmtSms(stats.smsSentMonth),
-        icon: "send",
-        variant: "primary",
+        label: "SMS de hoy",
+        value: fmtSms(stats.smsTodayTotal),
+        hint: "Total de hoy",
+        icon: "today",
+        variant: "success",
       })}
       ${renderKpiCard({
-        label: "SMS consumidos",
-        value: fmtSms(stats.smsCostMonth),
-        icon: "payments",
-        variant: "warn",
+        label: "SMS enviados (mes)",
+        value: fmtSms(stats.smsSentMonth),
+        hint: `Este mes · ${monthLabel}`,
+        icon: "send",
+        variant: "primary",
       })}
       ${renderKpiCard({
         label: "Balance",
