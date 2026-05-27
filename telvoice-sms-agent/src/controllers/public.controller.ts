@@ -14,6 +14,7 @@ import {
   getBearerTokenFromRequestHeader,
   verifySupabaseAccessToken,
 } from "../services/supabaseAuthVerifyService.js";
+import { validateUuidParam } from "../utils/validation.js";
 
 export async function getPublicProducts(
   _req: Request,
@@ -143,16 +144,13 @@ export async function postPublicCheckout(
 ): Promise<void> {
   try {
     const body = req.body as Record<string, unknown>;
-    const packageId = String(body.package_id ?? "").trim();
+    const packageId = validateUuidParam(String(body.package_id ?? ""), "package_id");
     const checkoutEmail = String(body.checkout_email ?? body.email ?? "").trim();
     const payerEmail =
       typeof body.payer_email === "string" ? body.payer_email.trim() : undefined;
     const payerName =
       typeof body.payer_name === "string" ? body.payer_name.trim() : undefined;
 
-    if (!packageId) {
-      throw new ValidationError("package_id es requerido.");
-    }
     if (!checkoutEmail.includes("@")) {
       throw new ValidationError("checkout_email inválido.");
     }
