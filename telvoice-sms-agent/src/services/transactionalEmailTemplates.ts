@@ -34,7 +34,15 @@ function fmtSms(n: number): string {
   return new Intl.NumberFormat("es-CL").format(n);
 }
 
+function absolutePublicUrl(pathname: string): string {
+  const base = env.publicAppUrl.replace(/\/$/, "");
+  const path = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  return `${base}${path}`;
+}
+
 function emailShell(title: string, bodyHtml: string): string {
+  const logoUrl = absolutePublicUrl("/assets/telvoice-isotipo.png");
+  const brandName = escapeHtml(env.transactionalEmail.fromName);
   return `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
@@ -43,8 +51,23 @@ function emailShell(title: string, bodyHtml: string): string {
     <tr><td align="center">
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
         <tr><td style="background:#0052cc;color:#fff;padding:24px 28px">
-          <div style="font-size:22px;font-weight:800">${escapeHtml(env.transactionalEmail.fromName)}</div>
-          <div style="font-size:14px;opacity:0.9;margin-top:4px">${escapeHtml(title)}</div>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="vertical-align:middle">
+                <img
+                  src="${escapeHtml(logoUrl)}"
+                  width="44"
+                  height="44"
+                  alt="${brandName}"
+                  style="display:block;border:0;outline:none;text-decoration:none"
+                />
+              </td>
+              <td style="vertical-align:middle;padding-left:12px">
+                <div style="font-size:22px;font-weight:800;line-height:1.1">${brandName}</div>
+                <div style="font-size:14px;opacity:0.9;margin-top:4px">${escapeHtml(title)}</div>
+              </td>
+            </tr>
+          </table>
         </td></tr>
         <tr><td style="padding:28px">${bodyHtml}</td></tr>
         <tr><td style="padding:16px 28px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:12px;color:#64748b">
