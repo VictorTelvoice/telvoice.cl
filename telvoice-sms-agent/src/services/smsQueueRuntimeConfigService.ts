@@ -13,6 +13,15 @@ export const TEST13_REFERENCE_SCHEDULER = {
   queueMinPaceSeconds: 3,
 } as const;
 
+/** Prueba de carga API proveedor (~5 SMS/s teórico con latencia API). */
+export const LOAD_TEST_REFERENCE_SCHEDULER = {
+  intervalSeconds: 1,
+  batchSize: 20,
+  queueMinPaceSeconds: 1,
+  asmscMaxSendsPerTick: 5,
+  asmscInterSendMs: 200,
+} as const;
+
 export type SmsQueueRuntimeHealth = "ok" | "slow" | "critical" | "disabled";
 
 export type SmsQueueRuntimeConfig = {
@@ -48,7 +57,8 @@ export type SmsQueueRuntimeConfig = {
     };
   };
   dispatchGuards: {
-    asmscOneSendPerSchedulerTick: boolean;
+    asmscMaxSendsPerTick: number;
+    asmscInterSendMs: number;
     asmscInProcessProviderLock: boolean;
     queueItemsStaggeredOnEnqueue: boolean;
     ipWhitelistRetriesWithBackoff: boolean;
@@ -210,7 +220,8 @@ export async function getSmsQueueRuntimeConfig(): Promise<SmsQueueRuntimeConfig>
       },
     },
     dispatchGuards: {
-      asmscOneSendPerSchedulerTick: true,
+      asmscMaxSendsPerTick: effective.asmscMaxSendsPerTick,
+      asmscInterSendMs: effective.asmscInterSendMs,
       asmscInProcessProviderLock: true,
       queueItemsStaggeredOnEnqueue: true,
       ipWhitelistRetriesWithBackoff: true,

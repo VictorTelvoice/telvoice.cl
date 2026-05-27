@@ -10,6 +10,10 @@ export type SchedulerSettingsValue = {
   interval_seconds?: number;
   batch_size?: number;
   queue_min_pace_seconds?: number;
+  /** Envíos aSMSC secuenciales máximos por tick del scheduler (prueba de carga API). */
+  asmsc_max_sends_per_tick?: number;
+  /** Pausa ms entre envíos aSMSC en el mismo tick (anti-ráfaga IP). */
+  asmsc_inter_send_ms?: number;
 };
 
 export type EffectiveSchedulerConfig = {
@@ -18,8 +22,13 @@ export type EffectiveSchedulerConfig = {
   batchSize: number;
   queueMinPaceSeconds: number;
   queueMinPaceMs: number;
+  asmscMaxSendsPerTick: number;
+  asmscInterSendMs: number;
   source: "database" | "env";
 };
+
+const DEFAULT_ASMSC_MAX_PER_TICK = 5;
+const DEFAULT_ASMSC_INTER_SEND_MS = 200;
 
 function clampInt(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, Math.round(value)));
@@ -107,6 +116,16 @@ export async function getEffectiveSchedulerConfig(): Promise<EffectiveSchedulerC
       ),
       queueMinPaceSeconds: paceSec,
       queueMinPaceMs: paceSec * 1000,
+      asmscMaxSendsPerTick: clampInt(
+        Number(fromDb.asmsc_max_sends_per_tick ?? DEFAULT_ASMSC_MAX_PER_TICK),
+        1,
+        10,
+      ),
+      asmscInterSendMs: clampInt(
+        Number(fromDb.asmsc_inter_send_ms ?? DEFAULT_ASMSC_INTER_SEND_MS),
+        0,
+        2000,
+      ),
       source: "database",
     };
   }
@@ -118,6 +137,8 @@ export async function getEffectiveSchedulerConfig(): Promise<EffectiveSchedulerC
     batchSize: env.smsQueueScheduler.batchSize,
     queueMinPaceSeconds: paceSec,
     queueMinPaceMs: env.smsCampaign.queueMinPaceMs,
+    asmscMaxSendsPerTick: DEFAULT_ASMSC_MAX_PER_TICK,
+    asmscInterSendMs: DEFAULT_ASMSC_INTER_SEND_MS,
     source: "env",
   };
 }
@@ -127,12 +148,36 @@ export async function saveSchedulerSettings(input: {
   intervalSeconds: number;
   batchSize: number;
   queueMinPaceSeconds: number;
+  asmscMaxSendsPerTick?: number;
+  asmscInterSendMs?: number;
 }): Promise<EffectiveSchedulerConfig> {
+  const existing = (await getPlatformSetting(PLATFORM_SCHEDULER_KEY)) as
+    | SchedulerSettingsValue
+    | null;
   const value: SchedulerSettingsValue = {
+    ...existing,
     enabled: input.enabled,
     interval_seconds: clampInt(input.intervalSeconds, 1, 300),
     batch_size: clampInt(input.batchSize, 1, 100),
     queue_min_pace_seconds: clampInt(input.queueMinPaceSeconds, 1, 120),
+    asmsc_max_sends_per_tick: clampInt(
+      Number(
+        input.asmscMaxSendsPerTick ??
+          existing?.asmsc_max_sends_per_tick ??
+          DEFAULT_ASMSC_MAX_PER_TICK,
+      ),
+      1,
+      10,
+    ),
+    asmsc_inter_send_ms: clampInt(
+      Number(
+        input.asmscInterSendMs ??
+          existing?.asmsc_inter_send_ms ??
+          DEFAULT_ASMSC_INTER_SEND_MS,
+      ),
+      0,
+      2000,
+    ),
   };
   await upsertPlatformSetting(PLATFORM_SCHEDULER_KEY, value);
   invalidateSchedulerConfigCache();

@@ -488,10 +488,20 @@ async function processOneQueuedItem(
   }
 }
 
+function sleepMs(ms: number): Promise<void> {
+  if (ms <= 0) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export async function processQueueTick(
   limit = 5,
   workerId = "manual-tick",
 ): Promise<QueueTickResult> {
+  const schedCfg = await getEffectiveSchedulerConfigCached();
   const result: QueueTickResult = {
     processed: 0,
     sent: 0,
@@ -507,23 +517,38 @@ export async function processQueueTick(
 
   const batch = await getNextQueuedMessages(limit);
   const outcomes: ItemProcessOutcome[] = [];
-  let asmscDispatchedThisTick = false;
+  let asmscSentThisTick = 0;
   for (const item of batch) {
+    let isAsmsc = false;
     if (item.provider_id) {
       const provider = await getSmsProviderById(item.provider_id);
-      if (provider?.code === "asmsc") {
-        const inflight = await countProcessingByProvider(item.provider_id);
-        if (inflight > 0 || asmscDispatchedThisTick) {
+      isAsmsc = provider?.code === "asmsc";
+      if (isAsmsc) {
+        if (asmscSentThisTick >= schedCfg.asmscMaxSendsPerTick) {
           result.deferred += 1;
           result.details.push(
-            `${item.id}: diferido — turno aSMSC (como Test12/13, un envío a la vez)`,
+            `${item.id}: diferido — tope ${schedCfg.asmscMaxSendsPerTick} aSMSC/tick`,
           );
           continue;
         }
-        asmscDispatchedThisTick = true;
+        const inflight = await countProcessingByProvider(item.provider_id);
+        if (inflight > 0) {
+          result.deferred += 1;
+          result.details.push(
+            `${item.id}: diferido — aSMSC en vuelo (otro proceso o envío previo)`,
+          );
+          continue;
+        }
+        if (asmscSentThisTick > 0) {
+          await sleepMs(schedCfg.asmscInterSendMs);
+        }
       }
     }
-    outcomes.push(await processOneQueuedItem(item, workerId));
+    const outcome = await processOneQueuedItem(item, workerId);
+    if (isAsmsc && outcome.sent) {
+      asmscSentThisTick += 1;
+    }
+    outcomes.push(outcome);
   }
 
   for (const outcome of outcomes) {

@@ -24,6 +24,7 @@
     "migrate:017": "node scripts/apply-migration-017.mjs",
     "migrate:025": "node scripts/apply-migration-025.mjs",
     "seed:scheduler-test13": "node scripts/seed-scheduler-test13.mjs",
+    "seed:scheduler-load5": "node scripts/seed-scheduler-load5.mjs",
     "migrate:telsim": "node scripts/apply-migration-telsim.mjs",
     "telegram:get-me": "tsx scripts/telegram-get-me.ts"
   },

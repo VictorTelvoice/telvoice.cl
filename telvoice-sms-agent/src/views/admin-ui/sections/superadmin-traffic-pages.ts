@@ -151,7 +151,7 @@ export function renderSaTrafficControlPage(
         <div><dt>Referencia Test13</dt><dd>intervalo <strong>${rt.referenceTest13.intervalSeconds}s</strong>, batch <strong>${rt.referenceTest13.batchSize}</strong>, pacing <strong>${rt.referenceTest13.queueMinPaceSeconds}s</strong> entre destinatarios</dd></div>
         <div><dt>Variables scheduler</dt><dd>Efectivo (arriba) · <code>${rt.scheduler.env.enabled}</code>=${rt.scheduler.envFallback.enabled ? "true" : "false"} · <code>${rt.scheduler.env.intervalSeconds}</code>=${rt.scheduler.envFallback.intervalSeconds} · <code>${rt.scheduler.env.batchSize}</code>=${rt.scheduler.envFallback.batchSize}</dd></div>
         <div><dt>Cola campañas</dt><dd><code>${rt.campaignQueue.env.trafficType}</code>=${escapeHtml(rt.campaignQueue.trafficType)} · <code>${rt.campaignQueue.env.queueMinPaceSeconds}</code>=${rt.campaignQueue.queueMinPaceSeconds}s (~${rt.campaignQueue.queueMinPaceMs}ms entre ítems encolados)</dd></div>
-        <div><dt>Guards despacho</dt><dd>1 aSMSC/tick · lock in-process · stagger en encolado · reintentos IP con backoff</dd></div>
+        <div><dt>Guards despacho</dt><dd>hasta <strong>${rt.dispatchGuards.asmscMaxSendsPerTick}</strong> aSMSC/tick (${rt.dispatchGuards.asmscInterSendMs}ms entre envíos) · lock in-process · stagger encolado</dd></div>
       </dl>
       <p class="field-hint">${escapeHtml(rt.referenceTest13.note)}</p>
       <p style="margin-top:0.75rem">
@@ -165,10 +165,14 @@ export function renderSaTrafficControlPage(
         <label>Intervalo (seg) <input name="interval_seconds" type="number" min="1" max="300" value="${rt.scheduler.intervalSeconds}" class="tv-input-full" required /></label>
         <label>Batch por tick <input name="batch_size" type="number" min="1" max="100" value="${rt.scheduler.batchSize}" class="tv-input-full" required /></label>
         <label>Pacing encolado (seg/dest.) <input name="queue_min_pace_seconds" type="number" min="1" max="120" value="${rt.campaignQueue.queueMinPaceSeconds}" class="tv-input-full" required /></label>
+        <label>aSMSC por tick <input name="asmsc_max_sends_per_tick" type="number" min="1" max="10" value="${rt.dispatchGuards.asmscMaxSendsPerTick}" class="tv-input-full" required /></label>
+        <label>Pausa entre envíos aSMSC (ms) <input name="asmsc_inter_send_ms" type="number" min="0" max="2000" value="${rt.dispatchGuards.asmscInterSendMs}" class="tv-input-full" required /></label>
         <div style="grid-column:1/-1;display:flex;gap:0.5rem;flex-wrap:wrap">
           <button type="submit" class="btn btn-primary btn-sm">Guardar scheduler</button>
-          <button type="submit" name="preset" value="test13" class="btn btn-secondary btn-sm">Preset Test13 (1s / 20 / 3s)</button>
+          <button type="submit" name="preset" value="load5" class="btn btn-primary btn-sm">Preset carga API (5/tick, 1s pace)</button>
+          <button type="submit" name="preset" value="test13" class="btn btn-secondary btn-sm">Preset Test13 (conservador)</button>
         </div>
+        <p class="field-hint" style="grid-column:1/-1">Prueba3 fue lenta porque solo 1 SMS salía por tick (~6s de latencia API cada uno). Suba «aSMSC por tick» a 5 para ~5× más rápido (techo política: ${rt.scheduler.intervalSeconds === 1 ? "hasta ~5 SMS/s" : "depende del intervalo"}).</p>
         <p class="field-hint" style="grid-column:1/-1">Requiere migración 025. Si falla al guardar, ejecute <code>npm run migrate:025</code> en el servidor.</p>
       </form>
     </section>

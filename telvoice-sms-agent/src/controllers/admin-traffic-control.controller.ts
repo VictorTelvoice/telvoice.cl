@@ -11,6 +11,7 @@ import { getTrafficControlDashboard } from "../services/smsTrafficMetricsService
 import {
   getSmsQueueRuntimeConfig,
   TEST13_REFERENCE_SCHEDULER,
+  LOAD_TEST_REFERENCE_SCHEDULER,
 } from "../services/smsQueueRuntimeConfigService.js";
 import { saveSchedulerSettings } from "../services/platformRuntimeSettingsService.js";
 import { validateUuidParam } from "../utils/validation.js";
@@ -65,32 +66,47 @@ export async function postUpdateQueueSchedulerSettings(
   res: Response,
 ): Promise<void> {
   try {
-    const preset = req.body.preset === "test13";
+    const presetTest13 = req.body.preset === "test13";
+    const presetLoad = req.body.preset === "load5";
+    const preset = presetTest13 || presetLoad;
+    const ref = presetLoad
+      ? LOAD_TEST_REFERENCE_SCHEDULER
+      : TEST13_REFERENCE_SCHEDULER;
     const enabled =
       req.body.scheduler_enabled === "1" ||
       req.body.scheduler_enabled === "true" ||
       preset;
     const intervalSeconds = preset
-      ? TEST13_REFERENCE_SCHEDULER.intervalSeconds
+      ? ref.intervalSeconds
       : Number(req.body.interval_seconds ?? 1);
     const batchSize = preset
-      ? TEST13_REFERENCE_SCHEDULER.batchSize
+      ? ref.batchSize
       : Number(req.body.batch_size ?? 20);
     const queueMinPaceSeconds = preset
-      ? TEST13_REFERENCE_SCHEDULER.queueMinPaceSeconds
+      ? ref.queueMinPaceSeconds
       : Number(req.body.queue_min_pace_seconds ?? 3);
+    const asmscMaxSendsPerTick = presetLoad
+      ? LOAD_TEST_REFERENCE_SCHEDULER.asmscMaxSendsPerTick
+      : Number(req.body.asmsc_max_sends_per_tick ?? 5);
+    const asmscInterSendMs = presetLoad
+      ? LOAD_TEST_REFERENCE_SCHEDULER.asmscInterSendMs
+      : Number(req.body.asmsc_inter_send_ms ?? 200);
 
     await saveSchedulerSettings({
       enabled,
       intervalSeconds,
       batchSize,
       queueMinPaceSeconds,
+      asmscMaxSendsPerTick,
+      asmscInterSendMs,
     });
 
     redirectQuery(res, "/admin/traffic-control", {
-      ok: preset
-        ? "Scheduler actualizado (preset Test13, aplica en ~3s sin reiniciar)"
-        : "Scheduler actualizado (aplica en ~3s sin reiniciar VPS)",
+      ok: presetLoad
+        ? "Preset carga API (5 aSMSC/tick, pacing 1s) — aplica en ~3s"
+        : presetTest13
+          ? "Preset Test13 — aplica en ~3s sin reiniciar"
+          : "Scheduler actualizado (aplica en ~3s sin reiniciar VPS)",
     });
   } catch (e) {
     redirectQuery(res, "/admin/traffic-control", {
