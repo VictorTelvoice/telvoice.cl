@@ -214,6 +214,19 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
 export function renderLoginBrowserScript(url: string, key: string): string {
   return `<script type="module">
 ${renderSupabaseBrowserClientInit(url, key)}
+  (function tvStoreClaimTokenFromUrl() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get("claim_token");
+      if (token && token.length >= 16) {
+        localStorage.setItem("telvoice_claim_token", token);
+        params.delete("claim_token");
+        const qs = params.toString();
+        const next = window.location.pathname + (qs ? "?" + qs : "");
+        window.history.replaceState({}, document.title, next);
+      }
+    } catch {}
+  })();
   const googleBtn = document.getElementById("tv-google-login");
   if (googleBtn) {
     googleBtn.addEventListener("click", async () => {

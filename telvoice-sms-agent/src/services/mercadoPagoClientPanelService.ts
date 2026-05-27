@@ -1,5 +1,8 @@
 import { env, isMercadoPagoConfigured } from "../config/env.js";
-import { CLIENT_PANEL_ORDER_METADATA } from "../utils/order-display.js";
+import {
+  CLIENT_PANEL_ORDER_METADATA,
+  isPublicCheckoutOrder,
+} from "../utils/order-display.js";
 import { AppError } from "../utils/errors.js";
 import { getSmsPackageById } from "./smsPackageService.js";
 import {
@@ -110,8 +113,18 @@ export async function assertOrderBelongsToCompany(
 }
 
 export function isClientPanelMercadoPagoOrder(
-  order: { metadata?: Record<string, unknown>; payment_provider?: string | null },
+  order: {
+    metadata?: Record<string, unknown>;
+    payment_provider?: string | null;
+    company_id?: string | null;
+  },
 ): boolean {
+  if (isPublicCheckoutOrder({
+    metadata: order.metadata ?? {},
+    company_id: order.company_id ?? null,
+  })) {
+    return false;
+  }
   const meta = order.metadata ?? {};
   return (
     meta.source === "client_panel" ||

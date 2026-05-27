@@ -5,7 +5,16 @@ import { getSmsPackageById } from "./smsPackageService.js";
 import { applyPurchaseCredit } from "./smsWalletService.js";
 import type { SmsOrderRow, SmsOrderWithDetails } from "../types/wallet.js";
 import { isMissingTableError } from "../utils/db-table.js";
-import { CLIENT_PANEL_ORDER_METADATA } from "../utils/order-display.js";
+import {
+  CLIENT_PANEL_ORDER_METADATA,
+  PUBLIC_LANDING_ORDER_METADATA,
+} from "../utils/order-display.js";
+import {
+  encryptClaimTokenForMetadata,
+  generateClaimToken,
+  generatePublicCheckoutReference,
+  hashClaimToken,
+} from "../utils/claim-token.js";
 import { AppError } from "../utils/errors.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 
@@ -136,15 +145,19 @@ export async function getOrderWithDetails(
     package_name = pkg?.name;
   }
 
-  const { data: company } = await getSupabase()
-    .from("companies")
-    .select("id, name")
-    .eq("id", order.company_id)
-    .maybeSingle();
+  let company_name: string | undefined;
+  if (order.company_id) {
+    const { data: company } = await getSupabase()
+      .from("companies")
+      .select("id, name")
+      .eq("id", order.company_id)
+      .maybeSingle();
+    company_name = (company as { name?: string } | null)?.name;
+  }
 
   return {
     ...order,
-    company_name: (company as { name?: string } | null)?.name,
+    company_name,
     package_name,
   };
 }
@@ -168,7 +181,9 @@ export async function listSmsOrders(limit = 100): Promise<SmsOrderWithDetails[]>
     return [];
   }
 
-  const companyIds = [...new Set(orders.map((o) => o.company_id))];
+  const companyIds = [
+    ...new Set(orders.map((o) => o.company_id).filter(Boolean)),
+  ] as string[];
   const packageIds = [
     ...new Set(orders.map((o) => o.package_id).filter(Boolean)),
   ] as string[];
@@ -201,9 +216,65 @@ export async function listSmsOrders(limit = 100): Promise<SmsOrderWithDetails[]>
 
   return orders.map((o) => ({
     ...o,
-    company_name: companyMap.get(o.company_id),
+    company_name: o.company_id ? companyMap.get(o.company_id) : undefined,
     package_name: o.package_id ? packageMap.get(o.package_id) : undefined,
   }));
+}
+
+const CLAIM_TTL_DAYS = 14;
+
+export async function createPublicLandingOrder(input: {
+  packageId: string;
+  checkoutEmail: string;
+  payerEmail?: string;
+}): Promise<{ order: SmsOrderRow; claimToken: string }> {
+  const pkg = await getSmsPackageById(input.packageId);
+  if (!pkg || !pkg.is_active) {
+    throw new AppError("Bolsa SMS no encontrada o inactiva.", 404);
+  }
+
+  const checkoutEmail = input.checkoutEmail.trim().toLowerCase();
+  const payerEmail = (input.payerEmail ?? checkoutEmail).trim().toLowerCase();
+  if (!checkoutEmail.includes("@")) {
+    throw new AppError("checkout_email inválido.", 400);
+  }
+
+  const claimToken = generateClaimToken();
+  const claimExpires = new Date();
+  claimExpires.setDate(claimExpires.getDate() + CLAIM_TTL_DAYS);
+  const publicRef = generatePublicCheckoutReference();
+
+  const { data, error } = await getSupabase()
+    .from("sms_orders")
+    .insert({
+      company_id: null,
+      package_id: pkg.id,
+      sms_quantity: pkg.sms_quantity,
+      amount: pkg.total_price,
+      currency: pkg.currency,
+      payment_provider: "mercadopago",
+      payment_reference: publicRef,
+      payment_status: "pending",
+      credit_status: "pending_claim",
+      claim_token_hash: hashClaimToken(claimToken),
+      claim_status: "unclaimed",
+      claim_expires_at: claimExpires.toISOString(),
+      checkout_email: checkoutEmail,
+      payer_email: payerEmail,
+      public_checkout_reference: publicRef,
+      metadata: {
+        ...PUBLIC_LANDING_ORDER_METADATA,
+        claim_token_enc: encryptClaimTokenForMetadata(claimToken),
+      },
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    wrapSupabaseError(error, "createPublicLandingOrder");
+  }
+
+  return { order: data as SmsOrderRow, claimToken };
 }
 
 export async function createOrder(input: {
@@ -392,6 +463,14 @@ export async function confirmOrderCredit(
 
   if (order.credit_status === "credited") {
     return { order, alreadyCredited: true };
+  }
+
+  if (!order.company_id) {
+    throw new AppError(
+      "La orden no tiene empresa asociada; no se puede acreditar saldo.",
+      400,
+      "ORDER_NO_COMPANY",
+    );
   }
 
   if (

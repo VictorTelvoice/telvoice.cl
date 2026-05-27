@@ -430,7 +430,8 @@ export async function getAppDashboard(
       company: ctx.company,
       balance: ctx.balance,
     });
-    return renderAppDashboardPage(ctx, data);
+    const showWelcomeBanner = req.query.welcome === "1";
+    return renderAppDashboardPage(ctx, data, { showWelcomeBanner });
   });
 }
 

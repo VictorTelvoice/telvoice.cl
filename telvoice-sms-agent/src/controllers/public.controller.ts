@@ -7,6 +7,9 @@ import { createHash } from "node:crypto";
 import { getSupabase } from "../database/supabaseClient.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 import { confirmOrderCredit } from "../services/smsOrderService.js";
+import { startPublicLandingCheckout } from "../services/publicCheckoutService.js";
+import { runBillingSyncBestEffort } from "../services/billingSyncService.js";
+import { sendPostClaimEmailsBestEffort } from "../services/transactionalEmailService.js";
 import {
   getBearerTokenFromRequestHeader,
   verifySupabaseAccessToken,
@@ -127,6 +130,47 @@ export async function postPublicLead(
       status: lead.status,
       message:
         "Solicitud registrada. Telvoice te contactará o enviará el link de pago.",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function postPublicCheckout(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const body = req.body as Record<string, unknown>;
+    const packageId = String(body.package_id ?? "").trim();
+    const checkoutEmail = String(body.checkout_email ?? body.email ?? "").trim();
+    const payerEmail =
+      typeof body.payer_email === "string" ? body.payer_email.trim() : undefined;
+    const payerName =
+      typeof body.payer_name === "string" ? body.payer_name.trim() : undefined;
+
+    if (!packageId) {
+      throw new ValidationError("package_id es requerido.");
+    }
+    if (!checkoutEmail.includes("@")) {
+      throw new ValidationError("checkout_email inválido.");
+    }
+
+    const result = await startPublicLandingCheckout({
+      packageId,
+      checkoutEmail,
+      payerEmail,
+      payerName,
+    });
+
+    res.status(201).json({
+      success: true,
+      order_id: result.orderId,
+      claim_token: result.claimToken,
+      checkout_url: result.checkoutUrl,
+      public_checkout_reference: result.publicCheckoutReference,
+      preference_id: result.preferenceId,
     });
   } catch (error) {
     next(error);
@@ -262,7 +306,14 @@ export async function postPublicClaim(
 
     await confirmOrderCredit(order.id, null, { allowManualWithoutPaid: false });
 
-    // Idempotencia: confirmOrderCredit evita duplicar purchase_credit (reference sms_order).
+    try {
+      await runBillingSyncBestEffort(order.id, { source: "public_claim" });
+    } catch (billingErr) {
+      console.error("[publicClaim] billing sync failed", order.id, billingErr);
+    }
+
+    void sendPostClaimEmailsBestEffort(order.id);
+
     res.json({ ok: true, order_id: order.id, status: "claimed" });
   } catch (error) {
     next(error);

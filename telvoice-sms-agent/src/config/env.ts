@@ -87,6 +87,16 @@ function normalizeBillingEmailMode(value: string): BillingEmailMode {
   return "mock";
 }
 
+export type TransactionalEmailMode = "mock" | "resend" | "sendgrid" | "smtp";
+
+function normalizeTransactionalEmailMode(value: string): TransactionalEmailMode {
+  const v = value.trim().toLowerCase();
+  if (v === "resend" || v === "sendgrid" || v === "smtp") {
+    return v;
+  }
+  return "mock";
+}
+
 export const env = {
   nodeEnv: optionalEnv("NODE_ENV", "development"),
   port: Number.parseInt(optionalEnv("PORT", "3001"), 10),
@@ -207,10 +217,20 @@ export const env = {
     provider: optionalEnv("BILLING_EMAIL_PROVIDER"),
     replyTo: optionalEnv("BILLING_EMAIL_REPLY_TO", "soporte@telvoice.cl"),
   },
+  transactionalEmail: {
+    mode: normalizeTransactionalEmailMode(optionalEnv("EMAIL_MODE", "mock")),
+    fromName: optionalEnv("EMAIL_FROM_NAME", "Telvoice"),
+    fromAddress: optionalEnv("EMAIL_FROM_ADDRESS", "no-reply@telvoice.cl"),
+    replyTo: optionalEnv("EMAIL_REPLY_TO", "soporte@telvoice.cl"),
+  },
 } as const;
 
 export function isBillingEmailMock(): boolean {
   return env.billingEmail.mode === "mock";
+}
+
+export function isTransactionalEmailMock(): boolean {
+  return env.transactionalEmail.mode === "mock";
 }
 
 export function isMercadoPagoConfigured(): boolean {

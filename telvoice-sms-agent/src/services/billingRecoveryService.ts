@@ -600,7 +600,7 @@ export async function retryBillingSyncForOrder(
   const invoice = await getInvoiceByOrderId(orderId);
   const companyId = invoice?.company_id ?? order.company_id;
 
-  if (sync.ok) {
+  if (sync.ok && companyId) {
     await recordRecoveryOnInvoice(
       invoiceId,
       companyId,
@@ -634,14 +634,16 @@ export async function retryBillingSyncForOrder(
     };
   }
 
-  await recordRecoveryOnInvoice(
-    invoiceId,
-    companyId,
-    "billing.recovery.failed",
-    "Recuperación Billing falló.",
-    { order_id: orderId, error: sync.error },
-    actor,
-  );
+  if (companyId) {
+    await recordRecoveryOnInvoice(
+      invoiceId,
+      companyId,
+      "billing.recovery.failed",
+      "Recuperación Billing falló.",
+      { order_id: orderId, error: sync.error },
+      actor,
+    );
+  }
   return {
     ok: false,
     message: sync.error ?? "Sync falló.",

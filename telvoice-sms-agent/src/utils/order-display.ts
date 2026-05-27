@@ -13,6 +13,24 @@ export const CLIENT_PANEL_ORDER_METADATA = {
   customer_visible: true,
 } as const;
 
+/** Compra rápida landing — claim Google post-pago */
+export const PUBLIC_LANDING_ORDER_METADATA = {
+  source: "landing",
+  checkout_mode: "mercadopago",
+  claim_required: true,
+} as const;
+
+export function isPublicCheckoutOrder(
+  order: Pick<SmsOrderRow, "metadata" | "company_id">,
+): boolean {
+  const meta = order.metadata ?? {};
+  return (
+    meta.source === "landing" ||
+    meta.claim_required === true ||
+    (!order.company_id && meta.checkout_mode === "mercadopago")
+  );
+}
+
 export type OrderListFilter =
   | "all"
   | "pending"
@@ -386,6 +404,7 @@ export function mercadoPagoAdminMetaRows(
 export function creditStatusLabel(status: CreditStatus): string {
   const map: Record<CreditStatus, string> = {
     pending: "Acreditación pendiente",
+    pending_claim: "Pendiente activación",
     credited: "Acreditada",
     failed: "Fallida",
     reversed: "Revertida",

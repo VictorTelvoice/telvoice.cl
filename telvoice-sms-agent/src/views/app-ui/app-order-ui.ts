@@ -35,6 +35,9 @@ export function renderClientCreditBadge(status: CreditStatus): string {
   if (status === "credited") {
     return badge("ok", "SMS acreditados");
   }
+  if (status === "pending_claim") {
+    return badge("warn", "Activar con Google");
+  }
   if (status === "failed" || status === "reversed") {
     return badge("err", creditStatusLabel(status));
   }

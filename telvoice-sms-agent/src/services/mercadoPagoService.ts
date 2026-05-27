@@ -305,6 +305,104 @@ export async function createClientPanelCheckoutPreference(
   };
 }
 
+export async function createPublicLandingCheckoutPreference(input: {
+  orderId: string;
+  packageId: string;
+  smsQuantity: number;
+  totalAmount: number;
+  itemTitle: string;
+  itemDescription: string;
+  payer: MercadoPagoPayerInput;
+  publicCheckoutReference: string;
+}): Promise<{
+  checkout_url: string;
+  preference_id: string | null;
+}> {
+  const token = env.mercadopago.accessToken;
+  if (!token) {
+    throw new AppError(
+      "MercadoPago no configurado (MERCADOPAGO_ACCESS_TOKEN).",
+      503,
+      "MP_NOT_CONFIGURED",
+    );
+  }
+
+  const payerEmail = resolvePayerEmail(input.payer.email);
+  const payer: Record<string, unknown> = {
+    email: payerEmail,
+    name: input.payer.name.trim().slice(0, 80) || "Cliente Telvoice",
+  };
+  if (env.mercadopago.sandbox) {
+    payer.name = "APRO";
+    payer.identification = { type: "Otro", number: "123456789" };
+  }
+
+  const successUrl = `${env.publicAppUrl}/checkout/success?ref=${encodeURIComponent(input.publicCheckoutReference)}`;
+  const failureUrl = `${env.publicSiteUrl}/pago-error`;
+  const pendingUrl = `${env.publicSiteUrl}/pago-pendiente`;
+
+  const body = {
+    items: [
+      {
+        title: input.itemTitle.slice(0, 256),
+        description: input.itemDescription.slice(0, 256),
+        quantity: 1,
+        currency_id: "CLP",
+        unit_price: input.totalAmount,
+      },
+    ],
+    payer,
+    statement_descriptor: "Telvoice SMS",
+    locale: "es-CL",
+    external_reference: input.orderId,
+    metadata: {
+      source: "landing",
+      checkout_mode: "mercadopago",
+      claim_required: true,
+      order_id: input.orderId,
+      package_id: input.packageId,
+      public_checkout_reference: input.publicCheckoutReference,
+    },
+    back_urls: {
+      success: successUrl,
+      failure: failureUrl,
+      pending: pendingUrl,
+    },
+    notification_url: `${env.publicAppUrl}/api/mercadopago/webhook`,
+    auto_return: "approved",
+  };
+
+  const res = await fetch(`${MP_API}/checkout/preferences`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = (await res.json().catch(() => ({}))) as {
+    message?: string;
+    id?: string;
+    init_point?: string;
+    sandbox_init_point?: string;
+  };
+
+  if (!res.ok) {
+    console.error("[mercadoPagoService] landing preference error", res.status);
+    throw new AppError(
+      data.message ?? "No se pudo crear la preferencia de MercadoPago.",
+      502,
+      "MP_PREFERENCE_FAILED",
+    );
+  }
+
+  return {
+    checkout_url: checkoutRedirectUrl(data),
+    preference_id: data.id ?? null,
+  };
+}
+
 export async function getMercadoPagoPayment(
   paymentId: string,
 ): Promise<MercadoPagoPaymentRecord> {

@@ -1,3 +1,5 @@
+import { getSupabase } from "../database/supabaseClient.js";
+import { wrapSupabaseError } from "../utils/supabase-errors.js";
 import { getMercadoPagoPayment } from "./mercadoPagoService.js";
 import {
   isClientPanelMercadoPagoOrder,
@@ -9,6 +11,8 @@ import {
   markOrderPaid,
   patchOrderFields,
 } from "./smsOrderService.js";
+import { isPublicCheckoutOrder } from "../utils/order-display.js";
+import { sendPaymentReceivedClaimEmail } from "./transactionalEmailService.js";
 import { hasPurchaseCreditForOrder } from "./walletTransactionService.js";
 import { syncPaymentCardFromOrderMetadata } from "./companyPaymentCardService.js";
 import { runBillingSyncBestEffort } from "./billingSyncService.js";
@@ -170,12 +174,95 @@ export async function processClientPanelMercadoPagoWebhook(
     }
 
     const creditResult = await creditApprovedOrder(orderId, order, metaPatch);
-    await syncPaymentCardFromOrderMetadata(
-      order.company_id,
-      order.metadata,
-      payment,
-    );
+    if (order.company_id) {
+      await syncPaymentCardFromOrderMetadata(
+        order.company_id,
+        order.metadata,
+        payment,
+      );
+    }
     return creditResult;
+  }
+
+  if (payment.status === "rejected") {
+    await patchOrderFields(orderId, {
+      payment_status: "rejected",
+      metadata: metaPatch,
+    });
+    return { handled: true, orderId, result: "rejected" };
+  }
+
+  if (payment.status === "cancelled") {
+    await patchOrderFields(orderId, {
+      payment_status: "cancelled",
+      metadata: metaPatch,
+    });
+    return { handled: true, orderId, result: "cancelled" };
+  }
+
+  await patchOrderFields(orderId, { metadata: metaPatch });
+  return { handled: true, orderId, result: payment.status };
+}
+
+export async function processPublicCheckoutMercadoPagoWebhook(
+  paymentId: string,
+): Promise<{ handled: boolean; orderId?: string; result?: string }> {
+  const payment = await getMercadoPagoPayment(paymentId);
+  const orderId = payment.external_reference?.trim();
+  if (!orderId) {
+    return { handled: false };
+  }
+
+  const order = await getOrderById(orderId);
+  if (!order || !isPublicCheckoutOrder(order)) {
+    return { handled: false };
+  }
+
+  const metaPatch = mergeMpMetadata(order, payment);
+
+  if (payment.status === "approved") {
+    const paidAmount = Math.round(Number(payment.transaction_amount ?? 0));
+    const expected = Math.round(Number(order.amount));
+    if (payment.currency_id && payment.currency_id !== "CLP") {
+      await patchOrderFields(orderId, { metadata: metaPatch });
+      return { handled: true, orderId, result: "invalid_currency" };
+    }
+    if (paidAmount !== expected) {
+      await patchOrderFields(orderId, { metadata: metaPatch });
+      return { handled: true, orderId, result: "amount_mismatch" };
+    }
+
+    const latestBefore = await getOrderById(orderId);
+    if (latestBefore?.credit_status === "credited") {
+      await patchOrderFields(orderId, { metadata: metaPatch });
+      return { handled: true, orderId, result: "already_credited" };
+    }
+
+    if (latestBefore?.payment_status !== "paid") {
+      await markOrderPaid(orderId, null);
+    }
+
+    const { error: claimErr } = await getSupabase()
+      .from("sms_orders")
+      .update({
+        credit_status: "pending_claim",
+        claim_status: latestBefore?.claim_status ?? "unclaimed",
+      })
+      .eq("id", orderId)
+      .neq("credit_status", "credited");
+    if (claimErr) {
+      wrapSupabaseError(claimErr, "publicCheckoutWebhook.pending_claim");
+    }
+
+    await patchOrderFields(orderId, { metadata: metaPatch });
+
+    try {
+      await sendPaymentReceivedClaimEmail(orderId);
+    } catch (err) {
+      console.error("[mp-webhook] payment claim email failed", orderId, err);
+    }
+
+    return { handled: true, orderId, result: "paid_pending_claim" };
   }
 
   if (payment.status === "rejected") {
@@ -211,6 +298,15 @@ export async function routeMercadoPagoWebhook(
   const order = await getOrderById(orderId);
   if (!order) {
     return { ok: true, skipped: "order_not_in_sms_orders" };
+  }
+
+  if (isPublicCheckoutOrder(order)) {
+    const pub = await processPublicCheckoutMercadoPagoWebhook(paymentId);
+    return {
+      ok: true,
+      orderId: pub.orderId,
+      result: pub.result,
+    };
   }
 
   if (!isClientPanelMercadoPagoOrder(order)) {

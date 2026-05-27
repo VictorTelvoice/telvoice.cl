@@ -331,6 +331,9 @@ async function createInvoiceRowFromOrder(
   order: SmsOrderRow,
   options?: { initialStatus?: BillingInvoiceStatus },
 ): Promise<BillingInvoice | null> {
+  if (!order.company_id) {
+    return null;
+  }
   const company = await findCompanyById(order.company_id);
   const nowIso = new Date().toISOString();
 
@@ -353,7 +356,11 @@ async function createInvoiceRowFromOrder(
     customer_name: company?.name ?? null,
     customer_legal_name: company?.legal_name ?? null,
     customer_tax_id: company?.rut ?? null,
-    customer_email: company?.billing_email ?? null,
+    customer_email:
+      company?.billing_email ??
+      order.checkout_email ??
+      order.payer_email ??
+      null,
     customer_phone: company?.contact_phone ?? null,
     customer_address: (company?.metadata as any)?.address ?? null,
     customer_city: (company?.metadata as any)?.city ?? null,

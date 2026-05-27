@@ -140,6 +140,12 @@ import {
   postWalletQuickCredit,
 } from "../controllers/admin-wallet.controller.js";
 import {
+  getAdminEmailLogsPage,
+  postResendEmailLog,
+  postResendOrderClaimEmail,
+  postResendOrderInvoiceEmail,
+} from "../controllers/admin-email-logs.controller.js";
+import {
   getDashboard,
   getInboxPage,
   getLoginPage,
@@ -264,6 +270,22 @@ adminRouter.post(
   "/orders/:id/sync-billing",
   requireAdminPage,
   postSyncOrderBilling,
+);
+adminRouter.post(
+  "/orders/:id/resend-claim-email",
+  requireAdminPage,
+  postResendOrderClaimEmail,
+);
+adminRouter.post(
+  "/orders/:id/resend-invoice-email",
+  requireAdminPage,
+  postResendOrderInvoiceEmail,
+);
+adminRouter.get("/email-logs", requireAdminPage, getAdminEmailLogsPage);
+adminRouter.post(
+  "/email-logs/:id/resend",
+  requireAdminPage,
+  postResendEmailLog,
 );
 adminRouter.get("/wallets", requireAdminPage, getSaWalletsPage);
 adminRouter.post("/wallets/quick-credit", requireAdminPage, postWalletQuickCredit);

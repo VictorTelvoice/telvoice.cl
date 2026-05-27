@@ -419,7 +419,9 @@ export function renderSaOrdersPage(opts: PageOpts & {
     opts.orders.length > 0
       ? opts.orders.map((o) => {
           const date = formatDate(o.created_at);
-          const company = escapeHtml(o.company_name ?? o.company_id.slice(0, 8));
+          const company = escapeHtml(
+            o.company_name ?? (o.company_id ? o.company_id.slice(0, 8) : "Sin empresa"),
+          );
           const bag = escapeHtml(o.package_name ?? "—") + renderSaOrderQaBadge(o);
           const amount = fmtMoney(Number(o.amount), o.currency);
           const badges = renderSaOrderStatusBadges(o);
@@ -578,6 +580,7 @@ export function renderSaOrderDetailPage(
     transactions: WalletTransactionRow[];
     company: CompanyRow | null;
     billingSummary: BillingOrderSummary;
+    emailLogsHtml?: string;
   },
 ): string {
   const o = opts.order;
@@ -642,7 +645,9 @@ export function renderSaOrderDetailPage(
         <h2 class="tv-panel__title">Cliente y empresa</h2>
         <dl class="tv-detail-dl tv-panel__body">
           <div><dt>Empresa</dt><dd>${escapeHtml(opts.company?.name ?? o.company_name ?? "—")}</dd></div>
-          <div><dt>ID empresa</dt><dd><code>${escapeHtml(o.company_id)}</code></dd></div>
+          <div><dt>ID empresa</dt><dd><code>${escapeHtml(o.company_id ?? "— (pendiente claim)")}</code></dd></div>
+          ${o.checkout_email ? `<div><dt>Email checkout</dt><dd>${escapeHtml(o.checkout_email)}</dd></div>` : ""}
+          ${o.public_checkout_reference ? `<div><dt>Ref. pública</dt><dd><code>${escapeHtml(o.public_checkout_reference)}</code></dd></div>` : ""}
           <div><dt>Bolsa</dt><dd>${escapeHtml(o.package_name ?? "—")}${renderSaOrderQaBadge(o)}</dd></div>
           <div><dt>SMS</dt><dd>${fmtSms(o.sms_quantity)}</dd></div>
           <div><dt>Monto</dt><dd>${fmtMoney(Number(o.amount), o.currency)}</dd></div>
@@ -683,6 +688,7 @@ export function renderSaOrderDetailPage(
         : ""
     }
     ${renderBillingOrderPanel(o, opts.billingSummary)}
+    ${opts.emailLogsHtml ?? ""}
     <section class="tv-panel" style="margin-top:1rem">
       <h2 class="tv-panel__title">Movimientos wallet (orden)</h2>
       <div class="table-wrap tv-panel__body" style="padding:0">

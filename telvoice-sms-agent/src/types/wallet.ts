@@ -48,11 +48,23 @@ export type PaymentStatus =
   | "cancelled"
   | "refunded";
 
-export type CreditStatus = "pending" | "credited" | "failed" | "reversed";
+export type CreditStatus =
+  | "pending"
+  | "pending_claim"
+  | "credited"
+  | "failed"
+  | "reversed";
+
+export type ClaimStatus =
+  | "unclaimed"
+  | "claimed"
+  | "manual_review"
+  | "expired"
+  | null;
 
 export interface SmsOrderRow {
   id: string;
-  company_id: string;
+  company_id: string | null;
   package_id: string | null;
   sms_quantity: number;
   amount: number;
@@ -63,6 +75,14 @@ export interface SmsOrderRow {
   credit_status: CreditStatus;
   credited_at: string | null;
   created_by: string | null;
+  claim_token_hash?: string | null;
+  claim_status?: ClaimStatus;
+  claim_expires_at?: string | null;
+  claimed_at?: string | null;
+  claimed_by_user_id?: string | null;
+  checkout_email?: string | null;
+  payer_email?: string | null;
+  public_checkout_reference?: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;

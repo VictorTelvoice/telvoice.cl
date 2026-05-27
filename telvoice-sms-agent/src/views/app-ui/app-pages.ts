@@ -186,6 +186,7 @@ function renderDashboardCharts(
 export function renderAppDashboardPage(
   ctx: AppPageContext,
   data: ClientDashboardData,
+  options?: { showWelcomeBanner?: boolean },
 ): string {
   const monthLabel = dashboardMonthLabel();
   const stats = data.stats;
@@ -217,8 +218,15 @@ export function renderAppDashboardPage(
         .join("")
     : `<tr><td colspan="4" class="tv-table-empty">Sin movimientos recientes.</td></tr>`;
 
+  const welcomeBanner = options?.showWelcomeBanner
+    ? `<div class="alert alert-success" role="status" style="margin-bottom:1rem">
+        Bienvenido. Tus SMS ya fueron cargados.
+      </div>`
+    : "";
+
   const body = `
     <div class="tv-client-dashboard">
+    ${welcomeBanner}
     ${renderPageHeader({
       title: "Dashboard",
       subtitle: `Resumen de ${escapeHtml(ctx.company.name)}`,

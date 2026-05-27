@@ -1,3 +1,5 @@
+import { loadOrderDetailEmailContext } from "./admin-email-logs.controller.js";
+import { renderOrderEmailsPanel } from "../views/admin-ui/sections/admin-email-logs-pages.js";
 import type { NextFunction, Request, Response } from "express";
 import { listCompanies, findCompanyById } from "../services/companyService.js";
 import {
@@ -495,10 +497,11 @@ export async function getSaOrderDetailPage(
       redirectWith(res, "/admin/orders", { error: "Orden no encontrada." });
       return;
     }
-    const [transactions, company, billingSummary] = await Promise.all([
+    const [transactions, company, billingSummary, emailCtx] = await Promise.all([
       listTransactionsForOrder(orderId),
-      findCompanyById(order.company_id),
+      order.company_id ? findCompanyById(order.company_id) : Promise.resolve(null),
       getBillingOrderSummary(orderId),
+      loadOrderDetailEmailContext(orderId),
     ]);
     res.type("html").send(
       renderSaOrderDetailPage({
@@ -507,6 +510,11 @@ export async function getSaOrderDetailPage(
         transactions,
         company,
         billingSummary,
+        emailLogsHtml: renderOrderEmailsPanel(
+          emailCtx.logs,
+          order,
+          emailCtx.invoiceId,
+        ),
         ...flash(req),
       }),
     );
