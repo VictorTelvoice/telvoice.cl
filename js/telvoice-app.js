@@ -874,8 +874,8 @@
         btn.appendChild(sub);
         btn.addEventListener("click", function () {
           openCompraModal({
-            planId: "calc",
-            calcSms: sms,
+            planId: "test200",
+            calcSms: null,
             planName: "Bolsa prueba — " + sms + " SMS",
             sms: sms,
             net_amount: net,
@@ -884,7 +884,7 @@
             source: "calculadora-test",
           });
           trackEvent("click_comprar_online", {
-            planId: "calc",
+            planId: "test200",
             source: "calculadora-test",
             volume: sms,
           });
