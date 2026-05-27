@@ -321,7 +321,7 @@
   }
 
   var BAG_TO_PLAN = { "1k": "inicial", "15k": "empresa", "100k": "volumen" };
-  var ONLINE_PLAN_IDS = { inicial: true, empresa: true, volumen: true, calc: true };
+  var ONLINE_PLAN_IDS = { inicial: true, empresa: true, volumen: true, calc: true, test200: true };
 
   var compraState = {
     planId: null,
