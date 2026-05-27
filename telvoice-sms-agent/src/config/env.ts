@@ -77,14 +77,28 @@ function normalizeSmsProviderMode(value: string): SmsProviderMode {
   return value.trim().toLowerCase() === "live_test" ? "live_test" : "mock";
 }
 
-export type BillingEmailMode = "mock" | "resend" | "sendgrid" | "smtp";
+export type BillingEmailMode = "mock" | "provider";
 
 function normalizeBillingEmailMode(value: string): BillingEmailMode {
   const v = value.trim().toLowerCase();
-  if (v === "resend" || v === "sendgrid" || v === "smtp") {
-    return v;
-  }
+  if (v === "mock") return "mock";
+  // Esquema nuevo: BILLING_EMAIL_MODE=provider
+  if (v === "provider") return "provider";
+  // Compatibilidad: BILLING_EMAIL_MODE=resend|sendgrid|smtp
+  if (v === "resend" || v === "sendgrid" || v === "smtp") return "provider";
   return "mock";
+}
+
+function normalizeBillingEmailProvider(
+  modeRaw: string,
+  providerRaw: string,
+): string {
+  const provider = providerRaw.trim().toLowerCase();
+  if (provider) return provider;
+
+  const mode = modeRaw.trim().toLowerCase();
+  if (mode === "resend" || mode === "sendgrid" || mode === "smtp") return mode;
+  return "";
 }
 
 export type TransactionalEmailMode = "mock" | "provider";
@@ -225,7 +239,10 @@ export const env = {
   billingEmail: {
     mode: normalizeBillingEmailMode(optionalEnv("BILLING_EMAIL_MODE", "mock")),
     from: optionalEnv("BILLING_EMAIL_FROM", "facturacion@telvoice.cl"),
-    provider: optionalEnv("BILLING_EMAIL_PROVIDER"),
+    provider: normalizeBillingEmailProvider(
+      optionalEnv("BILLING_EMAIL_MODE", "mock"),
+      optionalEnv("BILLING_EMAIL_PROVIDER", ""),
+    ),
     replyTo: optionalEnv("BILLING_EMAIL_REPLY_TO", "soporte@telvoice.cl"),
   },
   transactionalEmail: {

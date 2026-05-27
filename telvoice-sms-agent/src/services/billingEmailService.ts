@@ -1,8 +1,8 @@
 import { env, isBillingEmailMock } from "../config/env.js";
 import type { BillingEmailLog, BillingEmailStatus } from "../types/billing.js";
 import type { AdminInvoiceDetail } from "../types/billing.js";
-import { escapeHtml, formatDate } from "../utils/html.js";
-import { formatOrderShortId, paymentMethodLabel } from "../utils/order-display.js";
+import { escapeHtml } from "../utils/html.js";
+import { formatOrderShortId } from "../utils/order-display.js";
 import { getSupabase } from "../database/supabaseClient.js";
 import {
   getAdminInvoiceById,
@@ -52,6 +52,16 @@ function fmtMoney(amount: number, currency = "CLP"): string {
   }).format(amount);
 }
 
+function fmtSms(n: number): string {
+  return new Intl.NumberFormat("es-CL").format(n);
+}
+
+function absolutePublicUrl(pathname: string): string {
+  const base = env.publicAppUrl.replace(/\/$/, "");
+  const path = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  return `${base}${path}`;
+}
+
 function resolveRecipientEmail(detail: AdminInvoiceDetail): string | null {
   const candidates = [
     detail.customer_email,
@@ -82,21 +92,16 @@ export function buildInvoiceEmailSubject(detail: AdminInvoiceDetail): string {
 
 export function buildInvoiceEmailHtml(detail: AdminInvoiceDetail): string {
   const num = documentNumber(detail);
-  const customerName = escapeHtml(
-    detail.customer_name ?? detail.company?.name ?? "Cliente",
-  );
   const previewUrl = `${env.publicAppUrl}/app/invoices/${detail.id}/preview`;
-  const panelUrl = `${env.publicAppUrl}/app/invoices/${detail.id}`;
   const order = detail.order;
   const bag = escapeHtml(primaryItemDescription(detail));
   const total = fmtMoney(Number(detail.total_amount), detail.currency);
-  const issued = escapeHtml(formatDate(detail.issued_at ?? detail.created_at));
   const orderRef = order
     ? escapeHtml(order.payment_reference ?? formatOrderShortId(order.id))
     : "—";
-  const payment = order
-    ? escapeHtml(paymentMethodLabel(order.payment_provider))
-    : "—";
+  const sms = order ? fmtSms(Number(order.sms_quantity ?? 0)) : "—";
+  const logoUrl = absolutePublicUrl("/assets/telvoice-isotipo.png");
+  const replyTo = escapeHtml(env.transactionalEmail.replyTo);
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -105,37 +110,82 @@ export function buildInvoiceEmailHtml(detail: AdminInvoiceDetail): string {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:24px 12px">
     <tr><td align="center">
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
-        <tr><td style="background:#0052cc;color:#fff;padding:24px 28px">
-          <div style="font-size:22px;font-weight:800">Telvoice</div>
-          <div style="font-size:14px;opacity:0.9;margin-top:4px">Comprobante de compra</div>
-        </td></tr>
-        <tr><td style="padding:28px">
-          <p style="margin:0 0 16px;font-size:15px">Hola <strong>${customerName}</strong>,</p>
-          <p style="margin:0 0 20px;font-size:14px;line-height:1.55;color:#334155">
-            Te enviamos el respaldo de tu compra de SMS en Telvoice. Este es un <strong>comprobante interno de compra</strong> (documento no tributario).
+        <tr>
+          <td align="center" bgcolor="#0052cc" style="background-color:#0052cc;padding:24px 28px 20px">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
+              <tr>
+                <td valign="middle" style="padding-right:10px">
+                  <img
+                    src="${escapeHtml(logoUrl)}"
+                    width="40"
+                    height="40"
+                    alt="telvoice"
+                    style="display:block;border:0;outline:none;text-decoration:none"
+                  />
+                </td>
+                <td valign="middle" align="left">
+                  <span style="font-family:Segoe UI,system-ui,sans-serif;font-size:28px;font-weight:700;line-height:1;color:#ffffff;text-transform:lowercase">telvoice</span>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:12px 0 0;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.4;color:#ffffff;opacity:0.92;text-align:center">
+              Comprobante de compra
+            </p>
+          </td>
+        </tr>
+
+        <tr><td align="center" style="padding:28px 28px 24px">
+          <p style="margin:0 0 16px;font-family:Segoe UI,system-ui,sans-serif;font-size:15px;font-weight:700;line-height:1.55;color:#0f172a;text-align:center">
+            Tu comprobante de compra Telvoice ya está disponible.
           </p>
-          <table role="presentation" width="100%" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:20px">
-            <tr><td style="padding:16px;font-size:13px;line-height:1.6">
-              <div><strong>Documento:</strong> ${escapeHtml(num)}</div>
-              <div><strong>Orden:</strong> ${orderRef}</div>
-              <div><strong>Bolsa:</strong> ${bag}</div>
-              <div><strong>Monto:</strong> ${total}</div>
-              <div><strong>Fecha:</strong> ${issued}</div>
-              <div><strong>Pago:</strong> ${payment}</div>
-            </td></tr>
+
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;margin:0 auto 20px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px">
+            <tr>
+              <td align="center" style="padding:16px 20px;font-family:Segoe UI,system-ui,sans-serif;font-size:13px;line-height:1.7;color:#334155;text-align:center">
+                <div><strong>Número comprobante:</strong> ${escapeHtml(num)}</div>
+                <div style="margin-top:6px"><strong>Orden:</strong> ${orderRef}</div>
+                <div style="margin-top:6px"><strong>Bolsa:</strong> ${bag}</div>
+                <div style="margin-top:6px"><strong>SMS:</strong> ${escapeHtml(sms)}</div>
+                <div style="margin-top:6px"><strong>Monto:</strong> ${total}</div>
+              </td>
+            </tr>
           </table>
-          <p style="margin:0 0 20px;text-align:center">
-            <a href="${escapeHtml(previewUrl)}" style="display:inline-block;background:#0052cc;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px">Ver comprobante en el panel</a>
-          </p>
-          <p style="margin:0;font-size:12px;color:#64748b;line-height:1.5">
-            También puedes consultar tus documentos en <a href="${escapeHtml(panelUrl)}" style="color:#0052cc">Facturación</a> del panel cliente.
-          </p>
-          <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />
-          <p style="margin:0;font-size:11px;color:#94a3b8;line-height:1.5">
-            Este documento corresponde a un comprobante interno no tributario. No es una factura electrónica ni reemplaza documentación fiscal ante el SII.
-            <br />Telvoice · <a href="https://www.telvoice.cl" style="color:#0052cc">www.telvoice.cl</a> · soporte@telvoice.cl
+
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
+            <tr>
+              <td align="center" bgcolor="#0052cc" style="background-color:#0052cc;border-radius:8px;">
+                <!--[if mso]>
+                <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${escapeHtml(previewUrl)}" style="height:48px;v-text-anchor:middle;width:280px;" arcsize="12%" strokecolor="#0052cc" fillcolor="#0052cc">
+                  <w:anchorlock/>
+                  <center style="color:#ffffff;font-family:Segoe UI,system-ui,sans-serif;font-size:15px;font-weight:bold;">Ver comprobante</center>
+                </v:roundrect>
+                <![endif]-->
+                <!--[if !mso]><!-->
+                <a
+                  href="${escapeHtml(previewUrl)}"
+                  target="_blank"
+                  style="display:inline-block;padding:14px 32px;font-family:Segoe UI,system-ui,sans-serif;font-size:15px;font-weight:700;line-height:1.2;color:#ffffff;text-decoration:none;white-space:nowrap"
+                >Ver comprobante</a>
+                <!--<![endif]-->
+              </td>
+            </tr>
+          </table>
+
+          <p style="margin:18px 0 0;font-family:Segoe UI,system-ui,sans-serif;font-size:12px;line-height:1.5;color:#64748b;text-align:center;max-width:520px">
+            Este documento corresponde a un comprobante interno de compra.
           </p>
         </td></tr>
+      </table>
+    </td></tr>
+
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#f8fafc;border-top:1px solid #e2e8f0;border-radius:0;padding:16px 28px;font-family:Segoe UI,system-ui,sans-serif;font-size:12px;line-height:1.5;color:#64748b;text-align:center">
+        <tr>
+          <td>
+            Este correo fue enviado por Telvoice. Si no realizaste esta compra, contacta a
+            <a href="mailto:${replyTo}" style="color:#0052cc;text-decoration:none">${replyTo}</a>.
+          </td>
+        </tr>
       </table>
     </td></tr>
   </table>
@@ -145,30 +195,25 @@ export function buildInvoiceEmailHtml(detail: AdminInvoiceDetail): string {
 
 export function buildInvoiceEmailText(detail: AdminInvoiceDetail): string {
   const num = documentNumber(detail);
-  const name = detail.customer_name ?? detail.company?.name ?? "Cliente";
   const previewUrl = `${env.publicAppUrl}/app/invoices/${detail.id}/preview`;
   const bag = primaryItemDescription(detail);
   const total = fmtMoney(Number(detail.total_amount), detail.currency);
-  const issued = formatDate(detail.issued_at ?? detail.created_at);
   const orderRef =
     detail.order?.payment_reference ??
     (detail.order ? formatOrderShortId(detail.order.id) : "—");
+  const sms = detail.order ? fmtSms(Number(detail.order.sms_quantity ?? 0)) : "—";
 
-  return `Hola ${name},
+  return `Tu comprobante de compra Telvoice ya está disponible.
 
-Te enviamos el respaldo de tu compra de SMS en Telvoice.
-
-Documento: ${num}
+Número comprobante: ${num}
 Orden: ${orderRef}
 Bolsa: ${bag}
+SMS: ${sms}
 Monto: ${total}
-Fecha: ${issued}
 
 Ver comprobante: ${previewUrl}
 
-Este documento es un comprobante interno de compra (no tributario). No es factura electrónica ni documento ante el SII.
-
-Telvoice — www.telvoice.cl — soporte@telvoice.cl`;
+Este documento corresponde a un comprobante interno de compra.`;
 }
 
 /** True si ya hay al menos un envío exitoso (mock o real) para la invoice. */
@@ -214,6 +259,7 @@ async function insertEmailLog(input: {
   subject: string;
   status: BillingEmailStatus;
   provider: string;
+  providerMessageId?: string | null;
   errorMessage?: string | null;
   sentAt?: string | null;
   metadata?: Record<string, unknown>;
@@ -227,6 +273,7 @@ async function insertEmailLog(input: {
       subject: input.subject,
       status: input.status,
       provider: input.provider,
+      provider_message_id: input.providerMessageId ?? null,
       error_message: input.errorMessage ?? null,
       sent_at: input.sentAt ?? null,
       metadata: input.metadata ?? {},
@@ -275,6 +322,7 @@ async function deliverMockEmail(
       subject,
       status: "failed",
       provider: "mock",
+      providerMessageId: null,
       errorMessage: "No hay email de facturación disponible.",
       metadata: {
         mock: true,
@@ -313,6 +361,7 @@ async function deliverMockEmail(
     subject,
     status: "sent",
     provider: "mock",
+    providerMessageId: null,
     sentAt: now,
     metadata: {
       mock: true,
@@ -406,10 +455,14 @@ export async function sendInvoiceEmail(
     return deliverMockEmail(detail, options);
   }
 
+  if (env.billingEmail.provider === "resend") {
+    return deliverResendEmail(detail, options);
+  }
+
   return {
     success: false,
     mode: getBillingEmailMode(),
-    message: `Proveedor de email "${getBillingEmailMode()}" aún no está implementado. Use BILLING_EMAIL_MODE=mock.`,
+    message: `BILLING_EMAIL_PROVIDER="${env.billingEmail.provider ?? ""}" no está implementado. Use BILLING_EMAIL_MODE=mock.`,
   };
 }
 
@@ -425,3 +478,262 @@ export async function resendInvoiceEmail(
 }
 
 export { isBillingEmailMock };
+
+async function deliverResendEmail(
+  detail: AdminInvoiceDetail,
+  options: SendInvoiceEmailOptions,
+): Promise<SendInvoiceEmailResult> {
+  const toEmail = resolveRecipientEmail(detail);
+  const subject = buildInvoiceEmailSubject(detail);
+  const source = options.source ?? "admin_invoice_send_email";
+  const isResend = options.isResend === true;
+
+  await recordBillingEvent({
+    invoiceId: detail.id,
+    companyId: detail.company_id,
+    eventType: "invoice.email_pending",
+    description: isResend
+      ? "Reenvío de comprobante (resend) en cola."
+      : "Envío de comprobante (resend) en cola.",
+    actorType: options.actorType ?? "superadmin",
+    actorId: options.actorId ?? null,
+    metadata: {
+      mode: getBillingEmailMode(),
+      source,
+      to_email: toEmail ?? null,
+      is_resend: isResend,
+      provider: "resend",
+    },
+  });
+
+  if (!toEmail) {
+    const log = await insertEmailLog({
+      invoiceId: detail.id,
+      companyId: detail.company_id,
+      toEmail: "—",
+      subject,
+      status: "failed",
+      provider: "resend",
+      providerMessageId: null,
+      errorMessage: "No hay email de facturación disponible.",
+      metadata: {
+        mock: false,
+        mode: getBillingEmailMode(),
+        source,
+        is_resend: isResend,
+      },
+    });
+
+    await recordBillingEvent({
+      invoiceId: detail.id,
+      companyId: detail.company_id,
+      eventType: "invoice.email_failed",
+      description: "No hay email de facturación disponible.",
+      actorType: options.actorType ?? "superadmin",
+      actorId: options.actorId ?? null,
+      metadata: { mode: "provider", source, email_log_id: log?.id },
+    });
+
+    return {
+      success: false,
+      mode: getBillingEmailMode(),
+      emailLogId: log?.id,
+      message: "No hay email de facturación disponible para este cliente.",
+    };
+  }
+
+  const html = buildInvoiceEmailHtml(detail);
+  const text = buildInvoiceEmailText(detail);
+
+  const apiKey = env.transactionalEmail.resendApiKey?.trim();
+  if (!apiKey) {
+    return {
+      success: false,
+      mode: getBillingEmailMode(),
+      message: "Falta RESEND_API_KEY para envío real de comprobantes.",
+    };
+  }
+
+  const fromAddress = env.transactionalEmail.fromAddress?.trim();
+  const fromName = env.transactionalEmail.fromName?.trim() || "Telvoice";
+  const replyTo = env.transactionalEmail.replyTo?.trim();
+  if (!fromAddress || !fromAddress.includes("@") || !replyTo || !replyTo.includes("@")) {
+    return {
+      success: false,
+      mode: getBillingEmailMode(),
+      message: "Faltan EMAIL_FROM_ADDRESS/EMAIL_REPLY_TO válidos para envío de comprobantes.",
+    };
+  }
+
+  const from = `${fromName} <${fromAddress}>`;
+
+  const now = new Date().toISOString();
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: [toEmail],
+        subject,
+        html,
+        text,
+        reply_to: replyTo,
+      }),
+    });
+
+    const data = (await res.json().catch(() => ({}))) as {
+      id?: string;
+      error?: { message?: string };
+      message?: string;
+    };
+
+    if (!res.ok) {
+      const msg =
+        data?.error?.message ||
+        data?.message ||
+        `Resend error HTTP ${res.status}`;
+
+      const log = await insertEmailLog({
+        invoiceId: detail.id,
+        companyId: detail.company_id,
+        toEmail,
+        subject,
+        status: "failed",
+        provider: "resend",
+        providerMessageId: null,
+        errorMessage: msg,
+        metadata: {
+          mode: "provider",
+          provider: "resend",
+          source,
+          is_resend: isResend,
+        },
+      });
+
+      await recordBillingEvent({
+        invoiceId: detail.id,
+        companyId: detail.company_id,
+        eventType: "invoice.email_failed",
+        description: msg,
+        actorType: options.actorType ?? "superadmin",
+        actorId: options.actorId ?? null,
+        metadata: {
+          mode: "provider",
+          provider: "resend",
+          to_email: toEmail,
+          source,
+          email_log_id: log?.id,
+          is_resend: isResend,
+        },
+      });
+
+      return {
+        success: false,
+        mode: getBillingEmailMode(),
+        emailLogId: log?.id,
+        toEmail,
+        message: msg,
+      };
+    }
+
+    const providerMessageId = data?.id ?? null;
+
+    const log = await insertEmailLog({
+      invoiceId: detail.id,
+      companyId: detail.company_id,
+      toEmail,
+      subject,
+      status: "sent",
+      provider: "resend",
+      providerMessageId,
+      sentAt: now,
+      metadata: {
+        mode: "provider",
+        provider: "resend",
+        source,
+        is_resend: isResend,
+        invoice_number: documentNumber(detail),
+      },
+    });
+
+    await syncInvoiceStatusAfterEmailSent(detail.id, detail.status);
+
+    await recordBillingEvent({
+      invoiceId: detail.id,
+      companyId: detail.company_id,
+      eventType: "invoice.email_sent",
+      description: isResend
+        ? "Comprobante reenviado (resend)."
+        : "Comprobante enviado (resend).",
+      actorType: options.actorType ?? "superadmin",
+      actorId: options.actorId ?? null,
+      metadata: {
+        mode: "provider",
+        provider: "resend",
+        to_email: toEmail,
+        source,
+        email_log_id: log?.id,
+        is_resend: isResend,
+        provider_message_id: providerMessageId,
+      },
+    });
+
+    return {
+      success: true,
+      mode: getBillingEmailMode(),
+      emailLogId: log?.id,
+      toEmail,
+      message: isResend
+        ? "Reenvío registrado correctamente."
+        : "Email de comprobante enviado correctamente.",
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+
+    const log = await insertEmailLog({
+      invoiceId: detail.id,
+      companyId: detail.company_id,
+      toEmail,
+      subject,
+      status: "failed",
+      provider: "resend",
+      providerMessageId: null,
+      errorMessage: msg,
+      metadata: {
+        mode: "provider",
+        provider: "resend",
+        source,
+        is_resend: isResend,
+      },
+    });
+
+    await recordBillingEvent({
+      invoiceId: detail.id,
+      companyId: detail.company_id,
+      eventType: "invoice.email_failed",
+      description: msg,
+      actorType: options.actorType ?? "superadmin",
+      actorId: options.actorId ?? null,
+      metadata: {
+        mode: "provider",
+        provider: "resend",
+        to_email: toEmail,
+        source,
+        email_log_id: log?.id,
+      },
+    });
+
+    return {
+      success: false,
+      mode: getBillingEmailMode(),
+      emailLogId: log?.id,
+      toEmail,
+      message: msg,
+    };
+  }
+}
