@@ -15,6 +15,34 @@ import {
 } from "./app-sms-ui.js";
 import { interpretCampaignTpsMetadata } from "../../utils/campaignTpsMetadata.js";
 
+/** Título fuera del panel blanco; cuerpo solo dentro de `tv-panel`. */
+function renderCampaignDetailBlock(
+  title: string,
+  bodyHtml: string,
+  options?: {
+    subtitle?: string;
+    fullWidth?: boolean;
+    panelStyle?: string;
+  },
+): string {
+  const cellClass = options?.fullWidth
+    ? "tv-dash-block tv-campaign-detail-cell tv-campaign-detail-cell--full"
+    : "tv-dash-block tv-campaign-detail-cell";
+  const sub = options?.subtitle
+    ? `<p class="field-hint" style="margin:0.25rem 0 0">${escapeHtml(options.subtitle)}</p>`
+    : "";
+  const ps = options?.panelStyle ? ` style="${options.panelStyle}"` : "";
+  return `<div class="${cellClass}">
+    <div class="tv-dash-block__head">
+      <h2 class="tv-dash-block__title">${escapeHtml(title)}</h2>
+      ${sub}
+    </div>
+    <section class="tv-panel"${ps}>
+      <div class="tv-panel__body">${bodyHtml}</div>
+    </section>
+  </div>`;
+}
+
 function renderReadinessStateBadge(
   label: CampaignLiveReadinessResult["readinessLabel"],
 ): string {
@@ -52,13 +80,9 @@ function renderLiveReadinessBlock(
     ? `<span class="badge badge-ok">Sí</span>`
     : `<span class="badge badge-muted">No</span>`;
 
-  return `<section class="tv-panel tv-dash-block" style="margin-top:1rem">
-    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
-      <h2 class="tv-section-head__title">Preparación para envío real</h2>
-      <p class="tv-section-head__sub">Gate operativo — validación de ruta, TPS, saldo y permisos</p>
-    </header>
-    <div class="tv-panel__body">
-      <dl class="tv-detail-dl">
+  return renderCampaignDetailBlock(
+    "Preparación para envío real",
+    `<dl class="tv-detail-dl">
         <div><dt>Estado</dt><dd>${renderReadinessStateBadge(readiness.readinessLabel)}</dd></div>
         <div><dt>Saldo requerido</dt><dd>${fmtSms(readiness.requiredSms)} SMS</dd></div>
         <div><dt>Saldo disponible</dt><dd>${fmtSms(readiness.availableSms)} SMS (${escapeHtml(readiness.balanceStatus)})</dd></div>
@@ -73,9 +97,13 @@ function renderLiveReadinessBlock(
         <p class="field-hint" style="margin:0 0 0.35rem"><strong>Motivos de bloqueo</strong></p>
         ${blockedList}
         ${warningsBlock}
-      </div>
-    </div>
-  </section>`;
+      </div>`,
+    {
+      subtitle:
+        "Gate operativo — validación de ruta, TPS, saldo y permisos",
+      fullWidth: true,
+    },
+  );
 }
 
 function renderLiveLaunchBlock(
@@ -124,13 +152,9 @@ function renderLiveLaunchBlock(
         ${blockList}
       </div>`;
 
-  return `<section class="tv-panel tv-dash-block" style="margin-top:1rem;border-color:var(--tv-warn-border, #f59e0b)">
-    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
-      <h2 class="tv-section-head__title">Enviar campaña real</h2>
-      <p class="tv-section-head__sub tv-text-warn">Esta acción enviará SMS reales y descontará saldo según mensajes aceptados por el proveedor.</p>
-    </header>
-    <div class="tv-panel__body">
-      <dl class="tv-detail-dl">
+  return renderCampaignDetailBlock(
+    "Enviar campaña real",
+    `<dl class="tv-detail-dl">
         <div><dt>Destinatarios válidos</dt><dd>${detail.audience.validCount}</dd></div>
         <div><dt>SMS estimados</dt><dd>${fmtSms(readiness.requiredSms)}</dd></div>
         <div><dt>Saldo disponible</dt><dd>${fmtSms(readiness.availableSms)}</dd></div>
@@ -138,9 +162,14 @@ function renderLiveLaunchBlock(
         <div><dt>TPS efectivo</dt><dd>${readiness.effectiveTps ?? "—"}</dd></div>
       </dl>
       ${form}
-      <p class="field-hint" style="margin:1rem 0 0">Los mensajes entrarán a cola; Telvoice los procesará respetando TPS. No se llama al proveedor desde esta pantalla.</p>
-    </div>
-  </section>`;
+      <p class="field-hint" style="margin:1rem 0 0">Los mensajes entrarán a cola; Telvoice los procesará respetando TPS. No se llama al proveedor desde esta pantalla.</p>`,
+    {
+      subtitle:
+        "Esta acción enviará SMS reales y descontará saldo según mensajes aceptados por el proveedor.",
+      fullWidth: true,
+      panelStyle: "border-color:var(--tv-warn-border, #f59e0b)",
+    },
+  );
 }
 
 function renderQueueStatusBlock(detail: CampaignDetailView): string {
@@ -163,10 +192,11 @@ function renderQueueStatusBlock(detail: CampaignDetailView): string {
     )
     .join("");
 
-  return `<section class="tv-panel" style="margin-top:1rem">
-    <h2 class="tv-panel__title">Estado de cola y envío</h2>
-    <dl class="tv-detail-dl tv-panel__body">${rows}</dl>
-  </section>`;
+  return renderCampaignDetailBlock(
+    "Estado de cola y envío",
+    `<dl class="tv-detail-dl">${rows}</dl>`,
+    { fullWidth: true },
+  );
 }
 
 function renderCampaignMessageModeBadge(
@@ -198,16 +228,17 @@ function renderCampaignTpsTraceabilityBlock(
         `<p class="field-hint" style="margin:0.5rem 0 0;color:var(--tv-warn,#b45309)">${escapeHtml(w!)}</p>`,
     )
     .join("");
-  return `<section class="tv-panel" style="margin-top:1rem">
-    <h2 class="tv-panel__title">Tráfico (TPS)</h2>
-    <dl class="tv-detail-dl tv-panel__body">
+  return renderCampaignDetailBlock(
+    "Tráfico (TPS)",
+    `<dl class="tv-detail-dl">
       <div><dt>TPS efectivo</dt><dd>${tps.effectiveTps ?? "—"}</dd></div>
       <div><dt>TPS solicitado</dt><dd>${tps.requestedTps ?? "—"}</dd></div>
       <div><dt>Batch scheduler</dt><dd>${tps.schedulerBatchSize ?? "—"}</dd></div>
       <div><dt>Intervalo scheduler</dt><dd>${tps.schedulerIntervalSeconds != null ? `${tps.schedulerIntervalSeconds}s` : "—"}</dd></div>
     </dl>
-    ${warnings}
-  </section>`;
+    ${warnings}`,
+    { fullWidth: true },
+  );
 }
 
 function renderCampaignMessagesTable(
@@ -347,21 +378,41 @@ export function renderAppCampaignDetailPage(
     ? `Envío real · ${renderCampaignClientStatusBadge(c)} ${renderCampaignModeLabel(c)}`
     : `Campaña mock · ${renderCampaignClientStatusBadge(c)} ${renderCampaignModeLabel(c)}`;
 
-  const messagesSection = isProduction
-    ? `<section class="tv-panel tv-dash-block" style="margin-top:1rem">
-      <header class="tv-section-head" style="padding:1rem 1.25rem 0">
-        <h2 class="tv-section-head__title">Mensajes enviados</h2>
-        <p class="tv-section-head__sub">Registro en panel — operador y DLR según proveedor</p>
-      </header>
-      <div class="tv-panel__body">${renderCampaignMessagesTable(detail)}</div>
-    </section>`
-    : `<section class="tv-panel tv-dash-block" style="margin-top:1rem">
-      <header class="tv-section-head" style="padding:1rem 1.25rem 0">
-        <h2 class="tv-section-head__title">Mensajes simulados</h2>
-        <p class="tv-section-head__sub">Solo mock — sin operador ni aSMSC</p>
-      </header>
-      <div class="tv-panel__body">${renderCampaignMessagesTable(detail)}</div>
-    </section>`;
+  const summaryBody = `<dl class="tv-detail-dl">
+          <div><dt>Estado</dt><dd>${renderCampaignClientStatusBadge(c)}</dd></div>
+          <div><dt>Modo</dt><dd>${renderCampaignModeLabel(c)}</dd></div>
+          <div><dt>Creada</dt><dd>${formatDate(c.created_at)}</dd></div>
+          <div><dt>${isProduction ? "Enviada" : "Simulación"}</dt><dd>${executedAt ? formatDate(executedAt) : "—"}</dd></div>
+          <div><dt>Costo estimado</dt><dd>${fmtSms(c.estimated_sms_cost)} SMS</dd></div>
+          <div><dt>${isProduction ? "Costo real" : "Costo real (mock)"}</dt><dd>${fmtSms(c.real_sms_cost)} SMS</dd></div>
+        </dl>`;
+
+  const audienceBody = `<dl class="tv-detail-dl">
+          <div><dt>Tipo</dt><dd>${escapeHtml(detail.audience.typeLabel)}</dd></div>
+          <div><dt>Origen</dt><dd>${escapeHtml(detail.audience.sourceLabel)}</dd></div>
+          <div><dt>Válidos</dt><dd>${detail.audience.validCount}</dd></div>
+          <div><dt>Estimados</dt><dd>${detail.audience.estimatedRecipients}</dd></div>
+          ${audienceOmitted ? `<div><dt>Omitidos</dt><dd>${escapeHtml(audienceOmitted)}</dd></div>` : ""}
+        </dl>`;
+
+  const messageBody = `<dl class="tv-detail-dl">
+          <div><dt>Remitente</dt><dd>${escapeHtml(detail.messageInfo.senderId)}</dd></div>
+          <div><dt>Encoding</dt><dd>${escapeHtml(detail.messageInfo.encoding)}</dd></div>
+          <div><dt>Segmentos</dt><dd>${detail.messageInfo.segmentsPerMessage}</dd></div>
+          <div><dt>Caracteres</dt><dd>${detail.messageInfo.characters}</dd></div>
+        </dl>
+        <pre class="tv-code-block" style="white-space:pre-wrap;margin:0.75rem 0 0;font-size:0.85rem">${escapeHtml(detail.messageInfo.text)}</pre>`;
+
+  const messagesSection = renderCampaignDetailBlock(
+    isProduction ? "Mensajes enviados" : "Mensajes simulados",
+    renderCampaignMessagesTable(detail),
+    {
+      subtitle: isProduction
+        ? "Registro en panel — operador y DLR según proveedor"
+        : "Solo mock — sin operador ni aSMSC",
+      fullWidth: true,
+    },
+  );
 
   const body = `
     ${renderPageHeader({
@@ -378,55 +429,17 @@ export function renderAppCampaignDetailPage(
     })}
   <div class="tv-client-dashboard tv-dlr-report">
     ${kpis}
-    <div class="tv-dash-grid tv-dash-grid--2" style="margin-top:1rem">
-      <section class="tv-panel">
-        <h2 class="tv-panel__title">Resumen</h2>
-        <dl class="tv-detail-dl tv-panel__body">
-          <div><dt>Estado</dt><dd>${renderCampaignClientStatusBadge(c)}</dd></div>
-          <div><dt>Modo</dt><dd>${renderCampaignModeLabel(c)}</dd></div>
-          <div><dt>Creada</dt><dd>${formatDate(c.created_at)}</dd></div>
-          <div><dt>${isProduction ? "Enviada" : "Simulación"}</dt><dd>${executedAt ? formatDate(executedAt) : "—"}</dd></div>
-          <div><dt>Costo estimado</dt><dd>${fmtSms(c.estimated_sms_cost)} SMS</dd></div>
-          <div><dt>${isProduction ? "Costo real" : "Costo real (mock)"}</dt><dd>${fmtSms(c.real_sms_cost)} SMS</dd></div>
-        </dl>
-      </section>
-      <section class="tv-panel">
-        <h2 class="tv-panel__title">Timeline</h2>
-        <div class="tv-panel__body">${renderOrderTimeline(timelineSteps)}</div>
-      </section>
+    <div class="tv-campaign-detail-grid">
+      ${renderCampaignDetailBlock("Resumen", summaryBody)}
+      ${renderCampaignDetailBlock("Timeline", renderOrderTimeline(timelineSteps))}
+      ${renderCampaignDetailBlock("Audiencia", audienceBody)}
+      ${renderCampaignDetailBlock("Mensaje", messageBody)}
+      ${renderCampaignDetailBlock("Wallet", walletBlock)}
+      ${showLiveReadiness ? renderLiveReadinessBlock(liveReadiness) : ""}
+      ${showLiveLaunch ? renderLiveLaunchBlock(detail, liveReadiness, c.id) : ""}
+      ${showQueueStatus ? renderQueueStatusBlock(detail) : ""}
+      ${isProduction ? renderCampaignTpsTraceabilityBlock(meta as Record<string, unknown>) : ""}
     </div>
-    <div class="tv-dash-grid tv-dash-grid--2" style="margin-top:1rem">
-      <section class="tv-panel">
-        <h2 class="tv-panel__title">Audiencia</h2>
-        <dl class="tv-detail-dl tv-panel__body">
-          <div><dt>Tipo</dt><dd>${escapeHtml(detail.audience.typeLabel)}</dd></div>
-          <div><dt>Origen</dt><dd>${escapeHtml(detail.audience.sourceLabel)}</dd></div>
-          <div><dt>Válidos</dt><dd>${detail.audience.validCount}</dd></div>
-          <div><dt>Estimados</dt><dd>${detail.audience.estimatedRecipients}</dd></div>
-          ${audienceOmitted ? `<div><dt>Omitidos</dt><dd>${escapeHtml(audienceOmitted)}</dd></div>` : ""}
-        </dl>
-      </section>
-      <section class="tv-panel">
-        <h2 class="tv-panel__title">Mensaje</h2>
-        <dl class="tv-detail-dl tv-panel__body">
-          <div><dt>Remitente</dt><dd>${escapeHtml(detail.messageInfo.senderId)}</dd></div>
-          <div><dt>Encoding</dt><dd>${escapeHtml(detail.messageInfo.encoding)}</dd></div>
-          <div><dt>Segmentos</dt><dd>${detail.messageInfo.segmentsPerMessage}</dd></div>
-          <div><dt>Caracteres</dt><dd>${detail.messageInfo.characters}</dd></div>
-        </dl>
-        <div class="tv-panel__body" style="padding-top:0">
-          <pre class="tv-code-block" style="white-space:pre-wrap;margin:0;font-size:0.85rem">${escapeHtml(detail.messageInfo.text)}</pre>
-        </div>
-      </section>
-    </div>
-    <section class="tv-panel" style="margin-top:1rem">
-      <h2 class="tv-panel__title">Wallet</h2>
-      <div class="tv-panel__body">${walletBlock}</div>
-    </section>
-    ${showLiveReadiness ? renderLiveReadinessBlock(liveReadiness) : ""}
-    ${showLiveLaunch ? renderLiveLaunchBlock(detail, liveReadiness, c.id) : ""}
-    ${showQueueStatus ? renderQueueStatusBlock(detail) : ""}
-    ${isProduction ? renderCampaignTpsTraceabilityBlock(meta as Record<string, unknown>) : ""}
     ${messagesSection}
   </div>`;
 

@@ -230,16 +230,16 @@ export function renderAppDashboardPage(
     })}
     <div class="tv-kpi-grid tv-kpi-grid--client">
       ${renderKpiCard({
-        label: "SMS enviados",
+        label: "Mensajes (panel)",
         value: fmtSms(stats.smsSentMonth),
-        hint: `Este mes · ${monthLabel}`,
+        hint: `Filas registradas este mes · ${monthLabel}. Puede ser distinto de «SMS consumidos» si hay mensajes multi‑segmento (varias unidades por envío).`,
         icon: "send",
         variant: "primary",
       })}
       ${renderKpiCard({
-        label: "Costo",
+        label: "SMS consumidos",
         value: fmtSms(stats.smsCostMonth),
-        hint: "SMS consumidos este mes",
+        hint: "Suma de unidades SMS descontadas del saldo (segmentos). Es lo que comparas con tu precio por SMS (p. ej. $10 c/u).",
         icon: "payments",
         variant: "warn",
       })}

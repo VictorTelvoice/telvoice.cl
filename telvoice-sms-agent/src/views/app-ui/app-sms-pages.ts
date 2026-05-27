@@ -536,6 +536,25 @@ export function renderAppSendSmsPage(
         }
         return stats;
       }
+      function syncMassMessageFieldLock(stats){
+        if(!ta) return;
+        var mode = getSendMode();
+        var locked = isBulkMode(mode) && stats && stats.hasPerRowMessages && stats.valid > 0;
+        var grp = document.querySelector('[data-tv-message-group]');
+        if(grp) grp.classList.toggle('tv-message-locked', locked);
+        if(locked){
+          ta.readOnly = true;
+          ta.setAttribute('readonly','readonly');
+          ta.classList.add('tv-input-readonly-locked');
+          ta.value = '';
+          ta.placeholder = 'Texto definido en la planilla (columna mensaje). Este cuadro está bloqueado para no duplicar un mensaje manual.';
+        } else {
+          ta.readOnly = false;
+          ta.removeAttribute('readonly');
+          ta.classList.remove('tv-input-readonly-locked');
+          if((ta.placeholder || '').indexOf('planilla') >= 0) ta.placeholder = 'Escribe tu mensaje…';
+        }
+      }
       function updateMessageRequired(){
         if(!ta) return;
         var mode = getSendMode();
@@ -543,7 +562,7 @@ export function renderAppSendSmsPage(
         if(isBulkMode(mode)){
           if(stats.hasPerRowMessages && stats.valid > 0){
             ta.removeAttribute('required');
-            if(massMsgHint) massMsgHint.textContent = '(opcional: el CSV ya incluye mensaje por fila)';
+            if(massMsgHint) massMsgHint.textContent = '(mensajes por fila en la planilla — cuadro bloqueado)';
           } else {
             ta.setAttribute('required','');
             if(massMsgHint) massMsgHint.textContent = mode === 'scheduled'
@@ -554,6 +573,7 @@ export function renderAppSendSmsPage(
           ta.setAttribute('required','');
           if(massMsgHint) massMsgHint.textContent = '';
         }
+        syncMassMessageFieldLock(stats);
       }
       function renderMassPreview(){
         var stats = syncBulkPayload();
@@ -706,7 +726,7 @@ export function renderAppSendSmsPage(
       }
       document.querySelectorAll('.tv-var-btn').forEach(function(btn){
         btn.addEventListener('click', function(){
-          if(!ta) return;
+          if(!ta || ta.readOnly) return;
           ta.value = (ta.value || '') + (btn.getAttribute('data-var') || '');
           ta.focus();
           refresh();
@@ -714,7 +734,7 @@ export function renderAppSendSmsPage(
       });
       document.querySelectorAll('.tv-template-btn').forEach(function(btn){
         btn.addEventListener('click', function(){
-          if(!ta) return;
+          if(!ta || ta.readOnly) return;
           ta.value = btn.getAttribute('data-template') === 'dlr' ? templateDlr : templateQa;
           ta.focus();
           refresh();
@@ -768,6 +788,7 @@ export function renderAppSendSmsPage(
       }
       if(templateSelect){
         templateSelect.addEventListener('change', function(){
+          if(ta && ta.readOnly) return;
           var opt = templateSelect.options[templateSelect.selectedIndex];
           var msg = opt ? opt.getAttribute('data-message') : '';
           if(msg && ta){ ta.value = msg; ta.focus(); refresh(); }

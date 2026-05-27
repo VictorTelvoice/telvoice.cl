@@ -1903,6 +1903,39 @@
       top: 0.75rem;
       align-self: start;
     }
+    .tv-message-locked .tv-template-btn,
+    .tv-message-locked .tv-var-chip {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+    .tv-input-readonly-locked {
+      cursor: not-allowed;
+      background: #f1f5f9;
+      color: var(--tv-muted);
+    }
+    .tv-campaign-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+      align-items: start;
+    }
+    .tv-campaign-detail-cell--full {
+      grid-column: 1 / -1;
+    }
+    @media (max-width: 1100px) {
+      .tv-campaign-detail-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 720px) {
+      .tv-campaign-detail-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .tv-campaign-detail-grid + .tv-campaign-detail-cell--full {
+      margin-top: 1rem;
+    }
     .tv-send-preview-phone {
       display: flex;
       justify-content: center;
@@ -2825,7 +2858,7 @@
       overflow-x: auto;
       max-height: 58vh;
     }
-    .tv-dlr-report__table { min-width: 1280px; }
+    .tv-dlr-report__table { min-width: 1680px; }
     .tv-dlr-report__error-desc {
       max-width: 200px;
       font-size: 0.8rem;
@@ -2835,7 +2868,10 @@
       white-space: nowrap;
     }
     .tv-dlr-report__mono { font-family: ui-monospace, monospace; font-size: 0.78rem; }
-    .tv-dlr-report__msg { max-width: 220px; }
+    .tv-dlr-report__msg {
+      white-space: nowrap;
+      vertical-align: middle;
+    }
     .tv-dlr-report__date { white-space: nowrap; font-size: 0.8rem; }
     .tv-dlr-report__pager {
       display: flex;

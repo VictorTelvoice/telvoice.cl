@@ -160,7 +160,7 @@ export function renderAdminCampaignSendPage(options: {
             </div>
             <p class="field-hint" id="tv-mass-preview-more" hidden></p>
           </div>
-          <div class="form-group" style="margin-top:1rem">
+          <div class="form-group" data-tv-message-group style="margin-top:1rem">
             <label for="tv-sms-message">Mensaje común <span class="field-hint" id="tv-mass-msg-hint" style="font-weight:400"></span></label>
             <textarea id="tv-sms-message" class="tv-input-full" name="message" rows="4" placeholder="Mensaje para todas las filas si el CSV solo trae números…">${escapeHtml(options.formValues?.message ?? "")}</textarea>
           </div>`,

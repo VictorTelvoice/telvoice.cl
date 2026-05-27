@@ -138,17 +138,37 @@ export function renderMassCampaignCsvPreviewScript(
     }
     return stats;
   }
+  function syncMassMessageFieldLock(stats){
+    if(!ta) return;
+    var mode = getSendMode();
+    var locked = isBulkMode(mode) && stats && stats.hasPerRowMessages && stats.valid > 0;
+    var grp = document.querySelector('[data-tv-message-group]');
+    if(grp) grp.classList.toggle('tv-message-locked', locked);
+    if(locked){
+      ta.readOnly = true;
+      ta.setAttribute('readonly','readonly');
+      ta.classList.add('tv-input-readonly-locked');
+      ta.value = '';
+      ta.placeholder = 'Texto definido en la planilla (columna mensaje). Este cuadro está bloqueado para no duplicar un mensaje manual.';
+    } else {
+      ta.readOnly = false;
+      ta.removeAttribute('readonly');
+      ta.classList.remove('tv-input-readonly-locked');
+      if((ta.placeholder || '').indexOf('planilla') >= 0) ta.placeholder = 'Escribe tu mensaje…';
+    }
+  }
   function updateMessageRequired(){
     if(!ta) return;
     var stats = countMassStats();
     var mode = getSendMode();
     if(isBulkMode(mode) && stats.hasPerRowMessages && stats.valid > 0){
       ta.removeAttribute('required');
-      if(massMsgHint) massMsgHint.textContent = '(opcional: el CSV incluye mensaje por fila)';
+      if(massMsgHint) massMsgHint.textContent = '(mensajes por fila en la planilla — cuadro bloqueado)';
     } else {
       ta.setAttribute('required','');
       if(massMsgHint) massMsgHint.textContent = mode === 'scheduled' ? '(mensaje común si el CSV solo trae números)' : '(mensaje común para todos)';
     }
+    syncMassMessageFieldLock(stats);
   }
   function renderMassPreview(){
     var stats = syncBulkPayload();

@@ -112,7 +112,7 @@ function renderDlrTableRows(result: DlrReportResult): string {
         <td>${escapeHtml(r.senderId)}</td>
         <td><span class="badge badge-${statusCls}">${escapeHtml(r.dlrStatus)}</span></td>
         <td class="tv-dlr-report__date">${escapeHtml(formatDisplayDate(r.sentAtIso || r.sentDateUtc))}</td>
-        <td class="tv-dlr-report__msg">${escapeHtml(r.smsMessage.length > 48 ? `${r.smsMessage.slice(0, 48)}…` : r.smsMessage)}</td>
+        <td class="tv-dlr-report__msg" title="${escapeHtml(r.smsMessage)}">${escapeHtml(r.smsMessage)}</td>
         <td><code>${escapeHtml(r.phoneNumber)}</code></td>
         <td>${escapeHtml(r.mcc)}</td>
         <td>${escapeHtml(r.mnc)}</td>
