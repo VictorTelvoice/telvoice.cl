@@ -23,6 +23,7 @@
     "seed:chile-3-providers": "node scripts/seed-chile-3-providers.mjs",
     "migrate:017": "node scripts/apply-migration-017.mjs",
     "migrate:021": "node scripts/apply-migration-021.mjs",
+    "migrate:026": "node scripts/apply-migration-026.mjs",
     "migrate:025": "node scripts/apply-migration-025.mjs",
     "seed:scheduler-test13": "node scripts/seed-scheduler-test13.mjs",
     "seed:scheduler-load5": "node scripts/seed-scheduler-load5.mjs",

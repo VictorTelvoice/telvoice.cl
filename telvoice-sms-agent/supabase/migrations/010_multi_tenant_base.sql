@@ -62,13 +62,12 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_profiles_email_lower
   ON user_profiles (lower(email));
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_profiles_admin_user_id
-  ON user_profiles (admin_user_id)
-  WHERE admin_user_id IS NOT NULL;
+-- Índices únicos completos (PostgREST onConflict). Ver también 026_user_profiles_upsert_unique.sql.
+CREATE UNIQUE INDEX IF NOT EXISTS user_profiles_admin_user_id_unique
+  ON user_profiles (admin_user_id);
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_profiles_user_id
-  ON user_profiles (user_id)
-  WHERE user_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS user_profiles_user_id_unique
+  ON user_profiles (user_id);
 
 CREATE INDEX IF NOT EXISTS idx_user_profiles_company_id
   ON user_profiles (company_id);
