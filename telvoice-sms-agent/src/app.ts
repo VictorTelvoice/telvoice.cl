@@ -7,6 +7,7 @@ import { appRouter } from "./routes/app.routes.js";
 import { apiRouter } from "./routes/index.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import type { RequestWithRawBody } from "./types/express-request.js";
+import { getAuthCallbackPage, getClientLoginPage } from "./controllers/client-google-auth.controller.js";
 
 const publicDir = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -41,6 +42,9 @@ export function createApp() {
       status: "ok",
     });
   });
+
+  app.get("/login", getClientLoginPage);
+  app.get("/auth/callback", getAuthCallbackPage);
 
   app.use("/api", apiRouter);
   app.use("/admin", adminRouter);

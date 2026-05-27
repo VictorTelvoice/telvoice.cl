@@ -28,7 +28,7 @@ async function enforceClientPanel(
 ): Promise<void> {
   if (!req.adminUser) {
     const nextUrl = encodeURIComponent(req.originalUrl || "/app");
-    res.redirect(`/admin/login?next=${nextUrl}`);
+    res.redirect(`/login?next=${nextUrl}`);
     return;
   }
 

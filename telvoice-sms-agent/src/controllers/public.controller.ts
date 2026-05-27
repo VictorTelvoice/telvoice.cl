@@ -3,6 +3,10 @@ import { quoteSmsQuantity } from "../services/commercialQuoteService.js";
 import { createPublicLead } from "../services/publicLeadService.js";
 import { listActiveSmsProducts } from "../services/smsProductService.js";
 import { ValidationError } from "../utils/errors.js";
+import { createHash } from "node:crypto";
+import { getSupabase } from "../database/supabaseClient.js";
+import { wrapSupabaseError } from "../utils/supabase-errors.js";
+import { confirmOrderCredit } from "../services/smsOrderService.js";
 
 export async function getPublicProducts(
   _req: Request,
@@ -120,6 +124,94 @@ export async function postPublicLead(
       message:
         "Solicitud registrada. Telvoice te contactará o enviará el link de pago.",
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function postPublicClaim(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const body = req.body as Record<string, unknown>;
+    const token = String(body.claim_token ?? "").trim();
+    const supabaseUserId = String(body.supabase_user_id ?? "").trim();
+
+    if (!token || token.length < 16) {
+      throw new ValidationError("claim_token inválido.");
+    }
+    if (!supabaseUserId || supabaseUserId.length < 10) {
+      throw new ValidationError("supabase_user_id inválido.");
+    }
+
+    const tokenHash = createHash("sha256").update(token).digest("hex");
+    const nowIso = new Date().toISOString();
+
+    // Resolver company_id desde user_profiles (login ya creó el perfil).
+    const { data: profile, error: profErr } = await getSupabase()
+      .from("user_profiles")
+      .select("company_id")
+      .eq("user_id", supabaseUserId)
+      .maybeSingle();
+    if (profErr) {
+      wrapSupabaseError(profErr, "publicClaim.profile");
+    }
+    const companyId = profile?.company_id ?? null;
+    if (!companyId) {
+      throw new ValidationError("No hay empresa asociada para activar la compra.");
+    }
+
+    // Buscar orden pendiente de claim
+    const { data: order, error: orderErr } = await getSupabase()
+      .from("sms_orders")
+      .select("id, payment_status, credit_status, claim_status, claim_expires_at")
+      .eq("claim_token_hash", tokenHash)
+      .maybeSingle();
+    if (orderErr) {
+      wrapSupabaseError(orderErr, "publicClaim.order");
+    }
+    if (!order) {
+      res.status(404).json({ ok: false, error: "claim_not_found" });
+      return;
+    }
+    if (order.claim_expires_at && order.claim_expires_at < nowIso) {
+      res.status(410).json({ ok: false, error: "claim_expired" });
+      return;
+    }
+    if (order.claim_status && order.claim_status !== "unclaimed") {
+      res.status(409).json({ ok: false, error: "claim_already_used" });
+      return;
+    }
+    if (order.credit_status !== "pending_claim") {
+      res.status(409).json({ ok: false, error: "order_not_pending_claim" });
+      return;
+    }
+    if (order.payment_status !== "paid") {
+      res.status(409).json({ ok: false, error: "order_not_paid" });
+      return;
+    }
+
+    // Adjuntar orden a empresa y pasar a pending para acreditar.
+    const { error: patchErr } = await getSupabase()
+      .from("sms_orders")
+      .update({
+        company_id: companyId,
+        credit_status: "pending",
+        claim_status: "claimed",
+        claimed_at: nowIso,
+        claimed_by_user_id: supabaseUserId,
+      })
+      .eq("id", order.id)
+      .eq("credit_status", "pending_claim");
+    if (patchErr) {
+      wrapSupabaseError(patchErr, "publicClaim.patch");
+    }
+
+    await confirmOrderCredit(order.id, null, { allowManualWithoutPaid: false });
+
+    res.json({ ok: true, order_id: order.id });
   } catch (error) {
     next(error);
   }

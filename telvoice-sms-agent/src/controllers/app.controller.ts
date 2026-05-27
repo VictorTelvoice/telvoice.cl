@@ -404,7 +404,7 @@ async function withAppContext(
     if (!ctx) {
       const profile = req.userProfile;
       if (!profile) {
-        res.redirect("/admin/login?next=%2Fapp");
+        res.redirect("/login?next=%2Fapp");
         return;
       }
       res.type("html").send(renderNoCompanyPage(profile));

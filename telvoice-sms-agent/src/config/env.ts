@@ -116,6 +116,12 @@ export const env = {
   supabase: {
     url: normalizeSupabaseUrl(optionalEnv("SUPABASE_URL")),
     serviceRoleKey: optionalEnv("SUPABASE_SERVICE_ROLE_KEY"),
+    /** Para login Google en frontend (Supabase Auth). */
+    publicUrl: normalizeSupabaseUrl(
+      optionalEnv("VITE_SUPABASE_URL", optionalEnv("SUPABASE_URL")),
+    ),
+    /** Anon/publishable key (NUNCA service_role). */
+    publishableKey: optionalEnv("VITE_SUPABASE_PUBLISHABLE_KEY"),
   },
   encryptionKey: optionalEnv("ENCRYPTION_KEY"),
   admin: {

@@ -48,7 +48,7 @@ export function renderAppLoginRequiredPage(): string {
       <div class="tv-app-placeholder__card">
         <h1 class="tv-page-title">Panel cliente</h1>
         <p class="tv-page-sub">Inicia sesión para continuar.</p>
-        <a href="/admin/login?next=%2Fapp" class="btn btn-primary">Iniciar sesión</a>
+        <a href="/login?next=%2Fapp" class="btn btn-primary">Iniciar sesión</a>
       </div>
     </div>`;
 
