@@ -7,6 +7,10 @@ import { createHash } from "node:crypto";
 import { getSupabase } from "../database/supabaseClient.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 import { confirmOrderCredit } from "../services/smsOrderService.js";
+import {
+  getBearerTokenFromRequestHeader,
+  verifySupabaseAccessToken,
+} from "../services/supabaseAuthVerifyService.js";
 
 export async function getPublicProducts(
   _req: Request,
@@ -135,18 +139,29 @@ export async function postPublicClaim(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const body = req.body as Record<string, unknown>;
-    const token = String(body.claim_token ?? "").trim();
-    const supabaseUserId = String(body.supabase_user_id ?? "").trim();
+    const bearer = getBearerTokenFromRequestHeader(req.headers.authorization);
+    if (!bearer) {
+      res.status(401).json({ ok: false, error: "missing_bearer_token" });
+      return;
+    }
+    const verified = await verifySupabaseAccessToken(bearer);
 
-    if (!token || token.length < 16) {
+    const body = req.body as Record<string, unknown>;
+    const claimToken = String(body.claim_token ?? "").trim();
+    const supabaseUserId =
+      typeof body.supabase_user_id === "string"
+        ? body.supabase_user_id.trim()
+        : "";
+
+    if (!claimToken || claimToken.length < 16) {
       throw new ValidationError("claim_token inválido.");
     }
-    if (!supabaseUserId || supabaseUserId.length < 10) {
-      throw new ValidationError("supabase_user_id inválido.");
+    if (supabaseUserId && supabaseUserId !== verified.userId) {
+      res.status(403).json({ ok: false, error: "user_mismatch" });
+      return;
     }
 
-    const tokenHash = createHash("sha256").update(token).digest("hex");
+    const tokenHash = createHash("sha256").update(claimToken).digest("hex");
     const nowIso = new Date().toISOString();
 
     // Resolver company_id desde user_profiles (login ya creó el perfil).
@@ -166,7 +181,7 @@ export async function postPublicClaim(
     // Buscar orden pendiente de claim
     const { data: order, error: orderErr } = await getSupabase()
       .from("sms_orders")
-      .select("id, payment_status, credit_status, claim_status, claim_expires_at")
+      .select("id, payment_status, credit_status, claim_status, claim_expires_at, payer_email, checkout_email")
       .eq("claim_token_hash", tokenHash)
       .maybeSingle();
     if (orderErr) {
@@ -193,25 +208,62 @@ export async function postPublicClaim(
       return;
     }
 
-    // Adjuntar orden a empresa y pasar a pending para acreditar.
-    const { error: patchErr } = await getSupabase()
+    // Validar email del pago vs email autenticado
+    const authEmail = verified.email;
+    const payer = (order.payer_email ?? "").trim().toLowerCase();
+    const checkout = (order.checkout_email ?? "").trim().toLowerCase();
+    const emailMatches =
+      (payer && payer === authEmail) || (checkout && checkout === authEmail);
+    if (!emailMatches) {
+      const { error: mrErr } = await getSupabase()
+        .from("sms_orders")
+        .update({
+          claim_status: "manual_review",
+          metadata: {
+            manual_review_reason: "email_mismatch",
+            manual_review_email: authEmail,
+            manual_review_at: nowIso,
+          } as any,
+        })
+        .eq("id", order.id)
+        .eq("credit_status", "pending_claim");
+      if (mrErr) {
+        wrapSupabaseError(mrErr, "publicClaim.manual_review");
+      }
+      res.status(202).json({ ok: false, status: "manual_review" });
+      return;
+    }
+
+    // Prevención de doble-claim concurrente:
+    // solo el primer request que cumpla condiciones actualiza la fila.
+    const { data: patched, error: patchErr } = await getSupabase()
       .from("sms_orders")
       .update({
         company_id: companyId,
         credit_status: "pending",
         claim_status: "claimed",
         claimed_at: nowIso,
-        claimed_by_user_id: supabaseUserId,
+        claimed_by_user_id: verified.userId,
       })
       .eq("id", order.id)
-      .eq("credit_status", "pending_claim");
+      .eq("credit_status", "pending_claim")
+      .eq("claim_status", "unclaimed")
+      .eq("payment_status", "paid")
+      .select("id")
+      .maybeSingle();
     if (patchErr) {
       wrapSupabaseError(patchErr, "publicClaim.patch");
+    }
+    if (!patched) {
+      // Otro proceso ya lo tomó.
+      res.status(409).json({ ok: false, error: "claim_raced" });
+      return;
     }
 
     await confirmOrderCredit(order.id, null, { allowManualWithoutPaid: false });
 
-    res.json({ ok: true, order_id: order.id });
+    // Idempotencia: confirmOrderCredit evita duplicar purchase_credit (reference sms_order).
+    res.json({ ok: true, order_id: order.id, status: "claimed" });
   } catch (error) {
     next(error);
   }

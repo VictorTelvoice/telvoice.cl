@@ -88,20 +88,27 @@ export function renderAuthCallbackPage(): string {
 
   async function main(){
     setStatus("Obteniendo sesión…");
-    const { data: userRes } = await supabase.auth.getUser();
-    const user = userRes?.user;
+    const { data: sessionRes } = await supabase.auth.getSession();
+    const session = sessionRes?.session;
+    const user = session?.user;
     if (!user) {
       window.location.href = "/login?error=google_auth_failed";
       return;
     }
 
-    const accessToken = (await supabase.auth.getSession()).data?.session?.access_token;
+    const accessToken = session?.access_token;
     setStatus("Creando cuenta en Telvoice…");
     const payload = {
+      // Compat: el backend NO confía en esto sin token; lo mantenemos por log/telemetría.
       supabase_user_id: user.id,
       email: user.email || null,
-      name: user.user_metadata?.full_name || user.user_metadata?.name || user.email || "Usuario",
-      avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+      name:
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email ||
+        "Usuario",
+      avatar_url:
+        user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
     };
     const boot = await fetch("/api/auth/bootstrap-client", {
       method: "POST",
@@ -129,6 +136,14 @@ export function renderAuthCallbackPage(): string {
       });
       if (claim.ok) {
         localStorage.removeItem("telvoice_claim_token");
+      } else {
+        try {
+          const j = await claim.json();
+          if (j && j.status === "manual_review") {
+            window.location.href = "/claim/manual-review";
+            return;
+          }
+        } catch {}
       }
     }
 
@@ -142,5 +157,24 @@ export function renderAuthCallbackPage(): string {
     }`;
 
   return renderLayout({ title: "Auth callback", body, showNav: false });
+}
+
+export function renderClaimManualReviewPage(): string {
+  const body = `
+    <div class="tv-auth-card" style="max-width:520px">
+      ${renderAuthBrand("telvoice", "Revisión manual")}
+      <h2 class="tv-page-title" style="margin:0 0 0.35rem">Tu pago quedó en revisión</h2>
+      <p class="tv-page-sub" style="margin:0 0 1rem">
+        Detectamos una diferencia entre el correo autenticado y el correo del pago. No acreditamos automáticamente tu bolsa.
+      </p>
+      <p class="field-hint" style="margin:0">
+        Nuestro equipo revisará el caso. Si necesitas acelerar, escribe a soporte con tu correo y comprobante.
+      </p>
+      <div class="tv-quick-actions" style="margin-top:1rem">
+        <a class="btn btn-primary" href="/app/dashboard">Ir al dashboard</a>
+        <a class="btn btn-ghost" href="/login">Volver al login</a>
+      </div>
+    </div>`;
+  return renderLayout({ title: "Revisión manual", body, showNav: false });
 }
 

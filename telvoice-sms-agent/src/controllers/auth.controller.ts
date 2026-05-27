@@ -1,10 +1,13 @@
 import type { Request, Response, NextFunction } from "express";
-import { AppError } from "../utils/errors.js";
 import {
   bootstrapClientFromGoogle,
   getAdminJwtCookieName,
   getJwtCookieOptions,
 } from "../services/googleClientBootstrapService.js";
+import {
+  getBearerTokenFromRequestHeader,
+  verifySupabaseAccessToken,
+} from "../services/supabaseAuthVerifyService.js";
 
 export async function postBootstrapClient(
   req: Request,
@@ -12,28 +15,28 @@ export async function postBootstrapClient(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const body = req.body as Record<string, unknown>;
-    const supabaseUserId = String(body.supabase_user_id ?? "").trim();
-    const email = String(body.email ?? "").trim();
-    const name = String(body.name ?? "").trim();
-    const avatarUrl =
-      typeof body.avatar_url === "string" ? body.avatar_url : null;
+    const token = getBearerTokenFromRequestHeader(req.headers.authorization);
+    if (!token) {
+      res.status(401).json({ ok: false, error: "missing_bearer_token" });
+      return;
+    }
+    const verified = await verifySupabaseAccessToken(token);
 
-    if (!supabaseUserId || supabaseUserId.length < 10) {
-      throw new AppError("supabase_user_id inválido.", 400);
-    }
-    if (!email.includes("@")) {
-      throw new AppError("email inválido.", 400);
-    }
-    if (!name) {
-      throw new AppError("name requerido.", 400);
+    // Ignoramos body para datos críticos; solo sirve como compat.
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const bodyEmail =
+      typeof body.email === "string" ? body.email.trim().toLowerCase() : null;
+    if (bodyEmail && bodyEmail !== verified.email) {
+      // Señal de posible manipulación de cliente.
+      res.status(403).json({ ok: false, error: "email_mismatch" });
+      return;
     }
 
     const { jwt } = await bootstrapClientFromGoogle({
-      supabaseUserId,
-      email,
-      name,
-      avatarUrl,
+      supabaseUserId: verified.userId,
+      email: verified.email,
+      name: verified.name,
+      avatarUrl: verified.avatarUrl,
     });
 
     res.cookie(getAdminJwtCookieName(), jwt, getJwtCookieOptions());
