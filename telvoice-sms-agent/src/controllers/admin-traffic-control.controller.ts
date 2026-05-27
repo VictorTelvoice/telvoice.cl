@@ -8,7 +8,11 @@ import {
 } from "../services/smsProviderService.js";
 import { pauseSmsRoute, resumeSmsRoute } from "../services/smsRouteService.js";
 import { getTrafficControlDashboard } from "../services/smsTrafficMetricsService.js";
-import { getSmsQueueRuntimeConfig } from "../services/smsQueueRuntimeConfigService.js";
+import {
+  getSmsQueueRuntimeConfig,
+  TEST13_REFERENCE_SCHEDULER,
+} from "../services/smsQueueRuntimeConfigService.js";
+import { saveSchedulerSettings } from "../services/platformRuntimeSettingsService.js";
 import { validateUuidParam } from "../utils/validation.js";
 import { renderSaTrafficControlPage } from "../views/admin-ui/sections/superadmin-traffic-pages.js";
 
@@ -53,6 +57,45 @@ export async function getSaTrafficControlPage(
     );
   } catch (e) {
     next(e);
+  }
+}
+
+export async function postUpdateQueueSchedulerSettings(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const preset = req.body.preset === "test13";
+    const enabled =
+      req.body.scheduler_enabled === "1" ||
+      req.body.scheduler_enabled === "true" ||
+      preset;
+    const intervalSeconds = preset
+      ? TEST13_REFERENCE_SCHEDULER.intervalSeconds
+      : Number(req.body.interval_seconds ?? 1);
+    const batchSize = preset
+      ? TEST13_REFERENCE_SCHEDULER.batchSize
+      : Number(req.body.batch_size ?? 20);
+    const queueMinPaceSeconds = preset
+      ? TEST13_REFERENCE_SCHEDULER.queueMinPaceSeconds
+      : Number(req.body.queue_min_pace_seconds ?? 3);
+
+    await saveSchedulerSettings({
+      enabled,
+      intervalSeconds,
+      batchSize,
+      queueMinPaceSeconds,
+    });
+
+    redirectQuery(res, "/admin/traffic-control", {
+      ok: preset
+        ? "Scheduler actualizado (preset Test13, aplica en ~3s sin reiniciar)"
+        : "Scheduler actualizado (aplica en ~3s sin reiniciar VPS)",
+    });
+  } catch (e) {
+    redirectQuery(res, "/admin/traffic-control", {
+      error: e instanceof Error ? e.message : "Error al guardar scheduler",
+    });
   }
 }
 

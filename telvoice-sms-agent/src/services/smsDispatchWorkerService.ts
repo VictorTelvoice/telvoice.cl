@@ -3,6 +3,8 @@
  * Descontar saldo y actualizar mensaje panel al aceptar proveedor.
  */
 import { env } from "../config/env.js";
+import { getEffectiveSchedulerConfigCached } from "./platformRuntimeSettingsService.js";
+import { resolveCampaignQueueMinPaceMs } from "../utils/campaignQueuePace.js";
 import type { PanelSmsMessageStatus } from "../types/sms-panel.js";
 import {
   getPanelSmsMessageById,
@@ -192,6 +194,8 @@ async function handleProviderRejection(input: {
   const errMsg = providerResult.error_message ?? null;
   const rawResponse = providerResult.raw_response ?? {};
 
+  const schedulerCfg = await getEffectiveSchedulerConfigCached();
+
   if (shouldLogProviderIssue(errMsg, rawResponse)) {
     logProviderDispatchIssue({
       providerId: item.provider_id!,
@@ -209,7 +213,7 @@ async function handleProviderRejection(input: {
       errorCode: providerResult.error_code ?? "REJECTED",
       errorMessage: errMsg,
       effectiveTps: input.effectiveTps,
-      schedulerBatchSize: env.smsQueueScheduler.batchSize,
+      schedulerBatchSize: schedulerCfg.batchSize,
       remarks:
         typeof rawResponse.remarks === "string"
           ? rawResponse.remarks
@@ -228,8 +232,8 @@ async function handleProviderRejection(input: {
     // Test12/13: un envío cada ~3s. «IP not Whitelisted» suele ser ráfaga concurrente;
     // reintentar con el mismo pacing antes de marcar fallo terminal.
     if (attemptAfterProcessing < maxAttempts) {
-      const retryDelayMs =
-        env.smsCampaign.queueMinPaceMs * Math.max(1, attemptAfterProcessing);
+      const paceMs = await resolveCampaignQueueMinPaceMs();
+      const retryDelayMs = paceMs * Math.max(1, attemptAfterProcessing);
       const nextAt = new Date(Date.now() + retryDelayMs).toISOString();
       await requeueForRetry(item.id, nextAt);
       await updatePanelSmsMessage(message.id, {
@@ -251,7 +255,10 @@ async function handleProviderRejection(input: {
     const failCode = providerResult.error_code ?? "F";
     const failMsg = errMsg ?? "IP not Whitelisted";
     await failQueueAndPanelMessage(item, failCode, failMsg, {
-      panelMetadata: IP_WHITELIST_FAIL_FAST_PANEL_METADATA,
+      panelMetadata: {
+        ...IP_WHITELIST_FAIL_FAST_PANEL_METADATA,
+        raw_response: rawResponse,
+      },
     });
     return {
       sent: false,
@@ -266,6 +273,7 @@ async function handleProviderRejection(input: {
       item,
       providerResult.error_code ?? "REJECTED",
       errMsg ?? "Proveedor rechazó",
+      { panelMetadata: { raw_response: rawResponse } },
     );
     return { sent: false, deferred: false, failed: true };
   }

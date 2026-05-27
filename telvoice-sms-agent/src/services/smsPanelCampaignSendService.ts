@@ -485,10 +485,10 @@ export async function sendPanelCampaign(
         failed_enqueue: failed,
         awaiting_scheduler: true,
         bulk_queue: true,
-        ...buildCampaignTpsMetadataFields({
+        ...(await buildCampaignTpsMetadataFields({
           policy: trafficPolicy,
           requestedTps: null,
-        }),
+        })),
       },
     });
   } else {

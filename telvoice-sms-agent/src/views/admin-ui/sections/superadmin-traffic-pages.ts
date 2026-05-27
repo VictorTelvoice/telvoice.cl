@@ -34,7 +34,7 @@ export function renderSchedulerRuntimeCompactPanel(
   return `<section class="tv-panel" style="margin-top:0.75rem;border-left:4px solid var(--primary,#2563eb)">
     <h2 class="tv-panel__title">Despacho de campañas (servidor)</h2>
     <div class="tv-panel__body">
-      <p style="margin:0">${healthBadge} · intervalo <strong>${rt.scheduler.intervalSeconds}s</strong> · batch <strong>${rt.scheduler.batchSize}</strong> · pacing <strong>${rt.campaignQueue.queueMinPaceSeconds}s</strong>/destinatario</p>
+      <p style="margin:0">${healthBadge} · intervalo <strong>${rt.scheduler.intervalSeconds}s</strong> · batch <strong>${rt.scheduler.batchSize}</strong> · pacing <strong>${rt.campaignQueue.queueMinPaceSeconds}s</strong>/destinatario · fuente <strong>${escapeHtml(rt.scheduler.source)}</strong></p>
       <p class="field-hint" style="margin:0.35rem 0 0">Referencia Test13: intervalo <strong>1s</strong>, batch <strong>20</strong>. Si ves <strong>60s</strong>, las masivas tardan ~1 SMS/min.</p>
       ${warn}
       <p style="margin:0.75rem 0 0">
@@ -149,7 +149,7 @@ export function renderSaTrafficControlPage(
       <dl class="tv-detail-dl" style="margin-top:1rem">
         <div><dt>Estado salud</dt><dd>${healthBadge}</dd></div>
         <div><dt>Referencia Test13</dt><dd>intervalo <strong>${rt.referenceTest13.intervalSeconds}s</strong>, batch <strong>${rt.referenceTest13.batchSize}</strong>, pacing <strong>${rt.referenceTest13.queueMinPaceSeconds}s</strong> entre destinatarios</dd></div>
-        <div><dt>Variables scheduler</dt><dd><code>${rt.scheduler.env.enabled}</code>=${rt.scheduler.enabled ? "true" : "false"} · <code>${rt.scheduler.env.intervalSeconds}</code>=<strong>${rt.scheduler.intervalSeconds}</strong> · <code>${rt.scheduler.env.batchSize}</code>=<strong>${rt.scheduler.batchSize}</strong></dd></div>
+        <div><dt>Variables scheduler</dt><dd>Efectivo (arriba) · <code>${rt.scheduler.env.enabled}</code>=${rt.scheduler.envFallback.enabled ? "true" : "false"} · <code>${rt.scheduler.env.intervalSeconds}</code>=${rt.scheduler.envFallback.intervalSeconds} · <code>${rt.scheduler.env.batchSize}</code>=${rt.scheduler.envFallback.batchSize}</dd></div>
         <div><dt>Cola campañas</dt><dd><code>${rt.campaignQueue.env.trafficType}</code>=${escapeHtml(rt.campaignQueue.trafficType)} · <code>${rt.campaignQueue.env.queueMinPaceSeconds}</code>=${rt.campaignQueue.queueMinPaceSeconds}s (~${rt.campaignQueue.queueMinPaceMs}ms entre ítems encolados)</dd></div>
         <div><dt>Guards despacho</dt><dd>1 aSMSC/tick · lock in-process · stagger en encolado · reintentos IP con backoff</dd></div>
       </dl>
@@ -157,6 +157,20 @@ export function renderSaTrafficControlPage(
       <p style="margin-top:0.75rem">
         <a class="btn btn-ghost btn-sm" href="/admin/traffic-control/scheduler-config.json" target="_blank" rel="noopener">Ver JSON (API diagnóstico)</a>
       </p>
+      <form method="post" action="/admin/traffic-control/scheduler" class="tv-form-grid" style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border,#e5e7eb)">
+        <h3 style="grid-column:1/-1;margin:0;font-size:1rem">Editar scheduler (guarda en BD, sin reiniciar VPS)</h3>
+        <label class="tv-checkbox" style="grid-column:1/-1">
+          <input type="checkbox" name="scheduler_enabled" value="1" ${rt.scheduler.enabled ? "checked" : ""} /> Scheduler activo
+        </label>
+        <label>Intervalo (seg) <input name="interval_seconds" type="number" min="1" max="300" value="${rt.scheduler.intervalSeconds}" class="tv-input-full" required /></label>
+        <label>Batch por tick <input name="batch_size" type="number" min="1" max="100" value="${rt.scheduler.batchSize}" class="tv-input-full" required /></label>
+        <label>Pacing encolado (seg/dest.) <input name="queue_min_pace_seconds" type="number" min="1" max="120" value="${rt.campaignQueue.queueMinPaceSeconds}" class="tv-input-full" required /></label>
+        <div style="grid-column:1/-1;display:flex;gap:0.5rem;flex-wrap:wrap">
+          <button type="submit" class="btn btn-primary btn-sm">Guardar scheduler</button>
+          <button type="submit" name="preset" value="test13" class="btn btn-secondary btn-sm">Preset Test13 (1s / 20 / 3s)</button>
+        </div>
+        <p class="field-hint" style="grid-column:1/-1">Requiere migración 025. Si falla al guardar, ejecute <code>npm run migrate:025</code> en el servidor.</p>
+      </form>
     </section>
     <section class="tv-panel" style="margin-top:1rem">
       <h2 class="tv-panel__title">Snapshot scheduler en campañas recientes</h2>

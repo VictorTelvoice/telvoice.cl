@@ -1,4 +1,5 @@
 import { env } from "../config/env.js";
+import { getEffectiveSchedulerConfigCached } from "../services/platformRuntimeSettingsService.js";
 import type { ResolvedTrafficPolicy } from "../types/sms-traffic.js";
 
 export type CampaignTpsPolicySnapshot = {
@@ -55,14 +56,15 @@ export function buildTpsPolicySnapshot(
  * Metadata TPS para campañas programadas/masivas (Etapa 7.2).
  * `target_tps` en campañas nuevas = effective_tps (ya no batch size).
  */
-export function buildCampaignTpsMetadataFields(input: {
+export async function buildCampaignTpsMetadataFields(input: {
   policy: ResolvedTrafficPolicy;
   requestedTps?: number | null;
-}): Record<string, unknown> {
+}): Promise<Record<string, unknown>> {
   const effectiveTps = input.policy.effective_tps;
   const requestedTps = capRequestedTps(input.requestedTps, input.policy);
-  const schedulerBatchSize = env.smsQueueScheduler.batchSize;
-  const schedulerIntervalSeconds = env.smsQueueScheduler.intervalSeconds;
+  const schedulerCfg = await getEffectiveSchedulerConfigCached();
+  const schedulerBatchSize = schedulerCfg.batchSize;
+  const schedulerIntervalSeconds = schedulerCfg.intervalSeconds;
 
   return {
     requested_tps: requestedTps,

@@ -18,9 +18,11 @@ import {
 import {
   createRatePlanDetail,
   createSmsRatePlan,
+  deactivateRatePlanDetail,
   getSmsRatePlanById,
   listRatePlanDetails,
   listSmsRatePlans,
+  updateRatePlanDetail,
   updateSmsRatePlan,
 } from "../services/smsRatePlanService.js";
 import {
@@ -331,6 +333,84 @@ function parseUuidListField(value: unknown): string[] {
     return [String(value).trim()];
   }
   return [];
+}
+
+export async function postUpdateRatePlanDetail(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const planId = validateUuidParam(String(req.params.id), "id");
+  const detailId = validateUuidParam(String(req.params.detailId), "detailId");
+  try {
+    await updateRatePlanDetail(detailId, {
+      routeId: req.body.route_id
+        ? validateUuidParam(String(req.body.route_id), "route_id")
+        : undefined,
+      country: req.body.country ? String(req.body.country) : undefined,
+      operatorName:
+        req.body.operator_name !== undefined
+          ? String(req.body.operator_name || "") || null
+          : undefined,
+      trafficType: req.body.traffic_type
+        ? String(req.body.traffic_type)
+        : undefined,
+      sellPricePerSms:
+        req.body.sell_price_per_sms != null
+          ? Number(req.body.sell_price_per_sms)
+          : undefined,
+      costPricePerSms:
+        req.body.cost_price_per_sms != null
+          ? Number(req.body.cost_price_per_sms)
+          : undefined,
+      currency: req.body.currency ? String(req.body.currency) : undefined,
+      status: req.body.status ? String(req.body.status) : undefined,
+      weight: req.body.route_weight
+        ? Number(req.body.route_weight)
+        : undefined,
+    });
+    redirectQuery(res, `/admin/rate-plans/${planId}`, { ok: "Tarifa actualizada" });
+  } catch (e) {
+    redirectQuery(res, `/admin/rate-plans/${planId}`, {
+      error: e instanceof Error ? e.message : "Error",
+    });
+  }
+}
+
+export async function postDeactivateRatePlanDetail(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const planId = validateUuidParam(String(req.params.id), "id");
+  const detailId = validateUuidParam(String(req.params.detailId), "detailId");
+  try {
+    await deactivateRatePlanDetail(detailId);
+    redirectQuery(res, `/admin/rate-plans/${planId}`, { ok: "Tarifa desactivada" });
+  } catch (e) {
+    redirectQuery(res, `/admin/rate-plans/${planId}`, {
+      error: e instanceof Error ? e.message : "Error",
+    });
+  }
+}
+
+export async function postUpdateRouteTraffic(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const id = validateUuidParam(String(req.params.id), "id");
+  try {
+    await updateSmsRoute(id, {
+      max_tps: Number(req.body.max_tps ?? 1),
+      max_concurrent_requests: Number(req.body.max_concurrent_requests ?? 1),
+    });
+    const back = String(req.body.return_to ?? "");
+    redirectQuery(res, back === "traffic" ? "/admin/traffic-control" : "/admin/routes", {
+      ok: "Límites de ruta actualizados",
+    });
+  } catch (e) {
+    redirectQuery(res, "/admin/routes", {
+      error: e instanceof Error ? e.message : "Error",
+    });
+  }
 }
 
 export async function postCreateRatePlanDetail(

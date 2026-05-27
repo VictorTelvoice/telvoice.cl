@@ -1,6 +1,10 @@
 import { env } from "../config/env.js";
 import { getSupabase } from "../database/supabaseClient.js";
 import { isMissingTableError } from "../utils/db-table.js";
+import {
+  getEffectiveSchedulerConfig,
+  type EffectiveSchedulerConfig,
+} from "./platformRuntimeSettingsService.js";
 
 /** Valores de referencia cuando Test12/13 despacharon bien (~3s entre envíos). */
 export const TEST13_REFERENCE_SCHEDULER = {
@@ -18,6 +22,12 @@ export type SmsQueueRuntimeConfig = {
     enabled: boolean;
     intervalSeconds: number;
     batchSize: number;
+    source: EffectiveSchedulerConfig["source"];
+    envFallback: {
+      enabled: boolean;
+      intervalSeconds: number;
+      batchSize: number;
+    };
     env: {
       enabled: string;
       intervalSeconds: string;
@@ -68,7 +78,7 @@ function buildWarnings(
   const warnings: string[] = [];
   if (!enabled) {
     warnings.push(
-      "Scheduler desactivado: solo se procesa la cola con «Procesar tick manual» o reinicio con SMS_QUEUE_SCHEDULER_ENABLED=true.",
+      "Scheduler desactivado: solo se procesa la cola con «Procesar tick manual» o activar scheduler en Tráfico / TPS.",
     );
     return { health: "disabled", warnings };
   }
@@ -129,31 +139,41 @@ export async function getRecentCampaignSchedulerSnapshots(
   });
 }
 
-/** Config efectiva del proceso Node (variables de entorno al arranque). */
+/** Config efectiva: override en BD (Superadmin) > variables de entorno del proceso. */
 export async function getSmsQueueRuntimeConfig(): Promise<SmsQueueRuntimeConfig> {
-  const intervalSeconds = env.smsQueueScheduler.intervalSeconds;
-  const batchSize = env.smsQueueScheduler.batchSize;
-  const { health, warnings } = buildWarnings(
-    intervalSeconds,
-    env.smsQueueScheduler.enabled,
-  );
+  const effective = await getEffectiveSchedulerConfig();
+  const intervalSeconds = effective.intervalSeconds;
+  const batchSize = effective.batchSize;
+  const enabled = effective.enabled;
+  const { health, warnings } = buildWarnings(intervalSeconds, enabled);
 
-  const paceSeconds = Math.round(env.smsCampaign.queueMinPaceMs / 1000);
+  const paceSeconds = effective.queueMinPaceSeconds;
+  const paceMs = effective.queueMinPaceMs;
 
-  const maxPerMinute = env.smsQueueScheduler.enabled
+  const maxPerMinute = enabled
     ? Math.floor(60 / Math.max(1, intervalSeconds))
     : 0;
 
   const snapshots = await getRecentCampaignSchedulerSnapshots(8);
 
   const matchesTest13 =
-    env.smsQueueScheduler.enabled &&
+    enabled &&
     intervalSeconds === TEST13_REFERENCE_SCHEDULER.intervalSeconds &&
     batchSize >= TEST13_REFERENCE_SCHEDULER.batchSize;
 
-  if (!matchesTest13 && env.smsQueueScheduler.enabled) {
+  if (!matchesTest13 && enabled) {
     warnings.push(
-      `Para alinear con Test13: SMS_QUEUE_SCHEDULER_INTERVAL_SECONDS=${TEST13_REFERENCE_SCHEDULER.intervalSeconds} y SMS_QUEUE_SCHEDULER_BATCH_SIZE=${TEST13_REFERENCE_SCHEDULER.batchSize}.`,
+      `Para alinear con Test13: intervalo ${TEST13_REFERENCE_SCHEDULER.intervalSeconds}s, batch ${TEST13_REFERENCE_SCHEDULER.batchSize}, pacing ${TEST13_REFERENCE_SCHEDULER.queueMinPaceSeconds}s (editable en Tráfico / TPS).`,
+    );
+  }
+
+  if (effective.source === "database") {
+    warnings.push(
+      "Scheduler controlado desde Superadmin (platform_runtime_settings). Los cambios aplican en ~3s sin reiniciar el VPS.",
+    );
+  } else if (intervalSeconds >= 60 || intervalSeconds > 5) {
+    warnings.push(
+      "Sin override en BD: edite en Tráfico / TPS o defina SMS_QUEUE_SCHEDULER_INTERVAL_SECONDS=1 en el VPS.",
     );
   }
 
@@ -161,9 +181,15 @@ export async function getSmsQueueRuntimeConfig(): Promise<SmsQueueRuntimeConfig>
     health,
     warnings,
     scheduler: {
-      enabled: env.smsQueueScheduler.enabled,
+      enabled,
       intervalSeconds,
       batchSize,
+      source: effective.source,
+      envFallback: {
+        enabled: env.smsQueueScheduler.enabled,
+        intervalSeconds: env.smsQueueScheduler.intervalSeconds,
+        batchSize: env.smsQueueScheduler.batchSize,
+      },
       env: {
         enabled: "SMS_QUEUE_SCHEDULER_ENABLED",
         intervalSeconds: "SMS_QUEUE_SCHEDULER_INTERVAL_SECONDS",
@@ -175,7 +201,7 @@ export async function getSmsQueueRuntimeConfig(): Promise<SmsQueueRuntimeConfig>
       trafficType: env.smsCampaign.trafficType,
       bulkQueueMinRecipients: env.smsCampaign.bulkQueueMinRecipients,
       queueMinPaceSeconds: paceSeconds,
-      queueMinPaceMs: env.smsCampaign.queueMinPaceMs,
+      queueMinPaceMs: paceMs,
       env: {
         enabled: "SMS_CAMPAIGN_ENABLED",
         trafficType: "SMS_CAMPAIGN_TRAFFIC_TYPE",
@@ -195,10 +221,9 @@ export async function getSmsQueueRuntimeConfig(): Promise<SmsQueueRuntimeConfig>
     },
     estimatedThroughput: {
       maxAsmscSendsPerMinuteWithCurrentInterval: maxPerMinute,
-      description:
-        env.smsQueueScheduler.enabled
-          ? `Con 1 envío aSMSC por tick y intervalo ${intervalSeconds}s, techo ~${maxPerMinute} SMS/min por proveedor en este proceso.`
-          : "Scheduler off — sin throughput automático.",
+      description: enabled
+        ? `Con 1 envío aSMSC por tick y intervalo ${intervalSeconds}s, techo ~${maxPerMinute} SMS/min por proveedor en este proceso (${effective.source}).`
+        : "Scheduler off — sin throughput automático.",
     },
     recentCampaignSnapshots: snapshots,
   };

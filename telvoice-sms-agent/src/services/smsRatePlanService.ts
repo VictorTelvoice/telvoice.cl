@@ -179,3 +179,83 @@ export async function createRatePlanDetail(input: {
   }
   return data as SmsRatePlanDetailRow;
 }
+
+export async function getRatePlanDetailById(
+  id: string,
+): Promise<SmsRatePlanDetailRow | null> {
+  const { data, error } = await getSupabase()
+    .from("sms_rate_plan_details")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return null;
+    }
+    wrapSupabaseError(error, "getRatePlanDetailById");
+  }
+  return data as SmsRatePlanDetailRow | null;
+}
+
+export async function updateRatePlanDetail(
+  detailId: string,
+  patch: {
+    routeId?: string;
+    country?: string;
+    operatorName?: string | null;
+    trafficType?: string;
+    sellPricePerSms?: number;
+    costPricePerSms?: number;
+    currency?: string;
+    status?: string;
+    weight?: number;
+  },
+): Promise<SmsRatePlanDetailRow> {
+  const existing = await getRatePlanDetailById(detailId);
+  if (!existing) {
+    throw new AppError("Tarifa no encontrada", 404);
+  }
+
+  const metadata: Record<string, unknown> = {
+    ...((existing.metadata as Record<string, unknown> | null) ?? {}),
+  };
+  if (patch.weight != null && Number.isFinite(patch.weight) && patch.weight > 0) {
+    metadata.weight = patch.weight;
+  }
+
+  const row: Record<string, unknown> = { metadata };
+  if (patch.routeId) row.route_id = patch.routeId;
+  if (patch.country) row.country = patch.country;
+  if (patch.operatorName !== undefined) row.operator_name = patch.operatorName;
+  if (patch.trafficType) row.traffic_type = patch.trafficType;
+  if (patch.sellPricePerSms != null) row.sell_price_per_sms = patch.sellPricePerSms;
+  if (patch.costPricePerSms != null) row.cost_price_per_sms = patch.costPricePerSms;
+  if (patch.currency) row.currency = patch.currency;
+  if (patch.status) row.status = patch.status;
+
+  const { data, error } = await getSupabase()
+    .from("sms_rate_plan_details")
+    .update(row)
+    .eq("id", detailId)
+    .select("*")
+    .single();
+
+  if (error) {
+    wrapSupabaseError(error, "updateRatePlanDetail");
+  }
+  return data as SmsRatePlanDetailRow;
+}
+
+export async function deactivateRatePlanDetail(
+  detailId: string,
+): Promise<void> {
+  const { error } = await getSupabase()
+    .from("sms_rate_plan_details")
+    .update({ status: "inactive" })
+    .eq("id", detailId);
+
+  if (error) {
+    wrapSupabaseError(error, "deactivateRatePlanDetail");
+  }
+}

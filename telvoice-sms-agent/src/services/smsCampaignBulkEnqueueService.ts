@@ -3,7 +3,10 @@ import { env } from "../config/env.js";
 import { createPanelSmsMessagesBulk } from "./panelSmsMessageService.js";
 import { enqueueMessagesBulk } from "./smsQueueService.js";
 import { APP_CAMPAIGN_SEND_SOURCE } from "./smsCampaignPolicy.js";
-import { staggeredQueueScheduledAt } from "../utils/campaignQueuePace.js";
+import {
+  resolveCampaignQueueMinPaceMs,
+  staggeredQueueScheduledAt,
+} from "../utils/campaignQueuePace.js";
 
 export type BulkCampaignItem = {
   phone: string;
@@ -36,6 +39,7 @@ export async function bulkEnqueueCampaignRecipients(input: {
     "TELVOICE";
   const trafficType = env.smsCampaign.trafficType;
   const effectiveTps = Math.max(1, input.effectiveTps ?? 1);
+  const minPaceMs = await resolveCampaignQueueMinPaceMs();
   let queueIndex = 0;
   // panel_sms_messages.mode solo permite: mock | live | live_test
   const panelMessageMode =
@@ -107,6 +111,7 @@ export async function bulkEnqueueCampaignRecipients(input: {
           input.scheduledAt,
           paceIndex,
           effectiveTps,
+          minPaceMs,
         ),
         priority: 50,
         metadata: {

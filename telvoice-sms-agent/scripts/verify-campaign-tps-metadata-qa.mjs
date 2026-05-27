@@ -61,7 +61,7 @@ const policy = await resolveTrafficPolicy({
 assert(policy.effective_tps >= 1, "resolveTrafficPolicy", `effective=${policy.effective_tps}`);
 assert(policy.effective_tps <= 20, "effective_tps <= cap 20", String(policy.effective_tps));
 
-const fields = buildCampaignTpsMetadataFields({ policy, requestedTps: null });
+const fields = await buildCampaignTpsMetadataFields({ policy, requestedTps: null });
 assert(fields.effective_tps === policy.effective_tps, "metadata.effective_tps = policy");
 assert(
   fields.scheduler_batch_size === env.smsQueueScheduler.batchSize,
@@ -86,7 +86,7 @@ assert(
   "requested 99 limitado por política",
   String(highRequested),
 );
-const limitedFields = buildCampaignTpsMetadataFields({
+const limitedFields = await buildCampaignTpsMetadataFields({
   policy,
   requestedTps: 99,
 });

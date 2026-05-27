@@ -316,6 +316,11 @@ export function renderSaRoutesPage(opts: BaseOpts & {
         <td>${r.dlr_enabled ? "Sí" : "No"}</td>
         <td>${Number(r.max_tps ?? 1)}</td>
         <td>
+          <form method="post" action="/admin/routes/${escapeHtml(r.id)}/traffic" class="tv-form-inline" style="display:flex;gap:0.25rem;align-items:center;flex-wrap:wrap;margin-bottom:0.25rem">
+            <label style="font-size:0.75rem">TPS <input name="max_tps" type="number" step="0.1" min="1" value="${Number(r.max_tps ?? 1)}" style="width:3.5rem" /></label>
+            <label style="font-size:0.75rem">Conc. <input name="max_concurrent_requests" type="number" min="1" value="${Number(r.max_concurrent_requests ?? 1)}" style="width:3rem" /></label>
+            <button type="submit" class="btn btn-ghost btn-sm">TPS</button>
+          </form>
           <form method="post" action="/admin/routes/${escapeHtml(r.id)}/status" style="display:inline">
             <input type="hidden" name="status" value="${r.status === "active" ? "inactive" : "active"}" />
             <button type="submit" class="btn btn-ghost btn-sm">${r.status === "active" ? "Desactivar" : "Activar"}</button>
@@ -423,6 +428,14 @@ export function renderSaRatePlanDetailPage(opts: BaseOpts & {
               ? Number(d.margin)
               : Number(d.sell_price_per_sms) - Number(d.cost_price_per_sms);
           const weight = Number(d.metadata?.weight ?? 100);
+          const routeSelected = (rid: string) =>
+            d.route_id === rid ? " selected" : "";
+          const routeOptions = opts.routes
+            .map(
+              (r) =>
+                `<option value="${escapeHtml(r.id)}"${routeSelected(r.id)}>${escapeHtml(r.name)} — ${escapeHtml(r.provider_name ?? "")}</option>`,
+            )
+            .join("");
           return `<tr>
         <td>${escapeHtml(d.mcc ?? "—")}</td>
         <td>${escapeHtml(d.mnc ?? "—")}</td>
@@ -437,10 +450,33 @@ export function renderSaRatePlanDetailPage(opts: BaseOpts & {
         <td>${margin.toFixed(4)}</td>
         <td>${escapeHtml(d.currency)}</td>
         <td>${statusBadgeSa(d.status)}</td>
+        <td style="min-width:12rem">
+          <details>
+            <summary class="btn btn-ghost btn-sm" style="cursor:pointer">Editar</summary>
+            <form method="post" action="/admin/rate-plans/${escapeHtml(opts.ratePlan.id)}/details/${escapeHtml(d.id)}" class="tv-form-grid" style="margin-top:0.5rem;padding:0.5rem;background:var(--surface-2,#f8fafc)">
+              <label>Ruta <select name="route_id" class="tv-input-full">${routeOptions}</select></label>
+              <label>País <input name="country" value="${escapeHtml(d.country)}" class="tv-input-full" /></label>
+              <label>Tipo <select name="traffic_type" class="tv-input-full">
+                <option value="transactional"${d.traffic_type === "transactional" ? " selected" : ""}>Transactional</option>
+                <option value="promotional"${d.traffic_type === "promotional" ? " selected" : ""}>Promotional</option>
+              </select></label>
+              <label>Peso <input name="route_weight" type="number" min="1" value="${weight}" class="tv-input-full" /></label>
+              <label>Venta <input name="sell_price_per_sms" type="number" step="0.0001" value="${d.sell_price_per_sms}" class="tv-input-full" /></label>
+              <label>Costo <input name="cost_price_per_sms" type="number" step="0.0001" value="${d.cost_price_per_sms}" class="tv-input-full" /></label>
+              <label>Moneda <input name="currency" value="${escapeHtml(d.currency)}" class="tv-input-full" /></label>
+              <label>Estado <select name="status" class="tv-input-full">
+                <option value="active"${d.status === "active" ? " selected" : ""}>active</option>
+                <option value="inactive"${d.status === "inactive" ? " selected" : ""}>inactive</option>
+              </select></label>
+              <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+            </form>
+          </details>
+          ${d.status === "active" ? `<form method="post" action="/admin/rate-plans/${escapeHtml(opts.ratePlan.id)}/details/${escapeHtml(d.id)}/deactivate" style="margin-top:0.25rem"><button type="submit" class="btn btn-ghost btn-sm">Desactivar</button></form>` : ""}
+        </td>
       </tr>`;
         })
         .join("")
-    : `<tr><td colspan="13">Sin tarifas. Agregue un detalle abajo.</td></tr>`;
+    : `<tr><td colspan="14">Sin tarifas. Agregue un detalle abajo.</td></tr>`;
 
   const routeOpts = opts.routes
     .filter((r) => r.status === "active")
@@ -476,7 +512,7 @@ export function renderSaRatePlanDetailPage(opts: BaseOpts & {
       <p class="field-hint" style="grid-column:1/-1">Para repartir entre 3 proveedores CL, use weighted/round_robin y agregue 3 detalles con pesos (ej. 34/33/33).</p>
     </form>
     <div class="table-wrap tv-panel"><table class="tv-table tv-table--compact"><thead><tr>
-      <th>MCC</th><th>MNC</th><th>País</th><th>Operador</th><th>Tipo SMS</th><th>Ruta</th><th>Proveedor</th><th>Peso</th><th>Costo</th><th>Venta</th><th>Margen</th><th>Moneda</th><th>Estado</th>
+      <th>MCC</th><th>MNC</th><th>País</th><th>Operador</th><th>Tipo SMS</th><th>Ruta</th><th>Proveedor</th><th>Peso</th><th>Costo</th><th>Venta</th><th>Margen</th><th>Moneda</th><th>Estado</th><th>Acciones</th>
     </tr></thead><tbody>${rows}</tbody></table></div>
     <section class="tv-panel" style="margin-top:1rem">
       <h2 class="tv-panel__title">Agregar tarifa</h2>
