@@ -51,6 +51,14 @@ function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+function resolveTransactionalProvider(): string {
+  if (env.transactionalEmail.mode === "mock") {
+    return "mock";
+  }
+  const p = env.transactionalEmail.provider;
+  return p || "transactional";
+}
+
 function recipientFromOrder(order: SmsOrderRow): string | null {
   const candidates = [
     order.checkout_email,
@@ -103,7 +111,7 @@ export async function logEmailAttempt(
     template_key: input.templateKey,
     subject: input.subject,
     status: input.status,
-    provider: input.provider ?? (isTransactionalEmailMock() ? "mock" : "transactional"),
+    provider: input.provider ?? resolveTransactionalProvider(),
     provider_message_id: input.providerMessageId ?? null,
     error_message: input.errorMessage ?? null,
     metadata: input.metadata ?? {},
@@ -127,12 +135,69 @@ export async function logEmailAttempt(
 }
 
 async function deliverEmail(
-  _input: SendTransactionalEmailInput,
+  input: SendTransactionalEmailInput,
 ): Promise<{ providerMessageId: string | null }> {
   if (isTransactionalEmailMock()) {
     return { providerMessageId: `mock-${Date.now()}` };
   }
-  throw new Error("EMAIL_MODE real no configurado aún");
+
+  if (env.transactionalEmail.mode !== "provider") {
+    throw new Error("EMAIL_MODE inválido; usa mock o provider.");
+  }
+
+  if (env.transactionalEmail.provider !== "resend") {
+    throw new Error("EMAIL_PROVIDER no soportado (solo resend por ahora).");
+  }
+
+  const apiKey = env.transactionalEmail.resendApiKey?.trim();
+  if (!apiKey) {
+    throw new Error("Falta RESEND_API_KEY para envío real.");
+  }
+
+  const fromAddress = env.transactionalEmail.fromAddress?.trim();
+  const fromName = env.transactionalEmail.fromName?.trim() || "Telvoice";
+  if (!fromAddress || !fromAddress.includes("@")) {
+    throw new Error("Falta EMAIL_FROM_ADDRESS válido.");
+  }
+
+  const replyTo = env.transactionalEmail.replyTo?.trim();
+  if (!replyTo || !replyTo.includes("@")) {
+    throw new Error("Falta EMAIL_REPLY_TO válido.");
+  }
+
+  const from = `${fromName} <${fromAddress}>`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: [input.recipientEmail],
+      subject: input.subject,
+      html: input.html,
+      text: input.text,
+      reply_to: replyTo,
+    }),
+  });
+
+  const data = (await res.json().catch(() => ({}))) as {
+    id?: string;
+    error?: { message?: string };
+    message?: string;
+  };
+
+  if (!res.ok) {
+    const msg =
+      data?.error?.message ||
+      data?.message ||
+      `Resend error HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+
+  return { providerMessageId: data.id ?? null };
 }
 
 export async function sendTransactionalEmail(

@@ -87,14 +87,25 @@ function normalizeBillingEmailMode(value: string): BillingEmailMode {
   return "mock";
 }
 
-export type TransactionalEmailMode = "mock" | "resend" | "sendgrid" | "smtp";
+export type TransactionalEmailMode = "mock" | "provider";
+export type TransactionalEmailProvider = "resend" | "sendgrid" | "smtp" | "";
 
 function normalizeTransactionalEmailMode(value: string): TransactionalEmailMode {
+  const v = value.trim().toLowerCase();
+  if (v === "provider") {
+    return "provider";
+  }
+  return "mock";
+}
+
+function normalizeTransactionalEmailProvider(
+  value: string,
+): TransactionalEmailProvider {
   const v = value.trim().toLowerCase();
   if (v === "resend" || v === "sendgrid" || v === "smtp") {
     return v;
   }
-  return "mock";
+  return "";
 }
 
 export const env = {
@@ -219,6 +230,8 @@ export const env = {
   },
   transactionalEmail: {
     mode: normalizeTransactionalEmailMode(optionalEnv("EMAIL_MODE", "mock")),
+    provider: normalizeTransactionalEmailProvider(optionalEnv("EMAIL_PROVIDER")),
+    resendApiKey: optionalEnv("RESEND_API_KEY"),
     fromName: optionalEnv("EMAIL_FROM_NAME", "Telvoice"),
     fromAddress: optionalEnv("EMAIL_FROM_ADDRESS", "no-reply@telvoice.cl"),
     replyTo: optionalEnv("EMAIL_REPLY_TO", "soporte@telvoice.cl"),
