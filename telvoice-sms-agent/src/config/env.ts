@@ -116,11 +116,14 @@ export const env = {
   supabase: {
     url: normalizeSupabaseUrl(optionalEnv("SUPABASE_URL")),
     serviceRoleKey: optionalEnv("SUPABASE_SERVICE_ROLE_KEY"),
-    /** Para login Google en frontend (Supabase Auth). */
+    /**
+     * URL pública de Supabase para login Google (/login).
+     * Se lee al arrancar Node (dotenv); no hay bundle Vite con import.meta.env.
+     */
     publicUrl: normalizeSupabaseUrl(
       optionalEnv("VITE_SUPABASE_URL", optionalEnv("SUPABASE_URL")),
     ),
-    /** Anon/publishable key (NUNCA service_role). */
+    /** Anon/publishable key de Supabase (NUNCA service_role). */
     publishableKey: optionalEnv("VITE_SUPABASE_PUBLISHABLE_KEY"),
   },
   encryptionKey: optionalEnv("ENCRYPTION_KEY"),
@@ -251,4 +254,33 @@ export function buildTelsimWebhookUrl(): string | undefined {
 
 export function isProduction(): boolean {
   return env.nodeEnv === "production";
+}
+
+export type GoogleAuthEnvIssue = {
+  kind: "missing_public_url" | "missing_publishable_key";
+  message: string;
+};
+
+/** Variables necesarias para renderizar /login y /auth/callback con Supabase Auth. */
+export function getGoogleAuthEnvIssues(): GoogleAuthEnvIssue[] {
+  const issues: GoogleAuthEnvIssue[] = [];
+  if (!env.supabase.publicUrl) {
+    issues.push({
+      kind: "missing_public_url",
+      message:
+        "Falta la URL de Supabase: define VITE_SUPABASE_URL o SUPABASE_URL en el .env del servidor.",
+    });
+  }
+  if (!env.supabase.publishableKey) {
+    issues.push({
+      kind: "missing_publishable_key",
+      message:
+        "Falta la clave pública: define VITE_SUPABASE_PUBLISHABLE_KEY (anon/publishable en Supabase › Project Settings › API). No uses SUPABASE_SERVICE_ROLE_KEY en el login.",
+    });
+  }
+  return issues;
+}
+
+export function isGoogleAuthConfigured(): boolean {
+  return getGoogleAuthEnvIssues().length === 0;
 }

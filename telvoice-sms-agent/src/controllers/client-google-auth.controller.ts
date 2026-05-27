@@ -8,7 +8,9 @@ import {
 export function getClientLoginPage(req: Request, res: Response): void {
   const error =
     typeof req.query.error === "string" ? req.query.error : undefined;
-  res.type("html").send(renderClientLoginPage({ error }));
+  const detail =
+    typeof req.query.detail === "string" ? req.query.detail : undefined;
+  res.type("html").send(renderClientLoginPage({ error, detail }));
 }
 
 export function getAuthCallbackPage(_req: Request, res: Response): void {

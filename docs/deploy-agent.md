@@ -159,6 +159,7 @@ Revisa el run en **Actions** → **Deploy agent.telvoice.cl** → paso que fall�
 | `pm2` no encontrado | PM2 no instalado o fuera del `PATH` del usuario SSH | `npm i -g pm2` o ruta en el perfil del usuario |
 | Health local falla | `.env` ausente, `PORT` distinto o app no arranca | `pm2 logs telvoice-sms-agent`; `curl` local en el VPS; variables en `.env` |
 | Health público falla pero local OK | Proxy, DNS, firewall o servicio no expuesto | Nginx/reverse proxy; que el proceso escuche en el puerto esperado |
+| `/login` dice “Login con Google no configurado” | Faltan variables en `.env` del VPS o PM2 no recargó el entorno | Ver sección **Login Google (Supabase Auth)** abajo |
 
 ### Incidentes de GitHub (histórico)
 
@@ -211,7 +212,66 @@ bash scripts/deploy-vps.sh
 
 ---
 
-## 8. Verificar PM2 y logs
+## 8. Login Google (Supabase Auth) — `/login`
+
+**agent.telvoice.cl no se despliega en Vercel.** Es el agente Node en el VPS (`pm2`, ruta típica `/var/www/telvoice-sms-agent`). La landing **www.telvoice.cl** sí puede estar en Vercel; no confundir los `.env`.
+
+El login con Google **no** es un frontend Vite independiente: Express renderiza `/login` e inyecta la URL y la clave **anon** en el HTML. Las variables se leen con **dotenv al arrancar Node**, no se embeben en `npm run build` (el build solo compila TypeScript y CSS).
+
+| Variable | Dónde obtenerla | Uso |
+|----------|-----------------|-----|
+| `VITE_SUPABASE_URL` | Supabase → Project Settings → API → Project URL | URL del proyecto (mismo valor que `SUPABASE_URL`) |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase → API → **anon** / publishable (clave pública) | Solo en el navegador para OAuth |
+| `SUPABASE_URL` | Igual que arriba | Backend + fallback si `VITE_SUPABASE_URL` está vacío |
+| `SUPABASE_SERVICE_ROLE_KEY` | API → service_role | **Solo servidor**; nunca en `/login` |
+
+### Dónde ponerlas en producción
+
+Archivo en el VPS (no se commitea):
+
+```text
+/var/www/telvoice-sms-agent/.env
+```
+
+Ejemplo (valores reales desde el dashboard de Supabase; no copiar de este doc):
+
+```env
+VITE_SUPABASE_URL=https://TU_PROYECTO.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_URL=https://TU_PROYECTO.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=...
+```
+
+En **Supabase → Authentication → URL Configuration**:
+
+- **Site URL:** `https://agent.telvoice.cl`
+- **Redirect URLs:** `https://agent.telvoice.cl/auth/callback` (y `http://localhost:3001/auth/callback` para desarrollo)
+
+Habilita **Google** y, si usas Magic Link, el proveedor **Email** con confirmación según tu política.
+
+### Comandos tras editar `.env`
+
+```bash
+cd /var/www/telvoice-sms-agent
+npm run build
+pm2 restart telvoice-sms-agent --update-env
+pm2 logs telvoice-sms-agent --lines 30
+curl -sf http://127.0.0.1:3001/health
+```
+
+`npm run build` no necesita las `VITE_*` para compilar, pero el deploy habitual las ejecuta igual. Lo crítico es **`pm2 restart … --update-env`** para que Node vuelva a leer `.env`.
+
+### Cómo comprobar que el proceso las ve
+
+Tras el restart, en los logs de arranque no debe aparecer:
+
+`[auth] Login Google deshabilitado: faltan VITE_SUPABASE_URL…`
+
+Abre https://agent.telvoice.cl/login: el botón “Continuar con Google” debe estar habilitado (sin el recuadro rojo de configuración).
+
+---
+
+## 9. Verificar PM2 y logs
 
 ```bash
 pm2 list
@@ -223,17 +283,18 @@ Estado esperado: `online`.
 
 ---
 
-## 9. Verificación post-deploy
+## 10. Verificación post-deploy
 
 | URL | Esperado |
 |-----|----------|
 | https://agent.telvoice.cl/health | JSON `status: ok` |
-| https://agent.telvoice.cl/admin/login | Página de login |
+| https://agent.telvoice.cl/admin/login | Página de login admin |
+| https://agent.telvoice.cl/login | Login cliente (Google) |
 | https://agent.telvoice.cl/app/dashboard | Redirect login o panel cliente |
 
 ---
 
-## 10. Seguridad
+## 11. Seguridad
 
 - No imprimir secretos en logs del workflow.
 - No commitear `.env`, claves SSH ni contraseñas.

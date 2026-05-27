@@ -148,7 +148,7 @@ export async function postPublicClaim(
 
     const body = req.body as Record<string, unknown>;
     const claimToken = String(body.claim_token ?? "").trim();
-    const supabaseUserId =
+    const bodySupabaseUserId =
       typeof body.supabase_user_id === "string"
         ? body.supabase_user_id.trim()
         : "";
@@ -156,7 +156,7 @@ export async function postPublicClaim(
     if (!claimToken || claimToken.length < 16) {
       throw new ValidationError("claim_token inválido.");
     }
-    if (supabaseUserId && supabaseUserId !== verified.userId) {
+    if (bodySupabaseUserId && bodySupabaseUserId !== verified.userId) {
       res.status(403).json({ ok: false, error: "user_mismatch" });
       return;
     }
@@ -168,7 +168,7 @@ export async function postPublicClaim(
     const { data: profile, error: profErr } = await getSupabase()
       .from("user_profiles")
       .select("company_id")
-      .eq("user_id", supabaseUserId)
+      .eq("user_id", verified.userId)
       .maybeSingle();
     if (profErr) {
       wrapSupabaseError(profErr, "publicClaim.profile");

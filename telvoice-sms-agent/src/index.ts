@@ -1,6 +1,6 @@
 import { createApp } from "./app.js";
 import { setBootstrapWarning } from "./config/bootstrap-status.js";
-import { env } from "./config/env.js";
+import { env, isGoogleAuthConfigured } from "./config/env.js";
 import { ensureTestClientSetup } from "./services/clientService.js";
 import { startSmsQueueScheduler } from "./services/smsQueueScheduler.js";
 import { startTelegramPollingIfEnabled } from "./services/telegramPolling.js";
@@ -65,6 +65,13 @@ app.listen(env.port, () => {
   console.info(`Health: http://localhost:${env.port}/health`);
   console.info(`Admin:  ${env.publicAppUrl}/admin`);
   console.info(`Login:  ${env.publicAppUrl}/admin/login`);
+  console.info(`Cliente Google: ${env.publicAppUrl}/login`);
+
+  if (!isGoogleAuthConfigured()) {
+    console.warn(
+      "[auth] Login Google deshabilitado: faltan VITE_SUPABASE_URL (o SUPABASE_URL) y/o VITE_SUPABASE_PUBLISHABLE_KEY en .env. Reinicia el proceso tras editarlas.",
+    );
+  }
 
   if (env.telegram.botToken) {
     console.info(`Telegram: modo ${env.telegram.mode}`);

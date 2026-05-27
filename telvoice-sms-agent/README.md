@@ -121,7 +121,13 @@ Apunta el dominio al proceso Node (puerto `PORT`). Configura:
 PUBLIC_APP_URL=https://agent.telvoice.cl
 PUBLIC_WEBHOOK_BASE_URL=https://agent.telvoice.cl
 NODE_ENV=production
+SUPABASE_URL=https://TU_PROYECTO.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=...
+VITE_SUPABASE_URL=https://TU_PROYECTO.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=...   # anon key, NUNCA service_role
 ```
+
+Login cliente con Google: `https://agent.telvoice.cl/login`. Variables y comandos en el VPS: `docs/deploy-agent.md` (sección Login Google).
 
 Rutas públicas esperadas:
 
