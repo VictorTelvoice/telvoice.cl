@@ -120,7 +120,8 @@ function renderDlrPieChart(
 function renderDashboardBarChart(days: ClientDashboardDayVolume[]): string {
   const values = days.map((d) => d.count);
   const max = Math.max(...values, 1);
-  const minBarPct = 18;
+  /** Piso suave para días con pocos SMS respecto al pico (sin inflar tanto como antes). */
+  const minBarPct = 6;
 
   const bars = days
     .map((day, i) => {

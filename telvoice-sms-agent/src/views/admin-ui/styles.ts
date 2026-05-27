@@ -384,16 +384,25 @@ export function getAdminStyles(): string {
     .tv-section-head__sub { margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--tv-muted); }
     .tv-chart {
       display: flex;
-      align-items: flex-end;
+      /* stretch: cada columna ocupa la altura del gráfico; así height:% de la barra es respecto al día pico */
+      align-items: stretch;
       gap: 0.5rem;
       height: 160px;
       padding-top: 0.5rem;
     }
-    .tv-chart__col { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
-    .tv-chart__bar-wrap {
+    .tv-chart__col {
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 0;
+      min-height: 0;
+    }
+    .tv-chart__bar-wrap {
+      flex: 1 1 0;
       width: 100%;
       max-width: 48px;
+      min-height: 0;
       display: flex;
       align-items: flex-end;
       justify-content: center;

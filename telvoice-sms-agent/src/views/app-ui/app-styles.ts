@@ -731,10 +731,14 @@ export function getAppPanelStyles(): string {
     }
     .tv-chart--dashboard {
       height: 220px;
+      align-items: stretch;
       gap: 0.4rem;
       padding-top: 0.25rem;
       position: relative;
       padding-bottom: 1.5rem;
+    }
+    .tv-chart--dashboard .tv-chart__col {
+      min-height: 0;
     }
     .tv-chart--dashboard .tv-chart__bar-wrap {
       max-width: 56px;
