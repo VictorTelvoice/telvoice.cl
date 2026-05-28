@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Tu compra en Telvoice.cl fue confirmada. Estamos creando tu cuenta y activando tu bolsa SMS." />
-  <title>Compra confirmada | Telvoice.cl</title>
+  <meta name="description" content="Tu pago con Mercado Pago fue recibido. Telvoice validará la compra y activará tu bolsa SMS." />
+  <title>Pago recibido | Telvoice.cl</title>
   <link rel="canonical" href="https://www.telvoice.cl/pago-exitoso/" />
-  <meta name="robots" content="noindex, follow" />
+
   <link rel="icon" href="../assets/telvoice-isotipo.png" type="image/png" />
   <meta name="theme-color" content="#0052cc" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet" />
@@ -23,29 +23,20 @@
     </div>
   </header>
   <main class="payment-main">
-    <div id="payment-card" class="payment-card">
+    <div class="payment-card">
       <span class="payment-icon payment-icon--ok material-symbols-outlined" aria-hidden="true">check_circle</span>
       <h1 id="payment-return-title" class="payment-title">Pago recibido</h1>
       <p id="payment-return-text" class="payment-text">Tu pago fue recibido correctamente. Estamos validando la compra y activando tu bolsa SMS.</p>
+
       <div id="payment-order-summary" class="payment-order-summary" hidden></div>
-      <div id="payment-account-box" class="payment-account-box" hidden>
-        <h2 class="payment-account-box__title">Tu pago fue recibido</h2>
-        <p class="payment-account-box__text">Para usar tus SMS, activa tu cuenta con Google usando el mismo correo que utilizaste al pagar.</p>
-        <ol class="payment-steps">
-          <li><span class="payment-steps__num">1</span><span>Validamos tu compra y asignamos tu bolsa de mensajes.</span></li>
-          <li><span class="payment-steps__num">2</span><span>Activa tu cuenta con Google para acceder a la plataforma.</span></li>
-          <li><span class="payment-steps__num">3</span><span>Tu bolsa quedará disponible para enviar SMS.</span></li>
-        </ol>
-      </div>
-      <p id="payment-email-note" class="payment-sub" hidden></p>
       <p id="payment-return-meta" class="payment-sub" hidden></p>
+      <p id="payment-email-note" class="payment-sub" hidden></p>
       <div class="payment-actions">
-        <a id="payment-tutorial-btn" href="../ayuda/" class="payment-btn payment-btn--secondary" hidden data-track="click_tutorial_post_compra">Centro de ayuda</a>
         <a class="payment-btn payment-btn--primary" href="../">Volver al inicio</a>
+        
       </div>
     </div>
   </main>
   <script src="../js/payment-return.js"></script>
-  <script src="../js/telvoice-web-agent-loader.js" data-root="../"></script>
 </body>
 </html>
