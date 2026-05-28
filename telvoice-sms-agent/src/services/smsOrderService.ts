@@ -448,20 +448,58 @@ export async function markOrderPaid(
   return data as SmsOrderRow;
 }
 
+async function ensureDefaultRatePlanAfterCredit(
+  order: SmsOrderRow,
+  orderId: string,
+  actorUserId?: string | null,
+  source = "order_credit",
+): Promise<void> {
+  if (!order.company_id) {
+    return;
+  }
+  try {
+    const { ensureDefaultRetailRatePlanForCompany } = await import(
+      "./defaultRetailRatePlanService.js"
+    );
+    await ensureDefaultRetailRatePlanForCompany(order.company_id, {
+      orderId,
+      actorUserId,
+      source,
+    });
+  } catch (ratePlanErr) {
+    console.error(
+      "[order] default retail rate plan assignment failed",
+      orderId,
+      ratePlanErr,
+    );
+  }
+}
+
 export async function confirmOrderCredit(
   orderId: string,
   actorUserId?: string | null,
-  options?: { allowManualWithoutPaid?: boolean },
+  options?: {
+    allowManualWithoutPaid?: boolean;
+    ratePlanSource?: string;
+  },
 ): Promise<{
   order: SmsOrderRow;
   alreadyCredited: boolean;
 }> {
+  const ratePlanSource = options?.ratePlanSource ?? "order_credit";
+
   const order = await getOrderById(orderId);
   if (!order) {
     throw new AppError("Orden no encontrada.", 404);
   }
 
   if (order.credit_status === "credited") {
+    await ensureDefaultRatePlanAfterCredit(
+      order,
+      orderId,
+      actorUserId,
+      ratePlanSource,
+    );
     return { order, alreadyCredited: true };
   }
 
@@ -500,8 +538,15 @@ export async function confirmOrderCredit(
       .eq("id", orderId)
       .select("*")
       .single();
+    const creditedOrder = (synced ?? order) as SmsOrderRow;
+    await ensureDefaultRatePlanAfterCredit(
+      creditedOrder,
+      orderId,
+      actorUserId,
+      ratePlanSource,
+    );
     return {
-      order: (synced ?? order) as SmsOrderRow,
+      order: creditedOrder,
       alreadyCredited: true,
     };
   }
@@ -517,6 +562,12 @@ export async function confirmOrderCredit(
     if (isDuplicateKeyError(error)) {
       const current = await getOrderById(orderId);
       if (current?.credit_status === "credited") {
+        await ensureDefaultRatePlanAfterCredit(
+          current,
+          orderId,
+          actorUserId,
+          ratePlanSource,
+        );
         return { order: current, alreadyCredited: true };
       }
       const { data: synced } = await getSupabase()
@@ -532,8 +583,15 @@ export async function confirmOrderCredit(
         .eq("id", orderId)
         .select("*")
         .single();
+      const creditedOrder = (synced ?? current ?? order) as SmsOrderRow;
+      await ensureDefaultRatePlanAfterCredit(
+        creditedOrder,
+        orderId,
+        actorUserId,
+        ratePlanSource,
+      );
       return {
-        order: (synced ?? current ?? order) as SmsOrderRow,
+        order: creditedOrder,
         alreadyCredited: true,
       };
     }
@@ -577,5 +635,13 @@ export async function confirmOrderCredit(
     metadata: { step: "credit", smsQuantity: order.sms_quantity },
   });
 
-  return { order: data as SmsOrderRow, alreadyCredited: false };
+  const creditedOrder = data as SmsOrderRow;
+  await ensureDefaultRatePlanAfterCredit(
+    creditedOrder,
+    orderId,
+    actorUserId,
+    ratePlanSource,
+  );
+
+  return { order: creditedOrder, alreadyCredited: false };
 }

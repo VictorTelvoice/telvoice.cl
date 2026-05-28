@@ -64,6 +64,18 @@ export type SmsLiveCampaignConfig = {
   maxSegments: number;
 };
 
+/** Rate plan retail asignado automáticamente tras claim/compra sin plan activo. */
+export type DefaultRetailRatePlanConfig = {
+  ratePlanId: string;
+  ratePlanCode: string;
+  country: string;
+  maxTps: number;
+  liveEnabled: boolean;
+  campaignsEnabled: boolean;
+  apiEnabled: boolean;
+  trafficTypes: string[];
+};
+
 function parsePositiveIntEnv(name: string, fallback: number): number {
   const raw = optionalEnv(name, String(fallback));
   const n = Number.parseInt(raw, 10);
@@ -253,6 +265,26 @@ export const env = {
     fromAddress: optionalEnv("EMAIL_FROM_ADDRESS", "no-reply@telvoice.cl"),
     replyTo: optionalEnv("EMAIL_REPLY_TO", "soporte@telvoice.cl"),
   },
+  defaultRetailRatePlan: {
+    ratePlanId: optionalEnv(
+      "PUBLIC_CHECKOUT_DEFAULT_RATE_PLAN_ID",
+      "5002ddd5-0732-4bf5-affd-d1e692ca39f0",
+    ),
+    ratePlanCode: optionalEnv(
+      "PUBLIC_CHECKOUT_DEFAULT_RATE_PLAN_CODE",
+      "TELVOICE_CL_RETAIL",
+    ),
+    country: optionalEnv("PUBLIC_CHECKOUT_DEFAULT_COUNTRY", "CL").toUpperCase(),
+    maxTps: parsePositiveIntEnv("PUBLIC_CHECKOUT_DEFAULT_MAX_TPS", 1),
+    liveEnabled:
+      optionalEnv("PUBLIC_CHECKOUT_DEFAULT_LIVE_ENABLED", "true") === "true",
+    campaignsEnabled:
+      optionalEnv("PUBLIC_CHECKOUT_DEFAULT_CAMPAIGNS_ENABLED", "false") ===
+      "true",
+    apiEnabled:
+      optionalEnv("PUBLIC_CHECKOUT_DEFAULT_API_ENABLED", "false") === "true",
+    trafficTypes: ["transactional", "promotional"],
+  } satisfies DefaultRetailRatePlanConfig,
 } as const;
 
 export function isBillingEmailMock(): boolean {

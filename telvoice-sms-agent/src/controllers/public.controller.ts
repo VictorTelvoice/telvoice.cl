@@ -344,7 +344,10 @@ export async function postPublicClaim(
       return;
     }
 
-    await confirmOrderCredit(order.id, null, { allowManualWithoutPaid: false });
+    await confirmOrderCredit(order.id, null, {
+      allowManualWithoutPaid: false,
+      ratePlanSource: "public_checkout_claim",
+    });
 
     try {
       await runBillingSyncBestEffort(order.id, { source: "public_claim" });

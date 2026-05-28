@@ -17,6 +17,7 @@ import {
   paymentMethodLabel,
   renderSaOrderStatusBadges,
 } from "../../../utils/order-display.js";
+import { formatRatePlanAssignmentForAdmin } from "../../../services/defaultRetailRatePlanService.js";
 import { escapeHtml, formatDate } from "../../../utils/html.js";
 import {
   isCustomerVisible,
@@ -611,6 +612,11 @@ export function renderSaOrderDetailPage(
          </form>
        </div>`;
 
+  const ratePlanAssign = formatRatePlanAssignmentForAdmin(o);
+  const ratePlanAlert = ratePlanAssign.alert
+    ? `<div class="alert alert-warning" role="status" style="margin-top:1rem">${escapeHtml(ratePlanAssign.detail)}</div>`
+    : "";
+
   const auditRowsList = mercadoPagoPaymentAuditRows(o);
   const auditRowsHtml = auditRowsList
     .map(
@@ -640,6 +646,7 @@ export function renderSaOrderDetailPage(
       actions: renderBtn("Volver a compras", { href: "/admin/orders", variant: "secondary" }),
     })}
     ${creditWarning}
+    ${ratePlanAlert}
     <div class="tv-dash-grid tv-dash-grid--2">
       <section class="tv-panel">
         <h2 class="tv-panel__title">Cliente y empresa</h2>
@@ -664,6 +671,7 @@ export function renderSaOrderDetailPage(
           <div><dt>Método pago</dt><dd>${escapeHtml(paymentMethodLabel(o.payment_provider))}</dd></div>
           <div><dt>Checkout</dt><dd>${escapeHtml(checkoutModeLabel(o.metadata))}</dd></div>
           <div><dt>Origen</dt><dd>${escapeHtml(String(o.metadata?.source ?? "—"))}</dd></div>
+          <div><dt>Rate plan (auto)</dt><dd><strong>${escapeHtml(ratePlanAssign.status)}</strong><br /><span class="field-hint">${escapeHtml(ratePlanAssign.detail)}</span></dd></div>
         </dl>
       </section>
     </div>
