@@ -138,6 +138,60 @@ async function assignTrafficTypesToCompany(input: {
   return createdIds;
 }
 
+/**
+ * Alinea flags operativos en filas TELVOICE CL Retail existentes (upgrade only).
+ * No hace downgrade de max_tps ni desactiva live/campaigns.
+ */
+export async function ensureRetailOperationalFlagsForCompany(
+  companyId: string,
+  options?: { ratePlanId?: string },
+): Promise<{ updatedIds: string[] }> {
+  const config = getDefaultRetailRatePlanConfig();
+  const { ratePlan } = await getDefaultRetailRatePlan();
+  const targetPlanId = options?.ratePlanId ?? ratePlan?.id ?? config.ratePlanId;
+  const country = config.country.trim().toUpperCase();
+  const targetTps = normalizeClientMaxTps(config.maxTps);
+  const plans = await listActiveCompanyRatePlans(companyId, country);
+  const updatedIds: string[] = [];
+
+  for (const plan of plans) {
+    if (plan.rate_plan_id !== targetPlanId) {
+      continue;
+    }
+
+    const patch: Record<string, unknown> = {};
+    if (!plan.live_enabled) {
+      patch.live_enabled = true;
+    }
+    if (!plan.campaigns_enabled) {
+      patch.campaigns_enabled = true;
+    }
+    if (plan.api_enabled) {
+      patch.api_enabled = false;
+    }
+    const currentTps = Number(plan.max_tps ?? 1);
+    if (currentTps < targetTps) {
+      patch.max_tps = targetTps;
+    }
+
+    if (Object.keys(patch).length === 0) {
+      continue;
+    }
+
+    const { error } = await getSupabase()
+      .from("company_rate_plans")
+      .update(patch)
+      .eq("id", plan.id);
+
+    if (error) {
+      wrapSupabaseError(error, "ensureRetailOperationalFlagsForCompany");
+    }
+    updatedIds.push(plan.id);
+  }
+
+  return { updatedIds };
+}
+
 export async function assignDefaultRetailRatePlanToCompany(
   companyId: string,
   options?: {
@@ -150,12 +204,24 @@ export async function assignDefaultRetailRatePlanToCompany(
   const source = options?.source ?? "default_retail_auto";
 
   if (await hasActiveRetailRatePlan(companyId)) {
+    const { ratePlan } = await getDefaultRetailRatePlan();
+    const upgraded = await ensureRetailOperationalFlagsForCompany(companyId, {
+      ratePlanId: ratePlan?.id,
+    });
     const result: RetailRatePlanAssignmentResult = {
-      status: "skipped_already_has_active_rate_plan",
+      status:
+        upgraded.updatedIds.length > 0
+          ? "upgraded_existing_rate_plan"
+          : "skipped_already_has_active_rate_plan",
       at,
       source,
-      skipped: true,
-      reason: "already_has_active_rate_plan",
+      skipped: upgraded.updatedIds.length === 0,
+      reason:
+        upgraded.updatedIds.length > 0
+          ? "retail_flags_upgraded"
+          : "already_has_active_rate_plan",
+      rate_plan_id: ratePlan?.id,
+      company_rate_plan_ids: upgraded.updatedIds,
     };
     if (options?.orderId) {
       await patchOrderRatePlanMetadata(options.orderId, result);
@@ -185,8 +251,16 @@ export async function assignDefaultRetailRatePlanToCompany(
       config,
     });
 
+    const upgraded = await ensureRetailOperationalFlagsForCompany(companyId, {
+      ratePlanId: ratePlan.id,
+    });
+
     const status: RetailRatePlanAssignmentStatus =
-      createdIds.length > 0 ? "assigned" : "already_assigned";
+      createdIds.length > 0
+        ? "assigned"
+        : upgraded.updatedIds.length > 0
+          ? "upgraded_existing_rate_plan"
+          : "already_assigned";
 
     const result: RetailRatePlanAssignmentResult = {
       status,

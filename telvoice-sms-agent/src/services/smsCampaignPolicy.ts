@@ -1,9 +1,7 @@
 import { env } from "../config/env.js";
 import { AppError } from "../utils/errors.js";
-import {
-  isCompanyAllowedForLiveTest,
-  isNumberAllowedForLiveTest,
-} from "./smsLiveTestPolicy.js";
+import { resolveCompanyLiveSendAuthorized } from "./smsLiveTestPolicy.js";
+import { isNumberAllowedForLiveTest } from "./smsLiveTestPolicy.js";
 import { isAsmscConfigured } from "./sms-providers/realApiProvider.js";
 import { validateRecipientNumber } from "./smsSegmentService.js";
 
@@ -28,13 +26,13 @@ export function assertCampaignDispatchEnabled(): void {
 }
 
 /** Valida destinatario de campaña (sin pacing entre envíos). */
-export function assertCampaignRecipientAllowed(input: {
+export async function assertCampaignRecipientAllowed(input: {
   companyId: string;
   to: string;
-}): string {
+}): Promise<string> {
   assertCampaignDispatchEnabled();
 
-  if (!isCompanyAllowedForLiveTest(input.companyId)) {
+  if (!(await resolveCompanyLiveSendAuthorized(input.companyId))) {
     throw new AppError(
       "La empresa no está autorizada para envío SMS.",
       403,

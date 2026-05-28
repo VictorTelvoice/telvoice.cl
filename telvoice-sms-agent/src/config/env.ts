@@ -39,6 +39,8 @@ export type SmsProviderConfig = {
   mode: SmsProviderMode;
   provider: string;
   liveTestEnabled: boolean;
+  /** QA/demo sin rate plan. Clientes con plan CL + live_enabled pueden enviar si true. */
+  allowRatePlanCompaniesToSend: boolean;
   liveTestAllowedCompanyIds: string[];
   liveTestAllowedNumbers: string[];
   liveTestDailyLimit: number;
@@ -207,6 +209,8 @@ export const env = {
     mode: normalizeSmsProviderMode(optionalEnv("SMS_PROVIDER_MODE", "live_test")),
     provider: optionalEnv("SMS_PROVIDER", "real_api"),
     liveTestEnabled: optionalEnv("SMS_LIVE_TEST_ENABLED", "true") === "true",
+    allowRatePlanCompaniesToSend:
+      optionalEnv("ALLOW_RATE_PLAN_COMPANIES_TO_SEND", "true") === "true",
     liveTestAllowedCompanyIds: parseCsvEnv("SMS_LIVE_TEST_ALLOWED_COMPANY_IDS"),
     liveTestAllowedNumbers: parseCsvEnv("SMS_LIVE_TEST_ALLOWED_NUMBERS"),
     liveTestDailyLimit: parsePositiveIntEnv("SMS_LIVE_TEST_DAILY_LIMIT", 10_000),
@@ -275,11 +279,11 @@ export const env = {
       "TELVOICE_CL_RETAIL",
     ),
     country: optionalEnv("PUBLIC_CHECKOUT_DEFAULT_COUNTRY", "CL").toUpperCase(),
-    maxTps: parsePositiveIntEnv("PUBLIC_CHECKOUT_DEFAULT_MAX_TPS", 1),
+    maxTps: parsePositiveIntEnv("PUBLIC_CHECKOUT_DEFAULT_MAX_TPS", 2),
     liveEnabled:
       optionalEnv("PUBLIC_CHECKOUT_DEFAULT_LIVE_ENABLED", "true") === "true",
     campaignsEnabled:
-      optionalEnv("PUBLIC_CHECKOUT_DEFAULT_CAMPAIGNS_ENABLED", "false") ===
+      optionalEnv("PUBLIC_CHECKOUT_DEFAULT_CAMPAIGNS_ENABLED", "true") ===
       "true",
     apiEnabled:
       optionalEnv("PUBLIC_CHECKOUT_DEFAULT_API_ENABLED", "false") === "true",

@@ -14,10 +14,13 @@ SMS_PROVIDER=real_api
 # Habilitar opción live_test en /app (requiere mode=live_test + credenciales aSMSC)
 SMS_LIVE_TEST_ENABLED=false
 
-# Lista obligatoria para apertura controlada (UUIDs separados por coma). Vacío = ninguna empresa.
+# Clientes retail con rate plan CL activo + live_enabled (no requieren allowlist manual)
+ALLOW_RATE_PLAN_COMPANIES_TO_SEND=true
+
+# QA/demo sin rate plan (UUIDs separados por coma). Vacío = no exige allowlist si ALLOW_RATE_PLAN…=true
 SMS_LIVE_TEST_ALLOWED_COMPANY_IDS=
 
-# Lista obligatoria de destinos (+569…). Vacío = ningún número.
+# Restricción de destinos en envío individual (campañas usan SMS_CAMPAIGN_SKIP_NUMBER_WHITELIST)
 SMS_LIVE_TEST_ALLOWED_NUMBERS=
 
 # Límites operativos (Etapa 10.3)
@@ -36,8 +39,10 @@ PUBLIC_WEBHOOK_BASE_URL=https://agent.telvoice.cl
 |----------|-------------|
 | `SMS_PROVIDER_MODE` | `mock` (default) o `live_test` |
 | `SMS_LIVE_TEST_ENABLED` | `true` para mostrar “Envío real controlado” en `/app` |
-| `SMS_LIVE_TEST_ALLOWED_COMPANY_IDS` | Empresas autorizadas (obligatorio si live está activo) |
-| `SMS_LIVE_TEST_ALLOWED_NUMBERS` | Números destino autorizados |
+| `ALLOW_RATE_PLAN_COMPANIES_TO_SEND` | `true`: empresas con plan CL + `live_enabled` envían sin estar en allowlist |
+| `SMS_LIVE_TEST_ALLOWED_COMPANY_IDS` | Allowlist opcional para QA/demo sin rate plan |
+| `SMS_LIVE_TEST_ALLOWED_NUMBERS` | Allowlist opcional de destinos (envío individual) |
+| `PUBLIC_CHECKOUT_DEFAULT_CAMPAIGNS_ENABLED` | `true` para nuevas companies retail (campañas en panel) |
 | `SMS_LIVE_TEST_DAILY_LIMIT` | Máx. SMS reales por empresa por día (default 3) |
 | `SMS_LIVE_TEST_MIN_SECONDS_BETWEEN_SENDS` | Intervalo mínimo entre envíos (default 60) |
 | `SMS_LIVE_TEST_MAX_SEGMENTS` | Máx. segmentos por mensaje en live_test (default 1) |
@@ -47,7 +52,8 @@ PUBLIC_WEBHOOK_BASE_URL=https://agent.telvoice.cl
 1. `ASMSC_API_ID` + `ASMSC_API_PASSWORD` configurados.
 2. `SMS_PROVIDER_MODE=live_test`
 3. `SMS_LIVE_TEST_ENABLED=true`
-4. Definir `SMS_LIVE_TEST_ALLOWED_COMPANY_IDS` y `SMS_LIVE_TEST_ALLOWED_NUMBERS`.
+4. `ALLOW_RATE_PLAN_COMPANIES_TO_SEND=true` (producción retail). Allowlist solo para QA sin plan.
+5. Opcional: `SMS_LIVE_TEST_ALLOWED_COMPANY_IDS` / `SMS_LIVE_TEST_ALLOWED_NUMBERS` para pruebas acotadas.
 5. Ajustar límites si hace falta (`DAILY_LIMIT`, `MIN_SECONDS`, `MAX_SEGMENTS`).
 6. Reiniciar PM2: `pm2 restart telvoice-sms-agent --update-env`
 

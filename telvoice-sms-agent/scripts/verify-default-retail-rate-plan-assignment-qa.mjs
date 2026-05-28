@@ -105,8 +105,8 @@ try {
   assert(plans.rows.some((p) => p.traffic_type === "promotional"), "promotional");
   const tx = plans.rows.find((p) => p.traffic_type === "transactional");
   assert(tx.live_enabled === true, "live_enabled");
-  assert(tx.campaigns_enabled === false, "campaigns_enabled");
-  assert(Number(tx.max_tps) === 1, "max_tps");
+  assert(tx.campaigns_enabled === true, "campaigns_enabled");
+  assert(Number(tx.max_tps) === 2, "max_tps");
   console.log("OK 2-8: company_rate_plans asignados");
 
   const countPlans = plans.rows.length;
@@ -145,10 +145,17 @@ try {
     source: "verify_qa_skip",
   });
   assert(
-    rSkip?.status === "skipped_already_has_active_rate_plan",
-    "debe skip si ya tiene plan",
+    rSkip?.status === "upgraded_existing_rate_plan" ||
+      rSkip?.status === "skipped_already_has_active_rate_plan",
+    `debe upgrade o skip si ya tiene plan: ${rSkip?.status}`,
   );
-  console.log("OK 10: no duplica si ya tiene rate plan activo");
+  const co2Plans = await client.query(
+    `SELECT campaigns_enabled, max_tps FROM company_rate_plans
+     WHERE company_id = $1 AND traffic_type = 'transactional' AND status = 'active'`,
+    [co2],
+  );
+  assert(co2Plans.rows[0]?.campaigns_enabled === true, "upgrade campaigns_enabled");
+  console.log("OK 10: no duplica; upgrade flags retail si faltaban");
 
   const walletTxAfter = await client.query(
     `SELECT count(*)::int AS c FROM wallet_transactions WHERE company_id = $1`,
@@ -172,6 +179,23 @@ try {
     "metadata orden actualizada",
   );
   console.log("OK 11-15: sin SMS, metadata, sin campañas");
+
+  const distAuth = join(
+    __dirname,
+    "../dist/services/commercialSmsAuthorizationService.js",
+  );
+  if (existsSync(distAuth)) {
+    const { isCompanyAuthorizedForPanelSmsSend, isCompanyInLiveTestAllowlist } =
+      await import(pathToFileURL(distAuth).href);
+    const panelOk = await isCompanyAuthorizedForPanelSmsSend(companyId);
+    assert(panelOk, "nueva company autorizada para panel sin allowlist manual");
+    assert(
+      !isCompanyInLiveTestAllowlist(companyId) ||
+        process.env.SMS_LIVE_TEST_ALLOWED_COMPANY_IDS?.includes(companyId),
+      "allowlist check",
+    );
+    console.log("OK 16: autorización panel por rate plan (sin depender de .env por cliente)");
+  }
 
   console.log("\n✅ verify-default-retail-rate-plan-assignment-qa OK");
   console.log(`   company_id: ${companyId}`);

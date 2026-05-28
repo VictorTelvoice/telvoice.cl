@@ -1,6 +1,7 @@
 import { env, type SmsProviderConfig } from "../config/env.js";
 import { isRegisteredVerifyNumber } from "../config/verifyNumbers.js";
 import { AppError } from "../utils/errors.js";
+import { isCompanyAuthorizedForPanelSmsSend } from "./commercialSmsAuthorizationService.js";
 import { validateRecipientNumber } from "./smsSegmentService.js";
 import { isAsmscConfigured } from "./sms-providers/realApiProvider.js";
 
@@ -14,12 +15,19 @@ export function isLiveTestGloballyEnabled(): boolean {
   return cfg.liveTestEnabled && isAsmscConfigured();
 }
 
+/** @deprecated Usar isCompanyAuthorizedForPanelSmsSend (async) para reglas completas. */
 export function isCompanyAllowedForLiveTest(companyId: string): boolean {
   const allowed = env.smsProvider.liveTestAllowedCompanyIds;
   if (allowed.length === 0) {
     return true;
   }
   return allowed.includes(companyId);
+}
+
+export async function resolveCompanyLiveSendAuthorized(
+  companyId: string,
+): Promise<boolean> {
+  return isCompanyAuthorizedForPanelSmsSend(companyId);
 }
 
 export function isNumberAllowedForLiveTest(normalizedPhone: string): boolean {
@@ -41,10 +49,10 @@ export function canShowLiveTestOption(_companyId: string): boolean {
   return isLiveTestGloballyEnabled();
 }
 
-export function assertLiveTestSendAllowed(input: {
+export async function assertLiveTestSendAllowed(input: {
   companyId: string;
   to: string;
-}): string {
+}): Promise<string> {
   if (!env.smsProvider.liveTestEnabled) {
     throw new AppError(
       "El envío SMS no está habilitado en este entorno.",
@@ -56,7 +64,7 @@ export function assertLiveTestSendAllowed(input: {
     throw new AppError("Proveedor SMS no disponible.", 503);
   }
 
-  if (!isCompanyAllowedForLiveTest(input.companyId)) {
+  if (!(await resolveCompanyLiveSendAuthorized(input.companyId))) {
     throw new AppError(
       "La empresa no está autorizada para envío SMS.",
       403,

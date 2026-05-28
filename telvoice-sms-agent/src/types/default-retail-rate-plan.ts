@@ -12,6 +12,7 @@ export type DefaultRetailRatePlanConfig = {
 export type RetailRatePlanAssignmentStatus =
   | "assigned"
   | "already_assigned"
+  | "upgraded_existing_rate_plan"
   | "skipped_already_has_active_rate_plan"
   | "failed";
 

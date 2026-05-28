@@ -145,7 +145,7 @@ export async function sendLiveTestSms(
     }
   }
 
-  const phone = assertLiveTestSendAllowed({
+  const phone = await assertLiveTestSendAllowed({
     companyId: input.companyId,
     to: input.to,
   });

@@ -7,9 +7,9 @@ import { wrapSupabaseError } from "../utils/supabase-errors.js";
 import { getCompanyRatePlan } from "./companyRatePlanService.js";
 import { findCompanyById } from "./companyService.js";
 import {
-  isCompanyAllowedForLiveTest,
   isLiveTestGloballyEnabled,
   isNumberAllowedForLiveTest,
+  resolveCompanyLiveSendAuthorized,
 } from "./smsLiveTestPolicy.js";
 import { resolveRouteForMessage } from "./smsRoutingService.js";
 import { resolveTrafficPolicy } from "./smsTrafficPolicyService.js";
@@ -253,7 +253,7 @@ export async function assertLiveTestOperationalLimits(input: {
     );
   }
 
-  if (!isCompanyAllowedForLiveTest(input.companyId)) {
+  if (!(await resolveCompanyLiveSendAuthorized(input.companyId))) {
     throw new AppError(
       "La empresa no está autorizada para envío SMS.",
       403,
@@ -322,7 +322,7 @@ export async function getLiveTestSendPageStatus(
   const limits = getLiveTestLimiterConfig();
   const dailyCapEnforced = isDailySendLimitEnforced();
   const globallyEnabled = isLiveTestGloballyEnabled();
-  const companyAuthorized = isCompanyAllowedForLiveTest(companyId);
+  const companyAuthorized = await resolveCompanyLiveSendAuthorized(companyId);
   const allowedNumbers = env.smsProvider.liveTestAllowedNumbers;
   const maskedNumbers = allowedNumbers.map(maskPhoneForDisplay);
   const numbersRestricted = allowedNumbers.length > 0;

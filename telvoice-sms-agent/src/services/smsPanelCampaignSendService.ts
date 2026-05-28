@@ -75,13 +75,13 @@ type ResolvedCampaignItem = {
   segmentInfo: ReturnType<typeof calculateSmsSegments>;
 };
 
-function resolveCampaignItems(input: SendPanelCampaignInput): {
+async function resolveCampaignItems(input: SendPanelCampaignInput): Promise<{
   items: ResolvedCampaignItem[];
   invalid: number;
   rawCount: number;
   campaignMessage: string;
   personalized: boolean;
-} {
+}> {
   const defaultMessage = String(input.message ?? "").trim();
   const rawRows: MassCampaignSendRow[] = [];
 
@@ -104,7 +104,7 @@ function resolveCampaignItems(input: SendPanelCampaignInput): {
       continue;
     }
     try {
-      const phone = assertCampaignRecipientAllowed({
+      const phone = await assertCampaignRecipientAllowed({
         companyId: input.companyId,
         to: row.phone,
       });
@@ -328,7 +328,7 @@ export async function sendPanelCampaign(
   await assertCompanyCanSend(input.companyId);
 
   const { items, invalid, rawCount, campaignMessage, personalized } =
-    resolveCampaignItems(input);
+    await resolveCampaignItems(input);
 
   const fingerprint = buildMassCampaignFingerprint(
     input.companyId,
