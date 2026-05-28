@@ -386,7 +386,25 @@
 
   var compraSubmitting = false;
   var COMPRA_PAY_ERROR =
-    "No pudimos iniciar el pago. Intenta nuevamente o contáctanos por WhatsApp.";
+    "No pudimos iniciar el pago en este momento. Intenta nuevamente o contáctanos.";
+
+  var PLAN_PACKAGE_HINTS = {
+    inicial: "starter",
+    empresa: "business",
+    volumen: "corporativo",
+  };
+
+  function logCheckoutDebug(ctx, err) {
+    console.error("[checkout] debug", {
+      selectedPlanId: ctx.planId || null,
+      smsQuantity: ctx.smsQuantity != null ? ctx.smsQuantity : null,
+      priceAmount: ctx.priceAmount != null ? ctx.priceAmount : null,
+      packageId: ctx.packageId || null,
+      checkoutEmail: ctx.checkoutEmail || null,
+      endpoint: ctx.endpoint || null,
+      error: err && err.message ? String(err.message) : String(err || ""),
+    });
+  }
 
   function setCompraLoading(loading) {
     var btn = qs("compra-submit");
@@ -600,9 +618,41 @@
         });
     }
 
+    function resolveAgentPackage(products, planId) {
+      var hint = planId && PLAN_PACKAGE_HINTS[planId] ? PLAN_PACKAGE_HINTS[planId] : "";
+      var candidates = products.filter(function (p) {
+        return (
+          p &&
+          p.package_id &&
+          +p.sms_quantity === +compraState.sms &&
+          +p.price_amount === +compraState.total &&
+          String(p.currency || "CLP").toUpperCase() === "CLP"
+        );
+      });
+      if (!candidates.length) return null;
+      if (hint) {
+        var hinted = candidates.find(function (p) {
+          return String(p.product_name || "")
+            .toLowerCase()
+            .includes(hint);
+        });
+        if (hinted) return hinted;
+      }
+      return candidates[0];
+    }
+
     function startAgentCheckout() {
       // El agent checkout requiere package_id (uuid).
       // Para no hardcodear IDs acá, usamos /api/public/products y tomamos package_id que matchea el total/sms.
+      var debugCtx = {
+        planId: planId,
+        smsQuantity: compraState.sms,
+        priceAmount: compraState.total,
+        packageId: null,
+        checkoutEmail: email,
+        endpoint: agentCheckoutEndpoint,
+      };
+
       return fetch(agentProductsEndpoint, {
         method: "GET",
         headers: { Accept: "application/json" },
@@ -616,18 +666,11 @@
             throw new Error("agent_products_unavailable");
           }
 
-          // Match exacto por sms_quantity + price_amount (total) en CLP.
-          var match = products.find(function (p) {
-            return (
-              p &&
-              p.package_id &&
-              +p.sms_quantity === +compraState.sms &&
-              +p.price_amount === +compraState.total &&
-              String(p.currency || "CLP").toUpperCase() === "CLP"
-            );
-          });
+          var match = resolveAgentPackage(products, planId);
+          debugCtx.packageId = match && match.package_id ? match.package_id : null;
 
           if (!match || !match.package_id) {
+            logCheckoutDebug(debugCtx, new Error("agent_package_not_found"));
             throw new Error("agent_package_not_found");
           }
 
@@ -688,13 +731,9 @@
           );
         }
         if (code === "agent_products_unavailable") {
-          throw new Error(
-            "No pudimos iniciar el checkout en este momento. Por favor intenta nuevamente o contacta a soporte."
-          );
+          throw new Error(COMPRA_PAY_ERROR);
         }
-        throw new Error(
-          "No pudimos iniciar el checkout en este momento. Por favor intenta nuevamente o contacta a soporte."
-        );
+        throw new Error(COMPRA_PAY_ERROR);
       })
       .then(function (checkoutUrl) {
         trackEvent("click_comprar_online", { planId: planId, source: compraState.source });
@@ -703,12 +742,23 @@
       .catch(function (err) {
         compraSubmitting = false;
         setCompraLoading(false);
-        console.error("[checkout] checkout failed", err.message || err);
-        var msg = err.message || COMPRA_PAY_ERROR;
-        if (err.name === "AbortError") {
-          msg = COMPRA_PAY_ERROR;
+        logCheckoutDebug(
+          {
+            planId: planId,
+            smsQuantity: compraState.sms,
+            priceAmount: compraState.total,
+            packageId: null,
+            checkoutEmail: email,
+            endpoint: agentCheckoutEndpoint,
+          },
+          err,
+        );
+        var msg = COMPRA_PAY_ERROR;
+        if (err && err.message === "agent_package_not_found") {
+          msg =
+            "Este plan no está disponible para pago online en este momento. Por favor intenta con otra bolsa o contacta a soporte.";
         }
-        if (/^Vercel Blob:|^MERCADOPAGO_|token no configurado|failed to fetch|network/i.test(msg)) {
+        if (err.name === "AbortError") {
           msg = COMPRA_PAY_ERROR;
         }
         setCompraError(msg);

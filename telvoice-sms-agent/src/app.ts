@@ -6,6 +6,7 @@ import { adminRouter } from "./routes/admin.routes.js";
 import { appRouter } from "./routes/app.routes.js";
 import { apiRouter } from "./routes/index.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
+import { landingPublicCors } from "./middleware/landing-public-cors.js";
 import type { RequestWithRawBody } from "./types/express-request.js";
 import {
   getAuthCallbackPage,
@@ -51,6 +52,7 @@ export function createApp() {
   app.get("/auth/callback", getAuthCallbackPage);
   app.get("/claim/manual-review", getClaimManualReviewPage);
 
+  app.use(landingPublicCors);
   app.use("/api", apiRouter);
   app.use("/admin", adminRouter);
   app.use("/app", appRouter);
