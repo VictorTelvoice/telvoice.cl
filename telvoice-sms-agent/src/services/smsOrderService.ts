@@ -35,6 +35,56 @@ export async function getOrderById(id: string): Promise<SmsOrderRow | null> {
   return data as SmsOrderRow | null;
 }
 
+export async function getOrderByPublicCheckoutReference(
+  reference: string,
+): Promise<SmsOrderRow | null> {
+  const ref = reference.trim();
+  if (!ref) {
+    return null;
+  }
+
+  const { data, error } = await getSupabase()
+    .from("sms_orders")
+    .select("*")
+    .eq("public_checkout_reference", ref)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return null;
+    }
+    wrapSupabaseError(error, "getOrderByPublicCheckoutReference");
+  }
+
+  return data as SmsOrderRow | null;
+}
+
+export async function getOrderByMercadoPagoPaymentId(
+  paymentId: string,
+): Promise<SmsOrderRow | null> {
+  const id = paymentId.trim();
+  if (!id) {
+    return null;
+  }
+
+  const { data, error } = await getSupabase()
+    .from("sms_orders")
+    .select("*")
+    .filter("metadata->>mercadopago_payment_id", "eq", id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return null;
+    }
+    wrapSupabaseError(error, "getOrderByMercadoPagoPaymentId");
+  }
+
+  return data as SmsOrderRow | null;
+}
+
 export async function getOrderForCompany(
   orderId: string,
   companyId: string,

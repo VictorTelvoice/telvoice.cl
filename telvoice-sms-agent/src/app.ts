@@ -13,6 +13,7 @@ import {
   getClaimManualReviewPage,
   getClientLoginPage,
 } from "./controllers/client-google-auth.controller.js";
+import { getCheckoutSuccessPage } from "./controllers/checkout-success.controller.js";
 
 const publicDir = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -51,6 +52,7 @@ export function createApp() {
   app.get("/login", getClientLoginPage);
   app.get("/auth/callback", getAuthCallbackPage);
   app.get("/claim/manual-review", getClaimManualReviewPage);
+  app.get("/checkout/success", getCheckoutSuccessPage);
 
   app.use(landingPublicCors);
   app.use("/api", apiRouter);
