@@ -53,12 +53,18 @@ try {
      ORDER BY name`,
   );
 
-  const products = await client.query(
-    `SELECT id, product_name, is_active, product_type
-     FROM sms_products
-     WHERE is_active = true AND ${QA_PRODUCT_SQL}
-     ORDER BY product_name`,
+  let products = { rows: [] };
+  const hasProducts = await client.query(
+    `SELECT to_regclass('public.sms_products') IS NOT NULL AS ok`,
   );
+  if (hasProducts.rows[0]?.ok) {
+    products = await client.query(
+      `SELECT id, product_name, is_active, product_type
+       FROM sms_products
+       WHERE is_active = true AND ${QA_PRODUCT_SQL}
+       ORDER BY product_name`,
+    );
+  }
 
   console.log(
     JSON.stringify(
@@ -94,7 +100,7 @@ try {
     );
   }
 
-  if (products.rows.length) {
+  if (hasProducts.rows[0]?.ok && products.rows.length) {
     await client.query(
       `UPDATE sms_products
        SET is_active = false, updated_at = now()
