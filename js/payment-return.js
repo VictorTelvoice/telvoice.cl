@@ -70,6 +70,17 @@
       textEl.textContent =
         "Mercado Pago no aprobó el pago. Puedes volver a intentarlo desde la sección de precios.";
     }
+  } else if (
+    !collectionStatus ||
+    collectionStatus === "null" ||
+    (!paymentId && !preferenceId && orderRef)
+  ) {
+    /* Volver a la tienda sin completar pago: params null — no es error de cobro */
+    if (titleEl) titleEl.textContent = "No se completó el pago";
+    if (textEl) {
+      textEl.textContent =
+        "Tu compra no fue cobrada. Puedes volver al inicio e intentar nuevamente cuando quieras.";
+    }
   }
 
   var metaParts = [];

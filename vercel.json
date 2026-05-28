@@ -4,6 +4,12 @@
   "installCommand": "npm install",
   "buildCommand": "",
   "outputDirectory": "",
+  "rewrites": [
+    { "source": "/pago-error", "destination": "/pago-error/index.html" },
+    { "source": "/pago-pendiente", "destination": "/pago-pendiente/index.html" },
+    { "source": "/pago-fallido", "destination": "/pago-fallido/index.html" },
+    { "source": "/pago-exitoso", "destination": "/pago-exitoso/index.html" }
+  ],
   "redirects": [
     {
       "source": "/:path*",

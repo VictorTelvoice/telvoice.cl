@@ -54,6 +54,22 @@ PAGES = [
         "primary": ("Volver a precios", "../index.html#precios"),
         "secondary": ("Volver al inicio", "../"),
     },
+    {
+        "slug": "pago-error",
+        "title": "Pago no completado | Telvoice.cl",
+        "description": "No se completó el pago. Tu compra no fue cobrada.",
+        "icon": "cancel",
+        "icon_class": "payment-icon--fail",
+        "heading": "No se completó el pago",
+        "text": "Tu compra no fue cobrada. Puedes volver al inicio e intentar nuevamente cuando quieras.",
+        "primary": ("Reintentar compra", "../index.html#precios"),
+        "secondary": ("Volver al inicio", "../"),
+        "extra": (
+            '<p class="payment-sub">Si necesitas ayuda, escríbenos a '
+            '<a href="mailto:ventas@telvoice.net">ventas@telvoice.net</a>.</p>'
+        ),
+        "noindex": True,
+    },
 ]
 
 
@@ -64,6 +80,10 @@ def render_page(p):
         secondary = (
             f'<a class="payment-btn payment-btn--secondary" href="{href}">{label}</a>'
         )
+    extra = p.get("extra", "")
+    noindex = (
+        '  <meta name="robots" content="noindex, follow" />' if p.get("noindex") else ""
+    )
     primary_label, primary_href = p["primary"]
     return f"""<!DOCTYPE html>
 <html class="light" lang="es">
@@ -73,6 +93,7 @@ def render_page(p):
   <meta name="description" content="{p['description']}" />
   <title>{p['title']}</title>
   <link rel="canonical" href="https://www.telvoice.cl/{p['slug']}/" />
+{noindex}
   <link rel="icon" href="../assets/telvoice-isotipo.png" type="image/png" />
   <meta name="theme-color" content="#0052cc" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet" />
@@ -86,6 +107,7 @@ def render_page(p):
       <span class="payment-icon {p['icon_class']} material-symbols-outlined" aria-hidden="true">{p['icon']}</span>
       <h1 id="payment-return-title" class="payment-title">{p['heading']}</h1>
       <p id="payment-return-text" class="payment-text">{p['text']}</p>
+{extra}
 {ORDER_BLOCK}
       <div class="payment-actions">
         <a class="payment-btn payment-btn--primary" href="{primary_href}">{primary_label}</a>
