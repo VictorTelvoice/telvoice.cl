@@ -681,6 +681,17 @@
           console.warn("[checkout] agent checkout fallback (legacy enabled)", err && (err.message || err));
           return startLegacyCheckout();
         }
+        var code = err && err.message ? String(err.message) : "";
+        if (code === "agent_package_not_found") {
+          throw new Error(
+            "Este plan no está disponible para pago online en este momento. Por favor intenta con otra bolsa o contacta a soporte."
+          );
+        }
+        if (code === "agent_products_unavailable") {
+          throw new Error(
+            "No pudimos iniciar el checkout en este momento. Por favor intenta nuevamente o contacta a soporte."
+          );
+        }
         throw new Error(
           "No pudimos iniciar el checkout en este momento. Por favor intenta nuevamente o contacta a soporte."
         );
