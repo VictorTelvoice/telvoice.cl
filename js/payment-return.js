@@ -34,7 +34,7 @@
     if (titleEl) titleEl.textContent = "¡Compra confirmada!";
     if (textEl) {
       textEl.textContent =
-        "Mercado Pago aprobó tu pago. Ya estamos trabajando en la creación de tu cuenta y la activación de tu bolsa SMS.";
+        "Mercado Pago aprobó tu pago. Para usar tus SMS, activa tu cuenta con Google usando el mismo correo con el que compraste.";
     }
 
     if (emailNoteEl) {
@@ -42,7 +42,7 @@
       emailNoteEl.textContent =
         "Recibirás en " +
         mail +
-        " las credenciales de acceso a tu cuenta cuando esté lista. Revisa también la carpeta de spam.";
+        " un correo de Telvoice con el botón para activar tu cuenta con Google. Revisa también la carpeta de spam.";
       emailNoteEl.hidden = false;
     }
 

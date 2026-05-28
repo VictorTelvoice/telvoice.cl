@@ -544,62 +544,166 @@
     compraSubmitting = true;
     setCompraLoading(true);
 
-    var checkoutEndpoint = apiUrl("/api/mercadopago/create-preference");
+    var agentOrigin = "https://agent.telvoice.cl";
+    var agentProductsEndpoint = agentOrigin + "/api/public/products";
+    var agentCheckoutEndpoint = agentOrigin + "/api/public/checkout";
+    var legacyCheckoutEndpoint = apiUrl("/api/mercadopago/create-preference");
     var abortController = typeof AbortController !== "undefined" ? new AbortController() : null;
     var timeoutId = window.setTimeout(function () {
       if (abortController) abortController.abort();
     }, 45000);
 
-    var fetchOpts = {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      signal: abortController ? abortController.signal : undefined,
-      body: JSON.stringify(
-        Object.assign(
-          {
-            customer: {
-              name: nombre,
-              email: email,
-              phone: whatsapp,
-              rut: rut,
-              business_name: razonSocial || null,
-            },
-          },
-          compraState.calcSms ? { calc_sms: compraState.calcSms } : { plan_id: planId }
-        )
-      ),
-    };
-    if (checkoutEndpoint.indexOf("http") !== 0) {
-      fetchOpts.credentials = "same-origin";
+    function parseJsonSafe(res) {
+      return parseApiJson(res).then(function (data) {
+        return { httpOk: res.ok, status: res.status, data: data };
+      });
     }
 
-    fetch(checkoutEndpoint, fetchOpts)
-      .then(function (res) {
-        return parseApiJson(res).then(function (data) {
-          return { httpOk: res.ok, status: res.status, data: data };
+    function startLegacyCheckout() {
+      var fetchOpts = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        signal: abortController ? abortController.signal : undefined,
+        body: JSON.stringify(
+          Object.assign(
+            {
+              customer: {
+                name: nombre,
+                email: email,
+                phone: whatsapp,
+                rut: rut,
+                business_name: razonSocial || null,
+              },
+            },
+            compraState.calcSms ? { calc_sms: compraState.calcSms } : { plan_id: planId }
+          )
+        ),
+      };
+      if (legacyCheckoutEndpoint.indexOf("http") !== 0) {
+        fetchOpts.credentials = "same-origin";
+      }
+      return fetch(legacyCheckoutEndpoint, fetchOpts)
+        .then(parseJsonSafe)
+        .then(function (result) {
+          var data = result.data || {};
+          var checkoutUrl = resolveCheckoutUrl(data);
+          if (!result.httpOk || data.ok === false) {
+            throw new Error(data.error || COMPRA_PAY_ERROR);
+          }
+          if (!checkoutUrl) {
+            throw new Error("No se recibió URL de Mercado Pago");
+          }
+          return checkoutUrl;
         });
+    }
+
+    function startAgentCheckout() {
+      // El agent checkout requiere package_id (uuid).
+      // Para no hardcodear IDs acá, usamos /api/public/products y tomamos package_id que matchea el total/sms.
+      return fetch(agentProductsEndpoint, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        signal: abortController ? abortController.signal : undefined,
       })
-      .then(function (result) {
-        var data = result.data || {};
-        var checkoutUrl = resolveCheckoutUrl(data);
+        .then(parseJsonSafe)
+        .then(function (r) {
+          var data = r.data || {};
+          var products = (data && data.products) || [];
+          if (!r.httpOk || data.success !== true || !products || !products.length) {
+            throw new Error("agent_products_unavailable");
+          }
 
-        if (!result.httpOk || data.ok === false) {
-          throw new Error(data.error || COMPRA_PAY_ERROR);
-        }
-        if (!checkoutUrl) {
-          throw new Error("No se recibió URL de Mercado Pago");
-        }
+          // Match exacto por sms_quantity + price_amount (total) en CLP.
+          var match = products.find(function (p) {
+            return (
+              p &&
+              p.package_id &&
+              +p.sms_quantity === +compraState.sms &&
+              +p.price_amount === +compraState.total &&
+              String(p.currency || "CLP").toUpperCase() === "CLP"
+            );
+          });
 
+          if (!match || !match.package_id) {
+            throw new Error("agent_package_not_found");
+          }
+
+          return fetch(agentCheckoutEndpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            signal: abortController ? abortController.signal : undefined,
+            body: JSON.stringify({
+              package_id: match.package_id,
+              checkout_email: email,
+              payer_email: email,
+              payer_name: nombre,
+              source: "landing",
+            }),
+          }).then(parseJsonSafe);
+        })
+        .then(function (r) {
+          var data = r.data || {};
+          var checkoutUrl = data.checkout_url;
+          if (!r.httpOk || data.success !== true) {
+            throw new Error((data && (data.error || data.message)) || COMPRA_PAY_ERROR);
+          }
+          if (!checkoutUrl) {
+            throw new Error("No se recibió URL de Mercado Pago");
+          }
+          return checkoutUrl;
+        });
+    }
+
+    function allowLegacyFallback() {
+      var cfg = window.TELVOICE_CONFIG || {};
+      if (cfg.allowLegacyCheckoutFallback === true) return true;
+      var pub = window.__TELVOICE_PUBLIC_ENV__ || {};
+      var v = pub.NEXT_PUBLIC_ALLOW_LEGACY_CHECKOUT_FALLBACK;
+      if (typeof v === "string") {
+        v = v.trim().toLowerCase();
+        return v === "true" || v === "1" || v === "yes";
+      }
+      if (v === true) return true;
+      return false;
+    }
+
+    // Nuevo flujo: intentamos primero el checkout público del agent.
+    // Fallback legacy: SOLO si está explícitamente habilitado.
+    startAgentCheckout()
+      .catch(function (err) {
+        if (allowLegacyFallback()) {
+          console.warn("[checkout] agent checkout fallback (legacy enabled)", err && (err.message || err));
+          return startLegacyCheckout();
+        }
+        var code = err && err.message ? String(err.message) : "";
+        if (code === "agent_package_not_found") {
+          throw new Error(
+            "Este plan no está disponible para pago online en este momento. Por favor intenta con otra bolsa o contacta a soporte."
+          );
+        }
+        if (code === "agent_products_unavailable") {
+          throw new Error(
+            "No pudimos iniciar el checkout en este momento. Por favor intenta nuevamente o contacta a soporte."
+          );
+        }
+        throw new Error(
+          "No pudimos iniciar el checkout en este momento. Por favor intenta nuevamente o contacta a soporte."
+        );
+      })
+      .then(function (checkoutUrl) {
         trackEvent("click_comprar_online", { planId: planId, source: compraState.source });
         window.location.href = checkoutUrl;
       })
       .catch(function (err) {
         compraSubmitting = false;
         setCompraLoading(false);
-        console.error("[checkout] create-preference failed", err.message || err);
+        console.error("[checkout] checkout failed", err.message || err);
         var msg = err.message || COMPRA_PAY_ERROR;
         if (err.name === "AbortError") {
           msg = COMPRA_PAY_ERROR;

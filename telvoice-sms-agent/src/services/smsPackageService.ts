@@ -100,6 +100,23 @@ export async function getSmsPackageById(id: string): Promise<SmsPackageRow | nul
   return data as SmsPackageRow | null;
 }
 
+export async function findActiveSmsPackageByQuantityAndTotal(
+  input: { smsQuantity: number; totalPrice: number; currency?: string },
+): Promise<SmsPackageRow | null> {
+  const all = await listSmsPackages(true);
+  const total = Math.round(Number(input.totalPrice));
+  const cur = (input.currency ?? "CLP").trim().toUpperCase();
+
+  for (const p of all) {
+    const pTotal = Math.round(Number(p.total_price));
+    const pCur = String(p.currency ?? "CLP").trim().toUpperCase();
+    if (p.sms_quantity === input.smsQuantity && pTotal === total && pCur === cur) {
+      return p;
+    }
+  }
+  return null;
+}
+
 export async function createSmsPackage(input: {
   name: string;
   country?: string;

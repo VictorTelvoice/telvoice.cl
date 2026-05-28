@@ -11,6 +11,10 @@ import { startPublicLandingCheckout } from "../services/publicCheckoutService.js
 import { runBillingSyncBestEffort } from "../services/billingSyncService.js";
 import { sendPostClaimEmailsBestEffort } from "../services/transactionalEmailService.js";
 import {
+  listCustomerVisiblePackages,
+  listSmsPackages,
+} from "../services/smsPackageService.js";
+import {
   getBearerTokenFromRequestHeader,
   verifySupabaseAccessToken,
 } from "../services/supabaseAuthVerifyService.js";
@@ -29,11 +33,48 @@ export async function getPublicProducts(
 
     const products = await listActiveSmsProducts(countryCode);
 
+    // Preferimos sms_products si existe; si está vacío (por compatibilidad),
+    // devolvemos un catálogo mínimo desde sms_packages visibles para web.
+    if (!products.length) {
+      const packages = await listCustomerVisiblePackages(countryCode);
+      res.json({
+        success: true,
+        country_code: countryCode,
+        products: packages.map((p) => ({
+          id: p.id,
+          package_id: p.id,
+          product_name: p.name,
+          description: null,
+          sms_quantity: p.sms_quantity,
+          currency: p.currency,
+          price_amount: Math.round(Number(p.total_price)),
+          unit_price: Number(p.unit_price ?? 0),
+          checkout_url: null,
+          is_featured: false,
+          product_type: "sms_bundle",
+        })),
+      });
+      return;
+    }
+
+    const packages = await listSmsPackages(true);
+    const packageByKey = new Map<string, string>();
+    for (const p of packages) {
+      const k = `${p.sms_quantity}|${Math.round(Number(p.total_price))}|${String(p.currency ?? "CLP").toUpperCase()}`;
+      if (!packageByKey.has(k)) {
+        packageByKey.set(k, p.id);
+      }
+    }
+
     res.json({
       success: true,
       country_code: countryCode,
       products: products.map((p) => ({
         id: p.id,
+        package_id:
+          packageByKey.get(
+            `${p.sms_quantity}|${Math.round(Number(p.price_amount))}|${String(p.currency ?? "CLP").toUpperCase()}`,
+          ) ?? null,
         product_name: p.product_name,
         description: p.description,
         sms_quantity: p.sms_quantity,
@@ -144,7 +185,8 @@ export async function postPublicCheckout(
 ): Promise<void> {
   try {
     const body = req.body as Record<string, unknown>;
-    const packageId = validateUuidParam(String(body.package_id ?? ""), "package_id");
+    const packageIdRaw = String(body.package_id ?? "").trim();
+    const packageId = validateUuidParam(packageIdRaw, "package_id");
     const checkoutEmail = String(body.checkout_email ?? body.email ?? "").trim();
     const payerEmail =
       typeof body.payer_email === "string" ? body.payer_email.trim() : undefined;
