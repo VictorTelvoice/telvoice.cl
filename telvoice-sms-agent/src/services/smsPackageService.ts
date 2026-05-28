@@ -45,13 +45,15 @@ export async function listCustomerVisiblePackages(
   country = "CL",
 ): Promise<SmsPackageRow[]> {
   const all = await listSmsPackages(true);
+  const targetCountry = country.trim().toUpperCase();
   return all.filter((p) => {
-    if (p.country !== country || !isCustomerVisible(p.metadata ?? {})) {
+    const pCountry = String(p.country ?? "").trim().toUpperCase();
+    if (pCountry !== targetCountry || !isCustomerVisible(p.metadata ?? {})) {
       return false;
     }
     const meta = p.metadata ?? {};
-    const channel = String(meta.channel ?? "web");
-    const segment = String(meta.segment ?? "standard");
+    const channel = String(meta.channel ?? "web").trim().toLowerCase();
+    const segment = String(meta.segment ?? "standard").trim().toLowerCase();
     return channel === "web" && segment === "standard";
   });
 }
