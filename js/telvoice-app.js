@@ -3,7 +3,10 @@
   var SALES_EMAIL = CFG.salesEmail || "ventas@telvoice.net";
   var IVA_RATE = CFG.ivaRate != null ? CFG.ivaRate : 0.19;
   var QUOTE_MIN = CFG.quoteVolumeMin != null ? CFG.quoteVolumeMin : 200000;
-  var BAGS = CFG.bags || [];
+  var BAGS = (CFG.bags || []).slice();
+  if (CFG.showRetail200PurchaseChip === true && CFG.retail200Bag) {
+    BAGS.unshift(CFG.retail200Bag);
+  }
   var CALC_TIERS = CFG.volumeTiers || [];
   var CALC_MAX_VOL = CFG.calcMaxVolume != null ? CFG.calcMaxVolume : 120000;
 
@@ -320,8 +323,8 @@
     });
   }
 
-  var BAG_TO_PLAN = { "1k": "inicial", "15k": "empresa", "100k": "volumen" };
-  var ONLINE_PLAN_IDS = { inicial: true, empresa: true, volumen: true, calc: true };
+  var BAG_TO_PLAN = { "1k": "inicial", "15k": "empresa", "100k": "volumen", "200": "bolsa200" };
+  var ONLINE_PLAN_IDS = { inicial: true, empresa: true, volumen: true, calc: true, bolsa200: true };
 
   var compraState = {
     planId: null,
@@ -392,6 +395,7 @@
     inicial: "starter",
     empresa: "business",
     volumen: "corporativo",
+    bolsa200: "bolsa chile 200",
   };
 
   function logCheckoutDebug(ctx, err) {
@@ -1007,6 +1011,51 @@
     if (suggestionsEl) {
       // Botón de pruebas: bolsa fija (no depende del slider/tramos).
       // Total fijo IVA incl. para QA del flujo de compra/login.
+      (function addRetail200CalcChip() {
+        var cfg = window.TELVOICE_CONFIG || {};
+        if (cfg.showRetail200PurchaseChip !== true) {
+          return;
+        }
+        var bag = cfg.retail200Bag || {};
+        var sms = bag.sms || 200;
+        var totalInclIva = Math.round((bag.priceNet || 840) * (1 + IVA_RATE));
+        var net = bag.priceNet || Math.round(totalInclIva / (1 + IVA_RATE));
+        var tax = totalInclIva - net;
+        var planName = bag.planName || "Bolsa Chile 200 SMS";
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "calc-tier-chip calc-tier-chip--retail200";
+        btn.setAttribute("data-volume", String(sms));
+        btn.setAttribute("aria-pressed", "false");
+        btn.setAttribute(
+          "aria-label",
+          planName + " · $" + fmt(totalInclIva) + " IVA incl."
+        );
+        btn.appendChild(document.createTextNode(String(sms) + " SMS"));
+        var sub = document.createElement("span");
+        sub.className = "calc-tier-chip-sub";
+        sub.textContent = "$" + fmt(totalInclIva);
+        btn.appendChild(sub);
+        btn.addEventListener("click", function () {
+          openCompraModal({
+            planId: "bolsa200",
+            calcSms: null,
+            planName: planName,
+            sms: sms,
+            net_amount: net,
+            tax_amount: tax,
+            total_amount: totalInclIva,
+            source: "calculadora-retail200",
+          });
+          trackEvent("click_comprar_online", {
+            planId: "bolsa200",
+            source: "calculadora-retail200",
+            volume: sms,
+          });
+        });
+        suggestionsEl.appendChild(btn);
+      })();
+
       (function addTestCalcChip() {
         var cfg = window.TELVOICE_CONFIG || {};
         if (cfg.showTestPurchaseChip !== true) {

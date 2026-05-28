@@ -28,6 +28,20 @@ window.TELVOICE_CONFIG = {
   allowLegacyCheckoutFallback: false,
   /** Chip «Bolsa prueba» en calculadora — solo QA interno; false en producción controlada. */
   showTestPurchaseChip: false,
+  /**
+   * Bolsa Chile 200 SMS / $1.000 IVA incl. — QA compra real temporal (no usar «prueba» en UI).
+   * Revertir a false tras el go-live del cliente.
+   */
+  showRetail200PurchaseChip: true,
+  retail200Bag: {
+    id: "200",
+    planName: "Bolsa Chile 200 SMS",
+    label: "Bolsa Chile 200 SMS",
+    sms: 200,
+    priceNet: 840,
+    pxSms: 5,
+    maxNeed: 200,
+  },
   ivaRate: 0.19,
   quoteVolumeMin: 100001,
   hero: {

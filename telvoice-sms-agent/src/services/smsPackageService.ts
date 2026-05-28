@@ -55,7 +55,10 @@ export async function listCustomerVisiblePackages(
     }
     const channel = String(meta.channel ?? "web").trim().toLowerCase();
     const segment = String(meta.segment ?? "standard").trim().toLowerCase();
-    return channel === "web" && segment === "standard";
+    return (
+      channel === "web" &&
+      (segment === "standard" || segment === "retail")
+    );
   });
 }
 
