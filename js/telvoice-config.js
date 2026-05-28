@@ -26,6 +26,8 @@ window.TELVOICE_CONFIG = {
    * o configurando allowLegacyCheckoutFallback=true aquí.
    */
   allowLegacyCheckoutFallback: false,
+  /** Chip «Bolsa prueba» en calculadora — solo QA interno; false en producción controlada. */
+  showTestPurchaseChip: false,
   ivaRate: 0.19,
   quoteVolumeMin: 100001,
   hero: {

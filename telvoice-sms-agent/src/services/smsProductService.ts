@@ -5,6 +5,7 @@ import type {
   UpdateSmsProductInput,
 } from "../types/commercial.js";
 import { NotFoundError, ValidationError } from "../utils/errors.js";
+import { isPublicCatalogProductEligible } from "../utils/package-metadata.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 
 export async function findActiveSmsProductByQuantity(
@@ -38,7 +39,9 @@ export async function listActiveSmsProducts(
     return [];
   }
 
-  return (data ?? []) as SmsProductRow[];
+  return ((data ?? []) as SmsProductRow[]).filter((row) =>
+    isPublicCatalogProductEligible(row),
+  );
 }
 
 export async function listAllSmsProducts(): Promise<SmsProductRow[]> {

@@ -321,7 +321,7 @@
   }
 
   var BAG_TO_PLAN = { "1k": "inicial", "15k": "empresa", "100k": "volumen" };
-  var ONLINE_PLAN_IDS = { inicial: true, empresa: true, volumen: true, calc: true, test200: true };
+  var ONLINE_PLAN_IDS = { inicial: true, empresa: true, volumen: true, calc: true };
 
   var compraState = {
     planId: null,
@@ -958,6 +958,10 @@
       // Botón de pruebas: bolsa fija (no depende del slider/tramos).
       // Total fijo IVA incl. para QA del flujo de compra/login.
       (function addTestCalcChip() {
+        var cfg = window.TELVOICE_CONFIG || {};
+        if (cfg.showTestPurchaseChip !== true) {
+          return;
+        }
         var sms = 200;
         var totalInclIva = 1000;
         var net = Math.round(totalInclIva / (1 + IVA_RATE));

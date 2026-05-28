@@ -10,10 +10,7 @@ import { confirmOrderCredit } from "../services/smsOrderService.js";
 import { startPublicLandingCheckout } from "../services/publicCheckoutService.js";
 import { runBillingSyncBestEffort } from "../services/billingSyncService.js";
 import { sendPostClaimEmailsBestEffort } from "../services/transactionalEmailService.js";
-import {
-  listCustomerVisiblePackages,
-  listSmsPackages,
-} from "../services/smsPackageService.js";
+import { listCustomerVisiblePackages } from "../services/smsPackageService.js";
 import {
   getBearerTokenFromRequestHeader,
   verifySupabaseAccessToken,
@@ -57,19 +54,29 @@ export async function getPublicProducts(
       return;
     }
 
-    const packages = await listSmsPackages(true);
+    const visiblePackages = await listCustomerVisiblePackages(countryCode);
     const packageByKey = new Map<string, string>();
-    for (const p of packages) {
+    for (const p of visiblePackages) {
       const k = `${p.sms_quantity}|${Math.round(Number(p.total_price))}|${String(p.currency ?? "CLP").toUpperCase()}`;
       if (!packageByKey.has(k)) {
         packageByKey.set(k, p.id);
       }
     }
 
+    const publicProducts = products.filter((p) =>
+      visiblePackages.some(
+        (pkg) =>
+          pkg.sms_quantity === p.sms_quantity &&
+          Math.round(Number(pkg.total_price)) === Math.round(Number(p.price_amount)) &&
+          String(pkg.currency ?? "CLP").toUpperCase() ===
+            String(p.currency ?? "CLP").toUpperCase(),
+      ),
+    );
+
     res.json({
       success: true,
       country_code: countryCode,
-      products: products.map((p) => ({
+      products: publicProducts.map((p) => ({
         id: p.id,
         package_id:
           packageByKey.get(

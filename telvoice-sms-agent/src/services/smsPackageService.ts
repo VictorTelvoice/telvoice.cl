@@ -5,6 +5,7 @@ import { AppError } from "../utils/errors.js";
 import {
   defaultCommercialMetadata,
   isCustomerVisible,
+  isPublicCatalogEligible,
   mergePackageMetadata,
   type PackageMetadata,
 } from "../utils/package-metadata.js";
@@ -48,10 +49,10 @@ export async function listCustomerVisiblePackages(
   const targetCountry = country.trim().toUpperCase();
   return all.filter((p) => {
     const pCountry = String(p.country ?? "").trim().toUpperCase();
-    if (pCountry !== targetCountry || !isCustomerVisible(p.metadata ?? {})) {
+    const meta = (p.metadata ?? {}) as Record<string, unknown>;
+    if (pCountry !== targetCountry || !isPublicCatalogEligible(p.name, meta)) {
       return false;
     }
-    const meta = p.metadata ?? {};
     const channel = String(meta.channel ?? "web").trim().toLowerCase();
     const segment = String(meta.segment ?? "standard").trim().toLowerCase();
     return channel === "web" && segment === "standard";
