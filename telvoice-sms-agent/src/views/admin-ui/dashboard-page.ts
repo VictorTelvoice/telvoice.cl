@@ -102,11 +102,11 @@ export function renderDashboardBody(options: {
   const kpiGrid = `<div class="tv-kpi-grid tv-kpi-grid--dense">
     ${renderKpiCard({ label: "Clientes activos", value: "38", hint: "Cuentas operativas", icon: "business", variant: "primary" })}
     ${renderKpiCard({ label: "SMS enviados hoy", value: sentToday, hint: "Tráfico global", icon: "today", variant: "default" })}
-    ${renderKpiCard({ label: "SMS enviados (mes)", value: "284.500", hint: "Acumulado mayo", icon: "calendar_month", variant: "default" })}
+    ${renderKpiCard({ label: "SMS enviados", value: "284.500", hint: "Acumulado mayo", icon: "calendar_month", variant: "default" })}
     ${renderKpiCard({ label: "Saldo total vendido", value: ws ? fmtN(ws.totalPurchasedSms) : "1,2M", hint: "Wallets empresa", icon: "sell", variant: "primary" })}
     ${renderKpiCard({ label: "Saldo consumido", value: ws ? fmtN(ws.totalConsumedSms) : "892K", hint: "Débitos por envío", icon: "trending_down", variant: "warn" })}
     ${renderKpiCard({ label: "Campañas activas", value: "24", hint: "Todos los clientes", icon: "campaign", variant: "default" })}
-    ${renderKpiCard({ label: "Tasa entrega global", value: deliveryRatePercent(options.stats), hint: "DLR agregado", icon: "check_circle", variant: "success" })}
+    ${renderKpiCard({ label: "Tasa entrega", value: deliveryRatePercent(options.stats), hint: "Entregados vs enviados (DLR) Global", icon: "check_circle", variant: "success" })}
     ${renderKpiCard({ label: "Mensajes fallidos", value: failed, hint: "Últimas 24h ref.", icon: "error", variant: "danger" })}
     ${renderKpiCard({ label: "Wallets activas", value: ws ? String(ws.activeWallets) : "—", hint: "Empresas con wallet", icon: "account_balance_wallet", variant: "default" })}
     ${renderKpiCard({ label: "Compras pendientes", value: ws ? String(ws.pendingOrders) : "4", hint: "Pago pendiente", icon: "shopping_cart", variant: "warn" })}

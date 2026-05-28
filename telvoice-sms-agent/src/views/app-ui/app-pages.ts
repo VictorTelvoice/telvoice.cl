@@ -245,7 +245,7 @@ export function renderAppDashboardPage(
         variant: "success",
       })}
       ${renderKpiCard({
-        label: "SMS enviados (mes)",
+        label: "SMS enviados",
         value: fmtSms(stats.smsSentMonth),
         hint: `Este mes · ${monthLabel}`,
         icon: "send",
@@ -259,16 +259,16 @@ export function renderAppDashboardPage(
         variant: "success",
       })}
       ${renderKpiCard({
-        label: "Campañas del mes",
+        label: "Campañas",
         value: fmtSms(stats.campaignsMonth),
         hint: `Total en ${monthLabel}`,
         icon: "campaign",
         variant: "default",
       })}
       ${renderKpiCard({
-        label: "Tasa entrega global",
+        label: "Tasa entrega",
         value: stats.globalDeliveryRate,
-        hint: "Entregados vs enviados (DLR)",
+        hint: "Entregados vs enviados (DLR) Global",
         icon: "check_circle",
         variant: "success",
       })}
