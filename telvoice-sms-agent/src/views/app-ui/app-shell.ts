@@ -6,9 +6,9 @@ import {
   renderFaviconLink,
   renderSidebarBrand,
 } from "../brand.js";
+import { renderTelvoiceAgentStylesheetLink } from "../../components/agent/telvoice-agent-widget-ui.js";
 import {
   getPanelAgentWidgetScript,
-  getPanelAgentWidgetStyles,
   renderPanelAgentWidget,
 } from "../../components/app/client-agent-widget.js";
 import {
@@ -160,7 +160,7 @@ export function renderAppLayout(options: AppLayoutOptions): string {
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="${APP_PANEL_STYLESHEET}" />
-  <style>${getPanelAgentWidgetStyles()}</style>
+  ${renderTelvoiceAgentStylesheetLink()}
 </head>
 <body class="tv-admin tv-app-client">
   <div class="tv-app">

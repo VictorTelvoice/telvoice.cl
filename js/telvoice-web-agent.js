@@ -451,7 +451,7 @@
       '<img src="' +
       escHtml(iso) +
       '" alt="" width="40" height="40" decoding="async" data-tva-iso="1" />' +
-      '<div class="tva-header-text"><h2 id="tva-title">Agente Telvoice</h2><p>Cotiza SMS para Chile</p></div>' +
+      '<div class="tva-header-text"><h2 id="tva-title">Agente comercial Telvoice</h2><p>Cotiza SMS para Chile</p></div>' +
       '<button type="button" class="tva-close" aria-label="Cerrar chat"><span aria-hidden="true">×</span></button>' +
       "</div>" +
       '<div class="tva-suggestions" id="tva-suggestions" hidden>' +

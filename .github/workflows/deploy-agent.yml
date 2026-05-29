@@ -23,6 +23,8 @@ on:
       - "telvoice-sms-agent/package-lock.json"
       - "telvoice-sms-agent/tsconfig.json"
       - "telvoice-sms-agent/public/**"
+      - "css/telvoice-agent-widget-shared.css"
+      - "css/telvoice-web-agent.css"
       - "telvoice-sms-agent/.env.example"
       - ".github/workflows/deploy-agent.yml"
   workflow_dispatch:

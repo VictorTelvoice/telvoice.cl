@@ -1,3 +1,8 @@
+import {
+  getAdminAgentWidgetScript,
+  renderAdminAgentWidget,
+} from "../../components/admin/admin-agent-widget.js";
+import { renderTelvoiceAgentStylesheetLink } from "../../components/agent/telvoice-agent-widget-ui.js";
 import { escapeHtml } from "../../utils/html.js";
 import {
   brandPageTitle,
@@ -220,6 +225,7 @@ export function renderLayout(options: LayoutOptions): string {
     }
     ${getAdminStyles()}
   </style>
+  ${renderTelvoiceAgentStylesheetLink()}
 </head>
 <body class="tv-admin">
   <div class="tv-app">
@@ -230,7 +236,9 @@ export function renderLayout(options: LayoutOptions): string {
       <main class="tv-content">${options.body}</main>
     </div>
   </div>
+  ${renderAdminAgentWidget()}
   ${SIDEBAR_SCRIPT}
+  ${getAdminAgentWidgetScript()}
 </body>
 </html>`;
 }

@@ -3,6 +3,10 @@ import type { KnowledgeArticleRow } from "../../../types/knowledge.js";
 import type { UnansweredQuestionRow } from "../../../services/agent/agentUnansweredService.js";
 import type { UnansweredStats } from "../../../services/agent/agentUnansweredService.js";
 import type { AgentFeedbackRow } from "../../../services/agent/agentFeedbackService.js";
+import {
+  renderTelvoiceAgentHubBanner,
+  TELVOICE_AGENT_LABELS,
+} from "../../../components/agent/telvoice-agent-widget-ui.js";
 import { escapeHtml } from "../../../utils/html.js";
 import { wrapAdminPage } from "../admin-page-wrap.js";
 
@@ -17,6 +21,7 @@ export function renderAgentTrainingHub(options: {
   const s = options.stats;
   const fb = options.feedbackStats ?? { helpful: 0, notHelpful: 0, total: 0 };
   const body = `
+    ${renderTelvoiceAgentHubBanner(TELVOICE_AGENT_LABELS.admin)}
     <div class="tv-page-head">
       <h1 class="tv-page-title">Agente Telvoice</h1>
       <p class="tv-page-sub">Entrenamiento continuo sin tocar código.</p>
@@ -146,6 +151,7 @@ export function renderAgentTrainingUnansweredList(options: {
     : `<tr><td colspan="8">Sin resultados con estos filtros.</td></tr>`;
 
   const body = `
+    ${renderTelvoiceAgentHubBanner(TELVOICE_AGENT_LABELS.admin)}
     <div class="tv-page-head">
       <h1 class="tv-page-title">Preguntas sin respuesta</h1>
       <p class="tv-page-sub"><a href="/admin/agent-training">← Agente Telvoice</a></p>
@@ -338,6 +344,7 @@ export function renderAgentTrainingFeedbackList(options: {
     : `<tr><td colspan="5">Sin feedback registrado.</td></tr>`;
 
   const body = `
+    ${renderTelvoiceAgentHubBanner(TELVOICE_AGENT_LABELS.admin)}
     <div class="tv-page-head">
       <h1 class="tv-page-title">Feedback del agente</h1>
       <p class="tv-page-sub"><a href="/admin/agent-training">← Agente Telvoice</a></p>
