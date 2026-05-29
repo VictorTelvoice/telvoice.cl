@@ -1,12 +1,23 @@
 import { escapeHtml } from "./html.js";
+import { slugifyManualHeading } from "../services/clientPanelManualMeta.js";
+
+export type MarkdownLiteOptions = {
+  /** Omite el primer h1 del documento (título duplicado en layout). */
+  skipDocumentTitle?: boolean;
+};
 
 /** Conversión mínima Markdown → HTML para manuales internos (sin HTML crudo en el MD). */
-export function markdownLiteToHtml(markdown: string): string {
+export function markdownLiteToHtml(
+  markdown: string,
+  options?: MarkdownLiteOptions,
+): string {
   const lines = markdown.replace(/\r\n/g, "\n").split("\n");
   const out: string[] = [];
   let inCode = false;
   let inTable = false;
   let tableRows: string[] = [];
+  let skippedTitle = !options?.skipDocumentTitle;
+  let inPreamble = false;
 
   const flushTable = (): void => {
     if (!tableRows.length) return;
@@ -73,32 +84,54 @@ export function markdownLiteToHtml(markdown: string): string {
       continue;
     }
     if (line.startsWith("# ")) {
+      if (options?.skipDocumentTitle && !skippedTitle) {
+        skippedTitle = true;
+        inPreamble = true;
+        continue;
+      }
       out.push(`<h1>${inlineMd(line.slice(2).trim())}</h1>`);
       continue;
     }
     if (line.startsWith("## ")) {
-      out.push(`<h2>${inlineMd(line.slice(3).trim())}</h2>`);
+      const title = line.slice(3).trim();
+      if (/tabla de contenidos/i.test(title)) {
+        inPreamble = true;
+        continue;
+      }
+      if (/^\d+\.\s/.test(title)) {
+        inPreamble = false;
+      }
+      const id = slugifyManualHeading(title);
+      out.push(`<h2 id="${escapeHtml(id)}" class="tv-manual-h2">${inlineMd(title)}</h2>`);
       continue;
     }
     if (line.startsWith("### ")) {
-      out.push(`<h3>${inlineMd(line.slice(4).trim())}</h3>`);
+      inPreamble = false;
+      const title = line.slice(4).trim();
+      const id = slugifyManualHeading(title);
+      out.push(`<h3 id="${escapeHtml(id)}" class="tv-manual-h3">${inlineMd(title)}</h3>`);
+      continue;
+    }
+    if (inPreamble) {
       continue;
     }
     if (/^-\s+/.test(trimmed)) {
-      out.push(`<ul><li>${inlineMd(trimmed.replace(/^-\s+/, ""))}</li></ul>`);
+      out.push(`<ul class="tv-manual-list"><li>${inlineMd(trimmed.replace(/^-\s+/, ""))}</li></ul>`);
       continue;
     }
     if (/^\d+\.\s+/.test(trimmed)) {
       out.push(
-        `<ol start="${trimmed.match(/^(\d+)/)?.[1] ?? "1"}"><li>${inlineMd(trimmed.replace(/^\d+\.\s+/, ""))}</li></ol>`,
+        `<ol class="tv-manual-list" start="${trimmed.match(/^(\d+)/)?.[1] ?? "1"}"><li>${inlineMd(trimmed.replace(/^\d+\.\s+/, ""))}</li></ol>`,
       );
       continue;
     }
     if (trimmed.startsWith("> ")) {
-      out.push(`<blockquote><p>${inlineMd(trimmed.slice(2))}</p></blockquote>`);
+      out.push(
+        `<blockquote class="tv-manual-callout"><p>${inlineMd(trimmed.slice(2))}</p></blockquote>`,
+      );
       continue;
     }
-    out.push(`<p>${inlineMd(trimmed)}</p>`);
+    out.push(`<p class="tv-manual-p">${inlineMd(trimmed)}</p>`);
   }
 
   if (inTable) flushTable();
@@ -109,8 +142,8 @@ export function markdownLiteToHtml(markdown: string): string {
 
 function inlineMd(text: string): string {
   let s = escapeHtml(text);
-  s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
+  s = s.replace(/`([^`]+)`/g, "<code class=\"tv-manual-inline-code\">$1</code>");
   s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="tv-manual-link">$1</a>');
   return s;
 }

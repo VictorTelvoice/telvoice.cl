@@ -222,8 +222,14 @@ appRouter.post("/api/key/regenerate", requireClientPanelPage, postAppApiKeyRegen
 appRouter.post("/api/webhook", requireClientPanelPage, postAppApiWebhook);
 appRouter.post("/api/webhook/test", requireClientPanelPage, postAppApiWebhookTest);
 appRouter.post("/api/smpp/request", requireClientPanelPage, postAppApiSmppRequest);
-appRouter.get("/manual", requireClientPanelPage, getAppManual);
-appRouter.get("/manual.pdf", requireClientPanelPage, getAppManualPdf);
+appRouter.get("/support/manual", requireClientPanelPage, getAppManual);
+appRouter.get("/support/manual.pdf", requireClientPanelPage, getAppManualPdf);
+appRouter.get("/manual", requireClientPanelPage, (_req, res) => {
+  res.redirect(301, "/app/support/manual");
+});
+appRouter.get("/manual.pdf", requireClientPanelPage, (_req, res) => {
+  res.redirect(301, "/app/support/manual.pdf");
+});
 appRouter.get("/support", requireClientPanelPage, getAppSupport);
 appRouter.post("/support/tickets", requireClientPanelPage, postAppSupportTicket);
 appRouter.post(

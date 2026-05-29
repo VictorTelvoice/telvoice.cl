@@ -37,7 +37,6 @@ export const APP_NAV_REST: AppNavItem[] = [
   { id: "templates", label: "Plantillas", href: "/app/templates", icon: "description" },
   { id: "invoices", label: "Facturas", href: "/app/invoices", icon: "receipt_long" },
   { id: "api", label: "API", href: "/app/api", icon: "api" },
-  { id: "manual", label: "Manual de envío", href: "/app/manual", icon: "menu_book" },
   { id: "support", label: "Soporte", href: "/app/support", icon: "support_agent" },
   { id: "settings", label: "Configuración", href: "/app/settings", icon: "settings" },
 ];

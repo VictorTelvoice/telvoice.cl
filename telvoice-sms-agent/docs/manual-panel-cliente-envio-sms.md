@@ -2,8 +2,7 @@
 
 Guía operativa para usuarios del panel Telvoice (`https://agent.telvoice.cl/app`). Describe cómo gestionar contactos, plantillas, envíos individuales, campañas masivas, envíos programados y campañas desde agendas, hasta el seguimiento de entregas (DLR).
 
-**Audiencia:** propietarios, administradores y operadores con acceso al panel cliente.  
-**Versión del documento:** mayo 2026 — modo producción (`LIVE SEND`, envíos reales vía operador/aSMSC).
+Ruta web: **Soporte → Guía de envío SMS** (`/app/support/manual`) · PDF: `/app/support/manual.pdf`
 
 ---
 

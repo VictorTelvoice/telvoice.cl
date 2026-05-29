@@ -140,6 +140,57 @@ function supportPageStyles(): string {
       line-height: 1.45;
       flex: 1;
     }
+    .tv-support-manual-guide {
+      margin-bottom: 1rem;
+      border: 1px solid rgba(13, 148, 136, 0.22);
+      background: linear-gradient(135deg, rgba(13, 148, 136, 0.06) 0%, rgba(15, 118, 110, 0.03) 100%);
+    }
+    .tv-support-manual-guide__body {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    @media (min-width: 768px) {
+      .tv-support-manual-guide__body {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+    .tv-support-manual-guide__copy {
+      display: flex;
+      gap: 0.85rem;
+      align-items: flex-start;
+    }
+    .tv-support-manual-guide__icon {
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: 10px;
+      background: rgba(13, 148, 136, 0.12);
+      color: #0f766e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .tv-support-manual-guide__title {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+    .tv-support-manual-guide__text {
+      margin: 0.35rem 0 0;
+      font-size: 0.88rem;
+      color: var(--tv-muted);
+      line-height: 1.5;
+      max-width: 36rem;
+    }
+    .tv-support-manual-guide__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
     .tv-support-empty {
       text-align: center;
       padding: 2.5rem 1.5rem;
@@ -269,6 +320,36 @@ function renderRelatedOrderCard(relatedOrder: SmsOrderWithDetails): string {
         · <a href="/app/orders/${escapeHtml(relatedOrder.id)}">Ver detalle</a>
       </p>
       <p class="field-hint" style="margin:0.5rem 0 0">Puedes crear un ticket y mencionar esta referencia en el mensaje.</p>
+    </div>
+  </section>`;
+}
+
+function renderManualGuideSection(): string {
+  return `<section class="tv-panel tv-support-manual-guide">
+    <div class="tv-panel__body tv-support-manual-guide__body">
+      <div class="tv-support-manual-guide__copy">
+        <div class="tv-support-manual-guide__icon" aria-hidden="true">
+          <span class="material-symbols-outlined">menu_book</span>
+        </div>
+        <div>
+          <h2 class="tv-support-manual-guide__title">Guía de envío SMS</h2>
+          <p class="tv-support-manual-guide__text">
+            Manual paso a paso: contactos, plantillas, campañas masivas, programados, lanzamiento live y seguimiento DLR.
+          </p>
+        </div>
+      </div>
+      <div class="tv-support-manual-guide__actions">
+        ${renderBtn("Abrir manual", {
+          href: "/app/support/manual",
+          variant: "primary",
+          icon: "auto_stories",
+        })}
+        ${renderBtn("Descargar PDF", {
+          href: "/app/support/manual.pdf",
+          variant: "secondary",
+          icon: "download",
+        })}
+      </div>
     </div>
   </section>`;
 }
@@ -1020,7 +1101,6 @@ export function renderAppSupportPage(
       subtitle:
         "Recibe ayuda del equipo Telvoice para compras, saldo SMS, campañas, API, entregabilidad y configuración de tu cuenta.",
       actions: `
-        ${renderBtn("Manual de envío", { href: "/app/manual", variant: "secondary", icon: "menu_book" })}
         <button type="button" class="btn btn-primary" id="tv-support-new-btn">
           <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">add</span>
           Nuevo ticket
@@ -1029,6 +1109,7 @@ export function renderAppSupportPage(
     })}
     ${orderCard}
     ${renderInitialKpis(seedTickets)}
+    ${renderManualGuideSection()}
     <div class="tv-support-layout">
       <div class="tv-support-main">
         <div id="tv-support-empty" class="tv-panel tv-support-empty" hidden>

@@ -1758,7 +1758,7 @@ export async function getAppManualPdf(
   try {
     const ctx = await buildAppContext(req);
     if (!ctx) {
-      res.redirect("/login?next=%2Fapp%2Fmanual.pdf");
+      res.redirect("/login?next=%2Fapp%2Fsupport%2Fmanual.pdf");
       return;
     }
     const pdf = await generateClientPanelManualPdf();
