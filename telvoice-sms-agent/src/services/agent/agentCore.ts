@@ -17,6 +17,7 @@ import {
 import { executePendingAction } from "./executePendingAction.js";
 import { recordUnansweredQuestion } from "./agentUnansweredService.js";
 import { searchKnowledgeForChannel } from "./tools/searchKnowledgeTool.js";
+import { matchesSendSmsIntent } from "./agentSendSmsIntent.js";
 import { getAgentPersona } from "./agentPersona.js";
 import {
   getConversationMemory,
@@ -61,16 +62,24 @@ async function handleConfirmCancel(
   metadata?: Record<string, unknown>,
 ): Promise<AgentCoreResponse> {
   const persona = getAgentPersona(ctx.channel);
-  const isCancel = /^cancel/i.test(message.trim());
   const pending =
     (metadata?.pendingActionId
       ? await getPendingActionDb(String(metadata.pendingActionId))
       : null) ?? (await findPendingForSessionDb(sessionId, ctx.companyId));
+  const isCancel =
+    /^(cancelar|cancelo|no confirmo|anular|detener)\b/i.test(message.trim()) ||
+    (pending != null && /^(no|nop)\b/i.test(message.trim().toLowerCase()));
 
   if (isCancel) {
     if (pending) {
       await clearPendingActionDb(pending.id, "cancelled");
     }
+    await updateConversationMemory(
+      sessionId,
+      ctx.channel,
+      { pendingSmsPhone: undefined, pendingSmsMessage: undefined },
+      ctx.companyId,
+    );
     return {
       reply: composeAgentResponse({
         persona,
@@ -104,6 +113,12 @@ async function handleConfirmCancel(
 
   const rawReply = await executePendingAction(pending);
   await clearPendingActionDb(pending.id, "confirmed");
+  await updateConversationMemory(
+    sessionId,
+    ctx.channel,
+    { pendingSmsPhone: undefined, pendingSmsMessage: undefined },
+    ctx.companyId,
+  );
 
   return {
     reply: composeAgentResponse({
@@ -491,7 +506,9 @@ export async function runAgentCore(
   if (
     response.confidence < 0.45 &&
     response.intent !== "commercial" &&
-    response.intent !== "knowledge"
+    response.intent !== "knowledge" &&
+    response.intent !== "send_sms" &&
+    !matchesSendSmsIntent(message)
   ) {
     const k = await searchKnowledgeForChannel(message, channel);
     if (k.matched && k.confidence > response.confidence) {

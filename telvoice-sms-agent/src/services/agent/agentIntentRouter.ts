@@ -13,6 +13,7 @@ import {
   matchesCommercialBuyIntentNormalized,
   normalizeCommercialText,
 } from "./agentCommercialText.js";
+import { matchesSendSmsIntent } from "./agentSendSmsIntent.js";
 import type { ConversationMemory } from "./agentConversationMemory.js";
 import type { AgentChannel, AgentIntent } from "./types.js";
 
@@ -25,7 +26,7 @@ export type RoutedIntent = {
 };
 
 const CONFIRM_RE =
-  /^(confirmo|si confirmo|sí confirmo|confirmar|ok confirmo|si confirmar|sí confirmar|confirmar envio|confirmar envío)\b/i;
+  /^(confirmo|si confirmo|sí confirmo|confirmar|ok confirmo|si confirmar|sí confirmar|confirmar envio|confirmar envío|enviar ahora|sí, confirmar|si, confirmar|confirmo envio|confirmo envío)\b/i;
 const CANCEL_RE =
   /^(cancelar|cancelo|no confirmo|anular|detener)\b/i;
 
@@ -183,6 +184,43 @@ export function routeAgentIntent(
       requiresAuth: false,
       operationalCommand: null,
     };
+  }
+
+  if (matchesSendSmsIntent(text)) {
+    if (channel === "landing") {
+      return {
+        intent: "send_sms",
+        confidence: 0.92,
+        commercialQuantity: null,
+        requiresAuth: false,
+        operationalCommand: null,
+      };
+    }
+    return {
+      intent: "send_sms",
+      confidence: 0.92,
+      commercialQuantity: null,
+      requiresAuth: true,
+      operationalCommand: channel === "telegram" ? "enviar" : null,
+    };
+  }
+
+  if (memory.pendingSmsPhone || memory.pendingSmsMessage) {
+    const followPhone = text.match(/^(?:al\s+)?(\+?56\s?9[\d\s]{8,}|9\d{8})\s*$/i);
+    const followBody =
+      !matchesSendSmsIntent(text) &&
+      !CONFIRM_RE.test(normalized) &&
+      !CANCEL_RE.test(normalized) &&
+      text.trim().length >= 2;
+    if (followPhone || followBody) {
+      return {
+        intent: "send_sms",
+        confidence: 0.88,
+        commercialQuantity: null,
+        requiresAuth: true,
+        operationalCommand: null,
+      };
+    }
   }
 
   const tg = channel === "telegram" ? classifyTelegramIntent(text, options?.command ?? "") : null;

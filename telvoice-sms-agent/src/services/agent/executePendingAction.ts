@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { env } from "../../config/env.js";
+import { APP_CLIENT_LIVE_SOURCE } from "../../constants/panel-sms-mode.js";
 import { AppError } from "../../utils/errors.js";
+import { sendPanelSms } from "../smsSendService.js";
 import {
   createPanelSmsMessage,
   insertPanelDeliveryEvent,
@@ -123,17 +125,25 @@ export async function executePendingAction(
           });
         }
 
-        const params = new URLSearchParams({
-          to,
-          message,
-          sender_id: senderId,
-        });
-        return (
-          `Tu servidor está en modo **${env.smsProvider.mode}**. ` +
-          `Por seguridad, completa el envío en el panel:\n` +
-          `/app/send-sms?${params.toString()}\n\n` +
-          `Costo estimado: ${String(pending.payload.costSms ?? "?")} SMS.`
-        );
+        try {
+          const result = await sendPanelSms({
+            companyId,
+            to,
+            message,
+            senderId,
+            createdBy: userId,
+            sendSource: APP_CLIENT_LIVE_SOURCE,
+            idempotencyKey: `agent-pending-${pending.id}`,
+          });
+          return (
+            `SMS enviado a ${result.recipientNumber}.\n` +
+            `Mensaje ID: ${result.messageId}\n` +
+            `Costo: ${result.segments} SMS · Saldo restante: ${result.balanceAfter.toLocaleString("es-CL")}.\n` +
+            `Revisa /app/inbox.`
+          );
+        } catch (err) {
+          return formatAgentSmsSendError(err);
+        }
       }
 
       case "launch_campaign": {
@@ -157,15 +167,36 @@ export async function executePendingAction(
     }
 }
 
+function formatAgentSmsSendError(err: unknown): string {
+  if (err instanceof AppError) {
+    const msg = err.message;
+    if (/saldo|insuficiente|wallet/i.test(msg)) {
+      return "No tienes saldo suficiente para este envío. Puedo ayudarte a comprar más SMS.";
+    }
+    if (/proveedor|provider|rechaz|no aceptó/i.test(msg)) {
+      return `El proveedor rechazó el SMS. Motivo: ${msg}`;
+    }
+    return msg;
+  }
+  return "El proveedor rechazó el SMS. Revisa la configuración de tu cuenta o contacta soporte.";
+}
+
 export function buildSendSmsPendingPayload(input: {
   to: string;
   message: string;
   senderId?: string;
+  segments?: number;
+  estimatedCost?: number;
+  companyId?: string;
+  companyLabel?: string;
 }): {
   to: string;
   message: string;
   senderId: string;
   costSms: number;
+  segments: number;
+  companyId?: string;
+  companyLabel?: string;
   confirmToken: string;
 } {
   const seg = calculateSmsSegments(input.message);
@@ -173,7 +204,10 @@ export function buildSendSmsPendingPayload(input: {
     to: input.to,
     message: input.message,
     senderId: input.senderId ?? "TELVOICE",
-    costSms: seg.costSms,
+    costSms: input.estimatedCost ?? seg.costSms,
+    segments: input.segments ?? seg.segments,
+    companyId: input.companyId,
+    companyLabel: input.companyLabel,
     confirmToken: randomUUID().slice(0, 8),
   };
 }

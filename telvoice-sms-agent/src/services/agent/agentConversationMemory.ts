@@ -17,6 +17,8 @@ export type ConversationMemory = {
   userDisplayName?: string;
   pendingFeedback?: boolean;
   lastUserQuestion?: string;
+  pendingSmsPhone?: string;
+  pendingSmsMessage?: string;
   updatedAt?: string;
 };
 

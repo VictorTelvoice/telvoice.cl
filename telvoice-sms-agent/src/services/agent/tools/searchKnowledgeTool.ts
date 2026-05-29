@@ -14,10 +14,24 @@ const CHANNEL_CATEGORY_HINTS: Record<AgentChannel, string[]> = {
   admin: ["errores", "seguridad", "smpp", "api", "telvoice"],
 };
 
-function articleAllowsChannel(
-  article: { allowed_channels?: string[] | null; category: string },
+function articleBlockedOnChannel(
+  article: { title?: string | null; allowed_channels?: string[] | null },
   channel: AgentChannel,
 ): boolean {
+  const title = String(article.title ?? "").toLowerCase();
+  if (channel === "web_client" && title.includes("telegram")) {
+    return true;
+  }
+  return false;
+}
+
+function articleAllowsChannel(
+  article: { allowed_channels?: string[] | null; category: string; title?: string | null },
+  channel: AgentChannel,
+): boolean {
+  if (articleBlockedOnChannel(article, channel)) {
+    return false;
+  }
   const allowed = article.allowed_channels;
   if (allowed?.length) {
     return allowed.includes(channel);

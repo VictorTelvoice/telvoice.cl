@@ -74,6 +74,13 @@ const MIGRATIONS = [
         AND conname = 'panel_agent_sessions_user_id_fkey'
     )`,
   },
+  {
+    id: "048",
+    file: "048_panel_agent_send_sms_knowledge.sql",
+    check: `SELECT 1 FROM knowledge_articles
+      WHERE title = 'Cómo enviar SMS desde el panel cliente'
+      LIMIT 1`,
+  },
 ];
 
 const connectionString = process.env.DATABASE_URL?.trim();

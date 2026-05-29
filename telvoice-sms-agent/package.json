@@ -19,6 +19,7 @@
     "verify:agent-core": "tsx scripts/verify-agent-core.ts",
     "test:agent-persona": "tsx scripts/test-agent-persona.ts",
     "test:panel-agent-session": "node scripts/test-panel-agent-session.mjs",
+    "test:panel-agent-send-sms": "tsx scripts/test-panel-agent-send-sms.ts",
     "migrate:agent-core": "node scripts/apply-migrations-agent-core.mjs",
     "debug:supabase": "tsx scripts/debug-supabase.ts",
     "debug:supabase-rest": "tsx scripts/debug-supabase-rest.ts",

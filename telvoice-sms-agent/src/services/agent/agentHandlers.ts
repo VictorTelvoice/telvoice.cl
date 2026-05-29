@@ -4,10 +4,7 @@ import {
   toolDlrHelp,
   toolEstimateCampaignCost,
 } from "./clientAgentTools.js";
-import { buildSendSmsPendingPayload } from "./executePendingAction.js";
-import {
-  createPendingActionDb,
-} from "./agentPendingActionsService.js";
+import { handleSendSmsFlow } from "./agentSendSmsFlow.js";
 import {
   getCampaignSummaryTool,
   getClientBalanceTool,
@@ -88,21 +85,6 @@ function buildCommercialSuggestedActions(
     actions.push({ label: "Cotizar 30.000 SMS", message: "cotizar 30000 sms" });
   }
   return actions;
-}
-
-function extractPhone(text: string): string | null {
-  const m = text.match(/(\+?56\s?9[\d\s]{8,}|9\d{8})/);
-  if (!m?.[1]) {
-    return null;
-  }
-  const raw = m[1].replace(/\s/g, "");
-  if (raw.startsWith("+")) {
-    return raw;
-  }
-  if (raw.startsWith("569")) {
-    return `+${raw}`;
-  }
-  return `+56${raw}`;
 }
 
 export async function dispatchRoutedIntent(
@@ -265,42 +247,8 @@ export async function dispatchRoutedIntent(
       });
     }
 
-    case "send_sms": {
-      const phone = extractPhone(message);
-      const body = message.replace(/enviar|mandar|sms/gi, "").trim();
-      if (!phone || body.length < 2) {
-        return baseResponse({
-          reply:
-            "Indica número (+569…) y mensaje. Ejemplo: envía a +56912345678: Tu código es 1234",
-          intent,
-          confidence: 0.5,
-          sessionId,
-          safeToExecute: false,
-        });
-      }
-      const payload = buildSendSmsPendingPayload({ to: phone, message: body });
-      const pending = await createPendingActionDb({
-        type: "send_single_sms",
-        summary: `Enviar 1 SMS a ${payload.to} (${payload.costSms} SMS)`,
-        payload,
-        context: ctx,
-      });
-      return baseResponse({
-        reply:
-          `Resumen:\n• Destino: ${payload.to}\n• Costo: ${payload.costSms} SMS\n\n` +
-          `Responde **Confirmo** para continuar o **Cancelar**.`,
-        intent,
-        confidence: route.confidence,
-        requiresConfirmation: true,
-        pendingActionId: pending.id,
-        safeToExecute: false,
-        sessionId,
-        suggestedActions: [
-          { label: "Confirmo", message: "Confirmo" },
-          { label: "Cancelar", message: "Cancelar" },
-        ],
-      });
-    }
+    case "send_sms":
+      return handleSendSmsFlow(route, message, ctx, sessionId);
 
     case "reports":
       return baseResponse({
