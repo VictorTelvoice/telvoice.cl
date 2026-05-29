@@ -1,9 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import {
-  canAccessAdmin,
-  canAccessClient,
-  subjectFromAdmin,
-} from "../auth/authorization.js";
+import { canAccessAdmin, subjectFromAdmin } from "../auth/authorization.js";
 import {
   getAdminJwtCookieName,
   getClientJwtCookieName,
@@ -15,6 +11,8 @@ import { getCurrentUserProfile } from "../services/userProfileService.js";
 import type { AdminSessionUser } from "../types/admin.js";
 import type { UserProfileContext } from "../types/tenant.js";
 import { renderAdminForbiddenPage } from "../views/admin-ui/forbidden-page.js";
+
+const JWT_COOKIE_OPTS = { path: "/" };
 
 declare global {
   namespace Express {
@@ -65,13 +63,41 @@ async function loadSessionFromCookie(
   }
 }
 
-/** Solo cookie de admin: no mezcla sesión cliente al abrir `/admin/login`. */
+function adminAuthSubject(req: Request) {
+  if (!req.adminUser) {
+    return null;
+  }
+  return subjectFromAdmin(req.adminUser, req.userProfile);
+}
+
+/** Cookie tv_admin_session con rol cliente (legacy): no es sesión admin válida. */
+function clearInvalidAdminCookie(req: Request, res: Response): void {
+  res.clearCookie(getAdminJwtCookieName(), JWT_COOKIE_OPTS);
+  req.adminUser = undefined;
+  req.userProfile = null;
+}
+
+/** Solo cookie de admin; ignora tv_client_session. Invalida legacy cliente en tv_admin_session. */
 export async function loadAdminSession(
   req: Request,
-  _res: Response,
+  res: Response,
   next: NextFunction,
 ): Promise<void> {
+  const hadAdminCookie = Boolean(req.cookies?.[getAdminJwtCookieName()]);
   await loadSessionFromCookie(req, getAdminJwtCookieName());
+
+  if (req.adminUser) {
+    const subject = adminAuthSubject(req);
+    if (!subject || !canAccessAdmin(subject)) {
+      if (hadAdminCookie) {
+        clearInvalidAdminCookie(req, res);
+      } else {
+        req.adminUser = undefined;
+        req.userProfile = null;
+      }
+    }
+  }
+
   next();
 }
 
@@ -127,25 +153,16 @@ async function enforceAdminPanelAccess(
   const subject = subjectFromAdmin(req.adminUser, profile);
 
   if (!canAccessAdmin(subject)) {
-    if (canAccessClient(subject)) {
-      res.redirect("/app");
-      return;
-    }
-
-    res
-      .status(403)
-      .type("html")
-      .send(
-        renderAdminForbiddenPage({
-          adminName: req.adminUser.name,
-        }),
-      );
+    clearInvalidAdminCookie(req, res);
+    const nextUrl = encodeURIComponent(req.originalUrl || "/admin");
+    res.redirect(`/admin/login?next=${nextUrl}`);
     return;
   }
 
   next();
 }
 
+/** Solo para /admin/login y /admin/register: nunca redirige a /app. */
 export function redirectIfAuthenticated(
   req: Request,
   res: Response,
@@ -156,13 +173,17 @@ export function redirectIfAuthenticated(
     return;
   }
 
-  const subject = subjectFromAdmin(req.adminUser, req.userProfile);
-  if (canAccessClient(subject) && !canAccessAdmin(subject)) {
-    res.redirect("/app");
+  const subject = adminAuthSubject(req);
+  if (subject && canAccessAdmin(subject)) {
+    res.redirect("/admin");
     return;
   }
 
-  res.redirect("/admin");
+  if (req.cookies?.[getAdminJwtCookieName()]) {
+    clearInvalidAdminCookie(req, res);
+  }
+
+  next();
 }
 
 export function getAdminForbiddenPage(

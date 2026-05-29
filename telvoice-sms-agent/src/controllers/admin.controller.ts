@@ -5,6 +5,7 @@ import {
   canAccessAdminPanel,
   canAccessClientPanel,
 } from "../types/roles.js";
+import { subjectFromAdmin } from "../auth/authorization.js";
 import {
   authenticateAdmin,
   getAdminJwtCookieName,
@@ -14,7 +15,10 @@ import {
   registerGmailAdmin,
   signAdminToken,
 } from "../services/adminAuthService.js";
-import { ensureInternalProfileForAdmin } from "../services/userProfileService.js";
+import {
+  ensureInternalProfileForAdmin,
+  getCurrentUserProfile,
+} from "../services/userProfileService.js";
 import { getBalanceByClientId } from "../services/balanceService.js";
 import { listTelegramUsersByClientId } from "../services/clientTelegramUserService.js";
 import { getTestClientBundle } from "../services/clientService.js";
@@ -132,9 +136,11 @@ export async function postRegister(
       return;
     }
 
-    const token = signAdminToken(result.user);
-    res.cookie(getAdminJwtCookieName(), token, getJwtCookieOptions());
-    res.redirect(resolvePostAuthRedirect(result.user.role, nextPath));
+    const regProfile = await getCurrentUserProfile(result.user);
+    setSessionCookies(res, result.user, regProfile);
+    res.redirect(
+      resolvePostAuthRedirect(subjectFromAdmin(result.user, regProfile).role, nextPath),
+    );
   } catch (error) {
     next(error);
   }
@@ -166,13 +172,48 @@ export async function postLogin(
     }
 
     await ensureInternalProfileForAdmin(admin);
-
-    const token = signAdminToken(admin);
-    res.cookie(getAdminJwtCookieName(), token, getJwtCookieOptions());
-    res.redirect(resolvePostAuthRedirect(admin.role, nextPath));
+    const profile = await getCurrentUserProfile(admin);
+    const sessionUser = {
+      ...admin,
+      role: subjectFromAdmin(admin, profile).role,
+      companyId: profile?.companyId ?? admin.companyId,
+    };
+    setSessionCookies(res, sessionUser, profile);
+    res.redirect(resolvePostAuthRedirect(sessionUser.role, nextPath));
   } catch (error) {
     next(error);
   }
+}
+
+function setSessionCookies(
+  res: Response,
+  admin: { id: string; email: string; name: string; role: string; companyId?: string | null },
+  profile: Awaited<ReturnType<typeof getCurrentUserProfile>>,
+): void {
+  const subject = subjectFromAdmin(admin, profile);
+  const token = signAdminToken({
+    id: admin.id,
+    email: admin.email,
+    name: admin.name,
+    role: subject.role,
+    companyId: subject.companyId ?? undefined,
+  });
+  const opts = getJwtCookieOptions();
+  const cookiePath = { path: "/" };
+
+  if (canAccessAdminPanel(subject.role)) {
+    res.cookie(getAdminJwtCookieName(), token, opts);
+    res.clearCookie(getClientJwtCookieName(), cookiePath);
+    return;
+  }
+
+  if (canAccessClientPanel(subject.role)) {
+    res.cookie(getClientJwtCookieName(), token, opts);
+    res.clearCookie(getAdminJwtCookieName(), cookiePath);
+    return;
+  }
+
+  res.cookie(getAdminJwtCookieName(), token, opts);
 }
 
 function resolvePostAuthRedirect(role: string, nextPath: string): string {
