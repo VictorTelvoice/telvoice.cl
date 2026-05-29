@@ -65,6 +65,15 @@ const MIGRATIONS = [
     check: `SELECT 1 FROM information_schema.tables
       WHERE table_schema = 'public' AND table_name = 'agent_feedback'`,
   },
+  {
+    id: "047",
+    file: "047_fix_panel_agent_sessions_user_fk.sql",
+    check: `SELECT 1 WHERE NOT EXISTS (
+      SELECT 1 FROM pg_constraint
+      WHERE conrelid = 'public.panel_agent_sessions'::regclass
+        AND conname = 'panel_agent_sessions_user_id_fkey'
+    )`,
+  },
 ];
 
 const connectionString = process.env.DATABASE_URL?.trim();

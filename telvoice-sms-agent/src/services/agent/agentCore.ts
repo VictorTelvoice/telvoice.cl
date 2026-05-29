@@ -135,34 +135,44 @@ async function persistTurn(
     return sessionId ?? `sess-${randomUUID()}`;
   }
 
-  const sid = await ensurePanelAgentSession({
-    sessionId,
-    companyId,
-    userId: userId ?? null,
-    channel: "web_client",
-  });
+  const fallbackId = sessionId ?? `sess-${randomUUID()}`;
 
-  await appendPanelAgentMessage({
-    sessionId: sid,
-    companyId,
-    role: "user",
-    content: userMessage,
-    metadata: { intent: assistant.intent },
-  });
+  try {
+    const sid = await ensurePanelAgentSession({
+      sessionId,
+      companyId,
+      userId: userId ?? null,
+      channel: "web_client",
+    });
 
-  await appendPanelAgentMessage({
-    sessionId: sid,
-    companyId,
-    role: "assistant",
-    content: assistant.reply,
-    metadata: {
-      intent: assistant.intent,
-      confidence: assistant.confidence,
-      pendingActionId: assistant.pendingActionId,
-    },
-  });
+    await appendPanelAgentMessage({
+      sessionId: sid,
+      companyId,
+      role: "user",
+      content: userMessage,
+      metadata: { intent: assistant.intent },
+    });
 
-  return sid;
+    await appendPanelAgentMessage({
+      sessionId: sid,
+      companyId,
+      role: "assistant",
+      content: assistant.reply,
+      metadata: {
+        intent: assistant.intent,
+        confidence: assistant.confidence,
+        pendingActionId: assistant.pendingActionId,
+      },
+    });
+
+    return sid;
+  } catch (err) {
+    console.warn(
+      "[agentCore] persistTurn failed; chat continues without DB history",
+      err instanceof Error ? err.message : err,
+    );
+    return fallbackId;
+  }
 }
 
 async function applyLandingLeadFlow(

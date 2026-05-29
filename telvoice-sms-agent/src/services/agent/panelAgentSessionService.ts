@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
+import type { PostgrestError } from "@supabase/supabase-js";
 import { getSupabase } from "../../database/supabaseClient.js";
 import { isMissingTableError } from "../../utils/db-table.js";
-import { wrapSupabaseError } from "../../utils/supabase-errors.js";
+import { formatSupabaseError } from "../../utils/supabase-errors.js";
 import type { AgentChannel } from "./types.js";
 
 export type PanelAgentMessageRow = {
@@ -15,8 +16,46 @@ export type PanelAgentMessageRow = {
 
 const memorySessions = new Map<
   string,
-  { companyId: string; userId: string | null; channel: AgentChannel; messages: PanelAgentMessageRow[] }
+  {
+    companyId: string;
+    userId: string | null;
+    channel: AgentChannel;
+    messages: PanelAgentMessageRow[];
+  }
 >();
+
+function isPersistRecoverableError(error: PostgrestError | null): boolean {
+  if (!error) {
+    return false;
+  }
+  if (isMissingTableError(error)) {
+    return true;
+  }
+  const msg = (error.message ?? "").toLowerCase();
+  return (
+    error.code === "23503" ||
+    msg.includes("foreign key") ||
+    msg.includes("violates foreign key constraint")
+  );
+}
+
+function activateMemorySession(
+  sessionId: string,
+  input: { companyId: string; userId: string | null; channel: AgentChannel },
+): void {
+  if (!memorySessions.has(sessionId)) {
+    memorySessions.set(sessionId, {
+      companyId: input.companyId,
+      userId: input.userId,
+      channel: input.channel,
+      messages: [],
+    });
+  }
+}
+
+function warnPersist(context: string, error: PostgrestError | null): void {
+  console.warn(`[panelAgentSession] ${context}: ${formatSupabaseError(error ?? { message: "unknown" })}`);
+}
 
 export async function ensurePanelAgentSession(input: {
   sessionId?: string | null;
@@ -32,24 +71,24 @@ export async function ensurePanelAgentSession(input: {
   }
 
   const id = randomUUID();
-  const { error } = await getSupabase().from("panel_agent_sessions").insert({
+  const row = {
     id,
     company_id: input.companyId,
     user_id: input.userId,
     channel: input.channel,
-  });
+  };
+
+  const { error } = await getSupabase().from("panel_agent_sessions").insert(row);
 
   if (error) {
-    if (isMissingTableError(error)) {
-      memorySessions.set(id, {
-        companyId: input.companyId,
-        userId: input.userId,
-        channel: input.channel,
-        messages: [],
-      });
+    if (isPersistRecoverableError(error)) {
+      warnPersist("ensurePanelAgentSession fallback (memory)", error);
+      activateMemorySession(id, input);
       return id;
     }
-    wrapSupabaseError(error, "ensurePanelAgentSession");
+    warnPersist("ensurePanelAgentSession unexpected error, memory fallback", error);
+    activateMemorySession(id, input);
+    return id;
   }
 
   return id;
@@ -73,7 +112,8 @@ async function getSessionMeta(
     if (isMissingTableError(error)) {
       return null;
     }
-    wrapSupabaseError(error, "getSessionMeta");
+    warnPersist("getSessionMeta", error);
+    return null;
   }
 
   return data as { company_id: string } | null;
@@ -88,6 +128,9 @@ export async function appendPanelAgentMessage(input: {
 }): Promise<void> {
   const mem = memorySessions.get(input.sessionId);
   if (mem) {
+    if (mem.companyId !== input.companyId) {
+      return;
+    }
     mem.messages.push({
       id: randomUUID(),
       session_id: input.sessionId,
@@ -99,6 +142,11 @@ export async function appendPanelAgentMessage(input: {
     return;
   }
 
+  const session = await getSessionMeta(input.sessionId);
+  if (!session || session.company_id !== input.companyId) {
+    return;
+  }
+
   const { error } = await getSupabase().from("panel_agent_messages").insert({
     session_id: input.sessionId,
     role: input.role,
@@ -106,8 +154,28 @@ export async function appendPanelAgentMessage(input: {
     metadata: input.metadata ?? {},
   });
 
-  if (error && !isMissingTableError(error)) {
-    wrapSupabaseError(error, "appendPanelAgentMessage");
+  if (error) {
+    if (isPersistRecoverableError(error)) {
+      warnPersist("appendPanelAgentMessage fallback (memory)", error);
+      activateMemorySession(input.sessionId, {
+        companyId: input.companyId,
+        userId: null,
+        channel: "web_client",
+      });
+      const fallback = memorySessions.get(input.sessionId);
+      if (fallback) {
+        fallback.messages.push({
+          id: randomUUID(),
+          session_id: input.sessionId,
+          role: input.role,
+          content: input.content,
+          metadata: input.metadata ?? null,
+          created_at: new Date().toISOString(),
+        });
+      }
+      return;
+    }
+    warnPersist("appendPanelAgentMessage", error);
   }
 }
 
@@ -140,8 +208,18 @@ export async function listPanelAgentMessages(
     if (isMissingTableError(error)) {
       return [];
     }
-    wrapSupabaseError(error, "listPanelAgentMessages");
+    warnPersist("listPanelAgentMessages", error);
+    return [];
   }
 
   return (data ?? []) as PanelAgentMessageRow[];
+}
+
+/** Solo para tests: simula fallo de FK en insert de sesión. */
+export function __resetPanelAgentMemorySessionsForTests(): void {
+  memorySessions.clear();
+}
+
+export function __memorySessionCountForTests(): number {
+  return memorySessions.size;
 }
