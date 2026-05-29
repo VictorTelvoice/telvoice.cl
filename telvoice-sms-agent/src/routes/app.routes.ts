@@ -31,7 +31,6 @@ import {
   getAppRoot,
   getAppSendSms,
   postAppSendSms,
-  getAppSettings,
   getAppSupport,
   postAppSupportTicket,
   postAppSupportTicketReply,
@@ -47,6 +46,10 @@ import {
   getAppMercadoPagoReturn,
   postAppBuySmsMercadoPago,
 } from "../controllers/app-payments.controller.js";
+import {
+  getAppSettings,
+  postAppSettings,
+} from "../controllers/app-settings.controller.js";
 import {
   getAppTemplates,
   postAppSmsTemplate,
@@ -188,3 +191,4 @@ appRouter.post(
   postAppSupportTicketResolve,
 );
 appRouter.get("/settings", requireClientPanelPage, getAppSettings);
+appRouter.post("/settings", requireClientPanelPage, postAppSettings);

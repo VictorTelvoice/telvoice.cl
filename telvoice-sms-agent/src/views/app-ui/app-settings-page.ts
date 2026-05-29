@@ -1,65 +1,13 @@
+import type {
+  AppSettingsPageData,
+  ClientSettingsData,
+} from "../../types/client-settings.js";
 import { escapeHtml } from "../../utils/html.js";
 import { renderPageHeader, renderTabs } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
 
-export type ClientSettingsData = {
-  activeTab: string;
-  company: {
-    name: string;
-    rut: string;
-    activity: string;
-    website: string;
-    country: string;
-    city: string;
-    address: string;
-    contactName: string;
-    contactEmail: string;
-    contactPhone: string;
-  };
-  billing: {
-    legalName: string;
-    rut: string;
-    address: string;
-    email: string;
-    country: string;
-    currency: string;
-    sendReceipts: boolean;
-    sendInvoices: boolean;
-    notifyPending: boolean;
-    notifyCredited: boolean;
-  };
-  notifications: {
-    purchaseStarted: boolean;
-    paymentApproved: boolean;
-    balanceCredited: boolean;
-    paymentRejected: boolean;
-    lowBalance: boolean;
-    campaignFinished: boolean;
-    massDeliveryError: boolean;
-    dlrReports: boolean;
-    apiKeyRegenerated: boolean;
-    webhookErrors: boolean;
-    rateLimit: boolean;
-    ticketNewMessage: boolean;
-    ticketResolved: boolean;
-    ticketWaiting: boolean;
-    lowBalanceThreshold: number;
-  };
-  preferences: {
-    language: string;
-    timezone: string;
-    dateFormat: string;
-    homePage: string;
-    ticketView: string;
-    showQuickHelp: boolean;
-    defaultSender: string;
-    defaultCountry: string;
-    phoneFormat: string;
-    warnMultiSms: boolean;
-    confirmMassSend: boolean;
-  };
-};
+export type { ClientSettingsData };
 
 const SETTINGS_TABS = [
   { id: "empresa", label: "Empresa" },
@@ -579,16 +527,32 @@ function renderAccountAside(ctx: AppPageContext): string {
 
 function renderSettingsScript(
   companyId: string,
-  defaults: ClientSettingsData,
+  pageData: AppSettingsPageData,
 ): string {
-  const defaultsJson = JSON.stringify(defaults).replace(/</g, "\\u003c");
+  const serverJson = JSON.stringify(pageData.settings).replace(/</g, "\\u003c");
+  const dbAvailable =
+    pageData.module.available && companyId !== "default";
+  const syncHint =
+    pageData.syncSource === "supabase"
+      ? "Configuración sincronizada con tu empresa."
+      : pageData.syncSource === "local"
+        ? "Configuración guardada localmente."
+        : dbAvailable
+          ? "Aún no has guardado configuración en la nube."
+          : "Los cambios se guardan en este navegador hasta conectar Supabase.";
 
   return `<script>
 (function () {
   var STORAGE_KEY = "telvoice_client_settings_${escapeHtml(companyId)}";
-  var DEFAULTS = ${defaultsJson};
+  var SERVER_SETTINGS = ${serverJson};
+  var DB_AVAILABLE = ${dbAvailable ? "true" : "false"};
+  var SERVER_HAS_RECORD = ${pageData.hasStoredRecord ? "true" : "false"};
+  var SERVER_SYNC = ${JSON.stringify(pageData.syncSource)};
+  var SYNC_HINT = ${JSON.stringify(syncHint)};
   var lastSaved = null;
+  var syncSource = SERVER_SYNC;
   var toast = document.getElementById("tv-settings-toast");
+  var syncHintEl = document.getElementById("tv-settings-sync-hint");
 
   function showToast(msg, isError) {
     if (!toast) return;
@@ -603,16 +567,7 @@ function renderSettingsScript(
     return JSON.parse(JSON.stringify(o));
   }
 
-  function loadSettings() {
-    try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        var p = JSON.parse(raw);
-        if (p && typeof p === "object") return mergeDefaults(p, DEFAULTS);
-      }
-    } catch (e) {}
-    return deepClone(DEFAULTS);
-  }
+  if (syncHintEl) syncHintEl.textContent = SYNC_HINT;
 
   function mergeDefaults(saved, defs) {
     var m = deepClone(defs);
@@ -622,6 +577,62 @@ function renderSettingsScript(
     if (saved.notifications) Object.assign(m.notifications, saved.notifications);
     if (saved.preferences) Object.assign(m.preferences, saved.preferences);
     return m;
+  }
+
+  function loadLocalSettings() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var p = JSON.parse(raw);
+        if (p && typeof p === "object") return mergeDefaults(p, SERVER_SETTINGS);
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function loadSettings() {
+    if (DB_AVAILABLE && SERVER_HAS_RECORD) {
+      syncSource = "supabase";
+      return deepClone(SERVER_SETTINGS);
+    }
+    if (!DB_AVAILABLE) {
+      var local = loadLocalSettings();
+      if (local) {
+        syncSource = "local";
+        return local;
+      }
+      return deepClone(SERVER_SETTINGS);
+    }
+    return deepClone(SERVER_SETTINGS);
+  }
+
+  function updateSyncHint() {
+    if (!syncHintEl) return;
+    if (syncSource === "supabase") {
+      syncHintEl.textContent = "Configuración sincronizada con tu empresa.";
+    } else if (syncSource === "local") {
+      syncHintEl.textContent = "Configuración guardada localmente.";
+    } else {
+      syncHintEl.textContent = SYNC_HINT;
+    }
+  }
+
+  function postJson(payload) {
+    return fetch("/app/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).then(function (res) {
+      return res.json().then(function (body) {
+        return { ok: res.ok, body: body };
+      });
+    });
+  }
+
+  function saveLocal(s) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    } catch (e) {}
   }
 
   function val(id) {
@@ -809,9 +820,41 @@ function renderSettingsScript(
   document.getElementById("tv-settings-save")?.addEventListener("click", function () {
     var s = collectSettings();
     if (!validate(s)) return;
+
+    function finishSave(saved, source) {
+      lastSaved = deepClone(saved);
+      applySettings(saved);
+      syncSource = source;
+      updateSyncHint();
+    }
+
+    if (DB_AVAILABLE) {
+      postJson(s).then(function (r) {
+        if (r.ok && r.body && r.body.ok) {
+          var saved = r.body.settings || s;
+          saveLocal(saved);
+          finishSave(saved, "supabase");
+          showToast("Configuración guardada correctamente.");
+          return;
+        }
+        saveLocal(s);
+        finishSave(s, "local");
+        showToast(
+          "Configuración guardada localmente. Se sincronizará cuando la conexión esté disponible.",
+        );
+      }).catch(function () {
+        saveLocal(s);
+        finishSave(s, "local");
+        showToast(
+          "Configuración guardada localmente. Se sincronizará cuando la conexión esté disponible.",
+        );
+      });
+      return;
+    }
+
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-      lastSaved = deepClone(s);
+      saveLocal(s);
+      finishSave(s, "local");
       showToast("Configuración guardada correctamente.");
     } catch (e) {
       showToast("No se pudo guardar la configuración.", true);
@@ -820,10 +863,10 @@ function renderSettingsScript(
 
   document.getElementById("tv-settings-restore")?.addEventListener("click", function () {
     if (lastSaved) {
-      applySettings(lastSaved);
+      applySettings(deepClone(lastSaved));
       showToast("Se restauraron los últimos cambios guardados.");
     } else {
-      applySettings(deepClone(DEFAULTS));
+      applySettings(deepClone(SERVER_SETTINGS));
       showToast("Se restauró la configuración predeterminada.");
     }
   });
@@ -853,9 +896,22 @@ function renderSettingsScript(
 </script>`;
 }
 
-export function renderAppSettingsPage(ctx: AppPageContext): string {
+export function renderAppSettingsPage(
+  ctx: AppPageContext,
+  pageData?: AppSettingsPageData,
+): string {
   const defaults = buildDefaultClientSettings(ctx);
-  const tabs = renderTabs([...SETTINGS_TABS], "empresa", "settings");
+  const data: AppSettingsPageData = pageData ?? {
+    module: { available: false, migrationPending: false },
+    settings: defaults,
+    syncSource: "defaults",
+    hasStoredRecord: false,
+  };
+  const tabs = renderTabs(
+    [...SETTINGS_TABS],
+    data.settings.activeTab || "empresa",
+    "settings",
+  );
 
   const body = `
     ${settingsPageStyles()}
@@ -864,6 +920,8 @@ export function renderAppSettingsPage(ctx: AppPageContext): string {
       title: "Configuración",
       subtitle:
         "Administra los datos de tu empresa, facturación, seguridad, notificaciones y preferencias de uso del panel Telvoice.",
+      subtitleHtml:
+        'Administra los datos de tu empresa, facturación, seguridad, notificaciones y preferencias de uso del panel Telvoice. <span id="tv-settings-sync-hint" class="field-hint" style="display:block;margin-top:0.35rem"></span>',
       actions: `
         <button type="button" class="btn btn-primary" id="tv-settings-save">
           <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">save</span>
@@ -895,7 +953,7 @@ export function renderAppSettingsPage(ctx: AppPageContext): string {
       </div>
     </div>
     <div class="tv-settings-toast" id="tv-settings-toast" role="status" aria-live="polite" aria-hidden="true"></div>
-    ${renderSettingsScript(ctx.company.id || "default", defaults)}`;
+    ${renderSettingsScript(ctx.company.id || "default", data)}`;
 
   return wrapAppPage(ctx, "settings", "Configuración", body);
 }

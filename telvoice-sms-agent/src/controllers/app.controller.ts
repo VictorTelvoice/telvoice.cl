@@ -53,7 +53,6 @@ import {
   renderAppApiPage,
   renderAppContactsPage,
   parseContactsPageFilters,
-  renderAppSettingsPage,
   renderAppSupportPage,
 } from "../views/app-ui/app-section-pages.js";
 import type { ContactStatus, ContactSummary } from "../types/contacts.js";
@@ -1835,12 +1834,4 @@ export async function postAppSupportTicketResolve(
         : "No se pudo marcar el ticket como resuelto.";
     res.status(500).json({ ok: false, error: msg });
   }
-}
-
-export async function getAppSettings(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
-  await withAppContext(req, res, next, (ctx) => renderAppSettingsPage(ctx));
 }
