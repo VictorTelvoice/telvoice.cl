@@ -196,6 +196,9 @@ jobs:
 
           cd "$APP_PATH"
           npm ci
+          npm run migrate:agent-core
+          npm run verify:agent-core
+          npm run typecheck
           npm run build
 
           if pm2 describe telvoice-sms-agent >/dev/null 2>&1; then

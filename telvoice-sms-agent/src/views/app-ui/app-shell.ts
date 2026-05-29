@@ -7,6 +7,11 @@ import {
   renderSidebarBrand,
 } from "../brand.js";
 import {
+  getPanelAgentWidgetScript,
+  getPanelAgentWidgetStyles,
+  renderPanelAgentWidget,
+} from "../../components/app/client-agent-widget.js";
+import {
   APP_NAV_PRIMARY,
   APP_NAV_REST,
   APP_NAV_SEND_SMS,
@@ -155,6 +160,7 @@ export function renderAppLayout(options: AppLayoutOptions): string {
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="${APP_PANEL_STYLESHEET}" />
+  <style>${getPanelAgentWidgetStyles()}</style>
 </head>
 <body class="tv-admin tv-app-client">
   <div class="tv-app">
@@ -165,7 +171,9 @@ export function renderAppLayout(options: AppLayoutOptions): string {
       <main class="tv-content">${options.body}</main>
     </div>
   </div>
+  ${renderPanelAgentWidget()}
   ${SIDEBAR_SCRIPT}
+  <script>${getPanelAgentWidgetScript()}</script>
 </body>
 </html>`;
 }
