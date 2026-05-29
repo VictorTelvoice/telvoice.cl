@@ -24,6 +24,7 @@ import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
 
 const API_DOCS_URL = "https://www.telvoice.cl";
 const API_BASE_URL = "https://api.telvoice.cl";
+const SANDBOX_API_BASE_URL = "https://agent.telvoice.cl";
 
 export const DEFAULT_MOCK_API_KEY = DEFAULT_DEMO_API_KEY;
 export type { ClientApiCredentials, ClientApiWebhookConfig };
@@ -58,7 +59,7 @@ const API_ENDPOINTS = [
     path: "/api/v1/sms/send",
     title: "Enviar SMS",
     description:
-      "Envía un mensaje SMS a uno o varios destinatarios usando tu saldo disponible.",
+      "Envía un mensaje SMS en sandbox (no envía SMS real ni descuenta saldo). Requiere API Key tlv_test_ con scope sms:send.",
   },
   {
     method: "GET",
@@ -857,17 +858,17 @@ function renderRealApiKeysScript(data: AppApiPageData): string {
 }
 
 function buildExampleSnippets(apiKey: string): Record<"curl" | "javascript" | "php", string> {
-  const key = apiKey;
-  const curl = `curl -X POST ${API_BASE_URL}/api/v1/sms/send \\
+  const key = apiKey.startsWith("tlv_") ? apiKey : "tlv_test_xxxxx";
+  const curl = `curl -X POST ${SANDBOX_API_BASE_URL}/api/v1/sms/send \\
   -H "Authorization: Bearer ${key}" \\
   -H "Content-Type: application/json" \\
   -d '{
   "to": "+56912345678",
-  "message": "Tu código de verificación es 123456",
+  "message": "Mensaje de prueba sandbox",
   "sender": "Telvoice"
 }'`;
 
-  const javascript = `const response = await fetch("${API_BASE_URL}/api/v1/sms/send", {
+  const javascript = `const response = await fetch("${SANDBOX_API_BASE_URL}/api/v1/sms/send", {
   method: "POST",
   headers: {
     "Authorization": "Bearer ${key}",
@@ -875,14 +876,14 @@ function buildExampleSnippets(apiKey: string): Record<"curl" | "javascript" | "p
   },
   body: JSON.stringify({
     to: "+56912345678",
-    message: "Tu código de verificación es 123456",
+    message: "Mensaje de prueba sandbox",
     sender: "Telvoice"
   })
 });
 
 const data = await response.json();`;
 
-  const php = `$ch = curl_init("${API_BASE_URL}/api/v1/sms/send");
+  const php = `$ch = curl_init("${SANDBOX_API_BASE_URL}/api/v1/sms/send");
 
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
   "Authorization: Bearer ${key}",
@@ -892,7 +893,7 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, [
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
   "to" => "+56912345678",
-  "message" => "Tu código de verificación es 123456",
+  "message" => "Mensaje de prueba sandbox",
   "sender" => "Telvoice"
 ]));
 
@@ -974,6 +975,9 @@ function renderExampleSection(apiKey: string): string {
       <p class="tv-section-head__sub">Integra el envío de SMS en tu backend en minutos.</p>
     </header>
     <div class="tv-panel__body">
+      <div class="alert alert-warn" role="status" style="margin-bottom:1rem">
+        El envío por API está disponible solo en sandbox. No envía SMS reales ni descuenta saldo.
+      </div>
       <div class="tv-api-example-tabs" role="tablist" id="tv-api-example-tabs">
         <button type="button" class="tv-tab tv-tab--active" data-example="curl" aria-selected="true">cURL</button>
         <button type="button" class="tv-tab" data-example="javascript" aria-selected="false">JavaScript</button>

@@ -7,6 +7,7 @@ import type {
   AuthenticatedApiKeyContext,
   ClientApiKeyScope,
 } from "../types/client-api-keys.js";
+import type { ClientApiRequestMethod } from "../types/client-api-requests.js";
 import { publicApiError } from "../utils/public-api-response.js";
 import {
   getPublicApiRequestId,
@@ -21,11 +22,26 @@ declare global {
   }
 }
 
-// TODO(Fase 3/4): rate limits por apiKeyId / companyId (Redis o tabla dedicada).
+function parseRequestMethod(req: Request): ClientApiRequestMethod {
+  const method = req.method.toUpperCase();
+  if (
+    method === "GET" ||
+    method === "POST" ||
+    method === "PUT" ||
+    method === "PATCH" ||
+    method === "DELETE"
+  ) {
+    return method;
+  }
+  return "GET";
+}
+
+// TODO(Fase 4): rate limits por apiKeyId / companyId (Redis o tabla dedicada).
 export function requireApiKeyScope(requiredScope: ClientApiKeyScope) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const endpoint = (req.originalUrl ?? req.path).split("?")[0] || "/api/v1";
     const requestId = getPublicApiRequestId(req);
+    const method = parseRequestMethod(req);
 
     try {
       const auth = await authenticateClientApiKey(
@@ -37,7 +53,7 @@ export function requireApiKeyScope(requiredScope: ClientApiKeyScope) {
         recordPublicApiRequest({
           req,
           endpoint,
-          method: "GET",
+          method,
           statusCode: auth.statusCode,
           success: false,
           companyId: auth.resolved?.companyId ?? null,
@@ -72,7 +88,7 @@ export function requireApiKeyScope(requiredScope: ClientApiKeyScope) {
       recordPublicApiRequest({
         req,
         endpoint,
-        method: "GET",
+        method,
         statusCode: 500,
         success: false,
         errorCode: "INTERNAL_ERROR",

@@ -206,11 +206,11 @@ if (
 console.log("OK: wallet sin cambios");
 
 const smsSend = await fetch(`${BASE}/api/v1/sms/send`, { method: "POST" });
-if (smsSend.status !== 404) {
-  console.error("FAIL /api/v1/sms/send exists", smsSend.status);
+if (smsSend.status !== 401) {
+  console.error("FAIL /api/v1/sms/send auth", smsSend.status);
   process.exit(1);
 }
-console.log("OK: /api/v1/sms/send no existe");
+console.log("OK: /api/v1/sms/send requiere auth");
 
 const smokePaths = [
   "/app/api",

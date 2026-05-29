@@ -22,6 +22,7 @@ export type PublicApiRequestLogParams = {
   environment?: ClientApiKeyEnvironment | null;
   errorCode?: string | null;
   errorMessage?: string | null;
+  metadata?: Record<string, unknown>;
 };
 
 export function recordPublicApiRequest(params: PublicApiRequestLogParams): void {
@@ -56,6 +57,7 @@ export function recordPublicApiRequest(params: PublicApiRequestLogParams): void 
         : undefined,
     ),
     durationMs: getPublicApiDurationMs(req),
+    metadata: params.metadata ?? {},
   }).catch(() => {
     /* no bloquear respuesta */
   });
