@@ -6,7 +6,7 @@ import type {
 import { SUPPORT_CATEGORIES } from "../../types/support-tickets.js";
 import { escapeHtml } from "../../utils/html.js";
 import { renderKpiCard } from "../admin-ui/components.js";
-import { renderPageHeader } from "../admin-ui/page-kit.js";
+import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
 import { renderOrderShortIdCell } from "./app-order-ui.js";
@@ -1020,6 +1020,7 @@ export function renderAppSupportPage(
       subtitle:
         "Recibe ayuda del equipo Telvoice para compras, saldo SMS, campañas, API, entregabilidad y configuración de tu cuenta.",
       actions: `
+        ${renderBtn("Manual de envío", { href: "/app/manual", variant: "secondary", icon: "menu_book" })}
         <button type="button" class="btn btn-primary" id="tv-support-new-btn">
           <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">add</span>
           Nuevo ticket

@@ -32,6 +32,8 @@ import {
   getAppRoot,
   getAppSendSms,
   postAppSendSms,
+  getAppManual,
+  getAppManualPdf,
   getAppSupport,
   postAppSupportTicket,
   postAppSupportTicketReply,
@@ -220,6 +222,8 @@ appRouter.post("/api/key/regenerate", requireClientPanelPage, postAppApiKeyRegen
 appRouter.post("/api/webhook", requireClientPanelPage, postAppApiWebhook);
 appRouter.post("/api/webhook/test", requireClientPanelPage, postAppApiWebhookTest);
 appRouter.post("/api/smpp/request", requireClientPanelPage, postAppApiSmppRequest);
+appRouter.get("/manual", requireClientPanelPage, getAppManual);
+appRouter.get("/manual.pdf", requireClientPanelPage, getAppManualPdf);
 appRouter.get("/support", requireClientPanelPage, getAppSupport);
 appRouter.post("/support/tickets", requireClientPanelPage, postAppSupportTicket);
 appRouter.post(

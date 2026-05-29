@@ -123,6 +123,8 @@ import {
   dlrReportRowsToCsv,
 } from "../services/smsDlrReportService.js";
 import { renderAppReportsPage } from "../views/app-ui/app-reports-page.js";
+import { generateClientPanelManualPdf } from "../services/clientPanelManualPdfService.js";
+import { renderAppManualPage } from "../views/app-ui/app-manual-page.js";
 import {
   parseAppInvoiceFilters,
   renderAppInvoiceDetailPage,
@@ -1737,6 +1739,37 @@ export async function getAppInvoicePreview(
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Error al generar comprobante";
     res.status(500).type("html").send(`<p>${escapeHtml(msg)}</p>`);
+  }
+}
+
+export async function getAppManual(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  await withAppContext(req, res, next, (ctx) => renderAppManualPage(ctx));
+}
+
+export async function getAppManualPdf(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const ctx = await buildAppContext(req);
+    if (!ctx) {
+      res.redirect("/login?next=%2Fapp%2Fmanual.pdf");
+      return;
+    }
+    const pdf = await generateClientPanelManualPdf();
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="telvoice-manual-panel-cliente.pdf"',
+    );
+    res.send(pdf);
+  } catch (error) {
+    next(error);
   }
 }
 

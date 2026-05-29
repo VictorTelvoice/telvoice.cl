@@ -106,12 +106,12 @@ function confirmStep(preview: CampaignPreviewResult): string {
   return `<section class="tv-panel" id="paso-confirmar">
     <header class="tv-section-head" style="padding:1rem 1.25rem 0">
       <h2 class="tv-section-head__title">4. Confirmación</h2>
-      <p class="tv-section-head__sub">Guarda un borrador; luego simúlalo desde Campañas (modo mock, sin proveedor real)</p>
+      <p class="tv-section-head__sub">Guarda un borrador; luego confirma el envío real desde el detalle de la campaña</p>
     </header>
     <div class="tv-panel__body">
       <p class="alert alert-warn">
         Guardar borrador no envía SMS ni descuenta saldo.
-        La simulación mock (desde la lista de campañas) registra mensajes ficticios y puede descontar saldo de prueba.
+        Desde el detalle de la campaña podrás revisar la preparación operativa y lanzar el envío real a cola.
       </p>
       <form method="post" action="/app/campaigns/drafts" class="tv-dlr-report__filters-form">
         ${hidden}
@@ -123,7 +123,7 @@ function confirmStep(preview: CampaignPreviewResult): string {
           <a class="btn btn-secondary btn-sm" href="/app/campaigns">Ir a campañas</a>
         </div>
       </form>
-      <p class="field-hint" style="margin-top:0.5rem">Tras guardar, abre el detalle o usa «Simular campaña» en el listado. No contacta operadores ni aSMSC.</p>
+      <p class="field-hint" style="margin-top:0.5rem">Tras guardar, abre el detalle de la campaña y usa «Enviar campaña real» cuando estés listo.</p>
     </div>
   </section>`;
 }
@@ -133,7 +133,7 @@ function noAudienceState(): string {
     <div class="tv-panel__body tv-coming-soon">
       <span class="material-symbols-outlined" aria-hidden="true">campaign</span>
       <h2 style="margin-top:1rem">Selecciona una audiencia</h2>
-      <p class="tv-page-sub">Ve a Contactos y usa «Usar en campaña» o «Crear campaña» desde una agenda o tag.</p>
+      <p class="tv-page-sub">Filtra Contactos por agenda; el identificador de la agenda aparece en la URL (<code>?agenda=…</code>). Usa ese ID en <strong>Nueva campaña</strong> como <code>/app/campaigns/new?list_id=…</code>, o envía masivo desde <strong>Enviar SMS</strong> eligiendo la agenda.</p>
       ${renderBtn("Ir a contactos", { href: "/app/contacts", variant: "primary" })}
     </div>
   </section>`;

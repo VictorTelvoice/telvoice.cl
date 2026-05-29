@@ -300,6 +300,7 @@ export function renderAppSendSmsPage(
   const companyDisplayName = ctx.company.name.trim() || "Tu empresa";
 
   const headerActions = `
+    ${renderBtn("Manual", { href: "/app/manual", variant: "ghost", icon: "menu_book" })}
     ${renderBtn("Bandeja", { href: "/app/inbox", variant: "ghost" })}
     ${renderBtn("Reportes", { href: "/app/reports", variant: "ghost" })}
     <button type="submit" form="tv-app-send-form" class="tv-btn-campaign" id="tv-header-send-btn" ${submitDisabled}>
