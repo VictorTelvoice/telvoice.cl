@@ -302,7 +302,7 @@ function renderQuickHelpSection(): string {
     {
       id: "purchase",
       title: "¿Mi compra ya fue acreditada?",
-      text: "Revisa el estado de tu orden y el saldo SMS disponible en tu wallet.",
+      text: "Revisa el estado de tu orden y los mensajes SMS disponibles en Mi saldo.",
       link: "/app/wallet",
       linkLabel: "Ir a Mi saldo",
     },
@@ -509,7 +509,7 @@ function renderSupportScript(companyId: string): string {
   const helpData = JSON.stringify({
     purchase: {
       title: "¿Mi compra ya fue acreditada?",
-      body: "Revisa Mis órdenes para ver el estado del pago. Si está acreditada, el saldo aparecerá en Mi saldo en unos minutos.",
+      body: "Revisa Mis órdenes para ver el estado del pago. Si está acreditada, el saldo SMS aparecerá en Mi saldo en unos minutos.",
       href: "/app/wallet",
     },
     deliverability: {
@@ -627,12 +627,10 @@ function renderSupportScript(companyId: string): string {
     var lastVal = s.last ? s.last.category : "—";
     var lastHint = s.last ? s.last.code : "Sin tickets";
     kpiRoot.innerHTML =
-      '<div class="tv-kpi-grid tv-kpi-grid--client tv-kpi-grid--report">' +
       kpiCard("Tickets abiertos", String(s.open), "Incluye en revisión y espera", "confirmation_number", "warn") +
       kpiCard("Tickets resueltos", String(s.resolved), "Histórico cerrado", "task_alt", "success") +
       kpiCard("Tiempo estimado", "1-4 h", "Horas hábiles Chile", "schedule", "default") +
-      kpiCard("Último ticket", lastVal, lastHint, "forum", "primary") +
-      "</div>";
+      kpiCard("Último ticket", lastVal, lastHint, "forum", "primary");
   }
 
   function sortedTickets() {

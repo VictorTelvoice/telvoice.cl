@@ -421,7 +421,7 @@ export function renderAppCampaignDetailPage(
       actions: [
         simulateBtn,
         renderBtn("Ver reportes", { href: "/app/reports", variant: "secondary" }),
-        renderBtn("Ver wallet", { href: "/app/wallet", variant: "secondary" }),
+        renderBtn("Mi saldo", { href: "/app/wallet", variant: "secondary" }),
         renderBtn("Campañas", { href: "/app/campaigns", variant: "ghost" }),
       ]
         .filter(Boolean)
@@ -434,7 +434,7 @@ export function renderAppCampaignDetailPage(
       ${renderCampaignDetailBlock("Timeline", renderOrderTimeline(timelineSteps))}
       ${renderCampaignDetailBlock("Audiencia", audienceBody)}
       ${renderCampaignDetailBlock("Mensaje", messageBody)}
-      ${renderCampaignDetailBlock("Wallet", walletBlock)}
+      ${renderCampaignDetailBlock("Saldo SMS", walletBlock)}
       ${showLiveReadiness ? renderLiveReadinessBlock(liveReadiness) : ""}
       ${showLiveLaunch ? renderLiveLaunchBlock(detail, liveReadiness, c.id) : ""}
       ${showQueueStatus ? renderQueueStatusBlock(detail) : ""}

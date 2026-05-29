@@ -22,9 +22,17 @@ export const APP_NAV_PRIMARY: AppNavItem[] = [
   { id: "campaigns", label: "Campañas", href: "/app/campaigns", icon: "campaign" },
 ];
 
+export const APP_ORDERS_NAV: AppNavItem = {
+  id: "orders",
+  label: "Mis órdenes",
+  href: "/app/orders",
+  icon: "receipt",
+};
+
 /** Resto del menú (orden original, sin ítems ya listados arriba). */
 export const APP_NAV_REST: AppNavItem[] = [
   { id: "buy-sms", label: "Comprar SMS", href: "/app/buy-sms", icon: "shopping_cart" },
+  APP_ORDERS_NAV,
   { id: "contacts", label: "Contactos", href: "/app/contacts", icon: "contacts" },
   { id: "templates", label: "Plantillas", href: "/app/templates", icon: "description" },
   { id: "invoices", label: "Facturas", href: "/app/invoices", icon: "receipt_long" },
@@ -39,10 +47,3 @@ export const APP_NAV: AppNavItem[] = [
   ...APP_NAV_PRIMARY,
   ...APP_NAV_REST,
 ];
-
-export const APP_ORDERS_NAV: AppNavItem = {
-  id: "orders",
-  label: "Mis órdenes",
-  href: "/app/orders",
-  icon: "receipt",
-};

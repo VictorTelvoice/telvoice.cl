@@ -224,6 +224,9 @@ export function renderAppOrdersPage(
 ): string {
   const filtered = orders.filter((o) => orderMatchesFilter(o, filter));
 
+  const emptyMsg =
+    '<tr><td colspan="8" class="tv-table-empty">No hay órdenes con este filtro. <a href="/app/buy-sms">Comprar SMS</a></td></tr>';
+
   const rows = filtered.length
     ? filtered
         .map((o) => {
@@ -243,9 +246,31 @@ export function renderAppOrdersPage(
       </tr>`;
         })
         .join("")
-    : `<tr><td colspan="8">No hay órdenes con este filtro. <a href="/app/buy-sms">Comprar SMS</a></td></tr>`;
+    : emptyMsg;
+
+  const orderCards = filtered.length
+    ? filtered
+        .map((o) => {
+          const qa = renderOrderQaBadgeIfNeeded(o);
+          return `<article class="tv-order-card">
+        <div class="tv-order-card__head">
+          <strong>${escapeHtml(o.package_name ?? "Bolsa SMS")}</strong>
+          ${renderClientPaymentBadge(o.payment_status)}
+        </div>
+        <p class="tv-order-card__meta">${formatDate(o.created_at)} · ${fmtSms(o.sms_quantity)} · ${fmtMoney(Number(o.amount), o.currency)}</p>
+        <p class="tv-order-card__meta">Acreditación: ${renderClientCreditBadge(o.credit_status)}${qa}</p>
+        <p class="tv-order-card__meta"><code>${escapeHtml(o.payment_reference ?? "—")}</code></p>
+        <div class="tv-order-card__actions">
+          <a href="/app/orders/${escapeHtml(o.id)}" class="btn btn-secondary btn-sm">Ver detalle</a>
+          <a href="${supportOrderHref(o.id)}" class="btn btn-ghost btn-sm">Soporte</a>
+        </div>
+      </article>`;
+        })
+        .join("")
+    : `<p class="field-hint">No hay órdenes con este filtro. <a href="/app/buy-sms">Comprar SMS</a></p>`;
 
   const body = `
+    <div class="tv-orders-page">
     ${renderPageHeader({
       title: "Mis órdenes",
       subtitle: "Historial de compras de bolsas SMS.",
@@ -253,9 +278,13 @@ export function renderAppOrdersPage(
     })}
     ${renderOrderFilterTabs(filter)}
     <p class="field-hint">${filtered.length} de ${orders.length} órdenes</p>
-    <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
+    <div class="tv-panel tv-orders-table-wrap">
+      <table class="tv-table tv-table--dense"><thead><tr>
       <th>Fecha</th><th>Bolsa</th><th>SMS</th><th>Monto</th><th>Estado pago</th><th>Acreditación</th><th>Referencia</th><th></th>
-    </tr></thead><tbody>${rows}</tbody></table></div>`;
+    </tr></thead><tbody>${rows}</tbody></table>
+    </div>
+    <div class="tv-orders-cards">${orderCards}</div>
+    </div>`;
   return wrapAppPage(ctx, "orders", "Mis órdenes", body);
 }
 

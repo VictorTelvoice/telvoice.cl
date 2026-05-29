@@ -1487,5 +1487,105 @@ export function getAppPanelStyles(): string {
     @media (max-width: 640px) {
       .tv-contacts-quick-grid { grid-template-columns: 1fr; }
     }
+    .tv-templates-page,
+    .tv-api-page,
+    .tv-support-page,
+    .tv-settings-page,
+    .tv-orders-page {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      min-width: 0;
+    }
+    .tv-app-client .tv-page-head--row {
+      gap: 1rem;
+    }
+    .tv-app-client .tv-page-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .tv-app-client .tv-code {
+      max-width: 100%;
+      overflow: hidden;
+    }
+    .tv-app-client .tv-code pre {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 0;
+      max-width: 100%;
+    }
+    .tv-app-client .tv-code pre code {
+      display: block;
+      white-space: pre;
+      font-size: 0.78rem;
+    }
+    .tv-orders-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tv-orders-cards {
+      display: none;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .tv-order-card {
+      border: 1px solid var(--tv-border);
+      border-radius: var(--tv-radius);
+      padding: 1rem;
+      background: var(--tv-surface);
+    }
+    .tv-order-card__head {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.5rem;
+    }
+    .tv-order-card__meta {
+      font-size: 0.8rem;
+      color: var(--tv-muted);
+      margin: 0.25rem 0;
+    }
+    .tv-order-card__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.65rem;
+    }
+    @media (max-width: 768px) {
+      .tv-orders-table-wrap { display: none; }
+      .tv-orders-cards { display: flex; }
+      .tv-app-client .tv-page-head--row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .tv-app-client .tv-page-actions {
+        justify-content: stretch;
+      }
+      .tv-app-client .tv-page-actions .btn,
+      .tv-app-client .tv-page-actions .tv-btn-campaign {
+        flex: 1 1 calc(50% - 0.25rem);
+        min-width: 0;
+        justify-content: center;
+      }
+      .tv-settings-page .tv-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        max-width: 100%;
+      }
+      .tv-api-page .tv-api-key-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .tv-api-page .tv-api-layout,
+      .tv-support-page .tv-support-layout,
+      .tv-settings-page .tv-settings-layout {
+        gap: 1rem;
+      }
+    }
   `;
 }

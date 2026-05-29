@@ -407,12 +407,10 @@ function renderTemplatesScript(companyId: string): string {
   function renderKpis() {
     var s = summary();
     kpiRoot.innerHTML =
-      '<div class="tv-kpi-grid tv-kpi-grid--client tv-kpi-grid--report">' +
       kpiCard("Total plantillas", String(s.total), "En tu biblioteca", "description", "primary") +
       kpiCard("Plantillas activas", String(s.active), "Listas para usar", "check_circle", "success") +
       kpiCard("Categorías usadas", String(s.categories), "De " + CATEGORIES.length + " disponibles", "category", "default") +
-      kpiCard("Última actualización", s.lastUpdated ? fmtDate(s.lastUpdated) : "—", "Cambio más reciente", "update", "default") +
-      "</div>";
+      kpiCard("Última actualización", s.lastUpdated ? fmtDate(s.lastUpdated) : "—", "Cambio más reciente", "update", "default");
   }
 
   function kpiCard(label, value, hint, icon, variant) {
@@ -757,7 +755,7 @@ export function renderAppTemplatesPage(ctx: AppPageContext): string {
     </div>
     </div>
     ${renderModalShell()}
-    ${renderTemplatesScript(ctx.company.id)}`;
+    ${renderTemplatesScript(ctx.company.id || "default")}`;
 
   return wrapAppPage(ctx, "templates", "Plantillas SMS", body);
 }
