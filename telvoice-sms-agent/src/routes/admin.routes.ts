@@ -53,8 +53,12 @@ import {
   postKnowledgeTest,
 } from "../controllers/admin-knowledge.controller.js";
 import {
+  getAdminAgentCreateArticleForm,
   getAdminAgentHub,
   getAdminAgentUnanswered,
+  postAdminAgentCreateArticle,
+  postAdminAgentIgnore,
+  postAdminAgentMarkReviewed,
 } from "../controllers/admin-agent-training.controller.js";
 import {
   getAdminTestPage,
@@ -499,6 +503,26 @@ adminRouter.get(
   "/agent-training/unanswered",
   requireAdminPage,
   getAdminAgentUnanswered,
+);
+adminRouter.get(
+  "/agent-training/unanswered/:id/create-article",
+  requireAdminPage,
+  getAdminAgentCreateArticleForm,
+);
+adminRouter.post(
+  "/agent-training/unanswered/:id/create-article",
+  requireAdminPage,
+  postAdminAgentCreateArticle,
+);
+adminRouter.post(
+  "/agent-training/unanswered/:id/mark-reviewed",
+  requireAdminPage,
+  postAdminAgentMarkReviewed,
+);
+adminRouter.post(
+  "/agent-training/unanswered/:id/ignore",
+  requireAdminPage,
+  postAdminAgentIgnore,
 );
 adminRouter.get("/settings", requireAdminPage, getSettingsPage);
 adminRouter.get("/asmsc/balance", requireAdminPage, getAsmscBalancePage);

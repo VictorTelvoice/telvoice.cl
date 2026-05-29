@@ -337,17 +337,54 @@ export async function getKnowledgeArticleById(
 export async function createKnowledgeArticle(
   input: CreateKnowledgeArticleInput,
 ): Promise<KnowledgeArticleRow> {
-  const { data, error } = await getSupabase()
+  const base: Record<string, unknown> = {
+    title: input.title.trim(),
+    category: validateKnowledgeCategory(input.category),
+    keywords: input.keywords,
+    content: input.content.trim(),
+    is_active: input.is_active ?? true,
+  };
+
+  if (input.allowed_channels?.length) {
+    base.allowed_channels = input.allowed_channels;
+  }
+  if (input.audience) {
+    base.audience = input.audience;
+  }
+  if (input.priority != null) {
+    base.priority = input.priority;
+  }
+  if (input.source_unanswered_question_id) {
+    base.source_unanswered_question_id = input.source_unanswered_question_id;
+  }
+
+  let { data, error } = await getSupabase()
     .from("knowledge_articles")
-    .insert({
-      title: input.title.trim(),
-      category: validateKnowledgeCategory(input.category),
-      keywords: input.keywords,
-      content: input.content.trim(),
-      is_active: input.is_active ?? true,
-    })
+    .insert(base)
     .select("*")
     .single();
+
+  if (error) {
+    const msg = String(error.message ?? "");
+    const optionalMissing =
+      /allowed_channels|audience|priority|source_unanswered/.test(msg);
+    if (optionalMissing) {
+      const minimal = {
+        title: base.title,
+        category: base.category,
+        keywords: base.keywords,
+        content: base.content,
+        is_active: base.is_active,
+      };
+      const retry = await getSupabase()
+        .from("knowledge_articles")
+        .insert(minimal)
+        .select("*")
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+  }
 
   if (error) {
     wrapSupabaseError(error, "createKnowledgeArticle");

@@ -14,6 +14,7 @@ Aplicar en el SQL Editor o con los scripts del repo:
 | 4 | `supabase/migrations/042_agent_unanswered_questions.sql` | Entrenamiento continuo |
 | 5 | `supabase/migrations/043_knowledge_channels.sql` | `allowed_channels`, `audience`, `priority` |
 | 6 | `supabase/migrations/044_agent_knowledge_manual.sql` | Manual, estrategia, industrias |
+| 7 | `supabase/migrations/045_agent_training_flow.sql` | `ignored`, metadata dedup, vínculo knowledge |
 
 ### Validación SQL rápida
 

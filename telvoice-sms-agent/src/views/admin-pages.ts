@@ -946,8 +946,12 @@ export function renderKnowledgeListPage(options: {
 
   const rows = options.articles
     .map(
-      (a) => `<tr>
-        <td>${escapeHtml(a.title)}</td>
+      (a) => {
+        const fromQ = a.source_unanswered_question_id
+          ? `<a href="/admin/agent-training/unanswered" class="tv-tag" title="Desde entrenamiento">desde pregunta</a>`
+          : "";
+        return `<tr>
+        <td>${escapeHtml(a.title)} ${fromQ}</td>
         <td>${escapeHtml(a.category)}</td>
         <td>${escapeHtml((a.keywords ?? []).join(", ") || "—")}</td>
         <td>${a.is_active ? statusBadge("active") : statusBadge("inactive")}</td>
@@ -957,7 +961,8 @@ export function renderKnowledgeListPage(options: {
             <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
           </form>
         </td>
-      </tr>`,
+      </tr>`;
+      },
     )
     .join("");
 

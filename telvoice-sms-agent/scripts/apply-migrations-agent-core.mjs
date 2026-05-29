@@ -52,6 +52,13 @@ const MIGRATIONS = [
         AND (title ILIKE '%campaña masiva%' OR title ILIKE '%retail%')
       LIMIT 1`,
   },
+  {
+    id: "045",
+    file: "045_agent_training_flow.sql",
+    check: `SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'knowledge_articles'
+        AND column_name = 'source_unanswered_question_id'`,
+  },
 ];
 
 const connectionString = process.env.DATABASE_URL?.trim();
