@@ -26,6 +26,8 @@ export type SmsApiMessageRow = {
   provider_message_id: string | null;
   dlr_status: string | null;
   cost_sms: number;
+  idempotency_key: string | null;
+  payload_hash: string | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
@@ -81,4 +83,11 @@ export type CreateSandboxSmsApiMessageInput = {
   externalReference?: string | null;
   segments: number;
   idempotencyKey?: string | null;
+  payloadHash?: string | null;
+  environment?: SmsApiMessageEnvironment;
 };
+
+export type SandboxSmsSendResolution =
+  | { outcome: "created"; message: SmsApiMessage }
+  | { outcome: "replay"; message: SmsApiMessage }
+  | { outcome: "conflict" };

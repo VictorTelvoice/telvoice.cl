@@ -862,6 +862,7 @@ function buildExampleSnippets(apiKey: string): Record<"curl" | "javascript" | "p
   const curl = `curl -X POST ${SANDBOX_API_BASE_URL}/api/v1/sms/send \\
   -H "Authorization: Bearer ${key}" \\
   -H "Content-Type: application/json" \\
+  -H "Idempotency-Key: order-123-send-1" \\
   -d '{
   "to": "+56912345678",
   "message": "Mensaje de prueba sandbox",
@@ -978,6 +979,9 @@ function renderExampleSection(apiKey: string): string {
       <div class="alert alert-warn" role="status" style="margin-bottom:1rem">
         El envío por API está disponible solo en sandbox. No envía SMS reales ni descuenta saldo.
       </div>
+      <p class="field-hint" style="margin:0 0 1rem">
+        Usa <code>Idempotency-Key</code> para evitar duplicar mensajes si tu sistema reintenta una solicitud.
+      </p>
       <div class="tv-api-example-tabs" role="tablist" id="tv-api-example-tabs">
         <button type="button" class="tv-tab tv-tab--active" data-example="curl" aria-selected="true">cURL</button>
         <button type="button" class="tv-tab" data-example="javascript" aria-selected="false">JavaScript</button>

@@ -29,6 +29,7 @@
     "migrate:033": "node scripts/apply-migration-033.mjs",
     "migrate:034": "node scripts/apply-migration-034.mjs",
     "migrate:035": "node scripts/apply-migration-035.mjs",
+    "migrate:036": "node scripts/apply-migration-036.mjs",
     "migrate:025": "node scripts/apply-migration-025.mjs",
     "seed:scheduler-test13": "node scripts/seed-scheduler-test13.mjs",
     "seed:scheduler-load5": "node scripts/seed-scheduler-load5.mjs",

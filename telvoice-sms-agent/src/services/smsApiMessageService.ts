@@ -1,7 +1,9 @@
 import { getSupabase } from "../database/supabaseClient.js";
 import { calculateSimpleApiSmsSegments } from "../utils/sms-api-segments.js";
+import { hashSmsApiSendPayload } from "../utils/sms-api-payload-hash.js";
 import type {
   CreateSandboxSmsApiMessageInput,
+  SandboxSmsSendResolution,
   SmsApiMessage,
   SmsApiMessageEnvironment,
   SmsApiMessageRow,
@@ -118,7 +120,7 @@ export function validateE164Recipient(to: unknown): {
 export function validateIdempotencyKeyHeader(
   raw: unknown,
 ): { ok: true; value: string | null } | { ok: false; error: SmsApiSendValidationError } {
-  if (raw === undefined || raw === null || raw === "") {
+  if (raw === undefined || raw === null) {
     return { ok: true, value: null };
   }
   if (typeof raw !== "string") {
@@ -126,27 +128,36 @@ export function validateIdempotencyKeyHeader(
       ok: false,
       error: {
         statusCode: 400,
-        code: "VALIDATION_ERROR",
+        code: "INVALID_IDEMPOTENCY_KEY",
         message: "Idempotency-Key header is invalid.",
       },
     };
   }
   const trimmed = raw.trim();
   if (!trimmed) {
-    return { ok: true, value: null };
+    return {
+      ok: false,
+      error: {
+        statusCode: 400,
+        code: "INVALID_IDEMPOTENCY_KEY",
+        message: "Idempotency-Key must not be empty.",
+      },
+    };
   }
   if (trimmed.length > MAX_IDEMPOTENCY_KEY_LENGTH) {
     return {
       ok: false,
       error: {
         statusCode: 400,
-        code: "VALIDATION_ERROR",
+        code: "INVALID_IDEMPOTENCY_KEY",
         message: "Idempotency-Key is too long.",
       },
     };
   }
   return { ok: true, value: trimmed };
 }
+
+export { hashSmsApiSendPayload };
 
 export function validateSmsApiSendPayload(
   body: unknown,
@@ -297,12 +308,92 @@ export function validateSmsApiSendPayload(
   };
 }
 
+async function findIdempotentSmsMessage(
+  companyId: string,
+  apiKeyId: string,
+  environment: SmsApiMessageEnvironment,
+  idempotencyKey: string,
+): Promise<SmsApiMessageRow | null> {
+  const { data, error } = await getSupabase()
+    .from("sms_api_messages")
+    .select("*")
+    .eq("company_id", companyId)
+    .eq("api_key_id", apiKeyId)
+    .eq("environment", environment)
+    .eq("idempotency_key", idempotencyKey)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return null;
+    }
+    wrapSupabaseError(error, "findIdempotentSmsMessage");
+  }
+  return (data as SmsApiMessageRow | null) ?? null;
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+  const code = (error as { code?: string }).code;
+  return code === "23505";
+}
+
+export async function resolveSandboxSmsSend(
+  input: CreateSandboxSmsApiMessageInput,
+  payload: SmsApiSendPayload,
+): Promise<SandboxSmsSendResolution> {
+  const environment = input.environment ?? "sandbox";
+  const payloadHash = input.payloadHash ?? hashSmsApiSendPayload(payload);
+
+  if (input.idempotencyKey) {
+    const existing = await findIdempotentSmsMessage(
+      input.companyId,
+      input.apiKeyId,
+      environment,
+      input.idempotencyKey,
+    );
+    if (existing) {
+      if (existing.payload_hash === payloadHash) {
+        return { outcome: "replay", message: rowToSmsApiMessage(existing) };
+      }
+      return { outcome: "conflict" };
+    }
+  }
+
+  try {
+    const message = await createSandboxSmsApiMessage({
+      ...input,
+      environment,
+      payloadHash,
+    });
+    return { outcome: "created", message };
+  } catch (error) {
+    if (input.idempotencyKey && isUniqueViolation(error)) {
+      const existing = await findIdempotentSmsMessage(
+        input.companyId,
+        input.apiKeyId,
+        environment,
+        input.idempotencyKey,
+      );
+      if (existing) {
+        if (existing.payload_hash === payloadHash) {
+          return { outcome: "replay", message: rowToSmsApiMessage(existing) };
+        }
+        return { outcome: "conflict" };
+      }
+    }
+    throw error;
+  }
+}
+
 export async function createSandboxSmsApiMessage(
   input: CreateSandboxSmsApiMessageInput,
 ): Promise<SmsApiMessage> {
+  const environment = input.environment ?? "sandbox";
   const metadata: Record<string, unknown> = { sandbox: true };
   if (input.idempotencyKey) {
-    // TODO(Fase 4): deduplicar por idempotency_key + api_key_id.
     metadata.idempotency_key = input.idempotencyKey;
   }
 
@@ -319,10 +410,12 @@ export async function createSandboxSmsApiMessage(
       country: input.country ?? null,
       segments: input.segments,
       status: "sandbox_accepted",
-      environment: "sandbox",
+      environment,
       provider_message_id: null,
       dlr_status: null,
       cost_sms: 0,
+      idempotency_key: input.idempotencyKey ?? null,
+      payload_hash: input.payloadHash ?? null,
       metadata,
     })
     .select("*")
@@ -331,6 +424,9 @@ export async function createSandboxSmsApiMessage(
   if (error) {
     if (isMissingTableError(error)) {
       throw new Error("SMS API messages table not available.");
+    }
+    if (isUniqueViolation(error)) {
+      throw error;
     }
     wrapSupabaseError(error, "createSandboxSmsApiMessage");
   }

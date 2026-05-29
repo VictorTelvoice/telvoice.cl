@@ -2,11 +2,12 @@ import type { Request, Response } from "express";
 import { getPublicApiRequestId } from "../middleware/public-api-request-context.js";
 import { recordPublicApiRequest } from "../middleware/public-api-request-log.js";
 import {
-  createSandboxSmsApiMessage,
   getSmsApiMessagesModuleState,
+  resolveSandboxSmsSend,
   validateIdempotencyKeyHeader,
   validateSmsApiSendPayload,
 } from "../services/smsApiMessageService.js";
+import type { SmsApiMessage } from "../types/sms-api-messages.js";
 import { publicApiError } from "../utils/public-api-response.js";
 
 const SEND_ENDPOINT = "/api/v1/sms/send";
@@ -35,6 +36,18 @@ function logSmsSend(
     errorMessage: params.errorMessage ?? null,
     metadata: params.metadata,
   });
+}
+
+function messageBody(message: SmsApiMessage) {
+  return {
+    id: message.id,
+    status: message.status,
+    to: message.recipient,
+    sender: message.sender,
+    segments: message.segments,
+    cost_sms: message.costSms,
+    environment: message.environment,
+  };
 }
 
 export async function postPublicApiSmsSend(
@@ -85,6 +98,7 @@ export async function postPublicApiSmsSend(
       success: false,
       errorCode: idempotency.error.code,
       errorMessage: idempotency.error.message,
+      metadata: { idempotency_key_present: true },
     });
     publicApiError(
       res,
@@ -133,27 +147,57 @@ export async function postPublicApiSmsSend(
   }
 
   try {
-    const message = await createSandboxSmsApiMessage({
-      companyId: auth.companyId,
-      apiKeyId: auth.apiKeyId,
-      requestId,
-      recipient: validated.payload.to,
-      message: validated.payload.message,
-      sender: validated.payload.sender,
-      country: validated.payload.country,
-      externalReference: validated.payload.external_reference,
-      segments: validated.segments,
-      idempotencyKey: idempotency.value,
-    });
+    const resolution = await resolveSandboxSmsSend(
+      {
+        companyId: auth.companyId,
+        apiKeyId: auth.apiKeyId,
+        requestId,
+        recipient: validated.payload.to,
+        message: validated.payload.message,
+        sender: validated.payload.sender,
+        country: validated.payload.country,
+        externalReference: validated.payload.external_reference,
+        segments: validated.segments,
+        idempotencyKey: idempotency.value,
+        environment: auth.environment,
+      },
+      validated.payload,
+    );
+
+    if (resolution.outcome === "conflict") {
+      logSmsSend(req, {
+        statusCode: 409,
+        success: false,
+        errorCode: "IDEMPOTENCY_CONFLICT",
+        errorMessage:
+          "The same Idempotency-Key was already used with a different payload.",
+        metadata: {
+          idempotency_key_present: true,
+        },
+      });
+      publicApiError(
+        res,
+        409,
+        requestId,
+        "IDEMPOTENCY_CONFLICT",
+        "The same Idempotency-Key was already used with a different payload.",
+      );
+      return;
+    }
+
+    const message = resolution.message;
+    const isReplay = resolution.outcome === "replay";
+    const statusCode = isReplay ? 200 : 202;
 
     logSmsSend(req, {
-      statusCode: 202,
+      statusCode,
       success: true,
       metadata: {
         message_id: message.id,
         segments: message.segments,
         sandbox: true,
-        ...(idempotency.value ? { idempotency_key: idempotency.value } : {}),
+        idempotency_key_present: !!idempotency.value,
+        idempotent_replay: isReplay,
       },
     });
 
@@ -161,25 +205,20 @@ export async function postPublicApiSmsSend(
       endpoint: SEND_ENDPOINT,
       companyId: auth.companyId,
       apiKeyId: auth.apiKeyId,
-      status: 202,
+      status: statusCode,
       requestId,
       messageId: message.id,
+      idempotentReplay: isReplay,
     });
 
-    res.status(202).json({
+    res.status(statusCode).json({
       success: true,
       request_id: requestId,
-      message: {
-        id: message.id,
-        status: message.status,
-        to: message.recipient,
-        sender: message.sender,
-        segments: message.segments,
-        cost_sms: message.costSms,
-        environment: message.environment,
-      },
-      notice:
-        "Sandbox mode: no SMS was sent and no balance was deducted.",
+      ...(isReplay ? { idempotent_replay: true } : {}),
+      message: messageBody(message),
+      notice: isReplay
+        ? "Idempotent replay: returning the original sandbox message."
+        : "Sandbox mode: no SMS was sent and no balance was deducted.",
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
