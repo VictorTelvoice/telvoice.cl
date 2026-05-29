@@ -52,17 +52,17 @@ export type SendPageContactListPick = {
   phones: string[];
 };
 
-function renderSendContactsSelectOptions(lists: SendPageContactListPick[]): string {
+function renderAgendaPickOptions(lists: SendPageContactListPick[]): string {
   if (!lists.length) {
-    return `<option value="">Sin agendas</option>`;
+    return `<option value="">Contactos</option>`;
   }
   const items = lists
-    .map((list) => {
-      const phones = list.phones.join("\n");
-      return `<option value="${escapeHtml(list.id)}" data-phones="${escapeHtml(phones)}" data-sample="${escapeHtml(phones)}">${escapeHtml(list.name)}</option>`;
-    })
+    .map(
+      (list) =>
+        `<option value="${escapeHtml(list.id)}" data-phones="${escapeHtml(list.phones.join("\n"))}">${escapeHtml(list.name)} (${list.count})</option>`,
+    )
     .join("");
-  return `<option value="">Seleccionar agenda</option>${items}`;
+  return `<option value="">Contactos</option>${items}`;
 }
 
 function renderTemplateOptions(disabled: boolean): string {
@@ -275,20 +275,20 @@ export function renderAppSendSmsPage(
         ${modes}
         <section class="tv-panel">
           <div class="tv-panel__body">
-            <div class="tv-form-grid tv-send-meta-grid">
-              <div class="form-group">
-                <label for="campaign_name">Nombre de campaña (opcional)</label>
-                <input id="campaign_name" class="tv-input-full" name="campaign_name" placeholder="Ej. Bienvenida clientes" ${disabledAttr} />
-              </div>
+            <div class="form-group">
+              <label for="campaign_name">Nombre de campaña (opcional)</label>
+              <input id="campaign_name" class="tv-input-full" name="campaign_name" placeholder="Ej. Bienvenida clientes" ${disabledAttr} />
+            </div>
+            <div class="tv-send-meta-row">
               <div class="form-group">
                 <label for="sender_id">Remitente / Sender ID</label>
                 <input id="sender_id" class="tv-input-full" name="sender_id" value="${escapeHtml(suggestedSenderId)}" placeholder="${escapeHtml(suggestedSenderId)}" required maxlength="11" pattern="[A-Za-z0-9]+" title="Solo letras y números, máximo 11 caracteres" ${disabledAttr} />
                 <p class="field-hint">Sugerencia según tu empresa registrada: <strong>${escapeHtml(ctx.company.name)}</strong></p>
               </div>
-              <div class="form-group tv-send-contacts-field" data-tv-contacts-field>
+              <div class="form-group">
                 <label for="tv-send-contacts">Contactos</label>
-                <select id="tv-send-contacts" name="contact_list" class="tv-input-full tv-send-contacts-select" ${disabledAttr}${contactLists.length ? "" : " disabled"}>
-                  ${renderSendContactsSelectOptions(contactLists)}
+                <select id="tv-send-contacts" name="contact_list" class="tv-input-full tv-send-contacts-pick"${contactLists.length ? "" : " disabled"}>
+                  ${renderAgendaPickOptions(contactLists)}
                 </select>
               </div>
             </div>
@@ -296,7 +296,7 @@ export function renderAppSendSmsPage(
               <div class="form-group">
                 <label for="tv-send-to">Número destinatario</label>
                 <input class="tv-input-full" name="to" id="tv-send-to" placeholder="56912345678" inputmode="numeric" autocomplete="tel" ${activeMode === "single" || activeMode === "template" ? "required" : ""} ${disabledAttr} />
-                <p class="field-hint">Formato Chile: 569XXXXXXXX (sin signo +)${contactLists.length ? " · O elige una agenda en Contactos" : ""}</p>
+                <p class="field-hint">Formato Chile: 569XXXXXXXX (sin signo +)${contactLists.length ? " · Elige una agenda arriba a la derecha" : ""}</p>
               </div>
             </div>
             <div data-tv-mass-fields${activeMode === "mass" || activeMode === "scheduled" ? "" : " hidden"}>
@@ -305,7 +305,7 @@ export function renderAppSendSmsPage(
                 <input id="csv_file" type="file" accept=".csv,text/csv" class="tv-input-full" ${disabledAttr} />
                 <p class="field-hint">Columnas <code>numero</code> y <code>mensaje</code> (o solo números + mensaje común abajo). Separador coma o punto y coma.</p>
               </div>
-              <p class="field-hint tv-mass-summary" id="tv-mass-summary">Selecciona una agenda en Contactos o sube un CSV para previsualizar la campaña.</p>
+              <p class="field-hint tv-mass-summary" id="tv-mass-summary">Selecciona una lista o sube un CSV para previsualizar la campaña.</p>
               <div class="tv-mass-table-wrap" id="tv-mass-table-wrap" hidden>
                 <div class="table-wrap tv-panel" style="padding:0;margin-top:0.5rem">
                   <table class="tv-table tv-table--dense" id="tv-mass-preview-table">
@@ -393,10 +393,9 @@ export function renderAppSendSmsPage(
       var ta = document.getElementById('tv-sms-message');
       var senderInput = document.getElementById('sender_id');
       var toInput = document.getElementById('tv-send-to');
-      var contactsSelect = document.getElementById('tv-send-contacts');
+      var sendContacts = document.getElementById('tv-send-contacts');
       var sendModeInput = document.getElementById('tv-send-mode');
       var bulkHidden = document.getElementById('tv-bulk-recipients');
-      var contactList = contactsSelect;
       var csvInput = document.getElementById('csv_file');
       var templateSelect = document.getElementById('template_id');
       var scheduleDate = document.getElementById('schedule_date');
@@ -486,9 +485,9 @@ export function renderAppSendSmsPage(
       function rebuildMassPreviewRows(){
         var fallback = ta ? (ta.value || '').trim() : '';
         var combined = [];
-        if(contactList && contactList.value){
-          var opt = contactList.options[contactList.selectedIndex];
-          var sample = opt ? (opt.getAttribute('data-sample') || '') : '';
+        if(sendContacts && sendContacts.value){
+          var opt = sendContacts.options[sendContacts.selectedIndex];
+          var sample = opt ? (opt.getAttribute('data-phones') || opt.getAttribute('data-sample') || '') : '';
           splitRecipients(sample).forEach(function(p){
             combined.push({ phone: p, message: fallback });
           });
@@ -594,7 +593,7 @@ export function renderAppSendSmsPage(
           if(!stats.total){
             massSummary.textContent = bulk && getSendMode() === 'scheduled'
               ? 'Sube un CSV o elige una lista para programar el envío masivo.'
-              : 'Selecciona una agenda en Contactos o sube un CSV para previsualizar la campaña.';
+              : 'Selecciona una lista o sube un CSV para previsualizar la campaña.';
           } else {
             var prefix = getSendMode() === 'scheduled' ? 'A programar: ' : '';
             massSummary.textContent = prefix + stats.valid + ' listos · ' + stats.invalid + ' con error · ' + stats.totalSms + ' SMS estimados · ' + stats.total + ' filas';
@@ -763,35 +762,38 @@ export function renderAppSendSmsPage(
           });
         });
       }
-      if(contactsSelect){
-        contactsSelect.addEventListener('change', function(){
-          var listId = contactsSelect.value;
+      if(sendContacts){
+        sendContacts.addEventListener('change', function(){
+          var listId = sendContacts.value;
           var mode = getSendMode();
           if(!listId){
             if(isBulkMode(mode)) renderMassPreview();
             refresh();
             return;
           }
-          var opt = contactsSelect.options[contactsSelect.selectedIndex];
-          var phonesRaw = opt ? (opt.getAttribute('data-phones') || '') : '';
+          var opt = sendContacts.options[sendContacts.selectedIndex];
+          var phonesRaw = opt ? (opt.getAttribute('data-phones') || opt.getAttribute('data-sample') || '') : '';
           var phones = phonesRaw ? phonesRaw.split('\\n').map(function(p){ return p.trim(); }).filter(Boolean) : [];
           if(!phones.length){
             alert('Esta agenda no tiene contactos.');
-            contactsSelect.value = '';
+            sendContacts.value = '';
             return;
           }
-          if((mode === 'single' || mode === 'template') && toInput){
+          if(mode === 'single' || mode === 'template'){
             if(phones.length === 1){
-              toInput.value = phones[0];
-              contactsSelect.value = '';
+              if(toInput) toInput.value = phones[0];
+              refresh();
             } else {
               applySendMode('mass');
               renderMassPreview();
+              refresh();
             }
-          } else if(isBulkMode(getSendMode())){
-            renderMassPreview();
+            return;
           }
-          refresh();
+          if(isBulkMode(mode)){
+            renderMassPreview();
+            refresh();
+          }
         });
       }
       if(csvInput){

@@ -173,6 +173,83 @@ export async function createContactList(
   return data as ContactListRow;
 }
 
+export async function archiveContactList(
+  companyId: string,
+  listId: string,
+): Promise<void> {
+  await assertListBelongsToCompany(companyId, listId);
+  const { error } = await getSupabase()
+    .from("contact_lists")
+    .update({ status: "archived" })
+    .eq("company_id", companyId)
+    .eq("id", listId);
+  if (error) {
+    wrapSupabaseError(error, "archiveContactList");
+  }
+}
+
+export async function duplicateContactList(
+  companyId: string,
+  listId: string,
+): Promise<ContactListRow> {
+  const source = await assertListBelongsToCompany(companyId, listId);
+
+  let copyName = `Copia de ${source.name}`;
+  let created: ContactListRow | null = null;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    try {
+      created = await createContactList(companyId, {
+        name: copyName,
+        description: source.description ?? undefined,
+        color: source.color ?? undefined,
+      });
+      break;
+    } catch (error) {
+      if (
+        error instanceof AppError &&
+        error.statusCode === 409 &&
+        attempt < 7
+      ) {
+        copyName = `Copia de ${source.name} (${attempt + 2})`;
+        continue;
+      }
+      throw error;
+    }
+  }
+  if (!created) {
+    throw new AppError("No se pudo duplicar la agenda.", 500);
+  }
+
+  const { data: members, error: memErr } = await getSupabase()
+    .from("contact_list_members")
+    .select("contact_id")
+    .eq("company_id", companyId)
+    .eq("list_id", listId);
+
+  if (memErr && !isMissingTableError(memErr)) {
+    wrapSupabaseError(memErr, "duplicateContactList.members");
+  }
+
+  const memberRows = (members ?? []) as { contact_id: string }[];
+  if (memberRows.length) {
+    const { error: insErr } = await getSupabase()
+      .from("contact_list_members")
+      .insert(
+        memberRows.map((m) => ({
+          company_id: companyId,
+          contact_id: m.contact_id,
+          list_id: created!.id,
+          metadata: {},
+        })),
+      );
+    if (insErr && !isDuplicateKeyError(insErr)) {
+      wrapSupabaseError(insErr, "duplicateContactList.insertMembers");
+    }
+  }
+
+  return created;
+}
+
 export async function createContact(
   companyId: string,
   input: CreateContactInput,

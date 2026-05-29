@@ -529,18 +529,15 @@ export function getAppPanelStyles(): string {
     @media (max-width: 640px) {
       .tv-stat-chips--ops { grid-template-columns: repeat(2, 1fr); }
     }
-    .tv-send-meta-grid {
-      grid-template-columns: 1fr 1fr minmax(11rem, 14rem);
+    .tv-send-meta-row {
+      display: grid;
+      grid-template-columns: 1fr minmax(9rem, 14rem);
+      gap: 0.75rem 1rem;
       align-items: start;
     }
-    .tv-send-contacts-select { font-size: 0.88rem; }
-    @media (max-width: 960px) {
-      .tv-send-meta-grid { grid-template-columns: 1fr 1fr; }
-      .tv-send-contacts-field { grid-column: 1 / -1; max-width: 20rem; }
-    }
-    @media (max-width: 640px) {
-      .tv-send-meta-grid { grid-template-columns: 1fr; }
-      .tv-send-contacts-field { max-width: none; }
+    .tv-send-contacts-pick { font-size: 0.85rem; }
+    @media (max-width: 720px) {
+      .tv-send-meta-row { grid-template-columns: 1fr; }
     }
     .tv-send-to-row {
       display: grid;
@@ -1402,15 +1399,29 @@ export function getAppPanelStyles(): string {
     }
     .tv-contacts-agenda {
       display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.65rem;
       padding: 0.85rem 0.9rem;
       border-radius: 12px;
       border: 1px solid var(--tv-border);
       background: #fff;
       color: inherit;
-      text-decoration: none;
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .tv-contacts-agenda__main {
+      flex: 1;
+      min-width: 0;
+      color: inherit;
+      text-decoration: none;
+    }
+    .tv-contacts-agenda__main:hover { text-decoration: none; }
+    .tv-contacts-agenda__actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      flex-shrink: 0;
     }
     .tv-contacts-agenda__link {
       display: block;

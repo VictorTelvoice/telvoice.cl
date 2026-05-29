@@ -6,6 +6,7 @@ export { renderAppReportsPage } from "./app-reports-page.js";
 export {
   parseContactsPageFilters,
   parseContactsQuickModalTab,
+  parseContactsWizardState,
   renderAppContactsPage,
 } from "./app-contacts-page.js";
 

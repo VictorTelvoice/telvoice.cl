@@ -53,6 +53,7 @@ import {
 import {
   renderAppContactsPage,
   parseContactsPageFilters,
+  parseContactsWizardState,
   renderAppSupportPage,
 } from "../views/app-ui/app-section-pages.js";
 import type { ContactStatus, ContactSummary } from "../types/contacts.js";
@@ -1218,6 +1219,9 @@ export async function getAppContacts(
     const filters = parseContactsPageFilters(
       req.query as Record<string, string | string[] | undefined>,
     );
+    const wizardState = parseContactsWizardState(
+      req.query as Record<string, string | string[] | undefined>,
+    );
     const importJobId =
       typeof req.query.import_job === "string" ? req.query.import_job.trim() : "";
 
@@ -1255,6 +1259,7 @@ export async function getAppContacts(
       contacts,
       lists,
       summary,
+      wizardState,
       importPreview,
     });
   });
@@ -1289,16 +1294,17 @@ export async function postAppContactsImportPreview(
   try {
     const ctx = await requireContactsWriteContext(req);
     if (!ctx) {
-      res.redirect("/app/contacts?new=import&error=Sin%20permiso%20o%20empresa");
+      res.redirect("/app/contacts?quick_wizard=import&error=Sin%20permiso%20o%20empresa");
       return;
     }
     const body = req.body as Record<string, string | undefined>;
     const csvText = (body.csv_text ?? "").trim();
+    const wizardListId = (body.wizard_list_id ?? "").trim();
+    const importErrQs = new URLSearchParams({ quick_wizard: "import" });
+    if (wizardListId) importErrQs.set("list_id", wizardListId);
     if (!csvText) {
-      res.redirect(
-        "/app/contacts?new=import&error=" +
-          encodeURIComponent("El archivo o contenido está vacío."),
-      );
+      importErrQs.set("error", "El archivo o contenido está vacío.");
+      res.redirect(303, `/app/contacts?${importErrQs.toString()}`);
       return;
     }
     const preview = await createContactImportJob(ctx.company.id, {
@@ -1307,7 +1313,6 @@ export async function postAppContactsImportPreview(
       create_tags: body.create_tags === "1",
       default_list_name: body.default_list_name,
     });
-    const wizardListId = (body.wizard_list_id ?? "").trim();
     const qs = new URLSearchParams({
       import_job: preview.job.id,
       quick_wizard: "import",
@@ -1317,7 +1322,12 @@ export async function postAppContactsImportPreview(
   } catch (error) {
     const msg =
       error instanceof AppError ? error.message : "Error al previsualizar CSV";
-    res.redirect(303, `/app/contacts?new=import&error=${encodeURIComponent(msg)}`);
+    const body = req.body as Record<string, string | undefined>;
+    const wizardListId = (body.wizard_list_id ?? "").trim();
+    const errQs = new URLSearchParams({ quick_wizard: "import" });
+    if (wizardListId) errQs.set("list_id", wizardListId);
+    errQs.set("error", msg);
+    res.redirect(303, `/app/contacts?${errQs.toString()}`);
   }
 }
 

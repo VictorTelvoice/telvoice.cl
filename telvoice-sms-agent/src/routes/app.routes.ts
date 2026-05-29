@@ -18,6 +18,8 @@ import {
   postAppBulkContactStatus,
   postAppCreateContact,
   postAppCreateContactList,
+  postAppDuplicateContactList,
+  postAppDeleteContactList,
   getAppDashboard,
   getAppInbox,
   getAppInvoices,
@@ -170,6 +172,16 @@ appRouter.post(
 appRouter.get("/contacts", requireClientPanelPage, getAppContacts);
 appRouter.post("/contacts", requireClientPanelPage, postAppCreateContact);
 appRouter.post("/contacts/lists", requireClientPanelPage, postAppCreateContactList);
+appRouter.post(
+  "/contacts/lists/:id/duplicate",
+  requireClientPanelPage,
+  postAppDuplicateContactList,
+);
+appRouter.post(
+  "/contacts/lists/:id/delete",
+  requireClientPanelPage,
+  postAppDeleteContactList,
+);
 appRouter.get("/templates", requireClientPanelPage, getAppTemplates);
 appRouter.post("/templates", requireClientPanelPage, postAppSmsTemplate);
 appRouter.post(
