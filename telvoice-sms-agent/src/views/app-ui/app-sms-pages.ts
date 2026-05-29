@@ -90,7 +90,7 @@ function sendOutcomeTitle(
   return "Campaña en producción";
 }
 
-function renderSendOutcomeBlock(opts: {
+function renderSendConfirmModal(opts: {
   flash?: string;
   activeMode: AppSendMode;
   campaignResult?: PanelCampaignSendResult | null;
@@ -99,8 +99,12 @@ function renderSendOutcomeBlock(opts: {
   const { flash, activeMode, campaignResult, sendResult } = opts;
   if (!flash && !campaignResult && !sendResult) return "";
 
+  let title = "Envío confirmado";
+  let body = "";
+  let icon = "check_circle";
+
   if (campaignResult) {
-    const title = sendOutcomeTitle(activeMode, campaignResult);
+    title = sendOutcomeTitle(activeMode, campaignResult);
     const scheduledLabel = campaignResult.scheduledAt
       ? formatScheduleInTimeZone(
           campaignResult.scheduledAt,
@@ -108,51 +112,55 @@ function renderSendOutcomeBlock(opts: {
         )
       : "";
     const lead = flash
-      ? `<p class="tv-send-outcome__lead">${escapeHtml(flash)}</p>`
+      ? `<p class="tv-send-confirm-modal__lead">${escapeHtml(flash)}</p>`
       : "";
-    return `<section class="tv-panel tv-panel--hint tv-send-outcome" role="status" aria-live="polite">
-      <header class="tv-section-head">
-        <h2 class="tv-section-head__title">${escapeHtml(title)}</h2>
-        ${lead}
-      </header>
-      <div class="tv-panel__body">
-        <ul class="tv-send-result__list">
-          <li><strong>Campaña:</strong> ${escapeHtml(campaignResult.campaignName)}</li>
-          <li><strong>Destinatarios:</strong> ${campaignResult.totalRecipients}</li>
-          <li><strong>Enviados:</strong> ${campaignResult.sent}${campaignResult.queued > 0 ? ` · En cola: ${campaignResult.queued}` : ""}${campaignResult.failed > 0 ? ` · Fallidos: ${campaignResult.failed}` : ""}</li>
-          <li><strong>SMS consumidos:</strong> ${campaignResult.smsConsumed}</li>
-          <li><strong>Saldo:</strong> ${fmtSms(campaignResult.balanceBefore)} → ${fmtSms(campaignResult.balanceAfter)} SMS</li>
-          ${scheduledLabel ? `<li><strong>Programado:</strong> ${escapeHtml(scheduledLabel)}</li>` : ""}
-        </ul>
-        <p class="field-hint"><a href="/app/campaigns">Ver campañas</a> · <a href="/app/inbox">Bandeja</a></p>
-      </div>
-    </section>`;
-  }
-
-  if (sendResult) {
+    body = `${lead}
+      <ul class="tv-send-result__list">
+        <li><strong>Campaña:</strong> ${escapeHtml(campaignResult.campaignName)}</li>
+        <li><strong>Destinatarios:</strong> ${campaignResult.totalRecipients}</li>
+        <li><strong>Enviados:</strong> ${campaignResult.sent}${campaignResult.queued > 0 ? ` · En cola: ${campaignResult.queued}` : ""}${campaignResult.failed > 0 ? ` · Fallidos: ${campaignResult.failed}` : ""}</li>
+        <li><strong>SMS consumidos:</strong> ${campaignResult.smsConsumed}</li>
+        <li><strong>Saldo:</strong> ${fmtSms(campaignResult.balanceBefore)} → ${fmtSms(campaignResult.balanceAfter)} SMS</li>
+        ${scheduledLabel ? `<li><strong>Programado:</strong> ${escapeHtml(scheduledLabel)}</li>` : ""}
+      </ul>
+      <p class="field-hint tv-send-confirm-modal__links"><a href="/app/campaigns">Ver campañas</a> · <a href="/app/inbox">Bandeja</a></p>`;
+    icon =
+      campaignResult.queued > 0 && campaignResult.sent === 0
+        ? "schedule_send"
+        : "campaign";
+  } else if (sendResult) {
+    title = "Envío registrado";
     const lead = flash
-      ? `<p class="tv-send-outcome__lead">${escapeHtml(flash)}</p>`
+      ? `<p class="tv-send-confirm-modal__lead">${escapeHtml(flash)}</p>`
       : "";
-    return `<section class="tv-panel tv-panel--hint tv-send-outcome" role="status" aria-live="polite">
-      <header class="tv-section-head">
-        <h2 class="tv-section-head__title">Envío registrado</h2>
-        ${lead}
-      </header>
-      <div class="tv-panel__body">
-        <ul class="tv-send-result__list">
-          <li><strong>Destino:</strong> ${escapeHtml(sendResult.recipientNumber)}</li>
-          <li><strong>Segmentos:</strong> ${sendResult.segments}</li>
-          <li><strong>Saldo:</strong> ${fmtSms(sendResult.balanceBefore)} → ${fmtSms(sendResult.balanceAfter)} SMS</li>
-          <li><strong>Estado:</strong> ${renderPanelMessageStatusBadge(sendResult.status, sendResult.sendMode)}</li>
-        </ul>
-        <p class="field-hint">«Entregado» se actualiza cuando el operador confirma vía webhook DLR. <a href="/app/inbox">Bandeja</a></p>
-      </div>
-    </section>`;
+    body = `${lead}
+      <ul class="tv-send-result__list">
+        <li><strong>Destino:</strong> ${escapeHtml(sendResult.recipientNumber)}</li>
+        <li><strong>Segmentos:</strong> ${sendResult.segments}</li>
+        <li><strong>Saldo:</strong> ${fmtSms(sendResult.balanceBefore)} → ${fmtSms(sendResult.balanceAfter)} SMS</li>
+        <li><strong>Estado:</strong> ${renderPanelMessageStatusBadge(sendResult.status, sendResult.sendMode)}</li>
+      </ul>
+      <p class="field-hint tv-send-confirm-modal__links">«Entregado» se actualiza cuando el operador confirma vía webhook DLR. <a href="/app/inbox">Bandeja</a></p>`;
+  } else {
+    body = `<p class="tv-send-confirm-modal__lead">${escapeHtml(flash ?? "")}</p>`;
   }
 
-  return `<section class="tv-send-outcome tv-send-outcome--flash" role="status" aria-live="polite">
-    <div class="alert alert-success">${escapeHtml(flash ?? "")}</div>
-  </section>`;
+  return `<div class="tv-send-confirm-modal" id="tv-send-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="tv-send-confirm-title" aria-hidden="false">
+    <div class="tv-send-confirm-modal__backdrop" data-tv-send-confirm-close tabindex="-1"></div>
+    <div class="tv-send-confirm-modal__panel">
+      <header class="tv-send-confirm-modal__head">
+        <span class="material-symbols-outlined tv-send-confirm-modal__icon" aria-hidden="true">${icon}</span>
+        <div>
+          <h2 class="tv-section-head__title" id="tv-send-confirm-title">${escapeHtml(title)}</h2>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" data-tv-send-confirm-close aria-label="Cerrar">✕</button>
+      </header>
+      <div class="tv-send-confirm-modal__body">${body}</div>
+      <footer class="tv-send-confirm-modal__foot">
+        <button type="button" class="btn btn-primary" data-tv-send-confirm-close>Aceptar</button>
+      </footer>
+    </div>
+  </div>`;
 }
 
 export function renderAppSendSmsPage(
@@ -241,7 +249,7 @@ export function renderAppSendSmsPage(
     )
     .join("");
 
-  const sendOutcomeBlock = renderSendOutcomeBlock({
+  const sendConfirmModal = renderSendConfirmModal({
     flash: opts.flash,
     activeMode,
     campaignResult: opts.campaignResult,
@@ -264,7 +272,7 @@ export function renderAppSendSmsPage(
   const contactLists = opts.contactLists ?? [];
 
   const sendForm = !panel
-    ? `${panelUnavailableHtml}${sendOutcomeBlock}`
+    ? panelUnavailableHtml
     : `
     <form method="post" action="/app/send-sms" id="tv-app-send-form" class="tv-send-layout">
       ${opts.idempotencyKey ? `<input type="hidden" name="idempotency_key" value="${escapeHtml(opts.idempotencyKey)}" />` : ""}
@@ -288,10 +296,17 @@ export function renderAppSendSmsPage(
             </div>
             <div class="tv-send-meta-row tv-send-recipient-row">
               <div class="form-group tv-send-recipient-row__left">
-                <div data-tv-single-fields${activeMode === "single" || activeMode === "template" ? "" : " hidden"}>
+                <div data-tv-single-fields${activeMode === "single" ? "" : " hidden"}>
                   <label for="tv-send-to">Número destinatario</label>
-                  <input class="tv-input-full" name="to" id="tv-send-to" placeholder="56912345678" inputmode="numeric" autocomplete="tel" ${activeMode === "single" || activeMode === "template" ? "required" : ""} ${disabledAttr} />
+                  <input class="tv-input-full" name="to" id="tv-send-to" placeholder="56912345678" inputmode="numeric" autocomplete="tel" ${activeMode === "single" ? "required" : ""} ${disabledAttr} />
                   <p class="field-hint">Formato Chile: 569XXXXXXXX (sin signo +)</p>
+                </div>
+                <div data-tv-template-fields${activeMode === "template" ? "" : " hidden"}>
+                  <label for="template_id">Plantilla</label>
+                  <select id="template_id" name="template_id" class="tv-input-full" ${disabledAttr}${activeMode === "template" ? " required" : ""}>
+                    ${renderTemplateOptions(false)}
+                  </select>
+                  <p class="field-hint">Elige un mensaje preaprobado y personaliza variables abajo</p>
                 </div>
                 <div data-tv-mass-csv-field${activeMode === "mass" || activeMode === "scheduled" ? "" : " hidden"}>
                   <label for="csv_file">Cargar CSV</label>
@@ -304,7 +319,7 @@ export function renderAppSendSmsPage(
                 <select id="tv-send-contacts" name="contact_list" class="tv-input-full tv-send-contacts-pick"${contactLists.length ? "" : " disabled"}>
                   ${renderAgendaPickOptions(contactLists)}
                 </select>
-                <p class="field-hint">${contactLists.length ? "Elige una agenda para cargar destinatarios" : "Crea agendas en Contactos para usarlas aquí"}</p>
+                <p class="field-hint">${activeMode === "template" ? "Selecciona la agenda con el destinatario" : contactLists.length ? "Elige una agenda para cargar destinatarios" : "Crea agendas en Contactos para usarlas aquí"}</p>
               </div>
             </div>
             <div data-tv-mass-fields${activeMode === "mass" || activeMode === "scheduled" ? "" : " hidden"}>
@@ -319,14 +334,6 @@ export function renderAppSendSmsPage(
                   </table>
                 </div>
                 <p class="field-hint" id="tv-mass-preview-more" hidden></p>
-              </div>
-            </div>
-            <div data-tv-template-fields${activeMode === "template" ? "" : " hidden"}>
-              <div class="form-group">
-                <label for="template_id">Plantilla</label>
-                <select id="template_id" name="template_id" class="tv-input-full" ${disabledAttr}>
-                  ${renderTemplateOptions(false)}
-                </select>
               </div>
             </div>
             <div data-tv-schedule-fields${activeMode === "scheduled" ? "" : " hidden"}>
@@ -358,7 +365,6 @@ export function renderAppSendSmsPage(
             <button type="submit" class="btn btn-primary tv-send-submit" id="tv-send-submit" ${submitDisabled}>Enviar SMS</button>
           </div>
         </section>
-        ${sendOutcomeBlock}
       </div>
       <aside class="tv-send-aside">
         <div id="tv-send-preview-phone" class="tv-send-preview-phone">
@@ -391,6 +397,29 @@ export function renderAppSendSmsPage(
     ${opsChips}
     ${sendForm}
     </div>
+    ${sendConfirmModal}
+    <script>
+    (function(){
+      var confirmModal = document.getElementById('tv-send-confirm-modal');
+      if(confirmModal){
+        function closeConfirmModal(){
+          confirmModal.setAttribute('aria-hidden', 'true');
+          document.body.style.overflow = '';
+        }
+        confirmModal.querySelectorAll('[data-tv-send-confirm-close]').forEach(function(btn){
+          btn.addEventListener('click', closeConfirmModal);
+        });
+        document.addEventListener('keydown', function(e){
+          if(e.key === 'Escape' && confirmModal.getAttribute('aria-hidden') === 'false') closeConfirmModal();
+        });
+        document.body.style.overflow = 'hidden';
+        var outcomeParams = new URLSearchParams(window.location.search);
+        ['ok','message_id','campaign_id','mode'].forEach(function(k){ outcomeParams.delete(k); });
+        var cleanQs = outcomeParams.toString();
+        history.replaceState({}, '', '/app/send-sms' + (cleanQs ? '?' + cleanQs : ''));
+      }
+    })();
+    </script>
     <script>
     (function(){
       var ta = document.getElementById('tv-sms-message');
@@ -669,14 +698,18 @@ export function renderAppSendSmsPage(
         var mass = document.querySelector('[data-tv-mass-fields]');
         var tpl = document.querySelector('[data-tv-template-fields]');
         var sched = document.querySelector('[data-tv-schedule-fields]');
-        if(single) single.hidden = mode !== 'single' && mode !== 'template';
+        if(single) single.hidden = mode !== 'single';
         if(massCsv) massCsv.hidden = !isBulkMode(mode);
         if(mass) mass.hidden = !isBulkMode(mode);
         if(tpl) tpl.hidden = mode !== 'template';
         if(sched) sched.hidden = mode !== 'scheduled';
         if(toInput){
-          toInput.required = mode === 'single' || mode === 'template';
-          if(isBulkMode(mode)) toInput.removeAttribute('required');
+          if(mode === 'single') toInput.setAttribute('required', 'required');
+          else toInput.removeAttribute('required');
+        }
+        if(templateSelect){
+          if(mode === 'template') templateSelect.setAttribute('required', 'required');
+          else templateSelect.removeAttribute('required');
         }
         updateSubmitLabel(mode);
         updateMessageRequired();
