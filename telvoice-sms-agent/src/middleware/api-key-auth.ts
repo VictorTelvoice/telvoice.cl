@@ -4,10 +4,14 @@ import {
   touchClientApiKeyLastUsed,
 } from "../services/clientApiKeyService.js";
 import type {
-  ApiKeyAuthErrorCode,
   AuthenticatedApiKeyContext,
   ClientApiKeyScope,
 } from "../types/client-api-keys.js";
+import { publicApiError } from "../utils/public-api-response.js";
+import {
+  getPublicApiRequestId,
+} from "./public-api-request-context.js";
+import { recordPublicApiRequest } from "./public-api-request-log.js";
 
 declare global {
   namespace Express {
@@ -17,28 +21,11 @@ declare global {
   }
 }
 
-type PublicApiLogEntry = {
-  endpoint: string;
-  companyId?: string;
-  apiKeyId?: string;
-  status: number;
-  errorCode?: ApiKeyAuthErrorCode;
-};
-
-function logPublicApiAccess(entry: PublicApiLogEntry): void {
-  console.info("[public-api]", {
-    endpoint: entry.endpoint,
-    companyId: entry.companyId ?? null,
-    apiKeyId: entry.apiKeyId ?? null,
-    status: entry.status,
-    errorCode: entry.errorCode ?? null,
-  });
-}
-
 // TODO(Fase 3/4): rate limits por apiKeyId / companyId (Redis o tabla dedicada).
 export function requireApiKeyScope(requiredScope: ClientApiKeyScope) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const endpoint = req.originalUrl ?? req.path;
+    const endpoint = (req.originalUrl ?? req.path).split("?")[0] || "/api/v1";
+    const requestId = getPublicApiRequestId(req);
 
     try {
       const auth = await authenticateClientApiKey(
@@ -47,18 +34,29 @@ export function requireApiKeyScope(requiredScope: ClientApiKeyScope) {
       );
 
       if (!auth.ok) {
-        logPublicApiAccess({
+        recordPublicApiRequest({
+          req,
           endpoint,
+          method: "GET",
+          statusCode: auth.statusCode,
+          success: false,
+          companyId: auth.resolved?.companyId ?? null,
+          apiKeyId: auth.resolved?.apiKeyId ?? null,
+          environment: auth.resolved?.environment ?? null,
+          errorCode: auth.code,
+          errorMessage: auth.message,
+        });
+
+        console.info("[public-api]", {
+          endpoint,
+          companyId: auth.resolved?.companyId ?? null,
+          apiKeyId: auth.resolved?.apiKeyId ?? null,
           status: auth.statusCode,
           errorCode: auth.code,
+          requestId,
         });
-        res.status(auth.statusCode).json({
-          success: false,
-          error: {
-            code: auth.code,
-            message: auth.message,
-          },
-        });
+
+        publicApiError(res, auth.statusCode, requestId, auth.code, auth.message);
         return;
       }
 
@@ -68,28 +66,25 @@ export function requireApiKeyScope(requiredScope: ClientApiKeyScope) {
         /* no bloquear respuesta */
       });
 
-      logPublicApiAccess({
-        endpoint,
-        companyId: auth.context.companyId,
-        apiKeyId: auth.context.apiKeyId,
-        status: 200,
-      });
-
       next();
     } catch (error) {
       console.warn("[public-api] auth middleware error", error);
-      logPublicApiAccess({
+      recordPublicApiRequest({
+        req,
         endpoint,
-        status: 500,
-        errorCode: "INTERNAL_ERROR",
-      });
-      res.status(500).json({
+        method: "GET",
+        statusCode: 500,
         success: false,
-        error: {
-          code: "INTERNAL_ERROR",
-          message: "An internal error occurred.",
-        },
+        errorCode: "INTERNAL_ERROR",
+        errorMessage: "An internal error occurred.",
       });
+      publicApiError(
+        res,
+        500,
+        requestId,
+        "INTERNAL_ERROR",
+        "An internal error occurred.",
+      );
     }
   };
 }

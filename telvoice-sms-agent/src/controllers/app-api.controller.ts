@@ -15,6 +15,10 @@ import {
   getClientApiKeysModuleState,
   listClientApiKeys,
 } from "../services/clientApiKeyService.js";
+import {
+  getClientApiRequestsModuleState,
+  listApiRequestLogs,
+} from "../services/clientApiRequestLogService.js";
 import type { AppApiPageData, WebhookEvent } from "../types/client-api-settings.js";
 import { WEBHOOK_EVENTS } from "../types/client-api-settings.js";
 import { canOperateClientPanel } from "../types/roles.js";
@@ -65,6 +69,7 @@ export async function getAppApi(
     const defaults = buildDefaultClientApiSettings();
     const module = await getClientApiSettingsModuleState();
     const keysModule = await getClientApiKeysModuleState();
+    const requestsModule = await getClientApiRequestsModuleState();
     let pageData: AppApiPageData = {
       module,
       settings: defaults,
@@ -73,6 +78,8 @@ export async function getAppApi(
       keysModule,
       keys: [],
       pepperConfigured: isApiKeyPepperConfigured(),
+      requestsModule,
+      recentApiRequests: [],
     };
 
     if (module.available && ctx.company.id) {
@@ -86,6 +93,8 @@ export async function getAppApi(
           keysModule,
           keys: pageData.keys,
           pepperConfigured: isApiKeyPepperConfigured(),
+          requestsModule,
+          recentApiRequests: pageData.recentApiRequests,
         };
       }
     }
@@ -95,6 +104,21 @@ export async function getAppApi(
       if (listed.ok) {
         pageData.keys = listed.data;
       }
+    }
+
+    if (requestsModule.available && ctx.company.id) {
+      const logs = await listApiRequestLogs(ctx.company.id, { limit: 10 });
+      const keyMap = new Map(
+        (pageData.keys ?? []).map((k) => [k.id, k]),
+      );
+      pageData.recentApiRequests = logs.map((log) => {
+        const key = log.apiKeyId ? keyMap.get(log.apiKeyId) : undefined;
+        return {
+          ...log,
+          apiKeyName: key?.name ?? log.apiKeyName,
+          apiKeyMasked: key?.keyMasked ?? log.apiKeyMasked,
+        };
+      });
     }
 
     res.type("html").send(renderAppApiPage(ctx, pageData));

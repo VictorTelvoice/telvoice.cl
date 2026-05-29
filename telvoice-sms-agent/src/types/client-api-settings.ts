@@ -73,6 +73,8 @@ export type AppApiPageData = {
   keysModule?: import("./client-api-keys.js").ClientApiKeysModuleState;
   keys?: import("./client-api-keys.js").ClientApiKey[];
   pepperConfigured?: boolean;
+  requestsModule?: import("./client-api-requests.js").ClientApiRequestsModuleState;
+  recentApiRequests?: import("./client-api-requests.js").ClientApiRequest[];
 };
 
 /** Shape legacy localStorage credenciales (compatibilidad UI). */

@@ -424,6 +424,14 @@ function isKeyExpired(row: ClientApiKeyRow): boolean {
   return !Number.isNaN(expires.getTime()) && expires.getTime() <= Date.now();
 }
 
+function resolvedKeyFromRow(row: ClientApiKeyRow) {
+  return {
+    apiKeyId: row.id,
+    companyId: row.company_id,
+    environment: parseEnvironment(row.environment),
+  };
+}
+
 async function fetchKeyRowByPrefix(prefix: string): Promise<ClientApiKeyRow | null> {
   const { data, error } = await getSupabase()
     .from("client_api_keys")
@@ -521,6 +529,7 @@ export async function authenticateClientApiKey(
       statusCode: 403,
       code: "API_KEY_PAUSED",
       message: "API Key is paused.",
+      resolved: resolvedKeyFromRow(row),
     };
   }
 
@@ -530,6 +539,7 @@ export async function authenticateClientApiKey(
       statusCode: 403,
       code: "API_KEY_REVOKED",
       message: "API Key has been revoked.",
+      resolved: resolvedKeyFromRow(row),
     };
   }
 
@@ -539,6 +549,7 @@ export async function authenticateClientApiKey(
       statusCode: 403,
       code: "API_KEY_EXPIRED",
       message: "API Key has expired.",
+      resolved: resolvedKeyFromRow(row),
     };
   }
 
@@ -548,6 +559,7 @@ export async function authenticateClientApiKey(
       statusCode: 401,
       code: "INVALID_API_KEY",
       message: "API Key is invalid.",
+      resolved: resolvedKeyFromRow(row),
     };
   }
 
@@ -564,6 +576,7 @@ export async function authenticateClientApiKey(
       statusCode: 401,
       code: "INVALID_API_KEY",
       message: "API Key is invalid.",
+      resolved: resolvedKeyFromRow(row),
     };
   }
 
@@ -574,6 +587,7 @@ export async function authenticateClientApiKey(
       statusCode: 403,
       code: "INSUFFICIENT_SCOPE",
       message: `Required scope '${requiredScope}' is missing.`,
+      resolved: resolvedKeyFromRow(row),
     };
   }
 

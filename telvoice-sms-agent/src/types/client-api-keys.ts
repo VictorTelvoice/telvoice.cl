@@ -101,4 +101,9 @@ export type ApiKeyAuthResult =
       statusCode: number;
       code: ApiKeyAuthErrorCode;
       message: string;
+      resolved?: {
+        apiKeyId: string;
+        companyId: string;
+        environment: ClientApiKeyEnvironment | null;
+      };
     };

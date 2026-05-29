@@ -14,6 +14,7 @@ import type {
   ClientApiKeyStatus,
 } from "../../types/client-api-keys.js";
 import { CLIENT_API_KEY_SCOPES } from "../../types/client-api-keys.js";
+import type { ClientApiRequest } from "../../types/client-api-requests.js";
 import { canOperateClientPanel } from "../../types/roles.js";
 import { escapeHtml, formatDateShort } from "../../utils/html.js";
 import { renderKpiCard } from "../admin-ui/components.js";
@@ -445,6 +446,86 @@ function renderRealApiKeysPanel(ctx: AppPageContext, data: AppApiPageData): stri
             </tr>
           </thead>
           <tbody id="tv-api-keys-tbody">${rows}</tbody>
+        </table>
+      </div>
+    </div>
+  </section>`;
+}
+
+function requestResultLabel(log: ClientApiRequest): string {
+  return log.success ? "Éxito" : "Error";
+}
+
+function requestResultBadgeClass(log: ClientApiRequest): string {
+  return log.success ? "badge-ok" : "badge-warn";
+}
+
+function requestKeyLabel(log: ClientApiRequest): string {
+  if (log.apiKeyName?.trim()) {
+    return log.apiKeyName.trim();
+  }
+  if (log.apiKeyMasked?.trim()) {
+    return log.apiKeyMasked.trim();
+  }
+  return "—";
+}
+
+function renderRecentApiActivityPanel(data: AppApiPageData): string {
+  const module = data.requestsModule ?? { available: false, migrationPending: false };
+  const logs = data.recentApiRequests ?? [];
+
+  if (!module.available) {
+    return `<section class="tv-panel" id="tv-api-activity-panel">
+      <header class="tv-section-head" style="padding:1rem 1.25rem 0">
+        <h2 class="tv-section-head__title">Actividad reciente de API</h2>
+        <p class="tv-section-head__sub">Últimas solicitudes realizadas con tus API Keys.</p>
+      </header>
+      <div class="tv-panel__body">
+        <div class="alert alert-warn" role="status">Registro de actividad API no disponible${module.migrationPending ? " (migración pendiente)" : ""}.</div>
+      </div>
+    </section>`;
+  }
+
+  const rows =
+    logs.length === 0
+      ? `<tr><td colspan="7" class="tv-api-keys-empty">Aún no hay actividad registrada para tus API Keys.</td></tr>`
+      : logs
+          .map((log) => {
+            const err = log.errorCode
+              ? `<span class="badge badge-muted">${escapeHtml(log.errorCode)}</span>`
+              : "—";
+            return `<tr>
+            <td>${escapeHtml(formatDateShort(log.createdAt))}</td>
+            <td><code>${escapeHtml(log.endpoint)}</code></td>
+            <td>${escapeHtml(log.method)}</td>
+            <td>${log.statusCode}</td>
+            <td><span class="badge ${requestResultBadgeClass(log)}">${escapeHtml(requestResultLabel(log))}</span></td>
+            <td>${escapeHtml(requestKeyLabel(log))}</td>
+            <td>${err}</td>
+          </tr>`;
+          })
+          .join("");
+
+  return `<section class="tv-panel" id="tv-api-activity-panel">
+    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
+      <h2 class="tv-section-head__title">Actividad reciente de API</h2>
+      <p class="tv-section-head__sub">Últimas solicitudes realizadas con tus API Keys.</p>
+    </header>
+    <div class="tv-panel__body">
+      <div class="tv-api-keys-table-wrap">
+        <table class="tv-api-keys-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Endpoint</th>
+              <th>Método</th>
+              <th>HTTP</th>
+              <th>Resultado</th>
+              <th>API Key</th>
+              <th>Error</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
         </table>
       </div>
     </div>
@@ -1523,6 +1604,8 @@ export function renderAppApiPage(
     settings: buildDefaultClientApiSettings(),
     syncSource: "defaults",
     hasStoredRecord: false,
+    requestsModule: { available: false, migrationPending: false },
+    recentApiRequests: [],
   };
   const settings = data.settings;
   const creds = settingsToCredentials(settings);
@@ -1584,6 +1667,7 @@ export function renderAppApiPage(
       <div class="tv-api-main">
         ${renderCredentialsPanel(ctx, settings)}
         ${renderRealApiKeysPanel(ctx, data)}
+        ${renderRecentApiActivityPanel(data)}
         ${renderEndpointsSection()}
         ${renderExampleSection(creds.apiKey)}
         ${renderWebhookPanel()}
