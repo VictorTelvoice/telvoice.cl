@@ -3089,12 +3089,13 @@
     .tv-contacts-agenda {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.35rem;
       padding: 0.85rem 0.9rem;
       border-radius: 12px;
       border: 1px solid var(--tv-border);
       background: #fff;
       color: inherit;
+      text-decoration: none;
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .tv-contacts-agenda__link {

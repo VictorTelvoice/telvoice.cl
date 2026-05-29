@@ -72,8 +72,59 @@ const HEADER_MAP: Record<string, keyof ParsedContactCsvRow | "tags" | "list_name
 function mapHeader(cell: string): string | null {
   const n = normHeader(cell);
   if (HEADER_MAP[n]) return HEADER_MAP[n];
-  if (/^(numero|numeros|celular|movil|msisdn)s?$/.test(n)) return "phone";
+  if (/^(numero|numeros|celular|movil|msisdn|to|destino)s?$/.test(n)) return "phone";
   return null;
+}
+
+function looksLikePhone(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  return validateContactPhone(trimmed).ok;
+}
+
+function rowLooksLikeContactData(cols: string[]): boolean {
+  if (!cols.length) return false;
+  if (cols.some((c) => looksLikePhone(c))) return true;
+  const digitsOnly = cols.filter((c) => /^\d{8,15}$/.test(c.replace(/\D/g, "")));
+  return digitsOnly.length > 0;
+}
+
+function inferPhoneAndNameColumns(lines: string[]): { phone: number; display_name: number } {
+  let score0Phone = 0;
+  let score1Phone = 0;
+  for (const line of lines.slice(0, 10)) {
+    const cols = parseCsvLine(line);
+    if (cols[0] && looksLikePhone(cols[0])) score0Phone++;
+    if (cols[1] && looksLikePhone(cols[1]!)) score1Phone++;
+  }
+  if (score0Phone >= score1Phone) {
+    return { phone: 0, display_name: 1 };
+  }
+  return { phone: 1, display_name: 0 };
+}
+
+function resolvePhoneAndName(
+  phoneRaw: string,
+  nameRaw: string,
+): { phone: string; display_name: string } {
+  const name = nameRaw.trim();
+  const phone = phoneRaw.trim();
+  const phoneOk = validateContactPhone(phone);
+  const nameAsPhoneOk = validateContactPhone(name);
+
+  if (phoneOk.ok) {
+    return {
+      phone,
+      display_name: name || phoneOk.normalized || phone,
+    };
+  }
+  if (nameAsPhoneOk.ok) {
+    return {
+      phone: name,
+      display_name: phone || nameAsPhoneOk.normalized || name,
+    };
+  }
+  return { phone, display_name: name || phone };
 }
 
 export function parseContactsCsv(input: string): ParsedContactCsvRow[] {
@@ -85,7 +136,10 @@ export function parseContactsCsv(input: string): ParsedContactCsvRow[] {
 
   const firstCols = parseCsvLine(lines[0]!);
   const headerKeys = firstCols.map((c) => mapHeader(c));
-  const hasHeader = headerKeys.some(Boolean);
+  let hasHeader = headerKeys.some(Boolean);
+  if (hasHeader && rowLooksLikeContactData(firstCols)) {
+    hasHeader = false;
+  }
   let start = 0;
   const colMap: Record<string, number> = {};
 
@@ -95,8 +149,9 @@ export function parseContactsCsv(input: string): ParsedContactCsvRow[] {
     });
     start = 1;
   } else {
-    colMap.display_name = 0;
-    colMap.phone = 1;
+    const inferred = inferPhoneAndNameColumns(lines);
+    colMap.display_name = inferred.display_name;
+    colMap.phone = inferred.phone;
     if (firstCols.length > 2) colMap.email = 2;
   }
 
@@ -114,12 +169,11 @@ export function parseContactsCsv(input: string): ParsedContactCsvRow[] {
       raw[key] = (cols[idx] ?? "").trim();
     }
 
-    const phone = raw.phone ?? "";
+    const resolved = resolvePhoneAndName(raw.phone ?? "", raw.display_name ?? "");
+    const phone = resolved.phone;
     if (!phone) continue;
 
-    const displayName =
-      (raw.display_name ?? "").trim() ||
-      phone;
+    const displayName = resolved.display_name || phone;
 
     let tagNames: string[] | undefined;
     const tagsRaw = raw.tags ?? "";
@@ -218,6 +272,7 @@ export type CreateContactImportJobInput = {
   csv_text: string;
   filename?: string;
   create_tags?: boolean;
+  default_list_name?: string;
 };
 
 export async function createContactImportJob(
@@ -227,6 +282,13 @@ export async function createContactImportJob(
   const parsed = parseContactsCsv(input.csv_text);
   if (!parsed.length) {
     throw new AppError("El archivo CSV no tiene filas de datos.", 400);
+  }
+
+  const defaultList = input.default_list_name?.trim();
+  if (defaultList) {
+    for (const row of parsed) {
+      if (!row.list_name?.trim()) row.list_name = defaultList;
+    }
   }
 
   const validated = await validateContactImportRows(companyId, parsed);

@@ -1309,6 +1309,7 @@ export async function postAppContactsImportPreview(
       csv_text: csvText,
       filename: body.filename,
       create_tags: body.create_tags === "1",
+      default_list_name: body.default_list_name,
     });
     res.redirect(303, `/app/contacts?import_job=${encodeURIComponent(preview.job.id)}`);
   } catch (error) {

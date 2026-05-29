@@ -320,10 +320,18 @@ function contactsQuickModal(
           <input type="file" id="tv-contacts-import-file" accept=".csv,.txt,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
         </div>
         <p class="field-hint" id="tv-contacts-import-filename" style="margin:0.5rem 0 0.75rem" hidden></p>
+        ${lists.length
+          ? renderFilterField(
+              "Agenda destino",
+              `<select name="default_list_name" class="tv-filter-input" required>${lists
+                .map((a) => `<option value="${escapeHtml(a.name)}">${escapeHtml(a.name)}</option>`)
+                .join("")}</select>`,
+            )
+          : `<p class="alert alert-warn" style="margin:0">Crea primero una agenda en la pestaña Agenda.</p>`}
         <div class="form-group" style="margin-top:0.75rem">
           ${renderFilterField(
             "Contenido",
-            `<textarea name="csv_text" id="tv-contacts-import-text" class="tv-filter-input" rows="8" placeholder="nombre,telefono,email,agenda,tags,notas&#10;Juan Pérez,+56912345678,juan@ejemplo.cl,Clientes,vip" required></textarea>`,
+            `<textarea name="csv_text" id="tv-contacts-import-text" class="tv-filter-input" rows="8" placeholder="56912345678,Este es un test&#10;56987654321,Otro contacto&#10;&#10;Detecta teléfono y nombre en cualquier orden (con o sin cabecera)." required></textarea>`,
           )}
         </div>
         <input type="hidden" name="filename" id="tv-contacts-import-filename-input" value="" />
@@ -331,7 +339,7 @@ function contactsQuickModal(
           <input type="checkbox" name="create_tags" value="1" />
           <span>Crear tags automáticamente si no existen</span>
         </label>
-        <button type="submit" class="btn btn-primary btn-sm">Previsualizar importación</button>
+        <button type="submit" class="btn btn-primary btn-sm"${lists.length ? "" : " disabled"}>Previsualizar importación</button>
       </form>`;
 
   return `<div class="tv-contacts-modal" id="tv-contacts-quick-modal" role="dialog" aria-modal="true" aria-labelledby="tv-contacts-modal-title" aria-hidden="true">
@@ -340,16 +348,23 @@ function contactsQuickModal(
       <header class="tv-contacts-modal__head">
         <div>
           <h2 class="tv-section-head__title" id="tv-contacts-modal-title">Gestión rápida</h2>
-          <p class="tv-section-head__sub">Crea agendas, contactos o importa desde planilla</p>
+          <p class="tv-section-head__sub">Primero la agenda, luego contactos o importación</p>
         </div>
         <button type="button" class="btn btn-ghost btn-sm" data-tv-contacts-close aria-label="Cerrar">✕</button>
       </header>
       <nav class="tv-contacts-modal__tabs" role="tablist" aria-label="Acciones de contactos">
-        <button type="button" class="tv-contacts-modal__tab" role="tab" data-tv-contacts-tab="contact" aria-selected="false" aria-controls="tv-contacts-pane-contact">Contacto</button>
         <button type="button" class="tv-contacts-modal__tab" role="tab" data-tv-contacts-tab="agenda" aria-selected="false" aria-controls="tv-contacts-pane-agenda">Agenda</button>
+        <button type="button" class="tv-contacts-modal__tab" role="tab" data-tv-contacts-tab="contact" aria-selected="false" aria-controls="tv-contacts-pane-contact">Contacto</button>
         <button type="button" class="tv-contacts-modal__tab" role="tab" data-tv-contacts-tab="import" aria-selected="false" aria-controls="tv-contacts-pane-import">Importar</button>
       </nav>
       <div class="tv-contacts-modal__body">
+        <div class="tv-contacts-modal__pane" id="tv-contacts-pane-agenda" role="tabpanel" hidden>
+          <form method="post" action="/app/contacts/lists" id="tv-contacts-form-agenda">
+            ${renderFilterField("Nombre", `<input type="text" name="name" class="tv-filter-input" placeholder="Ej. Clientes VIP" required />`)}
+            ${renderFilterField("Descripción", `<input type="text" name="description" class="tv-filter-input" placeholder="opcional" />`)}
+            ${renderFilterField("Color", `<input type="text" name="color" class="tv-filter-input" placeholder="#0052CC opcional" />`)}
+          </form>
+        </div>
         <div class="tv-contacts-modal__pane" id="tv-contacts-pane-contact" role="tabpanel" hidden>
           <form method="post" action="/app/contacts" id="tv-contacts-form-contact">
             ${renderFilterField("Nombre visible", `<input type="text" name="display_name" class="tv-filter-input" placeholder="Ej. Juan Pérez" required />`)}
@@ -359,21 +374,14 @@ function contactsQuickModal(
             ${renderFilterField("Notas", `<input type="text" name="notes" class="tv-filter-input" placeholder="opcional" />`)}
           </form>
         </div>
-        <div class="tv-contacts-modal__pane" id="tv-contacts-pane-agenda" role="tabpanel" hidden>
-          <form method="post" action="/app/contacts/lists" id="tv-contacts-form-agenda">
-            ${renderFilterField("Nombre", `<input type="text" name="name" class="tv-filter-input" placeholder="Ej. Clientes VIP" required />`)}
-            ${renderFilterField("Descripción", `<input type="text" name="description" class="tv-filter-input" placeholder="opcional" />`)}
-            ${renderFilterField("Color", `<input type="text" name="color" class="tv-filter-input" placeholder="#0052CC opcional" />`)}
-          </form>
-        </div>
         <div class="tv-contacts-modal__pane" id="tv-contacts-pane-import" role="tabpanel" hidden>
           ${importPane}
         </div>
       </div>
       <footer class="tv-contacts-modal__foot" id="tv-contacts-modal-foot">
         <button type="button" class="btn btn-ghost" data-tv-contacts-close>Cancelar</button>
-        <button type="submit" form="tv-contacts-form-contact" class="btn btn-primary" data-tv-contacts-submit="contact">Guardar contacto</button>
-        <button type="submit" form="tv-contacts-form-agenda" class="btn btn-primary" data-tv-contacts-submit="agenda" hidden>Guardar agenda</button>
+        <button type="submit" form="tv-contacts-form-agenda" class="btn btn-primary" data-tv-contacts-submit="agenda">Guardar agenda</button>
+        <button type="submit" form="tv-contacts-form-contact" class="btn btn-primary" data-tv-contacts-submit="contact" hidden>Guardar contacto</button>
       </footer>
     </div>
   </div>`;
@@ -500,8 +508,8 @@ function emptyStateReal(): string {
       <h2 style="margin-top:1rem">Todavía no tienes contactos</h2>
       <p class="tv-page-sub">Crea tu primer contacto o agenda para comenzar a preparar campañas SMS.</p>
       <div class="tv-quick-actions">
-        <button type="button" class="btn btn-primary" data-tv-contacts-open data-tv-contacts-tab="contact">Nuevo contacto</button>
         <button type="button" class="btn btn-secondary" data-tv-contacts-open data-tv-contacts-tab="agenda">Nueva agenda</button>
+        <button type="button" class="btn btn-primary" data-tv-contacts-open data-tv-contacts-tab="contact">Nuevo contacto</button>
         <button type="button" class="btn btn-ghost" data-tv-contacts-open data-tv-contacts-tab="import">Importar planilla</button>
       </div>
     </div>
@@ -526,7 +534,7 @@ export function renderAppContactsPage(
   data: AppContactsPageData,
 ): string {
   const { module, filters, contacts, lists, summary } = data;
-  const initialTab = data.initialModalTab ?? "contact";
+  const initialTab = data.initialModalTab ?? "agenda";
 
   const anyFilter = Boolean((filters.q ?? "").trim() || (filters.agenda ?? "").trim());
 
@@ -544,7 +552,7 @@ export function renderAppContactsPage(
       title: "Contactos",
       subtitle: "Crea agendas y agrega contactos de forma simple y rápida.",
       actions: module.available
-        ? `<button type="button" class="btn btn-primary" data-tv-contacts-open data-tv-contacts-tab="contact">
+        ? `<button type="button" class="btn btn-primary" data-tv-contacts-open data-tv-contacts-tab="agenda">
             <span class="material-symbols-outlined" aria-hidden="true">bolt</span>
             Gestión rápida
           </button>`
@@ -589,7 +597,7 @@ export function renderAppContactsPage(
 
         function openModal(tab){
           if(!modal) return;
-          switchTab(tab || "contact");
+          switchTab(tab || "agenda");
           modal.setAttribute("aria-hidden", "false");
           document.body.style.overflow = "hidden";
         }
@@ -602,7 +610,7 @@ export function renderAppContactsPage(
 
         document.querySelectorAll("[data-tv-contacts-open]").forEach(function(btn){
           btn.addEventListener("click", function(){
-            openModal(btn.getAttribute("data-tv-contacts-tab") || "contact");
+            openModal(btn.getAttribute("data-tv-contacts-tab") || "agenda");
           });
         });
         modal && modal.querySelectorAll("[data-tv-contacts-close]").forEach(function(btn){
@@ -610,7 +618,7 @@ export function renderAppContactsPage(
         });
         tabs.filter(function(t){ return t.getAttribute("role") === "tab"; }).forEach(function(tab){
           tab.addEventListener("click", function(){
-            switchTab(tab.getAttribute("data-tv-contacts-tab") || "contact");
+            switchTab(tab.getAttribute("data-tv-contacts-tab") || "agenda");
           });
         });
         document.addEventListener("keydown", function(e){

@@ -529,6 +529,19 @@ export function getAppPanelStyles(): string {
     @media (max-width: 640px) {
       .tv-stat-chips--ops { grid-template-columns: repeat(2, 1fr); }
     }
+    .tv-send-meta-grid {
+      grid-template-columns: 1fr 1fr minmax(11rem, 14rem);
+      align-items: start;
+    }
+    .tv-send-contacts-select { font-size: 0.88rem; }
+    @media (max-width: 960px) {
+      .tv-send-meta-grid { grid-template-columns: 1fr 1fr; }
+      .tv-send-contacts-field { grid-column: 1 / -1; max-width: 20rem; }
+    }
+    @media (max-width: 640px) {
+      .tv-send-meta-grid { grid-template-columns: 1fr; }
+      .tv-send-contacts-field { max-width: none; }
+    }
     .tv-send-to-row {
       display: grid;
       grid-template-columns: 1fr minmax(9rem, 11rem);
