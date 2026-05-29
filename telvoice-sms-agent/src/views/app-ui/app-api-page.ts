@@ -25,6 +25,8 @@ import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
 const API_DOCS_URL = "https://www.telvoice.cl";
 const API_BASE_URL = "https://api.telvoice.cl";
 const SANDBOX_API_BASE_URL = "https://agent.telvoice.cl";
+/** Placeholder fijo en documentación SSR — nunca usar API Keys reales del cliente. */
+const DOC_PLACEHOLDER_KEY = "tlv_test_xxxxx";
 
 export const DEFAULT_MOCK_API_KEY = DEFAULT_DEMO_API_KEY;
 export type { ClientApiCredentials, ClientApiWebhookConfig };
@@ -252,6 +254,136 @@ function apiPageStyles(): string {
     @media (max-width: 900px) {
       .tv-api-page .tv-api-layout { grid-template-columns: 1fr; }
       .tv-api-endpoint { grid-template-columns: 1fr; }
+    }
+    .tv-api-doc-section .tv-api-doc-status {
+      display: grid;
+      gap: 0.65rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      font-size: 0.88rem;
+    }
+    .tv-api-doc-section .tv-api-doc-status li {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 0.5rem;
+      align-items: baseline;
+    }
+    .tv-api-doc-section .tv-api-doc-status dt {
+      margin: 0;
+      font-weight: 600;
+      color: var(--tv-text);
+      min-width: 10rem;
+    }
+    .tv-api-doc-section .tv-api-doc-status dd {
+      margin: 0;
+      color: var(--tv-muted);
+      flex: 1;
+    }
+    .tv-api-doc-block {
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--tv-border);
+    }
+    .tv-api-doc-block:first-of-type { margin-top: 0; padding-top: 0; border-top: none; }
+    .tv-api-doc-block h3 {
+      margin: 0 0 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .tv-api-doc-accordion {
+      border: 1px solid var(--tv-border);
+      border-radius: var(--tv-radius);
+      background: var(--tv-surface);
+      margin-bottom: 0.65rem;
+      overflow: hidden;
+    }
+    .tv-api-doc-accordion summary {
+      cursor: pointer;
+      padding: 0.85rem 1rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tv-api-doc-accordion summary::-webkit-details-marker { display: none; }
+    .tv-api-doc-accordion summary::after {
+      content: "expand_more";
+      font-family: "Material Symbols Outlined";
+      margin-left: auto;
+      color: var(--tv-muted);
+      font-size: 1.25rem;
+    }
+    .tv-api-doc-accordion[open] summary::after { content: "expand_less"; }
+    .tv-api-doc-accordion__body {
+      padding: 0 1rem 1rem;
+      border-top: 1px solid var(--tv-border);
+    }
+    .tv-api-doc-accordion__meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.82rem;
+    }
+    .tv-api-doc-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 0.75rem 0;
+    }
+    .tv-api-doc-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      min-width: 280px;
+    }
+    .tv-api-doc-table th,
+    .tv-api-doc-table td {
+      padding: 0.55rem 0.65rem;
+      text-align: left;
+      border-bottom: 1px solid var(--tv-border);
+      vertical-align: top;
+    }
+    .tv-api-doc-table th {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--tv-muted);
+      font-weight: 600;
+    }
+    .tv-api-doc-table code { font-size: 0.78rem; }
+    .tv-api-doc-steps {
+      margin: 0;
+      padding-left: 1.25rem;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: var(--tv-muted);
+    }
+    .tv-api-doc-steps li { margin-bottom: 0.4rem; }
+    .tv-api-doc-copy-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    .tv-api-doc-limits {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    .tv-api-doc-limits h4 {
+      margin: 0 0 0.35rem;
+      font-size: 0.85rem;
+    }
+    .tv-api-doc-limits ul {
+      margin: 0;
+      padding-left: 1.1rem;
+      font-size: 0.85rem;
+      color: var(--tv-muted);
     }
     .tv-api-keys-table-wrap {
       overflow-x: auto;
@@ -914,6 +1046,223 @@ curl_close($ch);`;
   return { curl, javascript, php };
 }
 
+function docSnippetBalance(): string {
+  return `curl -H "Authorization: Bearer ${DOC_PLACEHOLDER_KEY}" \\
+  ${SANDBOX_API_BASE_URL}/api/v1/balance`;
+}
+
+function docSnippetSend(): string {
+  return `curl -X POST ${SANDBOX_API_BASE_URL}/api/v1/sms/send \\
+  -H "Authorization: Bearer ${DOC_PLACEHOLDER_KEY}" \\
+  -H "Content-Type: application/json" \\
+  -H "Idempotency-Key: order-123-send-1" \\
+  -d '{
+  "to": "+56912345678",
+  "message": "Mensaje de prueba sandbox",
+  "sender": "Telvoice",
+  "country": "CL",
+  "external_reference": "order-123"
+}'`;
+}
+
+function docSnippetMessageDetail(): string {
+  return `curl -H "Authorization: Bearer ${DOC_PLACEHOLDER_KEY}" \\
+  ${SANDBOX_API_BASE_URL}/api/v1/messages/<message_id>`;
+}
+
+function docSnippetMessageList(): string {
+  return `curl -H "Authorization: Bearer ${DOC_PLACEHOLDER_KEY}" \\
+  "${SANDBOX_API_BASE_URL}/api/v1/messages?limit=20&status=sandbox_accepted"`;
+}
+
+function renderApiDocumentationSection(): string {
+  const authHeader = `Authorization: Bearer ${DOC_PLACEHOLDER_KEY}`;
+
+  const endpointAccordions = `
+    <details class="tv-api-doc-accordion">
+      <summary><span class="badge badge-muted">GET</span> Consultar saldo <code>/api/v1/balance</code></summary>
+      <div class="tv-api-doc-accordion__body">
+        <div class="tv-api-doc-accordion__meta"><span class="badge badge-muted">Scope</span> <code>balance:read</code></div>
+        ${renderCodeBlock(docSnippetBalance())}
+        <div class="tv-api-doc-copy-row">
+          <button type="button" class="btn btn-secondary btn-sm" data-copy-doc="balance">
+            <span class="material-symbols-outlined" style="font-size:1rem" aria-hidden="true">content_copy</span>
+            Copiar ejemplo balance
+          </button>
+        </div>
+      </div>
+    </details>
+    <details class="tv-api-doc-accordion">
+      <summary><span class="badge badge-ok">POST</span> Enviar SMS sandbox <code>/api/v1/sms/send</code></summary>
+      <div class="tv-api-doc-accordion__body">
+        <div class="tv-api-doc-accordion__meta"><span class="badge badge-muted">Scope</span> <code>sms:send</code></div>
+        ${renderCodeBlock(docSnippetSend())}
+        <p class="field-hint" style="margin:0.75rem 0 0">En sandbox no se envía SMS real ni se descuenta saldo.</p>
+        <div class="tv-api-doc-copy-row">
+          <button type="button" class="btn btn-secondary btn-sm" data-copy-doc="send">
+            <span class="material-symbols-outlined" style="font-size:1rem" aria-hidden="true">content_copy</span>
+            Copiar ejemplo envío sandbox
+          </button>
+        </div>
+      </div>
+    </details>
+    <details class="tv-api-doc-accordion">
+      <summary><span class="badge badge-muted">GET</span> Consultar mensaje <code>/api/v1/messages/:id</code></summary>
+      <div class="tv-api-doc-accordion__body">
+        <div class="tv-api-doc-accordion__meta"><span class="badge badge-muted">Scope</span> <code>messages:read</code></div>
+        ${renderCodeBlock(docSnippetMessageDetail())}
+        <div class="tv-api-doc-copy-row">
+          <button type="button" class="btn btn-secondary btn-sm" data-copy-doc="message">
+            <span class="material-symbols-outlined" style="font-size:1rem" aria-hidden="true">content_copy</span>
+            Copiar ejemplo consultar mensaje
+          </button>
+        </div>
+      </div>
+    </details>
+    <details class="tv-api-doc-accordion">
+      <summary><span class="badge badge-muted">GET</span> Listar mensajes <code>/api/v1/messages</code></summary>
+      <div class="tv-api-doc-accordion__body">
+        <div class="tv-api-doc-accordion__meta"><span class="badge badge-muted">Scope</span> <code>messages:read</code></div>
+        ${renderCodeBlock(docSnippetMessageList())}
+        <div class="tv-api-doc-copy-row">
+          <button type="button" class="btn btn-secondary btn-sm" data-copy-doc="list">
+            <span class="material-symbols-outlined" style="font-size:1rem" aria-hidden="true">content_copy</span>
+            Copiar ejemplo listar mensajes
+          </button>
+        </div>
+      </div>
+    </details>`;
+
+  const scopesTable = `<div class="tv-api-doc-table-wrap">
+    <table class="tv-api-doc-table">
+      <thead><tr><th>Scope</th><th>Uso</th></tr></thead>
+      <tbody>
+        <tr><td><code>balance:read</code></td><td>Consultar saldo SMS</td></tr>
+        <tr><td><code>sms:send</code></td><td>Crear mensajes sandbox</td></tr>
+        <tr><td><code>messages:read</code></td><td>Consultar mensajes creados por API</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="field-hint" style="margin:0.5rem 0 0">El scope <code>sms:send</code> no habilita envío real en esta fase.</p>`;
+
+  const errorsTable = `<div class="tv-api-doc-table-wrap">
+    <table class="tv-api-doc-table">
+      <thead><tr><th>HTTP</th><th>Código</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr><td>401</td><td><code>MISSING_API_KEY</code></td><td>Falta Authorization Bearer</td></tr>
+        <tr><td>401</td><td><code>INVALID_API_KEY</code></td><td>API Key inválida</td></tr>
+        <tr><td>403</td><td><code>API_KEY_PAUSED</code></td><td>Key pausada</td></tr>
+        <tr><td>403</td><td><code>API_KEY_REVOKED</code></td><td>Key revocada</td></tr>
+        <tr><td>403</td><td><code>INSUFFICIENT_SCOPE</code></td><td>La key no tiene el scope requerido</td></tr>
+        <tr><td>403</td><td><code>PRODUCTION_SEND_NOT_ENABLED</code></td><td>Envío real aún no habilitado</td></tr>
+        <tr><td>409</td><td><code>IDEMPOTENCY_CONFLICT</code></td><td>Misma Idempotency-Key con payload distinto</td></tr>
+        <tr><td>429</td><td><code>RATE_LIMIT_EXCEEDED</code></td><td>Se superó el límite de solicitudes</td></tr>
+      </tbody>
+    </table>
+  </div>`;
+
+  return `<section class="tv-panel tv-api-doc-section" id="tv-api-documentation">
+    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.5rem 1rem">
+        <div style="flex:1;min-width:200px">
+          <h2 class="tv-section-head__title">Documentación API</h2>
+          <p class="tv-section-head__sub" style="margin:0.35rem 0 0">
+            Integra tus sistemas con Telvoice usando API Keys seguras. Actualmente el envío SMS está disponible solo en modo sandbox.
+          </p>
+        </div>
+        <span class="badge badge-ok">Sandbox activo</span>
+      </div>
+    </header>
+    <div class="tv-panel__body">
+      <div class="tv-api-doc-block">
+        <h3>Estado de la API</h3>
+        <dl class="tv-api-doc-status">
+          <li><dt>Autenticación</dt><dd>API Key Bearer</dd></li>
+          <li><dt>Ambiente disponible</dt><dd>Sandbox</dd></li>
+          <li><dt>Envío real</dt><dd>No habilitado</dd></li>
+          <li><dt>Descuento de saldo</dt><dd>No habilitado</dd></li>
+          <li><dt>Webhooks reales</dt><dd>No habilitados</dd></li>
+          <li><dt>Producción</dt><dd>Bajo aprobación Telvoice</dd></li>
+        </dl>
+      </div>
+
+      <div class="tv-api-doc-block">
+        <h3>Autenticación</h3>
+        <p class="field-hint" style="margin:0 0 0.75rem">Header requerido en cada solicitud:</p>
+        ${renderCodeBlock(authHeader)}
+        <p class="field-hint" style="margin:0.75rem 0 0">
+          La API Key completa solo se muestra una vez al crearla. Después solo podrás verla enmascarada.
+        </p>
+      </div>
+
+      <div class="tv-api-doc-block">
+        <h3>Endpoints</h3>
+        <p class="field-hint" style="margin:0 0 0.75rem">Base URL sandbox: <code>${escapeHtml(SANDBOX_API_BASE_URL)}</code></p>
+        ${endpointAccordions}
+      </div>
+
+      <div class="tv-api-doc-block">
+        <h3>Scopes</h3>
+        ${scopesTable}
+      </div>
+
+      <div class="tv-api-doc-block">
+        <h3>Errores comunes</h3>
+        ${errorsTable}
+      </div>
+
+      <div class="tv-api-doc-block">
+        <h3>Rate limits</h3>
+        <div class="tv-api-doc-limits">
+          <div>
+            <h4>Sandbox</h4>
+            <ul>
+              <li>30 requests/min por API Key</li>
+              <li>500 requests/día por empresa</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Producción</h4>
+            <ul>
+              <li>120 requests/min por API Key</li>
+              <li>10.000 requests/día por empresa</li>
+            </ul>
+          </div>
+        </div>
+        <p class="field-hint" style="margin:0">Los límites pueden ser ajustados por Telvoice para clientes de alto volumen.</p>
+      </div>
+
+      <div class="tv-api-doc-block">
+        <h3>Idempotency-Key</h3>
+        <p class="field-hint" style="margin:0 0 0.75rem">
+          Usa este header para evitar duplicar mensajes si tu sistema reintenta una solicitud por timeout o error de red.
+        </p>
+        <ul class="tv-api-security-list" style="margin:0">
+          <li>Misma key + mismo payload: devuelve el mismo mensaje.</li>
+          <li>Misma key + payload distinto: error 409.</li>
+          <li>Máximo 120 caracteres.</li>
+        </ul>
+      </div>
+
+      <div class="tv-api-doc-block">
+        <h3>Flujo recomendado</h3>
+        <ol class="tv-api-doc-steps">
+          <li>Crear API Key sandbox.</li>
+          <li>Copiarla una sola vez.</li>
+          <li>Consultar saldo.</li>
+          <li>Enviar mensaje sandbox con <code>Idempotency-Key</code>.</li>
+          <li>Consultar el <code>message_id</code>.</li>
+          <li>Revisar actividad reciente en esta página.</li>
+        </ol>
+      </div>
+    </div>
+    <template id="tv-api-doc-snippet-balance">${docSnippetBalance()}</template>
+    <template id="tv-api-doc-snippet-send">${docSnippetSend()}</template>
+    <template id="tv-api-doc-snippet-message">${docSnippetMessageDetail()}</template>
+    <template id="tv-api-doc-snippet-list">${docSnippetMessageList()}</template>
+  </section>`;
+}
+
 function renderEndpointsSection(): string {
   const rows = API_ENDPOINTS.map(
     (e) => `<article class="tv-api-endpoint">
@@ -1484,6 +1833,21 @@ function renderApiScript(ctx: AppPageContext, pageData: AppApiPageData): string 
     });
   });
 
+  var docCopyLabels = {
+    balance: "Ejemplo balance copiado.",
+    send: "Ejemplo envío sandbox copiado.",
+    message: "Ejemplo consultar mensaje copiado.",
+    list: "Ejemplo listar mensajes copiado."
+  };
+  document.querySelectorAll("[data-copy-doc]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var key = btn.getAttribute("data-copy-doc");
+      var tpl = document.getElementById("tv-api-doc-snippet-" + key);
+      var label = docCopyLabels[key] || "Ejemplo copiado.";
+      copyText(tpl ? tpl.textContent.trim() : "", label);
+    });
+  });
+
   document.getElementById("tv-api-webhook-save")?.addEventListener("click", function () {
     var w = readWebhookFromForm();
     if (w.url && !isValidUrl(w.url)) {
@@ -1707,6 +2071,7 @@ export function renderAppApiPage(
       <div class="tv-api-main">
         ${renderCredentialsPanel(ctx, settings)}
         ${renderRealApiKeysPanel(ctx, data)}
+        ${renderApiDocumentationSection()}
         ${renderRecentApiActivityPanel(data)}
         ${renderEndpointsSection()}
         ${renderExampleSection(creds.apiKey)}

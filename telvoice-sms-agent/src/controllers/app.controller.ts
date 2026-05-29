@@ -53,7 +53,6 @@ import {
 import {
   renderAppContactsPage,
   parseContactsPageFilters,
-  parseContactsQuickModalTab,
   renderAppSupportPage,
 } from "../views/app-ui/app-section-pages.js";
 import type { ContactStatus, ContactSummary } from "../types/contacts.js";
@@ -62,6 +61,8 @@ import {
   bulkUpdateContactStatus,
   createContact,
   createContactList,
+  duplicateContactList,
+  archiveContactList,
   getContactSummary,
   getContactsModuleState,
   listContactLists,
@@ -1217,9 +1218,6 @@ export async function getAppContacts(
     const filters = parseContactsPageFilters(
       req.query as Record<string, string | string[] | undefined>,
     );
-    const initialModalTab = parseContactsQuickModalTab(
-      req.query as Record<string, string | string[] | undefined>,
-    );
     const importJobId =
       typeof req.query.import_job === "string" ? req.query.import_job.trim() : "";
 
@@ -1231,7 +1229,6 @@ export async function getAppContacts(
         contacts: [],
         lists: [],
         summary: EMPTY_CONTACT_SUMMARY,
-        initialModalTab,
       });
     }
 
@@ -1258,7 +1255,6 @@ export async function getAppContacts(
       contacts,
       lists,
       summary,
-      initialModalTab,
       importPreview,
     });
   });
@@ -1280,7 +1276,7 @@ export async function getAppContactsImport(
       res.redirect(303, `/app/contacts?import_job=${encodeURIComponent(jobId)}`);
       return;
     }
-    res.redirect(303, "/app/contacts?new=import");
+    res.redirect(303, "/app/contacts?quick_wizard=import");
   } catch (error) {
     next(error);
   }
@@ -1311,7 +1307,13 @@ export async function postAppContactsImportPreview(
       create_tags: body.create_tags === "1",
       default_list_name: body.default_list_name,
     });
-    res.redirect(303, `/app/contacts?import_job=${encodeURIComponent(preview.job.id)}`);
+    const wizardListId = (body.wizard_list_id ?? "").trim();
+    const qs = new URLSearchParams({
+      import_job: preview.job.id,
+      quick_wizard: "import",
+    });
+    if (wizardListId) qs.set("list_id", wizardListId);
+    res.redirect(303, `/app/contacts?${qs.toString()}`);
   } catch (error) {
     const msg =
       error instanceof AppError ? error.message : "Error al previsualizar CSV";
@@ -1501,11 +1503,19 @@ export async function postAppCreateContactList(
     }
 
     const body = req.body as Record<string, string | undefined>;
-    await createContactList(ctx.company.id, {
+    const created = await createContactList(ctx.company.id, {
       name: body.name ?? "",
       description: body.description,
       color: body.color,
     });
+
+    if (body.wizard_next === "1") {
+      res.redirect(
+        303,
+        `/app/contacts?quick_wizard=choose&list_id=${encodeURIComponent(created.id)}`,
+      );
+      return;
+    }
 
     res.redirect(303, "/app/contacts?ok=Agenda%20creada%20correctamente");
   } catch (error) {
@@ -1515,8 +1525,48 @@ export async function postAppCreateContactList(
         : "No se pudo crear la agenda";
     res.redirect(
       303,
-      `/app/contacts?error=${encodeURIComponent(msg)}&new=agenda`,
+      `/app/contacts?error=${encodeURIComponent(msg)}&quick_wizard=agenda`,
     );
+  }
+}
+
+export async function postAppDuplicateContactList(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireContactsWriteContext(req);
+    if (!ctx) {
+      res.redirect("/app/contacts?error=Sin%20permiso");
+      return;
+    }
+    const listId = validateUuidParam(String(req.params.id), "id");
+    await duplicateContactList(ctx.company.id, listId);
+    res.redirect(303, "/app/contacts?ok=Agenda%20duplicada%20correctamente");
+  } catch (error) {
+    const msg =
+      error instanceof AppError ? error.message : "No se pudo duplicar la agenda";
+    res.redirect(303, `/app/contacts?error=${encodeURIComponent(msg)}`);
+  }
+}
+
+export async function postAppDeleteContactList(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireContactsWriteContext(req);
+    if (!ctx) {
+      res.redirect("/app/contacts?error=Sin%20permiso");
+      return;
+    }
+    const listId = validateUuidParam(String(req.params.id), "id");
+    await archiveContactList(ctx.company.id, listId);
+    res.redirect(303, "/app/contacts?ok=Agenda%20eliminada%20correctamente");
+  } catch (error) {
+    const msg =
+      error instanceof AppError ? error.message : "No se pudo eliminar la agenda";
+    res.redirect(303, `/app/contacts?error=${encodeURIComponent(msg)}`);
   }
 }
 
