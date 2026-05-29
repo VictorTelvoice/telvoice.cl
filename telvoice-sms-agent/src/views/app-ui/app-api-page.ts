@@ -1,3 +1,13 @@
+import {
+  buildDefaultClientApiSettings,
+  DEFAULT_DEMO_API_KEY,
+} from "../../services/clientApiSettingsService.js";
+import type {
+  AppApiPageData,
+  ClientApiCredentials,
+  ClientApiSettings,
+  ClientApiWebhookConfig,
+} from "../../types/client-api-settings.js";
 import { escapeHtml, formatDateShort } from "../../utils/html.js";
 import { renderKpiCard } from "../admin-ui/components.js";
 import { renderCodeBlock, renderPageHeader } from "../admin-ui/page-kit.js";
@@ -7,45 +17,32 @@ import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
 const API_DOCS_URL = "https://www.telvoice.cl";
 const API_BASE_URL = "https://api.telvoice.cl";
 
-export const DEFAULT_MOCK_API_KEY = "tlv_live_ch7k2m9p4q1n8x6w5v3b2a";
+export const DEFAULT_MOCK_API_KEY = DEFAULT_DEMO_API_KEY;
+export type { ClientApiCredentials, ClientApiWebhookConfig };
 
-export type ClientApiCredentials = {
-  apiKey: string;
-  environment: "production";
-  status: "active";
-  createdAt: string;
-  lastUsedLabel: string;
-};
+function statusBadgeClass(status: string): string {
+  if (status === "Activa" || status === "Activo") return "badge-ok";
+  if (status === "Error" || status === "Pausada") return "badge-warn";
+  return "badge-muted";
+}
 
-const DEFAULT_CREDENTIALS: ClientApiCredentials = {
-  apiKey: DEFAULT_MOCK_API_KEY,
-  environment: "production",
-  status: "active",
-  createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-  lastUsedLabel: "Hace 12 minutos",
-};
-
-export type ClientApiWebhookConfig = {
-  url: string;
-  active: boolean;
-  events: {
-    delivered: boolean;
-    failed: boolean;
-    expired: boolean;
-    rejected: boolean;
+function settingsToCredentials(s: ClientApiSettings): ClientApiCredentials {
+  return {
+    apiKey: s.apiKeyDemo,
+    environment: "production",
+    status: "active",
+    createdAt: s.createdAt,
+    lastUsedLabel: s.lastUsedLabel,
   };
-};
+}
 
-const DEFAULT_WEBHOOK: ClientApiWebhookConfig = {
-  url: "",
-  active: false,
-  events: {
-    delivered: true,
-    failed: true,
-    expired: true,
-    rejected: true,
-  },
-};
+function settingsToWebhook(s: ClientApiSettings): ClientApiWebhookConfig {
+  return {
+    url: s.webhookUrl,
+    active: s.webhookStatus === "Activo",
+    events: { ...s.webhookEvents },
+  };
+}
 
 const API_ENDPOINTS = [
   {
@@ -312,18 +309,26 @@ function renderEndpointsSection(): string {
   </section>`;
 }
 
-function renderCredentialsPanel(ctx: AppPageContext, creds: ClientApiCredentials): string {
+function renderCredentialsPanel(
+  ctx: AppPageContext,
+  settings: ClientApiSettings,
+): string {
   const companyLabel = ctx.company.name?.trim() || "Tu empresa";
   const companyId = ctx.company.id?.trim() || "—";
+  const creds = settingsToCredentials(settings);
+  const statusCls = statusBadgeClass(settings.apiStatus);
 
   return `<section class="tv-panel" id="tv-api-credentials-panel">
     <header class="tv-section-head" style="padding:1rem 1.25rem 0">
       <h2 class="tv-section-head__title">Credenciales de acceso</h2>
-      <p class="tv-section-head__sub">Clave de prueba para desarrollo. No es una credencial de producción real.</p>
+      <p class="tv-section-head__sub">Clave de demostración para integración visual. No autentica envíos SMS reales.</p>
     </header>
     <div class="tv-panel__body">
+      <div class="alert alert-warn" role="status" style="margin-bottom:1rem">
+        Clave de demostración. La activación de API productiva será habilitada por Telvoice.
+      </div>
       <div class="tv-api-key-row">
-        <span class="field-hint" style="margin:0">API Key</span>
+        <span class="field-hint" style="margin:0">API Key (demo)</span>
         <code id="tv-api-key-display">${escapeHtml(creds.apiKey)}</code>
         <button type="button" class="btn btn-secondary btn-sm" id="tv-api-copy-key-btn">
           <span class="material-symbols-outlined" style="font-size:1rem" aria-hidden="true">content_copy</span>
@@ -331,9 +336,10 @@ function renderCredentialsPanel(ctx: AppPageContext, creds: ClientApiCredentials
         </button>
         <button type="button" class="btn btn-ghost btn-sm" id="tv-api-regen-key-btn">Regenerar API Key</button>
       </div>
+      <p class="field-hint" style="margin:0.35rem 0 0">Vista enmascarada: <code id="tv-api-key-masked">${escapeHtml(settings.apiKeyMasked)}</code></p>
       <dl class="tv-api-meta-grid">
-        <div><dt>Ambiente</dt><dd>Producción</dd></div>
-        <div><dt>Estado</dt><dd><span class="badge badge-ok">Activa</span></dd></div>
+        <div><dt>Ambiente</dt><dd id="tv-api-environment">${escapeHtml(settings.environment)}</dd></div>
+        <div><dt>Estado</dt><dd><span class="badge ${statusCls}" id="tv-api-status-badge">${escapeHtml(settings.apiStatus)}</span></dd></div>
         <div><dt>Empresa</dt><dd>${escapeHtml(companyLabel)}</dd></div>
         <div><dt>Company ID</dt><dd><code class="tv-code-sm">${escapeHtml(companyId)}</code></dd></div>
         <div><dt>Creada</dt><dd id="tv-api-created-at">${escapeHtml(formatDateShort(creds.createdAt))}</dd></div>
@@ -392,7 +398,15 @@ function renderWebhookPanel(): string {
   </section>`;
 }
 
-function renderSmppPanel(): string {
+function renderSmppPanel(settings: ClientApiSettings): string {
+  const smppBadge = settings.smppRequested
+    ? '<span class="badge badge-ok" id="tv-api-smpp-status">Solicitud registrada</span>'
+    : '<span class="badge badge-warn" id="tv-api-smpp-status">Bajo solicitud</span>';
+  const btnLabel = settings.smppRequested
+    ? "Solicitud enviada"
+    : "Solicitar acceso SMPP";
+  const btnDisabled = settings.smppRequested ? " disabled" : "";
+
   return `<section class="tv-panel">
     <header class="tv-section-head" style="padding:1rem 1.25rem 0">
       <h2 class="tv-section-head__title">Integración SMPP</h2>
@@ -405,9 +419,9 @@ function renderSmppPanel(): string {
         <div><dt>Host</dt><dd>smpp.telvoice.cl</dd></div>
         <div><dt>Puerto</dt><dd>2775</dd></div>
         <div><dt>TLS</dt><dd>Disponible bajo solicitud</dd></div>
-        <div><dt>Estado</dt><dd><span class="badge badge-warn">Bajo solicitud</span></dd></div>
+        <div><dt>Estado</dt><dd>${smppBadge}</dd></div>
       </dl>
-      <button type="button" class="btn btn-secondary btn-sm" id="tv-api-smpp-request">Solicitar acceso SMPP</button>
+      <button type="button" class="btn btn-secondary btn-sm" id="tv-api-smpp-request"${btnDisabled}>${escapeHtml(btnLabel)}</button>
     </div>
   </section>`;
 }
@@ -428,24 +442,49 @@ function renderSecurityAside(): string {
   </aside>`;
 }
 
-function renderApiScript(ctx: AppPageContext): string {
+function renderApiScript(ctx: AppPageContext, pageData: AppApiPageData): string {
   const companyId = escapeHtml(ctx.company.id || "default");
-  const credsJson = JSON.stringify(DEFAULT_CREDENTIALS).replace(/</g, "\\u003c");
-  const webhookJson = JSON.stringify(DEFAULT_WEBHOOK).replace(/</g, "\\u003c");
-  const defaultKey = DEFAULT_MOCK_API_KEY;
+  const serverJson = JSON.stringify(pageData.settings).replace(/</g, "\\u003c");
+  const credsJson = JSON.stringify(settingsToCredentials(pageData.settings)).replace(
+    /</g,
+    "\\u003c",
+  );
+  const webhookJson = JSON.stringify(settingsToWebhook(pageData.settings)).replace(
+    /</g,
+    "\\u003c",
+  );
+  const dbAvailable =
+    pageData.module.available && companyId !== "default";
+  const syncHint =
+    pageData.syncSource === "supabase"
+      ? "Configuración API sincronizada con tu empresa."
+      : pageData.syncSource === "local"
+        ? "Configuración API guardada localmente."
+        : dbAvailable
+          ? "Aún no has guardado configuración API en la nube."
+          : "Los cambios se guardan en este navegador hasta conectar Supabase.";
 
   return `<script>
 (function () {
   var CRED_KEY = "telvoice_client_api_credentials_${companyId}";
   var WEBHOOK_KEY = "telvoice_client_api_webhook_${companyId}";
+  var SERVER_SETTINGS = ${serverJson};
   var DEFAULT_CRED = ${credsJson};
   var DEFAULT_WEBHOOK = ${webhookJson};
-  var DEFAULT_API_KEY = ${JSON.stringify(defaultKey)};
+  var DB_AVAILABLE = ${dbAvailable ? "true" : "false"};
+  var SERVER_HAS_RECORD = ${pageData.hasStoredRecord ? "true" : "false"};
+  var SYNC_HINT = ${JSON.stringify(syncHint)};
+  var syncSource = ${JSON.stringify(pageData.syncSource)};
 
   var toast = document.getElementById("tv-api-toast");
+  var syncHintEl = document.getElementById("tv-api-sync-hint");
   var keyDisplay = document.getElementById("tv-api-key-display");
+  var keyMasked = document.getElementById("tv-api-key-masked");
   var exampleCode = document.getElementById("tv-api-example-code");
   var activeExample = "curl";
+  var state = null;
+
+  if (syncHintEl) syncHintEl.textContent = SYNC_HINT;
 
   function showToast(msg, isError) {
     if (!toast) return;
@@ -485,38 +524,110 @@ function renderApiScript(ctx: AppPageContext): string {
     document.body.removeChild(ta);
   }
 
-  function genApiKey() {
-    var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-    var s = "tlv_live_";
-    for (var i = 0; i < 20; i++) s += chars[Math.floor(Math.random() * chars.length)];
-    return s;
+  function postJson(url, payload) {
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload || {}),
+    }).then(function (res) {
+      return res.json().then(function (body) {
+        return { ok: res.ok, body: body };
+      });
+    });
   }
 
-  function loadCred() {
+  function updateSyncHint() {
+    if (!syncHintEl) return;
+    if (syncSource === "supabase") {
+      syncHintEl.textContent = "Configuración API sincronizada con tu empresa.";
+    } else if (syncSource === "local") {
+      syncHintEl.textContent = "Configuración API guardada localmente.";
+    } else {
+      syncHintEl.textContent = SYNC_HINT;
+    }
+  }
+
+  function settingsToCred(s) {
+    return {
+      apiKey: s.apiKeyDemo,
+      environment: "production",
+      status: "active",
+      createdAt: s.createdAt,
+      lastUsedLabel: s.lastUsedLabel,
+    };
+  }
+
+  function settingsToWebhookCfg(s) {
+    return {
+      url: s.webhookUrl || "",
+      active: s.webhookStatus === "Activo",
+      events: Object.assign({}, s.webhookEvents),
+    };
+  }
+
+  function saveLocal(s) {
     try {
-      var raw = localStorage.getItem(CRED_KEY);
-      if (raw) {
-        var p = JSON.parse(raw);
-        if (p && p.apiKey) return p;
-      }
+      localStorage.setItem(CRED_KEY, JSON.stringify(settingsToCred(s)));
+      localStorage.setItem(WEBHOOK_KEY, JSON.stringify(settingsToWebhookCfg(s)));
     } catch (e) {}
-    return Object.assign({}, DEFAULT_CRED);
+  }
+
+  function loadLocalSettings() {
+    try {
+      var credRaw = localStorage.getItem(CRED_KEY);
+      var whRaw = localStorage.getItem(WEBHOOK_KEY);
+      if (!credRaw && !whRaw) return null;
+      var s = Object.assign({}, SERVER_SETTINGS);
+      if (credRaw) {
+        var c = JSON.parse(credRaw);
+        if (c && c.apiKey) {
+          s.apiKeyDemo = c.apiKey;
+          s.createdAt = c.createdAt || s.createdAt;
+          s.lastUsedLabel = c.lastUsedLabel || s.lastUsedLabel;
+        }
+      }
+      if (whRaw) {
+        var w = JSON.parse(whRaw);
+        if (w) {
+          s.webhookUrl = w.url || "";
+          s.webhookStatus = w.active && w.url ? "Activo" : "No configurado";
+          if (w.events) s.webhookEvents = Object.assign({}, s.webhookEvents, w.events);
+        }
+      }
+      return s;
+    } catch (e) {}
+    return null;
+  }
+
+  function loadSettings() {
+    if (DB_AVAILABLE && SERVER_HAS_RECORD) {
+      syncSource = "supabase";
+      return JSON.parse(JSON.stringify(SERVER_SETTINGS));
+    }
+    if (!DB_AVAILABLE) {
+      var local = loadLocalSettings();
+      if (local) {
+        syncSource = "local";
+        return local;
+      }
+    }
+    return JSON.parse(JSON.stringify(SERVER_SETTINGS));
   }
 
   function saveCred(c) {
-    try { localStorage.setItem(CRED_KEY, JSON.stringify(c)); } catch (e) {}
-  }
-
-  function loadWebhook() {
-    try {
-      var raw = localStorage.getItem(WEBHOOK_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch (e) {}
-    return Object.assign({}, DEFAULT_WEBHOOK, { events: Object.assign({}, DEFAULT_WEBHOOK.events) });
+    if (!state) return;
+    state.apiKeyDemo = c.apiKey;
+    state.createdAt = c.createdAt;
+    state.lastUsedLabel = c.lastUsedLabel;
+    saveLocal(state);
   }
 
   function saveWebhook(w) {
-    try { localStorage.setItem(WEBHOOK_KEY, JSON.stringify(w)); } catch (e) {}
+    if (!state) return;
+    state.webhookUrl = w.url || "";
+    state.webhookStatus = w.active && w.url ? "Activo" : "No configurado";
+    state.webhookEvents = Object.assign({}, w.events);
+    saveLocal(state);
   }
 
   function getSnippetHtml(lang) {
@@ -538,10 +649,20 @@ function renderApiScript(ctx: AppPageContext): string {
     }
   }
 
-  function applyCredUI(c) {
+  function applySettingsUI(s) {
+    state = s;
+    var c = settingsToCred(s);
     if (keyDisplay) keyDisplay.textContent = c.apiKey;
+    if (keyMasked) keyMasked.textContent = s.apiKeyMasked || "";
     var created = document.getElementById("tv-api-created-at");
     var lastUsed = document.getElementById("tv-api-last-used");
+    var envEl = document.getElementById("tv-api-environment");
+    var statusBadge = document.getElementById("tv-api-status-badge");
+    if (envEl) envEl.textContent = s.environment || "Producción";
+    if (statusBadge) {
+      statusBadge.textContent = s.apiStatus || "Activa";
+      statusBadge.className = "badge " + (s.apiStatus === "Activa" ? "badge-ok" : "badge-warn");
+    }
     if (created && c.createdAt) {
       try {
         created.textContent = new Intl.DateTimeFormat("es-CL", { dateStyle: "medium" }).format(new Date(c.createdAt));
@@ -549,6 +670,25 @@ function renderApiScript(ctx: AppPageContext): string {
     }
     if (lastUsed) lastUsed.textContent = c.lastUsedLabel || "—";
     updateExampleSnippets(c.apiKey);
+    applyWebhookUI(settingsToWebhookCfg(s));
+    var smppBtn = document.getElementById("tv-api-smpp-request");
+    var smppStatus = document.getElementById("tv-api-smpp-status");
+    if (s.smppRequested) {
+      if (smppBtn) { smppBtn.disabled = true; smppBtn.textContent = "Solicitud enviada"; }
+      if (smppStatus) {
+        smppStatus.className = "badge badge-ok";
+        smppStatus.textContent = "Solicitud registrada";
+      }
+    }
+    updateSyncHint();
+  }
+
+  function applyCredUI(c) {
+    if (!state) return;
+    state.apiKeyDemo = c.apiKey;
+    state.createdAt = c.createdAt;
+    state.lastUsedLabel = c.lastUsedLabel;
+    applySettingsUI(state);
   }
 
   function applyWebhookUI(w) {
@@ -559,6 +699,9 @@ function renderApiScript(ctx: AppPageContext): string {
       if (w.active && w.url) {
         statusEl.className = "badge badge-ok";
         statusEl.textContent = "Activo";
+      } else if (state && state.webhookStatus === "Error") {
+        statusEl.className = "badge badge-warn";
+        statusEl.textContent = "Error";
       } else {
         statusEl.className = "badge badge-muted";
         statusEl.textContent = "No configurado";
@@ -572,7 +715,7 @@ function renderApiScript(ctx: AppPageContext): string {
   }
 
   function readWebhookFromForm() {
-    var w = loadWebhook();
+    var w = settingsToWebhookCfg(state || SERVER_SETTINGS);
     var urlInput = document.getElementById("tv-api-webhook-url");
     w.url = (urlInput && urlInput.value || "").trim();
     w.events = w.events || {};
@@ -584,6 +727,14 @@ function renderApiScript(ctx: AppPageContext): string {
     return w;
   }
 
+  function readWebhookEventsArray(w) {
+    var list = [];
+    Object.keys(w.events || {}).forEach(function (k) {
+      if (w.events[k]) list.push(k);
+    });
+    return list;
+  }
+
   function isValidUrl(s) {
     try {
       var u = new URL(s);
@@ -591,15 +742,13 @@ function renderApiScript(ctx: AppPageContext): string {
     } catch (e) { return false; }
   }
 
-  var cred = loadCred();
-  applyCredUI(cred);
-  applyWebhookUI(loadWebhook());
+  applySettingsUI(loadSettings());
 
   document.getElementById("tv-api-copy-header")?.addEventListener("click", function () {
-    copyText(cred.apiKey, "API Key copiada.");
+    copyText(state ? state.apiKeyDemo : "", "API Key copiada.");
   });
   document.getElementById("tv-api-copy-key-btn")?.addEventListener("click", function () {
-    copyText(cred.apiKey, "API Key copiada.");
+    copyText(state ? state.apiKeyDemo : "", "API Key copiada.");
   });
 
   document.getElementById("tv-api-regen-key-btn")?.addEventListener("click", function () {
@@ -608,13 +757,44 @@ function renderApiScript(ctx: AppPageContext): string {
   });
 
   document.getElementById("tv-api-regen-confirm")?.addEventListener("click", function () {
-    cred.apiKey = genApiKey();
-    cred.createdAt = new Date().toISOString();
-    cred.lastUsedLabel = "Recién generada";
-    saveCred(cred);
-    applyCredUI(cred);
     document.getElementById("tv-api-regen-modal")?.setAttribute("aria-hidden", "true");
-    showToast("API Key regenerada correctamente.");
+    function doneLocal() {
+      var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+      var s = "tlv_live_";
+      for (var i = 0; i < 20; i++) s += chars[Math.floor(Math.random() * chars.length)];
+      var c = settingsToCred(state || SERVER_SETTINGS);
+      c.apiKey = s;
+      c.createdAt = new Date().toISOString();
+      c.lastUsedLabel = "Recién generada";
+      if (state) {
+        state.apiKeyDemo = s;
+        state.apiKeyMasked = "tlv_live_" + "•".repeat(12) + s.slice(-4);
+        state.createdAt = c.createdAt;
+        state.lastUsedLabel = c.lastUsedLabel;
+      }
+      saveLocal(state || SERVER_SETTINGS);
+      applyCredUI(c);
+      syncSource = "local";
+      updateSyncHint();
+      showToast("Clave demo guardada localmente. Se sincronizará cuando la conexión esté disponible.");
+    }
+    if (DB_AVAILABLE) {
+      postJson("/app/api/key/regenerate", {}).then(function (r) {
+        if (r.ok && r.body && r.body.ok && r.body.settings) {
+          state = r.body.settings;
+          saveLocal(state);
+          applySettingsUI(state);
+          syncSource = "supabase";
+          updateSyncHint();
+          showToast(r.body.message || "Clave de demostración regenerada.");
+        } else {
+          doneLocal();
+        }
+      }).catch(doneLocal);
+    } else {
+      doneLocal();
+      showToast("Clave de demostración regenerada.");
+    }
   });
 
   document.querySelectorAll("[data-tv-api-modal-close]").forEach(function (el) {
@@ -653,9 +833,45 @@ function renderApiScript(ctx: AppPageContext): string {
       showToast("Ingresa una URL válida (http o https).", true);
       return;
     }
-    saveWebhook(w);
-    applyWebhookUI(w);
-    showToast(w.url ? "Webhook guardado correctamente." : "Configuración guardada.");
+    function applySaved(settings) {
+      if (settings) {
+        state = settings;
+        saveLocal(state);
+        applySettingsUI(state);
+      } else {
+        saveWebhook(w);
+        applyWebhookUI(w);
+      }
+    }
+    if (DB_AVAILABLE) {
+      postJson("/app/api/webhook", {
+        webhookUrl: w.url,
+        events: readWebhookEventsArray(w),
+      }).then(function (r) {
+        if (r.ok && r.body && r.body.ok) {
+          applySaved(r.body.settings);
+          syncSource = "supabase";
+          updateSyncHint();
+          showToast(w.url ? "Webhook guardado correctamente." : "Configuración guardada.");
+        } else {
+          saveWebhook(w);
+          applyWebhookUI(w);
+          syncSource = "local";
+          updateSyncHint();
+          showToast("Webhook guardado localmente. Se sincronizará cuando la conexión esté disponible.");
+        }
+      }).catch(function () {
+        saveWebhook(w);
+        applyWebhookUI(w);
+        syncSource = "local";
+        updateSyncHint();
+        showToast("Webhook guardado localmente. Se sincronizará cuando la conexión esté disponible.");
+      });
+    } else {
+      saveWebhook(w);
+      applyWebhookUI(w);
+      showToast(w.url ? "Webhook guardado correctamente." : "Configuración guardada.");
+    }
   });
 
   document.getElementById("tv-api-webhook-test")?.addEventListener("click", function () {
@@ -664,14 +880,72 @@ function renderApiScript(ctx: AppPageContext): string {
       showToast("Debes ingresar una URL válida antes de enviar una prueba.", true);
       return;
     }
-    saveWebhook(w);
-    applyWebhookUI(w);
-    showToast("Prueba enviada correctamente al webhook configurado.");
+    function showTestOk(msg) {
+      saveWebhook(w);
+      applyWebhookUI(w);
+      showToast(msg || "Prueba registrada correctamente. La entrega real de webhooks será habilitada por Telvoice.");
+    }
+    if (DB_AVAILABLE) {
+      postJson("/app/api/webhook", {
+        webhookUrl: w.url,
+        events: readWebhookEventsArray(w),
+      }).then(function () {
+        return postJson("/app/api/webhook/test", {});
+      }).then(function (r) {
+        if (r.ok && r.body && r.body.ok) {
+          if (r.body.settings) {
+            state = r.body.settings;
+            saveLocal(state);
+            applySettingsUI(state);
+          }
+          syncSource = "supabase";
+          updateSyncHint();
+          showTestOk(r.body.message);
+        } else {
+          showTestOk();
+        }
+      }).catch(function () {
+        showTestOk();
+      });
+    } else {
+      showTestOk();
+    }
   });
 
   document.getElementById("tv-api-smpp-request")?.addEventListener("click", function () {
+    if (state && state.smppRequested) return;
     var modal = document.getElementById("tv-api-smpp-modal");
     if (modal) modal.setAttribute("aria-hidden", "false");
+  });
+
+  document.getElementById("tv-api-smpp-confirm")?.addEventListener("click", function () {
+    document.getElementById("tv-api-smpp-modal")?.setAttribute("aria-hidden", "true");
+    function doneLocal() {
+      if (state) state.smppRequested = true;
+      saveLocal(state || SERVER_SETTINGS);
+      applySettingsUI(state || SERVER_SETTINGS);
+      syncSource = "local";
+      updateSyncHint();
+      showToast("Solicitud guardada localmente. Se sincronizará cuando la conexión esté disponible.");
+    }
+    if (DB_AVAILABLE) {
+      postJson("/app/api/smpp/request", {}).then(function (r) {
+        if (r.ok && r.body && r.body.ok) {
+          state = r.body.settings;
+          saveLocal(state);
+          applySettingsUI(state);
+          syncSource = "supabase";
+          updateSyncHint();
+          showToast(r.body.message || "Tu solicitud SMPP fue registrada.");
+        } else {
+          doneLocal();
+        }
+      }).catch(doneLocal);
+    } else {
+      if (state) state.smppRequested = true;
+      applySettingsUI(state || SERVER_SETTINGS);
+      showToast("Tu solicitud SMPP fue registrada. El equipo Telvoice revisará factibilidad técnica y comercial.");
+    }
   });
 })();
 </script>`;
@@ -684,7 +958,7 @@ function renderModals(): string {
       <div class="tv-api-modal__panel">
         <h2 class="tv-section-head__title" id="tv-api-regen-title" style="margin:0 0 0.5rem">Regenerar API Key</h2>
         <p class="tv-page-sub" style="margin:0 0 1.25rem">
-          Esta acción reemplazará la API Key actual. Las integraciones existentes podrían dejar de funcionar.
+          Se generará una nueva clave de demostración visual. No afecta credenciales productivas (aún no habilitadas).
         </p>
         <div style="display:flex;gap:0.5rem;justify-content:flex-end;flex-wrap:wrap">
           <button type="button" class="btn btn-ghost" data-tv-api-modal-close>Cancelar</button>
@@ -697,20 +971,31 @@ function renderModals(): string {
       <div class="tv-api-modal__panel">
         <h2 class="tv-section-head__title" id="tv-api-smpp-title" style="margin:0 0 0.5rem">Solicitud SMPP</h2>
         <p class="tv-page-sub" style="margin:0 0 1.25rem">Tu solicitud será revisada por el equipo Telvoice.</p>
-        <button type="button" class="btn btn-primary" data-tv-api-modal-close>Entendido</button>
+        <button type="button" class="btn btn-primary" id="tv-api-smpp-confirm">Entendido</button>
       </div>
     </div>
     <div class="tv-api-toast" id="tv-api-toast" role="status" aria-live="polite" aria-hidden="true"></div>`;
 }
 
-export function renderAppApiPage(ctx: AppPageContext): string {
+export function renderAppApiPage(
+  ctx: AppPageContext,
+  pageData?: AppApiPageData,
+): string {
   const balanceSms = fmtSms(ctx.balance?.availableSms ?? 0);
-  const creds = DEFAULT_CREDENTIALS;
+  const data: AppApiPageData = pageData ?? {
+    module: { available: false, migrationPending: false },
+    settings: buildDefaultClientApiSettings(),
+    syncSource: "defaults",
+    hasStoredRecord: false,
+  };
+  const settings = data.settings;
+  const creds = settingsToCredentials(settings);
+  const apiStatusKpi = settings.apiStatus;
 
   const kpis = `<div class="tv-kpi-grid tv-kpi-grid--client tv-kpi-grid--report">
     ${renderKpiCard({
       label: "Estado API",
-      value: "Activa",
+      value: apiStatusKpi,
       hint: "Integración REST disponible",
       icon: "cloud_done",
       variant: "success",
@@ -745,6 +1030,8 @@ export function renderAppApiPage(ctx: AppPageContext): string {
       title: "API",
       subtitle:
         "Conecta tus sistemas a Telvoice para enviar SMS transaccionales, OTP, alertas y notificaciones desde tus propias aplicaciones.",
+      subtitleHtml:
+        'Conecta tus sistemas a Telvoice para enviar SMS transaccionales, OTP, alertas y notificaciones desde tus propias aplicaciones. <span id="tv-api-sync-hint" class="field-hint" style="display:block;margin-top:0.35rem"></span>',
       actions: `
         <button type="button" class="btn btn-primary" id="tv-api-copy-header">
           <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">content_copy</span>
@@ -759,17 +1046,17 @@ export function renderAppApiPage(ctx: AppPageContext): string {
     ${kpis}
     <div class="tv-api-layout">
       <div class="tv-api-main">
-        ${renderCredentialsPanel(ctx, creds)}
+        ${renderCredentialsPanel(ctx, settings)}
         ${renderEndpointsSection()}
         ${renderExampleSection(creds.apiKey)}
         ${renderWebhookPanel()}
-        ${renderSmppPanel()}
+        ${renderSmppPanel(settings)}
       </div>
       ${renderSecurityAside()}
     </div>
     </div>
     ${renderModals()}
-    ${renderApiScript(ctx)}`;
+    ${renderApiScript(ctx, data)}`;
 
   return wrapAppPage(ctx, "api", "API", body);
 }

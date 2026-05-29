@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-  getAppApi,
   getAppBuySms,
   getAppCampaigns,
   getAppCampaignDetail,
@@ -46,6 +45,13 @@ import {
   getAppMercadoPagoReturn,
   postAppBuySmsMercadoPago,
 } from "../controllers/app-payments.controller.js";
+import {
+  getAppApi,
+  postAppApiKeyRegenerate,
+  postAppApiSmppRequest,
+  postAppApiWebhook,
+  postAppApiWebhookTest,
+} from "../controllers/app-api.controller.js";
 import {
   getAppSettings,
   postAppSettings,
@@ -178,6 +184,10 @@ appRouter.get("/invoices", requireClientPanelPage, getAppInvoices);
 appRouter.get("/invoices/:id/preview", requireClientPanelPage, getAppInvoicePreview);
 appRouter.get("/invoices/:id", requireClientPanelPage, getAppInvoiceDetail);
 appRouter.get("/api", requireClientPanelPage, getAppApi);
+appRouter.post("/api/key/regenerate", requireClientPanelPage, postAppApiKeyRegenerate);
+appRouter.post("/api/webhook", requireClientPanelPage, postAppApiWebhook);
+appRouter.post("/api/webhook/test", requireClientPanelPage, postAppApiWebhookTest);
+appRouter.post("/api/smpp/request", requireClientPanelPage, postAppApiSmppRequest);
 appRouter.get("/support", requireClientPanelPage, getAppSupport);
 appRouter.post("/support/tickets", requireClientPanelPage, postAppSupportTicket);
 appRouter.post(

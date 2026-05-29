@@ -50,7 +50,6 @@ import {
   renderAppOrdersPage,
 } from "../views/app-ui/app-order-pages.js";
 import {
-  renderAppApiPage,
   renderAppContactsPage,
   parseContactsPageFilters,
   renderAppSupportPage,
@@ -1643,14 +1642,6 @@ export async function getAppInvoicePreview(
     const msg = error instanceof Error ? error.message : "Error al generar comprobante";
     res.status(500).type("html").send(`<p>${escapeHtml(msg)}</p>`);
   }
-}
-
-export async function getAppApi(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
-  await withAppContext(req, res, next, (ctx) => renderAppApiPage(ctx));
 }
 
 export async function getAppSupport(
