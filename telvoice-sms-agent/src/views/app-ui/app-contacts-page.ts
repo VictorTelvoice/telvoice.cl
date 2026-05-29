@@ -1,14 +1,13 @@
 import type {
+  ContactImportPreview,
   ContactListWithCount,
   ContactSource,
   ContactStatus,
   ContactSummary,
-  ContactTagRow,
   ContactWithListsAndTags,
   ContactsModuleState,
 } from "../../types/contacts.js";
-import { escapeHtml, formatDate } from "../../utils/html.js";
-import { renderKpiCard, renderQuickAction } from "../admin-ui/components.js";
+import { escapeHtml } from "../../utils/html.js";
 import { renderBtn, renderFilterField, renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
@@ -23,29 +22,32 @@ export type ContactsPageFilters = {
   endDate?: string;
 };
 
+export type ContactsQuickModalTab = "contact" | "agenda" | "import";
+
 export type AppContactsPageData = {
   module: ContactsModuleState;
   filters: ContactsPageFilters;
   contacts: ContactWithListsAndTags[];
   lists: ContactListWithCount[];
-  tags: ContactTagRow[];
   summary: ContactSummary;
-  showNewContact: boolean;
-  showNewList: boolean;
-  showNewTag: boolean;
+  initialModalTab?: ContactsQuickModalTab;
+  importPreview?: ContactImportPreview;
 };
 
-const SOURCE_LABELS: Record<ContactSource, string> = {
-  manual: "Manual",
-  import: "Importación",
-  api: "API",
-  web: "Web",
-};
 
 function parseIsoDateOnly(v: string | undefined): string | undefined {
   const s = (v ?? "").trim();
   if (!s) return undefined;
   return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : undefined;
+}
+
+export function parseContactsQuickModalTab(
+  query: Record<string, string | string[] | undefined>,
+): ContactsQuickModalTab | undefined {
+  const v = typeof query.new === "string" ? query.new : undefined;
+  if (v === "contact" || v === "agenda" || v === "import") return v;
+  if (typeof query.import_job === "string" && query.import_job.trim()) return "import";
+  return undefined;
 }
 
 export function parseContactsPageFilters(
@@ -96,17 +98,6 @@ function queryStringFromFilters(filters: ContactsPageFilters): string {
   return s ? `?${s}` : "";
 }
 
-function badge(cls: string, label: string): string {
-  return `<span class="badge badge-${escapeHtml(cls)}">${escapeHtml(label)}</span>`;
-}
-
-function statusBadge(status: ContactStatus): string {
-  if (status === "active") return badge("ok", "Activo");
-  if (status === "incomplete") return badge("warn", "Incompleto");
-  if (status === "blocked") return badge("err", "Bloqueado");
-  if (status === "opt_out") return badge("muted", "Opt-out");
-  return badge("muted", "Duplicado");
-}
 
 function migrationBanner(): string {
   return `<div class="alert alert-warn" role="status">
@@ -115,71 +106,203 @@ function migrationBanner(): string {
   </div>`;
 }
 
-function kpis(summary: ContactSummary): string {
-  return `<div class="tv-kpi-grid tv-kpi-grid--client tv-kpi-grid--report">
-      ${renderKpiCard({
-        label: "Total contactos",
-        value: String(summary.totalContacts),
-        hint: "Base total en tu cuenta",
-        icon: "contacts",
-        variant: "primary",
-      })}
-      ${renderKpiCard({
-        label: "Agendas activas",
-        value: String(summary.activeLists),
-        hint: "Listas disponibles",
-        icon: "folder",
-        variant: "default",
-      })}
-      ${renderKpiCard({
-        label: "Contactos válidos",
-        value: String(summary.validContacts),
-        hint: "Activos sin opt-out",
-        icon: "check_circle",
-        variant: "success",
-      })}
-      ${renderKpiCard({
-        label: "Tags activos",
-        value: String(summary.activeTags),
-        hint: "Etiquetas en tu empresa",
-        icon: "label",
-        variant: "default",
-      })}
-      ${renderKpiCard({
-        label: "Importados (mes)",
-        value: String(summary.importedThisMonth),
-        hint: "Alta por CSV este mes",
-        icon: "upload_file",
-        variant: "default",
-      })}
-      ${renderKpiCard({
-        label: "Bloqueados / opt-out",
-        value: String(summary.blockedOrOptOut),
-        hint: "No aptos para campaña",
-        icon: "block",
-        variant: summary.blockedOrOptOut > 0 ? "danger" : "default",
-      })}
-    </div>`;
+function contactsPageStyles(): string {
+  return `<style>
+    .tv-contacts-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: none;
+      align-items: stretch;
+      justify-content: flex-end;
+    }
+    .tv-contacts-modal[aria-hidden="false"] { display: flex; }
+    .tv-contacts-modal__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+    }
+    .tv-contacts-modal__panel {
+      position: relative;
+      width: min(480px, 100%);
+      max-width: 100%;
+      background: var(--tv-surface);
+      box-shadow: var(--tv-shadow-lg);
+      display: flex;
+      flex-direction: column;
+      max-height: 100vh;
+      overflow: hidden;
+    }
+    .tv-contacts-modal__head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 1.25rem 1.25rem 0.75rem;
+      border-bottom: 1px solid var(--tv-border);
+    }
+    .tv-contacts-modal__tabs {
+      display: flex;
+      gap: 0.25rem;
+      padding: 0.65rem 1.25rem 0;
+      border-bottom: 1px solid var(--tv-border);
+      overflow-x: auto;
+    }
+    .tv-contacts-modal__tab {
+      appearance: none;
+      border: none;
+      background: transparent;
+      padding: 0.55rem 0.85rem;
+      font: inherit;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--tv-muted);
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      margin-bottom: -1px;
+    }
+    .tv-contacts-modal__tab:hover { color: var(--tv-text); }
+    .tv-contacts-modal__tab[aria-selected="true"] {
+      color: var(--tv-primary);
+      border-bottom-color: var(--tv-primary);
+    }
+    .tv-contacts-modal__body {
+      padding: 1rem 1.25rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .tv-contacts-modal__pane[hidden] { display: none; }
+    .tv-contacts-modal__foot {
+      padding: 1rem 1.25rem;
+      border-top: 1px solid var(--tv-border);
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+    .tv-contacts-import-drop {
+      border: 2px dashed var(--tv-border);
+      border-radius: var(--tv-radius);
+      padding: 1.25rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .tv-contacts-import-drop:hover,
+    .tv-contacts-import-drop--drag {
+      border-color: var(--tv-primary);
+      background: rgba(0, 82, 204, 0.04);
+    }
+    .tv-contacts-import-drop .material-symbols-outlined {
+      font-size: 2rem;
+      color: var(--tv-primary);
+      opacity: 0.85;
+    }
+    .tv-contacts-import-drop__title {
+      margin: 0.5rem 0 0.25rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .tv-contacts-import-drop__hint {
+      margin: 0;
+      font-size: 0.78rem;
+      color: var(--tv-muted);
+    }
+    .tv-contacts-import-preview-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.5rem;
+      margin-bottom: 0.85rem;
+    }
+    .tv-contacts-import-preview-stats > div {
+      padding: 0.65rem 0.75rem;
+      border: 1px solid var(--tv-border);
+      border-radius: var(--tv-radius);
+      font-size: 0.82rem;
+    }
+    .tv-contacts-import-preview-stats strong {
+      display: block;
+      font-size: 1.1rem;
+      margin-top: 0.15rem;
+    }
+    @media (max-width: 640px) {
+      .tv-contacts-modal { align-items: flex-end; }
+      .tv-contacts-modal__panel {
+        width: 100%;
+        border-radius: var(--tv-radius) var(--tv-radius) 0 0;
+        max-height: 92vh;
+      }
+    }
+    .tv-contacts-search__form {
+      display: grid;
+      grid-template-columns: 1fr minmax(10rem, 14rem) auto;
+      gap: 0.5rem;
+      align-items: end;
+    }
+    @media (max-width: 720px) {
+      .tv-contacts-search__form { grid-template-columns: 1fr; }
+    }
+  </style>`;
 }
 
-function quickActions(): string {
-  return `<section class="tv-panel">
-    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
-      <h2 class="tv-section-head__title">Gestión rápida</h2>
-      <p class="tv-section-head__sub">Accesos rápidos para mantener tu base al día</p>
-    </header>
-    <div class="tv-panel__body">
-      <div class="tv-contacts-quick-grid">
-        ${renderQuickAction({ href: "/app/contacts?new=contact", label: "Crear contacto", description: "Alta manual", icon: "person_add" })}
-        ${renderQuickAction({ href: "/app/contacts?new=agenda", label: "Crear agenda", description: "Organiza por audiencia", icon: "create_new_folder" })}
-        ${renderQuickAction({ href: "/app/contacts/import", label: "Importar CSV", description: "Con vista previa", icon: "upload_file" })}
-        ${renderQuickAction({ href: "/app/send-sms", label: "Crear campaña", description: "Envío SMS (sin audiencia aún)", icon: "campaign" })}
-      </div>
+function importStatusBadge(status: string): string {
+  const map: Record<string, [string, string]> = {
+    valid: ["ok", "Válida"],
+    invalid: ["err", "Inválida"],
+    duplicate: ["warn", "Duplicado"],
+    imported: ["ok", "Importada"],
+    skipped: ["muted", "Omitida"],
+    pending: ["muted", "Pendiente"],
+  };
+  const [cls, label] = map[status] ?? ["muted", status];
+  return `<span class="badge badge-${cls}">${escapeHtml(label)}</span>`;
+}
+
+function importPreviewInModal(preview: ContactImportPreview): string {
+  const { job, rows, summary } = preview;
+  const sample = rows.slice(0, 20);
+  const more = rows.length > 20 ? rows.length - 20 : 0;
+
+  const tableRows = sample
+    .map(
+      (r) => `<tr>
+        <td>${r.row_number}</td>
+        <td>${escapeHtml(r.display_name)}</td>
+        <td><code>${escapeHtml(r.phone)}</code></td>
+        <td>${importStatusBadge(r.status)}</td>
+      </tr>`,
+    )
+    .join("");
+
+  return `<div class="tv-contacts-import-preview">
+    <p class="tv-section-head__sub" style="margin:0 0 0.75rem">Revisa antes de confirmar. Solo se importan filas válidas.</p>
+    <div class="tv-contacts-import-preview-stats">
+      <div><span class="field-hint">Total filas</span><strong>${summary.total}</strong></div>
+      <div><span class="field-hint">Válidas</span><strong style="color:var(--tv-success)">${summary.valid}</strong></div>
+      <div><span class="field-hint">Inválidas</span><strong style="color:var(--tv-danger)">${summary.invalid}</strong></div>
+      <div><span class="field-hint">Duplicadas</span><strong style="color:var(--tv-warn)">${summary.duplicate}</strong></div>
     </div>
-  </section>`;
+    ${summary.invalid > 0 || summary.duplicate > 0 ? `<p class="alert alert-warn" style="margin-bottom:0.75rem">Algunas filas fueron omitidas. Se importarán ${summary.valid} contacto(s) válido(s).</p>` : ""}
+    <div class="table-wrap" style="max-height:220px;overflow:auto">
+      <table class="tv-table tv-table--dash">
+        <thead><tr><th>#</th><th>Nombre</th><th>Teléfono</th><th>Estado</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>
+    ${more > 0 ? `<p class="field-hint" style="margin:0.5rem 0 0">… y ${more} fila(s) más</p>` : ""}
+    <form method="post" action="/app/contacts/import/confirm" style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap">
+      <input type="hidden" name="job_id" value="${escapeHtml(job.id)}" />
+      <button type="submit" class="btn btn-primary btn-sm">Confirmar importación (${summary.valid})</button>
+      <button type="button" class="btn btn-ghost btn-sm" data-tv-contacts-import-reset>Importar otro archivo</button>
+    </form>
+  </div>`;
 }
 
-function createContactForm(lists: ContactListWithCount[]): string {
+function contactsQuickModal(
+  lists: ContactListWithCount[],
+  importPreview?: ContactImportPreview,
+): string {
   const listOpts = [
     `<option value="">Sin agenda (opcional)</option>`,
     ...lists.map(
@@ -187,100 +310,77 @@ function createContactForm(lists: ContactListWithCount[]): string {
     ),
   ].join("");
 
-  return `<section class="tv-panel" id="nuevo-contacto">
-    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
-      <h2 class="tv-section-head__title">Nuevo contacto</h2>
-    </header>
-    <div class="tv-panel__body">
-      <form method="post" action="/app/contacts" class="tv-dlr-report__filters-form">
-        <div class="tv-dlr-report__filters-grid tv-contacts__filters-grid">
-          ${renderFilterField("Nombre visible", `<input type="text" name="display_name" class="tv-filter-input" placeholder="Ej. Juan Pérez" required />`)}
-          ${renderFilterField("Teléfono", `<input type="tel" name="phone" class="tv-filter-input" placeholder="+56912345678" required />`)}
-          ${renderFilterField("Email", `<input type="email" name="email" class="tv-filter-input" placeholder="opcional" />`)}
-          ${renderFilterField("Agenda", `<select name="list_id" class="tv-filter-input">${listOpts}</select>`)}
-          ${renderFilterField("Notas", `<input type="text" name="notes" class="tv-filter-input" placeholder="opcional" />`)}
-          <div class="tv-dlr-report__filter-actions">
-            <button type="submit" class="btn btn-primary btn-sm">Guardar contacto</button>
-            <a class="btn btn-ghost btn-sm" href="/app/contacts">Cancelar</a>
-          </div>
+  const importPane = importPreview
+    ? importPreviewInModal(importPreview)
+    : `<form method="post" action="/app/contacts/import/preview" id="tv-contacts-import-form">
+        <div class="tv-contacts-import-drop" id="tv-contacts-import-drop" tabindex="0" role="button" aria-label="Subir archivo CSV o Excel">
+          <span class="material-symbols-outlined" aria-hidden="true">upload_file</span>
+          <p class="tv-contacts-import-drop__title">Arrastra o selecciona un archivo</p>
+          <p class="tv-contacts-import-drop__hint">CSV, TXT o Excel (.xlsx, .xls)</p>
+          <input type="file" id="tv-contacts-import-file" accept=".csv,.txt,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
         </div>
-      </form>
-    </div>
-  </section>`;
-}
-
-function createTagForm(): string {
-  return `<section class="tv-panel" id="nuevo-tag">
-    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
-      <h2 class="tv-section-head__title">Nuevo tag</h2>
-    </header>
-    <div class="tv-panel__body">
-      <form method="post" action="/app/contacts/tags" class="tv-dlr-report__filters-form">
-        <div class="tv-dlr-report__filters-grid tv-contacts__filters-grid">
-          ${renderFilterField("Nombre", `<input type="text" name="name" class="tv-filter-input" placeholder="Ej. VIP" required />`)}
-          ${renderFilterField("Color", `<input type="text" name="color" class="tv-filter-input" placeholder="#0052CC opcional" />`)}
-          <div class="tv-dlr-report__filter-actions">
-            <button type="submit" class="btn btn-primary btn-sm">Guardar tag</button>
-            <a class="btn btn-ghost btn-sm" href="/app/contacts">Cancelar</a>
-          </div>
+        <p class="field-hint" id="tv-contacts-import-filename" style="margin:0.5rem 0 0.75rem" hidden></p>
+        <div class="form-group" style="margin-top:0.75rem">
+          ${renderFilterField(
+            "Contenido",
+            `<textarea name="csv_text" id="tv-contacts-import-text" class="tv-filter-input" rows="8" placeholder="nombre,telefono,email,agenda,tags,notas&#10;Juan Pérez,+56912345678,juan@ejemplo.cl,Clientes,vip" required></textarea>`,
+          )}
         </div>
-      </form>
-    </div>
-  </section>`;
-}
+        <input type="hidden" name="filename" id="tv-contacts-import-filename-input" value="" />
+        <label class="tv-filter-field" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem">
+          <input type="checkbox" name="create_tags" value="1" />
+          <span>Crear tags automáticamente si no existen</span>
+        </label>
+        <button type="submit" class="btn btn-primary btn-sm">Previsualizar importación</button>
+      </form>`;
 
-function tagsPanel(tags: ContactTagRow[]): string {
-  const chips = tags.length
-    ? tags
-        .map(
-          (t) =>
-            `<span class="tv-tags__item">
-              <a class="tv-tag" href="/app/contacts?tag=${encodeURIComponent(t.id)}" style="${t.color ? `border-color:${escapeHtml(t.color)}` : ""}">${escapeHtml(t.name)}</a>
-              <a class="btn btn-ghost btn-sm" style="padding:0.1rem 0.35rem;font-size:0.68rem" href="/app/campaigns/new?tag_id=${encodeURIComponent(t.id)}" title="Crear campaña con este tag">Campaña</a>
-            </span>`,
-        )
-        .join("")
-    : `<p class="field-hint" style="margin:0">Aún no tienes tags.</p>`;
-
-  return `<section class="tv-panel">
-    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
-      <h2 class="tv-section-head__title">Tags</h2>
-      <p class="tv-section-head__sub">Etiqueta contactos para segmentar audiencias</p>
-    </header>
-    <div class="tv-panel__body">
-      <div class="tv-tags" style="margin-bottom:0.75rem">${chips}</div>
-      <a class="btn btn-secondary btn-sm" href="/app/contacts?new=tag">
-        <span class="material-symbols-outlined" aria-hidden="true">label</span>
-        Nuevo tag
-      </a>
-    </div>
-  </section>`;
-}
-
-function createListForm(): string {
-  return `<section class="tv-panel" id="nueva-agenda">
-    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
-      <h2 class="tv-section-head__title">Nueva agenda</h2>
-    </header>
-    <div class="tv-panel__body">
-      <form method="post" action="/app/contacts/lists" class="tv-dlr-report__filters-form">
-        <div class="tv-dlr-report__filters-grid tv-contacts__filters-grid">
-          ${renderFilterField("Nombre", `<input type="text" name="name" class="tv-filter-input" placeholder="Ej. Clientes VIP" required />`)}
-          ${renderFilterField("Descripción", `<input type="text" name="description" class="tv-filter-input" placeholder="opcional" />`)}
-          ${renderFilterField("Color", `<input type="text" name="color" class="tv-filter-input" placeholder="#0052CC opcional" />`)}
-          <div class="tv-dlr-report__filter-actions">
-            <button type="submit" class="btn btn-primary btn-sm">Guardar agenda</button>
-            <a class="btn btn-ghost btn-sm" href="/app/contacts">Cancelar</a>
-          </div>
+  return `<div class="tv-contacts-modal" id="tv-contacts-quick-modal" role="dialog" aria-modal="true" aria-labelledby="tv-contacts-modal-title" aria-hidden="true">
+    <div class="tv-contacts-modal__backdrop" data-tv-contacts-close tabindex="-1"></div>
+    <div class="tv-contacts-modal__panel">
+      <header class="tv-contacts-modal__head">
+        <div>
+          <h2 class="tv-section-head__title" id="tv-contacts-modal-title">Gestión rápida</h2>
+          <p class="tv-section-head__sub">Crea agendas, contactos o importa desde planilla</p>
         </div>
-      </form>
+        <button type="button" class="btn btn-ghost btn-sm" data-tv-contacts-close aria-label="Cerrar">✕</button>
+      </header>
+      <nav class="tv-contacts-modal__tabs" role="tablist" aria-label="Acciones de contactos">
+        <button type="button" class="tv-contacts-modal__tab" role="tab" data-tv-contacts-tab="contact" aria-selected="false" aria-controls="tv-contacts-pane-contact">Contacto</button>
+        <button type="button" class="tv-contacts-modal__tab" role="tab" data-tv-contacts-tab="agenda" aria-selected="false" aria-controls="tv-contacts-pane-agenda">Agenda</button>
+        <button type="button" class="tv-contacts-modal__tab" role="tab" data-tv-contacts-tab="import" aria-selected="false" aria-controls="tv-contacts-pane-import">Importar</button>
+      </nav>
+      <div class="tv-contacts-modal__body">
+        <div class="tv-contacts-modal__pane" id="tv-contacts-pane-contact" role="tabpanel" hidden>
+          <form method="post" action="/app/contacts" id="tv-contacts-form-contact">
+            ${renderFilterField("Nombre visible", `<input type="text" name="display_name" class="tv-filter-input" placeholder="Ej. Juan Pérez" required />`)}
+            ${renderFilterField("Teléfono", `<input type="tel" name="phone" class="tv-filter-input" placeholder="+56912345678" required />`)}
+            ${renderFilterField("Email", `<input type="email" name="email" class="tv-filter-input" placeholder="opcional" />`)}
+            ${renderFilterField("Agenda", `<select name="list_id" class="tv-filter-input">${listOpts}</select>`)}
+            ${renderFilterField("Notas", `<input type="text" name="notes" class="tv-filter-input" placeholder="opcional" />`)}
+          </form>
+        </div>
+        <div class="tv-contacts-modal__pane" id="tv-contacts-pane-agenda" role="tabpanel" hidden>
+          <form method="post" action="/app/contacts/lists" id="tv-contacts-form-agenda">
+            ${renderFilterField("Nombre", `<input type="text" name="name" class="tv-filter-input" placeholder="Ej. Clientes VIP" required />`)}
+            ${renderFilterField("Descripción", `<input type="text" name="description" class="tv-filter-input" placeholder="opcional" />`)}
+            ${renderFilterField("Color", `<input type="text" name="color" class="tv-filter-input" placeholder="#0052CC opcional" />`)}
+          </form>
+        </div>
+        <div class="tv-contacts-modal__pane" id="tv-contacts-pane-import" role="tabpanel" hidden>
+          ${importPane}
+        </div>
+      </div>
+      <footer class="tv-contacts-modal__foot" id="tv-contacts-modal-foot">
+        <button type="button" class="btn btn-ghost" data-tv-contacts-close>Cancelar</button>
+        <button type="submit" form="tv-contacts-form-contact" class="btn btn-primary" data-tv-contacts-submit="contact">Guardar contacto</button>
+        <button type="submit" form="tv-contacts-form-agenda" class="btn btn-primary" data-tv-contacts-submit="agenda" hidden>Guardar agenda</button>
+      </footer>
     </div>
-  </section>`;
+  </div>`;
 }
 
-function filtersPanel(
+function simpleSearchBar(
   lists: ContactListWithCount[],
-  tags: ContactTagRow[],
   filters: ContactsPageFilters,
 ): string {
   const agendaOpts = [
@@ -291,67 +391,18 @@ function filtersPanel(
     }),
   ].join("");
 
-  const tagOpts = [
-    `<option value="">Todos los tags</option>`,
-    ...tags.map((t) => {
-      const on = filters.tag === t.id;
-      return `<option value="${escapeHtml(t.id)}"${on ? " selected" : ""}>${escapeHtml(t.name)}</option>`;
-    }),
-  ].join("");
-
-  const status = (filters.status ?? "").trim();
-  const statusOpts = [
-    ["", "Todos"],
-    ["active", "Activo"],
-    ["incomplete", "Incompleto"],
-    ["blocked", "Bloqueado"],
-    ["duplicate", "Duplicado"],
-    ["opt_out", "Opt-out"],
-  ]
-    .map(([v, label]) => {
-      const on = v === status;
-      return `<option value="${escapeHtml(v)}"${on ? " selected" : ""}>${escapeHtml(label)}</option>`;
-    })
-    .join("");
-
-  const source = (filters.source ?? "").trim();
-  const sourceOpts = [
-    ["", "Todos"],
-    ["manual", "Manual"],
-    ["import", "Importación"],
-    ["api", "API"],
-    ["web", "Web"],
-  ]
-    .map(([v, label]) => {
-      const on = v === source;
-      return `<option value="${escapeHtml(v)}"${on ? " selected" : ""}>${escapeHtml(label)}</option>`;
-    })
-    .join("");
-
-  return `
-    <section class="tv-panel tv-dlr-report__filters-panel">
-      <header class="tv-section-head tv-dlr-report__filters-head">
-        <h2 class="tv-section-head__title">Filtros de búsqueda</h2>
-        <p class="tv-section-head__sub">Busca por nombre/teléfono y filtra por agenda, tags, estado u origen</p>
-      </header>
-      <div class="tv-panel__body tv-dlr-report__filters-body">
-        <form method="get" action="/app/contacts" class="tv-dlr-report__filters-form">
-          <div class="tv-dlr-report__filters-grid tv-contacts__filters-grid">
-            ${renderFilterField("Buscar", `<input type="text" name="q" class="tv-filter-input" placeholder="Nombre o teléfono" value="${escapeHtml(filters.q ?? "")}" />`)}
-            ${renderFilterField("Agenda", `<select name="agenda" class="tv-filter-input">${agendaOpts}</select>`)}
-            ${renderFilterField("Tag", `<select name="tag" class="tv-filter-input">${tagOpts}</select>`)}
-            ${renderFilterField("Estado", `<select name="status" class="tv-filter-input">${statusOpts}</select>`)}
-            ${renderFilterField("Origen", `<select name="source" class="tv-filter-input">${sourceOpts}</select>`)}
-            ${renderFilterField("Desde", `<input type="date" name="start_date" class="tv-filter-input" value="${escapeHtml(filters.startDate ?? "")}" />`)}
-            ${renderFilterField("Hasta", `<input type="date" name="end_date" class="tv-filter-input" value="${escapeHtml(filters.endDate ?? "")}" />`)}
-            <div class="tv-dlr-report__filter-actions">
-              <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
-              <a class="btn btn-ghost btn-sm" href="/app/contacts">Limpiar filtros</a>
-            </div>
-          </div>
-        </form>
-      </div>
-    </section>`;
+  return `<section class="tv-panel tv-contacts-search">
+    <div class="tv-panel__body">
+      <form method="get" action="/app/contacts" class="tv-contacts-search__form">
+        ${renderFilterField("Buscar", `<input type="text" name="q" class="tv-filter-input" placeholder="Nombre o teléfono" value="${escapeHtml(filters.q ?? "")}" />`)}
+        ${renderFilterField("Agenda", `<select name="agenda" class="tv-filter-input">${agendaOpts}</select>`)}
+        <div class="tv-dlr-report__filter-actions">
+          <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+          ${(filters.q ?? filters.agenda) ? `<a class="btn btn-ghost btn-sm" href="/app/contacts">Limpiar</a>` : ""}
+        </div>
+      </form>
+    </div>
+  </section>`;
 }
 
 function agendaPanel(lists: ContactListWithCount[], selectedAgenda?: string): string {
@@ -359,55 +410,37 @@ function agendaPanel(lists: ContactListWithCount[], selectedAgenda?: string): st
     .map((a) => {
       const active = selectedAgenda === a.id;
       const href = `/app/contacts?agenda=${encodeURIComponent(a.id)}`;
-      const campaignHref = `/app/campaigns/new?list_id=${encodeURIComponent(a.id)}`;
-      return `<div class="tv-contacts-agenda${active ? " tv-contacts-agenda--active" : ""}">
-        <a href="${href}" class="tv-contacts-agenda__link">
-          <div class="tv-contacts-agenda__head">
-            <strong class="tv-contacts-agenda__name">${escapeHtml(a.name)}</strong>
-            <span class="badge badge-muted">${a.contacts_count} contacto${a.contacts_count === 1 ? "" : "s"}</span>
-          </div>
-          <p class="tv-contacts-agenda__desc">${escapeHtml(a.description ?? "")}</p>
-          <p class="tv-contacts-agenda__meta">Actualizada: ${escapeHtml(formatDate(a.updated_at))}</p>
-        </a>
-        <a class="btn btn-ghost btn-sm tv-contacts-agenda__campaign" href="${campaignHref}">Crear campaña</a>
-      </div>`;
+      return `<a href="${href}" class="tv-contacts-agenda${active ? " tv-contacts-agenda--active" : ""}">
+        <div class="tv-contacts-agenda__head">
+          <strong class="tv-contacts-agenda__name">${escapeHtml(a.name)}</strong>
+          <span class="badge badge-muted">${a.contacts_count} contacto${a.contacts_count === 1 ? "" : "s"}</span>
+        </div>
+        ${a.description ? `<p class="tv-contacts-agenda__desc">${escapeHtml(a.description)}</p>` : ""}
+      </a>`;
     })
     .join("");
 
   const emptyLists =
-  lists.length === 0
-    ? `<p class="field-hint" style="margin:0 0 0.75rem">Aún no tienes agendas. Crea la primera para organizar contactos.</p>`
-    : "";
+    lists.length === 0
+      ? `<p class="field-hint" style="margin:0 0 0.75rem">Crea tu primera agenda para organizar contactos.</p>`
+      : "";
 
   return `<section class="tv-panel tv-contacts-agendas">
     <header class="tv-section-head" style="padding:1rem 1.25rem 0">
       <h2 class="tv-section-head__title">Agendas</h2>
-      <p class="tv-section-head__sub">Organiza contactos por audiencia</p>
+      <p class="tv-section-head__sub">Agrupa contactos por audiencia</p>
     </header>
     <div class="tv-panel__body">
       ${emptyLists}
       <div class="tv-contacts-agendas__list">${cards}</div>
       <div class="tv-contacts-agendas__cta">
-        <a class="btn btn-secondary btn-sm" href="/app/contacts?new=agenda">
+        <button type="button" class="btn btn-secondary btn-sm" data-tv-contacts-open data-tv-contacts-tab="agenda">
           <span class="material-symbols-outlined" aria-hidden="true">create_new_folder</span>
           Nueva agenda
-        </a>
+        </button>
       </div>
     </div>
   </section>`;
-}
-
-function tagsCell(tagNames: string[]): string {
-  if (!tagNames.length) return `<span class="field-hint">—</span>`;
-  const items = tagNames
-    .slice(0, 4)
-    .map((t) => `<span class="tv-tag">${escapeHtml(t)}</span>`)
-    .join("");
-  const more =
-    tagNames.length > 4
-      ? `<span class="tv-tag tv-tag--muted">+${tagNames.length - 4}</span>`
-      : "";
-  return `<div class="tv-tags">${items}${more}</div>`;
 }
 
 function listsCell(listNames: string[]): string {
@@ -418,77 +451,22 @@ function listsCell(listNames: string[]): string {
 function contactsTable(
   rows: ContactWithListsAndTags[],
   filters: ContactsPageFilters,
-  lists: ContactListWithCount[],
-  tags: ContactTagRow[],
 ): string {
   const empty =
     rows.length === 0
-      ? `<tr><td colspan="9" class="tv-table-empty">No hay contactos con los filtros aplicados.</td></tr>`
+      ? `<tr><td colspan="3" class="tv-table-empty">No hay contactos con los filtros aplicados.</td></tr>`
       : rows
           .map((c) => {
             return `<tr>
-              <td><input type="checkbox" class="tv-contacts-check" data-id="${escapeHtml(c.id)}" aria-label="Seleccionar contacto" /></td>
               <td><strong>${escapeHtml(c.display_name)}</strong></td>
               <td><code>${escapeHtml(c.phone)}</code></td>
               <td>${listsCell(c.list_names)}</td>
-              <td>${tagsCell(c.tag_names)}</td>
-              <td>${statusBadge(c.status)}</td>
-              <td>${escapeHtml(SOURCE_LABELS[c.source] ?? c.source)}</td>
-              <td class="tv-contacts-date">${escapeHtml(formatDate(c.updated_at))}</td>
-              <td class="tv-contacts-actions">
-                <button type="button" class="btn btn-ghost btn-sm" disabled title="Próximamente">Ver</button>
-                <button type="button" class="btn btn-secondary btn-sm" disabled title="Próximamente">Editar</button>
-              </td>
             </tr>`;
           })
           .join("");
 
-  const anyFilter = Boolean(
-    (filters.q ?? "").trim() ||
-      (filters.agenda ?? "").trim() ||
-      (filters.tag ?? "").trim() ||
-      (filters.status ?? "").trim() ||
-      (filters.source ?? "").trim() ||
-      (filters.startDate ?? "").trim() ||
-      (filters.endDate ?? "").trim(),
-  );
-
+  const anyFilter = Boolean((filters.q ?? "").trim() || (filters.agenda ?? "").trim());
   const qs = queryStringFromFilters(filters);
-  const listOpts =
-    `<option value="">Selecciona agenda</option>` +
-    lists
-      .map((l) => `<option value="${escapeHtml(l.id)}">${escapeHtml(l.name)}</option>`)
-      .join("");
-  const tagOpts =
-    `<option value="">Selecciona tag</option>` +
-    tags
-      .map((t) => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)}</option>`)
-      .join("");
-
-  const bulkBar = `<div class="tv-contacts-bulk" data-tv-bulk hidden>
-    <div class="tv-contacts-bulk__left">
-      <strong data-tv-bulk-count>0</strong> seleccionados
-    </div>
-    <div class="tv-contacts-bulk__right">
-      <form method="post" action="/app/contacts/bulk/move-list" class="tv-contacts-bulk-form" style="display:inline-flex;gap:0.35rem;align-items:center">
-        <input type="hidden" name="contact_ids" value="" data-tv-bulk-ids />
-        <select name="list_id" class="tv-filter-input" style="min-width:140px" required>${listOpts}</select>
-        <button type="submit" class="btn btn-secondary btn-sm">Mover a agenda</button>
-      </form>
-      <form method="post" action="/app/contacts/bulk/assign-tag" class="tv-contacts-bulk-form" style="display:inline-flex;gap:0.35rem;align-items:center">
-        <input type="hidden" name="contact_ids" value="" data-tv-bulk-ids />
-        <select name="tag_id" class="tv-filter-input" style="min-width:120px" required>${tagOpts}</select>
-        <button type="submit" class="btn btn-secondary btn-sm">Asignar tag</button>
-      </form>
-      <form method="post" action="/app/contacts/bulk/status" class="tv-contacts-bulk-form" style="display:inline-flex;gap:0.35rem;align-items:center">
-        <input type="hidden" name="contact_ids" value="" data-tv-bulk-ids />
-        <input type="hidden" name="status" value="blocked" />
-        <button type="submit" class="btn btn-ghost btn-sm">Bloquear</button>
-      </form>
-      <button type="button" class="btn btn-ghost btn-sm" disabled title="Próximamente">Exportar CSV</button>
-      <a class="btn btn-primary btn-sm" href="#" data-tv-campaign-link role="button">Usar en campaña</a>
-    </div>
-  </div>`;
 
   return `<div class="tv-dash-block tv-contacts-table-block">
     <div class="tv-dash-block__head">
@@ -498,21 +476,14 @@ function contactsTable(
         ${anyFilter ? `<a href="/app/contacts" class="tv-dash-block__link">Quitar filtros</a>` : `<a href="/app/contacts${qs}" class="tv-dash-block__link">Actualizar</a>`}
       </span>
     </div>
-    ${bulkBar}
     <section class="tv-panel tv-client-dash-table-panel">
       <div class="tv-client-dash-table-inner">
         <div class="table-wrap tv-contacts-table-wrap">
           <table class="tv-table tv-table--dash tv-contacts-table">
             <thead><tr>
-              <th style="width:36px"><span class="field-hint">Sel.</span></th>
               <th>Nombre</th>
               <th>Teléfono</th>
               <th>Agenda</th>
-              <th>Tags</th>
-              <th>Estado</th>
-              <th>Origen</th>
-              <th>Últ. actualización</th>
-              <th>Acciones</th>
             </tr></thead>
             <tbody>${empty}</tbody>
           </table>
@@ -529,11 +500,10 @@ function emptyStateReal(): string {
       <h2 style="margin-top:1rem">Todavía no tienes contactos</h2>
       <p class="tv-page-sub">Crea tu primer contacto o agenda para comenzar a preparar campañas SMS.</p>
       <div class="tv-quick-actions">
-        ${renderBtn("Nuevo contacto", { href: "/app/contacts?new=contact", variant: "primary" })}
-        ${renderBtn("Nueva agenda", { href: "/app/contacts?new=agenda", variant: "secondary" })}
-        ${renderBtn("Importar CSV", { href: "/app/contacts/import", variant: "ghost" })}
+        <button type="button" class="btn btn-primary" data-tv-contacts-open data-tv-contacts-tab="contact">Nuevo contacto</button>
+        <button type="button" class="btn btn-secondary" data-tv-contacts-open data-tv-contacts-tab="agenda">Nueva agenda</button>
+        <button type="button" class="btn btn-ghost" data-tv-contacts-open data-tv-contacts-tab="import">Importar planilla</button>
       </div>
-      <p class="field-hint" style="margin-top:0.75rem">La importación CSV estará disponible en una próxima etapa.</p>
     </div>
   </section>`;
 }
@@ -545,7 +515,7 @@ function noResultsState(): string {
       <p class="field-hint" style="margin:0.35rem 0 0">Prueba limpiando filtros o seleccionando otra agenda.</p>
       <div class="tv-quick-actions" style="margin-top:0.75rem">
         ${renderBtn("Limpiar filtros", { href: "/app/contacts", variant: "primary" })}
-        ${renderBtn("Crear contacto", { href: "/app/contacts?new=contact", variant: "secondary" })}
+        <button type="button" class="btn btn-secondary btn-sm" data-tv-contacts-open data-tv-contacts-tab="contact">Crear contacto</button>
       </div>
     </div>
   </section>`;
@@ -555,17 +525,10 @@ export function renderAppContactsPage(
   ctx: AppPageContext,
   data: AppContactsPageData,
 ): string {
-  const { module, filters, contacts, lists, tags, summary } = data;
+  const { module, filters, contacts, lists, summary } = data;
+  const initialTab = data.initialModalTab ?? "contact";
 
-  const anyFilter = Boolean(
-    (filters.q ?? "").trim() ||
-      (filters.agenda ?? "").trim() ||
-      (filters.tag ?? "").trim() ||
-      (filters.status ?? "").trim() ||
-      (filters.source ?? "").trim() ||
-      (filters.startDate ?? "").trim() ||
-      (filters.endDate ?? "").trim(),
-  );
+  const anyFilter = Boolean((filters.q ?? "").trim() || (filters.agenda ?? "").trim());
 
   const showTable = module.available && (contacts.length > 0 || anyFilter);
   const showEmptyReal =
@@ -574,65 +537,184 @@ export function renderAppContactsPage(
     module.available && summary.totalContacts > 0 && contacts.length === 0 && anyFilter;
 
   const body = `
+    ${contactsPageStyles()}
     <div class="tv-contacts tv-client-dashboard tv-dlr-report">
     ${module.migrationPending ? migrationBanner() : ""}
     ${renderPageHeader({
       title: "Contactos",
-      subtitle: "Organiza tus contactos y agendas para campañas SMS.",
-      actions: [
-        renderBtn("Nuevo contacto", { href: "/app/contacts?new=contact", variant: "primary", icon: "person_add" }),
-        renderBtn("Nueva agenda", { href: "/app/contacts?new=agenda", variant: "secondary", icon: "create_new_folder" }),
-        renderBtn("Importar CSV", { href: "/app/contacts/import", variant: "ghost", icon: "upload_file" }),
-      ].join(" "),
+      subtitle: "Crea agendas y agrega contactos de forma simple y rápida.",
+      actions: module.available
+        ? `<button type="button" class="btn btn-primary" data-tv-contacts-open data-tv-contacts-tab="contact">
+            <span class="material-symbols-outlined" aria-hidden="true">bolt</span>
+            Gestión rápida
+          </button>`
+        : "",
     })}
-    ${module.available ? kpis(summary) : ""}
-    ${module.available ? quickActions() : ""}
-    ${data.showNewContact && module.available ? createContactForm(lists) : ""}
-    ${data.showNewList && module.available ? createListForm() : ""}
-    ${data.showNewTag && module.available ? createTagForm() : ""}
-    ${module.available ? filtersPanel(lists, tags, filters) : ""}
-    ${module.available ? `<div class="tv-dash-grid tv-dash-grid--2 tv-contacts-grid">${agendaPanel(lists, filters.agenda)}${tagsPanel(tags)}</div>` : ""}
+    ${module.available ? agendaPanel(lists, filters.agenda) : ""}
+    ${module.available ? simpleSearchBar(lists, filters) : ""}
     <div>
       ${showEmptyReal ? emptyStateReal() : ""}
       ${showNoResults ? noResultsState() : ""}
-      ${showTable ? contactsTable(contacts, filters, lists, tags) : ""}
+      ${showTable ? contactsTable(contacts, filters) : ""}
     </div>
     </div>
+    ${module.available ? contactsQuickModal(lists, data.importPreview) : ""}
     <script>
       (function(){
-        var checks = Array.prototype.slice.call(document.querySelectorAll('.tv-contacts-check'));
-        var bulk = document.querySelector('[data-tv-bulk]');
-        var countEl = document.querySelector('[data-tv-bulk-count]');
-        var bulkForms = Array.prototype.slice.call(document.querySelectorAll('.tv-contacts-bulk-form'));
-        function selectedIds(){
-          return checks.filter(function(c){ return c && c.checked; }).map(function(c){ return c.getAttribute('data-id'); }).filter(Boolean);
-        }
-        function update(){
-          if(!bulk || !countEl) return;
-          var ids = selectedIds();
-          countEl.textContent = String(ids.length);
-          bulk.hidden = ids.length === 0;
-          var joined = ids.join(',');
-          bulkForms.forEach(function(f){
-            var hid = f.querySelector('[data-tv-bulk-ids]');
-            if(hid) hid.value = joined;
+        var modal = document.getElementById("tv-contacts-quick-modal");
+        var foot = document.getElementById("tv-contacts-modal-foot");
+        var submitContact = foot && foot.querySelector('[data-tv-contacts-submit="contact"]');
+        var submitAgenda = foot && foot.querySelector('[data-tv-contacts-submit="agenda"]');
+        var tabs = Array.prototype.slice.call(document.querySelectorAll("[data-tv-contacts-tab]"));
+        var panes = {
+          contact: document.getElementById("tv-contacts-pane-contact"),
+          agenda: document.getElementById("tv-contacts-pane-agenda"),
+          import: document.getElementById("tv-contacts-pane-import")
+        };
+        var activeTab = ${JSON.stringify(initialTab)};
+
+        function switchTab(name){
+          activeTab = name;
+          tabs.forEach(function(t){
+            var on = t.getAttribute("data-tv-contacts-tab") === name;
+            if(t.getAttribute("role") === "tab") t.setAttribute("aria-selected", on ? "true" : "false");
           });
+          Object.keys(panes).forEach(function(k){
+            if(panes[k]) panes[k].hidden = k !== name;
+          });
+          if(submitContact) submitContact.hidden = name !== "contact";
+          if(submitAgenda) submitAgenda.hidden = name !== "agenda";
+          if(foot) foot.hidden = name === "import";
         }
-        checks.forEach(function(c){ c.addEventListener('change', update); });
-        bulkForms.forEach(function(f){
-          f.addEventListener('submit', function(ev){
-            if(!selectedIds().length){ ev.preventDefault(); alert('Selecciona al menos un contacto.'); }
+
+        function openModal(tab){
+          if(!modal) return;
+          switchTab(tab || "contact");
+          modal.setAttribute("aria-hidden", "false");
+          document.body.style.overflow = "hidden";
+        }
+
+        function closeModal(){
+          if(!modal) return;
+          modal.setAttribute("aria-hidden", "true");
+          document.body.style.overflow = "";
+        }
+
+        document.querySelectorAll("[data-tv-contacts-open]").forEach(function(btn){
+          btn.addEventListener("click", function(){
+            openModal(btn.getAttribute("data-tv-contacts-tab") || "contact");
           });
         });
-        var campLink = document.querySelector('[data-tv-campaign-link]');
-        if(campLink){
-          campLink.addEventListener('click', function(ev){
-            ev.preventDefault();
-            var ids = selectedIds();
-            if(!ids.length){ alert('Selecciona al menos un contacto.'); return; }
-            window.location.href = '/app/campaigns/new?contacts=' + encodeURIComponent(ids.join(','));
+        modal && modal.querySelectorAll("[data-tv-contacts-close]").forEach(function(btn){
+          btn.addEventListener("click", closeModal);
+        });
+        tabs.filter(function(t){ return t.getAttribute("role") === "tab"; }).forEach(function(tab){
+          tab.addEventListener("click", function(){
+            switchTab(tab.getAttribute("data-tv-contacts-tab") || "contact");
+          });
+        });
+        document.addEventListener("keydown", function(e){
+          if(e.key === "Escape" && modal && modal.getAttribute("aria-hidden") === "false") closeModal();
+        });
+
+        var drop = document.getElementById("tv-contacts-import-drop");
+        var fileInput = document.getElementById("tv-contacts-import-file");
+        var textArea = document.getElementById("tv-contacts-import-text");
+        var fileLabel = document.getElementById("tv-contacts-import-filename");
+        var fileHidden = document.getElementById("tv-contacts-import-filename-input");
+        var xlsxReady = false;
+
+        function setCsvContent(text, filename){
+          if(textArea) textArea.value = text;
+          if(fileHidden) fileHidden.value = filename || "";
+          if(fileLabel){
+            fileLabel.hidden = !filename;
+            fileLabel.textContent = filename ? "Archivo: " + filename : "";
+          }
+        }
+
+        function loadXlsx(cb){
+          if(window.XLSX){ cb(); return; }
+          if(xlsxReady){ return; }
+          xlsxReady = true;
+          var s = document.createElement("script");
+          s.src = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
+          s.onload = cb;
+          s.onerror = function(){ alert("No se pudo cargar el lector de Excel. Guarda la planilla como CSV e inténtalo de nuevo."); };
+          document.head.appendChild(s);
+        }
+
+        function sheetToCsv(wb){
+          var sheet = wb.Sheets[wb.SheetNames[0]];
+          return window.XLSX.utils.sheet_to_csv(sheet);
+        }
+
+        function handleFile(file){
+          if(!file) return;
+          var name = file.name || "";
+          var lower = name.toLowerCase();
+          if(lower.endsWith(".csv") || lower.endsWith(".txt")){
+            var reader = new FileReader();
+            reader.onload = function(ev){ setCsvContent(String(ev.target && ev.target.result || ""), name); };
+            reader.readAsText(file);
+            return;
+          }
+          if(lower.endsWith(".xlsx") || lower.endsWith(".xls")){
+            loadXlsx(function(){
+              var reader = new FileReader();
+              reader.onload = function(ev){
+                try {
+                  var data = new Uint8Array(ev.target.result);
+                  var wb = window.XLSX.read(data, { type: "array" });
+                  setCsvContent(sheetToCsv(wb), name);
+                } catch(err){
+                  alert("No se pudo leer el archivo Excel.");
+                }
+              };
+              reader.readAsArrayBuffer(file);
+            });
+            return;
+          }
+          alert("Formato no soportado. Usa CSV o Excel (.xlsx, .xls).");
+        }
+
+        if(drop && fileInput){
+          drop.addEventListener("click", function(){ fileInput.click(); });
+          drop.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } });
+          drop.addEventListener("dragover", function(e){ e.preventDefault(); drop.classList.add("tv-contacts-import-drop--drag"); });
+          drop.addEventListener("dragleave", function(){ drop.classList.remove("tv-contacts-import-drop--drag"); });
+          drop.addEventListener("drop", function(e){
+            e.preventDefault();
+            drop.classList.remove("tv-contacts-import-drop--drag");
+            var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+            handleFile(f);
+          });
+          fileInput.addEventListener("change", function(){
+            handleFile(fileInput.files && fileInput.files[0]);
           });
         }
+
+        var resetBtn = document.querySelector("[data-tv-contacts-import-reset]");
+        if(resetBtn){
+          resetBtn.addEventListener("click", function(){
+            window.location.href = "/app/contacts?new=import";
+          });
+        }
+
+        var params = new URLSearchParams(window.location.search);
+        var openTab = params.get("new");
+        if(openTab === "contact" || openTab === "agenda" || openTab === "import") openModal(openTab);
+        else if(params.get("import_job")) openModal("import");
+        else if(${JSON.stringify(Boolean(data.initialModalTab))}) openModal(activeTab);
+
+        if(openTab || params.get("import_job")){
+          params.delete("new");
+          params.delete("import_job");
+          var qs = params.toString();
+          history.replaceState({}, "", "/app/contacts" + (qs ? "?" + qs : ""));
+        }
+
+        switchTab(activeTab);
       })();
     </script>`;
 

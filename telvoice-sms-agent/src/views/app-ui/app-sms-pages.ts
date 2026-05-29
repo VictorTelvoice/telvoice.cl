@@ -9,11 +9,8 @@ import { isDailySendLimitEnforced } from "../../services/smsLiveTestLimiterServi
 import type { SendControlPanelView } from "../../services/smsSendControlPanelService.js";
 import { escapeHtml } from "../../utils/html.js";
 import { renderKpiCard } from "../admin-ui/components.js";
-import {
-  MOCK_CONTACT_LISTS,
-  MOCK_TEMPLATES,
-} from "../admin-ui/mock-data-stage3.js";
 import { suggestSenderIdFromCompanyName } from "../../utils/suggestSenderId.js";
+import { MOCK_TEMPLATES } from "../admin-ui/mock-data-stage3.js";
 import {
   renderBtn,
   renderHeroPhonePreview,
@@ -45,16 +42,45 @@ export type SendSmsPageOptions = {
   controlPanel?: SendControlPanelView | null;
   /** Clave de un solo uso; evita envíos duplicados en servidor. */
   idempotencyKey?: string;
+  contactLists?: SendPageContactListPick[];
 };
 
-function renderContactListOptions(disabled: boolean): string {
+export type SendPageContactListPick = {
+  id: string;
+  name: string;
+  count: number;
+  phones: string[];
+};
+
+function renderContactListOptions(
+  lists: SendPageContactListPick[],
+  disabled: boolean,
+): string {
   const dis = disabled ? " disabled" : "";
   const placeholder = `<option value="" data-sample=""${dis}>— Seleccionar lista —</option>`;
-  const items = MOCK_CONTACT_LISTS.map(
-    (list) =>
-      `<option value="${escapeHtml(list.id)}" data-sample="${escapeHtml(list.sampleNumbers.join("\n"))}">${escapeHtml(list.label ?? list.name)} (${list.count})</option>`,
-  ).join("");
+  if (!lists.length) {
+    return placeholder;
+  }
+  const items = lists
+    .map(
+      (list) =>
+        `<option value="${escapeHtml(list.id)}" data-sample="${escapeHtml(list.phones.join("\n"))}">${escapeHtml(list.name)} (${list.count})</option>`,
+    )
+    .join("");
   return placeholder + items;
+}
+
+function renderAgendaPickOptions(lists: SendPageContactListPick[]): string {
+  if (!lists.length) {
+    return `<option value="">Contactos</option>`;
+  }
+  const items = lists
+    .map(
+      (list) =>
+        `<option value="${escapeHtml(list.id)}" data-phones="${escapeHtml(list.phones.join("\n"))}">${escapeHtml(list.name)}</option>`,
+    )
+    .join("");
+  return `<option value="">Contactos</option>${items}`;
 }
 
 function renderTemplateOptions(disabled: boolean): string {
@@ -253,6 +279,8 @@ export function renderAppSendSmsPage(
 
   const panelUnavailableHtml = `<p class="alert alert-error">El envío SMS no está disponible. Contacte a soporte Telvoice.</p>`;
 
+  const contactLists = opts.contactLists ?? [];
+
   const sendForm = !panel
     ? `${panelUnavailableHtml}${sendOutcomeBlock}`
     : `
@@ -279,15 +307,20 @@ export function renderAppSendSmsPage(
             <div data-tv-single-fields${activeMode === "single" || activeMode === "template" ? "" : " hidden"}>
               <div class="form-group">
                 <label for="tv-send-to">Número destinatario</label>
-                <input class="tv-input-full" name="to" id="tv-send-to" placeholder="56912345678" inputmode="numeric" autocomplete="tel" ${activeMode === "single" || activeMode === "template" ? "required" : ""} ${disabledAttr} />
-                <p class="field-hint">Formato Chile: 569XXXXXXXX (sin signo +)</p>
+                <div class="tv-send-to-row">
+                  <input class="tv-input-full" name="to" id="tv-send-to" placeholder="56912345678" inputmode="numeric" autocomplete="tel" ${activeMode === "single" || activeMode === "template" ? "required" : ""} ${disabledAttr} />
+                  <select id="tv-agenda-pick" class="tv-input-full tv-send-to-pick" aria-label="Contactos"${contactLists.length ? "" : " disabled"}>
+                    ${renderAgendaPickOptions(contactLists)}
+                  </select>
+                </div>
+                <p class="field-hint">Formato Chile: 569XXXXXXXX (sin signo +)${contactLists.length ? " · Elige una agenda a la derecha" : ""}</p>
               </div>
             </div>
             <div data-tv-mass-fields${activeMode === "mass" || activeMode === "scheduled" ? "" : " hidden"}>
               <div class="form-group">
                 <label for="contact_list">Lista de contactos</label>
                 <select id="contact_list" name="contact_list" class="tv-input-full" ${disabledAttr}>
-                  ${renderContactListOptions(false)}
+                  ${renderContactListOptions(contactLists, false)}
                 </select>
               </div>
               <div class="form-group">
@@ -383,6 +416,7 @@ export function renderAppSendSmsPage(
       var ta = document.getElementById('tv-sms-message');
       var senderInput = document.getElementById('sender_id');
       var toInput = document.getElementById('tv-send-to');
+      var agendaPick = document.getElementById('tv-agenda-pick');
       var sendModeInput = document.getElementById('tv-send-mode');
       var bulkHidden = document.getElementById('tv-bulk-recipients');
       var contactList = document.getElementById('contact_list');
@@ -798,6 +832,31 @@ export function renderAppSendSmsPage(
       if(scheduleTime) scheduleTime.addEventListener('change', refresh);
       if(senderInput) senderInput.addEventListener('input', refresh);
       if(toInput) toInput.addEventListener('input', refresh);
+      if(agendaPick && toInput){
+        agendaPick.addEventListener('change', function(){
+          var listId = agendaPick.value;
+          if(!listId) return;
+          var opt = agendaPick.options[agendaPick.selectedIndex];
+          var phonesRaw = opt ? (opt.getAttribute('data-phones') || '') : '';
+          var phones = phonesRaw ? phonesRaw.split('\\n').map(function(p){ return p.trim(); }).filter(Boolean) : [];
+          if(!phones.length){
+            alert('Esta agenda no tiene contactos.');
+            agendaPick.value = '';
+            return;
+          }
+          if(phones.length === 1){
+            toInput.value = phones[0];
+            refresh();
+          } else {
+            applySendMode('mass');
+            if(contactList){
+              contactList.value = listId;
+              contactList.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }
+          agendaPick.value = '';
+        });
+      }
       if(ta){ ta.addEventListener('input', refresh); }
       applySendMode(initialMode || 'single');
     })();

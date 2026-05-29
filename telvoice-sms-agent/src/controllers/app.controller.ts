@@ -38,6 +38,7 @@ import {
   renderAppCampaignsPage,
   renderAppInboxPage,
   renderAppSendSmsPage,
+  type SendPageContactListPick,
 } from "../views/app-ui/app-sms-pages.js";
 import {
   renderAppCampaignDetailPage,
@@ -52,6 +53,7 @@ import {
 import {
   renderAppContactsPage,
   parseContactsPageFilters,
+  parseContactsQuickModalTab,
   renderAppSupportPage,
 } from "../views/app-ui/app-section-pages.js";
 import type { ContactStatus, ContactSummary } from "../types/contacts.js";
@@ -64,7 +66,6 @@ import {
   getContactsModuleState,
   listContactLists,
   listContacts,
-  listContactTags,
 } from "../services/contactService.js";
 import {
   createContactImportJob,
@@ -80,7 +81,6 @@ import {
   markSupportTicketResolved,
 } from "../services/clientSupportTicketService.js";
 import type { SupportTicketPriority, SupportTicket } from "../types/support-tickets.js";
-import { renderAppContactsImportPage } from "../views/app-ui/app-contacts-import-page.js";
 import { renderAppCampaignNewPage } from "../views/app-ui/app-campaigns-new-page.js";
 import { suggestSenderIdFromCompanyName } from "../utils/suggestSenderId.js";
 import {
@@ -661,6 +661,35 @@ export async function getAppOrderDetail(
   });
 }
 
+async function loadSendPageContactData(
+  companyId: string,
+): Promise<{ contactLists: SendPageContactListPick[] }> {
+  const module = await getContactsModuleState();
+  if (!module.available) {
+    return { contactLists: [] };
+  }
+
+  const lists = await listContactLists(companyId);
+
+  const contactLists = await Promise.all(
+    lists.map(async (l) => {
+      const members = await listContacts(companyId, {
+        listId: l.id,
+        status: "active",
+        limit: 5000,
+      });
+      return {
+        id: l.id,
+        name: l.name,
+        count: l.contacts_count,
+        phones: members.map((m) => m.phone_normalized.replace(/^\+/, "")),
+      };
+    }),
+  );
+
+  return { contactLists };
+}
+
 export async function getAppSendSms(
   req: Request,
   res: Response,
@@ -672,11 +701,12 @@ export async function getAppSendSms(
     const sendEnabled = canCompanyUseLiveTestUi(ctx.company.id);
     const { flash: okFlash, error: errFlash } = flash(req);
 
-    const [liveTestStatus, outcome] = await Promise.all([
+    const [liveTestStatus, outcome, sendContacts] = await Promise.all([
       sendEnabled
         ? getLiveTestSendPageStatus(ctx.company.id)
         : Promise.resolve(null),
       loadSendOutcomeFromQuery(req, ctx.company.id),
+      loadSendPageContactData(ctx.company.id),
     ]);
 
     const controlPanel =
@@ -696,6 +726,7 @@ export async function getAppSendSms(
       liveTestStatus,
       controlPanel,
       idempotencyKey,
+      contactLists: sendContacts.contactLists,
     });
   });
 }
@@ -1186,9 +1217,11 @@ export async function getAppContacts(
     const filters = parseContactsPageFilters(
       req.query as Record<string, string | string[] | undefined>,
     );
-    const showNewContact = req.query.new === "contact";
-    const showNewList = req.query.new === "agenda";
-    const showNewTag = req.query.new === "tag";
+    const initialModalTab = parseContactsQuickModalTab(
+      req.query as Record<string, string | string[] | undefined>,
+    );
+    const importJobId =
+      typeof req.query.import_job === "string" ? req.query.import_job.trim() : "";
 
     const module = await getContactsModuleState();
     if (!module.available) {
@@ -1197,28 +1230,25 @@ export async function getAppContacts(
         filters,
         contacts: [],
         lists: [],
-        tags: [],
         summary: EMPTY_CONTACT_SUMMARY,
-        showNewContact,
-        showNewList,
-        showNewTag,
+        initialModalTab,
       });
+    }
+
+    let importPreview;
+    if (importJobId && module.importAvailable) {
+      importPreview =
+        (await getContactImportJob(ctx.company.id, importJobId)) ?? undefined;
     }
 
     const serviceFilters = {
       q: filters.q,
       listId: filters.agenda,
-      tagId: filters.tag,
-      status: filters.status || undefined,
-      source: filters.source || undefined,
-      startDate: filters.startDate,
-      endDate: filters.endDate,
     };
 
-    const [contacts, lists, tags, summary] = await Promise.all([
+    const [contacts, lists, summary] = await Promise.all([
       listContacts(ctx.company.id, serviceFilters),
       listContactLists(ctx.company.id),
-      listContactTags(ctx.company.id),
       getContactSummary(ctx.company.id),
     ]);
 
@@ -1227,11 +1257,9 @@ export async function getAppContacts(
       filters,
       contacts,
       lists,
-      tags,
       summary,
-      showNewContact,
-      showNewList,
-      showNewTag,
+      initialModalTab,
+      importPreview,
     });
   });
 }
@@ -1241,18 +1269,21 @@ export async function getAppContactsImport(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  await withAppContext(req, res, next, async (ctx) => {
-    const module = await getContactsModuleState();
-    const jobId = typeof req.query.job === "string" ? req.query.job : "";
-    let preview;
-    if (jobId && module.importAvailable) {
-      preview = (await getContactImportJob(ctx.company.id, jobId)) ?? undefined;
+  try {
+    const ctx = await buildAppContext(req);
+    if (!ctx) {
+      res.redirect("/login?next=%2Fapp%2Fcontacts%2Fimport");
+      return;
     }
-    return renderAppContactsImportPage(ctx, {
-      preview,
-      showForm: !preview,
-    });
-  });
+    const jobId = typeof req.query.job === "string" ? req.query.job.trim() : "";
+    if (jobId) {
+      res.redirect(303, `/app/contacts?import_job=${encodeURIComponent(jobId)}`);
+      return;
+    }
+    res.redirect(303, "/app/contacts?new=import");
+  } catch (error) {
+    next(error);
+  }
 }
 
 export async function postAppContactsImportPreview(
@@ -1262,15 +1293,15 @@ export async function postAppContactsImportPreview(
   try {
     const ctx = await requireContactsWriteContext(req);
     if (!ctx) {
-      res.redirect("/app/contacts/import?error=Sin%20permiso%20o%20empresa");
+      res.redirect("/app/contacts?new=import&error=Sin%20permiso%20o%20empresa");
       return;
     }
     const body = req.body as Record<string, string | undefined>;
     const csvText = (body.csv_text ?? "").trim();
     if (!csvText) {
       res.redirect(
-        "/app/contacts/import?error=" +
-          encodeURIComponent("El CSV está vacío."),
+        "/app/contacts?new=import&error=" +
+          encodeURIComponent("El archivo o contenido está vacío."),
       );
       return;
     }
@@ -1279,11 +1310,11 @@ export async function postAppContactsImportPreview(
       filename: body.filename,
       create_tags: body.create_tags === "1",
     });
-    res.redirect(303, `/app/contacts/import?job=${preview.job.id}`);
+    res.redirect(303, `/app/contacts?import_job=${encodeURIComponent(preview.job.id)}`);
   } catch (error) {
     const msg =
       error instanceof AppError ? error.message : "Error al previsualizar CSV";
-    res.redirect(303, `/app/contacts/import?error=${encodeURIComponent(msg)}`);
+    res.redirect(303, `/app/contacts?new=import&error=${encodeURIComponent(msg)}`);
   }
 }
 
