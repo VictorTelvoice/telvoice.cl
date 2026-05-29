@@ -1,5 +1,6 @@
 import type { CompanyRow } from "../types/tenant.js";
 import type { MockSmsSendResult, PanelSmsMessageStatus } from "../types/sms-panel.js";
+import { AppError } from "../utils/errors.js";
 import { findCompanyById } from "./companyService.js";
 import {
   createPanelSmsMessage,
@@ -24,7 +25,7 @@ import { dispatchProviderSend } from "./smsProviderDispatchService.js";
 import { assertLiveTestTrafficAllowed } from "./smsDispatchWorkerService.js";
 import { recordTpsSend } from "./smsTpsLimiterService.js";
 import { resolveRouteForMessage } from "./smsRoutingService.js";
-import { AppError } from "../utils/errors.js";
+import { APP_CLIENT_LIVE_SOURCE, PANEL_PRODUCTION_MODE } from "../constants/panel-sms-mode.js";
 import {
   findCampaignByIdempotencyKey,
   isPostgresUniqueViolation,
@@ -41,7 +42,7 @@ export type SendMockSmsInput = {
 };
 
 export type SendPanelSmsInput = SendMockSmsInput & {
-  sendSource?: "app_send_sms_live_test" | "app_send_sms_verify_test";
+  sendSource?: "app_send_sms_live" | "app_send_sms_live_test" | "app_send_sms_verify_test";
   idempotencyKey?: string | null;
   /** Sin cooldown de 1 min (p. ej. /admin/test superadmin). */
   skipInterSendCooldown?: boolean;
@@ -130,7 +131,7 @@ export async function sendPanelSms(
 export async function sendLiveTestSms(
   input: SendPanelSmsInput,
 ): Promise<MockSmsSendResult> {
-  const sendSource = input.sendSource ?? "app_send_sms_live_test";
+  const sendSource = input.sendSource ?? APP_CLIENT_LIVE_SOURCE;
 
   if (input.idempotencyKey?.trim()) {
     const existing = await findCampaignByIdempotencyKey(
@@ -164,7 +165,7 @@ export async function sendLiveTestSms(
 
   const campaignMetadata: Record<string, unknown> = {
     source: sendSource,
-    mode: "live_test",
+    mode: PANEL_PRODUCTION_MODE,
   };
   if (input.idempotencyKey?.trim()) {
     campaignMetadata.idempotency_key = input.idempotencyKey.trim();
@@ -183,7 +184,7 @@ export async function sendLiveTestSms(
       invalidRecipients: 0,
       estimatedSmsCost: segmentInfo.costSms,
       realSmsCost: 0,
-      mode: "live_test",
+      mode: PANEL_PRODUCTION_MODE,
       createdBy: input.createdBy ?? null,
       metadata: campaignMetadata,
     });
@@ -233,11 +234,11 @@ export async function sendLiveTestSms(
     segments: segmentInfo.segments,
     costSms: segmentInfo.costSms,
     status: "queued",
-    mode: "live_test",
+    mode: PANEL_PRODUCTION_MODE,
     provider: resolved.provider.code,
     metadata: {
       source: sendSource,
-      mode: "live_test",
+      mode: PANEL_PRODUCTION_MODE,
       encoding: segmentInfo.encoding,
       characters: segmentInfo.characters,
       provider_id: resolved.provider.id,
@@ -266,7 +267,7 @@ export async function sendLiveTestSms(
       error_message: providerResult.error_message ?? "Proveedor rechazó el envío",
       metadata: {
         source: sendSource,
-        mode: "live_test",
+        mode: PANEL_PRODUCTION_MODE,
         asmsc_uid: providerResult.asmsc_uid ?? null,
         raw_response: providerResult.raw_response,
       },
@@ -294,7 +295,7 @@ export async function sendLiveTestSms(
       balanceAfter: bal.availableSms,
       status: existing?.status ?? panelStatus,
       providerMessageId: existing?.provider_message_id ?? "",
-      sendMode: "live_test",
+      sendMode: PANEL_PRODUCTION_MODE,
     };
   }
 
@@ -305,8 +306,8 @@ export async function sendLiveTestSms(
       referenceType: "sms_message",
       referenceId: pendingMessage.id,
       actorUserId: input.createdBy ?? null,
-      description: "Consumo por envío SMS live_test (API aSMSC)",
-      metadata: { mode: "live_test", provider: providerResult.provider },
+      description: "Consumo por envío SMS (panel)",
+      metadata: { mode: PANEL_PRODUCTION_MODE, provider: providerResult.provider },
     });
   } catch (err) {
     await updatePanelSmsMessage(pendingMessage.id, {
@@ -334,7 +335,7 @@ export async function sendLiveTestSms(
     margin: resolved.margin,
     metadata: {
       source: sendSource,
-      mode: "live_test",
+      mode: PANEL_PRODUCTION_MODE,
       asmsc_uid: providerResult.asmsc_uid ?? null,
       encoding: segmentInfo.encoding,
       characters: segmentInfo.characters,
@@ -378,6 +379,6 @@ export async function sendLiveTestSms(
     balanceAfter: balanceBefore - segmentInfo.costSms,
     status: panelStatus,
     providerMessageId: providerResult.provider_message_id ?? "",
-    sendMode: "live_test",
+    sendMode: PANEL_PRODUCTION_MODE,
   };
 }

@@ -1096,7 +1096,7 @@ export function renderAppCampaignsPage(
   const body = `
     ${renderPageHeader({
       title: "Campañas",
-      subtitle: "Borradores y campañas SMS. Los borradores desde Contactos pueden simularse en modo mock (sin SMS real).",
+      subtitle: "Borradores y campañas SMS con envío real vía operador (aSMSC).",
       actions: [
         renderBtn("Nueva campaña", { href: "/app/campaigns/new", variant: "primary", icon: "campaign" }),
         renderBtn("Envío SMS", { href: "/app/send-sms", variant: "secondary" }),

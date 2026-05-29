@@ -1,4 +1,8 @@
 import { env } from "../config/env.js";
+import {
+  APP_CLIENT_LIVE_SOURCE,
+  PANEL_LIVE_MODES,
+} from "../constants/panel-sms-mode.js";
 import { getSupabase } from "../database/supabaseClient.js";
 import type { PanelSmsMessageRow } from "../types/sms-panel.js";
 import { AppError } from "../utils/errors.js";
@@ -27,10 +31,14 @@ const COUNTABLE_LIVE_TEST_STATUSES = [
 /** Cuota diaria /app: envíos desde panel cliente. */
 export const APP_CLIENT_LIVE_TEST_SOURCE = "app_send_sms_live_test";
 
+/** Alias producción (envíos comerciales reales). */
+export { APP_CLIENT_LIVE_SOURCE };
+
 /** Test QA a números telsim registrados (cuenta en cuota diaria). */
 export const APP_VERIFY_TEST_SOURCE = "app_send_sms_verify_test";
 
 export const APP_PANEL_SEND_SOURCES = [
+  APP_CLIENT_LIVE_SOURCE,
   APP_CLIENT_LIVE_TEST_SOURCE,
   APP_VERIFY_TEST_SOURCE,
 ] as const;
@@ -150,7 +158,7 @@ export async function countDailyLiveTestMessages(
     .from("panel_sms_messages")
     .select("id", { count: "exact", head: true })
     .eq("company_id", companyId)
-    .eq("mode", "live_test")
+    .in("mode", [...PANEL_LIVE_MODES])
     .in("metadata->>source", [...APP_PANEL_SEND_SOURCES])
     .in("status", [...COUNTABLE_LIVE_TEST_STATUSES])
     .gte("created_at", startOfTodayUtcIso());
@@ -172,7 +180,7 @@ async function getLastCountableLiveTestAt(
     .from("panel_sms_messages")
     .select("created_at")
     .eq("company_id", companyId)
-    .eq("mode", "live_test")
+    .in("mode", [...PANEL_LIVE_MODES])
     .in("metadata->>source", [...APP_PANEL_SEND_SOURCES])
     .in("status", [...COUNTABLE_LIVE_TEST_STATUSES])
     .order("created_at", { ascending: false })
@@ -508,7 +516,7 @@ export async function getLiveTestControlPanelView(): Promise<LiveTestControlPane
   const { data: todayRows, error: todayError } = await getSupabase()
     .from("panel_sms_messages")
     .select("id, cost_sms, metadata")
-    .eq("mode", "live_test")
+    .in("mode", [...PANEL_LIVE_MODES])
     .in("status", [...COUNTABLE_LIVE_TEST_STATUSES])
     .gte("created_at", start);
 
@@ -526,9 +534,12 @@ export async function getLiveTestControlPanelView(): Promise<LiveTestControlPane
     return typeof src === "string" ? src : null;
   };
 
-  const clientToday = today.filter(
-    (r) => sourceOf(r) === APP_CLIENT_LIVE_TEST_SOURCE,
-  );
+  const clientToday = today.filter((r) => {
+    const src = sourceOf(r);
+    return (
+      src === APP_CLIENT_LIVE_SOURCE || src === APP_CLIENT_LIVE_TEST_SOURCE
+    );
+  });
   const superadminToday = today.filter(
     (r) => sourceOf(r) === SUPERADMIN_LIVE_TEST_SOURCE,
   );
@@ -538,7 +549,7 @@ export async function getLiveTestControlPanelView(): Promise<LiveTestControlPane
     .select(
       "id, company_id, recipient_number, status, segments, created_at, provider_message_id, metadata",
     )
-    .eq("mode", "live_test")
+    .in("mode", [...PANEL_LIVE_MODES])
     .order("created_at", { ascending: false })
     .limit(10);
 

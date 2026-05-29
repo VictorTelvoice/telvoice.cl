@@ -95,7 +95,7 @@ export type MockSmsSendResult = {
   balanceAfter: number;
   status: PanelSmsMessageStatus;
   providerMessageId: string;
-  sendMode?: "mock" | "live_test";
+  sendMode?: "mock" | "live_test" | "live";
 };
 
 export type PanelCampaignSendResult = {

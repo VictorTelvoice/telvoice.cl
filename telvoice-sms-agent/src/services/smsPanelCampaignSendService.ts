@@ -2,6 +2,7 @@ import type {
   PanelCampaignSendResult,
   PanelSmsMessageStatus,
 } from "../types/sms-panel.js";
+import { PANEL_PRODUCTION_MODE } from "../constants/panel-sms-mode.js";
 import { AppError } from "../utils/errors.js";
 import { calculateSmsSegments } from "./smsSegmentService.js";
 import { createSmsCampaign, updateSmsCampaign } from "./smsCampaignService.js";
@@ -205,11 +206,11 @@ async function sendOneInCampaign(input: {
       segments: segmentInfo.segments,
       costSms: segmentInfo.costSms,
       status: "queued",
-      mode: "live_test",
+      mode: PANEL_PRODUCTION_MODE,
       provider: resolved.provider.code,
       metadata: {
         source: sendSource,
-        mode: "live_test",
+        mode: PANEL_PRODUCTION_MODE,
         encoding: segmentInfo.encoding,
         characters: segmentInfo.characters,
         provider_id: resolved.provider.id,
@@ -255,7 +256,7 @@ async function sendOneInCampaign(input: {
         referenceId: pendingMessage.id,
         actorUserId: createdBy ?? null,
         description: "Consumo por envío SMS (campaña panel)",
-        metadata: { mode: "live_test", provider: providerResult.provider },
+        metadata: { mode: PANEL_PRODUCTION_MODE, provider: providerResult.provider },
       });
     }
 
@@ -396,7 +397,7 @@ export async function sendPanelCampaign(
       invalidRecipients: invalid,
       estimatedSmsCost: totalCost,
       realSmsCost: 0,
-      mode: "live_test",
+      mode: PANEL_PRODUCTION_MODE,
       createdBy: input.createdBy ?? null,
       scheduledAt: input.scheduledAt ?? null,
       metadata: campaignMetadata,

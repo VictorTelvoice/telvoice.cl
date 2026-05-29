@@ -1,5 +1,5 @@
+import { isPanelLiveMode, isPanelMockMode, PANEL_PRODUCTION_MODE } from "../../constants/panel-sms-mode.js";
 import type { PanelSmsMessageRow, SmsCampaignRow } from "../../types/sms-panel.js";
-import { canSimulateCampaignMock } from "../../services/campaignDetailService.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 
 function badge(cls: string, label: string): string {
@@ -29,8 +29,8 @@ export function renderSmsModeBadge(mode: string | null | undefined): string {
   if (mode === "mock") {
     return badge("muted", "MOCK");
   }
-  if (mode === "live_test") {
-    return badge("warn", "LIVE TEST");
+  if (mode === "live_test" || mode === "live") {
+    return badge("ok", "LIVE SEND");
   }
   return badge("ok", (mode ?? "live").toUpperCase());
 }
@@ -60,8 +60,8 @@ export function renderPanelMessageSourceBadge(
   if (source === "app_send_sms_verify_test") {
     return badge("ok", "verify_test");
   }
-  if (source === "app_send_sms_live_test") {
-    return badge("warn", "app_send_sms_live_test");
+  if (source === "app_send_sms_live" || source === "app_send_sms_live_test") {
+    return badge("ok", "envío real");
   }
   if (source === "superadmin_provider_test") {
     return badge("ok", "superadmin_provider_test");
@@ -69,8 +69,8 @@ export function renderPanelMessageSourceBadge(
   if (mode === "mock") {
     return badge("muted", "mock");
   }
-  if (mode === "live_test") {
-    return badge("warn", "live_test");
+  if (mode === "live_test" || mode === "live") {
+    return badge("ok", "LIVE SEND");
   }
   return badge("muted", "—");
 }
@@ -103,7 +103,13 @@ export function renderCampaignModeLabel(campaign: SmsCampaignRow): string {
   if (sendMode === "mass") {
     return badge("ok", "MASIVA");
   }
-  return renderClientLiveModeBadge(campaign.mode);
+  if (isPanelLiveMode(campaign.mode)) {
+    return renderClientLiveModeBadge(campaign.mode);
+  }
+  if (campaign.status === "draft") {
+    return badge("muted", "BORRADOR");
+  }
+  return renderClientLiveModeBadge(PANEL_PRODUCTION_MODE);
 }
 
 export function renderCampaignStatusBadge(status: string): string {
@@ -132,10 +138,10 @@ export function renderCampaignClientStatusBadge(campaign: SmsCampaignRow): strin
   }
   if (
     campaign.status === "completed" &&
-    campaign.mode === "mock" &&
+    isPanelMockMode(campaign.mode) &&
     (meta.mock_executed_at || meta.simulated)
   ) {
-    return badge("ok", "Simulada");
+    return badge("ok", "Completada");
   }
   if (campaign.status === "completed" || campaign.status === "sent") {
     return badge("ok", "Completada");
@@ -168,14 +174,6 @@ export function renderInboxTableRows(messages: PanelSmsMessageRow[]): string {
     .join("");
 }
 
-function renderCampaignMockExecuteAction(c: SmsCampaignRow): string {
-  if (!canSimulateCampaignMock(c)) {
-    return "";
-  }
-  return `<form method="post" action="/app/campaigns/${escapeHtml(c.id)}/execute-mock" style="display:inline;margin-left:0.25rem">
-    <button type="submit" class="btn btn-secondary btn-sm" title="Simula envío y DLR sin proveedor real">Simular campaña</button>
-  </form>`;
-}
 
 export function renderCampaignsTableRows(campaigns: SmsCampaignRow[]): string {
   if (!campaigns.length) {
@@ -193,7 +191,6 @@ export function renderCampaignsTableRows(campaigns: SmsCampaignRow[]): string {
       <td>${renderCampaignModeLabel(c)}</td>
       <td>
         <a class="btn btn-ghost btn-sm" href="/app/campaigns/${escapeHtml(c.id)}">Ver detalle</a>
-        ${renderCampaignMockExecuteAction(c)}
       </td>
     </tr>`,
     )

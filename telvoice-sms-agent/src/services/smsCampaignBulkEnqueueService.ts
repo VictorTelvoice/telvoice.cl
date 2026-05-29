@@ -1,5 +1,6 @@
 import type { ResolvedSmsRoute } from "../types/sms-routing.js";
 import { env } from "../config/env.js";
+import { PANEL_PRODUCTION_MODE } from "../constants/panel-sms-mode.js";
 import { createPanelSmsMessagesBulk } from "./panelSmsMessageService.js";
 import { enqueueMessagesBulk } from "./smsQueueService.js";
 import { APP_CAMPAIGN_SEND_SOURCE } from "./smsCampaignPolicy.js";
@@ -41,9 +42,9 @@ export async function bulkEnqueueCampaignRecipients(input: {
   const effectiveTps = Math.max(1, input.effectiveTps ?? 1);
   const minPaceMs = await resolveCampaignQueueMinPaceMs();
   let queueIndex = 0;
-  // panel_sms_messages.mode solo permite: mock | live | live_test
+  // panel_sms_messages.mode: mock | live | live_test — producción usa live
   const panelMessageMode =
-    env.smsProvider.mode === "mock" ? "mock" : "live_test";
+    env.smsProvider.mode === "mock" ? "mock" : PANEL_PRODUCTION_MODE;
   let queued = 0;
   let failed = 0;
 

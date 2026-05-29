@@ -3,6 +3,7 @@ import type {
   CampaignAudienceSummary,
   CampaignPreviewResult,
 } from "../types/campaign-audience.js";
+import { PANEL_PRODUCTION_MODE } from "../constants/panel-sms-mode.js";
 import { AppError } from "../utils/errors.js";
 import {
   parseAudienceSourceFromQuery,
@@ -144,7 +145,7 @@ export async function createCampaignDraftFromPreview(
       preview.audience.duplicatesOmitted,
     estimatedSmsCost: preview.totalSmsEstimated,
     realSmsCost: 0,
-    mode: "mock",
+    mode: PANEL_PRODUCTION_MODE,
     createdBy: createdBy ?? null,
     metadata: {
       source: "contacts_audience",

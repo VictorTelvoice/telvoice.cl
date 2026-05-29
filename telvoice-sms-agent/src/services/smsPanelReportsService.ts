@@ -57,7 +57,9 @@ export async function getClientSmsReportData(
     (m) => m.status === "delivered" && m.mode !== "mock",
   ).length;
   const mockMessages = rows.filter((m) => m.mode === "mock").length;
-  const liveTestMessages = rows.filter((m) => m.mode === "live_test").length;
+  const liveTestMessages = rows.filter(
+    (m) => m.mode === "live" || m.mode === "live_test",
+  ).length;
   const pendingCount = rows.filter(
     (m) => m.status === "pending" || m.status === "queued",
   ).length;

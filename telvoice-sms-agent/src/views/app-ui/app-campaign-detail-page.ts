@@ -1,4 +1,5 @@
 import type { CampaignDetailView } from "../../services/campaignDetailService.js";
+import { isContactsAudienceDraft } from "../../services/campaignDetailService.js";
 import type { CampaignLiveReadinessResult } from "../../services/campaignReadinessService.js";
 import { LIVE_CAMPAIGN_CONFIRM_TEXT } from "../../services/campaignLiveLaunchService.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
@@ -250,10 +251,10 @@ function renderCampaignMessagesTable(
   if (!rows.length) {
     const emptyHint = isProduction
       ? "Aún no hay mensajes registrados para esta campaña."
-      : `Aún no hay mensajes. Usa «Simular campaña» para generar la simulación mock.`;
+      : "Aún no hay mensajes registrados.";
     return `<p class="field-hint" style="margin:0">${emptyHint}</p>`;
   }
-  const refCol = isProduction ? "Ref. proveedor" : "Ref. mock";
+  const refCol = "Ref. proveedor";
   const body = rows
     .map(
       (m) => `<tr>
@@ -306,6 +307,7 @@ export function renderAppCampaignDetailPage(
   const c = detail.campaign;
   const meta = c.metadata ?? {};
   const isProduction = detail.viewKind === "production";
+  const contactsDraft = isContactsAudienceDraft(c);
   const executedAt = isProduction
     ? c.sent_at ||
       (typeof meta.queue_finalized_at === "string"
@@ -313,17 +315,13 @@ export function renderAppCampaignDetailPage(
         : null)
     : (typeof meta.mock_executed_at === "string" && meta.mock_executed_at) ||
       c.sent_at;
-  const showLiveReadiness = !isProduction && c.status === "draft";
+  const showLiveReadiness =
+    contactsDraft && !(detail.liveLaunch?.launched);
   const showLiveLaunch =
-    !isProduction && c.status === "draft" && !(detail.liveLaunch?.launched);
+    contactsDraft && !(detail.liveLaunch?.launched);
   const showQueueStatus =
     isProduction || detail.liveLaunch?.launched || (detail.queueByStatus?.queued ?? 0) > 0;
 
-  const simulateBtn = detail.canSimulate
-    ? `<form method="post" action="/app/campaigns/${escapeHtml(c.id)}/execute-mock" style="display:inline">
-        <button type="submit" class="btn btn-primary btn-sm">Simular campaña</button>
-      </form>`
-    : "";
 
   const kpis = `<div class="tv-kpi-grid tv-kpi-grid--client tv-kpi-grid--report">
     ${renderKpiCard({ label: "Destinatarios est.", value: String(detail.kpis.estimatedRecipients), icon: "group", variant: "primary" })}
@@ -367,7 +365,7 @@ export function renderAppCampaignDetailPage(
         <div><dt>Consumo real (mensajes)</dt><dd>${fmtSms(detail.walletDebitedFromMessages ?? 0)} SMS</dd></div>
         <div><dt>Referencia</dt><dd><code>sms_message</code> por mensaje aceptado</dd></div>
       </dl>`
-      : `<p class="field-hint" style="margin:0">${isProduction ? "El consumo se debitará por cada mensaje aceptado por el proveedor (cola)." : "Sin débito wallet aún. Al simular la campaña se registrará un único movimiento <code>sms_debit</code> con referencia <code>sms_campaign</code>."}</p>`;
+      : `<p class="field-hint" style="margin:0">${isProduction ? "El consumo se debitará por cada mensaje aceptado por el proveedor (cola)." : "Sin débito wallet registrado."}</p>`;
 
   const timelineSteps = detail.timeline.map((s) => ({
     title: s.title,
@@ -376,16 +374,18 @@ export function renderAppCampaignDetailPage(
   }));
 
   const pageSubtitle = isProduction
-    ? `Envío real · ${renderCampaignClientStatusBadge(c)} ${renderCampaignModeLabel(c)}`
-    : `Campaña mock · ${renderCampaignClientStatusBadge(c)} ${renderCampaignModeLabel(c)}`;
+    ? contactsDraft
+      ? `Borrador · ${renderCampaignClientStatusBadge(c)} ${renderCampaignModeLabel(c)}`
+      : `Envío real · ${renderCampaignClientStatusBadge(c)} ${renderCampaignModeLabel(c)}`
+    : `Campaña histórica · ${renderCampaignClientStatusBadge(c)} ${renderCampaignModeLabel(c)}`;
 
   const summaryBody = `<dl class="tv-detail-dl">
           <div><dt>Estado</dt><dd>${renderCampaignClientStatusBadge(c)}</dd></div>
           <div><dt>Modo</dt><dd>${renderCampaignModeLabel(c)}</dd></div>
           <div><dt>Creada</dt><dd>${formatDate(c.created_at)}</dd></div>
-          <div><dt>${isProduction ? "Enviada" : "Simulación"}</dt><dd>${executedAt ? formatDate(executedAt) : "—"}</dd></div>
+          <div><dt>${isProduction ? "Enviada" : "Ejecutada"}</dt><dd>${executedAt ? formatDate(executedAt) : "—"}</dd></div>
           <div><dt>Costo estimado</dt><dd>${fmtSms(c.estimated_sms_cost)} SMS</dd></div>
-          <div><dt>${isProduction ? "Costo real" : "Costo real (mock)"}</dt><dd>${fmtSms(c.real_sms_cost)} SMS</dd></div>
+          <div><dt>Costo real</dt><dd>${fmtSms(c.real_sms_cost)} SMS</dd></div>
         </dl>`;
 
   const audienceBody = `<dl class="tv-detail-dl">
@@ -405,12 +405,12 @@ export function renderAppCampaignDetailPage(
         <pre class="tv-code-block" style="white-space:pre-wrap;margin:0.75rem 0 0;font-size:0.85rem">${escapeHtml(detail.messageInfo.text)}</pre>`;
 
   const messagesSection = renderCampaignDetailBlock(
-    isProduction ? "Mensajes enviados" : "Mensajes simulados",
+    isProduction ? "Mensajes enviados" : "Mensajes",
     renderCampaignMessagesTable(detail),
     {
       subtitle: isProduction
         ? "Registro en panel — operador y DLR según proveedor"
-        : "Solo mock — sin operador ni aSMSC",
+        : "Registro histórico (modo simulación descontinuado)",
       fullWidth: true,
     },
   );
@@ -420,7 +420,6 @@ export function renderAppCampaignDetailPage(
       title: escapeHtml(c.name),
       subtitleHtml: pageSubtitle,
       actions: [
-        simulateBtn,
         renderBtn("Ver reportes", { href: "/app/reports", variant: "secondary" }),
         renderBtn("Mi saldo", { href: "/app/wallet", variant: "secondary" }),
         renderBtn("Campañas", { href: "/app/campaigns", variant: "ghost" }),

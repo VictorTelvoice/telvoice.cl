@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { PANEL_PRODUCTION_MODE } from "../constants/panel-sms-mode.js";
 import { getSupabase } from "../database/supabaseClient.js";
 import type {
   MockSmsSendResult,
@@ -398,7 +399,7 @@ export async function mockSmsSendResultFromIdempotentCampaign(
     balanceAfter: bal.availableSms,
     status: m?.status ?? "sent",
     providerMessageId: m?.provider_message_id ?? "",
-    sendMode: "live_test",
+    sendMode: PANEL_PRODUCTION_MODE,
   };
 }
 

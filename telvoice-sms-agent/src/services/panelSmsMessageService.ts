@@ -1,3 +1,4 @@
+import { PANEL_LIVE_MODES, PANEL_PRODUCTION_MODE } from "../constants/panel-sms-mode.js";
 import { getSupabase } from "../database/supabaseClient.js";
 import type {
   PanelSmsMessageRow,
@@ -31,9 +32,9 @@ export async function createPanelSmsMessage(input: {
       message: input.message,
       segments: input.segments,
       cost_sms: input.costSms,
-      provider: input.provider ?? "mock",
+      provider: input.provider ?? null,
       status: input.status ?? "queued",
-      mode: input.mode ?? "mock",
+      mode: input.mode ?? PANEL_PRODUCTION_MODE,
       metadata: input.metadata ?? {},
     })
     .select("*")
@@ -79,9 +80,9 @@ export async function createPanelSmsMessagesBulk(
     message: input.message,
     segments: input.segments,
     cost_sms: input.costSms,
-    provider: input.provider ?? "mock",
+    provider: input.provider ?? null,
     status: input.status ?? "queued",
-    mode: input.mode ?? "mock",
+    mode: input.mode ?? PANEL_PRODUCTION_MODE,
     metadata: input.metadata ?? {},
   }));
 
@@ -261,7 +262,7 @@ export async function getLastLiveTestPanelMessage(): Promise<PanelSmsMessageRow 
   const { data, error } = await getSupabase()
     .from("panel_sms_messages")
     .select("*")
-    .eq("mode", "live_test")
+    .in("mode", [...PANEL_LIVE_MODES])
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

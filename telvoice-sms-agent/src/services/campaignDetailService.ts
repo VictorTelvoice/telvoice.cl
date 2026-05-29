@@ -1,5 +1,9 @@
 import type { SmsCampaignRow, PanelSmsMessageRow } from "../types/sms-panel.js";
 import type { WalletTransactionRow } from "../types/wallet.js";
+import {
+  isPanelLiveMode,
+  isPanelMockMode,
+} from "../constants/panel-sms-mode.js";
 import { getSupabase } from "../database/supabaseClient.js";
 import { isMissingTableError } from "../utils/db-table.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
@@ -132,13 +136,26 @@ export function isCampaignRealSend(campaign: SmsCampaignRow): boolean {
     return true;
   }
   const source = String(meta.source ?? "");
-  return (
+  if (
     meta.execution_mode === "live_campaign" ||
     source === "campaign_live_launch" ||
     source === "app_send_sms_scheduled" ||
     source === "app_send_sms_mass" ||
     source === "app_send_sms_campaign"
-  );
+  ) {
+    return true;
+  }
+  if (isPanelLiveMode(campaign.mode) && campaign.status !== "draft") {
+    return true;
+  }
+  return false;
+}
+
+export function isContactsAudienceDraft(campaign: SmsCampaignRow): boolean {
+  if (campaign.status !== "draft") {
+    return false;
+  }
+  return String(campaign.metadata?.source ?? "") === "contacts_audience";
 }
 
 export function isContactsLiveLaunchCampaign(campaign: SmsCampaignRow): boolean {
@@ -153,7 +170,7 @@ export function isCampaignMockOnly(campaign: SmsCampaignRow): boolean {
   if (isCampaignRealSend(campaign)) {
     return false;
   }
-  return campaign.mode === "mock";
+  return isPanelMockMode(campaign.mode);
 }
 
 function providerTimelineLabel(provider: string | null | undefined): string {
@@ -421,18 +438,14 @@ export function buildCampaignTimeline(input: {
   walletDebit: WalletTransactionRow | null;
   walletDebitedFromMessages?: number;
 }): CampaignTimelineStep[] {
-  if (isCampaignRealSend(input.campaign)) {
+  if (isCampaignRealSend(input.campaign) || !isPanelMockMode(input.campaign.mode)) {
     return buildProductionCampaignTimeline(input);
   }
   return buildMockCampaignTimeline(input);
 }
 
-export function canSimulateCampaignMock(campaign: SmsCampaignRow): boolean {
-  if (campaign.status !== "draft" || campaign.mode !== "mock") {
-    return false;
-  }
-  const meta = campaign.metadata ?? {};
-  return meta.source === "contacts_audience";
+export function canSimulateCampaignMock(_campaign: SmsCampaignRow): boolean {
+  return false;
 }
 
 export async function loadCampaignDetailView(
@@ -455,9 +468,9 @@ export async function loadCampaignDetailView(
   const estimatedRecipients =
     numMeta(meta, "estimated_recipients") || campaign.valid_recipients;
   const deliveredCount = messages.filter((m) => m.status === "delivered").length;
-  const viewKind: CampaignDetailViewKind = isCampaignRealSend(campaign)
-    ? "production"
-    : "mock";
+  const viewKind: CampaignDetailViewKind = isPanelMockMode(campaign.mode)
+    ? "mock"
+    : "production";
   const sendMode =
     typeof meta.send_mode === "string" ? meta.send_mode.trim() : "";
   const modeKpi =
@@ -467,9 +480,7 @@ export async function loadCampaignDetailView(
         : sendMode === "mass"
           ? "MASIVA"
           : "LIVE SEND"
-      : campaign.mode === "mock"
-        ? "MOCK"
-        : "MOCK";
+      : "BORRADOR";
 
   return {
     viewKind,

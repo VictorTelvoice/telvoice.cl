@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { APP_CLIENT_LIVE_SOURCE, PANEL_PRODUCTION_MODE } from "../constants/panel-sms-mode.js";
 import type { NextFunction, Request, Response } from "express";
 import { canOperateClientPanel } from "../types/roles.js";
 import {
@@ -95,7 +96,6 @@ import {
   buildCampaignPreviewFromRequest,
   createCampaignDraftFromPreview,
 } from "../services/campaignPreviewService.js";
-import { executeContactsAudienceCampaignMock } from "../services/campaignMockExecuteService.js";
 import { launchLiveCampaign } from "../services/campaignLiveLaunchService.js";
 import { loadCampaignDetailView } from "../services/campaignDetailService.js";
 import { getCampaignLiveReadiness } from "../services/campaignReadinessService.js";
@@ -363,7 +363,7 @@ async function loadSendOutcomeFromQuery(
           balanceAfter: bal.availableSms,
           status: m.status,
           providerMessageId: m.provider_message_id ?? "",
-          sendMode: "live_test",
+          sendMode: PANEL_PRODUCTION_MODE,
         };
       }
     } catch {
@@ -879,7 +879,7 @@ export async function postAppSendSms(
         ctx.profile.profileId ?? ctx.profile.adminUserId ?? undefined,
       sendSource: isVerifyTest
         ? "app_send_sms_verify_test"
-        : "app_send_sms_live_test",
+        : APP_CLIENT_LIVE_SOURCE,
       idempotencyKey,
     });
 
@@ -1054,36 +1054,10 @@ export async function postAppCampaignExecuteMock(
   res: Response,
 ): Promise<void> {
   const campaignId = validateUuidParam(String(req.params.id), "id");
-  try {
-    const ctx = await requireContactsWriteContext(req);
-    if (!ctx) {
-      res.redirect("/app/campaigns?error=Sin%20permiso");
-      return;
-    }
-    const result = await executeContactsAudienceCampaignMock({
-      companyId: ctx.company.id,
-      campaignId,
-      createdBy: ctx.profile.profileId ?? ctx.profile.adminUserId ?? null,
-    });
-    const okMsg = result.alreadyExecuted
-      ? "Esta campaña mock ya fue ejecutada; no se descontó saldo nuevamente."
-      : result.status === "completed"
-        ? `Campaña simulada: ${result.sent} mensaje(s) mock, ${result.realSmsCost} SMS descontados (sin envío real).`
-        : `La simulación no generó envíos (${result.failed} fallo(s)).`;
-    res.redirect(
-      303,
-      `/app/campaigns/${campaignId}?ok=${encodeURIComponent(okMsg)}`,
-    );
-  } catch (error) {
-    const msg =
-      error instanceof AppError
-        ? error.message
-        : "No se pudo ejecutar la campaña en modo simulación";
-    res.redirect(
-      303,
-      `/app/campaigns/${campaignId}?error=${encodeURIComponent(msg)}`,
-    );
-  }
+  res.redirect(
+    303,
+    `/app/campaigns/${campaignId}?error=${encodeURIComponent("La simulación mock está deshabilitada. Usa el envío live desde el detalle de la campaña.")}`,
+  );
 }
 
 export async function postAppCampaignLaunchLive(

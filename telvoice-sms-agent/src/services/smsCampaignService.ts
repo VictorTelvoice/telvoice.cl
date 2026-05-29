@@ -1,3 +1,4 @@
+import { PANEL_PRODUCTION_MODE } from "../constants/panel-sms-mode.js";
 import { getSupabase } from "../database/supabaseClient.js";
 import type {
   SmsCampaignRow,
@@ -37,7 +38,7 @@ export async function createSmsCampaign(input: {
       invalid_recipients: input.invalidRecipients ?? 0,
       estimated_sms_cost: input.estimatedSmsCost ?? 0,
       real_sms_cost: input.realSmsCost ?? 0,
-      mode: input.mode ?? "mock",
+      mode: input.mode ?? PANEL_PRODUCTION_MODE,
       created_by: input.createdBy ?? null,
       scheduled_at: input.scheduledAt ?? null,
       metadata: input.metadata ?? {},
