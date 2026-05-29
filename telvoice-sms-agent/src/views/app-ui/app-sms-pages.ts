@@ -287,11 +287,16 @@ export function renderAppSendSmsPage(
               </div>
             </div>
             <div class="tv-send-meta-row tv-send-recipient-row">
-              <div class="form-group tv-send-recipient-row__to">
+              <div class="form-group tv-send-recipient-row__left">
                 <div data-tv-single-fields${activeMode === "single" || activeMode === "template" ? "" : " hidden"}>
                   <label for="tv-send-to">Número destinatario</label>
                   <input class="tv-input-full" name="to" id="tv-send-to" placeholder="56912345678" inputmode="numeric" autocomplete="tel" ${activeMode === "single" || activeMode === "template" ? "required" : ""} ${disabledAttr} />
                   <p class="field-hint">Formato Chile: 569XXXXXXXX (sin signo +)</p>
+                </div>
+                <div data-tv-mass-csv-field${activeMode === "mass" || activeMode === "scheduled" ? "" : " hidden"}>
+                  <label for="csv_file">Cargar CSV</label>
+                  <input id="csv_file" type="file" accept=".csv,text/csv" class="tv-input-full" ${disabledAttr} />
+                  <p class="field-hint">Columnas <code>numero</code> y <code>mensaje</code> (o solo números + mensaje común abajo). Separador coma o punto y coma.</p>
                 </div>
               </div>
               <div class="form-group">
@@ -303,11 +308,6 @@ export function renderAppSendSmsPage(
               </div>
             </div>
             <div data-tv-mass-fields${activeMode === "mass" || activeMode === "scheduled" ? "" : " hidden"}>
-              <div class="form-group">
-                <label for="csv_file">Cargar CSV</label>
-                <input id="csv_file" type="file" accept=".csv,text/csv" class="tv-input-full" ${disabledAttr} />
-                <p class="field-hint">Columnas <code>numero</code> y <code>mensaje</code> (o solo números + mensaje común abajo). Separador coma o punto y coma.</p>
-              </div>
               <p class="field-hint tv-mass-summary" id="tv-mass-summary">Selecciona una lista o sube un CSV para previsualizar la campaña.</p>
               <div class="tv-mass-table-wrap" id="tv-mass-table-wrap" hidden>
                 <div class="table-wrap tv-panel" style="padding:0;margin-top:0.5rem">
@@ -665,10 +665,12 @@ export function renderAppSendSmsPage(
       function applySendMode(mode){
         if(sendModeInput) sendModeInput.value = mode;
         var single = document.querySelector('[data-tv-single-fields]');
+        var massCsv = document.querySelector('[data-tv-mass-csv-field]');
         var mass = document.querySelector('[data-tv-mass-fields]');
         var tpl = document.querySelector('[data-tv-template-fields]');
         var sched = document.querySelector('[data-tv-schedule-fields]');
         if(single) single.hidden = mode !== 'single' && mode !== 'template';
+        if(massCsv) massCsv.hidden = !isBulkMode(mode);
         if(mass) mass.hidden = !isBulkMode(mode);
         if(tpl) tpl.hidden = mode !== 'template';
         if(sched) sched.hidden = mode !== 'scheduled';
