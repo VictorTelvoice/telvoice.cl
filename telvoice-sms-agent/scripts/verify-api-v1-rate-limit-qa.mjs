@@ -277,7 +277,7 @@ if (!sms429) {
 console.log("OK: POST /api/v1/sms/send respeta rate limit");
 
 const { rows: msgRows } = await pgQuery(
-  `select provider_message_id, dlr_status from sms_messages
+  `select provider_message_id, dlr_status from sms_api_messages
    where company_id = $1 and external_reference like 'qa-rate%'
    order by created_at desc limit 5`,
   [DEMO],
@@ -346,7 +346,7 @@ await pgQuery(
   [keyId],
 );
 await pgQuery(
-  `delete from sms_messages where company_id = $1 and external_reference like 'qa-rate%'`,
+  `delete from sms_api_messages where company_id = $1 and external_reference like 'qa-rate%'`,
   [DEMO],
 );
 await pgQuery(`delete from client_api_keys where id = $1`, [keyId]);
