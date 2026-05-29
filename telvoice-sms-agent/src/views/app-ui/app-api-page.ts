@@ -9,6 +9,7 @@ import type {
   ClientApiWebhookConfig,
 } from "../../types/client-api-settings.js";
 import type {
+  ClientApiKey,
   ClientApiKeyEnvironment,
   ClientApiKeyScope,
   ClientApiKeyStatus,
@@ -477,6 +478,18 @@ function apiKeyEnvironmentLabel(env: ClientApiKeyEnvironment): string {
   return env === "production" ? "Producción" : "Sandbox";
 }
 
+function productionApprovalClientBadges(k: ClientApiKey): string {
+  if (k.environment !== "production") {
+    return "";
+  }
+  const approval = k.productionApproved
+    ? '<span class="badge badge-ok">Producción aprobada</span>'
+    : '<span class="badge badge-warn">Producción pendiente de aprobación</span>';
+  const sendNote =
+    '<span class="badge badge-muted" title="Envío SMS productivo no activo">Producción no habilitada para envío real</span>';
+  return `<div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.25rem">${approval} ${sendNote}</div>`;
+}
+
 function renderKeyScopesBadges(scopes: ClientApiKeyScope[]): string {
   if (!scopes.length) {
     return '<span class="badge badge-muted">—</span>';
@@ -511,10 +524,7 @@ function renderRealApiKeysPanel(ctx: AppPageContext, data: AppApiPageData): stri
             const isRevoked = k.status === "revoked";
             const isActive = k.status === "active";
             const isPaused = k.status === "paused";
-            const prodBadge =
-              k.environment === "production"
-                ? ' <span class="badge badge-warn" title="Requiere aprobación antes de uso real">Producción — requiere aprobación antes de uso real</span>'
-                : "";
+            const prodBadge = productionApprovalClientBadges(k);
             const lastUsed = k.lastUsedAt
               ? escapeHtml(formatDateShort(k.lastUsedAt))
               : "—";
@@ -571,6 +581,9 @@ function renderRealApiKeysPanel(ctx: AppPageContext, data: AppApiPageData): stri
       <div class="alert alert-warn" role="status" style="margin-bottom:1rem">
         Estas claves son reales para autenticación futura, pero el envío SMS por API aún no está habilitado.
       </div>
+      <p class="field-hint" style="margin:0 0 1rem">
+        Aunque una key de producción esté aprobada, el envío SMS productivo será habilitado en una fase posterior por Telvoice.
+      </p>
       ${bodyInner}
       <div class="tv-api-keys-table-wrap">
         <table class="tv-api-keys-table">

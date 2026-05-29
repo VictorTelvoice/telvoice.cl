@@ -26,7 +26,7 @@ const REQUEST_SELECT =
   "id, company_id, api_key_id, request_id, endpoint, method, environment, status_code, success, error_code, error_message, duration_ms, metadata, created_at";
 
 const KEY_SELECT =
-  "id, company_id, name, key_prefix, key_masked, status, scopes, environment, last_used_at, created_at, updated_at";
+  "id, company_id, name, key_prefix, key_masked, status, scopes, environment, last_used_at, created_at, updated_at, production_approved, production_approved_at, production_approval_notes";
 
 function parseMethod(raw: string): ClientApiRequestMethod {
   if (
@@ -397,6 +397,9 @@ export async function listAdminApiKeys(
         scopes: key.scopes,
         lastUsedAt: key.lastUsedAt,
         createdAt: key.createdAt,
+        productionApproved: key.productionApproved,
+        productionApprovedAt: key.productionApprovedAt,
+        productionApprovalNotes: key.productionApprovalNotes,
       };
     });
 

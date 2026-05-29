@@ -25,6 +25,10 @@ export type ClientApiKey = {
   revokedReason: string | null;
   createdAt: string;
   updatedAt: string;
+  productionApproved: boolean;
+  productionApprovedAt: string | null;
+  productionApprovedByAdminId: string | null;
+  productionApprovalNotes: string | null;
 };
 
 export type ClientApiKeyRow = {
@@ -46,6 +50,10 @@ export type ClientApiKeyRow = {
   source: string;
   created_at: string;
   updated_at: string;
+  production_approved?: boolean;
+  production_approved_at?: string | null;
+  production_approved_by_admin_id?: string | null;
+  production_approval_notes?: string | null;
 };
 
 export type CreateClientApiKeyInput = {
@@ -82,6 +90,7 @@ export type AuthenticatedApiKeyContext = {
   environment: ClientApiKeyEnvironment;
   scopes: ClientApiKeyScope[];
   keyPrefix: string;
+  productionApproved: boolean;
 };
 
 export type ApiKeyAuthErrorCode =

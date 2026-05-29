@@ -15,8 +15,10 @@ import {
 import { getTestClientBundle } from "../services/clientService.js";
 import {
   activateClientApiKey,
+  approveProductionApiKey,
   pauseClientApiKey,
   revokeClientApiKey,
+  revokeProductionApproval,
 } from "../services/clientApiKeyService.js";
 import {
   createAdminRateLimitOverride,
@@ -266,6 +268,62 @@ export async function postAdminApiUsageKeyRevoke(
 ): Promise<void> {
   try {
     await adminKeyAction(req, res, "revoke");
+  } catch (error) {
+    if (error instanceof AppError) {
+      redirectApiUsage(res, { error: error.message }, preserveQuery(req));
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function postAdminApiUsageKeyApproveProduction(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const rawId = req.params.id;
+    const keyId = validateUuidParam(
+      typeof rawId === "string" ? rawId : Array.isArray(rawId) ? rawId[0] ?? "" : "",
+      "id",
+    );
+    const notes =
+      typeof req.body?.notes === "string" ? req.body.notes.trim() : undefined;
+    const result = await approveProductionApiKey(keyId, adminActor(req), notes || null);
+    if (!result.ok) {
+      redirectApiUsage(res, { error: result.error ?? "No se pudo aprobar." }, preserveQuery(req));
+      return;
+    }
+    redirectApiUsage(res, { ok: "Aprobación production registrada." }, preserveQuery(req));
+  } catch (error) {
+    if (error instanceof AppError) {
+      redirectApiUsage(res, { error: error.message }, preserveQuery(req));
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function postAdminApiUsageKeyRevokeProductionApproval(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const rawId = req.params.id;
+    const keyId = validateUuidParam(
+      typeof rawId === "string" ? rawId : Array.isArray(rawId) ? rawId[0] ?? "" : "",
+      "id",
+    );
+    const reason =
+      typeof req.body?.reason === "string" ? req.body.reason.trim() : undefined;
+    const result = await revokeProductionApproval(keyId, adminActor(req), reason || null);
+    if (!result.ok) {
+      redirectApiUsage(res, { error: result.error ?? "No se pudo revocar." }, preserveQuery(req));
+      return;
+    }
+    redirectApiUsage(res, { ok: "Aprobación production revocada." }, preserveQuery(req));
   } catch (error) {
     if (error instanceof AppError) {
       redirectApiUsage(res, { error: error.message }, preserveQuery(req));

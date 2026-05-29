@@ -69,6 +69,8 @@ import {
   postAdminApiUsageKeyActivate,
   postAdminApiUsageKeyPause,
   postAdminApiUsageKeyRevoke,
+  postAdminApiUsageKeyApproveProduction,
+  postAdminApiUsageKeyRevokeProductionApproval,
   postAdminApiUsageRateLimitCreate,
   postAdminApiUsageRateLimitDisable,
   postAdminApiUsageRateLimitUpdate,
@@ -349,6 +351,16 @@ adminRouter.post(
   "/api-usage/keys/:id/revoke",
   requireAdminPage,
   postAdminApiUsageKeyRevoke,
+);
+adminRouter.post(
+  "/api-usage/keys/:id/approve-production",
+  requireAdminPage,
+  postAdminApiUsageKeyApproveProduction,
+);
+adminRouter.post(
+  "/api-usage/keys/:id/revoke-production-approval",
+  requireAdminPage,
+  postAdminApiUsageKeyRevokeProductionApproval,
 );
 adminRouter.post(
   "/api-usage/rate-limits",

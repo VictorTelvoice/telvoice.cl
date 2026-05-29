@@ -80,6 +80,10 @@ export async function postPublicApiSmsSend(
       success: false,
       errorCode: "PRODUCTION_SEND_NOT_ENABLED",
       errorMessage: "Production SMS send is not enabled yet.",
+      metadata: {
+        production_approved: auth.productionApproved,
+        reason: "production_send_not_enabled",
+      },
     });
     publicApiError(
       res,

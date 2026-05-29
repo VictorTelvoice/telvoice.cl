@@ -25,6 +25,52 @@ import { AppError } from "../utils/errors.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 import { validateUuidParam } from "../utils/validation.js";
 
+const KEY_LIST_COLUMNS =
+  "id, company_id, created_by_user_id, name, key_prefix, key_masked, status, scopes, environment, last_used_at, expires_at, revoked_at, revoked_reason, metadata, source, created_at, updated_at, production_approved, production_approved_at, production_approved_by_admin_id, production_approval_notes";
+
+type ApiKeyAuditEntry = {
+  id: string;
+  action: string;
+  adminId: string;
+  adminEmail: string;
+  adminName: string;
+  at: string;
+  previous?: Record<string, unknown>;
+  next?: Record<string, unknown>;
+};
+
+function newAuditId(): string {
+  return `key_audit_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function parseAuditLog(metadata: Record<string, unknown> | null): ApiKeyAuditEntry[] {
+  const raw = metadata?.audit_log;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (item): item is ApiKeyAuditEntry =>
+      !!item && typeof item === "object" && typeof (item as ApiKeyAuditEntry).action === "string",
+  );
+}
+
+function appendKeyAudit(
+  metadata: Record<string, unknown> | null | undefined,
+  entry: Omit<ApiKeyAuditEntry, "id" | "at"> & { at?: string },
+): Record<string, unknown> {
+  const base =
+    metadata && typeof metadata === "object" && !Array.isArray(metadata)
+      ? { ...metadata }
+      : {};
+  const audit_log = [
+    ...parseAuditLog(base),
+    { id: newAuditId(), at: entry.at ?? new Date().toISOString(), ...entry },
+  ];
+  return { ...base, audit_log };
+}
+
+function parseProductionApproved(row: ClientApiKeyRow): boolean {
+  return row.production_approved === true;
+}
+
 function parseStatus(raw: string): ClientApiKey["status"] {
   if (raw === "active" || raw === "paused" || raw === "revoked" || raw === "expired") {
     return raw;
@@ -71,6 +117,10 @@ export function rowToClientApiKey(row: ClientApiKeyRow): ClientApiKey {
     revokedReason: row.revoked_reason,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    productionApproved: parseProductionApproved(row),
+    productionApprovedAt: row.production_approved_at ?? null,
+    productionApprovedByAdminId: row.production_approved_by_admin_id ?? null,
+    productionApprovalNotes: row.production_approval_notes ?? null,
   };
 }
 
@@ -143,9 +193,7 @@ export async function listClientApiKeys(
   try {
     const { data, error } = await getSupabase()
       .from("client_api_keys")
-      .select(
-        "id, company_id, created_by_user_id, name, key_prefix, key_masked, status, scopes, environment, last_used_at, expires_at, revoked_at, revoked_reason, metadata, source, created_at, updated_at",
-      )
+      .select(KEY_LIST_COLUMNS)
       .eq("company_id", companyId)
       .order("updated_at", { ascending: false });
 
@@ -599,6 +647,159 @@ export async function authenticateClientApiKey(
       environment: rowEnvironment,
       scopes,
       keyPrefix: row.key_prefix,
+      productionApproved:
+        rowEnvironment === "production" ? parseProductionApproved(row) : false,
     },
   };
+}
+
+export async function fetchClientApiKeyById(
+  keyId: string,
+): Promise<ClientApiKeyRow | null> {
+  const id = validateUuidParam(keyId, "id");
+  const { data, error } = await getSupabase()
+    .from("client_api_keys")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) {
+    if (isMissingTableError(error)) return null;
+    wrapSupabaseError(error, "fetchClientApiKeyById");
+  }
+  return (data as ClientApiKeyRow | null) ?? null;
+}
+
+export type ProductionApprovalAdminActor = {
+  adminId: string;
+  adminEmail: string;
+  adminName: string;
+};
+
+export async function listProductionPendingApiKeys(filters?: {
+  companyId?: string;
+  limit?: number;
+}): Promise<ClientApiKey[]> {
+  try {
+    let query = getSupabase()
+      .from("client_api_keys")
+      .select(KEY_LIST_COLUMNS)
+      .eq("environment", "production")
+      .eq("production_approved", false)
+      .neq("status", "revoked")
+      .order("created_at", { ascending: false })
+      .limit(Math.min(Math.max(filters?.limit ?? 100, 1), 200));
+
+    if (filters?.companyId) {
+      query = query.eq("company_id", filters.companyId);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      if (isMissingTableError(error)) return [];
+      wrapSupabaseError(error, "listProductionPendingApiKeys");
+    }
+    return (data ?? []).map((row) => rowToClientApiKey(row as ClientApiKeyRow));
+  } catch (error) {
+    console.warn("[client-api-keys] listProductionPendingApiKeys", error);
+    return [];
+  }
+}
+
+export async function approveProductionApiKey(
+  keyId: string,
+  admin: ProductionApprovalAdminActor,
+  notes?: string | null,
+): Promise<ClientApiKeyServiceResult<ClientApiKey>> {
+  const row = await fetchClientApiKeyById(keyId);
+  if (!row) {
+    return { ok: false, error: "API Key no encontrada." };
+  }
+  if (parseEnvironment(row.environment) !== "production") {
+    return { ok: false, error: "Solo se pueden aprobar API Keys de ambiente production." };
+  }
+  if (row.status === "revoked") {
+    return { ok: false, error: "No se puede aprobar una API Key revocada." };
+  }
+  if (row.status === "paused") {
+    return { ok: false, error: "Activa la API Key antes de aprobar production." };
+  }
+  if (row.status !== "active") {
+    return { ok: false, error: "La API Key debe estar activa para aprobar production." };
+  }
+
+  const metadata = appendKeyAudit(row.metadata, {
+    action: "production_approved",
+    adminId: admin.adminId,
+    adminEmail: admin.adminEmail,
+    adminName: admin.adminName,
+    previous: {
+      production_approved: row.production_approved ?? false,
+    },
+    next: { production_approved: true },
+  });
+
+  const { data, error } = await getSupabase()
+    .from("client_api_keys")
+    .update({
+      production_approved: true,
+      production_approved_at: new Date().toISOString(),
+      production_approved_by_admin_id: admin.adminId,
+      production_approval_notes: notes?.trim() || null,
+      metadata,
+    })
+    .eq("id", keyId)
+    .select(KEY_LIST_COLUMNS)
+    .single();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return { ok: false, error: "Tabla API Keys no disponible.", missingTable: true };
+    }
+    wrapSupabaseError(error, "approveProductionApiKey");
+  }
+  return { ok: true, data: rowToClientApiKey(data as ClientApiKeyRow) };
+}
+
+export async function revokeProductionApproval(
+  keyId: string,
+  admin: ProductionApprovalAdminActor,
+  reason?: string | null,
+): Promise<ClientApiKeyServiceResult<ClientApiKey>> {
+  const row = await fetchClientApiKeyById(keyId);
+  if (!row) {
+    return { ok: false, error: "API Key no encontrada." };
+  }
+  if (parseEnvironment(row.environment) !== "production") {
+    return { ok: false, error: "Solo aplica a API Keys production." };
+  }
+
+  const metadata = appendKeyAudit(row.metadata, {
+    action: "production_approval_revoked",
+    adminId: admin.adminId,
+    adminEmail: admin.adminEmail,
+    adminName: admin.adminName,
+    previous: { production_approved: row.production_approved ?? false },
+    next: { production_approved: false },
+  });
+
+  const { data, error } = await getSupabase()
+    .from("client_api_keys")
+    .update({
+      production_approved: false,
+      production_approved_at: null,
+      production_approved_by_admin_id: null,
+      production_approval_notes: reason?.trim() || null,
+      metadata,
+    })
+    .eq("id", keyId)
+    .select(KEY_LIST_COLUMNS)
+    .single();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return { ok: false, error: "Tabla API Keys no disponible.", missingTable: true };
+    }
+    wrapSupabaseError(error, "revokeProductionApproval");
+  }
+  return { ok: true, data: rowToClientApiKey(data as ClientApiKeyRow) };
 }

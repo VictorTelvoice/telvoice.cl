@@ -145,6 +145,19 @@ function keyStatusBadge(status: string): string {
   return `<span class="badge ${map[status] ?? "badge-muted"}">${escapeHtml(status)}</span>`;
 }
 
+function productionApprovalBadge(k: AdminApiKeyListItem): string {
+  if (k.environment !== "production") {
+    return `<span class="field-hint">No aplica</span>`;
+  }
+  if (k.productionApproved) {
+    return `<span class="badge badge-ok">Aprobada</span>`;
+  }
+  if (k.status === "revoked") {
+    return `<span class="badge badge-muted">No aplica (revocada)</span>`;
+  }
+  return `<span class="badge badge-warn">Pendiente</span>`;
+}
+
 function renderKpis(stats: AdminApiUsageStats): string {
   return `<div class="tv-kpi-grid tv-kpi-grid--client" style="margin-bottom:1.25rem">
     ${renderKpiCard({ label: "Requests 24h", value: String(stats.requestsLast24h), icon: "monitoring", variant: "primary" })}
@@ -308,27 +321,53 @@ function renderKeysTable(keys: AdminApiKeyListItem[], filters: AdminApiUsageFilt
              <button type="submit" class="btn btn-ghost btn-sm">Revocar</button>
            </form>`
         : "";
+      const isProduction = k.environment === "production";
+      const canApproveProd =
+        isProduction && !k.productionApproved && k.status === "active";
+      const canRevokeApproval = isProduction && k.productionApproved;
+      const prodConfirm =
+        "Esta acción no habilita envío real todavía. Solo deja la API Key preparada para una futura activación productiva.";
+      const approveForm = canApproveProd
+        ? `<details style="display:inline-block;vertical-align:top">
+             <summary class="btn btn-ghost btn-sm" style="list-style:none;cursor:pointer">Aprobar production</summary>
+             <form method="post" action="/admin/api-usage/keys/${escapeHtml(k.id)}/approve-production${qs}" style="padding:0.5rem;min-width:220px" onsubmit="return confirm(${JSON.stringify(prodConfirm)});">
+               <textarea name="notes" class="tv-input-full" rows="2" placeholder="Notas de aprobación (opcional)"></textarea>
+               <button type="submit" class="btn btn-primary btn-sm" style="margin-top:0.35rem">Confirmar aprobación</button>
+             </form>
+           </details>`
+        : "";
+      const revokeApprovalForm = canRevokeApproval
+        ? `<details style="display:inline-block;vertical-align:top">
+             <summary class="btn btn-ghost btn-sm" style="list-style:none;cursor:pointer">Revocar aprobación</summary>
+             <form method="post" action="/admin/api-usage/keys/${escapeHtml(k.id)}/revoke-production-approval${qs}" style="padding:0.5rem;min-width:220px" onsubmit="return confirm('¿Revocar aprobación production de esta API Key?');">
+               <textarea name="reason" class="tv-input-full" rows="2" placeholder="Motivo de revocación"></textarea>
+               <button type="submit" class="btn btn-primary btn-sm" style="margin-top:0.35rem">Confirmar revocación</button>
+             </form>
+           </details>`
+        : "";
       return `<tr>
         <td>${company}</td>
         <td><strong>${escapeHtml(k.name)}</strong></td>
         <td><code>${escapeHtml(k.keyMasked)}</code></td>
         <td>${escapeHtml(k.environment)}</td>
         <td>${keyStatusBadge(k.status)}</td>
+        <td>${productionApprovalBadge(k)}</td>
         <td>${scopes || "—"}</td>
         <td>${k.lastUsedAt ? escapeHtml(formatDate(k.lastUsedAt)) : "—"}</td>
         <td>${escapeHtml(formatDate(k.createdAt))}</td>
-        <td style="white-space:nowrap">${pauseForm}${activateForm}${revokeForm}</td>
+        <td style="white-space:nowrap">${approveForm}${revokeApprovalForm}${pauseForm}${activateForm}${revokeForm}</td>
       </tr>`;
     })
     .join("");
 
   return renderPanel(
     "API Keys por empresa",
-    `<div class="table-wrap" style="overflow-x:auto">
+    `<p class="field-hint" style="margin:0 0 1rem">Aprobar production no habilita envío SMS real; solo prepara la key para una futura activación.</p>
+    <div class="table-wrap" style="overflow-x:auto">
       <table class="tv-table">
         <thead><tr>
           <th>Empresa</th><th>Nombre</th><th>Key</th><th>Ambiente</th><th>Estado</th>
-          <th>Scopes</th><th>Último uso</th><th>Creada</th><th>Acciones</th>
+          <th>Aprobación production</th><th>Scopes</th><th>Último uso</th><th>Creada</th><th>Acciones</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>

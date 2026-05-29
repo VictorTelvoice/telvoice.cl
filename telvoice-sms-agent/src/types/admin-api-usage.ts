@@ -59,6 +59,9 @@ export type AdminApiKeyListItem = {
   scopes: ClientApiKeyScope[];
   lastUsedAt: string | null;
   createdAt: string;
+  productionApproved: boolean;
+  productionApprovedAt: string | null;
+  productionApprovalNotes: string | null;
 };
 
 export type AdminSmsApiMessageListItem = {
