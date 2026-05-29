@@ -175,6 +175,7 @@ async function sendOneInCampaign(input: {
       companyId,
       to: phone,
       segmentCount: segmentInfo.segments,
+      skipSegmentCap: true,
     });
 
     const resolved = await resolveRouteForMessage({

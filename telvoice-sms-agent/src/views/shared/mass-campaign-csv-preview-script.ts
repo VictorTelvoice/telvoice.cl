@@ -210,8 +210,7 @@ export function renderMassCampaignCsvPreviewScript(
     var schedOk = mode !== 'scheduled' || (scheduleDate && scheduleDate.value && scheduleTime && scheduleTime.value);
     var bulkOk = stats.valid > 0 && (stats.hasPerRowMessages || (ta && (ta.value || '').trim()));
     var balanceOk = avail <= 0 || stats.totalSms <= avail;
-    var overSeg = stats.rows.some(function(r){ return r.ok && r.seg > maxLiveSegments; });
-    var canDispatch = bulkOk && schedOk && balanceOk && !overSeg;
+    var canDispatch = bulkOk && schedOk && balanceOk;
     if(dispatchBtn){
       dispatchBtn.disabled = !canDispatch;
       dispatchBtn.title = canDispatch ? '' : 'Revisa CSV, mensaje, programación o saldo';

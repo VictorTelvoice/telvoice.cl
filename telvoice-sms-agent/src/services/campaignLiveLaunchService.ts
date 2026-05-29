@@ -155,13 +155,6 @@ export async function validateLiveCampaignLaunch(
     blockReasons.push(...readiness.blockedReasons);
   }
 
-  const segmentInfo = calculateSmsSegments(campaign.message ?? "");
-  if (segmentInfo.segments > env.smsLiveCampaign.maxSegments) {
-    blockReasons.push(
-      `El mensaje supera el máximo de ${env.smsLiveCampaign.maxSegments} segmentos por envío live.`,
-    );
-  }
-
   const validRecipients =
     campaign.valid_recipients ||
     (typeof meta.estimated_recipients === "number"
@@ -438,12 +431,6 @@ export async function getLiveLaunchStatus(
     }
     if (queueItemCount > 0) {
       launchBlockReasons.push("Ya existe cola de envío para esta campaña.");
-    }
-    const segmentInfo = calculateSmsSegments(campaign.message ?? "");
-    if (segmentInfo.segments > env.smsLiveCampaign.maxSegments) {
-      launchBlockReasons.push(
-        `Máximo ${env.smsLiveCampaign.maxSegments} segmentos por mensaje.`,
-      );
     }
     if (campaign.valid_recipients > env.smsLiveCampaign.maxRecipients) {
       launchBlockReasons.push(

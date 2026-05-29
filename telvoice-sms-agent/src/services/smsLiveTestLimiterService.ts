@@ -232,10 +232,15 @@ export async function assertLiveTestOperationalLimits(input: {
   segmentCount: number;
   /** Panel Test superadmin: sin espera entre envíos QA. */
   skipInterSendCooldown?: boolean;
+  /** Campañas masivas/programadas: cobrar por segmentos, sin tope artificial. */
+  skipSegmentCap?: boolean;
 }): Promise<void> {
   const limits = getLiveTestLimiterConfig();
 
-  if (input.segmentCount > limits.maxSegments) {
+  if (
+    !input.skipSegmentCap &&
+    input.segmentCount > limits.maxSegments
+  ) {
     throw new AppError(
       "El mensaje supera el máximo de segmentos permitido.",
       400,

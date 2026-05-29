@@ -377,7 +377,7 @@ export function renderAppSendSmsPage(
                 ${varChips}
               </div>
             </div>
-            <p class="field-hint tv-live-segment-warn" id="tv-live-segment-warn" hidden>El mensaje supera el máximo de segmentos permitido.</p>
+            <p class="field-hint tv-live-segment-warn" id="tv-live-segment-warn" hidden></p>
             <p class="field-hint tv-live-number-warn" id="tv-live-number-warn" hidden>El número destino no está autorizado.</p>
             <p class="field-hint tv-mass-warn" id="tv-mass-warn" hidden>Agrega al menos un destinatario válido (lista o CSV).</p>
             ${submitBlockAlert}
@@ -773,23 +773,38 @@ export function renderAppSendSmsPage(
           if(phoneAvatar) phoneAvatar.textContent = (sid.charAt(0) || 'E').toUpperCase();
         }
         var overSeg = false;
-        if(isBulkMode(mode) && massStats){
-          massStats.rows.forEach(function(r){ if(r.ok && r.seg > maxLiveSegments) overSeg = true; });
-        } else if(mode !== 'scheduled') {
+        if(!isBulkMode(mode) && mode !== 'template') {
           overSeg = c.seg > maxLiveSegments;
         }
         var numOk = isRecipientAllowed();
         var schedOk = mode !== 'scheduled' || (scheduleDate && scheduleDate.value && scheduleTime && scheduleTime.value);
         var bulkOk = !isBulkMode(mode) || (massStats && massStats.valid > 0 && (massStats.hasPerRowMessages || (ta && (ta.value || '').trim())));
+        var balanceOk = true;
+        if(avail > 0){
+          if(isBulkMode(mode) && massStats) balanceOk = massStats.totalSms <= avail;
+          else if(mode === 'single' || mode === 'template') balanceOk = c.cost <= avail;
+        }
         var segWarn = document.getElementById('tv-live-segment-warn');
         var numWarn = document.getElementById('tv-live-number-warn');
         var massWarn = document.getElementById('tv-mass-warn');
         var submitBtn = document.getElementById('tv-send-submit');
         var headerBtn = document.getElementById('tv-header-send-btn');
-        if(segWarn) segWarn.hidden = !overSeg;
+        if(segWarn){
+          if(isBulkMode(mode) && massStats && massStats.totalSms > 0){
+            segWarn.hidden = false;
+            segWarn.textContent = 'Se descontarán ' + massStats.totalSms + ' créditos SMS según segmentos del mensaje (no hay tope de segmentos en campañas).';
+            segWarn.style.color = '';
+          } else if(overSeg){
+            segWarn.hidden = false;
+            segWarn.textContent = 'El mensaje supera el máximo de ' + maxLiveSegments + ' segmentos permitido en envío individual.';
+            segWarn.style.color = 'var(--err,#b91c1c)';
+          } else {
+            segWarn.hidden = true;
+          }
+        }
         if(numWarn) numWarn.hidden = isBulkMode(mode) || numOk || (!numbersRestricted && allowedLiveNumbers.length === 0);
         if(massWarn) massWarn.hidden = bulkOk || !isBulkMode(mode);
-        var disabled = overSeg || !numOk || !schedOk || !bulkOk;
+        var disabled = overSeg || !numOk || !schedOk || !bulkOk || !balanceOk;
         if(submitBtn) submitBtn.disabled = !canSubmit || disabled;
         if(headerBtn) headerBtn.disabled = !canSubmit || disabled;
       }
