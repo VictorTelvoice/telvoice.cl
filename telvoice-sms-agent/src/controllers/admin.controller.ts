@@ -8,6 +8,7 @@ import {
 import {
   authenticateAdmin,
   getAdminJwtCookieName,
+  getClientJwtCookieName,
   getJwtCookieOptions,
   isAdminSignupOpen,
   registerGmailAdmin,
@@ -188,8 +189,16 @@ function resolvePostAuthRedirect(role: string, nextPath: string): string {
 }
 
 export function postLogout(_req: Request, res: Response): void {
-  res.clearCookie(getAdminJwtCookieName(), { path: "/" });
+  const opts = { path: "/" };
+  res.clearCookie(getAdminJwtCookieName(), opts);
   res.redirect("/admin/login");
+}
+
+/** Cierra solo la sesión del panel cliente (no afecta `/admin`). */
+export function postClientLogout(_req: Request, res: Response): void {
+  const opts = { path: "/" };
+  res.clearCookie(getClientJwtCookieName(), opts);
+  res.redirect("/login");
 }
 
 export async function getDashboard(

@@ -16,6 +16,10 @@ import { SUPPORT_CATEGORIES } from "../types/support-tickets.js";
 import { isMissingTableError } from "../utils/db-table.js";
 import { AppError } from "../utils/errors.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
+import {
+  appendSupportTicketAuditEvent,
+  type SupportTicketAuditActor,
+} from "./supportTicketAudit.js";
 
 const PRIORITY_TO_DB: Record<SupportTicketPriority, string> = {
   low: "Baja",
@@ -274,17 +278,53 @@ export async function updateSupportTicketAdmin(
     status: SupportTicketStatus;
     priority: SupportTicketPriority;
   }>,
+  actor?: SupportTicketAuditActor,
 ): Promise<SupportTicketServiceResult<AdminSupportTicketListItem>> {
   try {
-    const update: Record<string, string> = {};
+    const existing = await getTicketRowById(ticketId);
+    if (!existing) {
+      return { ok: false, error: "Ticket no encontrado." };
+    }
+
+    const update: Record<string, unknown> = {};
+    let metadata = (existing.metadata as Record<string, unknown> | null) ?? null;
+
     if (patch.status) {
-      update.status = STATUS_TO_DB[patch.status];
+      const fromStatus = existing.status;
+      const toStatus = STATUS_TO_DB[patch.status];
+      if (fromStatus !== toStatus) {
+        update.status = toStatus;
+        if (actor) {
+          metadata = appendSupportTicketAuditEvent(metadata, actor, {
+            action: "status_changed",
+            from: fromStatus,
+            to: toStatus,
+          });
+        }
+      }
     }
+
     if (patch.priority) {
-      update.priority = PRIORITY_TO_DB[patch.priority];
+      const fromPriority = existing.priority;
+      const toPriority = PRIORITY_TO_DB[patch.priority];
+      if (fromPriority !== toPriority) {
+        update.priority = toPriority;
+        if (actor) {
+          metadata = appendSupportTicketAuditEvent(metadata, actor, {
+            action: "priority_changed",
+            from: fromPriority,
+            to: toPriority,
+          });
+        }
+      }
     }
+
     if (!Object.keys(update).length) {
       return { ok: false, error: "Sin cambios para aplicar." };
+    }
+
+    if (metadata !== existing.metadata) {
+      update.metadata = metadata;
     }
 
     const { data, error } = await getSupabase()
@@ -318,7 +358,11 @@ export async function updateSupportTicketAdmin(
 async function appendTicketReply(
   ticketId: string,
   entry: SupportTicketReply,
-  statusAfter?: SupportTicketStatus,
+  options?: {
+    statusAfter?: SupportTicketStatus;
+    actor?: SupportTicketAuditActor;
+    auditAction?: "public_reply_sent" | "internal_note_added";
+  },
 ): Promise<SupportTicketServiceResult<AdminSupportTicketListItem>> {
   const existing = await getTicketRowById(ticketId);
   if (!existing) {
@@ -328,9 +372,40 @@ async function appendTicketReply(
   const replies = parseReplies(existing.replies, { includeInternal: true });
   replies.push(entry);
 
+  let metadata = (existing.metadata as Record<string, unknown> | null) ?? null;
+  const actor = options?.actor;
+  const auditAction = options?.auditAction;
+
+  if (actor && auditAction) {
+    metadata = appendSupportTicketAuditEvent(metadata, actor, {
+      action: auditAction,
+      detail: entry.message.trim().slice(0, 200),
+    });
+  }
+
   const update: Record<string, unknown> = { replies };
+  if (metadata !== existing.metadata) {
+    update.metadata = metadata;
+  }
+
+  const statusAfter = options?.statusAfter;
   if (statusAfter) {
-    update.status = STATUS_TO_DB[statusAfter];
+    const toStatus = STATUS_TO_DB[statusAfter];
+    if (existing.status !== toStatus) {
+      update.status = toStatus;
+      if (actor) {
+        metadata = appendSupportTicketAuditEvent(
+          (update.metadata as Record<string, unknown> | undefined) ?? metadata,
+          actor,
+          {
+            action: "status_changed",
+            from: existing.status,
+            to: toStatus,
+          },
+        );
+        update.metadata = metadata;
+      }
+    }
   }
 
   const { data, error } = await getSupabase()
@@ -357,6 +432,7 @@ export async function addAdminSupportTicketReply(
   ticketId: string,
   message: string,
   authorName = "Equipo Telvoice",
+  actor?: SupportTicketAuditActor,
 ): Promise<SupportTicketServiceResult<AdminSupportTicketListItem>> {
   const text = message.trim();
   if (!text) {
@@ -374,7 +450,11 @@ export async function addAdminSupportTicketReply(
       createdAt: new Date().toISOString(),
       internal: false,
     },
-    "waiting",
+    {
+      statusAfter: "waiting",
+      actor,
+      auditAction: actor ? "public_reply_sent" : undefined,
+    },
   );
 }
 
@@ -382,21 +462,29 @@ export async function addInternalSupportTicketNote(
   ticketId: string,
   message: string,
   authorName = "Equipo Telvoice",
+  actor?: SupportTicketAuditActor,
 ): Promise<SupportTicketServiceResult<AdminSupportTicketListItem>> {
   const text = message.trim();
   if (!text) {
     return { ok: false, error: "La nota interna no puede estar vacía." };
   }
 
-  return appendTicketReply(ticketId, {
-    id: `rep_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    author: "support",
-    authorType: "admin",
-    authorName,
-    message: text,
-    createdAt: new Date().toISOString(),
-    internal: true,
-  });
+  return appendTicketReply(
+    ticketId,
+    {
+      id: `rep_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      author: "support",
+      authorType: "admin",
+      authorName,
+      message: text,
+      createdAt: new Date().toISOString(),
+      internal: true,
+    },
+    {
+      actor,
+      auditAction: actor ? "internal_note_added" : undefined,
+    },
+  );
 }
 
 export async function getSupportTicketsModuleState(): Promise<SupportTicketsModuleState> {

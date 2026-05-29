@@ -68,7 +68,9 @@ export function renderNoCompanyPage(profile: UserProfileContext): string {
     <p class="field-hint">Rol: ${escapeHtml(roleDisplayLabel(profile.role))}</p>
     <div style="margin-top:1.5rem;display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap">
       <a href="/admin" class="btn btn-secondary">Ir a Superadmin</a>
-      <a href="/admin/logout" class="btn btn-ghost">Cerrar sesión</a>
+      <form method="post" action="/app/logout" class="logout-form" style="display:inline;margin:0">
+        <button type="submit" class="btn btn-ghost">Cerrar sesión</button>
+      </form>
     </div>
   </div>`;
   return renderAppMinimalPage("Empresa no asociada", body);

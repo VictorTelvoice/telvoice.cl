@@ -20,6 +20,11 @@ import {
   renderPanel,
 } from "../page-kit.js";
 import { renderSuperadminBanner } from "../superadmin-kit.js";
+import {
+  auditActionLabel,
+  formatAuditChange,
+  getSupportTicketAuditLog,
+} from "../../../services/supportTicketAudit.js";
 
 export type AdminSupportPageOpts = {
   admin: AdminSessionUser;
@@ -299,6 +304,32 @@ function renderTable(tickets: AdminSupportTicketListItem[]): string {
   </style>`;
 }
 
+function renderAuditActivity(ticket: AdminSupportTicketListItem): string {
+  const events = getSupportTicketAuditLog(ticket.metadata).slice().reverse();
+  if (!events.length) {
+    return `<section class="tv-support-audit" style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--tv-border)">
+      <h3 style="font-size:0.9rem;margin:0 0 0.5rem;color:var(--tv-text-muted)">Actividad interna</h3>
+      <p class="field-hint" style="margin:0">Sin eventos registrados aún.</p>
+    </section>`;
+  }
+
+  const rows = events
+    .map((ev) => {
+      const change = formatAuditChange(ev);
+      return `<li class="tv-support-audit__item">
+        <span class="field-hint">${escapeHtml(formatDate(ev.createdAt))}</span>
+        <strong style="display:block;font-size:0.85rem;margin:0.15rem 0">${escapeHtml(auditActionLabel(ev.action))}</strong>
+        <span class="field-hint">${escapeHtml(ev.actorName)} · ${escapeHtml(change)}</span>
+      </li>`;
+    })
+    .join("");
+
+  return `<section class="tv-support-audit" style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--tv-border)">
+    <h3 style="font-size:0.9rem;margin:0 0 0.65rem;color:var(--tv-text-muted)">Actividad interna</h3>
+    <ul class="tv-support-audit__list" style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.65rem">${rows}</ul>
+  </section>`;
+}
+
 function renderReplyHistory(ticket: AdminSupportTicketListItem): string {
   const replies = ticket.replies ?? [];
   if (!replies.length) {
@@ -405,6 +436,7 @@ function renderDrawer(ticket: AdminSupportTicketListItem): string {
           <form method="post" action="/admin/support/tickets/${escapeHtml(ticket.id)}/quick-action" style="display:inline"><input type="hidden" name="action" value="urgent" /><button type="submit" class="btn btn-ghost btn-sm">Subir a urgente</button></form>
           <button type="button" class="btn btn-ghost btn-sm" data-copy-text="${escapeHtml(ticket.code)}">Copiar código</button>
         </div>
+        ${renderAuditActivity(ticket)}
       </div>
     </div>
   </div>
@@ -416,6 +448,7 @@ function renderDrawer(ticket: AdminSupportTicketListItem): string {
     .tv-support-admin-drawer__body { padding:1rem 1.25rem;overflow-y:auto;flex:1; }
     .tv-support-admin-reply { padding:0.65rem 0;border-bottom:1px solid var(--tv-border); }
     .tv-support-admin-reply--internal { background:var(--tv-bg);padding:0.65rem;border-radius:var(--tv-radius);margin-bottom:0.5rem;border:1px dashed var(--tv-border); }
+    .tv-support-audit__item { padding:0.5rem 0.65rem;background:var(--tv-bg);border-radius:var(--tv-radius);border:1px solid var(--tv-border); }
   </style>
   <script>
   document.querySelectorAll("[data-copy-target]").forEach(function(btn) {

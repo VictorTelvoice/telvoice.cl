@@ -112,7 +112,7 @@ function renderTopbar(tb: AppLayoutTopbar): string {
           <span class="tv-user__name">${escapeHtml(tb.userName)}</span>
           <span class="tv-user__company">Cuenta cliente</span>
         </span>
-        <form method="post" action="/admin/logout" class="logout-form">
+        <form method="post" action="/app/logout" class="logout-form">
           <button type="submit" class="btn btn-ghost btn-sm" title="Cerrar sesión">Salir</button>
         </form>
       </div>

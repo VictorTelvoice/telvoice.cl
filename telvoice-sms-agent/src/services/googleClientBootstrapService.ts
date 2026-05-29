@@ -3,7 +3,13 @@ import { getSupabase } from "../database/supabaseClient.js";
 import { ROLES } from "../types/roles.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 import { findAdminByEmail, createAdminUser } from "./adminUserService.js";
-import { hashPassword, signAdminToken, getAdminJwtCookieName, getJwtCookieOptions } from "./adminAuthService.js";
+import {
+  hashPassword,
+  signAdminToken,
+  getAdminJwtCookieName,
+  getClientJwtCookieName,
+  getJwtCookieOptions,
+} from "./adminAuthService.js";
 import type { AdminSessionUser } from "../types/admin.js";
 import { AppError } from "../utils/errors.js";
 import { getOrCreateCompanyWallet } from "./smsWalletService.js";
@@ -105,5 +111,5 @@ export async function bootstrapClientFromGoogle(input: {
   return { user: sessionUser, jwt: signAdminToken(sessionUser) };
 }
 
-export { getAdminJwtCookieName, getJwtCookieOptions };
+export { getAdminJwtCookieName, getClientJwtCookieName, getJwtCookieOptions };
 

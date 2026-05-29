@@ -27,7 +27,9 @@ export function renderAppPlaceholderPage(profile: UserProfileContext): string {
           <li><code>/app/reports</code> — Reportes</li>
           <li><code>/app/api</code> — Tu API</li>
         </ul>
-        <a href="/admin/logout" class="btn btn-ghost btn-sm">Cerrar sesión</a>
+        <form method="post" action="/app/logout" class="logout-form" style="display:inline">
+          <button type="submit" class="btn btn-ghost btn-sm">Cerrar sesión</button>
+        </form>
       </div>
     </div>`;
 

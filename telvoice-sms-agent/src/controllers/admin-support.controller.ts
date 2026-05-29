@@ -18,6 +18,7 @@ import type {
   SupportTicketPriority,
   SupportTicketStatus,
 } from "../types/support-tickets.js";
+import { buildAdminAuditActorFromRequest } from "../services/supportTicketAudit.js";
 import { AppError } from "../utils/errors.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
@@ -162,7 +163,11 @@ export async function postAdminSupportTicketUpdate(
       patch.priority = priorityRaw as SupportTicketPriority;
     }
 
-    const result = await updateSupportTicketAdmin(ticketId, patch);
+    const result = await updateSupportTicketAdmin(
+      ticketId,
+      patch,
+      buildAdminAuditActorFromRequest(req),
+    );
     if (!result.ok) {
       redirectSupport(res, ticketId, { error: result.error });
       return;
@@ -185,7 +190,12 @@ export async function postAdminSupportTicketReply(
     const message = body.message ?? "";
     const authorName = req.adminUser?.name?.trim() || "Equipo Telvoice";
 
-    const result = await addAdminSupportTicketReply(ticketId, message, authorName);
+    const result = await addAdminSupportTicketReply(
+      ticketId,
+      message,
+      authorName,
+      buildAdminAuditActorFromRequest(req),
+    );
     if (!result.ok) {
       redirectSupport(res, ticketId, { error: result.error });
       return;
@@ -208,7 +218,12 @@ export async function postAdminSupportTicketInternalNote(
     const message = body.message ?? "";
     const authorName = req.adminUser?.name?.trim() || "Equipo Telvoice";
 
-    const result = await addInternalSupportTicketNote(ticketId, message, authorName);
+    const result = await addInternalSupportTicketNote(
+      ticketId,
+      message,
+      authorName,
+      buildAdminAuditActorFromRequest(req),
+    );
     if (!result.ok) {
       redirectSupport(res, ticketId, { error: result.error });
       return;
@@ -257,7 +272,11 @@ export async function postAdminSupportTicketQuickAction(
         return;
     }
 
-    const result = await updateSupportTicketAdmin(ticketId, patch);
+    const result = await updateSupportTicketAdmin(
+      ticketId,
+      patch,
+      buildAdminAuditActorFromRequest(req),
+    );
     if (!result.ok) {
       redirectSupport(res, ticketId, { error: result.error });
       return;

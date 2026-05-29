@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import {
   bootstrapClientFromGoogle,
-  getAdminJwtCookieName,
+  getClientJwtCookieName,
   getJwtCookieOptions,
 } from "../services/googleClientBootstrapService.js";
 import {
@@ -39,7 +39,7 @@ export async function postBootstrapClient(
       avatarUrl: verified.avatarUrl,
     });
 
-    res.cookie(getAdminJwtCookieName(), jwt, getJwtCookieOptions());
+    res.cookie(getClientJwtCookieName(), jwt, getJwtCookieOptions());
     res.json({ ok: true });
   } catch (error) {
     next(error);

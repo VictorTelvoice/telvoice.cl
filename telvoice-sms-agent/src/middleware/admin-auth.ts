@@ -6,9 +6,11 @@ import {
 } from "../auth/authorization.js";
 import {
   getAdminJwtCookieName,
+  getClientJwtCookieName,
   resolveAdminSession,
   verifyAdminToken,
 } from "../services/adminAuthService.js";
+import { canAccessClientPanel } from "../types/roles.js";
 import { getCurrentUserProfile } from "../services/userProfileService.js";
 import type { AdminSessionUser } from "../types/admin.js";
 import type { UserProfileContext } from "../types/tenant.js";
@@ -42,20 +44,17 @@ async function attachProfile(req: Request): Promise<void> {
   }
 }
 
-export async function loadAdminSession(
+async function loadSessionFromCookie(
   req: Request,
-  _res: Response,
-  next: NextFunction,
+  cookieName: string,
 ): Promise<void> {
-  const token = req.cookies?.[getAdminJwtCookieName()] as string | undefined;
+  const token = req.cookies?.[cookieName] as string | undefined;
   if (!token) {
-    next();
     return;
   }
 
   const decoded = verifyAdminToken(token);
   if (!decoded) {
-    next();
     return;
   }
 
@@ -63,6 +62,42 @@ export async function loadAdminSession(
   if (admin) {
     req.adminUser = admin;
     await attachProfile(req);
+  }
+}
+
+/** Solo cookie de admin: no mezcla sesión cliente al abrir `/admin/login`. */
+export async function loadAdminSession(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): Promise<void> {
+  await loadSessionFromCookie(req, getAdminJwtCookieName());
+  next();
+}
+
+/**
+ * Cookie de cliente; fallback a cookie admin legacy solo para cuentas cliente
+ * (migración suave sin afectar login admin independiente).
+ */
+export async function loadClientSession(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): Promise<void> {
+  await loadSessionFromCookie(req, getClientJwtCookieName());
+
+  if (!req.adminUser) {
+    const legacyToken = req.cookies?.[getAdminJwtCookieName()] as string | undefined;
+    if (legacyToken) {
+      const decoded = verifyAdminToken(legacyToken);
+      if (decoded && canAccessClientPanel(decoded.role)) {
+        const admin = await resolveAdminSession(decoded.id);
+        if (admin) {
+          req.adminUser = admin;
+          await attachProfile(req);
+        }
+      }
+    }
   }
 
   next();

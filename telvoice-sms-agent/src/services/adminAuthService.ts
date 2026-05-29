@@ -13,11 +13,18 @@ import {
 } from "./adminUserService.js";
 
 const BCRYPT_ROUNDS = 12;
-const JWT_COOKIE = "tv_admin_session";
+const JWT_COOKIE_ADMIN = "tv_admin_session";
+const JWT_COOKIE_CLIENT = "tv_client_session";
 const JWT_EXPIRES_IN = "8h";
 
+/** Sesión panel interno `/admin`. */
 export function getAdminJwtCookieName(): string {
-  return JWT_COOKIE;
+  return JWT_COOKIE_ADMIN;
+}
+
+/** Sesión panel cliente `/app` (independiente de admin). */
+export function getClientJwtCookieName(): string {
+  return JWT_COOKIE_CLIENT;
 }
 
 export async function hashPassword(plain: string): Promise<string> {

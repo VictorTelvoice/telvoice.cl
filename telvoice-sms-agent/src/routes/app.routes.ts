@@ -48,12 +48,14 @@ import {
   getAppMercadoPagoReturn,
   postAppBuySmsMercadoPago,
 } from "../controllers/app-payments.controller.js";
-import { loadAdminSession } from "../middleware/admin-auth.js";
+import { postClientLogout } from "../controllers/admin.controller.js";
+import { loadClientSession } from "../middleware/admin-auth.js";
 import { requireClientPanelPage } from "../middleware/client-panel-auth.js";
 
 export const appRouter = Router();
 
-appRouter.use(loadAdminSession);
+appRouter.use(loadClientSession);
+appRouter.post("/logout", postClientLogout);
 
 appRouter.get("/", requireClientPanelPage, getAppRoot);
 appRouter.get("/dashboard", requireClientPanelPage, getAppDashboard);
