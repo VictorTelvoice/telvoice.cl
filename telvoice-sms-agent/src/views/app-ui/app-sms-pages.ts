@@ -275,28 +275,31 @@ export function renderAppSendSmsPage(
         ${modes}
         <section class="tv-panel">
           <div class="tv-panel__body">
-            <div class="form-group">
-              <label for="campaign_name">Nombre de campaña (opcional)</label>
-              <input id="campaign_name" class="tv-input-full" name="campaign_name" placeholder="Ej. Bienvenida clientes" ${disabledAttr} />
-            </div>
             <div class="tv-send-meta-row">
+              <div class="form-group">
+                <label for="campaign_name">Nombre de campaña (opcional)</label>
+                <input id="campaign_name" class="tv-input-full" name="campaign_name" placeholder="Ej. Bienvenida clientes" ${disabledAttr} />
+              </div>
               <div class="form-group">
                 <label for="sender_id">Remitente / Sender ID</label>
                 <input id="sender_id" class="tv-input-full" name="sender_id" value="${escapeHtml(suggestedSenderId)}" placeholder="${escapeHtml(suggestedSenderId)}" required maxlength="11" pattern="[A-Za-z0-9]+" title="Solo letras y números, máximo 11 caracteres" ${disabledAttr} />
                 <p class="field-hint">Sugerencia según tu empresa registrada: <strong>${escapeHtml(ctx.company.name)}</strong></p>
+              </div>
+            </div>
+            <div class="tv-send-meta-row tv-send-recipient-row">
+              <div class="form-group tv-send-recipient-row__to">
+                <div data-tv-single-fields${activeMode === "single" || activeMode === "template" ? "" : " hidden"}>
+                  <label for="tv-send-to">Número destinatario</label>
+                  <input class="tv-input-full" name="to" id="tv-send-to" placeholder="56912345678" inputmode="numeric" autocomplete="tel" ${activeMode === "single" || activeMode === "template" ? "required" : ""} ${disabledAttr} />
+                  <p class="field-hint">Formato Chile: 569XXXXXXXX (sin signo +)</p>
+                </div>
               </div>
               <div class="form-group">
                 <label for="tv-send-contacts">Contactos</label>
                 <select id="tv-send-contacts" name="contact_list" class="tv-input-full tv-send-contacts-pick"${contactLists.length ? "" : " disabled"}>
                   ${renderAgendaPickOptions(contactLists)}
                 </select>
-              </div>
-            </div>
-            <div data-tv-single-fields${activeMode === "single" || activeMode === "template" ? "" : " hidden"}>
-              <div class="form-group">
-                <label for="tv-send-to">Número destinatario</label>
-                <input class="tv-input-full" name="to" id="tv-send-to" placeholder="56912345678" inputmode="numeric" autocomplete="tel" ${activeMode === "single" || activeMode === "template" ? "required" : ""} ${disabledAttr} />
-                <p class="field-hint">Formato Chile: 569XXXXXXXX (sin signo +)${contactLists.length ? " · Elige una agenda arriba a la derecha" : ""}</p>
+                <p class="field-hint">${contactLists.length ? "Elige una agenda para cargar destinatarios" : "Crea agendas en Contactos para usarlas aquí"}</p>
               </div>
             </div>
             <div data-tv-mass-fields${activeMode === "mass" || activeMode === "scheduled" ? "" : " hidden"}>

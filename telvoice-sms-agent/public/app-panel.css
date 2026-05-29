@@ -2230,7 +2230,7 @@
     }
     .tv-send-meta-row {
       display: grid;
-      grid-template-columns: 1fr minmax(9rem, 14rem);
+      grid-template-columns: 1fr 1fr;
       gap: 0.75rem 1rem;
       align-items: start;
     }
@@ -3118,10 +3118,22 @@
     .tv-contacts-agenda__main:hover { text-decoration: none; }
     .tv-contacts-agenda__actions {
       display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.15rem;
       flex-shrink: 0;
     }
+    .tv-contacts-agenda__actions form { margin: 0; }
+    .tv-contacts-agenda__icon-btn {
+      padding: 0.35rem;
+      min-width: 2rem;
+      line-height: 1;
+    }
+    .tv-contacts-agenda__icon-btn .material-symbols-outlined {
+      font-size: 1.1rem;
+    }
+    .tv-contacts-agenda__icon-btn--danger { color: var(--tv-danger); }
+    .tv-contacts-agenda__icon-btn--danger:hover { color: var(--tv-danger); background: rgba(220, 38, 38, 0.06); }
     .tv-contacts-agenda__link {
       display: block;
       color: inherit;

@@ -498,10 +498,14 @@ function agendaPanel(lists: ContactListWithCount[], selectedAgenda?: string): st
         </a>
         <div class="tv-contacts-agenda__actions">
           <form method="post" action="/app/contacts/lists/${escapeHtml(a.id)}/duplicate">
-            <button type="submit" class="btn btn-ghost btn-sm">Duplicar</button>
+            <button type="submit" class="btn btn-ghost btn-sm tv-contacts-agenda__icon-btn" aria-label="Duplicar agenda" title="Duplicar">
+              <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
+            </button>
           </form>
           <form method="post" action="/app/contacts/lists/${escapeHtml(a.id)}/delete" onsubmit="return confirm('¿Eliminar esta agenda? Los contactos no se borran.');">
-            <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--tv-danger)">Eliminar</button>
+            <button type="submit" class="btn btn-ghost btn-sm tv-contacts-agenda__icon-btn tv-contacts-agenda__icon-btn--danger" aria-label="Eliminar agenda" title="Eliminar">
+              <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+            </button>
           </form>
         </div>
       </div>`;
