@@ -75,3 +75,30 @@ export type ClientApiKeysModuleState = {
 export type ClientApiKeyServiceResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: string; missingTable?: boolean; code?: string };
+
+export type AuthenticatedApiKeyContext = {
+  apiKeyId: string;
+  companyId: string;
+  environment: ClientApiKeyEnvironment;
+  scopes: ClientApiKeyScope[];
+  keyPrefix: string;
+};
+
+export type ApiKeyAuthErrorCode =
+  | "MISSING_API_KEY"
+  | "INVALID_API_KEY_FORMAT"
+  | "INVALID_API_KEY"
+  | "API_KEY_PAUSED"
+  | "API_KEY_REVOKED"
+  | "API_KEY_EXPIRED"
+  | "INSUFFICIENT_SCOPE"
+  | "INTERNAL_ERROR";
+
+export type ApiKeyAuthResult =
+  | { ok: true; context: AuthenticatedApiKeyContext }
+  | {
+      ok: false;
+      statusCode: number;
+      code: ApiKeyAuthErrorCode;
+      message: string;
+    };

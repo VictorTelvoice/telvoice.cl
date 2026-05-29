@@ -96,6 +96,44 @@ export async function getCompanyBalance(
   return walletToBalanceView(wallet);
 }
 
+/** Lectura sin crear wallet — devuelve saldo 0 si no existe fila. */
+export async function readCompanyBalance(
+  companyId: string,
+  country: string = DEFAULT_COUNTRY,
+): Promise<CompanyBalanceView> {
+  const { data, error } = await getSupabase()
+    .from("company_sms_wallets")
+    .select("*")
+    .eq("company_id", companyId)
+    .eq("country", country)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      throw new AppError(
+        "Tablas de wallet no disponibles. Aplica la migración 011.",
+        503,
+      );
+    }
+    wrapSupabaseError(error, "readCompanyBalance");
+  }
+
+  if (!data) {
+    return {
+      companyId,
+      country,
+      availableSms: 0,
+      reservedSms: 0,
+      consumedSms: 0,
+      totalPurchasedSms: 0,
+      status: "active",
+      walletId: null,
+    };
+  }
+
+  return walletToBalanceView(data as CompanySmsWalletRow);
+}
+
 async function persistWallet(
   walletId: string,
   patch: Partial<CompanySmsWalletRow>,

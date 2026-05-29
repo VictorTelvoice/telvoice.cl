@@ -4,9 +4,12 @@ import {
   extractKeyPrefix,
   generateApiKey,
   hashApiKey,
+  isApiKeyPepperConfigured,
   maskApiKey,
+  safeCompareApiKeyHash,
 } from "./apiKeyCryptoService.js";
 import type {
+  ApiKeyAuthResult,
   ClientApiKey,
   ClientApiKeyEnvironment,
   ClientApiKeyRow,
@@ -374,4 +377,214 @@ export async function updateClientApiKeyName(
   }
   const validated = validateApiKeyName(name);
   return updateKeyStatus(id, companyId, { name: validated });
+}
+
+function parseBearerToken(header: string | undefined): string | null {
+  if (!header || typeof header !== "string") {
+    return null;
+  }
+  const match = /^Bearer\s+(.+)$/i.exec(header.trim());
+  if (!match?.[1]) {
+    return null;
+  }
+  const token = match[1].trim();
+  return token.length > 0 ? token : null;
+}
+
+function isValidApiKeyFormat(token: string): boolean {
+  if (!token.startsWith("tlv_test_") && !token.startsWith("tlv_live_")) {
+    return false;
+  }
+  const suffix = token.startsWith("tlv_test_")
+    ? token.slice("tlv_test_".length)
+    : token.slice("tlv_live_".length);
+  return suffix.length >= 8 && /^[a-z0-9]+$/.test(suffix);
+}
+
+function expectedEnvironmentFromToken(
+  token: string,
+): ClientApiKeyEnvironment | null {
+  if (token.startsWith("tlv_test_")) {
+    return "sandbox";
+  }
+  if (token.startsWith("tlv_live_")) {
+    return "production";
+  }
+  return null;
+}
+
+function isKeyExpired(row: ClientApiKeyRow): boolean {
+  if (row.status === "expired") {
+    return true;
+  }
+  if (!row.expires_at) {
+    return false;
+  }
+  const expires = new Date(row.expires_at);
+  return !Number.isNaN(expires.getTime()) && expires.getTime() <= Date.now();
+}
+
+async function fetchKeyRowByPrefix(prefix: string): Promise<ClientApiKeyRow | null> {
+  const { data, error } = await getSupabase()
+    .from("client_api_keys")
+    .select("*")
+    .eq("key_prefix", prefix)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return null;
+    }
+    wrapSupabaseError(error, "fetchKeyRowByPrefix");
+  }
+  return (data as ClientApiKeyRow | null) ?? null;
+}
+
+export async function touchClientApiKeyLastUsed(id: string): Promise<void> {
+  try {
+    await getSupabase()
+      .from("client_api_keys")
+      .update({ last_used_at: new Date().toISOString() })
+      .eq("id", id);
+  } catch (error) {
+    console.warn("[client-api-keys] touchClientApiKeyLastUsed", error);
+  }
+}
+
+export async function authenticateClientApiKey(
+  authorizationHeader: string | undefined,
+  requiredScope: ClientApiKeyScope,
+): Promise<ApiKeyAuthResult> {
+  const token = parseBearerToken(authorizationHeader);
+  if (!token) {
+    return {
+      ok: false,
+      statusCode: 401,
+      code: "MISSING_API_KEY",
+      message: "Authorization Bearer token is required.",
+    };
+  }
+
+  if (!isValidApiKeyFormat(token)) {
+    return {
+      ok: false,
+      statusCode: 401,
+      code: "INVALID_API_KEY_FORMAT",
+      message: "API Key format is invalid.",
+    };
+  }
+
+  if (!isApiKeyPepperConfigured()) {
+    return {
+      ok: false,
+      statusCode: 500,
+      code: "INTERNAL_ERROR",
+      message: "API authentication is not configured.",
+    };
+  }
+
+  const keyPrefix = extractKeyPrefix(token);
+  const row = await fetchKeyRowByPrefix(keyPrefix);
+  if (!row) {
+    return {
+      ok: false,
+      statusCode: 401,
+      code: "INVALID_API_KEY",
+      message: "API Key is invalid.",
+    };
+  }
+
+  let computedHash: string;
+  try {
+    computedHash = hashApiKey(token);
+  } catch {
+    return {
+      ok: false,
+      statusCode: 500,
+      code: "INTERNAL_ERROR",
+      message: "API authentication failed.",
+    };
+  }
+
+  if (!safeCompareApiKeyHash(computedHash, row.key_hash)) {
+    return {
+      ok: false,
+      statusCode: 401,
+      code: "INVALID_API_KEY",
+      message: "API Key is invalid.",
+    };
+  }
+
+  if (row.status === "paused") {
+    return {
+      ok: false,
+      statusCode: 403,
+      code: "API_KEY_PAUSED",
+      message: "API Key is paused.",
+    };
+  }
+
+  if (row.status === "revoked") {
+    return {
+      ok: false,
+      statusCode: 403,
+      code: "API_KEY_REVOKED",
+      message: "API Key has been revoked.",
+    };
+  }
+
+  if (isKeyExpired(row)) {
+    return {
+      ok: false,
+      statusCode: 403,
+      code: "API_KEY_EXPIRED",
+      message: "API Key has expired.",
+    };
+  }
+
+  if (row.status !== "active") {
+    return {
+      ok: false,
+      statusCode: 401,
+      code: "INVALID_API_KEY",
+      message: "API Key is invalid.",
+    };
+  }
+
+  const tokenEnvironment = expectedEnvironmentFromToken(token);
+  const rowEnvironment = parseEnvironment(row.environment);
+  if (
+    !tokenEnvironment ||
+    tokenEnvironment !== rowEnvironment ||
+    (token.startsWith("tlv_test_") && rowEnvironment !== "sandbox") ||
+    (token.startsWith("tlv_live_") && rowEnvironment !== "production")
+  ) {
+    return {
+      ok: false,
+      statusCode: 401,
+      code: "INVALID_API_KEY",
+      message: "API Key is invalid.",
+    };
+  }
+
+  const scopes = parseScopes(row.scopes);
+  if (!scopes.includes(requiredScope)) {
+    return {
+      ok: false,
+      statusCode: 403,
+      code: "INSUFFICIENT_SCOPE",
+      message: `Required scope '${requiredScope}' is missing.`,
+    };
+  }
+
+  return {
+    ok: true,
+    context: {
+      apiKeyId: row.id,
+      companyId: row.company_id,
+      environment: rowEnvironment,
+      scopes,
+      keyPrefix: row.key_prefix,
+    },
+  };
 }
