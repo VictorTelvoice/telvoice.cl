@@ -35,13 +35,7 @@ export {
   renderAppContactsPage,
 } from "./app-contacts-page.js";
 
-export function renderAppTemplatesPage(ctx: AppPageContext): string {
-  return comingSoon(ctx, "templates", "Plantillas", "Plantillas de mensaje aprobadas.", "description", [
-    "Plantillas con variables",
-    "Vista previa móvil",
-    "Reutilizar en campañas",
-  ]);
-}
+export { renderAppTemplatesPage } from "./app-templates-page.js";
 
 export function renderAppApiPage(ctx: AppPageContext): string {
   return comingSoon(ctx, "api", "API", "Integra Telvoice con tus sistemas.", "api", [
