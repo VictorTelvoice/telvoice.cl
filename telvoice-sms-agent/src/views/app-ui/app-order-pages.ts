@@ -26,15 +26,24 @@ function supportOrderHref(orderId: string): string {
   return `/app/support?order=${encodeURIComponent(orderId)}`;
 }
 
+/** Bolsas ocultas en el catálogo del panel cliente (QA / pruebas internas). */
+const HIDDEN_CLIENT_PACKAGE_NAMES = new Set([
+  "Bolsa Chile 200 SMS",
+  "Bolsa Chile 300 SMS",
+]);
+
 export function renderAppBuySmsPage(
   ctx: AppPageContext,
   packages: SmsPackageRow[],
   mercadoPagoAvailable: boolean,
 ): string {
   const canBuy = canOperateClientPanel(ctx.profile.role);
+  const visiblePackages = packages.filter(
+    (p) => !HIDDEN_CLIENT_PACKAGE_NAMES.has(p.name.trim()),
+  );
 
-  const cards = packages.length
-    ? packages
+  const cards = visiblePackages.length
+    ? visiblePackages
         .map((p) => {
           const mpBtn = canBuy && mercadoPagoAvailable
             ? `<form method="post" action="/app/buy-sms/mercadopago" style="margin-bottom:0.35rem">

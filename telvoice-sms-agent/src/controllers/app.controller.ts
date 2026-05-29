@@ -499,17 +499,7 @@ export async function getAppWallet(
         endDate: filters.endDate,
       })
     ).filter((t) => !isQaTransaction(t));
-    const paymentCard = await getCompanyPaymentCard(ctx.company.id);
-    const packages = await getClientCatalogPackages(ctx.company.country);
-    const defaultPackage =
-      packages.find((p) => p.id === paymentCard.defaultPackageId) ??
-      packages[0] ??
-      null;
-    return renderAppWalletPage(ctx, transactions, filters, {
-      paymentCard,
-      mercadoPagoAvailable: isMercadoPagoConfigured(),
-      defaultPackage,
-    });
+    return renderAppWalletPage(ctx, transactions, filters);
   });
 }
 

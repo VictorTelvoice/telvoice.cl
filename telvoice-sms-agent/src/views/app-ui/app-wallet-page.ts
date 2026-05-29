@@ -1,11 +1,8 @@
-import type { WalletTransactionRow, SmsPackageRow } from "../../types/wallet.js";
-import type { CompanyPaymentCardConfig } from "../../types/company-payment-card.js";
+import type { WalletTransactionRow } from "../../types/wallet.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
-import { renderKpiCard } from "../admin-ui/components.js";
 import { renderBtn, renderFilterField, renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
-import { renderWalletPaymentCardKpi } from "./app-wallet-payment-card-ui.js";
 import {
   renderTxQaBadgeIfNeeded,
   renderWalletTxTypeBadge,
@@ -71,61 +68,6 @@ function renderTypeSelect(selected?: string): string {
   return `<select name="type" class="tv-filter-input">${opts}</select>`;
 }
 
-function renderWalletKpis(
-  ctx: AppPageContext,
-  transactions: WalletTransactionRow[],
-  options: {
-    paymentCard: CompanyPaymentCardConfig;
-    mercadoPagoAvailable: boolean;
-    defaultPackage?: SmsPackageRow | null;
-  },
-): string {
-  const b = ctx.balance;
-  return `<div class="tv-kpi-grid tv-kpi-grid--client tv-kpi-grid--report">
-      ${renderKpiCard({
-        label: "Disponible",
-        value: fmtSms(b.availableSms),
-        hint: "SMS listos para enviar",
-        icon: "account_balance_wallet",
-        variant: "primary",
-      })}
-      ${renderKpiCard({
-        label: "Reservado",
-        value: fmtSms(b.reservedSms),
-        hint: "SMS en campañas o reservas",
-        icon: "lock",
-        variant: "warn",
-      })}
-      ${renderKpiCard({
-        label: "Consumido",
-        value: fmtSms(b.consumedSms),
-        hint: "Total histórico enviado",
-        icon: "send",
-        variant: "default",
-      })}
-      ${renderKpiCard({
-        label: "Total comprado",
-        value: fmtSms(b.totalPurchasedSms),
-        hint: "Acreditaciones acumuladas",
-        icon: "shopping_cart",
-        variant: "success",
-      })}
-      ${renderKpiCard({
-        label: "Movimientos",
-        value: fmtSms(transactions.length),
-        hint: "Con filtros aplicados",
-        icon: "receipt_long",
-        variant: "default",
-      })}
-      ${renderWalletPaymentCardKpi({
-        card: options.paymentCard,
-        walletStatus: b.status,
-        mercadoPagoAvailable: options.mercadoPagoAvailable,
-        defaultPackage: options.defaultPackage,
-      })}
-    </div>`;
-}
-
 function renderWalletTableRows(transactions: WalletTransactionRow[]): string {
   if (!transactions.length) {
     return `<tr><td colspan="6" class="tv-table-empty">No hay movimientos con los filtros aplicados.</td></tr>`;
@@ -148,11 +90,6 @@ export function renderAppWalletPage(
   ctx: AppPageContext,
   transactions: WalletTransactionRow[],
   filters: WalletPageFilters,
-  walletUi: {
-    paymentCard: CompanyPaymentCardConfig;
-    mercadoPagoAvailable: boolean;
-    defaultPackage?: SmsPackageRow | null;
-  },
 ): string {
   const filterQs = walletQueryString(filters);
   const typeLabel =
@@ -191,7 +128,6 @@ export function renderAppWalletPage(
         icon: "shopping_cart",
       }),
     })}
-    ${renderWalletKpis(ctx, transactions, walletUi)}
     ${filtersPanel}
     <div class="tv-dash-block tv-dlr-report__table-block">
       <div class="tv-dash-block__head">

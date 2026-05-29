@@ -159,13 +159,6 @@ function kpis(summary: ContactSummary): string {
         icon: "block",
         variant: summary.blockedOrOptOut > 0 ? "danger" : "default",
       })}
-      ${renderKpiCard({
-        label: "Última actualización",
-        value: summary.lastUpdatedAt ? formatDate(summary.lastUpdatedAt) : "—",
-        hint: "Último cambio en contactos",
-        icon: "update",
-        variant: "default",
-      })}
     </div>`;
 }
 

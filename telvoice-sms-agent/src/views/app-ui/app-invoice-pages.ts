@@ -10,7 +10,6 @@ import type {
 import type { SmsOrderRow } from "../../types/wallet.js";
 import { paymentMethodLabel } from "../../utils/order-display.js";
 import { escapeHtml, formatDate, formatDateShort } from "../../utils/html.js";
-import { renderKpiCard } from "../admin-ui/components.js";
 import { renderBtn, renderFilterField, renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtMoney, wrapAppPage } from "./app-page-wrap.js";
@@ -213,58 +212,6 @@ function renderInfoNotice(): string {
   </section>`;
 }
 
-function renderInvoiceKpis(summary: AppInvoiceListContext["summary"]): string {
-  const lastDoc = summary.lastDocumentAt
-    ? formatDateShort(summary.lastDocumentAt)
-    : "—";
-  const totalFmt = fmtMoney(summary.totalAmount, "CLP");
-
-  return `<div class="tv-kpi-grid tv-kpi-grid--client tv-kpi-grid--report">
-    ${renderKpiCard({
-      label: "Total documentado",
-      value: totalFmt,
-      hint: `${summary.count} documento(s)`,
-      icon: "payments",
-      variant: "primary",
-    })}
-    ${renderKpiCard({
-      label: "Documentos emitidos",
-      value: String(summary.issuedCount),
-      hint: "Emitidos, enviados o pagados",
-      icon: "receipt_long",
-      variant: "success",
-    })}
-    ${renderKpiCard({
-      label: "Comprobantes enviados",
-      value: String(summary.sentCount),
-      hint: "Estado ENVIADO",
-      icon: "mail",
-      variant: "success",
-    })}
-    ${renderKpiCard({
-      label: "Pendientes",
-      value: String(summary.pendingCount),
-      hint: "Borrador o pendiente de emisión",
-      icon: "pending",
-      variant: "warn",
-    })}
-    ${renderKpiCard({
-      label: "Fallidos",
-      value: String(summary.failedCount),
-      hint: "Requieren revisión",
-      icon: "error",
-      variant: "danger",
-    })}
-    ${renderKpiCard({
-      label: "Último documento",
-      value: lastDoc,
-      hint: "Solo fecha (ver detalle para hora)",
-      icon: "event",
-      variant: "default",
-    })}
-  </div>`;
-}
-
 function renderFiltersPanel(filters: AppInvoicePageFilters): string {
   const statusOpts = [
     `<option value="">Todos</option>`,
@@ -443,7 +390,6 @@ export function renderAppInvoicesPage(
       `,
     })}
     ${renderInfoNotice()}
-    ${renderInvoiceKpis(listCtx.summary)}
     ${renderFiltersPanel(listCtx.filters)}
     ${
       listCtx.invoices.length === 0
