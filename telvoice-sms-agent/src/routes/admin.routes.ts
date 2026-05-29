@@ -69,6 +69,9 @@ import {
   postAdminApiUsageKeyActivate,
   postAdminApiUsageKeyPause,
   postAdminApiUsageKeyRevoke,
+  postAdminApiUsageRateLimitCreate,
+  postAdminApiUsageRateLimitDisable,
+  postAdminApiUsageRateLimitUpdate,
 } from "../controllers/admin-api-usage.controller.js";
 import {
   getChatPage,
@@ -346,6 +349,21 @@ adminRouter.post(
   "/api-usage/keys/:id/revoke",
   requireAdminPage,
   postAdminApiUsageKeyRevoke,
+);
+adminRouter.post(
+  "/api-usage/rate-limits",
+  requireAdminPage,
+  postAdminApiUsageRateLimitCreate,
+);
+adminRouter.post(
+  "/api-usage/rate-limits/:id",
+  requireAdminPage,
+  postAdminApiUsageRateLimitUpdate,
+);
+adminRouter.post(
+  "/api-usage/rate-limits/:id/disable",
+  requireAdminPage,
+  postAdminApiUsageRateLimitDisable,
 );
 adminRouter.get("/invoices", requireAdminPage, getInvoicesPage);
 adminRouter.get("/invoices/recovery", requireAdminPage, getAdminBillingRecoveryPage);

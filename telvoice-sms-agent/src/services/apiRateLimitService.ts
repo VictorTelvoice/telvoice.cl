@@ -201,7 +201,12 @@ async function checkScopeLimit(input: {
 export async function checkApiRateLimit(
   context: ApiRateLimitContext,
 ): Promise<ApiRateLimitCheckResult> {
-  const config = getRateLimitConfig(context.environment);
+  const { getEffectiveRateLimitConfig } = await import("./apiRateLimitOverrideService.js");
+  const config = await getEffectiveRateLimitConfig(
+    context.companyId,
+    context.apiKeyId,
+    context.environment,
+  );
 
   const minuteCheck = await checkScopeLimit({
     scope: "api_key_minute",

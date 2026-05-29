@@ -18,7 +18,15 @@ import {
   pauseClientApiKey,
   revokeClientApiKey,
 } from "../services/clientApiKeyService.js";
+import {
+  createAdminRateLimitOverride,
+  disableAdminRateLimitOverride,
+  listAdminRateLimitOverrides,
+  listCompanyApiKeysForOverride,
+  updateAdminRateLimitOverride,
+} from "../services/apiRateLimitOverrideService.js";
 import { listCompanies } from "../services/companyService.js";
+import type { ClientApiKeyEnvironment } from "../types/client-api-keys.js";
 import { AppError } from "../utils/errors.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
@@ -98,6 +106,8 @@ export async function getAdminApiUsagePage(
     let requests: Awaited<ReturnType<typeof listAdminApiRequests>> = [];
     let keys: Awaited<ReturnType<typeof listAdminApiKeys>> = [];
     let messages: Awaited<ReturnType<typeof listAdminSmsApiMessages>> = [];
+    let overrides: Awaited<ReturnType<typeof listAdminRateLimitOverrides>> = [];
+    let companyApiKeys: Awaited<ReturnType<typeof listCompanyApiKeysForOverride>> = [];
     let loadError: string | undefined;
 
     if (module.requestsAvailable || module.keysAvailable || module.messagesAvailable) {
@@ -111,6 +121,25 @@ export async function getAdminApiUsagePage(
       loadError = module.migrationPending
         ? "Migraciones API pendientes."
         : "Tablas API no disponibles.";
+    }
+
+    if (module.overridesAvailable) {
+      overrides = await listAdminRateLimitOverrides(
+        {
+          companyId: filters.companyId,
+          environment: filters.environment,
+          status: "all",
+        },
+        names,
+      );
+    }
+
+    const keysCompanyId =
+      typeof req.query.override_company === "string"
+        ? req.query.override_company.trim()
+        : filters.companyId;
+    if (keysCompanyId && module.keysAvailable) {
+      companyApiKeys = await listCompanyApiKeysForOverride(keysCompanyId);
     }
 
     let selectedRequest = null;
@@ -141,6 +170,9 @@ export async function getAdminApiUsagePage(
         requests,
         keys,
         messages,
+        overrides,
+        companyApiKeys,
+        overrideCompanyId: keysCompanyId || undefined,
         selectedRequest,
         selectedMessage,
         loadError,
@@ -234,6 +266,148 @@ export async function postAdminApiUsageKeyRevoke(
 ): Promise<void> {
   try {
     await adminKeyAction(req, res, "revoke");
+  } catch (error) {
+    if (error instanceof AppError) {
+      redirectApiUsage(res, { error: error.message }, preserveQuery(req));
+      return;
+    }
+    next(error);
+  }
+}
+
+function adminActor(req: Request) {
+  const admin = req.adminUser!;
+  return {
+    adminId: admin.id,
+    adminEmail: admin.email,
+    adminName: admin.name,
+  };
+}
+
+function parsePositiveInt(raw: unknown): number | null {
+  const s = String(raw ?? "").trim();
+  if (!s) return null;
+  const n = Number.parseInt(s, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function parseEnvironment(raw: unknown): ClientApiKeyEnvironment | null {
+  const v = String(raw ?? "").trim();
+  return v === "sandbox" || v === "production" ? v : null;
+}
+
+export async function postAdminApiUsageRateLimitCreate(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const body = req.body as Record<string, string | undefined>;
+    const companyId = String(body.company_id ?? "").trim();
+    const apiKeyRaw = String(body.api_key_id ?? "").trim();
+    const environment = parseEnvironment(body.environment);
+    const limitPerMinute = parsePositiveInt(body.limit_per_minute);
+    const limitPerDay = parsePositiveInt(body.limit_per_day);
+    const reason = String(body.reason ?? "").trim() || null;
+
+    if (!companyId) {
+      redirectApiUsage(res, { error: "Empresa requerida." }, preserveQuery(req));
+      return;
+    }
+    if (!environment) {
+      redirectApiUsage(res, { error: "Ambiente inválido." }, preserveQuery(req));
+      return;
+    }
+
+    const result = await createAdminRateLimitOverride({
+      companyId,
+      apiKeyId: apiKeyRaw || null,
+      environment,
+      limitPerMinute,
+      limitPerDay,
+      reason,
+      ...adminActor(req),
+    });
+
+    if (!result.ok) {
+      redirectApiUsage(res, { error: result.error }, preserveQuery(req));
+      return;
+    }
+    redirectApiUsage(res, { ok: "Override de rate limit creado." }, preserveQuery(req));
+  } catch (error) {
+    if (error instanceof AppError) {
+      redirectApiUsage(res, { error: error.message }, preserveQuery(req));
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function postAdminApiUsageRateLimitUpdate(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const rawId = req.params.id;
+    const id = validateUuidParam(
+      typeof rawId === "string" ? rawId : Array.isArray(rawId) ? rawId[0] ?? "" : "",
+      "id",
+    );
+    const body = req.body as Record<string, string | undefined>;
+    const limitPerMinute =
+      body.limit_per_minute !== undefined
+        ? parsePositiveInt(body.limit_per_minute)
+        : undefined;
+    const limitPerDay =
+      body.limit_per_day !== undefined ? parsePositiveInt(body.limit_per_day) : undefined;
+    const reason =
+      body.reason !== undefined ? String(body.reason ?? "").trim() || null : undefined;
+    const statusRaw = String(body.status ?? "").trim();
+    const status =
+      statusRaw === "active" || statusRaw === "paused" || statusRaw === "disabled"
+        ? statusRaw
+        : undefined;
+
+    const result = await updateAdminRateLimitOverride(id, {
+      limitPerMinute,
+      limitPerDay,
+      reason,
+      status,
+      ...adminActor(req),
+    });
+
+    if (!result.ok) {
+      redirectApiUsage(res, { error: result.error }, preserveQuery(req));
+      return;
+    }
+    redirectApiUsage(res, { ok: "Override actualizado." }, preserveQuery(req));
+  } catch (error) {
+    if (error instanceof AppError) {
+      redirectApiUsage(res, { error: error.message }, preserveQuery(req));
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function postAdminApiUsageRateLimitDisable(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const rawId = req.params.id;
+    const id = validateUuidParam(
+      typeof rawId === "string" ? rawId : Array.isArray(rawId) ? rawId[0] ?? "" : "",
+      "id",
+    );
+    const result = await disableAdminRateLimitOverride(id, adminActor(req));
+    if (!result.ok) {
+      redirectApiUsage(res, { error: result.error }, preserveQuery(req));
+      return;
+    }
+    redirectApiUsage(res, { ok: "Override desactivado." }, preserveQuery(req));
   } catch (error) {
     if (error instanceof AppError) {
       redirectApiUsage(res, { error: error.message }, preserveQuery(req));

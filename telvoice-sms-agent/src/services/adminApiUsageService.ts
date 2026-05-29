@@ -4,6 +4,7 @@ import {
   rowToClientApiKey,
 } from "./clientApiKeyService.js";
 import { getClientApiRequestsModuleState } from "./clientApiRequestLogService.js";
+import { getRateLimitOverridesModuleState } from "./apiRateLimitOverrideService.js";
 import { getSmsApiMessagesModuleState, rowToSmsApiMessage } from "./smsApiMessageService.js";
 import type {
   AdminApiKeyListItem,
@@ -170,17 +171,22 @@ function rowToRequestListItem(
 }
 
 export async function getAdminApiUsageModuleState(): Promise<AdminApiUsageModuleState> {
-  const [requests, keys, messages] = await Promise.all([
+  const [requests, keys, messages, overrides] = await Promise.all([
     getClientApiRequestsModuleState(),
     getClientApiKeysModuleState(),
     getSmsApiMessagesModuleState(),
+    getRateLimitOverridesModuleState(),
   ]);
   return {
     requestsAvailable: requests.available,
     keysAvailable: keys.available,
     messagesAvailable: messages.available,
+    overridesAvailable: overrides.available,
     migrationPending:
-      requests.migrationPending || keys.migrationPending || messages.migrationPending,
+      requests.migrationPending ||
+      keys.migrationPending ||
+      messages.migrationPending ||
+      overrides.migrationPending,
   };
 }
 

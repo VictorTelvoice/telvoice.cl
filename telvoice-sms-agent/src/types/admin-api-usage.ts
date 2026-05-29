@@ -100,5 +100,6 @@ export type AdminApiUsageModuleState = {
   requestsAvailable: boolean;
   keysAvailable: boolean;
   messagesAvailable: boolean;
+  overridesAvailable: boolean;
   migrationPending: boolean;
 };

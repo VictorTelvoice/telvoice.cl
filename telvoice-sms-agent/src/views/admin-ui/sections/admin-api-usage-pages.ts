@@ -9,6 +9,8 @@ import type {
   AdminSmsApiMessageDetail,
   AdminSmsApiMessageListItem,
 } from "../../../types/admin-api-usage.js";
+import type { AdminRateLimitOverrideListItem } from "../../../types/api-rate-limit-overrides.js";
+import type { ClientApiKeyEnvironment } from "../../../types/client-api-keys.js";
 import type { CompanyRow } from "../../../types/tenant.js";
 import { escapeHtml, formatDate } from "../../../utils/html.js";
 import { renderKpiCard } from "../components.js";
@@ -35,6 +37,14 @@ export type AdminApiUsagePageContext = {
   requests: AdminApiRequestListItem[];
   keys: AdminApiKeyListItem[];
   messages: AdminSmsApiMessageListItem[];
+  overrides: AdminRateLimitOverrideListItem[];
+  companyApiKeys: Array<{
+    id: string;
+    name: string;
+    keyMasked: string;
+    environment: ClientApiKeyEnvironment;
+  }>;
+  overrideCompanyId?: string;
   selectedRequest: AdminApiRequestDetail | null;
   selectedMessage: AdminSmsApiMessageDetail | null;
   loadError?: string;
@@ -326,6 +336,140 @@ function renderKeysTable(keys: AdminApiKeyListItem[], filters: AdminApiUsageFilt
   );
 }
 
+function overrideStatusBadge(status: string): string {
+  const map: Record<string, string> = {
+    active: "badge-ok",
+    paused: "badge-warn",
+    disabled: "badge-muted",
+  };
+  return `<span class="badge ${map[status] ?? "badge-muted"}">${escapeHtml(status)}</span>`;
+}
+
+function renderRateLimitOverridesSection(
+  ctx: AdminApiUsagePageContext,
+  filters: AdminApiUsageFilters,
+): string {
+  if (!ctx.module.overridesAvailable) {
+    return renderPanel(
+      "Overrides de rate limit",
+      `<p class="field-hint" style="margin:0">Migración 037 pendiente. Ejecute <code>npm run migrate:037</code>.</p>`,
+    );
+  }
+
+  const qs = filtersToQuery(filters);
+  const companyOpts = [
+    `<option value="">Seleccionar empresa…</option>`,
+    ...ctx.companies.map(
+      (c) =>
+        `<option value="${escapeHtml(c.id)}"${ctx.overrideCompanyId === c.id ? " selected" : ""}>${escapeHtml(c.name)}</option>`,
+    ),
+  ].join("");
+
+  const keyOpts = [
+    `<option value="">Toda la empresa (sin key específica)</option>`,
+    ...ctx.companyApiKeys.map(
+      (k) =>
+        `<option value="${escapeHtml(k.id)}">${escapeHtml(k.name)} (${escapeHtml(k.keyMasked)})</option>`,
+    ),
+  ].join("");
+
+  const rows = ctx.overrides.length
+    ? ctx.overrides
+        .map((o) => {
+          const company = o.companyName
+            ? escapeHtml(o.companyName)
+            : `<code>${escapeHtml(shortId(o.companyId))}</code>`;
+          const keyLabel = o.apiKeyMasked
+            ? `<code>${escapeHtml(o.apiKeyMasked)}</code>${o.apiKeyName ? ` <span class="field-hint">${escapeHtml(o.apiKeyName)}</span>` : ""}`
+            : `<span class="field-hint">Empresa</span>`;
+          const disableForm =
+            o.status !== "disabled"
+              ? `<form method="post" action="/admin/api-usage/rate-limits/${escapeHtml(o.id)}/disable${qs}" style="display:inline" onsubmit="return confirm('¿Desactivar este override?');">
+                   <button type="submit" class="btn btn-ghost btn-sm">Desactivar</button>
+                 </form>`
+              : "";
+          return `<tr>
+            <td>${company}</td>
+            <td>${keyLabel}</td>
+            <td>${escapeHtml(o.environment)}</td>
+            <td>${o.limitPerMinute ?? "—"}</td>
+            <td>${o.limitPerDay ?? "—"}</td>
+            <td>${overrideStatusBadge(o.status)}</td>
+            <td>${escapeHtml(o.reason ?? "—")}</td>
+            <td>${escapeHtml(formatDate(o.updatedAt))}</td>
+            <td style="white-space:nowrap">
+              <details style="display:inline">
+                <summary class="btn btn-ghost btn-sm" style="cursor:pointer;list-style:none">Editar</summary>
+                <form method="post" action="/admin/api-usage/rate-limits/${escapeHtml(o.id)}${qs}" style="margin-top:0.5rem;padding:0.75rem;background:var(--tv-bg);border-radius:6px;min-width:220px">
+                  <label class="field-hint">Límite/min</label>
+                  <input type="number" name="limit_per_minute" class="tv-filter-input" min="1" value="${o.limitPerMinute ?? ""}" />
+                  <label class="field-hint" style="margin-top:0.35rem;display:block">Límite/día</label>
+                  <input type="number" name="limit_per_day" class="tv-filter-input" min="1" value="${o.limitPerDay ?? ""}" />
+                  <label class="field-hint" style="margin-top:0.35rem;display:block">Motivo</label>
+                  <input type="text" name="reason" class="tv-filter-input" value="${escapeHtml(o.reason ?? "")}" />
+                  <button type="submit" class="btn btn-primary btn-sm" style="margin-top:0.5rem">Guardar</button>
+                </form>
+              </details>
+              ${disableForm}
+            </td>
+          </tr>`;
+        })
+        .join("")
+    : `<tr><td colspan="9" class="field-hint" style="text-align:center;padding:1.5rem">Sin overrides activos. Use el formulario para crear uno.</td></tr>`;
+
+  return renderPanel(
+    "Overrides de rate limit",
+    `<p class="field-hint" style="margin:0 0 1rem">Define límites personalizados para empresas o API Keys específicas.</p>
+    <details style="margin-bottom:1rem">
+      <summary class="btn btn-primary btn-sm" style="cursor:pointer;list-style:none;display:inline-block">Crear override</summary>
+      <form method="post" action="/admin/api-usage/rate-limits${qs}" style="margin-top:0.75rem;padding:1rem;background:var(--tv-bg);border-radius:8px;max-width:520px">
+        <div style="display:grid;gap:0.65rem">
+          <div>
+            <label class="field-hint">Empresa *</label>
+            <select name="company_id" id="tv-rl-company" class="tv-filter-input" required onchange="location.href='/admin/api-usage${filtersToQuery(filters)}&override_company='+encodeURIComponent(this.value)">${companyOpts}</select>
+          </div>
+          <div>
+            <label class="field-hint">API Key (opcional)</label>
+            <select name="api_key_id" class="tv-filter-input">${keyOpts}</select>
+          </div>
+          <div>
+            <label class="field-hint">Ambiente *</label>
+            <select name="environment" id="tv-rl-env" class="tv-filter-input" required onchange="document.getElementById('tv-rl-prod-warn').style.display=this.value==='production'?'block':'none'">
+              <option value="sandbox">Sandbox</option>
+              <option value="production">Producción</option>
+            </select>
+            <p id="tv-rl-prod-warn" class="field-hint" style="display:none;margin:0.35rem 0 0;color:var(--tv-warn)">Los límites production no habilitan envío real; solo preparan la política futura.</p>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.65rem">
+            <div>
+              <label class="field-hint">Límite por minuto</label>
+              <input type="number" name="limit_per_minute" class="tv-filter-input" min="1" placeholder="30" />
+            </div>
+            <div>
+              <label class="field-hint">Límite por día</label>
+              <input type="number" name="limit_per_day" class="tv-filter-input" min="1" placeholder="500" />
+            </div>
+          </div>
+          <div>
+            <label class="field-hint">Motivo</label>
+            <input type="text" name="reason" class="tv-filter-input" placeholder="Cliente alto volumen temporal…" />
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Crear override</button>
+        </div>
+      </form>
+    </details>
+    <div class="table-wrap" style="overflow-x:auto">
+      <table class="tv-table">
+        <thead><tr>
+          <th>Empresa</th><th>API Key</th><th>Ambiente</th><th>Límite/min</th><th>Límite/día</th>
+          <th>Estado</th><th>Motivo</th><th>Actualizado</th><th>Acciones</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`,
+  );
+}
+
 function renderMessagesTable(
   messages: AdminSmsApiMessageListItem[],
   filters: AdminApiUsageFilters,
@@ -468,6 +612,7 @@ export function renderAdminApiUsagePage(
     })}
     ${renderKpis(ctx.stats)}
     ${renderFilters(ctx.filters, ctx.companies)}
+    ${renderRateLimitOverridesSection(ctx, ctx.filters)}
     ${renderRequestsTable(ctx.requests, ctx.filters)}
     ${ctx.selectedRequest ? renderRequestDetail(ctx.selectedRequest, ctx.filters) : ""}
     ${renderKeysTable(ctx.keys, ctx.filters)}
