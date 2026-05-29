@@ -39,6 +39,7 @@ import {
   renderAppInboxPage,
   renderAppSendSmsPage,
   type SendPageContactListPick,
+  type SendPageTemplatePick,
 } from "../views/app-ui/app-sms-pages.js";
 import {
   renderAppCampaignDetailPage,
@@ -75,6 +76,10 @@ import {
   importValidatedContacts,
 } from "../services/contactImportService.js";
 import { createContactTag, bulkAssignTag } from "../services/contactTagService.js";
+import {
+  getSmsTemplatesModuleState,
+  listSmsTemplates,
+} from "../services/clientSmsTemplateService.js";
 import {
   addSupportTicketReply,
   createSupportTicket,
@@ -692,6 +697,29 @@ async function loadSendPageContactData(
   return { contactLists };
 }
 
+async function loadSendPageTemplateData(
+  companyId: string,
+): Promise<{ smsTemplates: SendPageTemplatePick[] }> {
+  const module = await getSmsTemplatesModuleState();
+  if (!module.available) {
+    return { smsTemplates: [] };
+  }
+
+  const listed = await listSmsTemplates(companyId);
+  if (!listed.ok) {
+    return { smsTemplates: [] };
+  }
+
+  return {
+    smsTemplates: listed.data.map((t) => ({
+      id: t.id,
+      name: t.name,
+      message: t.message,
+      status: t.status,
+    })),
+  };
+}
+
 export async function getAppSendSms(
   req: Request,
   res: Response,
@@ -703,12 +731,13 @@ export async function getAppSendSms(
     const sendEnabled = canCompanyUseLiveTestUi(ctx.company.id);
     const { flash: okFlash, error: errFlash } = flash(req);
 
-    const [liveTestStatus, outcome, sendContacts] = await Promise.all([
+    const [liveTestStatus, outcome, sendContacts, sendTemplates] = await Promise.all([
       sendEnabled
         ? getLiveTestSendPageStatus(ctx.company.id)
         : Promise.resolve(null),
       loadSendOutcomeFromQuery(req, ctx.company.id),
       loadSendPageContactData(ctx.company.id),
+      loadSendPageTemplateData(ctx.company.id),
     ]);
 
     const controlPanel =
@@ -729,6 +758,7 @@ export async function getAppSendSms(
       controlPanel,
       idempotencyKey,
       contactLists: sendContacts.contactLists,
+      smsTemplates: sendTemplates.smsTemplates,
     });
   });
 }

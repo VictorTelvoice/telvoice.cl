@@ -9,8 +9,8 @@ import { isDailySendLimitEnforced } from "../../services/smsLiveTestLimiterServi
 import type { SendControlPanelView } from "../../services/smsSendControlPanelService.js";
 import { escapeHtml } from "../../utils/html.js";
 import { renderKpiCard } from "../admin-ui/components.js";
+import type { ClientSmsTemplateStatus } from "../../types/sms-templates.js";
 import { suggestSenderIdFromCompanyName } from "../../utils/suggestSenderId.js";
-import { MOCK_TEMPLATES } from "../admin-ui/mock-data-stage3.js";
 import {
   renderBtn,
   renderHeroPhonePreview,
@@ -43,6 +43,14 @@ export type SendSmsPageOptions = {
   /** Clave de un solo uso; evita envíos duplicados en servidor. */
   idempotencyKey?: string;
   contactLists?: SendPageContactListPick[];
+  smsTemplates?: SendPageTemplatePick[];
+};
+
+export type SendPageTemplatePick = {
+  id: string;
+  name: string;
+  message: string;
+  status: ClientSmsTemplateStatus;
 };
 
 export type SendPageContactListPick = {
@@ -65,12 +73,21 @@ function renderAgendaPickOptions(lists: SendPageContactListPick[]): string {
   return `<option value="">Contactos</option>${items}`;
 }
 
-function renderTemplateOptions(disabled: boolean): string {
+function renderTemplateOptions(
+  templates: SendPageTemplatePick[],
+  disabled: boolean,
+): string {
   const dis = disabled ? " disabled" : "";
-  return `<option value=""${dis}>— Elegir plantilla —</option>${MOCK_TEMPLATES.map(
-    (t) =>
-      `<option value="${escapeHtml(t.id)}" data-message="${escapeHtml(t.message)}"${dis}>${escapeHtml(t.name)}</option>`,
-  ).join("")}`;
+  const active = templates.filter((t) => t.status === "active");
+  if (!active.length) {
+    return `<option value=""${dis}>— Sin plantillas activas —</option>`;
+  }
+  return `<option value=""${dis}>— Elegir plantilla —</option>${active
+    .map(
+      (t) =>
+        `<option value="${escapeHtml(t.id)}" data-message="${escapeHtml(t.message)}"${dis}>${escapeHtml(t.name)}</option>`,
+    )
+    .join("")}`;
 }
 
 type AppSendMode = "single" | "mass" | "scheduled" | "template";
@@ -270,6 +287,8 @@ export function renderAppSendSmsPage(
   const panelUnavailableHtml = `<p class="alert alert-error">El envío SMS no está disponible. Contacte a soporte Telvoice.</p>`;
 
   const contactLists = opts.contactLists ?? [];
+  const smsTemplates = opts.smsTemplates ?? [];
+  const activeSmsTemplates = smsTemplates.filter((t) => t.status === "active");
 
   const sendForm = !panel
     ? panelUnavailableHtml
@@ -303,10 +322,10 @@ export function renderAppSendSmsPage(
                 </div>
                 <div data-tv-template-fields${activeMode === "template" ? "" : " hidden"}>
                   <label for="template_id">Plantilla</label>
-                  <select id="template_id" name="template_id" class="tv-input-full" ${disabledAttr}${activeMode === "template" ? " required" : ""}>
-                    ${renderTemplateOptions(false)}
+                  <select id="template_id" name="template_id" class="tv-input-full" ${disabledAttr}${activeMode === "template" && activeSmsTemplates.length ? " required" : ""}${activeSmsTemplates.length ? "" : " disabled"}>
+                    ${renderTemplateOptions(smsTemplates, !activeSmsTemplates.length)}
                   </select>
-                  <p class="field-hint">Elige un mensaje preaprobado y personaliza variables abajo</p>
+                  <p class="field-hint">${activeSmsTemplates.length ? "Elige un mensaje preaprobado y personaliza variables abajo" : "No tienes plantillas activas. <a href=\"/app/templates\">Crear plantilla</a>"}</p>
                 </div>
                 <div data-tv-mass-csv-field${activeMode === "mass" || activeMode === "scheduled" ? "" : " hidden"}>
                   <label for="csv_file">Cargar CSV</label>
@@ -708,8 +727,10 @@ export function renderAppSendSmsPage(
           else toInput.removeAttribute('required');
         }
         if(templateSelect){
-          if(mode === 'template') templateSelect.setAttribute('required', 'required');
+          var hasTemplates = templateSelect.options.length > 1;
+          if(mode === 'template' && hasTemplates) templateSelect.setAttribute('required', 'required');
           else templateSelect.removeAttribute('required');
+          templateSelect.disabled = mode === 'template' && !hasTemplates;
         }
         updateSubmitLabel(mode);
         updateMessageRequired();
