@@ -70,6 +70,9 @@ export type AppApiPageData = {
   settings: ClientApiSettings;
   syncSource: "supabase" | "local" | "defaults";
   hasStoredRecord: boolean;
+  keysModule?: import("./client-api-keys.js").ClientApiKeysModuleState;
+  keys?: import("./client-api-keys.js").ClientApiKey[];
+  pepperConfigured?: boolean;
 };
 
 /** Shape legacy localStorage credenciales (compatibilidad UI). */

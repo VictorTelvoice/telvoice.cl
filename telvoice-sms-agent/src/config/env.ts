@@ -185,6 +185,10 @@ export const env = {
     /** Permite /admin/register con cuenta @gmail.com */
     signupEnabled: optionalEnv("ADMIN_SIGNUP_ENABLED", "false") === "true",
   },
+  /** Pepper HMAC para API Keys reales (Fase 1+). No loguear ni commitear. */
+  apiKeys: {
+    pepper: optionalEnv("API_KEY_PEPPER"),
+  },
   /** URL pública del agente (producción: https://agent.telvoice.cl) */
   publicAppUrl: optionalEnv("PUBLIC_APP_URL", "http://localhost:3001").replace(
     /\/$/,

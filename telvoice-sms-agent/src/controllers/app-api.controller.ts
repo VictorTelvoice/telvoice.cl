@@ -10,6 +10,11 @@ import {
   validateWebhookEvents,
   validateWebhookUrl,
 } from "../services/clientApiSettingsService.js";
+import { isApiKeyPepperConfigured } from "../services/apiKeyCryptoService.js";
+import {
+  getClientApiKeysModuleState,
+  listClientApiKeys,
+} from "../services/clientApiKeyService.js";
 import type { AppApiPageData, WebhookEvent } from "../types/client-api-settings.js";
 import { WEBHOOK_EVENTS } from "../types/client-api-settings.js";
 import { canOperateClientPanel } from "../types/roles.js";
@@ -59,11 +64,15 @@ export async function getAppApi(
 
     const defaults = buildDefaultClientApiSettings();
     const module = await getClientApiSettingsModuleState();
+    const keysModule = await getClientApiKeysModuleState();
     let pageData: AppApiPageData = {
       module,
       settings: defaults,
       syncSource: "defaults",
       hasStoredRecord: false,
+      keysModule,
+      keys: [],
+      pepperConfigured: isApiKeyPepperConfigured(),
     };
 
     if (module.available && ctx.company.id) {
@@ -74,7 +83,17 @@ export async function getAppApi(
           settings: loaded.data.settings,
           syncSource: loaded.data.hasStoredRecord ? "supabase" : "defaults",
           hasStoredRecord: loaded.data.hasStoredRecord,
+          keysModule,
+          keys: pageData.keys,
+          pepperConfigured: isApiKeyPepperConfigured(),
         };
+      }
+    }
+
+    if (keysModule.available && ctx.company.id) {
+      const listed = await listClientApiKeys(ctx.company.id);
+      if (listed.ok) {
+        pageData.keys = listed.data;
       }
     }
 

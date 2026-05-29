@@ -8,6 +8,13 @@ import type {
   ClientApiSettings,
   ClientApiWebhookConfig,
 } from "../../types/client-api-settings.js";
+import type {
+  ClientApiKeyEnvironment,
+  ClientApiKeyScope,
+  ClientApiKeyStatus,
+} from "../../types/client-api-keys.js";
+import { CLIENT_API_KEY_SCOPES } from "../../types/client-api-keys.js";
+import { canOperateClientPanel } from "../../types/roles.js";
 import { escapeHtml, formatDateShort } from "../../utils/html.js";
 import { renderKpiCard } from "../admin-ui/components.js";
 import { renderCodeBlock, renderPageHeader } from "../admin-ui/page-kit.js";
@@ -236,7 +243,536 @@ function apiPageStyles(): string {
       .tv-api-page .tv-api-layout { grid-template-columns: 1fr; }
       .tv-api-endpoint { grid-template-columns: 1fr; }
     }
+    .tv-api-keys-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tv-api-keys-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .tv-api-keys-table th,
+    .tv-api-keys-table td {
+      padding: 0.65rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--tv-border);
+      vertical-align: top;
+    }
+    .tv-api-keys-table th {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--tv-muted);
+      font-weight: 600;
+    }
+    .tv-api-keys-table code {
+      font-size: 0.8rem;
+      word-break: break-all;
+    }
+    .tv-api-keys-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      justify-content: flex-end;
+    }
+    .tv-api-keys-scopes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+    }
+    .tv-api-keys-scopes .badge {
+      font-size: 0.72rem;
+    }
+    .tv-api-keys-empty {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--tv-muted);
+    }
+    .tv-api-keys-create-scopes {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      margin-top: 0.35rem;
+    }
+    .tv-api-keys-create-scopes label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .tv-api-key-reveal {
+      margin: 1rem 0;
+      padding: 0.75rem;
+      background: var(--tv-bg);
+      border-radius: 6px;
+      word-break: break-all;
+      font-family: ui-monospace, monospace;
+      font-size: 0.82rem;
+    }
   </style>`;
+}
+
+function apiKeyStatusLabel(status: ClientApiKeyStatus): string {
+  const map: Record<ClientApiKeyStatus, string> = {
+    active: "Activa",
+    paused: "Pausada",
+    revoked: "Revocada",
+    expired: "Expirada",
+  };
+  return map[status] ?? status;
+}
+
+function apiKeyStatusBadgeClass(status: ClientApiKeyStatus): string {
+  if (status === "active") return "badge-ok";
+  if (status === "paused") return "badge-warn";
+  if (status === "revoked" || status === "expired") return "badge-muted";
+  return "badge-muted";
+}
+
+function apiKeyEnvironmentLabel(env: ClientApiKeyEnvironment): string {
+  return env === "production" ? "Producción" : "Sandbox";
+}
+
+function renderKeyScopesBadges(scopes: ClientApiKeyScope[]): string {
+  if (!scopes.length) {
+    return '<span class="badge badge-muted">—</span>';
+  }
+  return scopes
+    .map((s) => `<span class="badge badge-muted">${escapeHtml(s)}</span>`)
+    .join("");
+}
+
+function renderRealApiKeysPanel(ctx: AppPageContext, data: AppApiPageData): string {
+  const canWrite = canOperateClientPanel(ctx.profile.role);
+  const keysModule = data.keysModule ?? { available: false, migrationPending: false };
+  const keys = data.keys ?? [];
+  const pepperOk = data.pepperConfigured === true;
+
+  let bodyInner = "";
+  if (!keysModule.available) {
+    bodyInner = `<div class="alert alert-warn" role="status">
+      Backend de API Keys no disponible${keysModule.migrationPending ? " (migración pendiente)" : ""}.
+    </div>`;
+  } else if (!pepperOk) {
+    bodyInner = `<div class="alert alert-warn" role="status">
+      No se pueden crear API Keys: falta configurar <code>API_KEY_PEPPER</code> en el servidor.
+    </div>`;
+  }
+
+  const rows =
+    keys.length === 0
+      ? `<tr><td colspan="8" class="tv-api-keys-empty">Aún no tienes API Keys. Crea una para futuras integraciones.</td></tr>`
+      : keys
+          .map((k) => {
+            const isRevoked = k.status === "revoked";
+            const isActive = k.status === "active";
+            const isPaused = k.status === "paused";
+            const prodBadge =
+              k.environment === "production"
+                ? ' <span class="badge badge-warn" title="Requiere aprobación antes de uso real">Producción — requiere aprobación antes de uso real</span>'
+                : "";
+            const lastUsed = k.lastUsedAt
+              ? escapeHtml(formatDateShort(k.lastUsedAt))
+              : "—";
+            const created = escapeHtml(formatDateShort(k.createdAt));
+            const actions = canWrite
+              ? `<div class="tv-api-keys-actions" data-key-id="${escapeHtml(k.id)}">
+              ${
+                isActive
+                  ? `<button type="button" class="btn btn-ghost btn-sm" data-key-action="pause">Pausar</button>`
+                  : ""
+              }
+              ${
+                isPaused
+                  ? `<button type="button" class="btn btn-ghost btn-sm" data-key-action="activate">Activar</button>`
+                  : ""
+              }
+              ${
+                !isRevoked
+                  ? `<button type="button" class="btn btn-ghost btn-sm" data-key-action="scopes">Scopes</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-key-action="name">Nombre</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-key-action="revoke">Revocar</button>`
+                  : ""
+              }
+            </div>`
+              : "—";
+            return `<tr data-key-row="${escapeHtml(k.id)}">
+            <td><strong>${escapeHtml(k.name)}</strong></td>
+            <td>${escapeHtml(apiKeyEnvironmentLabel(k.environment))}${prodBadge}</td>
+            <td><code>${escapeHtml(k.keyMasked)}</code></td>
+            <td><span class="badge ${apiKeyStatusBadgeClass(k.status)}">${escapeHtml(apiKeyStatusLabel(k.status))}</span></td>
+            <td><div class="tv-api-keys-scopes">${renderKeyScopesBadges(k.scopes)}</div></td>
+            <td>${lastUsed}</td>
+            <td>${created}</td>
+            <td>${actions}</td>
+          </tr>`;
+          })
+          .join("");
+
+  const createBtn = canWrite
+    ? `<button type="button" class="btn btn-primary btn-sm" id="tv-api-keys-create-btn"${
+        !keysModule.available || !pepperOk ? " disabled" : ""
+      }>Crear API Key</button>`
+    : "";
+
+  return `<section class="tv-panel" id="tv-api-keys-panel">
+    <header class="tv-section-head" style="padding:1rem 1.25rem 0;display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:0.75rem">
+      <div>
+        <h2 class="tv-section-head__title">API Keys</h2>
+        <p class="tv-section-head__sub">Crea y administra claves de acceso para futuras integraciones API de Telvoice.</p>
+      </div>
+      ${createBtn}
+    </header>
+    <div class="tv-panel__body">
+      <div class="alert alert-warn" role="status" style="margin-bottom:1rem">
+        Estas claves son reales para autenticación futura, pero el envío SMS por API aún no está habilitado.
+      </div>
+      ${bodyInner}
+      <div class="tv-api-keys-table-wrap">
+        <table class="tv-api-keys-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Ambiente</th>
+              <th>Key</th>
+              <th>Estado</th>
+              <th>Scopes</th>
+              <th>Último uso</th>
+              <th>Creada</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tv-api-keys-tbody">${rows}</tbody>
+        </table>
+      </div>
+    </div>
+  </section>`;
+}
+
+function renderKeysModals(): string {
+  const scopeChecks = CLIENT_API_KEY_SCOPES.map(
+    (s) =>
+      `<label><input type="checkbox" name="scope" value="${escapeHtml(s)}"${
+        s === "balance:read" ? " checked" : ""
+      } /> ${escapeHtml(s)}</label>`,
+  ).join("");
+
+  return `
+    <div class="tv-api-modal" id="tv-api-keys-create-modal" role="dialog" aria-modal="true" aria-labelledby="tv-api-keys-create-title" aria-hidden="true">
+      <div class="tv-api-modal__backdrop" data-tv-keys-modal-close tabindex="-1"></div>
+      <div class="tv-api-modal__panel">
+        <h2 class="tv-section-head__title" id="tv-api-keys-create-title" style="margin:0 0 0.75rem">Crear API Key</h2>
+        <div class="form-group">
+          <label for="tv-api-keys-create-name">Nombre</label>
+          <input type="text" id="tv-api-keys-create-name" class="tv-input-full" maxlength="120" placeholder="Ej. Backend producción" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label for="tv-api-keys-create-env">Ambiente</label>
+          <select id="tv-api-keys-create-env" class="tv-input-full">
+            <option value="sandbox">Sandbox</option>
+            <option value="production">Producción</option>
+          </select>
+          <p class="field-hint" id="tv-api-keys-create-env-hint" style="display:none;margin-top:0.35rem">
+            Producción — requiere aprobación antes de uso real.
+          </p>
+        </div>
+        <div class="form-group">
+          <span class="field-hint">Scopes</span>
+          <div class="tv-api-keys-create-scopes" id="tv-api-keys-create-scopes">${scopeChecks}</div>
+        </div>
+        <div class="form-group">
+          <label for="tv-api-keys-create-expires">Expiración (opcional)</label>
+          <input type="datetime-local" id="tv-api-keys-create-expires" class="tv-input-full" />
+        </div>
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end;flex-wrap:wrap;margin-top:1rem">
+          <button type="button" class="btn btn-ghost" data-tv-keys-modal-close>Cancelar</button>
+          <button type="button" class="btn btn-primary" id="tv-api-keys-create-submit">Crear</button>
+        </div>
+      </div>
+    </div>
+    <div class="tv-api-modal" id="tv-api-keys-reveal-modal" role="dialog" aria-modal="true" aria-labelledby="tv-api-keys-reveal-title" aria-hidden="true">
+      <div class="tv-api-modal__backdrop" data-tv-keys-reveal-close tabindex="-1"></div>
+      <div class="tv-api-modal__panel">
+        <h2 class="tv-section-head__title" id="tv-api-keys-reveal-title" style="margin:0 0 0.5rem">API Key creada</h2>
+        <p class="tv-page-sub" style="margin:0 0 0.75rem">Copia esta API Key ahora. Por seguridad no volverás a verla completa.</p>
+        <div class="tv-api-key-reveal" id="tv-api-keys-reveal-value"></div>
+        <button type="button" class="btn btn-primary" id="tv-api-keys-reveal-copy">Copiar API Key</button>
+        <button type="button" class="btn btn-ghost" style="margin-left:0.5rem" data-tv-keys-reveal-close>Cerrar</button>
+      </div>
+    </div>
+    <div class="tv-api-modal" id="tv-api-keys-name-modal" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="tv-api-modal__backdrop" data-tv-keys-modal-close tabindex="-1"></div>
+      <div class="tv-api-modal__panel">
+        <h2 class="tv-section-head__title" style="margin:0 0 0.75rem">Editar nombre</h2>
+        <input type="hidden" id="tv-api-keys-name-id" />
+        <div class="form-group">
+          <label for="tv-api-keys-name-input">Nombre</label>
+          <input type="text" id="tv-api-keys-name-input" class="tv-input-full" maxlength="120" />
+        </div>
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem">
+          <button type="button" class="btn btn-ghost" data-tv-keys-modal-close>Cancelar</button>
+          <button type="button" class="btn btn-primary" id="tv-api-keys-name-submit">Guardar</button>
+        </div>
+      </div>
+    </div>
+    <div class="tv-api-modal" id="tv-api-keys-scopes-modal" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="tv-api-modal__backdrop" data-tv-keys-modal-close tabindex="-1"></div>
+      <div class="tv-api-modal__panel">
+        <h2 class="tv-section-head__title" style="margin:0 0 0.75rem">Editar scopes</h2>
+        <input type="hidden" id="tv-api-keys-scopes-id" />
+        <div class="tv-api-keys-create-scopes" id="tv-api-keys-scopes-edit">${scopeChecks}</div>
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem">
+          <button type="button" class="btn btn-ghost" data-tv-keys-modal-close>Cancelar</button>
+          <button type="button" class="btn btn-primary" id="tv-api-keys-scopes-submit">Guardar</button>
+        </div>
+      </div>
+    </div>
+    <div class="tv-api-modal" id="tv-api-keys-revoke-modal" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="tv-api-modal__backdrop" data-tv-keys-modal-close tabindex="-1"></div>
+      <div class="tv-api-modal__panel">
+        <h2 class="tv-section-head__title" style="margin:0 0 0.5rem">Revocar API Key</h2>
+        <p class="tv-page-sub" style="margin:0 0 0.75rem">Esta acción no se puede deshacer. La key dejará de funcionar cuando la API esté habilitada.</p>
+        <input type="hidden" id="tv-api-keys-revoke-id" />
+        <div class="form-group">
+          <label for="tv-api-keys-revoke-reason">Motivo (opcional)</label>
+          <input type="text" id="tv-api-keys-revoke-reason" class="tv-input-full" placeholder="Ej. Rotación de credenciales" />
+        </div>
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem">
+          <button type="button" class="btn btn-ghost" data-tv-keys-modal-close>Cancelar</button>
+          <button type="button" class="btn btn-primary" id="tv-api-keys-revoke-submit">Revocar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderRealApiKeysScript(data: AppApiPageData): string {
+  const keysJson = JSON.stringify(data.keys ?? []).replace(/</g, "\\u003c");
+  const keysModuleJson = JSON.stringify(
+    data.keysModule ?? { available: false, migrationPending: false },
+  ).replace(/</g, "\\u003c");
+  const pepperOk = data.pepperConfigured === true;
+
+  return `<script>
+(function () {
+  var KEYS = ${keysJson};
+  var KEYS_MODULE = ${keysModuleJson};
+  var PEPPER_OK = ${pepperOk ? "true" : "false"};
+  var revealPlainKey = null;
+
+  function keysToast(msg, isError) {
+    var t = document.getElementById("tv-api-toast");
+    if (!t) return;
+    t.textContent = msg;
+    t.className = "tv-api-toast" + (isError ? " tv-api-toast--error" : "");
+    t.setAttribute("aria-hidden", "false");
+    clearTimeout(keysToast._t);
+    keysToast._t = setTimeout(function () {
+      t.setAttribute("aria-hidden", "true");
+    }, 4200);
+  }
+
+  function keysPost(url, payload) {
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload || {}),
+    }).then(function (res) {
+      return res.json().then(function (body) {
+        return { ok: res.ok, body: body };
+      });
+    });
+  }
+
+  function closeKeysModals() {
+    ["tv-api-keys-create-modal", "tv-api-keys-name-modal", "tv-api-keys-scopes-modal", "tv-api-keys-revoke-modal"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.setAttribute("aria-hidden", "true");
+    });
+  }
+
+  function closeRevealModal() {
+    var hadKey = !!revealPlainKey;
+    revealPlainKey = null;
+    var el = document.getElementById("tv-api-keys-reveal-value");
+    if (el) el.textContent = "";
+    document.getElementById("tv-api-keys-reveal-modal")?.setAttribute("aria-hidden", "true");
+    if (hadKey) window.location.reload();
+  }
+
+  function readCreateScopes() {
+    var list = [];
+    document.querySelectorAll("#tv-api-keys-create-scopes input[name=scope]:checked").forEach(function (cb) {
+      var v = cb.getAttribute("value");
+      if (v) list.push(v);
+    });
+    return list;
+  }
+
+  function readEditScopes() {
+    var list = [];
+    document.querySelectorAll("#tv-api-keys-scopes-edit input[name=scope]:checked").forEach(function (cb) {
+      var v = cb.getAttribute("value");
+      if (v) list.push(v);
+    });
+    return list;
+  }
+
+  document.getElementById("tv-api-keys-create-env")?.addEventListener("change", function (e) {
+    var hint = document.getElementById("tv-api-keys-create-env-hint");
+    if (hint) hint.style.display = e.target.value === "production" ? "block" : "none";
+  });
+
+  document.getElementById("tv-api-keys-create-btn")?.addEventListener("click", function () {
+    if (!KEYS_MODULE.available || !PEPPER_OK) {
+      keysToast("No se pueden crear API Keys en este momento.", true);
+      return;
+    }
+    document.getElementById("tv-api-keys-create-name").value = "";
+    document.getElementById("tv-api-keys-create-env").value = "sandbox";
+    document.getElementById("tv-api-keys-create-expires").value = "";
+    document.getElementById("tv-api-keys-create-env-hint").style.display = "none";
+    document.querySelectorAll("#tv-api-keys-create-scopes input[name=scope]").forEach(function (cb) {
+      cb.checked = cb.getAttribute("value") === "balance:read";
+    });
+    document.getElementById("tv-api-keys-create-modal")?.setAttribute("aria-hidden", "false");
+  });
+
+  document.getElementById("tv-api-keys-create-submit")?.addEventListener("click", function () {
+    var name = (document.getElementById("tv-api-keys-create-name")?.value || "").trim();
+    var environment = document.getElementById("tv-api-keys-create-env")?.value || "sandbox";
+    var scopes = readCreateScopes();
+    var expiresRaw = document.getElementById("tv-api-keys-create-expires")?.value || "";
+    var payload = { name: name, environment: environment, scopes: scopes };
+    if (expiresRaw) {
+      try {
+        payload.expiresAt = new Date(expiresRaw).toISOString();
+      } catch (e) {}
+    }
+    keysPost("/app/api/keys", payload).then(function (r) {
+      if (r.ok && r.body && r.body.ok && r.body.plainTextKey) {
+        closeKeysModals();
+        revealPlainKey = r.body.plainTextKey;
+        var revealEl = document.getElementById("tv-api-keys-reveal-value");
+        if (revealEl) revealEl.textContent = revealPlainKey;
+        document.getElementById("tv-api-keys-reveal-modal")?.setAttribute("aria-hidden", "false");
+        keysToast("API Key creada.");
+      } else {
+        keysToast((r.body && r.body.error) || "No se pudo crear la API Key.", true);
+      }
+    }).catch(function () {
+      keysToast("Error de red al crear la API Key.", true);
+    });
+  });
+
+  document.getElementById("tv-api-keys-reveal-copy")?.addEventListener("click", function () {
+    if (!revealPlainKey) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(revealPlainKey).then(function () {
+        keysToast("API Key copiada.");
+      });
+    }
+  });
+
+  document.querySelectorAll("[data-tv-keys-reveal-close]").forEach(function (el) {
+    el.addEventListener("click", closeRevealModal);
+  });
+
+  document.querySelectorAll("[data-tv-keys-modal-close]").forEach(function (el) {
+    el.addEventListener("click", closeKeysModals);
+  });
+
+  document.getElementById("tv-api-keys-tbody")?.addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-key-action]");
+    if (!btn) return;
+    var wrap = btn.closest("[data-key-id]");
+    var keyId = wrap && wrap.getAttribute("data-key-id");
+    if (!keyId) return;
+    var action = btn.getAttribute("data-key-action");
+    var key = KEYS.find(function (k) { return k.id === keyId; });
+    if (action === "pause") {
+      keysPost("/app/api/keys/" + keyId + "/pause", {}).then(function (r) {
+        if (r.ok && r.body && r.body.ok) {
+          keysToast("API Key pausada.");
+          window.location.reload();
+        } else {
+          keysToast((r.body && r.body.error) || "No se pudo pausar.", true);
+        }
+      });
+    } else if (action === "activate") {
+      keysPost("/app/api/keys/" + keyId + "/activate", {}).then(function (r) {
+        if (r.ok && r.body && r.body.ok) {
+          keysToast("API Key activada.");
+          window.location.reload();
+        } else {
+          keysToast((r.body && r.body.error) || "No se pudo activar.", true);
+        }
+      });
+    } else if (action === "revoke") {
+      document.getElementById("tv-api-keys-revoke-id").value = keyId;
+      document.getElementById("tv-api-keys-revoke-reason").value = "";
+      document.getElementById("tv-api-keys-revoke-modal")?.setAttribute("aria-hidden", "false");
+    } else if (action === "name") {
+      document.getElementById("tv-api-keys-name-id").value = keyId;
+      document.getElementById("tv-api-keys-name-input").value = key ? key.name : "";
+      document.getElementById("tv-api-keys-name-modal")?.setAttribute("aria-hidden", "false");
+    } else if (action === "scopes") {
+      document.getElementById("tv-api-keys-scopes-id").value = keyId;
+      var scopes = (key && key.scopes) || [];
+      document.querySelectorAll("#tv-api-keys-scopes-edit input[name=scope]").forEach(function (cb) {
+        var v = cb.getAttribute("value");
+        cb.checked = scopes.indexOf(v) >= 0;
+      });
+      document.getElementById("tv-api-keys-scopes-modal")?.setAttribute("aria-hidden", "false");
+    }
+  });
+
+  document.getElementById("tv-api-keys-revoke-submit")?.addEventListener("click", function () {
+    var keyId = document.getElementById("tv-api-keys-revoke-id")?.value;
+    var reason = document.getElementById("tv-api-keys-revoke-reason")?.value || "";
+    if (!keyId) return;
+    keysPost("/app/api/keys/" + keyId + "/revoke", { reason: reason }).then(function (r) {
+      if (r.ok && r.body && r.body.ok) {
+        closeKeysModals();
+        keysToast("API Key revocada.");
+        window.location.reload();
+      } else {
+        keysToast((r.body && r.body.error) || "No se pudo revocar.", true);
+      }
+    });
+  });
+
+  document.getElementById("tv-api-keys-name-submit")?.addEventListener("click", function () {
+    var keyId = document.getElementById("tv-api-keys-name-id")?.value;
+    var name = (document.getElementById("tv-api-keys-name-input")?.value || "").trim();
+    if (!keyId) return;
+    keysPost("/app/api/keys/" + keyId + "/name", { name: name }).then(function (r) {
+      if (r.ok && r.body && r.body.ok) {
+        closeKeysModals();
+        keysToast("Nombre actualizado.");
+        window.location.reload();
+      } else {
+        keysToast((r.body && r.body.error) || "No se pudo actualizar.", true);
+      }
+    });
+  });
+
+  document.getElementById("tv-api-keys-scopes-submit")?.addEventListener("click", function () {
+    var keyId = document.getElementById("tv-api-keys-scopes-id")?.value;
+    if (!keyId) return;
+    keysPost("/app/api/keys/" + keyId + "/scopes", { scopes: readEditScopes() }).then(function (r) {
+      if (r.ok && r.body && r.body.ok) {
+        closeKeysModals();
+        keysToast("Scopes actualizados.");
+        window.location.reload();
+      } else {
+        keysToast((r.body && r.body.error) || "No se pudieron actualizar los scopes.", true);
+      }
+    });
+  });
+})();
+</script>`;
 }
 
 function buildExampleSnippets(apiKey: string): Record<"curl" | "javascript" | "php", string> {
@@ -1047,6 +1583,7 @@ export function renderAppApiPage(
     <div class="tv-api-layout">
       <div class="tv-api-main">
         ${renderCredentialsPanel(ctx, settings)}
+        ${renderRealApiKeysPanel(ctx, data)}
         ${renderEndpointsSection()}
         ${renderExampleSection(creds.apiKey)}
         ${renderWebhookPanel()}
@@ -1056,7 +1593,9 @@ export function renderAppApiPage(
     </div>
     </div>
     ${renderModals()}
-    ${renderApiScript(ctx, data)}`;
+    ${renderKeysModals()}
+    ${renderApiScript(ctx, data)}
+    ${renderRealApiKeysScript(data)}`;
 
   return wrapAppPage(ctx, "api", "API", body);
 }

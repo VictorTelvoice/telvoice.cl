@@ -53,6 +53,15 @@ import {
   postAppApiWebhookTest,
 } from "../controllers/app-api.controller.js";
 import {
+  getAppApiKeysJson,
+  postAppApiKeyActivate,
+  postAppApiKeyCreate,
+  postAppApiKeyName,
+  postAppApiKeyPause,
+  postAppApiKeyRevoke,
+  postAppApiKeyScopes,
+} from "../controllers/app-api-keys.controller.js";
+import {
   getAppSettings,
   postAppSettings,
 } from "../controllers/app-settings.controller.js";
@@ -184,6 +193,13 @@ appRouter.get("/invoices", requireClientPanelPage, getAppInvoices);
 appRouter.get("/invoices/:id/preview", requireClientPanelPage, getAppInvoicePreview);
 appRouter.get("/invoices/:id", requireClientPanelPage, getAppInvoiceDetail);
 appRouter.get("/api", requireClientPanelPage, getAppApi);
+appRouter.get("/api/keys", requireClientPanelPage, getAppApiKeysJson);
+appRouter.post("/api/keys", requireClientPanelPage, postAppApiKeyCreate);
+appRouter.post("/api/keys/:id/pause", requireClientPanelPage, postAppApiKeyPause);
+appRouter.post("/api/keys/:id/activate", requireClientPanelPage, postAppApiKeyActivate);
+appRouter.post("/api/keys/:id/revoke", requireClientPanelPage, postAppApiKeyRevoke);
+appRouter.post("/api/keys/:id/scopes", requireClientPanelPage, postAppApiKeyScopes);
+appRouter.post("/api/keys/:id/name", requireClientPanelPage, postAppApiKeyName);
 appRouter.post("/api/key/regenerate", requireClientPanelPage, postAppApiKeyRegenerate);
 appRouter.post("/api/webhook", requireClientPanelPage, postAppApiWebhook);
 appRouter.post("/api/webhook/test", requireClientPanelPage, postAppApiWebhookTest);
