@@ -5,6 +5,9 @@
   "engines": {
     "node": ">=18"
   },
+  "scripts": {
+    "test:web-agent-intent": "node scripts/verify-web-agent-intent.mjs"
+  },
   "dependencies": {
     "@vercel/blob": "^2.4.0"
   }
