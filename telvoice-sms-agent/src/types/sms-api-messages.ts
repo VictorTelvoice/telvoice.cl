@@ -91,3 +91,33 @@ export type SandboxSmsSendResolution =
   | { outcome: "created"; message: SmsApiMessage }
   | { outcome: "replay"; message: SmsApiMessage }
   | { outcome: "conflict" };
+
+export const SMS_API_MESSAGE_STATUSES: readonly SmsApiMessageStatus[] = [
+  "sandbox_accepted",
+  "sandbox_rejected",
+  "pending",
+  "sent",
+  "delivered",
+  "failed",
+  "expired",
+  "rejected",
+] as const;
+
+export type SmsApiMessageListFilters = {
+  status?: SmsApiMessageStatus;
+  environment?: SmsApiMessageEnvironment;
+  externalReference?: string;
+  limit: number;
+  before?: string;
+};
+
+export type SmsApiMessageListResult = {
+  messages: SmsApiMessage[];
+  nextCursor: string | null;
+};
+
+export type SmsApiMessageQueryError = {
+  statusCode: number;
+  code: string;
+  message: string;
+};

@@ -70,8 +70,16 @@ const API_ENDPOINTS = [
   {
     method: "GET",
     path: "/api/v1/messages/{messageId}",
-    title: "Estado de mensaje",
-    description: "Revisa el estado de entrega de un mensaje enviado.",
+    title: "Consultar mensaje",
+    description:
+      "Obtiene el detalle de un mensaje creado por API. Requiere scope messages:read.",
+  },
+  {
+    method: "GET",
+    path: "/api/v1/messages",
+    title: "Listar mensajes",
+    description:
+      "Lista mensajes creados por API con filtros opcionales. Requiere scope messages:read.",
   },
   {
     method: "POST",
@@ -968,6 +976,30 @@ function renderCredentialsPanel(
   </section>`;
 }
 
+function renderMessagesExampleSection(apiKey: string): string {
+  const key = apiKey.startsWith("tlv_") ? apiKey : "tlv_test_xxxxx";
+  const detailCurl = `curl -H "Authorization: Bearer ${key}" \\
+  ${SANDBOX_API_BASE_URL}/api/v1/messages/{message_id}`;
+  const listCurl = `curl -H "Authorization: Bearer ${key}" \\
+  "${SANDBOX_API_BASE_URL}/api/v1/messages?limit=20"`;
+
+  return `<section class="tv-panel">
+    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
+      <h2 class="tv-section-head__title">Consultar mensajes</h2>
+      <p class="tv-section-head__sub">Consulta mensajes creados por la API con scope messages:read.</p>
+    </header>
+    <div class="tv-panel__body">
+      <p class="field-hint" style="margin:0 0 1rem">
+        Los mensajes consultados corresponden a registros creados por API. En esta fase, los mensajes sandbox no se envían ni descuentan saldo.
+      </p>
+      <p class="field-hint" style="margin:0 0 0.35rem"><strong>Consultar mensaje</strong></p>
+      ${renderCodeBlock(detailCurl)}
+      <p class="field-hint" style="margin:1rem 0 0.35rem"><strong>Listar mensajes</strong></p>
+      ${renderCodeBlock(listCurl)}
+    </div>
+  </section>`;
+}
+
 function renderExampleSection(apiKey: string): string {
   const snippets = buildExampleSnippets(apiKey);
   return `<section class="tv-panel">
@@ -1678,6 +1710,7 @@ export function renderAppApiPage(
         ${renderRecentApiActivityPanel(data)}
         ${renderEndpointsSection()}
         ${renderExampleSection(creds.apiKey)}
+        ${renderMessagesExampleSection(creds.apiKey)}
         ${renderWebhookPanel()}
         ${renderSmppPanel(settings)}
       </div>
