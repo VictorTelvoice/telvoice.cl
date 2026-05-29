@@ -94,7 +94,12 @@ export function composeAgentResponse(input: ComposeInput): string {
     parts.push(acknowledgment);
   } else {
     const ack = intentAck(intent, channel);
-    if (ack && confidence >= 0.55 && !rawReply.startsWith(ack)) {
+    if (
+    ack &&
+    confidence >= 0.55 &&
+    !rawReply.startsWith(ack) &&
+    !rawReply.toLowerCase().includes(ack.toLowerCase().slice(0, 12))
+  ) {
       parts.push(ack);
     }
   }

@@ -7,6 +7,12 @@ import {
 } from "../telegramIntentService.js";
 import { matchesCapabilitiesIntent } from "../telegramCapabilities.js";
 import { extractSmsQuantityFromText } from "../commercialQuoteService.js";
+import {
+  extractCommercialQuantity,
+  isLikelyCommercialPhrase,
+  matchesCommercialBuyIntentNormalized,
+  normalizeCommercialText,
+} from "./agentCommercialText.js";
 import type { ConversationMemory } from "./agentConversationMemory.js";
 import type { AgentChannel, AgentIntent } from "./types.js";
 
@@ -98,9 +104,10 @@ export function routeAgentIntent(
   }
 
   if (
-    /\b(no me sirvio|no me sirvió|respuesta incorrecta|mal respuesta|mala respuesta)\b/.test(
+    /\b(no me sirvio|no me sirvió|respuesta incorrecta|mal respuesta|mala respuesta|no entendiste|no entendi|eso no era)\b/.test(
       normalized,
-    )
+    ) &&
+    !isLikelyCommercialPhrase(text)
   ) {
     return {
       intent: "negative_feedback",
@@ -197,35 +204,29 @@ export function routeAgentIntent(
     return { intent: "commercial", confidence: 0.88, commercialQuantity: extractSmsQuantityFromText(text), requiresAuth: false, operationalCommand: op };
   }
 
-  if (matchesCapabilitiesIntent(normalized)) {
-    return { intent: "capabilities", confidence: 0.85, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
-  }
-
-  if (
-    /\b(quiero comprar|comprar mas|comprar más|cargar saldo|mas sms|más sms|necesito sms)\b/.test(
-      normalized,
-    )
-  ) {
-    return {
-      intent: "commercial",
-      confidence: 0.9,
-      commercialQuantity:
-        extractSmsQuantityFromText(text) ?? memory.lastQuantity ?? null,
-      requiresAuth: false,
-      operationalCommand: null,
-    };
-  }
-
   const commercial = detectCommercialIntent(text);
-  const commercialBuy = matchesCommercialBuyIntent(normalized);
+  const commercialBuy =
+    matchesCommercialBuyIntent(normalized) ||
+    matchesCommercialBuyIntentNormalized(text) ||
+    isLikelyCommercialPhrase(text);
+
   if (commercial || commercialBuy) {
+    const qty =
+      commercial?.quantity ??
+      extractCommercialQuantity(text) ??
+      memory.lastQuantity ??
+      null;
     return {
       intent: "commercial",
-      confidence: commercial?.hasQuantity ? 0.92 : 0.8,
-      commercialQuantity: commercial?.quantity ?? extractSmsQuantityFromText(text),
+      confidence: qty != null ? 0.92 : 0.88,
+      commercialQuantity: qty,
       requiresAuth: false,
       operationalCommand: null,
     };
+  }
+
+  if (matchesCapabilitiesIntent(normalizeCommercialText(text))) {
+    return { intent: "capabilities", confidence: 0.85, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
   }
 
   if (
@@ -251,7 +252,7 @@ export function routeAgentIntent(
     return { intent: "reports", confidence: 0.8, commercialQuantity: null, requiresAuth: true, operationalCommand: null };
   }
 
-  if (/\b(wallet|bolsa|movimientos saldo)\b/.test(normalized)) {
+  if (/\b(wallet|movimientos saldo)\b/.test(normalized)) {
     return { intent: "wallet", confidence: 0.78, commercialQuantity: null, requiresAuth: true, operationalCommand: null };
   }
 

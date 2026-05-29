@@ -1,4 +1,5 @@
 import { createQuickQuote } from "../../commercialQuoteService.js";
+import { extractCommercialQuantity } from "../agentCommercialText.js";
 import type { CommercialQuoteResult } from "../../../types/commercial.js";
 import type { AgentToolContext, AgentToolResult } from "./types.js";
 
@@ -12,10 +13,7 @@ export const quoteSmsBundleTool = {
   ): Promise<AgentToolResult<CommercialQuoteResult>> {
     let qty = input.quantity;
     if (!qty && input.text) {
-      const m = input.text.match(/(\d[\d\s]*)\s*sms?/i);
-      if (m?.[1]) {
-        qty = parseInt(m[1].replace(/\s/g, ""), 10);
-      }
+      qty = extractCommercialQuantity(input.text) ?? undefined;
     }
     if (!qty || qty < 1) {
       return {

@@ -14,6 +14,10 @@ import {
   KNOWLEDGE_MIN_SCORE,
   searchKnowledgeRaw,
 } from "./knowledgeService.js";
+import {
+  matchesCommercialBuyIntentNormalized,
+  normalizeCommercialText,
+} from "./agent/agentCommercialText.js";
 
 function detectInternationalIntent(text: string): boolean {
   const normalized = normalizeIntentText(text);
@@ -85,6 +89,13 @@ export const TELEGRAM_INTENT_TEST_CASES: {
   { input: "hola quiero comprar mas sms", expectedRoute: "commercial" },
   { input: "Hola quiero comprar más SMS", expectedRoute: "commercial" },
   { input: "quiero comprar más sms", expectedRoute: "commercial" },
+  { input: "quiero comprar mensajes", expectedRoute: "commercial" },
+  { input: "necesito comprar más sms", expectedRoute: "commercial" },
+  {
+    input: "cuánto cuesta 30000 mensajes",
+    expectedRoute: "commercial",
+    expectedQuantity: 30000,
+  },
   {
     input: "Me gustaría comprar una nueva bolsa, cuál me recomiendas",
     expectedRoute: "commercial",
@@ -172,6 +183,10 @@ export function matchesCommercialBuyIntent(normalized: string): boolean {
     return false;
   }
 
+  if (matchesCommercialBuyIntentNormalized(normalized)) {
+    return true;
+  }
+
   if (normalized === "comprar" || normalized === "cotizar" || normalized === "precios" || normalized === "planes" || normalized === "bolsas") {
     return true;
   }
@@ -222,7 +237,8 @@ export function matchesCommercialBuyIntent(normalized: string): boolean {
 }
 
 export function detectCommercialIntent(text: string): CommercialIntentDetail | null {
-  const normalized = normalizeIntentText(text);
+  const commercialText = normalizeCommercialText(text);
+  const normalized = normalizeIntentText(commercialText);
   if (!normalized) {
     return null;
   }
@@ -238,7 +254,7 @@ export function detectCommercialIntent(text: string): CommercialIntentDetail | n
   const quantity = extractQuantityFromNormalized(normalized);
   const hasQuantity = quantity !== null;
   const wantsMoreSms =
-    /\b(mas sms|mas mensajes|comprar mas|necesito mas|quiero mas|recargar|cargar saldo|agregar saldo)\b/.test(
+    /\b(mas sms|comprar mas|necesito mas|quiero mas|recargar|comprar sms|comprar)\b/.test(
       normalized,
     );
 

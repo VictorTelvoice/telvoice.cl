@@ -24,6 +24,11 @@ import type {
 } from "./types.js";
 import type { AgentToolContext } from "./tools/types.js";
 import type { RoutedIntent } from "./agentIntentRouter.js";
+import {
+  AGENT_COMMERCIAL_ASK_QUANTITY_MESSAGE,
+  extractCommercialQuantity,
+} from "./agentCommercialText.js";
+import type { CommercialQuoteResult } from "../../types/commercial.js";
 
 function toolCtx(ctx: AgentExecutionContext): AgentToolContext {
   return {
@@ -58,6 +63,33 @@ function extractMessageBody(text: string): string {
   return m?.[1]?.trim() ?? text;
 }
 
+function buildCommercialSuggestedActions(
+  channel: AgentExecutionContext["channel"],
+  quote: CommercialQuoteResult | null | undefined,
+): AgentSuggestedAction[] {
+  const actions: AgentSuggestedAction[] = [];
+  if (quote?.checkout_url) {
+    actions.push({ label: "Pagar ahora", href: quote.checkout_url });
+  }
+  if (channel === "landing") {
+    actions.push({
+      label: "Ver calculadora",
+      href: "https://www.telvoice.cl/#calculadora",
+    });
+    if (!quote?.checkout_url) {
+      actions.push({
+        label: "Dejar mis datos",
+        message: "Quiero comprar SMS, soy de mi empresa",
+      });
+    }
+  } else if (channel === "web_client") {
+    actions.push({ label: "Comprar SMS", href: "/app/buy-sms" });
+  } else if (channel === "telegram") {
+    actions.push({ label: "Cotizar 30.000 SMS", message: "cotizar 30000 sms" });
+  }
+  return actions;
+}
+
 function extractPhone(text: string): string | null {
   const m = text.match(/(\+?56\s?9[\d\s]{8,}|9\d{8})/);
   if (!m?.[1]) {
@@ -84,21 +116,43 @@ export async function dispatchRoutedIntent(
   switch (intent) {
     case "commercial":
     case "quote_purchase": {
+      const qty =
+        route.commercialQuantity ?? extractCommercialQuantity(message) ?? undefined;
+      if (!qty) {
+        return baseResponse({
+          reply: AGENT_COMMERCIAL_ASK_QUANTITY_MESSAGE,
+          intent: "commercial",
+          confidence: route.confidence,
+          suggestedActions: [
+            { label: "5.000 SMS", message: "cotizar 5000 sms" },
+            { label: "30.000 SMS", message: "cotizar 30000 sms" },
+            { label: "100.000 SMS", message: "cotizar 100000 sms" },
+          ],
+          leadRequired: ctx.channel === "landing",
+          sessionId,
+        });
+      }
       const q = await quoteSmsBundleTool.run(toolCtx(ctx), {
-        quantity: route.commercialQuantity ?? undefined,
+        quantity: qty,
         text: message,
       });
-      const actions: AgentSuggestedAction[] =
-        ctx.channel === "landing"
-          ? [{ label: "Ver calculadora", href: "https://www.telvoice.cl/#calculadora" }]
-          : [{ label: "Comprar SMS", href: "/app/buy-sms" }];
+      if (!q.ok && q.error === "quantity_required") {
+        return baseResponse({
+          reply: AGENT_COMMERCIAL_ASK_QUANTITY_MESSAGE,
+          intent: "commercial",
+          confidence: route.confidence,
+          leadRequired: ctx.channel === "landing",
+          sessionId,
+        });
+      }
       return baseResponse({
         reply: q.summary,
         intent: "commercial",
         confidence: route.confidence,
-        suggestedActions: actions,
+        suggestedActions: buildCommercialSuggestedActions(ctx.channel, q.data),
         quote: q.data ?? null,
         sessionId,
+        leadRequired: ctx.channel === "landing" && !q.data?.checkout_url,
       });
     }
 

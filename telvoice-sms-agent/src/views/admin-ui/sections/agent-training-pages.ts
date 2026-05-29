@@ -153,6 +153,12 @@ export function renderAgentTrainingUnansweredList(options: {
     ${successBlock}
     ${errorBlock}
     <div class="tv-panel" style="margin-bottom:1rem">
+      <p class="field-hint" style="margin:0 0 0.75rem">
+        <strong>Ejemplos para entrenar (comercial):</strong>
+        quiero comprar mensajes · necesito comprar más sms ·
+        quiero una bolsa de mensajes · cuánto cuesta 30000 mensajes ·
+        necesito mensajes para mi empresa
+      </p>
       <form method="get" action="/admin/agent-training/unanswered" class="actions-row" style="margin:0;flex-wrap:wrap;gap:0.75rem">
         <div class="form-group" style="margin:0">
           <label for="status">Estado</label>

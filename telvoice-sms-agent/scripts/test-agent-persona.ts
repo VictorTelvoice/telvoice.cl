@@ -1,40 +1,73 @@
 /**
- * Pruebas manuales de personalidad y routing del Agent Core.
+ * Pruebas de personalidad y detección comercial (mensajes → SMS).
  */
 import "dotenv/config";
 import { runAgentCore } from "../src/services/agent/agentCore.js";
+import {
+  extractCommercialQuantity,
+  isLikelyCommercialPhrase,
+  matchesCommercialBuyIntentNormalized,
+  normalizeCommercialText,
+} from "../src/services/agent/agentCommercialText.js";
 
-type Case = { channel: "landing" | "web_client" | "telegram"; message: string; companyId?: string };
+type Case = {
+  channel: "landing" | "web_client" | "telegram";
+  message: string;
+  companyId?: string;
+  expectIntent?: string;
+  expectQuote?: boolean;
+};
 
 const TEST_COMPANY = process.env.TEST_COMPANY_ID?.trim();
 
 const CASES: Case[] = [
-  { channel: "landing", message: "hola" },
-  { channel: "landing", message: "quiero comprar más SMS" },
-  { channel: "landing", message: "cuánto cuesta 30000 SMS" },
-  { channel: "landing", message: "necesito SMS para mi empresa" },
-  { channel: "landing", message: "sirve para OTP" },
+  { channel: "landing", message: "quiero comprar mensajes", expectIntent: "commercial", expectQuote: false },
+  { channel: "landing", message: "quiero comprar más mensajes", expectIntent: "commercial", expectQuote: false },
+  { channel: "landing", message: "quiero comprar 30000 mensajes", expectIntent: "commercial", expectQuote: true },
+  { channel: "landing", message: "cuánto cuesta 70000 mensajes", expectIntent: "commercial", expectQuote: true },
+  { channel: "landing", message: "necesito una bolsa de mensajes", expectIntent: "commercial", expectQuote: false },
+  { channel: "landing", message: "necesito mensajes para mi empresa", expectIntent: "commercial", expectQuote: false },
+  { channel: "landing", message: "quiero enviar campañas", expectIntent: "commercial" },
+  { channel: "telegram", message: "quiero comprar mensajes", expectIntent: "commercial" },
+  { channel: "telegram", message: "cotizar 30000 mensajes", expectIntent: "commercial", expectQuote: true },
+  { channel: "telegram", message: "saldo", expectIntent: "unknown" },
   ...(TEST_COMPANY
     ? [
-        { channel: "web_client" as const, message: "hola", companyId: TEST_COMPANY },
-        { channel: "web_client" as const, message: "cuánto saldo tengo", companyId: TEST_COMPANY },
-        { channel: "web_client" as const, message: "quiero crear una campaña", companyId: TEST_COMPANY },
-        { channel: "web_client" as const, message: "qué significa failed", companyId: TEST_COMPANY },
-        {
-          channel: "web_client" as const,
-          message: "optimiza este mensaje: Estimado cliente tenemos descuentos hoy",
-          companyId: TEST_COMPANY,
-        },
+        { channel: "web_client" as const, message: "quiero comprar más mensajes", companyId: TEST_COMPANY, expectIntent: "commercial" },
+        { channel: "web_client" as const, message: "necesito cargar saldo", companyId: TEST_COMPANY, expectIntent: "commercial" },
+        { channel: "web_client" as const, message: "quiero enviar campaña", companyId: TEST_COMPANY, expectIntent: "campaign_draft" },
       ]
     : []),
-  { channel: "telegram", message: "saldo" },
-  { channel: "telegram", message: "cotizar 70000 sms" },
-  { channel: "telegram", message: "quiero comprar mas sms" },
-  { channel: "telegram", message: "no entiendo" },
 ];
+
+function assertCommercialNormalization(): void {
+  const samples = [
+    ["quiero comprar mensajes", "quiero comprar sms"],
+    ["necesito 70000 mensajes", "necesito 70000 sms"],
+    ["cargar saldo", "comprar sms"],
+  ];
+  for (const [inText, expected] of samples) {
+    const out = normalizeCommercialText(inText);
+    if (!out.includes(expected.split(" ").slice(-1)[0]!)) {
+      throw new Error(`normalizeCommercialText("${inText}") → "${out}", esperaba contener parte de "${expected}"`);
+    }
+  }
+  if (!matchesCommercialBuyIntentNormalized("quiero comprar mensajes")) {
+    throw new Error("matchesCommercialBuyIntentNormalized falló para quiero comprar mensajes");
+  }
+  if (!isLikelyCommercialPhrase("necesito mensajes para mi empresa")) {
+    throw new Error("isLikelyCommercialPhrase falló");
+  }
+  if (extractCommercialQuantity("cotizar 12500 mensajes") !== 12500) {
+    throw new Error("extractCommercialQuantity 12500 mensajes");
+  }
+  console.log("✓ normalización comercial");
+}
 
 async function main(): Promise<void> {
   console.log("=== test:agent-persona ===\n");
+  assertCommercialNormalization();
+
   let ok = 0;
   let fail = 0;
 
@@ -51,10 +84,26 @@ async function main(): Promise<void> {
             ? { authorized: Boolean(c.companyId), telegramAuthorized: Boolean(c.companyId) }
             : {},
       });
-      const preview = r.reply.replace(/\n/g, " ").slice(0, 100);
-      console.log(`✓ [${c.channel}] "${c.message}" → ${r.intent} (${r.confidence})`);
+      const preview = r.reply.replace(/\n/g, " ").slice(0, 120);
+      let pass = true;
+      if (c.expectIntent && r.intent !== c.expectIntent) {
+        pass = false;
+      }
+      if (c.expectQuote === true && !r.quote) {
+        pass = false;
+      }
+      if (c.expectQuote === false && r.quote) {
+        pass = false;
+      }
+      console.log(
+        `${pass ? "✓" : "✗"} [${c.channel}] "${c.message}" → ${r.intent}${r.quote ? " +quote" : ""}`,
+      );
       console.log(`  ${preview}…\n`);
-      ok += 1;
+      if (pass) {
+        ok += 1;
+      } else {
+        fail += 1;
+      }
     } catch (e) {
       console.log(`✗ [${c.channel}] "${c.message}" → ${e instanceof Error ? e.message : e}\n`);
       fail += 1;
@@ -62,10 +111,7 @@ async function main(): Promise<void> {
   }
 
   console.log(`Resultado: ${ok} OK, ${fail} fallos`);
-  console.log(
-    "\nNota: casos web_client con companyId real deben probarse en /app con sesión autenticada.",
-  );
-  process.exit(fail > 3 ? 1 : 0);
+  process.exit(fail > 0 ? 1 : 0);
 }
 
 main().catch((e) => {

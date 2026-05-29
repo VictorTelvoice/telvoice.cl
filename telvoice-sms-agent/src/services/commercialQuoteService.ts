@@ -12,6 +12,7 @@ import {
   SMS_QUANTITY_STEP,
 } from "./smsPricingTierService.js";
 import { listActiveSmsProducts } from "./smsProductService.js";
+import { normalizeCommercialText } from "./agent/agentCommercialText.js";
 
 const BUNDLE_INCLUDES = [
   "Plataforma web para gestión de envíos",
@@ -22,7 +23,7 @@ const BUNDLE_INCLUDES = [
 export { getUnitPriceForQuantity, normalizeQuoteQuantity } from "./smsPricingTierService.js";
 
 export function extractSmsQuantityFromText(text: string): number | null {
-  const normalized = text.toLowerCase().replace(/\./g, "");
+  const normalized = normalizeCommercialText(text);
 
   const patterns = [
     /cotizar\s+(\d[\d\s]*)\s*sms?/i,
@@ -34,6 +35,7 @@ export function extractSmsQuantityFromText(text: string): number | null {
     /cu[aá]nto\s+cuesta\s+(\d[\d\s]*)\s*sms?/i,
     /(\d[\d\s]*)\s*sms?\s+en\s+chile/i,
     /(\d[\d\s]*)\s*sms?/i,
+    /(\d[\d\s]*)\s*mensajes?/i,
   ];
 
   for (const pattern of patterns) {

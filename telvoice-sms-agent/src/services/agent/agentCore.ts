@@ -34,6 +34,7 @@ import {
   saveLandingLead,
 } from "./agentLeadCapture.js";
 import { extractSmsQuantityFromText } from "../commercialQuoteService.js";
+import { isLikelyCommercialPhrase } from "./agentCommercialText.js";
 import { recordAgentFeedback } from "./agentFeedbackService.js";
 import type {
   AgentCoreRequest,
@@ -456,6 +457,30 @@ export async function runAgentCore(
   if (
     response.confidence < 0.45 &&
     response.intent !== "commercial" &&
+    response.intent !== "knowledge" &&
+    isLikelyCommercialPhrase(message)
+  ) {
+    const commercialRoute = routeAgentIntent(message, channel, {
+      command,
+      authorized,
+      memory: await getConversationMemory(sessionId, channel),
+    });
+    if (commercialRoute.intent === "commercial") {
+      if (companyId) {
+        execCtx.companyId = companyId;
+      }
+      response = await dispatchRoutedIntent(
+        commercialRoute,
+        message,
+        execCtx,
+        sessionId,
+      );
+    }
+  }
+
+  if (
+    response.confidence < 0.45 &&
+    response.intent !== "commercial" &&
     response.intent !== "knowledge"
   ) {
     const k = await searchKnowledgeForChannel(message, channel);
@@ -466,7 +491,7 @@ export async function runAgentCore(
         intent: "knowledge",
         confidence: k.confidence,
       };
-    } else {
+    } else if (!isLikelyCommercialPhrase(message)) {
       await recordUnansweredQuestion({
         channel,
         sessionId,
@@ -475,6 +500,7 @@ export async function runAgentCore(
         question: message,
         detectedIntent: String(response.intent),
         confidence: response.confidence,
+        suggestedCategory: "comercial",
       });
       response = {
         ...response,
