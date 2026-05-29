@@ -10,6 +10,7 @@ import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
 import {
   renderCampaignClientStatusBadge,
   renderCampaignModeLabel,
+  renderClientLiveModeBadge,
   renderPanelMessageStatusBadge,
   renderSmsModeBadge,
 } from "./app-sms-ui.js";
@@ -204,7 +205,7 @@ function renderCampaignMessageModeBadge(
   mode: string | null | undefined,
 ): string {
   if (detail.viewKind === "production") {
-    return `<span class="badge badge-ok">PRODUCCIÓN</span>`;
+    return renderClientLiveModeBadge(mode);
   }
   return renderSmsModeBadge(mode);
 }

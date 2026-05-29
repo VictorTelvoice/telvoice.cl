@@ -462,16 +462,14 @@ export async function loadCampaignDetailView(
     typeof meta.send_mode === "string" ? meta.send_mode.trim() : "";
   const modeKpi =
     viewKind === "production"
-      ? isContactsLiveLaunchCampaign(campaign)
-        ? "LIVE"
-        : sendMode === "scheduled"
-          ? "PROGRAMADO"
-          : sendMode === "mass"
-            ? "MASIVA"
-            : "PRODUCCIÓN"
+      ? sendMode === "scheduled"
+        ? "PROGRAMADO"
+        : sendMode === "mass"
+          ? "MASIVA"
+          : "LIVE SEND"
       : campaign.mode === "mock"
         ? "MOCK"
-        : campaign.mode.toUpperCase();
+        : "MOCK";
 
   return {
     viewKind,

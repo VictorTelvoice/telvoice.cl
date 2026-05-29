@@ -35,6 +35,19 @@ export function renderSmsModeBadge(mode: string | null | undefined): string {
   return badge("ok", (mode ?? "live").toUpperCase());
 }
 
+/** Etiqueta comercial en panel cliente (campañas y bandeja reales). */
+export function renderClientLiveModeBadge(
+  mode: string | null | undefined,
+): string {
+  if (mode === "mock") {
+    return badge("muted", "MOCK");
+  }
+  if (mode === "live_test" || mode === "live") {
+    return badge("ok", "LIVE SEND");
+  }
+  return badge("ok", (mode ?? "live").toUpperCase());
+}
+
 export function renderPanelMessageSourceBadge(
   metadata: Record<string, unknown> | null | undefined,
   mode?: string | null,
@@ -90,7 +103,7 @@ export function renderCampaignModeLabel(campaign: SmsCampaignRow): string {
   if (sendMode === "mass") {
     return badge("ok", "MASIVA");
   }
-  return renderSmsModeBadge(campaign.mode);
+  return renderClientLiveModeBadge(campaign.mode);
 }
 
 export function renderCampaignStatusBadge(status: string): string {
@@ -147,7 +160,7 @@ export function renderInboxTableRows(messages: PanelSmsMessageRow[]): string {
       <td>${m.segments}</td>
       <td>${m.cost_sms}</td>
       <td>${renderPanelMessageStatusBadge(m.status, m.mode)}</td>
-      <td>${renderSmsModeBadge(m.mode)}</td>
+      <td>${renderClientLiveModeBadge(m.mode)}</td>
       <td><code class="tv-code-sm" title="${escapeHtml(m.provider_message_id ?? "")}">${escapeHtml((m.provider_message_id ?? "—").slice(0, 12))}</code></td>
       <td class="tv-cell-truncate" title="${escapeHtml(m.error_message ?? "")}">${escapeHtml(m.error_message ?? "—")}</td>
     </tr>`,
