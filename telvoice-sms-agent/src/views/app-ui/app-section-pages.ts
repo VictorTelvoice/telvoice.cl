@@ -5,26 +5,6 @@ import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
 import { renderOrderShortIdCell } from "./app-order-ui.js";
 
-function comingSoon(
-  ctx: AppPageContext,
-  activeNav: string,
-  title: string,
-  subtitle: string,
-  icon: string,
-  bullets: string[],
-): string {
-  const lis = bullets.map((b) => `<li>${escapeHtml(b)}</li>`).join("");
-  const body = `
-    ${renderPageHeader({ title, subtitle })}
-    <div class="tv-coming-soon">
-      <span class="material-symbols-outlined" aria-hidden="true">${escapeHtml(icon)}</span>
-      <h2 style="margin-top:1rem">Próximamente</h2>
-      <p class="tv-page-sub">Esta sección mostrará solo los datos de <strong>${escapeHtml(ctx.company.name)}</strong>.</p>
-      <ul style="text-align:left;max-width:360px;margin:1rem auto;color:var(--tv-muted)">${lis}</ul>
-    </div>`;
-  return wrapAppPage(ctx, activeNav, title, body);
-}
-
 export {
   renderAppCampaignsPage,
   renderAppInboxPage,
@@ -37,13 +17,7 @@ export {
 
 export { renderAppTemplatesPage } from "./app-templates-page.js";
 
-export function renderAppApiPage(ctx: AppPageContext): string {
-  return comingSoon(ctx, "api", "API", "Integra Telvoice con tus sistemas.", "api", [
-    "API key por empresa",
-    "Webhooks de entrega",
-    "Documentación de endpoints",
-  ]);
-}
+export { renderAppApiPage } from "./app-api-page.js";
 
 export function renderAppSupportPage(
   ctx: AppPageContext,
