@@ -17,6 +17,7 @@
     "setup:env:force": "tsx scripts/setup-env.ts --force",
     "verify:setup": "tsx scripts/verify-setup.ts",
     "verify:agent-core": "tsx scripts/verify-agent-core.ts",
+    "test:agent-persona": "tsx scripts/test-agent-persona.ts",
     "migrate:agent-core": "node scripts/apply-migrations-agent-core.mjs",
     "debug:supabase": "tsx scripts/debug-supabase.ts",
     "debug:supabase-rest": "tsx scripts/debug-supabase-rest.ts",

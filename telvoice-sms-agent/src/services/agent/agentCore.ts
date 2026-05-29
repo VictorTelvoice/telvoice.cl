@@ -3,7 +3,6 @@ import { AppError } from "../../utils/errors.js";
 import {
   routeAgentIntent,
   UNAUTHORIZED_PRIVATE_MSG,
-  LOW_CONFIDENCE_FALLBACK,
 } from "./agentIntentRouter.js";
 import { dispatchRoutedIntent } from "./agentHandlers.js";
 import {
@@ -18,6 +17,24 @@ import {
 import { executePendingAction } from "./executePendingAction.js";
 import { recordUnansweredQuestion } from "./agentUnansweredService.js";
 import { searchKnowledgeForChannel } from "./tools/searchKnowledgeTool.js";
+import { getAgentPersona } from "./agentPersona.js";
+import {
+  getConversationMemory,
+  updateConversationMemory,
+} from "./agentConversationMemory.js";
+import {
+  composeAgentResponse,
+  composeLowConfidenceReply,
+} from "./agentResponseComposer.js";
+import {
+  extractLeadFieldsFromText,
+  leadFieldsComplete,
+  mergeLeadFields,
+  missingLeadFieldPrompt,
+  saveLandingLead,
+} from "./agentLeadCapture.js";
+import { extractSmsQuantityFromText } from "../commercialQuoteService.js";
+import { recordAgentFeedback } from "./agentFeedbackService.js";
 import type {
   AgentCoreRequest,
   AgentCoreResponse,
@@ -42,6 +59,7 @@ async function handleConfirmCancel(
   sessionId: string,
   metadata?: Record<string, unknown>,
 ): Promise<AgentCoreResponse> {
+  const persona = getAgentPersona(ctx.channel);
   const isCancel = /^cancel/i.test(message.trim());
   const pending =
     (metadata?.pendingActionId
@@ -53,7 +71,15 @@ async function handleConfirmCancel(
       await clearPendingActionDb(pending.id, "cancelled");
     }
     return {
-      reply: "Acción cancelada. ¿En qué más te ayudo?",
+      reply: composeAgentResponse({
+        persona,
+        channel: ctx.channel,
+        intent: "cancel",
+        rawReply: "Acción cancelada.",
+        memory: await getConversationMemory(sessionId, ctx.channel),
+        confidence: 0.99,
+        acknowledgment: persona.defaultCTA,
+      }),
       intent: "cancel",
       confidence: 0.99,
       sessionId,
@@ -75,11 +101,18 @@ async function handleConfirmCancel(
     throw new AppError("Acción no autorizada para esta empresa.", 403);
   }
 
-  const reply = await executePendingAction(pending);
+  const rawReply = await executePendingAction(pending);
   await clearPendingActionDb(pending.id, "confirmed");
 
   return {
-    reply,
+    reply: composeAgentResponse({
+      persona,
+      channel: ctx.channel,
+      intent: "confirm",
+      rawReply,
+      memory: await getConversationMemory(sessionId, ctx.channel),
+      confidence: 0.99,
+    }),
     intent: "confirm",
     confidence: 0.99,
     requiresConfirmation: false,
@@ -131,6 +164,126 @@ async function persistTurn(
   return sid;
 }
 
+async function applyLandingLeadFlow(
+  message: string,
+  sessionId: string,
+  response: AgentCoreResponse,
+  memory: Awaited<ReturnType<typeof getConversationMemory>>,
+): Promise<AgentCoreResponse> {
+  const extracted = extractLeadFieldsFromText(message);
+  const leadPartial = mergeLeadFields(memory.leadPartial ?? {}, extracted);
+  const qty =
+    response.quote?.quoted_quantity ??
+    extractSmsQuantityFromText(message) ??
+    leadPartial.requested_quantity;
+
+  if (qty) {
+    leadPartial.requested_quantity = qty;
+  }
+
+  await updateConversationMemory(sessionId, "landing", {
+    leadPartial,
+    lastQuote: response.quote ?? memory.lastQuote,
+    lastQuantity: qty ?? memory.lastQuantity,
+    lastIntent: response.intent,
+  });
+
+  const commercialIntents = new Set([
+    "commercial",
+    "quote_purchase",
+    "lead_capture",
+    "human_contact",
+    "payment",
+  ]);
+
+  if (!commercialIntents.has(String(response.intent)) && !leadPartial.name) {
+    return response;
+  }
+
+  if (leadFieldsComplete(leadPartial)) {
+    const saved = await saveLandingLead({
+      fields: leadPartial,
+      sessionId,
+      quote: response.quote ?? memory.lastQuote,
+      lastMessage: message,
+    });
+    if (saved.ok) {
+      return {
+        ...response,
+        reply: `${response.reply}\n\nListo, registré tus datos. Un ejecutivo Telvoice puede contactarte pronto.`,
+        leadRequired: false,
+      };
+    }
+  }
+
+  const missing = missingLeadFieldPrompt(leadPartial);
+  if (missing && (response.leadRequired || commercialIntents.has(String(response.intent)))) {
+    return {
+      ...response,
+      reply: `${response.reply}\n\nPara avanzar necesito: ${missing}.`,
+      leadRequired: true,
+    };
+  }
+
+  return response;
+}
+
+async function finalizeResponse(
+  request: AgentCoreRequest,
+  sessionId: string,
+  companyId: string | null,
+  response: AgentCoreResponse,
+  message: string,
+): Promise<AgentCoreResponse> {
+  const channel = request.channel;
+  const persona = getAgentPersona(channel);
+  const userName =
+    typeof request.metadata?.userDisplayName === "string"
+      ? request.metadata.userDisplayName
+      : typeof request.metadata?.telegramFirstName === "string"
+        ? request.metadata.telegramFirstName
+        : null;
+
+  let memory = await getConversationMemory(sessionId, channel);
+
+  const composed = composeAgentResponse({
+    persona,
+    channel,
+    intent: response.intent,
+    rawReply: response.reply,
+    memory,
+    confidence: response.confidence,
+    quote: response.quote ?? null,
+    userName,
+  });
+
+  response = { ...response, reply: composed };
+
+  const qty =
+    response.quote?.quoted_quantity ??
+    extractSmsQuantityFromText(message) ??
+    undefined;
+
+  memory = await updateConversationMemory(
+    sessionId,
+    channel,
+    {
+      lastIntent: String(response.intent),
+      lastQuantity: qty ?? memory.lastQuantity,
+      lastQuote: response.quote ?? memory.lastQuote,
+      lastTopic: String(response.intent),
+      userDisplayName: userName ?? memory.userDisplayName,
+    },
+    companyId,
+  );
+
+  if (channel === "landing") {
+    response = await applyLandingLeadFlow(message, sessionId, response, memory);
+  }
+
+  return response;
+}
+
 export async function runAgentCore(
   request: AgentCoreRequest,
 ): Promise<AgentCoreResponse> {
@@ -158,6 +311,37 @@ export async function runAgentCore(
         request.companyId ??
         null;
 
+  let memory = await getConversationMemory(sessionId, channel);
+
+  if (memory.pendingFeedback) {
+    await recordAgentFeedback({
+      channel,
+      sessionId,
+      userId: request.userId,
+      companyId,
+      rating: 1,
+      feedbackText: message,
+      lastQuestion: memory.lastUserQuestion,
+    });
+    await updateConversationMemory(sessionId, channel, { pendingFeedback: false }, companyId);
+    const persona = getAgentPersona(channel);
+    const fbReply = composeAgentResponse({
+      persona,
+      channel,
+      intent: "negative_feedback",
+      rawReply: "Gracias, registré tu comentario para mejorar el agente.",
+      memory,
+      confidence: 0.9,
+    });
+    sessionId = await persistTurn(channel, companyId, request.userId, sessionId, message, {
+      reply: fbReply,
+      intent: "negative_feedback",
+      confidence: 0.9,
+      sessionId,
+    });
+    return { reply: fbReply, intent: "negative_feedback", confidence: 0.9, sessionId };
+  }
+
   const execCtx: AgentExecutionContext = {
     channel,
     companyId: companyId ?? "",
@@ -168,6 +352,7 @@ export async function runAgentCore(
   const route = routeAgentIntent(message, channel, {
     command,
     authorized,
+    memory,
   });
 
   if (route.intent === "confirm" || route.intent === "cancel") {
@@ -198,15 +383,22 @@ export async function runAgentCore(
         sessionId,
       );
       if (commercial.intent === "commercial" && commercial.quote) {
+        let out = await finalizeResponse(
+          request,
+          sessionId,
+          null,
+          commercial,
+          message,
+        );
         sessionId = await persistTurn(
           channel,
           null,
           request.userId,
           sessionId,
           message,
-          commercial,
+          out,
         );
-        return { ...commercial, sessionId };
+        return { ...out, sessionId };
       }
       return {
         reply: UNAUTHORIZED_PRIVATE_MSG,
@@ -250,7 +442,7 @@ export async function runAgentCore(
     } else {
       response = await dispatchRoutedIntent(route, message, execCtx, sessionId);
     }
-  } else if (companyId || channel === "admin") {
+  } else if (companyId || channel === "admin" || !route.requiresAuth) {
     response = await dispatchRoutedIntent(route, message, execCtx, sessionId);
   } else {
     response = {
@@ -286,11 +478,35 @@ export async function runAgentCore(
       });
       response = {
         ...response,
-        reply: LOW_CONFIDENCE_FALLBACK,
+        reply: composeLowConfidenceReply(getAgentPersona(channel), channel),
         confidence: 0.35,
       };
     }
   }
+
+  if (route.intent === "negative_feedback") {
+    await updateConversationMemory(
+      sessionId,
+      channel,
+      { pendingFeedback: true, lastUserQuestion: message },
+      companyId,
+    );
+  } else {
+    await updateConversationMemory(
+      sessionId,
+      channel,
+      { lastUserQuestion: message },
+      companyId,
+    );
+  }
+
+  response = await finalizeResponse(
+    request,
+    sessionId,
+    companyId,
+    response,
+    message,
+  );
 
   sessionId = await persistTurn(
     channel,

@@ -27,6 +27,14 @@ export type AgentIntent =
   | "wallet"
   | "register"
   | "lead_capture"
+  | "confusion"
+  | "frustration"
+  | "human_contact"
+  | "payment"
+  | "follow_up"
+  | "negative_feedback"
+  | "commercial_doubt"
+  | "technical_doubt"
   | "unknown";
 
 export type AgentSuggestedAction = {

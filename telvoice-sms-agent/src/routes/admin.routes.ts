@@ -54,6 +54,7 @@ import {
 } from "../controllers/admin-knowledge.controller.js";
 import {
   getAdminAgentCreateArticleForm,
+  getAdminAgentFeedback,
   getAdminAgentHub,
   getAdminAgentUnanswered,
   postAdminAgentCreateArticle,
@@ -499,6 +500,7 @@ adminRouter.get("/knowledge/:id/edit", requireAdminPage, getKnowledgeEditForm);
 adminRouter.post("/knowledge/:id/edit", requireAdminPage, postEditKnowledge);
 adminRouter.post("/knowledge/:id/delete", requireAdminPage, postDeleteKnowledge);
 adminRouter.get("/agent-training", requireAdminPage, getAdminAgentHub);
+adminRouter.get("/agent-training/feedback", requireAdminPage, getAdminAgentFeedback);
 adminRouter.get(
   "/agent-training/unanswered",
   requireAdminPage,

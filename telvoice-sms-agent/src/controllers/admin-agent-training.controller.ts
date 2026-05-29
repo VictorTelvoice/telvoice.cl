@@ -15,7 +15,12 @@ import {
 import { ValidationError } from "../utils/errors.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
+  getAgentFeedbackStats,
+  listAgentFeedback,
+} from "../services/agent/agentFeedbackService.js";
+import {
   renderAgentTrainingCreateArticleForm,
+  renderAgentTrainingFeedbackList,
   renderAgentTrainingHub,
   renderAgentTrainingUnansweredList,
 } from "../views/admin-ui/sections/agent-training-pages.js";
@@ -94,8 +99,28 @@ export async function getAdminAgentHub(
 ): Promise<void> {
   try {
     const stats = await getUnansweredStats();
+    const feedbackStats = await getAgentFeedbackStats();
     res.type("html").send(
-      renderAgentTrainingHub({ admin: req.adminUser!, stats }),
+      renderAgentTrainingHub({
+        admin: req.adminUser!,
+        stats,
+        feedbackStats,
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAdminAgentFeedback(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const rows = await listAgentFeedback(100);
+    res.type("html").send(
+      renderAgentTrainingFeedbackList({ admin: req.adminUser!, rows }),
     );
   } catch (error) {
     next(error);

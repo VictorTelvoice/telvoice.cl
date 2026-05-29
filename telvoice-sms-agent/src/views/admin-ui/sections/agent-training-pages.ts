@@ -2,6 +2,7 @@ import type { AdminSessionUser } from "../../../types/admin.js";
 import type { KnowledgeArticleRow } from "../../../types/knowledge.js";
 import type { UnansweredQuestionRow } from "../../../services/agent/agentUnansweredService.js";
 import type { UnansweredStats } from "../../../services/agent/agentUnansweredService.js";
+import type { AgentFeedbackRow } from "../../../services/agent/agentFeedbackService.js";
 import { escapeHtml } from "../../../utils/html.js";
 import { wrapAdminPage } from "../admin-page-wrap.js";
 
@@ -11,8 +12,10 @@ const STATUSES = ["new", "reviewed", "ignored"] as const;
 export function renderAgentTrainingHub(options: {
   admin: AdminSessionUser;
   stats: UnansweredStats;
+  feedbackStats?: { helpful: number; notHelpful: number; total: number };
 }): string {
   const s = options.stats;
+  const fb = options.feedbackStats ?? { helpful: 0, notHelpful: 0, total: 0 };
   const body = `
     <div class="tv-page-head">
       <h1 class="tv-page-title">Agente Telvoice</h1>
@@ -35,6 +38,10 @@ export function renderAgentTrainingHub(options: {
         <span class="tv-kpi__label">Artículos desde preguntas</span>
         <span class="tv-kpi__value">${s.articlesFromQuestions}</span>
       </div>
+      <a href="/admin/agent-training/feedback" class="tv-kpi" style="text-decoration:none;color:inherit">
+        <span class="tv-kpi__label">Feedback útil / no útil</span>
+        <span class="tv-kpi__value">${fb.helpful} / ${fb.notHelpful}</span>
+      </a>
     </div>
     <div class="tv-kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));margin-top:1rem">
       <a href="/admin/agent-training/unanswered" class="tv-kpi" style="text-decoration:none;color:inherit">
@@ -301,6 +308,48 @@ export function renderAgentTrainingCreateArticleForm(options: {
   return wrapAdminPage({
     admin: options.admin,
     title: "Crear artículo",
+    activeNav: "agent-training",
+    body,
+  });
+}
+
+export function renderAgentTrainingFeedbackList(options: {
+  admin: AdminSessionUser;
+  rows: AgentFeedbackRow[];
+}): string {
+  const tableRows = options.rows.length
+    ? options.rows
+        .map(
+          (r) => `<tr>
+        <td>${escapeHtml(new Date(r.created_at).toLocaleString("es-CL"))}</td>
+        <td><span class="tv-tag">${escapeHtml(r.channel)}</span></td>
+        <td>${escapeHtml(r.session_id.slice(0, 24))}</td>
+        <td>${r.rating != null ? (r.rating >= 4 ? "👍" : "👎") : "—"}</td>
+        <td>${escapeHtml(r.feedback_text ?? "—")}</td>
+      </tr>`,
+        )
+        .join("")
+    : `<tr><td colspan="5">Sin feedback registrado.</td></tr>`;
+
+  const body = `
+    <div class="tv-page-head">
+      <h1 class="tv-page-title">Feedback del agente</h1>
+      <p class="tv-page-sub"><a href="/admin/agent-training">← Agente Telvoice</a></p>
+    </div>
+    <div class="tv-panel">
+      <div class="tv-table-wrap">
+        <table class="tv-table">
+          <thead>
+            <tr><th>Fecha</th><th>Canal</th><th>Sesión</th><th>Rating</th><th>Comentario</th></tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+
+  return wrapAdminPage({
+    admin: options.admin,
+    title: "Feedback agente",
     activeNav: "agent-training",
     body,
   });

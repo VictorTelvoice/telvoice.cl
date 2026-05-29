@@ -7,6 +7,7 @@ import {
 } from "../telegramIntentService.js";
 import { matchesCapabilitiesIntent } from "../telegramCapabilities.js";
 import { extractSmsQuantityFromText } from "../commercialQuoteService.js";
+import type { ConversationMemory } from "./agentConversationMemory.js";
 import type { AgentChannel, AgentIntent } from "./types.js";
 
 export type RoutedIntent = {
@@ -19,7 +20,8 @@ export type RoutedIntent = {
 
 const CONFIRM_RE =
   /^(confirmo|si confirmo|sí confirmo|confirmar|ok confirmo|si confirmar|sí confirmar|confirmar envio|confirmar envío)\b/i;
-const CANCEL_RE = /^(cancelar|cancelo|no confirmo|anular|detener|no)\b/i;
+const CANCEL_RE =
+  /^(cancelar|cancelo|no confirmo|anular|detener)\b/i;
 
 function requiresCompanyIntent(intent: AgentIntent): boolean {
   return [
@@ -37,19 +39,143 @@ function requiresCompanyIntent(intent: AgentIntent): boolean {
   ].includes(intent);
 }
 
+export function detectFollowUpIntent(
+  message: string,
+  memory: ConversationMemory,
+): RoutedIntent | null {
+  const n = normalizeIntentText(message);
+  if (
+    !/\b(y eso|y el total|cuanto era|cuánto era|otra vez|de nuevo|lo anterior|esa cotizacion|esa cotización)\b/.test(
+      n,
+    )
+  ) {
+    return null;
+  }
+  if (memory.lastQuote) {
+    return {
+      intent: "follow_up",
+      confidence: 0.82,
+      commercialQuantity: memory.lastQuote.quoted_quantity,
+      requiresAuth: false,
+      operationalCommand: null,
+    };
+  }
+  if (memory.lastIntent) {
+    return {
+      intent: "follow_up",
+      confidence: 0.75,
+      commercialQuantity: memory.lastQuantity ?? null,
+      requiresAuth: false,
+      operationalCommand: null,
+    };
+  }
+  return null;
+}
+
 export function routeAgentIntent(
   message: string,
   channel: AgentChannel,
-  options?: { command?: string; authorized?: boolean },
+  options?: {
+    command?: string;
+    authorized?: boolean;
+    memory?: ConversationMemory;
+  },
 ): RoutedIntent {
   const normalized = normalizeIntentText(message);
   const text = message.trim();
+  const memory = options?.memory ?? {};
+
+  const followUp = detectFollowUpIntent(text, memory);
+  if (followUp) {
+    return followUp;
+  }
 
   if (CONFIRM_RE.test(normalized)) {
     return { intent: "confirm", confidence: 0.99, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
   }
   if (CANCEL_RE.test(normalized)) {
     return { intent: "cancel", confidence: 0.99, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
+  }
+
+  if (
+    /\b(no me sirvio|no me sirvió|respuesta incorrecta|mal respuesta|mala respuesta)\b/.test(
+      normalized,
+    )
+  ) {
+    return {
+      intent: "negative_feedback",
+      confidence: 0.9,
+      commercialQuantity: null,
+      requiresAuth: false,
+      operationalCommand: null,
+    };
+  }
+
+  if (
+    /\b(no entiendo|no entendi|no comprendo|que significa esto|no me queda claro)\b/.test(
+      normalized,
+    )
+  ) {
+    return {
+      intent: "confusion",
+      confidence: 0.88,
+      commercialQuantity: null,
+      requiresAuth: false,
+      operationalCommand: null,
+    };
+  }
+
+  if (
+    /\b(frustrad|mal servicio|esto no funciona|no funciona bien|pésimo|pesimo)\b/.test(
+      normalized,
+    )
+  ) {
+    return {
+      intent: "frustration",
+      confidence: 0.85,
+      commercialQuantity: null,
+      requiresAuth: false,
+      operationalCommand: null,
+    };
+  }
+
+  if (
+    /\b(hablar con|ejecutivo|persona humana|humano|vendedor|contactar a alguien)\b/.test(
+      normalized,
+    )
+  ) {
+    return {
+      intent: "human_contact",
+      confidence: 0.84,
+      commercialQuantity: null,
+      requiresAuth: false,
+      operationalCommand: null,
+    };
+  }
+
+  if (/\b(mercadopago|mercado pago|como pago|cómo pago|link de pago|pagar ahora)\b/.test(normalized)) {
+    return {
+      intent: "payment",
+      confidence: 0.86,
+      commercialQuantity: extractSmsQuantityFromText(text),
+      requiresAuth: false,
+      operationalCommand: null,
+    };
+  }
+
+  if (
+    /\b(sirve para|funciona para|se puede usar para|otp|verificacion|verificación)\b/.test(
+      normalized,
+    ) &&
+    channel === "landing"
+  ) {
+    return {
+      intent: "commercial_doubt",
+      confidence: 0.8,
+      commercialQuantity: null,
+      requiresAuth: false,
+      operationalCommand: null,
+    };
   }
 
   const tg = channel === "telegram" ? classifyTelegramIntent(text, options?.command ?? "") : null;
@@ -73,6 +199,21 @@ export function routeAgentIntent(
 
   if (matchesCapabilitiesIntent(normalized)) {
     return { intent: "capabilities", confidence: 0.85, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
+  }
+
+  if (
+    /\b(quiero comprar|comprar mas|comprar más|cargar saldo|mas sms|más sms|necesito sms)\b/.test(
+      normalized,
+    )
+  ) {
+    return {
+      intent: "commercial",
+      confidence: 0.9,
+      commercialQuantity:
+        extractSmsQuantityFromText(text) ?? memory.lastQuantity ?? null,
+      requiresAuth: false,
+      operationalCommand: null,
+    };
   }
 
   const commercial = detectCommercialIntent(text);
@@ -128,7 +269,11 @@ export function routeAgentIntent(
     return { intent: "strategy", confidence: 0.75, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
   }
 
-  if (/\b(dlr|submitted|delivered|failed|provider_status|no llega)\b/.test(normalized)) {
+  if (
+    /\b(dlr|submitted|delivered|failed|provider_status|no llega|por que no llega|por qué no llega)\b/.test(
+      normalized,
+    )
+  ) {
     return { intent: "dlr_help", confidence: 0.82, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
   }
 
@@ -142,7 +287,11 @@ export function routeAgentIntent(
     };
   }
 
-  if (/\b(crear campana|crear campaña|nueva campaña|borrador)\b/.test(normalized)) {
+  if (
+    /\b(crear campana|crear campaña|nueva campaña|borrador|enviar campaña|enviar campana|quiero campaña)\b/.test(
+      normalized,
+    )
+  ) {
     return { intent: "campaign_draft", confidence: 0.8, commercialQuantity: null, requiresAuth: true, operationalCommand: null };
   }
 
@@ -158,11 +307,34 @@ export function routeAgentIntent(
     return { intent: "lead_capture", confidence: 0.7, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
   }
 
+  if (
+    /\b(api|smpp|whitelist|ip |encoding|segmento tecnico)\b/.test(normalized) &&
+    !commercial &&
+    !commercialBuy
+  ) {
+    return {
+      intent: "technical_doubt",
+      confidence: 0.78,
+      commercialQuantity: null,
+      requiresAuth: false,
+      operationalCommand: null,
+    };
+  }
+
   if (isExplicitKnowledgeQuestion(normalized) || tg?.route === "knowledge") {
+    if (commercialBuy || /\b(comprar|cotizar|precio|bolsa)\b/.test(normalized)) {
+      return {
+        intent: "commercial",
+        confidence: 0.85,
+        commercialQuantity: extractSmsQuantityFromText(text),
+        requiresAuth: false,
+        operationalCommand: null,
+      };
+    }
     return { intent: "knowledge", confidence: 0.72, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
   }
 
-  if (/^(hola|buenas|hey)\b/.test(normalized)) {
+  if (/^(hola|buenas|hey|buenos dias|buenas tardes)\b/.test(normalized)) {
     return { intent: "greeting", confidence: 0.7, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
   }
 

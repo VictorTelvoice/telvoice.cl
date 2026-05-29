@@ -59,6 +59,12 @@ const MIGRATIONS = [
       WHERE table_schema = 'public' AND table_name = 'knowledge_articles'
         AND column_name = 'source_unanswered_question_id'`,
   },
+  {
+    id: "046",
+    file: "046_agent_persona_memory_feedback.sql",
+    check: `SELECT 1 FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'agent_feedback'`,
+  },
 ];
 
 const connectionString = process.env.DATABASE_URL?.trim();

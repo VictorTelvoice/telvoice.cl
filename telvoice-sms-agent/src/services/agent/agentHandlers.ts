@@ -135,13 +135,20 @@ export async function dispatchRoutedIntent(
       });
     }
 
-    case "dlr_help":
+    case "dlr_help": {
+      let reply = toolDlrHelp();
+      if (ctx.channel === "web_client" && ctx.companyId) {
+        const recent = await getRecentMessagesTool.run(toolCtx(ctx), { limit: 3 });
+        reply = `${reply}\n\n${recent.summary}`;
+      }
       return baseResponse({
-        reply: toolDlrHelp(),
+        reply,
         intent,
         confidence: route.confidence,
         sessionId,
+        suggestedActions: [{ label: "Bandeja", href: "/app/inbox" }],
       });
+    }
 
     case "segments": {
       const r = await analyzeSmsTextTool.run(toolCtx(ctx), {
@@ -301,12 +308,95 @@ export async function dispatchRoutedIntent(
 
     case "greeting":
       return baseResponse({
-        reply:
-          "Hola, soy el asistente **telvoice**. ¿Saldo, campañas, cotización, DLR o compra de SMS?",
+        reply: "",
         intent,
         confidence: route.confidence,
         sessionId,
       });
+
+    case "confusion":
+    case "frustration":
+      return baseResponse({
+        reply: "",
+        intent,
+        confidence: route.confidence,
+        sessionId,
+      });
+
+    case "human_contact":
+      return baseResponse({
+        reply:
+          "Puedo derivarte al equipo comercial. Déjame nombre, empresa y email o WhatsApp, o escríbenos por el formulario en telvoice.cl.",
+        intent,
+        confidence: route.confidence,
+        leadRequired: ctx.channel === "landing",
+        sessionId,
+      });
+
+    case "payment":
+      return baseResponse({
+        reply:
+          ctx.channel === "landing"
+            ? "Puedes pagar con MercadoPago desde telvoice.cl tras cotizar, o dejar tus datos y te enviamos el link."
+            : "Compra más SMS en /app/buy-sms con MercadoPago cuando esté disponible.",
+        intent,
+        confidence: route.confidence,
+        sessionId,
+        suggestedActions:
+          ctx.channel === "landing"
+            ? [{ label: "Calculadora", href: "https://www.telvoice.cl/#calculadora" }]
+            : [{ label: "Comprar SMS", href: "/app/buy-sms" }],
+      });
+
+    case "follow_up": {
+      if (route.commercialQuantity) {
+        const q = await quoteSmsBundleTool.run(toolCtx(ctx), {
+          quantity: route.commercialQuantity,
+        });
+        return baseResponse({
+          reply: q.summary,
+          intent: "commercial",
+          confidence: route.confidence,
+          quote: q.data ?? null,
+          sessionId,
+        });
+      }
+      return baseResponse({
+        reply: "¿Sobre qué tema quieres continuar: cotización, saldo, campaña o DLR?",
+        intent,
+        confidence: route.confidence,
+        sessionId,
+      });
+    }
+
+    case "negative_feedback":
+      return baseResponse({
+        reply:
+          "Gracias por el aviso. ¿Qué faltó en la respuesta? Cuéntame en una frase y lo registramos para mejorar.",
+        intent,
+        confidence: route.confidence,
+        sessionId,
+      });
+
+    case "commercial_doubt":
+      return baseResponse({
+        reply:
+          "Sí, Telvoice SMS sirve para OTP, alertas, cobranza y campañas masivas en Chile (Entel, Movistar, Claro, WOM). ¿Cuántos SMS estimas al mes?",
+        intent,
+        confidence: route.confidence,
+        sessionId,
+        suggestedActions: [{ label: "Cotizar 5000 SMS", message: "cotizar 5000 sms" }],
+      });
+
+    case "technical_doubt": {
+      const k = await searchKnowledgeForChannel(message, ctx.channel);
+      return baseResponse({
+        reply: k.matched ? k.reply : "Consulta técnica: revisa API y documentación en el panel o pide whitelist IP en soporte.",
+        intent: k.matched ? "knowledge" : "technical_doubt",
+        confidence: k.confidence || route.confidence,
+        sessionId,
+      });
+    }
 
     case "knowledge": {
       const k = await searchKnowledgeForChannel(message, ctx.channel);

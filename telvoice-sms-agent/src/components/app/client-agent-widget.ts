@@ -130,6 +130,21 @@ export function getPanelAgentWidgetStyles(): string {
       background: #f1f5f9;
       color: #0f172a;
     }
+    .tv-panel-agent__feedback {
+      display: flex;
+      gap: 0.35rem;
+      margin-top: 0.25rem;
+      align-self: flex-start;
+    }
+    .tv-panel-agent__feedback button {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.45rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+      color: #64748b;
+    }
     .tv-panel-agent__form {
       display: flex;
       gap: 0.35rem;
@@ -232,12 +247,55 @@ export function getPanelAgentWidgetScript(): string {
     fab.setAttribute("aria-expanded", open ? "true" : "false");
   }
 
+  var lastUserMessage = "";
+
   function appendBubble(role, text) {
+    var wrap = document.createElement("div");
+    wrap.style.display = "flex";
+    wrap.style.flexDirection = "column";
+    wrap.style.alignItems = role === "user" ? "flex-end" : "flex-start";
     var el = document.createElement("div");
     el.className = "tv-panel-agent__bubble tv-panel-agent__bubble--" + (role === "user" ? "user" : "bot");
     el.textContent = text.replace(/\\*\\*/g, "");
-    log.appendChild(el);
+    wrap.appendChild(el);
+    if (role !== "user" && sessionId) {
+      var fb = document.createElement("div");
+      fb.className = "tv-panel-agent__feedback";
+      var up = document.createElement("button");
+      up.type = "button";
+      up.textContent = "👍 Me sirvió";
+      up.addEventListener("click", function () { sendFeedback(5, ""); });
+      var down = document.createElement("button");
+      down.type = "button";
+      down.textContent = "👎 No me sirvió";
+      down.addEventListener("click", function () {
+        var c = window.prompt("¿Qué faltó en la respuesta?");
+        sendFeedback(1, c || "");
+      });
+      fb.appendChild(up);
+      fb.appendChild(down);
+      wrap.appendChild(fb);
+    }
+    log.appendChild(wrap);
     log.scrollTop = log.scrollHeight;
+  }
+
+  async function sendFeedback(rating, feedbackText) {
+    if (!sessionId) return;
+    try {
+      await fetch("/api/app/agent/feedback", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: sessionId,
+          rating: rating,
+          feedbackText: feedbackText,
+          lastQuestion: lastUserMessage
+        })
+      });
+      appendBubble("bot", rating >= 4 ? "Gracias por tu feedback." : "Gracias, lo revisaremos para mejorar.");
+    } catch (e) {}
   }
 
   function renderQuick() {
@@ -272,6 +330,7 @@ export function getPanelAgentWidgetScript(): string {
   async function sendMessage(text) {
     var msg = String(text || "").trim();
     if (!msg) return;
+    lastUserMessage = msg;
     appendBubble("user", msg);
     input.value = "";
     sendBtn.disabled = true;
@@ -318,7 +377,7 @@ export function getPanelAgentWidgetScript(): string {
     setOpen(open);
     if (open) {
       if (!log.childElementCount) {
-        appendBubble("bot", "Hola, soy el asistente telvoice. ¿En qué te ayudo?");
+        appendBubble("bot", "Hola, soy el asistente operativo Telvoice. ¿En qué te ayudo?");
         loadHistory();
       }
       input.focus();
