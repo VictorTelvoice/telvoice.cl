@@ -1,37 +1,21 @@
 import { calculateSmsSegments } from "../../services/smsSegmentService.js";
+import type {
+  AppTemplatesPageData,
+  ClientSmsTemplate,
+  ClientSmsTemplateCategory,
+  ClientSmsTemplateStatus,
+} from "../../types/sms-templates.js";
+import { SMS_TEMPLATE_CATEGORIES } from "../../types/sms-templates.js";
 import { escapeHtml, formatDateShort } from "../../utils/html.js";
 import { renderKpiCard } from "../admin-ui/components.js";
 import { renderFilterField, renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
 
-export type SmsTemplateCategory =
-  | "OTP"
-  | "Transaccional"
-  | "Marketing"
-  | "Recordatorio"
-  | "Interno"
-  | "Soporte";
-
-export type SmsTemplateStatus = "active" | "draft";
-
-export type ClientSmsTemplate = {
-  id: string;
-  name: string;
-  category: SmsTemplateCategory;
-  message: string;
-  status: SmsTemplateStatus;
-  updatedAt: string;
-};
-
-export const SMS_TEMPLATE_CATEGORIES: SmsTemplateCategory[] = [
-  "OTP",
-  "Transaccional",
-  "Marketing",
-  "Recordatorio",
-  "Interno",
-  "Soporte",
-];
+export type SmsTemplateCategory = ClientSmsTemplateCategory;
+export type SmsTemplateStatus = ClientSmsTemplateStatus;
+export type { ClientSmsTemplate };
+export { SMS_TEMPLATE_CATEGORIES };
 
 const NOW = new Date().toISOString();
 
@@ -193,6 +177,20 @@ function templatesPageStyles(): string {
     .tv-templates-segment-hint--warn {
       color: #b45309;
     }
+    .tv-toast {
+      position: fixed;
+      bottom: 1.25rem;
+      right: 1.25rem;
+      z-index: 400;
+      max-width: min(360px, calc(100vw - 2rem));
+      padding: 0.75rem 1rem;
+      background: var(--tv-surface);
+      border: 1px solid var(--tv-border);
+      border-radius: var(--tv-radius);
+      box-shadow: var(--tv-shadow-lg);
+      font-size: 0.88rem;
+    }
+    .tv-toast[aria-hidden="true"] { display: none; }
     @media (max-width: 640px) {
       .tv-templates-modal {
         align-items: flex-end;
@@ -284,21 +282,34 @@ function renderModalShell(): string {
   </div>`;
 }
 
-function renderTemplatesScript(companyId: string): string {
+function renderTemplatesScript(
+  companyId: string,
+  pageData: AppTemplatesPageData,
+): string {
   const initialJson = JSON.stringify(DEFAULT_CLIENT_SMS_TEMPLATES).replace(
     /</g,
     "\\u003c",
   );
+  const serverJson = JSON.stringify(pageData.templates).replace(/</g, "\\u003c");
   const categoriesJson = JSON.stringify(SMS_TEMPLATE_CATEGORIES).replace(
     /</g,
     "\\u003c",
   );
+  const dbAvailable =
+    pageData.module.available && companyId !== "default";
+  const listSubtitle = dbAvailable
+    ? "Plantillas sincronizadas con tu empresa."
+    : "Los cambios se guardan en este navegador hasta conectar Supabase.";
 
   return `<script>
 (function () {
   var STORAGE_KEY = "telvoice_client_sms_templates_${escapeHtml(companyId)}";
   var INITIAL = ${initialJson};
+  var SERVER_TEMPLATES = ${serverJson};
+  var DB_AVAILABLE = ${dbAvailable ? "true" : "false"};
+  var LIST_SUBTITLE = ${JSON.stringify(listSubtitle)};
   var CATEGORIES = ${categoriesJson};
+  var toast = document.getElementById("tv-templates-toast");
 
   var GSM_BASIC = /^[@£$¥èéùìòÇ\\nØø\\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&'()*+,\\-./0-9:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà^{}\\\\\\[\\~\\]|€]*$/;
   function isGsm7(text) { return GSM_BASIC.test(text || ""); }
@@ -326,8 +337,19 @@ function renderTemplatesScript(companyId: string): string {
   var statusFilter = document.getElementById("tv-tpl-filter-status");
 
   var state = { templates: [], filter: { q: "", category: "", status: "" } };
+  var listSubEl = document.getElementById("tv-templates-list-sub");
 
-  function loadTemplates() {
+  if (listSubEl) listSubEl.textContent = LIST_SUBTITLE;
+
+  function showToast(msg) {
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.setAttribute("aria-hidden", "false");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(function () { toast.setAttribute("aria-hidden", "true"); }, 4200);
+  }
+
+  function loadLocalTemplates() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
@@ -335,11 +357,43 @@ function renderTemplatesScript(companyId: string): string {
         if (Array.isArray(parsed) && parsed.length) return parsed;
       }
     } catch (e) {}
+    return null;
+  }
+
+  function loadTemplates() {
+    if (DB_AVAILABLE) {
+      return SERVER_TEMPLATES.slice();
+    }
+    var local = loadLocalTemplates();
+    if (local) return local;
     return INITIAL.slice();
   }
 
   function saveTemplates() {
+    if (DB_AVAILABLE) return;
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.templates)); } catch (e) {}
+  }
+
+  function isRemoteId(id) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(id || ""));
+  }
+
+  function postJson(url, payload) {
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload || {}),
+    }).then(function (res) {
+      return res.json().then(function (body) {
+        return { ok: res.ok, body: body };
+      });
+    });
+  }
+
+  function replaceTemplate(tpl) {
+    var i = state.templates.findIndex(function (t) { return t.id === tpl.id; });
+    if (i >= 0) state.templates[i] = tpl;
+    else state.templates.unshift(tpl);
   }
 
   function newId() {
@@ -521,6 +575,35 @@ function renderTemplatesScript(companyId: string): string {
 
   document.getElementById("tv-tpl-message").addEventListener("input", updateMessageStats);
 
+  function saveLocalTemplate(payload, id) {
+    var now = new Date().toISOString();
+    if (id) {
+      var idx = state.templates.findIndex(function (t) { return t.id === id; });
+      if (idx >= 0) {
+        state.templates[idx] = {
+          id: id,
+          name: payload.name,
+          category: payload.category,
+          message: payload.message,
+          status: payload.status,
+          updatedAt: now,
+        };
+      }
+    } else {
+      state.templates.unshift({
+        id: newId(),
+        name: payload.name,
+        category: payload.category,
+        message: payload.message,
+        status: payload.status,
+        updatedAt: now,
+      });
+    }
+    saveTemplates();
+    closeModal();
+    renderAll();
+  }
+
   form.addEventListener("submit", function (e) {
     e.preventDefault();
     var id = document.getElementById("tv-tpl-id").value.trim();
@@ -529,25 +612,42 @@ function renderTemplatesScript(companyId: string): string {
     var status = document.getElementById("tv-tpl-status").value;
     var message = document.getElementById("tv-tpl-message").value.trim();
     if (!name || !message) return;
-    var now = new Date().toISOString();
-    if (id) {
-      var idx = state.templates.findIndex(function (t) { return t.id === id; });
-      if (idx >= 0) {
-        state.templates[idx] = { id: id, name: name, category: category, message: message, status: status, updatedAt: now };
-      }
-    } else {
-      state.templates.unshift({
-        id: newId(),
-        name: name,
-        category: category,
-        message: message,
-        status: status,
-        updatedAt: now,
+    var payload = { name: name, category: category, message: message, status: status };
+
+    if (DB_AVAILABLE && (!id || isRemoteId(id))) {
+      var url = id
+        ? "/app/templates/" + encodeURIComponent(id) + "/update"
+        : "/app/templates";
+      postJson(url, payload).then(function (res) {
+        if (res.ok && res.body && res.body.ok && res.body.template) {
+          replaceTemplate(res.body.template);
+          closeModal();
+          renderAll();
+          showToast(id ? "Plantilla actualizada." : "Plantilla creada correctamente.");
+          return;
+        }
+        if (!id) {
+          saveLocalTemplate(payload, "");
+          showToast("Plantilla guardada localmente. Se sincronizará cuando la conexión esté disponible.");
+        } else if (!isRemoteId(id)) {
+          saveLocalTemplate(payload, id);
+          showToast("Plantilla guardada localmente. Se sincronizará cuando la conexión esté disponible.");
+        } else {
+          showToast((res.body && res.body.error) || "No se pudo guardar la plantilla.");
+        }
+      }).catch(function () {
+        if (!id || !isRemoteId(id)) {
+          saveLocalTemplate(payload, id);
+          showToast("Plantilla guardada localmente. Se sincronizará cuando la conexión esté disponible.");
+        } else {
+          showToast("No se pudo guardar la plantilla.");
+        }
       });
+      return;
     }
-    saveTemplates();
-    closeModal();
-    renderAll();
+
+    saveLocalTemplate(payload, id);
+    showToast(id ? "Plantilla actualizada." : "Plantilla creada correctamente.");
   });
 
   tableBody.addEventListener("click", function (e) {
@@ -560,21 +660,57 @@ function renderTemplatesScript(companyId: string): string {
     if (action === "edit") {
       openModal("edit", tpl);
     } else if (action === "dup") {
-      state.templates.unshift({
-        id: newId(),
-        name: tpl.name + " (copia)",
-        category: tpl.category,
-        message: tpl.message,
-        status: "draft",
-        updatedAt: new Date().toISOString(),
-      });
-      saveTemplates();
-      renderAll();
+      if (DB_AVAILABLE && isRemoteId(tpl.id)) {
+        postJson("/app/templates/" + encodeURIComponent(tpl.id) + "/duplicate", {})
+          .then(function (res) {
+            if (res.ok && res.body && res.body.ok && res.body.template) {
+              state.templates.unshift(res.body.template);
+              renderAll();
+              showToast("Plantilla duplicada.");
+              return;
+            }
+            dupLocal();
+            showToast("Duplicado guardado localmente. Se sincronizará cuando la conexión esté disponible.");
+          })
+          .catch(dupLocal);
+      } else {
+        dupLocal();
+        showToast("Plantilla duplicada.");
+      }
+      function dupLocal() {
+        state.templates.unshift({
+          id: newId(),
+          name: tpl.name + " (copia)",
+          category: tpl.category,
+          message: tpl.message,
+          status: "draft",
+          updatedAt: new Date().toISOString(),
+        });
+        saveTemplates();
+        renderAll();
+      }
     } else if (action === "del") {
       if (!confirm("¿Eliminar la plantilla \\"" + tpl.name + "\\"? Esta acción no se puede deshacer.")) return;
+      if (DB_AVAILABLE && isRemoteId(tpl.id)) {
+        postJson("/app/templates/" + encodeURIComponent(tpl.id) + "/delete", {})
+          .then(function (res) {
+            if (res.ok && res.body && res.body.ok) {
+              state.templates = state.templates.filter(function (t) { return t.id !== id; });
+              renderAll();
+              showToast("Plantilla eliminada.");
+              return;
+            }
+            showToast((res.body && res.body.error) || "No se pudo eliminar la plantilla en el servidor.");
+          })
+          .catch(function () {
+            showToast("No se pudo eliminar la plantilla.");
+          });
+        return;
+      }
       state.templates = state.templates.filter(function (t) { return t.id !== id; });
       saveTemplates();
       renderAll();
+      showToast("Plantilla eliminada.");
     }
   });
 
@@ -602,11 +738,10 @@ function renderTemplatesScript(companyId: string): string {
 </script>`;
 }
 
-/** KPIs iniciales en servidor (antes de hidratar con localStorage). */
-function renderInitialKpis(): string {
-  const cats = new Set(DEFAULT_CLIENT_SMS_TEMPLATES.map((t) => t.category));
-  const active = DEFAULT_CLIENT_SMS_TEMPLATES.filter((t) => t.status === "active").length;
-  const last = DEFAULT_CLIENT_SMS_TEMPLATES.reduce(
+function renderInitialKpis(templates: ClientSmsTemplate[]): string {
+  const cats = new Set(templates.map((t) => t.category));
+  const active = templates.filter((t) => t.status === "active").length;
+  const last = templates.reduce(
     (a, t) => (t.updatedAt > a ? t.updatedAt : a),
     "",
   );
@@ -614,7 +749,7 @@ function renderInitialKpis(): string {
   return `<div class="tv-kpi-grid tv-kpi-grid--client tv-kpi-grid--report" id="tv-templates-kpis">
     ${renderKpiCard({
       label: "Total plantillas",
-      value: String(DEFAULT_CLIENT_SMS_TEMPLATES.length),
+      value: String(templates.length),
       hint: "En tu biblioteca",
       icon: "description",
       variant: "primary",
@@ -643,8 +778,8 @@ function renderInitialKpis(): string {
   </div>`;
 }
 
-function renderInitialTableRows(): string {
-  return DEFAULT_CLIENT_SMS_TEMPLATES.map((t) => {
+function renderInitialTableRows(templates: ClientSmsTemplate[]): string {
+  return templates.map((t) => {
     const seg = calculateSmsSegments(t.message);
     const statusHtml =
       t.status === "active"
@@ -669,7 +804,23 @@ function renderInitialTableRows(): string {
   }).join("");
 }
 
-export function renderAppTemplatesPage(ctx: AppPageContext): string {
+export function renderAppTemplatesPage(
+  ctx: AppPageContext,
+  pageData?: AppTemplatesPageData,
+): string {
+  const data: AppTemplatesPageData = pageData ?? {
+    module: { available: false, migrationPending: true },
+    templates: [],
+  };
+  const companyId = ctx.company.id || "default";
+  const dbAvailable = data.module.available && companyId !== "default";
+  const seedTemplates = dbAvailable
+    ? data.templates
+    : data.module.available
+      ? []
+      : DEFAULT_CLIENT_SMS_TEMPLATES;
+  const showTableInitially = seedTemplates.length > 0;
+
   const categoryFilterOpts = [
     `<option value="">Todas las categorías</option>`,
     ...SMS_TEMPLATE_CATEGORIES.map(
@@ -695,7 +846,8 @@ export function renderAppTemplatesPage(ctx: AppPageContext): string {
         </button>
       `,
     })}
-    ${renderInitialKpis()}
+    <div id="tv-templates-toast" class="tv-toast" aria-live="polite" aria-hidden="true"></div>
+    ${renderInitialKpis(seedTemplates)}
     ${renderExamplesSection()}
     <section class="tv-panel tv-dlr-report__filters-panel">
       <header class="tv-section-head tv-dlr-report__filters-head">
@@ -722,18 +874,22 @@ export function renderAppTemplatesPage(ctx: AppPageContext): string {
         </div>
       </div>
     </section>
-    <div id="tv-templates-empty" class="tv-panel tv-templates-empty" hidden>
+    <div id="tv-templates-empty" class="tv-panel tv-templates-empty"${showTableInitially ? " hidden" : ""}>
       <span class="material-symbols-outlined" aria-hidden="true">description</span>
       <h2 style="margin:1rem 0 0.5rem;font-size:1.15rem">Aún no tienes plantillas creadas</h2>
-      <p class="tv-page-sub" style="max-width:420px;margin:0 auto 1.25rem">
-        Crea tu primera plantilla SMS para ahorrar tiempo y mantener una comunicación consistente con tus clientes.
+      <p class="tv-page-sub" style="max-width:480px;margin:0 auto 1.25rem">
+        Crea tu primera plantilla SMS para reutilizar mensajes frecuentes, mantener consistencia y ahorrar tiempo en campañas, OTP y notificaciones.
       </p>
       <button type="button" class="btn btn-primary" id="tv-tpl-empty-create">Crear plantilla</button>
     </div>
-    <div class="tv-dash-block tv-dlr-report__table-block" id="tv-templates-table-block">
+    <div class="tv-dash-block tv-dlr-report__table-block" id="tv-templates-table-block"${showTableInitially ? "" : " hidden"}>
       <div class="tv-dash-block__head">
         <h2 class="tv-section-head__title">Tus plantillas</h2>
-        <p class="tv-section-head__sub">Los cambios se guardan en este navegador hasta conectar Supabase.</p>
+        <p class="tv-section-head__sub" id="tv-templates-list-sub">${
+          dbAvailable
+            ? "Plantillas sincronizadas con tu empresa."
+            : "Los cambios se guardan en este navegador hasta conectar Supabase."
+        }</p>
       </div>
       <div class="tv-templates-table-wrap">
         <table class="tv-table tv-table--dense tv-templates-table">
@@ -749,13 +905,13 @@ export function renderAppTemplatesPage(ctx: AppPageContext): string {
               <th style="text-align:right">Acciones</th>
             </tr>
           </thead>
-          <tbody id="tv-templates-tbody">${renderInitialTableRows()}</tbody>
+          <tbody id="tv-templates-tbody">${renderInitialTableRows(seedTemplates)}</tbody>
         </table>
       </div>
     </div>
     </div>
     ${renderModalShell()}
-    ${renderTemplatesScript(ctx.company.id || "default")}`;
+    ${renderTemplatesScript(companyId, data)}`;
 
   return wrapAppPage(ctx, "templates", "Plantillas SMS", body);
 }

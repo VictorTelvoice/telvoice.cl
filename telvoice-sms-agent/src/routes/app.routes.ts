@@ -36,7 +36,6 @@ import {
   postAppSupportTicket,
   postAppSupportTicketReply,
   postAppSupportTicketResolve,
-  getAppTemplates,
   getAppWallet,
   getAppWalletPaymentCard,
   postAppWalletPaymentCard,
@@ -48,6 +47,13 @@ import {
   getAppMercadoPagoReturn,
   postAppBuySmsMercadoPago,
 } from "../controllers/app-payments.controller.js";
+import {
+  getAppTemplates,
+  postAppSmsTemplate,
+  postAppSmsTemplateDelete,
+  postAppSmsTemplateDuplicate,
+  postAppSmsTemplateUpdate,
+} from "../controllers/app-templates.controller.js";
 import { postClientLogout } from "../controllers/admin.controller.js";
 import { loadClientSession } from "../middleware/admin-auth.js";
 import { requireClientPanelPage } from "../middleware/client-panel-auth.js";
@@ -147,6 +153,22 @@ appRouter.get("/contacts", requireClientPanelPage, getAppContacts);
 appRouter.post("/contacts", requireClientPanelPage, postAppCreateContact);
 appRouter.post("/contacts/lists", requireClientPanelPage, postAppCreateContactList);
 appRouter.get("/templates", requireClientPanelPage, getAppTemplates);
+appRouter.post("/templates", requireClientPanelPage, postAppSmsTemplate);
+appRouter.post(
+  "/templates/:id/update",
+  requireClientPanelPage,
+  postAppSmsTemplateUpdate,
+);
+appRouter.post(
+  "/templates/:id/delete",
+  requireClientPanelPage,
+  postAppSmsTemplateDelete,
+);
+appRouter.post(
+  "/templates/:id/duplicate",
+  requireClientPanelPage,
+  postAppSmsTemplateDuplicate,
+);
 appRouter.get("/reports", requireClientPanelPage, getAppReports);
 appRouter.get("/reports/export.csv", requireClientPanelPage, getAppReportsExportCsv);
 appRouter.get("/invoices", requireClientPanelPage, getAppInvoices);

@@ -55,7 +55,6 @@ import {
   parseContactsPageFilters,
   renderAppSettingsPage,
   renderAppSupportPage,
-  renderAppTemplatesPage,
 } from "../views/app-ui/app-section-pages.js";
 import type { ContactStatus, ContactSummary } from "../types/contacts.js";
 import {
@@ -384,7 +383,7 @@ async function loadSendOutcomeFromQuery(
   return { sendResult, campaignResult, activeMode };
 }
 
-async function buildAppContext(req: Request): Promise<AppPageContext | null> {
+export async function buildAppContext(req: Request): Promise<AppPageContext | null> {
   const profile = req.userProfile;
   if (!profile?.companyId) {
     return null;
@@ -1489,14 +1488,6 @@ export async function postAppCreateContactList(
       `/app/contacts?error=${encodeURIComponent(msg)}&new=agenda`,
     );
   }
-}
-
-export async function getAppTemplates(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
-  await withAppContext(req, res, next, (ctx) => renderAppTemplatesPage(ctx));
 }
 
 export async function getAppReports(
