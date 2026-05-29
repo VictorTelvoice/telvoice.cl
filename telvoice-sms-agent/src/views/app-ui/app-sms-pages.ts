@@ -1006,23 +1006,88 @@ export function renderAppSendSmsPage(
   );
 }
 
+export type AppInboxPageFilters = {
+  startDate?: string;
+  endDate?: string;
+  status?: string;
+  senderId?: string;
+  recipient?: string;
+  q?: string;
+};
+
 export function renderAppInboxPage(
   ctx: AppPageContext,
   messages: PanelSmsMessageRow[],
+  filters?: AppInboxPageFilters,
 ): string {
+  const f = filters ?? {};
+  const status = (f.status ?? "").trim();
+  const statusOpts = [
+    ["", "Todos"],
+    ["queued", "En cola"],
+    ["pending", "Pendiente"],
+    ["sent", "Enviado"],
+    ["delivered", "Entregado"],
+    ["failed", "Fallido"],
+    ["rejected", "Rechazado"],
+    ["expired", "Expirado"],
+  ]
+    .map(([v, label]) => {
+      const on = v === status;
+      return `<option value="${escapeHtml(v)}"${on ? " selected" : ""}>${escapeHtml(label)}</option>`;
+    })
+    .join("");
+
+  const filtersPanel = `
+    <section class="tv-panel tv-dlr-report__filters-panel">
+      <header class="tv-section-head tv-dlr-report__filters-head">
+        <h2 class="tv-section-head__title">Filtros de búsqueda</h2>
+        <p class="tv-section-head__sub">Filtra mensajes por período, estado, remitente o destinatario</p>
+      </header>
+      <div class="tv-panel__body tv-dlr-report__filters-body">
+        <form method="get" action="/app/inbox" class="tv-dlr-report__filters-form">
+          <div class="tv-dlr-report__filters-grid tv-inbox__filters-grid">
+            ${renderFilterField("Desde", `<input type="date" name="start_date" class="tv-filter-input" value="${escapeHtml(f.startDate ?? "")}" />`)}
+            ${renderFilterField("Hasta", `<input type="date" name="end_date" class="tv-filter-input" value="${escapeHtml(f.endDate ?? "")}" />`)}
+            ${renderFilterField("Estado", `<select name="status" class="tv-filter-input">${statusOpts}</select>`)}
+            ${renderFilterField("Remitente", `<input type="text" name="sender_id" class="tv-filter-input" placeholder="Ej. TELVOICE" value="${escapeHtml(f.senderId ?? "")}" />`)}
+            ${renderFilterField("Destinatario", `<input type="text" name="recipient" class="tv-filter-input" placeholder="Ej. +569…" value="${escapeHtml(f.recipient ?? "")}" />`)}
+            ${renderFilterField("Mensaje", `<input type="text" name="q" class="tv-filter-input" placeholder="Buscar en texto" value="${escapeHtml(f.q ?? "")}" />`)}
+            <div class="tv-dlr-report__filter-actions">
+              <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+              <a class="btn btn-ghost btn-sm" href="/app/inbox">Limpiar</a>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>`;
+
   const body = `
     ${renderPageHeader({
       title: "Bandeja",
       subtitle: "Mensajes SMS enviados por tu empresa.",
     })}
-    <div class="table-wrap tv-panel">
-      <table class="tv-table">
-        <thead><tr>
-          <th>Fecha</th><th>Destinatario</th><th>Remitente</th><th>Mensaje</th>
-          <th>Seg.</th><th>Costo SMS</th><th>Estado</th><th>Modo</th><th>Referencia</th><th>Error</th>
-        </tr></thead>
-        <tbody>${renderInboxTableRows(messages)}</tbody>
-      </table>
+    <div class="tv-client-dashboard tv-dlr-report tv-inbox-report">
+      ${filtersPanel}
+      <div class="tv-dash-block tv-dlr-report__table-block">
+        <div class="tv-dash-block__head">
+          <h2 class="tv-dash-block__title">Mensajes</h2>
+          <p class="tv-dash-block__sub">${fmtSms(messages.length)} registro(s) con filtros aplicados</p>
+        </div>
+        <section class="tv-panel tv-client-dash-table-panel tv-dlr-report__table-panel">
+          <div class="tv-client-dash-table-inner tv-dlr-report__table-inner">
+            <div class="table-wrap tv-dlr-report__table-wrap">
+              <table class="tv-table tv-table--dash">
+                <thead><tr>
+                  <th>Fecha</th><th>Destinatario</th><th>Remitente</th><th>Mensaje</th>
+                  <th>Seg.</th><th>Costo SMS</th><th>Estado</th><th>Modo</th><th>Referencia</th><th>Error</th>
+                </tr></thead>
+                <tbody>${renderInboxTableRows(messages)}</tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>`;
   return wrapAppPage(ctx, "inbox", "Bandeja", body);
 }

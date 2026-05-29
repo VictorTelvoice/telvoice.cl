@@ -296,14 +296,48 @@ export async function getPanelSmsMessageById(
   return data as PanelSmsMessageRow | null;
 }
 
+export type PanelInboxListFilters = {
+  startDate?: string;
+  endDate?: string;
+  status?: PanelSmsMessageStatus;
+  senderId?: string;
+  recipient?: string;
+  q?: string;
+};
+
 export async function listPanelMessagesByCompany(
   companyId: string,
   limit = 50,
+  filters?: PanelInboxListFilters,
 ): Promise<PanelSmsMessageRow[]> {
-  const { data, error } = await getSupabase()
+  let q = getSupabase()
     .from("panel_sms_messages")
     .select("*")
-    .eq("company_id", companyId)
+    .eq("company_id", companyId);
+
+  if (filters?.startDate) {
+    q = q.gte("created_at", `${filters.startDate}T00:00:00.000Z`);
+  }
+  if (filters?.endDate) {
+    q = q.lte("created_at", `${filters.endDate}T23:59:59.999Z`);
+  }
+  if (filters?.status) {
+    q = q.eq("status", filters.status);
+  }
+  const sender = filters?.senderId?.trim();
+  if (sender) {
+    q = q.ilike("sender_id", `%${sender}%`);
+  }
+  const recipient = filters?.recipient?.trim();
+  if (recipient) {
+    q = q.ilike("recipient_number", `%${recipient}%`);
+  }
+  const text = filters?.q?.trim();
+  if (text) {
+    q = q.ilike("message", `%${text}%`);
+  }
+
+  const { data, error } = await q
     .order("created_at", { ascending: false })
     .limit(limit);
 

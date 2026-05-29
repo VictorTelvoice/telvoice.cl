@@ -108,6 +108,7 @@ import { getPanelSmsMessageById } from "../services/panelSmsMessageService.js";
 import type {
   MockSmsSendResult,
   PanelCampaignSendResult,
+  PanelSmsMessageStatus,
 } from "../types/sms-panel.js";
 import type { SmsOrderRow } from "../types/wallet.js";
 import {
@@ -1183,8 +1184,54 @@ export async function getAppInbox(
   next: NextFunction,
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
-    const messages = await listPanelMessagesByCompany(ctx.company.id, 100);
-    return renderAppInboxPage(ctx, messages);
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const status =
+      typeof req.query.status === "string" ? req.query.status.trim() : "";
+    const senderId =
+      typeof req.query.sender_id === "string" ? req.query.sender_id.trim() : "";
+    const recipient =
+      typeof req.query.recipient === "string" ? req.query.recipient.trim() : "";
+    const startDate =
+      typeof req.query.start_date === "string" ? req.query.start_date.trim() : "";
+    const endDate =
+      typeof req.query.end_date === "string" ? req.query.end_date.trim() : "";
+
+    const allowedStatus = new Set([
+      "queued",
+      "pending",
+      "sent",
+      "delivered",
+      "failed",
+      "rejected",
+      "expired",
+    ]);
+    const safeStatus = allowedStatus.has(status)
+      ? (status as PanelSmsMessageStatus)
+      : undefined;
+
+    const filterInput = {
+      q: q || undefined,
+      status: safeStatus,
+      senderId: senderId || undefined,
+      recipient: recipient || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    };
+
+    const messages = await listPanelMessagesByCompany(
+      ctx.company.id,
+      200,
+      filterInput,
+    );
+
+    return renderAppInboxPage(ctx, messages, {
+      q: q || undefined,
+      status: status || undefined,
+      senderId: senderId || undefined,
+      recipient: recipient || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    });
   });
 }
 

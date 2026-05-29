@@ -3231,12 +3231,24 @@
     .tv-invoice-notice .tv-panel__body {
       padding: 1rem 1.25rem;
     }
-    .tv-app-client .tv-invoice__filters-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    .tv-app-client .tv-invoice__filters-grid,
+    .tv-app-client .tv-inbox__filters-grid {
+      grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
     }
-    .tv-app-client .tv-invoice__filters-grid .tv-dlr-report__filter-actions {
+    .tv-app-client .tv-invoice__filters-grid .tv-dlr-report__filter-actions,
+    .tv-app-client .tv-inbox__filters-grid .tv-dlr-report__filter-actions {
       grid-column: 1 / -1;
       justify-content: flex-start;
+    }
+    .tv-inbox-report.tv-client-dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      width: 100%;
+      max-width: none;
+    }
+    .tv-inbox-report .tv-dlr-report__table-wrap {
+      max-height: 62vh;
     }
     .tv-invoice-sent {
       display: flex;
