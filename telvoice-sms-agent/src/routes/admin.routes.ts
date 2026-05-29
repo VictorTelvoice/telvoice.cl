@@ -65,6 +65,12 @@ import {
   postAdminSupportTicketUpdate,
 } from "../controllers/admin-support.controller.js";
 import {
+  getAdminApiUsagePage,
+  postAdminApiUsageKeyActivate,
+  postAdminApiUsageKeyPause,
+  postAdminApiUsageKeyRevoke,
+} from "../controllers/admin-api-usage.controller.js";
+import {
   getChatPage,
   getContactsPage,
   getInvoicesPage,
@@ -324,6 +330,22 @@ adminRouter.post(
   "/support/tickets/:id/quick-action",
   requireAdminPage,
   postAdminSupportTicketQuickAction,
+);
+adminRouter.get("/api-usage", requireAdminPage, getAdminApiUsagePage);
+adminRouter.post(
+  "/api-usage/keys/:id/pause",
+  requireAdminPage,
+  postAdminApiUsageKeyPause,
+);
+adminRouter.post(
+  "/api-usage/keys/:id/activate",
+  requireAdminPage,
+  postAdminApiUsageKeyActivate,
+);
+adminRouter.post(
+  "/api-usage/keys/:id/revoke",
+  requireAdminPage,
+  postAdminApiUsageKeyRevoke,
 );
 adminRouter.get("/invoices", requireAdminPage, getInvoicesPage);
 adminRouter.get("/invoices/recovery", requireAdminPage, getAdminBillingRecoveryPage);
