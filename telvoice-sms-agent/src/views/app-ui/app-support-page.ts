@@ -20,7 +20,6 @@ export type {
 } from "../../types/support-tickets.js";
 export { SUPPORT_CATEGORIES } from "../../types/support-tickets.js";
 
-const WHATSAPP_URL = "https://wa.me/";
 const SUPPORT_EMAIL = "soporte@telvoice.cl";
 
 const T0 = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
@@ -1025,10 +1024,6 @@ export function renderAppSupportPage(
           <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">add</span>
           Nuevo ticket
         </button>
-        <a href="${escapeHtml(WHATSAPP_URL)}" class="btn btn-secondary" target="_blank" rel="noopener noreferrer" title="WhatsApp">
-          <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">chat</span>
-          Contactar por WhatsApp
-        </a>
       `,
     })}
     ${orderCard}

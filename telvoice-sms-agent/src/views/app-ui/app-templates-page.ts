@@ -7,7 +7,6 @@ import type {
 } from "../../types/sms-templates.js";
 import { SMS_TEMPLATE_CATEGORIES } from "../../types/sms-templates.js";
 import { escapeHtml, formatDateShort } from "../../utils/html.js";
-import { renderKpiCard } from "../admin-ui/components.js";
 import { renderFilterField, renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
@@ -326,7 +325,6 @@ function renderTemplatesScript(
   }
 
   var root = document.querySelector(".tv-templates-page");
-  var kpiRoot = document.getElementById("tv-templates-kpis");
   var tableBody = document.getElementById("tv-templates-tbody");
   var emptyEl = document.getElementById("tv-templates-empty");
   var tableBlock = document.getElementById("tv-templates-table-block");
@@ -442,40 +440,6 @@ function renderTemplatesScript(
     });
   }
 
-  function summary() {
-    var all = state.templates;
-    var cats = {};
-    var last = null;
-    all.forEach(function (t) {
-      cats[t.category] = true;
-      if (!last || t.updatedAt > last) last = t.updatedAt;
-    });
-    return {
-      total: all.length,
-      active: all.filter(function (t) { return t.status === "active"; }).length,
-      categories: Object.keys(cats).length,
-      lastUpdated: last,
-    };
-  }
-
-  function renderKpis() {
-    var s = summary();
-    kpiRoot.innerHTML =
-      kpiCard("Total plantillas", String(s.total), "En tu biblioteca", "description", "primary") +
-      kpiCard("Plantillas activas", String(s.active), "Listas para usar", "check_circle", "success") +
-      kpiCard("Categorías usadas", String(s.categories), "De " + CATEGORIES.length + " disponibles", "category", "default") +
-      kpiCard("Última actualización", s.lastUpdated ? fmtDate(s.lastUpdated) : "—", "Cambio más reciente", "update", "default");
-  }
-
-  function kpiCard(label, value, hint, icon, variant) {
-    return '<article class="tv-kpi tv-kpi--' + variant + '">' +
-      '<div class="tv-kpi__head"><span class="material-symbols-outlined tv-kpi__icon" aria-hidden="true">' + icon + "</span>" +
-      '<span class="tv-kpi__label">' + escapeHtml(label) + "</span></div>" +
-      '<div class="tv-kpi__value">' + escapeHtml(value) + "</div>" +
-      (hint ? '<p class="tv-kpi__hint">' + escapeHtml(hint) + "</p>" : "") +
-      "</article>";
-  }
-
   function renderTable() {
     var rows = filtered();
     var hasAny = state.templates.length > 0;
@@ -508,7 +472,6 @@ function renderTemplatesScript(
   }
 
   function renderAll() {
-    renderKpis();
     renderTable();
   }
 
@@ -738,46 +701,6 @@ function renderTemplatesScript(
 </script>`;
 }
 
-function renderInitialKpis(templates: ClientSmsTemplate[]): string {
-  const cats = new Set(templates.map((t) => t.category));
-  const active = templates.filter((t) => t.status === "active").length;
-  const last = templates.reduce(
-    (a, t) => (t.updatedAt > a ? t.updatedAt : a),
-    "",
-  );
-
-  return `<div class="tv-kpi-grid tv-kpi-grid--client tv-kpi-grid--report" id="tv-templates-kpis">
-    ${renderKpiCard({
-      label: "Total plantillas",
-      value: String(templates.length),
-      hint: "En tu biblioteca",
-      icon: "description",
-      variant: "primary",
-    })}
-    ${renderKpiCard({
-      label: "Plantillas activas",
-      value: String(active),
-      hint: "Listas para usar",
-      icon: "check_circle",
-      variant: "success",
-    })}
-    ${renderKpiCard({
-      label: "Categorías usadas",
-      value: String(cats.size),
-      hint: `De ${SMS_TEMPLATE_CATEGORIES.length} disponibles`,
-      icon: "category",
-      variant: "default",
-    })}
-    ${renderKpiCard({
-      label: "Última actualización",
-      value: last ? formatDateShort(last) : "—",
-      hint: "Cambio más reciente",
-      icon: "update",
-      variant: "default",
-    })}
-  </div>`;
-}
-
 function renderInitialTableRows(templates: ClientSmsTemplate[]): string {
   return templates.map((t) => {
     const seg = calculateSmsSegments(t.message);
@@ -847,7 +770,6 @@ export function renderAppTemplatesPage(
       `,
     })}
     <div id="tv-templates-toast" class="tv-toast" aria-live="polite" aria-hidden="true"></div>
-    ${renderInitialKpis(seedTemplates)}
     ${renderExamplesSection()}
     <section class="tv-panel tv-dlr-report__filters-panel">
       <header class="tv-section-head tv-dlr-report__filters-head">
