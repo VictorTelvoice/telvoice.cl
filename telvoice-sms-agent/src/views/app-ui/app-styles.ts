@@ -524,48 +524,193 @@ export function getAppPanelStyles(): string {
     }
     .tv-send-confirm-modal__panel {
       position: relative;
-      width: min(480px, 100%);
-      max-height: min(90vh, 640px);
+      width: min(520px, 100%);
+      max-height: min(92vh, 680px);
       background: var(--tv-surface);
-      border-radius: var(--tv-radius);
-      box-shadow: var(--tv-shadow-lg);
+      border-radius: 16px;
+      box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(15, 23, 42, 0.06);
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      animation: tv-send-confirm-in 0.28s ease-out;
     }
-    .tv-send-confirm-modal__head {
+    @keyframes tv-send-confirm-in {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .tv-send-confirm-modal__panel--success .tv-send-confirm-modal__hero,
+    .tv-send-confirm-modal__panel--queued .tv-send-confirm-modal__hero {
+      background: linear-gradient(180deg, #ecfdf5 0%, #f8fffe 100%);
+    }
+    .tv-send-confirm-modal__panel--scheduled .tv-send-confirm-modal__hero {
+      background: linear-gradient(180deg, #eff6ff 0%, #f8fbff 100%);
+    }
+    .tv-send-confirm-modal__panel--scheduled .tv-send-confirm-modal__icon-wrap {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+    .tv-send-confirm-modal__close {
+      position: absolute;
+      top: 0.65rem;
+      right: 0.65rem;
+      z-index: 2;
+    }
+    .tv-send-confirm-modal__hero {
+      padding: 1.75rem 1.5rem 1.25rem;
+      text-align: center;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    }
+    .tv-send-confirm-modal__icon-wrap {
+      width: 4rem;
+      height: 4rem;
+      margin: 0 auto 0.85rem;
+      border-radius: 999px;
+      background: #d1fae5;
+      color: #059669;
       display: flex;
-      align-items: flex-start;
-      gap: 0.75rem;
-      padding: 1.15rem 1.15rem 0.75rem;
-      border-bottom: 1px solid var(--tv-border);
-    }
-    .tv-send-confirm-modal__head .tv-section-head__title {
-      margin: 0;
-      font-size: 1.05rem;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.08);
     }
     .tv-send-confirm-modal__icon {
-      font-size: 1.75rem;
-      color: var(--tv-success);
-      flex-shrink: 0;
+      font-size: 2.25rem;
+      font-variation-settings: "FILL" 1, "wght" 600;
+    }
+    .tv-send-confirm-modal__title {
+      margin: 0;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--tv-text);
+    }
+    .tv-send-confirm-modal__subtitle {
+      margin: 0.45rem 0 0;
+      font-size: 0.92rem;
+      color: var(--tv-muted);
+      line-height: 1.45;
+      max-width: 28rem;
+      margin-left: auto;
+      margin-right: auto;
     }
     .tv-send-confirm-modal__body {
-      padding: 1rem 1.15rem;
+      padding: 1.15rem 1.35rem 0.5rem;
       overflow-y: auto;
     }
-    .tv-send-confirm-modal__lead {
+    .tv-send-confirm-modal__flash {
       margin: 0 0 0.85rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: var(--tv-radius);
+      background: #f8fafc;
+      border: 1px solid var(--tv-border);
+      font-size: 0.82rem;
+      color: var(--tv-muted);
+      line-height: 1.45;
+    }
+    .tv-send-confirm-modal__stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 520px) {
+      .tv-send-confirm-modal__stats { grid-template-columns: repeat(2, 1fr); }
+    }
+    .tv-send-confirm-stat {
+      padding: 0.75rem 0.55rem;
+      border: 1px solid var(--tv-border);
+      border-radius: 12px;
+      background: #fff;
+      text-align: center;
+    }
+    .tv-send-confirm-stat--accent {
+      border-color: rgba(5, 150, 105, 0.22);
+      background: #f0fdf4;
+    }
+    .tv-send-confirm-stat__value {
+      display: block;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--tv-text);
+      line-height: 1.2;
+      word-break: break-word;
+    }
+    .tv-send-confirm-stat--accent .tv-send-confirm-stat__value {
+      color: #047857;
+    }
+    .tv-send-confirm-stat__label {
+      display: block;
+      margin-top: 0.2rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--tv-muted);
+    }
+    .tv-send-confirm-modal__details {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+    .tv-send-confirm-detail {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+      font-size: 0.88rem;
+    }
+    .tv-send-confirm-detail:last-of-type { border-bottom: none; }
+    .tv-send-confirm-detail__label {
+      color: var(--tv-muted);
+      flex-shrink: 0;
+    }
+    .tv-send-confirm-detail__value {
+      text-align: right;
+      color: var(--tv-text);
+    }
+    .tv-send-confirm-modal__note {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.45rem;
+      margin: 0.75rem 0 0;
+      padding: 0.7rem 0.75rem;
+      border-radius: var(--tv-radius);
+      background: #f8fafc;
+      font-size: 0.8rem;
+      color: var(--tv-muted);
+      line-height: 1.45;
+    }
+    .tv-send-confirm-modal__note .material-symbols-outlined {
+      font-size: 1.05rem;
+      color: #64748b;
+      flex-shrink: 0;
+      margin-top: 0.05rem;
+    }
+    .tv-send-confirm-modal__lead {
+      margin: 0;
       font-size: 0.92rem;
       color: var(--tv-text);
       line-height: 1.45;
     }
-    .tv-send-confirm-modal__links { margin: 0.85rem 0 0; }
     .tv-send-confirm-modal__foot {
-      padding: 0.85rem 1.15rem 1.15rem;
+      padding: 0.85rem 1.35rem 1.25rem;
       border-top: 1px solid var(--tv-border);
       display: flex;
-      justify-content: flex-end;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
     }
+    .tv-send-confirm-modal__foot-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+    .tv-send-confirm-modal__head {
+      display: none;
+    }
+    .tv-send-confirm-modal__links { margin: 0.85rem 0 0; }
     .tv-send-outcome__lead {
       margin: 0.35rem 0 0;
       font-size: 0.92rem;
