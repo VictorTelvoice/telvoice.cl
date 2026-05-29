@@ -1,4 +1,9 @@
 import type { SmsOrderWithDetails } from "../../types/wallet.js";
+import type {
+  AppSupportPageData,
+  SupportTicket,
+} from "../../types/support-tickets.js";
+import { SUPPORT_CATEGORIES } from "../../types/support-tickets.js";
 import { escapeHtml } from "../../utils/html.js";
 import { renderKpiCard } from "../admin-ui/components.js";
 import { renderPageHeader } from "../admin-ui/page-kit.js";
@@ -6,45 +11,17 @@ import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
 import { renderOrderShortIdCell } from "./app-order-ui.js";
 
+export type {
+  SupportTicket,
+  SupportTicketCategory,
+  SupportTicketPriority,
+  SupportTicketReply,
+  SupportTicketStatus,
+} from "../../types/support-tickets.js";
+export { SUPPORT_CATEGORIES } from "../../types/support-tickets.js";
+
 const WHATSAPP_URL = "https://wa.me/";
 const SUPPORT_EMAIL = "soporte@telvoice.cl";
-
-export type SupportTicketStatus = "open" | "in_review" | "waiting" | "resolved";
-export type SupportTicketPriority = "low" | "medium" | "high" | "urgent";
-
-export const SUPPORT_CATEGORIES = [
-  "Compra y pago",
-  "Saldo SMS",
-  "Campañas y envíos",
-  "API / Webhook",
-  "Entregabilidad SMS",
-  "Facturación",
-  "Configuración de cuenta",
-  "SMPP / Alto volumen",
-  "Otro",
-] as const;
-
-export type SupportTicketCategory = (typeof SUPPORT_CATEGORIES)[number];
-
-export type SupportTicketReply = {
-  id: string;
-  author: "client" | "support";
-  message: string;
-  createdAt: string;
-};
-
-export type SupportTicket = {
-  id: string;
-  code: string;
-  subject: string;
-  category: SupportTicketCategory;
-  priority: SupportTicketPriority;
-  status: SupportTicketStatus;
-  message: string;
-  createdAt: string;
-  updatedAt: string;
-  replies: SupportTicketReply[];
-};
 
 const T0 = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
 const T1 = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
@@ -371,10 +348,17 @@ function renderContactAside(): string {
   </aside>`;
 }
 
-function renderNewTicketModal(): string {
+function renderNewTicketModal(
+  suggestedSubject?: string,
+  relatedOrderId?: string | null,
+): string {
   const catOpts = SUPPORT_CATEGORIES.map(
     (c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`,
   ).join("");
+  const subjectValue = suggestedSubject ? escapeHtml(suggestedSubject) : "";
+  const orderHidden = relatedOrderId
+    ? `<input type="hidden" id="tv-support-related-order-id" value="${escapeHtml(relatedOrderId)}" />`
+    : "";
 
   return `<div class="tv-support-modal" id="tv-support-new-modal" role="dialog" aria-modal="true" aria-labelledby="tv-support-new-title" aria-hidden="true">
     <div class="tv-support-modal__backdrop" data-tv-support-close tabindex="-1"></div>
@@ -382,10 +366,11 @@ function renderNewTicketModal(): string {
       <h2 class="tv-section-head__title" id="tv-support-new-title" style="margin:0 0 0.25rem">Crear solicitud</h2>
       <p class="tv-page-sub" style="margin:0 0 1rem">Describe tu consulta y el equipo Telvoice te responderá por este ticket.</p>
       <form id="tv-support-new-form">
+        ${orderHidden}
         <div class="form-group">
           <label for="tv-support-subject">Asunto</label>
           <input type="text" id="tv-support-subject" class="tv-input-full" required maxlength="160"
-            placeholder="Ej: Problema con saldo SMS después de una compra" />
+            placeholder="Ej: Problema con saldo SMS después de una compra" value="${subjectValue}" />
         </div>
         <div class="form-group">
           <label for="tv-support-category">Categoría</label>
@@ -465,11 +450,12 @@ function renderHelpInfoModal(): string {
   </div>`;
 }
 
-function renderInitialKpis(): string {
-  const open = DEFAULT_SUPPORT_TICKETS.filter((t) => t.status !== "resolved").length;
-  const resolved = DEFAULT_SUPPORT_TICKETS.filter((t) => t.status === "resolved").length;
-  const last = DEFAULT_SUPPORT_TICKETS.reduce((a, t) =>
-    t.updatedAt > a.updatedAt ? t : a,
+function renderInitialKpis(seedTickets: SupportTicket[]): string {
+  const open = seedTickets.filter((t) => t.status !== "resolved").length;
+  const resolved = seedTickets.filter((t) => t.status === "resolved").length;
+  const last = seedTickets.reduce(
+    (a, t) => (t.updatedAt > a.updatedAt ? t : a),
+    seedTickets[0] ?? DEFAULT_SUPPORT_TICKETS[0]!,
   );
 
   return `<div class="tv-kpi-grid tv-kpi-grid--client tv-kpi-grid--report" id="tv-support-kpis">
@@ -504,8 +490,12 @@ function renderInitialKpis(): string {
   </div>`;
 }
 
-function renderSupportScript(companyId: string): string {
+function renderSupportScript(
+  companyId: string,
+  pageData: AppSupportPageData,
+): string {
   const initialJson = JSON.stringify(DEFAULT_SUPPORT_TICKETS).replace(/</g, "\\u003c");
+  const serverJson = JSON.stringify(pageData.tickets).replace(/</g, "\\u003c");
   const helpData = JSON.stringify({
     purchase: {
       title: "¿Mi compra ya fue acreditada?",
@@ -529,11 +519,19 @@ function renderSupportScript(companyId: string): string {
     },
   }).replace(/</g, "\\u003c");
 
+  const dbAvailable = pageData.module.available && companyId !== "default";
+  const listSubtitle = dbAvailable
+    ? "Tickets sincronizados con tu empresa."
+    : "Los tickets se guardan en este navegador hasta conectar el backend.";
+
   return `<script>
 (function () {
   var STORAGE_KEY = "telvoice_client_support_tickets_${escapeHtml(companyId)}";
   var INITIAL = ${initialJson};
+  var SERVER_TICKETS = ${serverJson};
+  var DB_AVAILABLE = ${dbAvailable ? "true" : "false"};
   var HELP = ${helpData};
+  var LIST_SUBTITLE = ${JSON.stringify(listSubtitle)};
 
   var STATUS_LABELS = { open: "Abierto", in_review: "En revisión", waiting: "Esperando respuesta", resolved: "Resuelto" };
   var PRIORITY_LABELS = { low: "Baja", medium: "Media", high: "Alta", urgent: "Urgente" };
@@ -546,6 +544,9 @@ function renderSupportScript(companyId: string): string {
   var cardsRoot = document.getElementById("tv-support-cards");
   var emptyEl = document.getElementById("tv-support-empty");
   var listBlock = document.getElementById("tv-support-list-block");
+  var listSubEl = document.getElementById("tv-support-list-sub");
+
+  if (listSubEl) listSubEl.textContent = LIST_SUBTITLE;
 
   function showToast(msg) {
     if (!toast) return;
@@ -579,7 +580,7 @@ function renderSupportScript(companyId: string): string {
     return '<span class="badge ' + cls + '">' + escapeHtml(PRIORITY_LABELS[p] || p) + "</span>";
   }
 
-  function loadTickets() {
+  function loadLocalTickets() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
@@ -587,11 +588,63 @@ function renderSupportScript(companyId: string): string {
         if (Array.isArray(p) && p.length) return p;
       }
     } catch (e) {}
+    return null;
+  }
+
+  function loadTickets() {
+    if (DB_AVAILABLE && SERVER_TICKETS.length) {
+      return SERVER_TICKETS.slice();
+    }
+    var local = loadLocalTickets();
+    if (local) return local;
+    if (DB_AVAILABLE) return [];
     return INITIAL.slice();
   }
 
-  function saveTickets() {
+  function saveTicketsLocal() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets)); } catch (e) {}
+  }
+
+  function isRemoteTicket(t) {
+    return DB_AVAILABLE && t && t.id && String(t.id).indexOf("tkt_") !== 0;
+  }
+
+  function createLocalTicket(payload) {
+    var now = new Date().toISOString();
+    var ticket = {
+      id: "tkt_" + Date.now().toString(36),
+      code: nextCode(),
+      subject: payload.subject,
+      category: payload.category,
+      priority: payload.priority,
+      status: "open",
+      message: payload.message,
+      createdAt: now,
+      updatedAt: now,
+      replies: [],
+    };
+    tickets.unshift(ticket);
+    saveTicketsLocal();
+    return ticket;
+  }
+
+  function postJson(url, body) {
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(body),
+    }).then(function (r) {
+      return r.json().then(function (j) {
+        return { ok: r.ok, body: j };
+      });
+    });
+  }
+
+  function replaceTicket(updated) {
+    var idx = tickets.findIndex(function (t) { return t.id === updated.id; });
+    if (idx >= 0) tickets[idx] = updated;
+    else tickets.unshift(updated);
   }
 
   function nextCode() {
@@ -725,6 +778,8 @@ function renderSupportScript(companyId: string): string {
         }).join("")
       : '<p class="field-hint" style="margin:0">Sin respuestas adicionales aún.</p>';
     document.getElementById("tv-support-reply-input").value = "";
+    var resolveBtn = document.getElementById("tv-support-resolve-btn");
+    if (resolveBtn) resolveBtn.disabled = t.status === "resolved";
     openModal("tv-support-detail-drawer");
   }
 
@@ -745,25 +800,48 @@ function renderSupportScript(companyId: string): string {
 
   document.getElementById("tv-support-new-form")?.addEventListener("submit", function (e) {
     e.preventDefault();
-    var now = new Date().toISOString();
     var subject = document.getElementById("tv-support-subject").value.trim();
     var category = document.getElementById("tv-support-category").value;
     var priority = document.getElementById("tv-support-priority").value;
     var message = document.getElementById("tv-support-message").value.trim();
+    var orderEl = document.getElementById("tv-support-related-order-id");
+    var relatedOrderId = orderEl ? orderEl.value.trim() : "";
     if (!subject || !message) return;
-    tickets.unshift({
-      id: "tkt_" + Date.now().toString(36),
-      code: nextCode(),
+
+    var payload = {
       subject: subject,
       category: category,
       priority: priority,
-      status: "open",
       message: message,
-      createdAt: now,
-      updatedAt: now,
-      replies: [],
-    });
-    saveTickets();
+      relatedOrderId: relatedOrderId || null,
+    };
+
+    if (DB_AVAILABLE) {
+      postJson("/app/support/tickets", payload).then(function (res) {
+        if (res.ok && res.body && res.body.ok && res.body.ticket) {
+          tickets.unshift(res.body.ticket);
+          closeModals();
+          e.target.reset();
+          renderAll();
+          showToast("Ticket creado correctamente. El equipo Telvoice revisará tu solicitud.");
+          return;
+        }
+        createLocalTicket(payload);
+        closeModals();
+        e.target.reset();
+        renderAll();
+        showToast("Ticket guardado localmente. Se sincronizará cuando la conexión esté disponible.");
+      }).catch(function () {
+        createLocalTicket(payload);
+        closeModals();
+        e.target.reset();
+        renderAll();
+        showToast("Ticket guardado localmente. Se sincronizará cuando la conexión esté disponible.");
+      });
+      return;
+    }
+
+    createLocalTicket(payload);
     closeModals();
     e.target.reset();
     renderAll();
@@ -785,6 +863,49 @@ function renderSupportScript(companyId: string): string {
     var t = findTicket(activeTicketId);
     var text = document.getElementById("tv-support-reply-input").value.trim();
     if (!t || !text) return;
+
+    if (isRemoteTicket(t)) {
+      postJson("/app/support/tickets/" + encodeURIComponent(t.id) + "/reply", { message: text })
+        .then(function (res) {
+          if (res.ok && res.body && res.body.ok && res.body.ticket) {
+            replaceTicket(res.body.ticket);
+            openDetail(activeTicketId);
+            renderAll();
+            showToast("Respuesta enviada.");
+            return;
+          }
+          t.replies = t.replies || [];
+          t.replies.push({
+            id: "rep_" + Date.now(),
+            author: "client",
+            message: text,
+            createdAt: new Date().toISOString(),
+          });
+          t.status = "waiting";
+          t.updatedAt = new Date().toISOString();
+          saveTicketsLocal();
+          openDetail(activeTicketId);
+          renderAll();
+          showToast("Respuesta guardada localmente.");
+        })
+        .catch(function () {
+          t.replies = t.replies || [];
+          t.replies.push({
+            id: "rep_" + Date.now(),
+            author: "client",
+            message: text,
+            createdAt: new Date().toISOString(),
+          });
+          t.status = "waiting";
+          t.updatedAt = new Date().toISOString();
+          saveTicketsLocal();
+          openDetail(activeTicketId);
+          renderAll();
+          showToast("Respuesta guardada localmente.");
+        });
+      return;
+    }
+
     t.replies = t.replies || [];
     t.replies.push({
       id: "rep_" + Date.now(),
@@ -794,7 +915,7 @@ function renderSupportScript(companyId: string): string {
     });
     t.status = "waiting";
     t.updatedAt = new Date().toISOString();
-    saveTickets();
+    saveTicketsLocal();
     openDetail(activeTicketId);
     renderAll();
     showToast("Respuesta enviada.");
@@ -804,9 +925,38 @@ function renderSupportScript(companyId: string): string {
     if (!activeTicketId) return;
     var t = findTicket(activeTicketId);
     if (!t) return;
+
+    if (isRemoteTicket(t)) {
+      postJson("/app/support/tickets/" + encodeURIComponent(t.id) + "/resolve", {})
+        .then(function (res) {
+          if (res.ok && res.body && res.body.ok && res.body.ticket) {
+            replaceTicket(res.body.ticket);
+            closeModals();
+            renderAll();
+            showToast("Ticket marcado como resuelto.");
+            return;
+          }
+          t.status = "resolved";
+          t.updatedAt = new Date().toISOString();
+          saveTicketsLocal();
+          closeModals();
+          renderAll();
+          showToast("Estado guardado localmente.");
+        })
+        .catch(function () {
+          t.status = "resolved";
+          t.updatedAt = new Date().toISOString();
+          saveTicketsLocal();
+          closeModals();
+          renderAll();
+          showToast("Estado guardado localmente.");
+        });
+      return;
+    }
+
     t.status = "resolved";
     t.updatedAt = new Date().toISOString();
-    saveTickets();
+    saveTicketsLocal();
     closeModals();
     renderAll();
     showToast("Ticket marcado como resuelto.");
@@ -827,6 +977,11 @@ function renderSupportScript(companyId: string): string {
   });
 
   tickets = loadTickets();
+  if (DB_AVAILABLE && !SERVER_TICKETS.length && loadLocalTickets()) {
+    if (listSubEl) {
+      listSubEl.textContent = "Mostrando tickets guardados en este navegador. Los nuevos se sincronizarán con Supabase.";
+    }
+  }
   renderAll();
 })();
 </script>`;
@@ -835,8 +990,28 @@ function renderSupportScript(companyId: string): string {
 export function renderAppSupportPage(
   ctx: AppPageContext,
   relatedOrder?: SmsOrderWithDetails | null,
+  pageData?: AppSupportPageData,
 ): string {
+  const data: AppSupportPageData = pageData ?? {
+    module: { available: false, migrationPending: true },
+    tickets: [],
+    relatedOrderId: relatedOrder?.id ?? null,
+  };
+  const suggestedSubject = data.suggestedSubject
+    ?? (relatedOrder
+      ? `Consulta sobre orden ${relatedOrder.payment_reference ?? relatedOrder.id.slice(0, 8)}`
+      : undefined);
+  const companyId = ctx.company.id || "default";
+  const seedTickets =
+    data.module.available && data.tickets.length
+      ? data.tickets
+      : data.module.available
+        ? []
+        : DEFAULT_SUPPORT_TICKETS;
   const orderCard = relatedOrder ? renderRelatedOrderCard(relatedOrder) : "";
+  const listSubtitle = data.module.available && companyId !== "default"
+    ? "Tickets sincronizados con tu empresa."
+    : "Los tickets se guardan en este navegador hasta conectar el backend.";
 
   const body = `
     ${supportPageStyles()}
@@ -857,7 +1032,7 @@ export function renderAppSupportPage(
       `,
     })}
     ${orderCard}
-    ${renderInitialKpis()}
+    ${renderInitialKpis(seedTickets)}
     <div class="tv-support-layout">
       <div class="tv-support-main">
         <div id="tv-support-empty" class="tv-panel tv-support-empty" hidden>
@@ -872,7 +1047,7 @@ export function renderAppSupportPage(
           <section class="tv-panel">
             <header class="tv-section-head" style="padding:1rem 1.25rem 0">
               <h2 class="tv-section-head__title">Mis tickets</h2>
-              <p class="tv-section-head__sub">Los tickets se guardan en este navegador hasta conectar el backend.</p>
+              <p class="tv-section-head__sub" id="tv-support-list-sub">${escapeHtml(listSubtitle)}</p>
             </header>
             <div class="tv-panel__body">
               <div class="tv-support-table-wrap">
@@ -901,11 +1076,11 @@ export function renderAppSupportPage(
       ${renderContactAside()}
     </div>
     </div>
-    ${renderNewTicketModal()}
+    ${renderNewTicketModal(suggestedSubject, data.relatedOrderId ?? relatedOrder?.id ?? null)}
     ${renderDetailDrawer()}
     ${renderHelpInfoModal()}
     <div class="tv-support-toast" id="tv-support-toast" role="status" aria-live="polite" aria-hidden="true"></div>
-    ${renderSupportScript(ctx.company.id || "default")}`;
+    ${renderSupportScript(companyId, data)}`;
 
   return wrapAppPage(ctx, "support", "Soporte", body);
 }

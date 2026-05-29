@@ -75,6 +75,14 @@ import {
   importValidatedContacts,
 } from "../services/contactImportService.js";
 import { createContactTag, bulkAssignTag } from "../services/contactTagService.js";
+import {
+  addSupportTicketReply,
+  createSupportTicket,
+  getSupportTicketsModuleState,
+  listSupportTickets,
+  markSupportTicketResolved,
+} from "../services/clientSupportTicketService.js";
+import type { SupportTicketPriority, SupportTicket } from "../types/support-tickets.js";
 import { renderAppContactsImportPage } from "../views/app-ui/app-contacts-import-page.js";
 import { renderAppCampaignNewPage } from "../views/app-ui/app-campaigns-new-page.js";
 import { suggestSenderIdFromCompanyName } from "../utils/suggestSenderId.js";
@@ -1674,8 +1682,168 @@ export async function getAppSupport(
         relatedOrder = null;
       }
     }
-    return renderAppSupportPage(ctx, relatedOrder);
+
+    const module = await getSupportTicketsModuleState();
+    let tickets: SupportTicket[] = [];
+
+    if (module.available && ctx.company.id) {
+      const listed = await listSupportTickets(ctx.company.id);
+      if (listed.ok) {
+        tickets = listed.data;
+      }
+    }
+
+    const suggestedSubject = relatedOrder
+      ? `Consulta sobre orden ${relatedOrder.payment_reference ?? relatedOrder.id.slice(0, 8)}`
+      : undefined;
+
+    return renderAppSupportPage(ctx, relatedOrder, {
+      module,
+      tickets,
+      relatedOrderId: relatedOrder?.id ?? null,
+      suggestedSubject,
+    });
   });
+}
+
+const SUPPORT_PRIORITIES = new Set<SupportTicketPriority>([
+  "low",
+  "medium",
+  "high",
+  "urgent",
+]);
+
+function parseSupportPriority(raw: unknown): SupportTicketPriority {
+  const value = typeof raw === "string" ? raw.trim() : "";
+  if (SUPPORT_PRIORITIES.has(value as SupportTicketPriority)) {
+    return value as SupportTicketPriority;
+  }
+  return "medium";
+}
+
+async function requireSupportWriteContext(
+  req: Request,
+): Promise<AppPageContext | null> {
+  const ctx = await buildAppContext(req);
+  if (!ctx) return null;
+  if (!canOperateClientPanel(ctx.profile.role)) return null;
+  return ctx;
+}
+
+export async function postAppSupportTicket(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireSupportWriteContext(req);
+    if (!ctx) {
+      res.status(403).json({ ok: false, error: "Sin permiso o empresa no asociada." });
+      return;
+    }
+
+    const module = await getSupportTicketsModuleState();
+    if (!module.available) {
+      res.status(503).json({
+        ok: false,
+        error: "Backend de tickets no disponible.",
+        missingTable: module.migrationPending,
+      });
+      return;
+    }
+
+    const body = req.body as Record<string, unknown>;
+    let relatedOrderId: string | null = null;
+    if (typeof body.relatedOrderId === "string" && body.relatedOrderId.trim()) {
+      try {
+        relatedOrderId = validateUuidParam(body.relatedOrderId.trim(), "order");
+      } catch {
+        relatedOrderId = null;
+      }
+    }
+
+    const result = await createSupportTicket({
+      companyId: ctx.company.id,
+      userId: ctx.profile.authUserId ?? ctx.profile.profileId,
+      subject: typeof body.subject === "string" ? body.subject : "",
+      category: typeof body.category === "string" ? body.category : "Otro",
+      priority: parseSupportPriority(body.priority),
+      message: typeof body.message === "string" ? body.message : "",
+      relatedOrderId,
+    });
+
+    if (!result.ok) {
+      res.status(result.missingTable ? 503 : 400).json(result);
+      return;
+    }
+
+    res.json({ ok: true, ticket: result.data });
+  } catch (error) {
+    const msg =
+      error instanceof AppError ? error.message : "No se pudo crear el ticket.";
+    res.status(500).json({ ok: false, error: msg });
+  }
+}
+
+export async function postAppSupportTicketReply(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireSupportWriteContext(req);
+    if (!ctx) {
+      res.status(403).json({ ok: false, error: "Sin permiso o empresa no asociada." });
+      return;
+    }
+
+    const ticketId = validateUuidParam(String(req.params.id ?? ""), "ticket");
+    const body = req.body as Record<string, unknown>;
+    const message = typeof body.message === "string" ? body.message : "";
+
+    const result = await addSupportTicketReply(ticketId, ctx.company.id, {
+      message,
+      author: "client",
+    });
+
+    if (!result.ok) {
+      res.status(result.missingTable ? 503 : 400).json(result);
+      return;
+    }
+
+    res.json({ ok: true, ticket: result.data });
+  } catch (error) {
+    const msg =
+      error instanceof AppError ? error.message : "No se pudo enviar la respuesta.";
+    res.status(500).json({ ok: false, error: msg });
+  }
+}
+
+export async function postAppSupportTicketResolve(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireSupportWriteContext(req);
+    if (!ctx) {
+      res.status(403).json({ ok: false, error: "Sin permiso o empresa no asociada." });
+      return;
+    }
+
+    const ticketId = validateUuidParam(String(req.params.id ?? ""), "ticket");
+    const result = await markSupportTicketResolved(ticketId, ctx.company.id);
+
+    if (!result.ok) {
+      res.status(result.missingTable ? 503 : 400).json(result);
+      return;
+    }
+
+    res.json({ ok: true, ticket: result.data });
+  } catch (error) {
+    const msg =
+      error instanceof AppError
+        ? error.message
+        : "No se pudo marcar el ticket como resuelto.";
+    res.status(500).json({ ok: false, error: msg });
+  }
 }
 
 export async function getAppSettings(

@@ -33,6 +33,9 @@ import {
   postAppSendSms,
   getAppSettings,
   getAppSupport,
+  postAppSupportTicket,
+  postAppSupportTicketReply,
+  postAppSupportTicketResolve,
   getAppTemplates,
   getAppWallet,
   getAppWalletPaymentCard,
@@ -149,4 +152,15 @@ appRouter.get("/invoices/:id/preview", requireClientPanelPage, getAppInvoicePrev
 appRouter.get("/invoices/:id", requireClientPanelPage, getAppInvoiceDetail);
 appRouter.get("/api", requireClientPanelPage, getAppApi);
 appRouter.get("/support", requireClientPanelPage, getAppSupport);
+appRouter.post("/support/tickets", requireClientPanelPage, postAppSupportTicket);
+appRouter.post(
+  "/support/tickets/:id/reply",
+  requireClientPanelPage,
+  postAppSupportTicketReply,
+);
+appRouter.post(
+  "/support/tickets/:id/resolve",
+  requireClientPanelPage,
+  postAppSupportTicketResolve,
+);
 appRouter.get("/settings", requireClientPanelPage, getAppSettings);
