@@ -137,13 +137,14 @@ if (defaultBurst.ok < 30) {
   process.exit(1);
 }
 console.log("OK: default ~30/min (ok=", defaultBurst.ok, ")");
+console.log("… esperando ventana de 1 min antes de override por key");
+await new Promise((r) => setTimeout(r, 65_000));
 
 const createKeyOv = await postAdminForm("/admin/api-usage/rate-limits", adminCk, {
   company_id: DEMO,
   api_key_id: key1Id,
   environment: "sandbox",
   limit_per_minute: "5",
-  limit_per_day: "50",
   reason: QA_PREFIX,
 });
 if (createKeyOv !== 303 && createKeyOv !== 302) {
@@ -155,10 +156,16 @@ await new Promise((r) => setTimeout(r, 2_000));
 
 const keyOvBurst = await burstBalance(key1, 8);
 if (keyOvBurst.ok !== 5 || keyOvBurst.last429?.body.rate_limit?.limit !== 5) {
-  console.error("FAIL key override 5/min", keyOvBurst);
+  console.error(
+    "FAIL key override 5/min",
+    keyOvBurst,
+    "scope=",
+    keyOvBurst.last429?.body.rate_limit?.scope,
+  );
   process.exit(1);
 }
 console.log("OK: 5 permitidos, 6º 429 limit=5");
+await new Promise((r) => setTimeout(r, 65_000));
 
 const { rows: ovRows } = await pgQuery(
   `select id from client_api_rate_limit_overrides where company_id=$1 and reason=$2 and status='active' limit 1`,
@@ -201,6 +208,7 @@ if (companyBurst1.ok !== 7 || companyBurst2.ok !== 7) {
   process.exit(1);
 }
 console.log("OK: override empresa 7/min en ambas keys");
+await new Promise((r) => setTimeout(r, 65_000));
 
 await postAdminForm("/admin/api-usage/rate-limits", adminCk, {
   company_id: DEMO,
