@@ -24,6 +24,8 @@ import { WEBHOOK_EVENTS } from "../types/client-api-settings.js";
 import { canOperateClientPanel } from "../types/roles.js";
 import { AppError } from "../utils/errors.js";
 import { renderAppApiPage } from "../views/app-ui/app-api-page.js";
+import { renderAppApiDocsPage } from "../views/app-ui/app-api-docs-page.js";
+import { generateApiDocumentationPdf } from "../services/apiDocumentationPdfService.js";
 import { buildAppContext } from "./app.controller.js";
 import type { AppPageContext } from "../views/app-ui/app-page-wrap.js";
 
@@ -122,6 +124,46 @@ export async function getAppApi(
     }
 
     res.type("html").send(renderAppApiPage(ctx, pageData));
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAppApiDocs(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const ctx = await buildAppContext(req);
+    if (!ctx) {
+      res.redirect("/login?next=%2Fapp%2Fapi%2Fdocs");
+      return;
+    }
+    res.type("html").send(renderAppApiDocsPage(ctx, true));
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAppApiDocsPdf(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const ctx = await buildAppContext(req);
+    if (!ctx) {
+      res.redirect("/login?next=%2Fapp%2Fapi%2Fdocs.pdf");
+      return;
+    }
+    const pdf = await generateApiDocumentationPdf();
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="telvoice-api-docs.pdf"',
+    );
+    res.send(pdf);
   } catch (error) {
     next(error);
   }

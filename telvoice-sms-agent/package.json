@@ -46,16 +46,18 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "pdfkit": "^0.18.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "pg": "^8.16.0",
     "@types/bcrypt": "^5.0.2",
     "@types/cookie-parser": "^1.4.8",
     "@types/express": "^5.0.2",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.15.21",
+    "@types/pdfkit": "^0.17.6",
     "@types/uuid": "^10.0.0",
+    "pg": "^8.16.0",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   }

@@ -49,6 +49,8 @@ import {
 } from "../controllers/app-payments.controller.js";
 import {
   getAppApi,
+  getAppApiDocs,
+  getAppApiDocsPdf,
   postAppApiKeyRegenerate,
   postAppApiSmppRequest,
   postAppApiWebhook,
@@ -205,6 +207,8 @@ appRouter.get("/invoices", requireClientPanelPage, getAppInvoices);
 appRouter.get("/invoices/:id/preview", requireClientPanelPage, getAppInvoicePreview);
 appRouter.get("/invoices/:id", requireClientPanelPage, getAppInvoiceDetail);
 appRouter.get("/api", requireClientPanelPage, getAppApi);
+appRouter.get("/api/docs", requireClientPanelPage, getAppApiDocs);
+appRouter.get("/api/docs.pdf", requireClientPanelPage, getAppApiDocsPdf);
 appRouter.get("/api/keys", requireClientPanelPage, getAppApiKeysJson);
 appRouter.post("/api/keys", requireClientPanelPage, postAppApiKeyCreate);
 appRouter.post("/api/keys/:id/pause", requireClientPanelPage, postAppApiKeyPause);
