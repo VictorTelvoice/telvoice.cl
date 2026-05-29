@@ -28,8 +28,7 @@ export function renderPanelAgentWidget(): string {
 }
 
 export function getPanelAgentWidgetScript(): string {
-  return `<script>
-(function () {
+  return `(function () {
   var root = document.getElementById("${ROOT_ID}");
   if (!root) return;
 
@@ -240,6 +239,5 @@ export function getPanelAgentWidgetScript(): string {
   }
 
   renderQuick();
-})();
-</script>`;
+})();`;
 }
