@@ -21,6 +21,9 @@ export interface KnowledgeArticleRow {
   keywords: string[];
   content: string;
   is_active: boolean;
+  allowed_channels?: string[];
+  audience?: string;
+  priority?: number;
   created_at: string;
   updated_at: string;
 }

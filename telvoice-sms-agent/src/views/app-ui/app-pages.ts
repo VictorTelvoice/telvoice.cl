@@ -54,6 +54,7 @@ function renderDashBlockHead(
 function renderDlrPieChart(
   breakdown: ClientDashboardDlrBreakdown,
   todayLabel: string,
+  todaySmsUnits: number,
 ): string {
   const slices = [
     {
@@ -94,7 +95,7 @@ function renderDlrPieChart(
       return `<li class="tv-dash-pie__legend-item">
         <span class="tv-dash-pie__swatch" style="background:${s.color}"></span>
         <span class="tv-dash-pie__legend-label">${escapeHtml(s.label)}</span>
-        <span class="tv-dash-pie__legend-val">${fmtSms(s.value)} <span class="tv-dash-pie__legend-pct">(${pct}%)</span></span>
+        <span class="tv-dash-pie__legend-val">${fmtSms(s.value)} SMS <span class="tv-dash-pie__legend-pct">(${pct}%)</span></span>
       </li>`;
     })
     .join("");
@@ -107,8 +108,8 @@ function renderDlrPieChart(
     <div class="tv-dash-pie__chart-wrap">
       <div class="tv-dash-pie__chart" style="background:conic-gradient(${gradientStops})" role="img" aria-label="${escapeHtml(ariaLabel)}">
         <div class="tv-dash-pie__center">
-          <span class="tv-dash-pie__center-val">${fmtSms(total)}</span>
-          <span class="tv-dash-pie__center-label">Hoy</span>
+          <span class="tv-dash-pie__center-val">${fmtSms(todaySmsUnits)}</span>
+          <span class="tv-dash-pie__center-label">SMS hoy</span>
         </div>
       </div>
     </div>
@@ -158,16 +159,15 @@ function renderDashboardCharts(
     charts.dlrBreakdown.sent +
     charts.dlrBreakdown.delivered +
     charts.dlrBreakdown.failed;
-
   return `<section class="tv-dash-charts">
     <div class="tv-dash-charts__grid">
       <div class="tv-dash-charts__card tv-panel">
         <header class="tv-dash-charts__head">
           <h2 class="tv-dash-charts__title">Estado de envíos de hoy</h2>
-          <p class="tv-dash-charts__sub">SMS enviados hoy · ${escapeHtml(todayLabel)}${pieTotal > 0 ? ` · ${fmtSms(pieTotal)} en total` : ""}</p>
+          <p class="tv-dash-charts__sub">Por SMS consumidos (segmentos) · ${escapeHtml(todayLabel)}${pieTotal > 0 ? ` · ${fmtSms(pieTotal)} SMS` : ""}</p>
         </header>
         <div class="tv-dash-charts__body">
-          ${renderDlrPieChart(charts.dlrBreakdown, todayLabel)}
+          ${renderDlrPieChart(charts.dlrBreakdown, todayLabel, charts.todaySmsUnits)}
         </div>
       </div>
       <div class="tv-dash-charts__card tv-panel">
@@ -238,9 +238,13 @@ export function renderAppDashboardPage(
     })}
     <div class="tv-kpi-grid tv-kpi-grid--client">
       ${renderKpiCard({
-        label: "SMS de hoy",
+        label: "SMS consumidos hoy",
         value: fmtSms(stats.smsTodayTotal),
-        hint: "Total de hoy",
+        hint:
+          stats.smsTodayDestinations > 0 &&
+          stats.smsTodayDestinations !== stats.smsTodayTotal
+            ? `${fmtSms(stats.smsTodayDestinations)} destinatarios · multiparte incluido`
+            : "Total de hoy",
         icon: "today",
         variant: "success",
       })}

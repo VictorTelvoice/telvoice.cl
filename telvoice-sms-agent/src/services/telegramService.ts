@@ -315,6 +315,32 @@ async function handleFreeTextByIntent(
     return;
   }
 
+  try {
+    const { runTelegramAgentTurn } = await import("./agent/telegramAgentBridge.js");
+    const turn = await runTelegramAgentTurn({
+      chatId,
+      userId,
+      text,
+      command,
+      auth,
+      telegramFirstName,
+    });
+    if (turn.useLegacyEnviarFlow && auth) {
+      await handleEnviar(chatId, userId, text, auth);
+      return;
+    }
+    if (!turn.useLegacyEnviarFlow && turn.reply) {
+      console.info("[telegram] Agent Core", {
+        intent: turn.coreResponse?.intent,
+        confidence: turn.coreResponse?.confidence,
+      });
+      await reply(chatId, turn.reply);
+      return;
+    }
+  } catch (err) {
+    console.error("[telegram] Agent Core fallback:", err);
+  }
+
   const classification = classifyTelegramIntent(text, command);
 
   console.info("[telegram] Intención", {

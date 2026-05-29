@@ -25,7 +25,10 @@ import {
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 
 export type ClientDashboardStats = {
+  /** SMS consumidos hoy (suma cost_sms; multiparte cuenta varios). */
   smsTodayTotal: number;
+  /** Destinatarios con envío contabilizable hoy (1 fila = 1 número). */
+  smsTodayDestinations: number;
   smsSentMonth: number;
   smsCostMonth: number;
   campaignsMonth: number;
@@ -49,6 +52,8 @@ export type ClientDashboardDayVolume = {
 export type ClientDashboardCharts = {
   dlrBreakdown: ClientDashboardDlrBreakdown;
   last7Days: ClientDashboardDayVolume[];
+  todayDestinations: number;
+  todaySmsUnits: number;
 };
 
 export type ClientDashboardData = {
@@ -75,21 +80,41 @@ function deliveryRatePercent(delivered: number, total: number): string {
   return `${Math.round((delivered / total) * 100)}%`;
 }
 
+function smsUnitsForRow(row: MessageStatRow): number {
+  const units = Number(row.cost_sms);
+  return Number.isFinite(units) && units > 0 ? units : 1;
+}
+
 function countDeliveryStats(rows: MessageStatRow[]): {
   delivered: number;
   total: number;
 } {
-  const countable = rows.filter(
-    (m) => m.mode !== "mock" && m.status !== "queued",
-  );
-  const delivered = countable.filter((m) => m.status === "delivered").length;
-  return { delivered, total: countable.length };
+  const countable = rows.filter(isCountableMessage);
+  const delivered = countable
+    .filter((m) => m.status === "delivered")
+    .reduce((sum, m) => sum + smsUnitsForRow(m), 0);
+  const total = smsUnitsFromRows(rows);
+  return { delivered, total };
 }
 
 const FAILED_STATUSES = new Set(["failed", "rejected", "expired"]);
 
 function isCountableMessage(row: MessageStatRow): boolean {
   return row.mode !== "mock" && row.status !== "queued";
+}
+
+function isTodayInChile(iso: string, todayKey: string): boolean {
+  return dateKeyInTimeZone(iso, APP_SCHEDULE_TIMEZONE) === todayKey;
+}
+
+function smsUnitsFromRows(rows: MessageStatRow[]): number {
+  return rows
+    .filter(isCountableMessage)
+    .reduce((sum, row) => sum + smsUnitsForRow(row), 0);
+}
+
+function destinationCountFromRows(rows: MessageStatRow[]): number {
+  return rows.filter(isCountableMessage).length;
 }
 
 function breakdownFromMessages(rows: MessageStatRow[]): ClientDashboardDlrBreakdown {
@@ -103,11 +128,11 @@ function breakdownFromMessages(rows: MessageStatRow[]): ClientDashboardDlrBreakd
       continue;
     }
     if (row.status === "delivered") {
-      breakdown.delivered += 1;
+      breakdown.delivered += smsUnitsForRow(row);
     } else if (FAILED_STATUSES.has(row.status)) {
-      breakdown.failed += 1;
+      breakdown.failed += smsUnitsForRow(row);
     } else {
-      breakdown.sent += 1;
+      breakdown.sent += smsUnitsForRow(row);
     }
   }
   return breakdown;
@@ -153,7 +178,7 @@ function countByDayInLast7(
     const key = dateKeyInTimeZone(row.created_at, timeZone);
     const idx = indexByKey.get(key);
     if (idx !== undefined) {
-      template[idx]!.count += 1;
+      template[idx]!.count += smsUnitsForRow(row);
     }
   }
   return template.map(({ label, count }) => ({ label, count }));
@@ -175,13 +200,13 @@ async function loadDashboardCharts(
 
   const { data: weekMessages, error } = await getSupabase()
     .from("panel_sms_messages")
-    .select("status, mode, created_at")
+    .select("status, mode, created_at, cost_sms")
     .eq("company_id", companyId)
     .gte("created_at", rangeStart);
 
   const todayKey = dayStartIsoInTimeZone(new Date(), APP_SCHEDULE_TIMEZONE);
-  const todayRows = monthRows.filter(
-    (m) => dateKeyInTimeZone(m.created_at, APP_SCHEDULE_TIMEZONE) === todayKey,
+  const todayRows = monthRows.filter((m) =>
+    isTodayInChile(m.created_at, todayKey),
   );
 
   if (error) {
@@ -189,6 +214,8 @@ async function loadDashboardCharts(
       return {
         dlrBreakdown: breakdownFromMessages(todayRows),
         last7Days: emptyDays,
+        todayDestinations: destinationCountFromRows(todayRows),
+        todaySmsUnits: smsUnitsFromRows(todayRows),
       };
     }
     wrapSupabaseError(error, "loadDashboardCharts.week");
@@ -200,6 +227,8 @@ async function loadDashboardCharts(
       (weekMessages ?? []) as MessageStatRow[],
       APP_SCHEDULE_TIMEZONE,
     ),
+    todayDestinations: destinationCountFromRows(todayRows),
+    todaySmsUnits: smsUnitsFromRows(todayRows),
   };
 }
 
@@ -209,6 +238,7 @@ async function loadDashboardMonthStats(companyId: string): Promise<{
 }> {
   const empty: ClientDashboardStats = {
     smsTodayTotal: 0,
+    smsTodayDestinations: 0,
     smsSentMonth: 0,
     smsCostMonth: 0,
     campaignsMonth: 0,
@@ -217,7 +247,7 @@ async function loadDashboardMonthStats(companyId: string): Promise<{
     todayDlrDetail: "Sin envíos hoy",
   };
   const monthStart = monthStartIsoInTimeZone(new Date(), APP_SCHEDULE_TIMEZONE);
-  const dayStart = dayStartIsoInTimeZone(new Date(), APP_SCHEDULE_TIMEZONE);
+  const todayKey = dayStartIsoInTimeZone(new Date(), APP_SCHEDULE_TIMEZONE);
 
   const [{ data: monthMessages, error: msgError }, { data: globalMessages, error: globalError }] =
     await Promise.all([
@@ -254,12 +284,11 @@ async function loadDashboardMonthStats(companyId: string): Promise<{
   const globalStats = countDeliveryStats(
     (globalMessages ?? []) as MessageStatRow[],
   );
-  const todayRows = monthRows.filter((m) => m.created_at >= dayStart);
-  const todaySmsTotal = todayRows.reduce(
-    (sum, row) =>
-      !isCountableMessage(row) ? sum : sum + (Number(row.cost_sms) || 0),
-    0,
+  const todayRows = monthRows.filter((m) =>
+    isTodayInChile(m.created_at, todayKey),
   );
+  const todaySmsTotal = smsUnitsFromRows(todayRows);
+  const todayDestinations = destinationCountFromRows(todayRows);
   const todayStats = countDeliveryStats(todayRows);
 
   const { count: campaignsMonth, error: campError } = await getSupabase()
@@ -275,6 +304,7 @@ async function loadDashboardMonthStats(companyId: string): Promise<{
   return {
     stats: {
       smsTodayTotal: todaySmsTotal,
+      smsTodayDestinations: todayDestinations,
       smsSentMonth: monthCountable.length,
       smsCostMonth,
       campaignsMonth: campaignsMonth ?? 0,
@@ -285,7 +315,7 @@ async function loadDashboardMonthStats(companyId: string): Promise<{
       todayDlrRate: deliveryRatePercent(todayStats.delivered, todayStats.total),
       todayDlrDetail:
         todayStats.total > 0
-          ? `${todayStats.delivered} de ${todayStats.total} confirmados por DLR`
+          ? `${todayStats.delivered} de ${todayStats.total} SMS confirmados por DLR`
           : "Sin envíos hoy",
     },
     monthRows,

@@ -53,6 +53,10 @@ import {
   postKnowledgeTest,
 } from "../controllers/admin-knowledge.controller.js";
 import {
+  getAdminAgentHub,
+  getAdminAgentUnanswered,
+} from "../controllers/admin-agent-training.controller.js";
+import {
   getAdminTestPage,
   getAdminTelsimInboundPreview,
   postAdminTestQaSend,
@@ -490,6 +494,12 @@ adminRouter.post("/knowledge", requireAdminPage, postCreateKnowledge);
 adminRouter.get("/knowledge/:id/edit", requireAdminPage, getKnowledgeEditForm);
 adminRouter.post("/knowledge/:id/edit", requireAdminPage, postEditKnowledge);
 adminRouter.post("/knowledge/:id/delete", requireAdminPage, postDeleteKnowledge);
+adminRouter.get("/agent-training", requireAdminPage, getAdminAgentHub);
+adminRouter.get(
+  "/agent-training/unanswered",
+  requireAdminPage,
+  getAdminAgentUnanswered,
+);
 adminRouter.get("/settings", requireAdminPage, getSettingsPage);
 adminRouter.get("/asmsc/balance", requireAdminPage, getAsmscBalancePage);
 adminRouter.get("/asmsc/diagnostics", requireAdminPage, getAsmscDiagnosticsPage);

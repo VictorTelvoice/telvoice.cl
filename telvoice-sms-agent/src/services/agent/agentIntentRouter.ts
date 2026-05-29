@@ -1,0 +1,183 @@
+import {
+  classifyTelegramIntent,
+  detectCommercialIntent,
+  isExplicitKnowledgeQuestion,
+  matchesCommercialBuyIntent,
+  normalizeIntentText,
+} from "../telegramIntentService.js";
+import { matchesCapabilitiesIntent } from "../telegramCapabilities.js";
+import { extractSmsQuantityFromText } from "../commercialQuoteService.js";
+import type { AgentChannel, AgentIntent } from "./types.js";
+
+export type RoutedIntent = {
+  intent: AgentIntent;
+  confidence: number;
+  commercialQuantity: number | null;
+  requiresAuth: boolean;
+  operationalCommand: string | null;
+};
+
+const CONFIRM_RE =
+  /^(confirmo|si confirmo|sí confirmo|confirmar|ok confirmo|si confirmar|sí confirmar|confirmar envio|confirmar envío)\b/i;
+const CANCEL_RE = /^(cancelar|cancelo|no confirmo|anular|detener|no)\b/i;
+
+function requiresCompanyIntent(intent: AgentIntent): boolean {
+  return [
+    "balance",
+    "recent_messages",
+    "recent_campaigns",
+    "campaign_draft",
+    "campaign_cost",
+    "contact_list",
+    "send_sms",
+    "launch_campaign",
+    "reports",
+    "invoices",
+    "wallet",
+  ].includes(intent);
+}
+
+export function routeAgentIntent(
+  message: string,
+  channel: AgentChannel,
+  options?: { command?: string; authorized?: boolean },
+): RoutedIntent {
+  const normalized = normalizeIntentText(message);
+  const text = message.trim();
+
+  if (CONFIRM_RE.test(normalized)) {
+    return { intent: "confirm", confidence: 0.99, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
+  }
+  if (CANCEL_RE.test(normalized)) {
+    return { intent: "cancel", confidence: 0.99, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
+  }
+
+  const tg = channel === "telegram" ? classifyTelegramIntent(text, options?.command ?? "") : null;
+  const op = tg?.operationalCommand ?? null;
+
+  if (op === "saldo") {
+    return { intent: "balance", confidence: 0.92, commercialQuantity: null, requiresAuth: true, operationalCommand: op };
+  }
+  if (op === "historial") {
+    return { intent: "recent_messages", confidence: 0.92, commercialQuantity: null, requiresAuth: true, operationalCommand: op };
+  }
+  if (op === "enviar") {
+    return { intent: "send_sms", confidence: 0.9, commercialQuantity: null, requiresAuth: true, operationalCommand: op };
+  }
+  if (op === "ayuda") {
+    return { intent: "capabilities", confidence: 0.9, commercialQuantity: null, requiresAuth: false, operationalCommand: op };
+  }
+  if (op === "planes" || op === "precios" || op === "bolsas") {
+    return { intent: "commercial", confidence: 0.88, commercialQuantity: extractSmsQuantityFromText(text), requiresAuth: false, operationalCommand: op };
+  }
+
+  if (matchesCapabilitiesIntent(normalized)) {
+    return { intent: "capabilities", confidence: 0.85, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
+  }
+
+  const commercial = detectCommercialIntent(text);
+  const commercialBuy = matchesCommercialBuyIntent(normalized);
+  if (commercial || commercialBuy) {
+    return {
+      intent: "commercial",
+      confidence: commercial?.hasQuantity ? 0.92 : 0.8,
+      commercialQuantity: commercial?.quantity ?? extractSmsQuantityFromText(text),
+      requiresAuth: false,
+      operationalCommand: null,
+    };
+  }
+
+  if (
+    /\b(saldo|balance|cuanto tengo|cuánto tengo|sms disponibles|mi saldo)\b/.test(normalized) &&
+    !/\b(comprar|cargar|cotizar|necesito mas)\b/.test(normalized)
+  ) {
+    return { intent: "balance", confidence: 0.88, commercialQuantity: null, requiresAuth: true, operationalCommand: null };
+  }
+
+  if (/\b(ultimos envios|últimos envíos|historial|bandeja|ultimos sms)\b/.test(normalized)) {
+    return { intent: "recent_messages", confidence: 0.86, commercialQuantity: null, requiresAuth: true, operationalCommand: null };
+  }
+
+  if (/\b(campanas|campañas|ultima campana|última campaña)\b/.test(normalized)) {
+    return { intent: "recent_campaigns", confidence: 0.84, commercialQuantity: null, requiresAuth: true, operationalCommand: null };
+  }
+
+  if (/\b(factura|facturas|boleta)\b/.test(normalized)) {
+    return { intent: "invoices", confidence: 0.8, commercialQuantity: null, requiresAuth: true, operationalCommand: null };
+  }
+
+  if (/\b(reporte|reportes|metricas|métricas)\b/.test(normalized)) {
+    return { intent: "reports", confidence: 0.8, commercialQuantity: null, requiresAuth: true, operationalCommand: null };
+  }
+
+  if (/\b(wallet|bolsa|movimientos saldo)\b/.test(normalized)) {
+    return { intent: "wallet", confidence: 0.78, commercialQuantity: null, requiresAuth: true, operationalCommand: null };
+  }
+
+  if (/\b(optimiza|optimizar|mejora copy|mejorar mensaje|reducir segmentos)\b/.test(normalized)) {
+    return { intent: "copy_help", confidence: 0.82, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
+  }
+
+  if (/\b(segmento|segmentos|caracteres|encoding|gsm|ucs)\b/.test(normalized)) {
+    return { intent: "segments", confidence: 0.8, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
+  }
+
+  if (
+    /\b(estrategia|buenas practicas|buenas prácticas|retail|ecommerce|restaurante|fintech)\b/.test(normalized)
+  ) {
+    return { intent: "strategy", confidence: 0.75, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
+  }
+
+  if (/\b(dlr|submitted|delivered|failed|provider_status|no llega)\b/.test(normalized)) {
+    return { intent: "dlr_help", confidence: 0.82, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
+  }
+
+  if (/\b(cotizar|comprar|quiero \d+.*sms)\b/.test(normalized)) {
+    return {
+      intent: "quote_purchase",
+      confidence: 0.85,
+      commercialQuantity: extractSmsQuantityFromText(text),
+      requiresAuth: false,
+      operationalCommand: null,
+    };
+  }
+
+  if (/\b(crear campana|crear campaña|nueva campaña|borrador)\b/.test(normalized)) {
+    return { intent: "campaign_draft", confidence: 0.8, commercialQuantity: null, requiresAuth: true, operationalCommand: null };
+  }
+
+  if (/\b(enviar campana|lanzar campaña)\b/.test(normalized)) {
+    return { intent: "launch_campaign", confidence: 0.78, commercialQuantity: null, requiresAuth: true, operationalCommand: null };
+  }
+
+  if (/\b(registro|registrarme|crear cuenta|portal)\b/.test(normalized) && channel === "landing") {
+    return { intent: "register", confidence: 0.75, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
+  }
+
+  if (/\b(lead|contacto|ejecutivo|vendedor)\b/.test(normalized) && channel === "landing") {
+    return { intent: "lead_capture", confidence: 0.7, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
+  }
+
+  if (isExplicitKnowledgeQuestion(normalized) || tg?.route === "knowledge") {
+    return { intent: "knowledge", confidence: 0.72, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
+  }
+
+  if (/^(hola|buenas|hey)\b/.test(normalized)) {
+    return { intent: "greeting", confidence: 0.7, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
+  }
+
+  const intent: AgentIntent = "unknown";
+  return {
+    intent,
+    confidence: 0.35,
+    commercialQuantity: null,
+    requiresAuth: requiresCompanyIntent(intent),
+    operationalCommand: null,
+  };
+}
+
+export const UNAUTHORIZED_PRIVATE_MSG =
+  "Esta consulta requiere una cuenta Telvoice autorizada. Puedes cotizar bolsas SMS o dejar tus datos para que te contactemos.";
+
+export const LOW_CONFIDENCE_FALLBACK =
+  "No tengo una respuesta exacta todavía, pero puedo ayudarte con saldo, campañas, DLR, precios, compras, reportes o uso del panel.";
