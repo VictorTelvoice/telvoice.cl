@@ -20,6 +20,10 @@ export type SupportTicketReply = {
   author: "client" | "support";
   message: string;
   createdAt: string;
+  /** Notas internas: no visibles en panel cliente */
+  internal?: boolean;
+  authorType?: string;
+  authorName?: string;
 };
 
 export type SupportTicket = {
@@ -78,4 +82,30 @@ export type AppSupportPageData = {
   tickets: SupportTicket[];
   relatedOrderId?: string | null;
   suggestedSubject?: string;
+};
+
+export type AdminSupportTicketDateRange = "all" | "today" | "7d" | "30d";
+
+export type AdminSupportTicketFilters = {
+  search?: string;
+  status?: SupportTicketStatus | "all";
+  priority?: SupportTicketPriority | "all";
+  category?: SupportTicketCategory | "all";
+  dateRange?: AdminSupportTicketDateRange;
+};
+
+export type AdminSupportTicketStats = {
+  open: number;
+  in_review: number;
+  waiting: number;
+  resolved: number;
+  urgent: number;
+};
+
+export type AdminSupportTicketListItem = SupportTicket & {
+  companyId: string;
+  companyName: string | null;
+  userId: string | null;
+  relatedOrderId: string | null;
+  metadata: Record<string, unknown> | null;
 };

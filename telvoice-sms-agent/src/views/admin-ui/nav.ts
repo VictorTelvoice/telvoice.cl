@@ -22,6 +22,7 @@ export const MAIN_NAV: NavItem[] = [
   { id: "email-logs", href: "/admin/email-logs", label: "Emails", icon: "mail" },
   { id: "wallets", href: "/admin/wallets", label: "Saldos", icon: "account_balance_wallet" },
   { id: "invoices", href: "/admin/invoices", label: "Facturas", icon: "receipt_long" },
+  { id: "support", href: "/admin/support", label: "Soporte", icon: "confirmation_number" },
   { id: "api", href: "/admin/api", label: "API", icon: "api" },
   { id: "bot", href: "/admin/bot", label: "Bot", icon: "smart_toy" },
   { id: "chat", href: "/admin/chat", label: "Chat soporte", icon: "support_agent" },

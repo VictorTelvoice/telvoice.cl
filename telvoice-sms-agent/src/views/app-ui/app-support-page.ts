@@ -769,7 +769,7 @@ function renderSupportScript(
       "Creado: " + fmtDate(t.createdAt) + " · Actualizado: " + fmtDate(t.updatedAt);
     document.getElementById("tv-support-detail-message").textContent = t.message;
     var repliesEl = document.getElementById("tv-support-detail-replies");
-    var replies = t.replies || [];
+    var replies = (t.replies || []).filter(function (r) { return !r.internal; });
     repliesEl.innerHTML = replies.length
       ? replies.map(function (r) {
           var who = r.author === "support" ? "Telvoice" : "Tú";

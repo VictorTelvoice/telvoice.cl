@@ -58,6 +58,13 @@ import {
   postAdminTestQaSend,
 } from "../controllers/admin-test.controller.js";
 import {
+  getAdminSupportPage,
+  postAdminSupportTicketInternalNote,
+  postAdminSupportTicketQuickAction,
+  postAdminSupportTicketReply,
+  postAdminSupportTicketUpdate,
+} from "../controllers/admin-support.controller.js";
+import {
   getChatPage,
   getContactsPage,
   getInvoicesPage,
@@ -297,6 +304,27 @@ adminRouter.get("/bot", requireAdminPage, redirectSaBot);
 adminRouter.get("/inbox", requireAdminPage, getInboxPage);
 adminRouter.get("/reports", requireAdminPage, getReportsPage);
 adminRouter.get("/contacts", requireAdminPage, getContactsPage);
+adminRouter.get("/support", requireAdminPage, getAdminSupportPage);
+adminRouter.post(
+  "/support/tickets/:id/update",
+  requireAdminPage,
+  postAdminSupportTicketUpdate,
+);
+adminRouter.post(
+  "/support/tickets/:id/reply",
+  requireAdminPage,
+  postAdminSupportTicketReply,
+);
+adminRouter.post(
+  "/support/tickets/:id/internal-note",
+  requireAdminPage,
+  postAdminSupportTicketInternalNote,
+);
+adminRouter.post(
+  "/support/tickets/:id/quick-action",
+  requireAdminPage,
+  postAdminSupportTicketQuickAction,
+);
 adminRouter.get("/invoices", requireAdminPage, getInvoicesPage);
 adminRouter.get("/invoices/recovery", requireAdminPage, getAdminBillingRecoveryPage);
 adminRouter.post(
