@@ -27,8 +27,8 @@ export function getAppPanelStyles(): string {
       background: rgba(255, 255, 255, 0.12);
     }
     .tv-app-client .tv-brand-lockup .tv-brand-isotipo {
-      width: 40px;
-      height: 40px;
+      width: 32px;
+      height: 32px;
     }
     .tv-app-client .tv-nav-link--send {
       background: var(--tv-primary, #0052cc);

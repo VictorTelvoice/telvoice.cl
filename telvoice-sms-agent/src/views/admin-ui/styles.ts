@@ -88,8 +88,8 @@ export function getAdminStyles(): string {
     }
     .tv-brand-lockup:hover { color: #fff; text-decoration: none; }
     .tv-brand-isotipo {
-      width: 40px;
-      height: 40px;
+      width: 32px;
+      height: 32px;
       object-fit: contain;
       flex-shrink: 0;
     }
@@ -98,19 +98,11 @@ export function getAdminStyles(): string {
       display: inline-flex;
       align-items: baseline;
       font-family: Montserrat, Inter, sans-serif;
-      font-size: 24px;
-      line-height: 32px;
+      font-size: 19.2px;
+      line-height: 25.6px;
       font-weight: 700;
       letter-spacing: -0.025em;
       text-transform: lowercase;
-    }
-    .tv-brand-wordmark__name {
-      display: inline;
-    }
-    .tv-brand-wordmark__tld {
-      font-size: 18px;
-      line-height: 1;
-      font-weight: 700;
     }
     .tv-brand-wordmark--plain {
       display: block;
@@ -323,8 +315,8 @@ export function getAdminStyles(): string {
       margin-bottom: 1.35rem;
     }
     .tv-auth-brand .tv-brand-isotipo {
-      width: 48px;
-      height: 48px;
+      width: 38px;
+      height: 38px;
       flex-shrink: 0;
     }
     .tv-auth-title {

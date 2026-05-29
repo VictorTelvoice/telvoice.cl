@@ -10,7 +10,7 @@ export function brandPageTitle(pageTitle: string): string {
   return `${pageTitle} | ${TV_BRAND.name}`;
 }
 
-export function renderBrandIsotipo(size = 40): string {
+export function renderBrandIsotipo(size = 32): string {
   return `<img src="${TV_BRAND.isotipo}" alt="" width="${size}" height="${size}" class="tv-brand-isotipo" decoding="async" aria-hidden="true" />`;
 }
 
@@ -18,11 +18,9 @@ export function renderFaviconLink(): string {
   return `<link rel="icon" href="${TV_BRAND.isotipo}" type="image/png" sizes="any" />`;
 }
 
-/** Wordmark alineado al footer del landing (telvoice.cl). */
+/** Wordmark del sidebar y pantallas de auth. */
 export function renderBrandWordmark(): string {
-  return `<span class="tv-brand-wordmark">
-    <span class="tv-brand-wordmark__name">${TV_BRAND.name}</span><span class="tv-brand-wordmark__tld">.cl</span>
-  </span>`;
+  return `<span class="tv-brand-wordmark">${TV_BRAND.name}</span>`;
 }
 
 export function renderSidebarBrand(
@@ -37,7 +35,7 @@ export function renderSidebarBrand(
     : "";
 
   return `<a href="${href}" class="tv-brand-lockup">
-    ${renderBrandIsotipo(40)}
+    ${renderBrandIsotipo(32)}
     <span class="tv-brand-lockup__text">
       ${renderBrandWordmark()}
       ${subtitle}
@@ -51,7 +49,7 @@ export function renderAuthBrand(title: string, subtitle: string): string {
       ? renderBrandWordmark()
       : `<span class="tv-brand-wordmark tv-brand-wordmark--plain">${escapeHtml(title)}</span>`;
   return `<div class="tv-auth-brand">
-    ${renderBrandIsotipo(48)}
+    ${renderBrandIsotipo(38)}
     <div>
       <h1 class="tv-auth-title">${titleHtml}</h1>
       <p class="tv-auth-sub">${escapeHtml(subtitle)}</p>
