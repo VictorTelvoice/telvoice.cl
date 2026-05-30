@@ -1,4 +1,5 @@
 import { getOrderUiSharedStyles } from "../shared/order-ui-styles.js";
+import { getPanelResponsiveStyles } from "../shared/panel-responsive-styles.js";
 
 /** Estilos del panel admin Telvoice — shell SaaS + compatibilidad legacy (inline SSR). */
 export function getAdminStyles(): string {
@@ -23,6 +24,13 @@ export function getAdminStyles(): string {
       --tv-radius: 14px;
       --tv-shadow: 0 4px 24px -8px rgba(15, 23, 42, 0.1);
       --tv-shadow-lg: 0 12px 40px -16px rgba(15, 23, 42, 0.14);
+      --tv-bp-xs: 480px;
+      --tv-bp-sm: 640px;
+      --tv-bp-md: 768px;
+      --tv-bp-nav: 900px;
+      --tv-bp-lg: 1024px;
+      --tv-bp-xl: 1100px;
+      --tv-bp-xxl: 1280px;
       --primary: var(--tv-primary);
       --primary-dark: var(--tv-primary-dark);
       --bg: var(--tv-bg);
@@ -1698,6 +1706,15 @@ export function getAdminStyles(): string {
       font-size: 0.82rem;
       color: var(--tv-muted);
     }
+    .tv-admin-campaign-layout {
+      display: grid;
+      grid-template-columns: 1fr min(320px, 32%);
+      gap: 1.25rem;
+      align-items: start;
+    }
+    .tv-csv-row--err td { opacity: 0.7; background: rgba(220,38,38,0.07); }
+    .tv-csv-row--ok td { background: rgba(22,163,74,0.04); }
     ${getOrderUiSharedStyles()}
+    ${getPanelResponsiveStyles()}
   `;
 }

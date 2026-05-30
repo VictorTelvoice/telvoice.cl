@@ -95,12 +95,6 @@ export function renderAdminCampaignSendPage(options: {
   const dispatchDisabled = !company;
 
   const body = `
-    <style>
-      .tv-csv-row--err td { opacity: 0.7; background: rgba(220,38,38,0.07); }
-      .tv-csv-row--ok td { background: rgba(22,163,74,0.04); }
-      .tv-admin-campaign-layout { display: grid; grid-template-columns: 1fr min(320px, 32%); gap: 1.25rem; align-items: start; }
-      @media (max-width: 960px) { .tv-admin-campaign-layout { grid-template-columns: 1fr; } }
-    </style>
     ${renderPageHeader({
       title: "Enviar campaña (superadmin)",
       subtitle:
