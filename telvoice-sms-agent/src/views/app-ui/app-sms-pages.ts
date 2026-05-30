@@ -82,10 +82,10 @@ function renderTemplateOptions(
   if (!active.length) {
     return `<option value=""${dis}>— Sin plantillas activas —</option>`;
   }
-  return `<option value=""${dis}>— Elegir plantilla —</option>${active
+  return `<option value=""${dis}>Selecciona una plantilla</option>${active
     .map(
       (t) =>
-        `<option value="${escapeHtml(t.id)}" data-message="${escapeHtml(t.message)}"${dis}>${escapeHtml(t.name)}</option>`,
+        `<option value="${escapeHtml(t.id)}" data-message="${escapeHtml(t.message)}" data-status="${escapeHtml(t.status)}"${dis}>${escapeHtml(t.name)}</option>`,
     )
     .join("")}`;
 }
@@ -404,11 +404,11 @@ export function renderAppSendSmsPage(
                   <p class="field-hint">Formato Chile: 569XXXXXXXX (sin signo +)</p>
                 </div>
                 <div data-tv-template-fields${activeMode === "template" ? "" : " hidden"}>
-                  <label for="template_id">Plantilla</label>
+                  <label for="template_id">Plantilla SMS</label>
                   <select id="template_id" name="template_id" class="tv-input-full" ${disabledAttr}${activeMode === "template" && activeSmsTemplates.length ? " required" : ""}${activeSmsTemplates.length ? "" : " disabled"}>
                     ${renderTemplateOptions(smsTemplates, !activeSmsTemplates.length)}
                   </select>
-                  <p class="field-hint">${activeSmsTemplates.length ? "Elige un mensaje preaprobado y personaliza variables abajo" : "No tienes plantillas activas. <a href=\"/app/templates\">Crear plantilla</a>"}</p>
+                  <p class="field-hint" id="tv-template-meta-hint">${activeSmsTemplates.length ? "Selecciona una plantilla; el mensaje se cargará abajo." : "No tienes plantillas activas. <a href=\"/app/templates\">Crear plantilla</a>"}</p>
                 </div>
                 <div data-tv-mass-csv-field${activeMode === "mass" || activeMode === "scheduled" ? "" : " hidden"}>
                   <label for="csv_file">Cargar CSV</label>
@@ -416,16 +416,17 @@ export function renderAppSendSmsPage(
                   <p class="field-hint">Columnas <code>numero</code> y <code>mensaje</code> (o solo números + mensaje común abajo). Separador coma o punto y coma.</p>
                 </div>
               </div>
-              <div class="form-group">
-                <label for="tv-send-contacts">Contactos</label>
+              <div class="form-group" data-tv-contacts-group>
+                <label for="tv-send-contacts" id="tv-send-contacts-label">${activeMode === "template" ? "Destinatarios" : "Contactos"}</label>
                 <select id="tv-send-contacts" name="contact_list" class="tv-input-full tv-send-contacts-pick"${contactLists.length ? "" : " disabled"}>
                   ${renderAgendaPickOptions(contactLists)}
                 </select>
-                <p class="field-hint">${activeMode === "template" ? "Selecciona la agenda con el destinatario" : contactLists.length ? "Elige una agenda para cargar destinatarios" : "Crea agendas en Contactos para usarlas aquí"}</p>
+                <p class="field-hint" id="tv-send-contacts-hint">${activeMode === "template" ? "Elige una agenda o lista de contactos." : contactLists.length ? "Elige una agenda para cargar destinatarios" : "Crea agendas en Contactos para usarlas aquí"}</p>
               </div>
             </div>
-            <div data-tv-mass-fields${activeMode === "mass" || activeMode === "scheduled" ? "" : " hidden"}>
-              <p class="field-hint tv-mass-summary" id="tv-mass-summary">Selecciona una lista o sube un CSV para previsualizar la campaña.</p>
+            <div data-tv-recipients-preview${activeMode === "mass" || activeMode === "scheduled" || activeMode === "template" ? "" : " hidden"}>
+              <p class="field-hint tv-mass-summary" id="tv-mass-summary">${activeMode === "template" ? "Selecciona una plantilla y una agenda para previsualizar destinatarios." : "Selecciona una lista o sube un CSV para previsualizar la campaña."}</p>
+              <p class="field-hint tv-template-var-warn" id="tv-template-var-warn" hidden></p>
               <div class="tv-mass-table-wrap" id="tv-mass-table-wrap" hidden>
                 <div class="table-wrap tv-panel" style="padding:0;margin-top:0.5rem">
                   <table class="tv-table tv-table--dense" id="tv-mass-preview-table">
@@ -550,8 +551,26 @@ export function renderAppSendSmsPage(
       var massPreviewBody = document.getElementById('tv-mass-preview-body');
       var massPreviewMore = document.getElementById('tv-mass-preview-more');
       var massMsgHint = document.getElementById('tv-mass-msg-hint');
+      var templateMetaHint = document.getElementById('tv-template-meta-hint');
+      var templateVarWarn = document.getElementById('tv-template-var-warn');
+      var contactsLabel = document.getElementById('tv-send-contacts-label');
+      var contactsHint = document.getElementById('tv-send-contacts-hint');
+      var recipientsPreview = document.querySelector('[data-tv-recipients-preview]');
       var csvParsedRows = [];
       var massPreviewRows = [];
+      function templateStatusLabel(st){
+        if(st === 'active') return 'Activa';
+        if(st === 'draft') return 'Borrador';
+        if(st === 'archived') return 'Archivada';
+        return st || '';
+      }
+      function messageHasUnresolvedVars(text){
+        return /\\{\\{[^}]+\\}\\}|\\{[a-zA-Z_][a-zA-Z0-9_]*\\}/.test(text || '');
+      }
+      function clearCsvSelection(){
+        csvParsedRows = [];
+        if(csvInput) csvInput.value = '';
+      }
       function gsmBasic(ch){ return /^[@£$¥èéùìòÇ\\nØø\\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&'()*+,\\-./0-9:;<=>?¡A-Za-zäöñüà^{}\\\\\\[\\]~|€]*$/.test(ch); }
       function calc(text){
         var chars = [...text].length;
@@ -617,16 +636,23 @@ export function renderAppSendSmsPage(
         return rows;
       }
       function rebuildMassPreviewRows(){
+        var mode = getSendMode();
         var fallback = ta ? (ta.value || '').trim() : '';
         var combined = [];
         if(sendContacts && sendContacts.value){
           var opt = sendContacts.options[sendContacts.selectedIndex];
           var sample = opt ? (opt.getAttribute('data-phones') || opt.getAttribute('data-sample') || '') : '';
-          splitRecipients(sample).forEach(function(p){
-            combined.push({ phone: p, message: fallback });
-          });
+          var fromList = splitRecipients(sample);
+          var tplSingle = mode === 'template' && fromList.length === 1;
+          if(!tplSingle){
+            fromList.forEach(function(p){
+              combined.push({ phone: p, message: fallback });
+            });
+          }
         }
-        csvParsedRows.forEach(function(r){ combined.push({ phone: r.phone, message: r.message || fallback }); });
+        if(isBulkMode(mode)){
+          csvParsedRows.forEach(function(r){ combined.push({ phone: r.phone, message: r.message || fallback }); });
+        }
         var seen = {};
         massPreviewRows = [];
         combined.forEach(function(r){
@@ -720,17 +746,34 @@ export function renderAppSendSmsPage(
         syncMassMessageFieldLock(stats);
       }
       function renderMassPreview(){
+        var mode = getSendMode();
         var stats = syncBulkPayload();
         updateMessageRequired();
         if(massSummary){
-          var bulk = isBulkMode(getSendMode());
+          var bulk = isBulkMode(mode);
+          var tpl = mode === 'template';
           if(!stats.total){
-            massSummary.textContent = bulk && getSendMode() === 'scheduled'
-              ? 'Sube un CSV o elige una lista para programar el envío masivo.'
-              : 'Selecciona una lista o sube un CSV para previsualizar la campaña.';
+            if(tpl){
+              massSummary.textContent = 'Selecciona una plantilla y una agenda para previsualizar destinatarios.';
+            } else if(bulk && mode === 'scheduled'){
+              massSummary.textContent = 'Sube un CSV o elige una lista para programar el envío masivo.';
+            } else {
+              massSummary.textContent = 'Selecciona una lista o sube un CSV para previsualizar la campaña.';
+            }
+          } else if(tpl){
+            massSummary.textContent = stats.total + ' destinatario(s) seleccionado(s) · ' + stats.valid + ' válidos · ' + stats.totalSms + ' SMS estimados';
           } else {
-            var prefix = getSendMode() === 'scheduled' ? 'A programar: ' : '';
+            var prefix = mode === 'scheduled' ? 'A programar: ' : '';
             massSummary.textContent = prefix + stats.valid + ' listos · ' + stats.invalid + ' con error · ' + stats.totalSms + ' SMS estimados · ' + stats.total + ' filas';
+          }
+        }
+        if(templateVarWarn){
+          var msg = ta ? (ta.value || '').trim() : '';
+          if(mode === 'template' && stats.total > 0 && messageHasUnresolvedVars(msg)){
+            templateVarWarn.hidden = false;
+            templateVarWarn.textContent = 'La plantilla incluye variables ({nombre}, {codigo}, etc.). Se enviará el mismo texto a todos los destinatarios hasta que definas valores por contacto.';
+          } else {
+            templateVarWarn.hidden = true;
           }
         }
         if(massTableWrap && massPreviewBody){
@@ -765,11 +808,22 @@ export function renderAppSendSmsPage(
       function isBulkMode(mode){
         return mode === 'mass' || mode === 'scheduled';
       }
+      function showsRecipientsPreview(mode){
+        return isBulkMode(mode) || mode === 'template';
+      }
+      function templateUsesBulkRecipients(mode){
+        if(mode !== 'template') return false;
+        return countMassStats().total > 1;
+      }
       function isRecipientAllowed(){
         var mode = getSendMode();
-        if(isBulkMode(mode)){
+        if(isBulkMode(mode) || templateUsesBulkRecipients(mode)){
           var ms = countMassStats();
           return ms.valid > 0 && (ms.hasPerRowMessages || (ta && (ta.value || '').trim()));
+        }
+        if(mode === 'template'){
+          if(!toInput) return !!(ta && (ta.value || '').trim());
+          return !!(toInput.value || '').trim() && !!(ta && (ta.value || '').trim());
         }
         if(!numbersRestricted){
           if(!toInput) return true;
@@ -800,14 +854,24 @@ export function renderAppSendSmsPage(
         if(sendModeInput) sendModeInput.value = mode;
         var single = document.querySelector('[data-tv-single-fields]');
         var massCsv = document.querySelector('[data-tv-mass-csv-field]');
-        var mass = document.querySelector('[data-tv-mass-fields]');
         var tpl = document.querySelector('[data-tv-template-fields]');
         var sched = document.querySelector('[data-tv-schedule-fields]');
         if(single) single.hidden = mode !== 'single';
         if(massCsv) massCsv.hidden = !isBulkMode(mode);
-        if(mass) mass.hidden = !isBulkMode(mode);
+        if(recipientsPreview) recipientsPreview.hidden = !showsRecipientsPreview(mode);
         if(tpl) tpl.hidden = mode !== 'template';
         if(sched) sched.hidden = mode !== 'scheduled';
+        if(contactsLabel){
+          contactsLabel.textContent = mode === 'template' ? 'Destinatarios' : 'Contactos';
+        }
+        if(contactsHint){
+          contactsHint.textContent = mode === 'template'
+            ? 'Elige una agenda o lista de contactos.'
+            : (sendContacts && !sendContacts.disabled
+              ? 'Elige una agenda para cargar destinatarios'
+              : 'Crea agendas en Contactos para usarlas aquí');
+        }
+        if(mode === 'template') clearCsvSelection();
         if(toInput){
           if(mode === 'single') toInput.setAttribute('required', 'required');
           else toInput.removeAttribute('required');
@@ -820,7 +884,8 @@ export function renderAppSendSmsPage(
         }
         updateSubmitLabel(mode);
         updateMessageRequired();
-        if(isBulkMode(mode)) renderMassPreview();
+        if(showsRecipientsPreview(mode)) renderMassPreview();
+        else if(templateVarWarn) templateVarWarn.hidden = true;
         refresh();
       }
       function setChip(label, value){
@@ -836,7 +901,7 @@ export function renderAppSendSmsPage(
         var t = ta.value || '';
         var c = calc(t);
         var massStats = null;
-        if(isBulkMode(mode)){
+        if(isBulkMode(mode) || templateUsesBulkRecipients(mode)){
           massStats = renderMassPreview();
           setChip('Caracteres', String(massStats.total) + ' filas');
           setChip('Segmentos', String(massStats.totalSms) + ' SMS');
@@ -852,7 +917,7 @@ export function renderAppSendSmsPage(
         var bubble = document.getElementById('tv-send-preview-bubble');
         var phoneTitle = document.querySelector('#tv-send-preview-phone .tv-hero-phone__app-title');
         var phoneAvatar = document.querySelector('#tv-send-preview-phone .tv-hero-phone__avatar');
-        if(!isBulkMode(mode) && bubble) bubble.textContent = t || 'Hola, tu mensaje aparecerá aquí.';
+        if(!isBulkMode(mode) && !templateUsesBulkRecipients(mode) && bubble) bubble.textContent = t || 'Hola, tu mensaje aparecerá aquí.';
         if(senderInput) {
           var sid = (senderInput.value || '').trim() || suggestedSenderId;
           if(phoneTitle) phoneTitle.textContent = sid;
@@ -864,10 +929,11 @@ export function renderAppSendSmsPage(
         }
         var numOk = isRecipientAllowed();
         var schedOk = mode !== 'scheduled' || (scheduleDate && scheduleDate.value && scheduleTime && scheduleTime.value);
-        var bulkOk = !isBulkMode(mode) || (massStats && massStats.valid > 0 && (massStats.hasPerRowMessages || (ta && (ta.value || '').trim())));
+        var needsBulkRecipients = isBulkMode(mode) || templateUsesBulkRecipients(mode);
+        var bulkOk = !needsBulkRecipients || (massStats && massStats.valid > 0 && (massStats.hasPerRowMessages || (ta && (ta.value || '').trim())));
         var balanceOk = true;
         if(avail > 0){
-          if(isBulkMode(mode) && massStats) balanceOk = massStats.totalSms <= avail;
+          if((isBulkMode(mode) || templateUsesBulkRecipients(mode)) && massStats) balanceOk = massStats.totalSms <= avail;
           else if(mode === 'single' || mode === 'template') balanceOk = c.cost <= avail;
         }
         var segWarn = document.getElementById('tv-live-segment-warn');
@@ -876,7 +942,7 @@ export function renderAppSendSmsPage(
         var submitBtn = document.getElementById('tv-send-submit');
         var headerBtn = document.getElementById('tv-header-send-btn');
         if(segWarn){
-          if(isBulkMode(mode) && massStats && massStats.totalSms > 0){
+          if((isBulkMode(mode) || (mode === 'template' && templateUsesBulkRecipients(mode))) && massStats && massStats.totalSms > 0){
             segWarn.hidden = false;
             segWarn.textContent = 'Se descontarán ' + massStats.totalSms + ' créditos SMS según segmentos del mensaje (no hay tope de segmentos en campañas).';
             segWarn.style.color = '';
@@ -888,8 +954,16 @@ export function renderAppSendSmsPage(
             segWarn.hidden = true;
           }
         }
-        if(numWarn) numWarn.hidden = isBulkMode(mode) || numOk || !numbersRestricted;
-        if(massWarn) massWarn.hidden = bulkOk || !isBulkMode(mode);
+        if(numWarn) numWarn.hidden = isBulkMode(mode) || templateUsesBulkRecipients(mode) || numOk || !numbersRestricted;
+        if(massWarn){
+          if(mode === 'template' && !templateUsesBulkRecipients(mode)){
+            massWarn.hidden = numOk || !numbersRestricted;
+            if(!massWarn.hidden) massWarn.textContent = 'Indica el número destinatario o elige una agenda con contactos.';
+          } else {
+            massWarn.hidden = bulkOk || !needsBulkRecipients;
+            if(!massWarn.hidden) massWarn.textContent = 'Agrega al menos un destinatario válido (lista o CSV).';
+          }
+        }
         var disabled = overSeg || !numOk || !schedOk || !bulkOk || !balanceOk;
         if(submitBtn) submitBtn.disabled = !canSubmit || disabled;
         if(headerBtn) headerBtn.disabled = !canSubmit || disabled;
@@ -927,7 +1001,7 @@ export function renderAppSendSmsPage(
           var listId = sendContacts.value;
           var mode = getSendMode();
           if(!listId){
-            if(isBulkMode(mode)) renderMassPreview();
+            if(showsRecipientsPreview(mode)) renderMassPreview();
             refresh();
             return;
           }
@@ -939,15 +1013,24 @@ export function renderAppSendSmsPage(
             sendContacts.value = '';
             return;
           }
-          if(mode === 'single' || mode === 'template'){
-            if(phones.length === 1){
-              if(toInput) toInput.value = phones[0];
-              refresh();
+          if(mode === 'single'){
+            if(phones.length === 1 && toInput){
+              toInput.value = phones[0];
             } else {
               applySendMode('mass');
-              renderMassPreview();
-              refresh();
             }
+            refresh();
+            return;
+          }
+          if(mode === 'template'){
+            if(phones.length === 1 && toInput){
+              toInput.value = phones[0];
+              if(bulkHidden) bulkHidden.value = '';
+              if(bulkRowsJson) bulkRowsJson.value = '';
+              massPreviewRows = [];
+            }
+            renderMassPreview();
+            refresh();
             return;
           }
           if(isBulkMode(mode)){
@@ -974,7 +1057,8 @@ export function renderAppSendSmsPage(
       var headerSendBtn = document.getElementById('tv-header-send-btn');
       if(sendForm){
         sendForm.addEventListener('submit', function(ev){
-          if(isBulkMode(getSendMode())) renderMassPreview();
+          var submitMode = getSendMode();
+          if(isBulkMode(submitMode) || templateUsesBulkRecipients(submitMode)) renderMassPreview();
           if(sendForm.getAttribute('data-tv-submitting') === '1'){
             ev.preventDefault();
             return;
@@ -992,7 +1076,16 @@ export function renderAppSendSmsPage(
           if(ta && ta.readOnly) return;
           var opt = templateSelect.options[templateSelect.selectedIndex];
           var msg = opt ? opt.getAttribute('data-message') : '';
+          var st = opt ? opt.getAttribute('data-status') : '';
+          if(templateMetaHint){
+            if(opt && opt.value && st){
+              templateMetaHint.innerHTML = 'Estado: <strong>' + escHtml(templateStatusLabel(st)) + '</strong>. Personaliza variables en el mensaje si lo necesitas.';
+            } else if(templateSelect.options.length > 1){
+              templateMetaHint.textContent = 'Selecciona una plantilla; el mensaje se cargará abajo.';
+            }
+          }
           if(msg && ta){ ta.value = msg; ta.focus(); refresh(); }
+          if(getSendMode() === 'template') renderMassPreview();
         });
       }
       if(scheduleDate) scheduleDate.addEventListener('change', refresh);
