@@ -11,6 +11,7 @@ import { getCurrentUserProfile } from "../services/userProfileService.js";
 import type { AdminSessionUser } from "../types/admin.js";
 import type { UserProfileContext } from "../types/tenant.js";
 import { renderAdminForbiddenPage } from "../views/admin-ui/forbidden-page.js";
+import { adminLoginRedirect } from "../utils/panel-host.js";
 
 const JWT_COOKIE_OPTS = { path: "/" };
 
@@ -143,8 +144,7 @@ async function enforceAdminPanelAccess(
   next: NextFunction,
 ): Promise<void> {
   if (!req.adminUser) {
-    const nextUrl = encodeURIComponent(req.originalUrl || "/admin");
-    res.redirect(`/admin/login?next=${nextUrl}`);
+    res.redirect(adminLoginRedirect(req, req.originalUrl || "/admin"));
     return;
   }
 
@@ -154,8 +154,7 @@ async function enforceAdminPanelAccess(
 
   if (!canAccessAdmin(subject)) {
     clearInvalidAdminCookie(req, res);
-    const nextUrl = encodeURIComponent(req.originalUrl || "/admin");
-    res.redirect(`/admin/login?next=${nextUrl}`);
+    res.redirect(adminLoginRedirect(req, req.originalUrl || "/admin"));
     return;
   }
 

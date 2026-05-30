@@ -47,6 +47,11 @@ import {
 import { getWalletGlobalStats } from "../services/walletDashboardService.js";
 import { getConfiguredDlrWebhookUrl } from "../utils/dlr-callback.js";
 import { validateUuidParam } from "../utils/validation.js";
+import {
+  adminLoginPath,
+  agentPanelUrl,
+  isAdminPanelHost,
+} from "../utils/panel-host.js";
 
 export async function getLoginPage(
   req: Request,
@@ -71,6 +76,10 @@ export async function getLoginPage(
           next: nextPath,
           signupAvailable,
           successMessage,
+          loginActionPath: adminLoginPath(req),
+          brandSubtitle: isAdminPanelHost(req)
+            ? "Panel administrativo · admin.telvoice.cl"
+            : "Panel administrativo · agent.telvoice.cl",
         }),
       );
   } catch (error) {
@@ -86,7 +95,9 @@ export async function getRegisterPage(
   try {
     const open = await isAdminSignupOpen();
     if (!open) {
-      res.redirect("/admin/login?error=Registro%20no%20disponible.");
+      res.redirect(
+        `${adminLoginPath(req)}?error=${encodeURIComponent("Registro no disponible.")}`,
+      );
       return;
     }
 
@@ -107,11 +118,11 @@ export async function postRegister(
 ): Promise<void> {
   try {
     const open = await isAdminSignupOpen();
-    const nextPath = sanitizeNextPath(String(req.body?.next ?? "/admin"));
+    const nextPath = sanitizeNextPath(String(req.body?.next ?? "/admin"), req);
 
     if (!open) {
       res.redirect(
-        `/admin/login?error=${encodeURIComponent("Registro no disponible.")}`,
+        `${adminLoginPath(req)}?error=${encodeURIComponent("Registro no disponible.")}`,
       );
       return;
     }
@@ -139,7 +150,11 @@ export async function postRegister(
     const regProfile = await getCurrentUserProfile(result.user);
     setSessionCookies(res, result.user, regProfile);
     res.redirect(
-      resolvePostAuthRedirect(subjectFromAdmin(result.user, regProfile).role, nextPath),
+      resolvePostAuthRedirect(
+        subjectFromAdmin(result.user, regProfile).role,
+        nextPath,
+        req,
+      ),
     );
   } catch (error) {
     next(error);
@@ -154,11 +169,11 @@ export async function postLogin(
   try {
     const email = String(req.body?.email ?? "").trim();
     const password = String(req.body?.password ?? "");
-    const nextPath = sanitizeNextPath(String(req.body?.next ?? "/admin"));
+    const nextPath = sanitizeNextPath(String(req.body?.next ?? "/admin"), req);
 
     if (!email || !password) {
       res.redirect(
-        `/admin/login?error=${encodeURIComponent("Correo y contraseña son obligatorios.")}&next=${encodeURIComponent(nextPath)}`,
+        `${adminLoginPath(req)}?error=${encodeURIComponent("Correo y contraseña son obligatorios.")}&next=${encodeURIComponent(nextPath)}`,
       );
       return;
     }
@@ -166,7 +181,7 @@ export async function postLogin(
     const admin = await authenticateAdmin(email, password);
     if (!admin) {
       res.redirect(
-        `/admin/login?error=${encodeURIComponent("Credenciales inválidas.")}&next=${encodeURIComponent(nextPath)}`,
+        `${adminLoginPath(req)}?error=${encodeURIComponent("Credenciales inválidas.")}&next=${encodeURIComponent(nextPath)}`,
       );
       return;
     }
@@ -179,7 +194,7 @@ export async function postLogin(
       companyId: profile?.companyId ?? admin.companyId,
     };
     setSessionCookies(res, sessionUser, profile);
-    res.redirect(resolvePostAuthRedirect(sessionUser.role, nextPath));
+    res.redirect(resolvePostAuthRedirect(sessionUser.role, nextPath, req));
   } catch (error) {
     next(error);
   }
@@ -216,12 +231,17 @@ function setSessionCookies(
   res.cookie(getAdminJwtCookieName(), token, opts);
 }
 
-function resolvePostAuthRedirect(role: string, nextPath: string): string {
+function resolvePostAuthRedirect(
+  role: string,
+  nextPath: string,
+  req: Request,
+): string {
   if (canAccessClientPanel(role) && !canAccessAdminPanel(role)) {
-    if (nextPath.startsWith("/app")) {
-      return nextPath;
+    const appPath = nextPath.startsWith("/app") ? nextPath : "/app";
+    if (isAdminPanelHost(req)) {
+      return agentPanelUrl(appPath);
     }
-    return "/app";
+    return appPath;
   }
   if (canAccessAdminPanel(role) && nextPath.startsWith("/app")) {
     return "/admin";
@@ -229,10 +249,10 @@ function resolvePostAuthRedirect(role: string, nextPath: string): string {
   return nextPath;
 }
 
-export function postLogout(_req: Request, res: Response): void {
+export function postLogout(req: Request, res: Response): void {
   const opts = { path: "/" };
   res.clearCookie(getAdminJwtCookieName(), opts);
-  res.redirect("/admin/login");
+  res.redirect(adminLoginPath(req));
 }
 
 /** Cierra solo la sesión del panel cliente (no afecta `/admin`). */
@@ -429,7 +449,13 @@ export function getSettingsPage(req: Request, res: Response): void {
   );
 }
 
-function sanitizeNextPath(path: string): string {
+function sanitizeNextPath(path: string, req: Request): string {
+  if (isAdminPanelHost(req)) {
+    if (path.startsWith("/admin") && !path.startsWith("//")) {
+      return path;
+    }
+    return "/admin";
+  }
   if (
     (path.startsWith("/admin") || path.startsWith("/app")) &&
     !path.startsWith("//")

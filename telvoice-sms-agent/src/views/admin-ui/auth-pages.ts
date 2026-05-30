@@ -7,6 +7,8 @@ export function renderAuthLoginPage(options: {
   next?: string;
   signupAvailable?: boolean;
   successMessage?: string;
+  loginActionPath?: string;
+  brandSubtitle?: string;
 }): string {
   const errorBlock = options.error
     ? `<div class="alert alert-error">${escapeHtml(options.error)}</div>`
@@ -21,12 +23,16 @@ export function renderAuthLoginPage(options: {
       </p>`
     : "";
 
+  const loginAction = options.loginActionPath ?? "/admin/login";
+  const brandLine =
+    options.brandSubtitle ?? "Panel administrativo · agent.telvoice.cl";
+
   const body = `
     <div class="tv-auth-card">
-      ${renderAuthBrand("telvoice", "Panel administrativo · agent.telvoice.cl")}
+      ${renderAuthBrand("telvoice", brandLine)}
       ${successBlock}
       ${errorBlock}
-      <form method="post" action="/admin/login" class="tv-auth-form">
+      <form method="post" action="${escapeHtml(loginAction)}" class="tv-auth-form">
         <input type="hidden" name="next" value="${escapeHtml(options.next ?? "/admin")}" />
         <div class="form-group">
           <label for="email">Correo</label>

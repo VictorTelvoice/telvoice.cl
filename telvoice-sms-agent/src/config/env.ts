@@ -138,6 +138,17 @@ function normalizeTransactionalEmailProvider(
   return "";
 }
 
+function hostnameFromUrl(url: string): string {
+  if (!url) {
+    return "";
+  }
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
 export const env = {
   nodeEnv: optionalEnv("NODE_ENV", "development"),
   port: Number.parseInt(optionalEnv("PORT", "3001"), 10),
@@ -196,6 +207,24 @@ export const env = {
     /\/$/,
     "",
   ),
+  /** URL pública del superadmin (producción: https://admin.telvoice.cl) */
+  publicAdminUrl: optionalEnv(
+    "PUBLIC_ADMIN_URL",
+    optionalEnv("NODE_ENV", "development") === "production"
+      ? "https://admin.telvoice.cl"
+      : "",
+  ).replace(/\/$/, ""),
+  /** Hostname del panel admin (derivado de PUBLIC_ADMIN_URL) */
+  publicAdminHost: hostnameFromUrl(
+    optionalEnv(
+      "PUBLIC_ADMIN_URL",
+      optionalEnv("NODE_ENV", "development") === "production"
+        ? "https://admin.telvoice.cl"
+        : "",
+    ).replace(/\/$/, ""),
+  ),
+  /** Dev local: host alternativo para simular admin.telvoice.cl (ej. admin.localhost) */
+  adminPanelHostDev: optionalEnv("ADMIN_PANEL_HOST_DEV").toLowerCase(),
   /** Sitio Telvoice.cl (back_urls y webhook MercadoPago) */
   publicSiteUrl: optionalEnv("PUBLIC_SITE_URL", "https://www.telvoice.cl").replace(
     /\/$/,

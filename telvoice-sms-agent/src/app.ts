@@ -1,5 +1,5 @@
 import cookieParser from "cookie-parser";
-import express, { type Request } from "express";
+import express, { type Request, type Response } from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { adminRouter } from "./routes/admin.routes.js";
@@ -7,6 +7,17 @@ import { appRouter } from "./routes/app.routes.js";
 import { apiRouter } from "./routes/index.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { landingPublicCors } from "./middleware/landing-public-cors.js";
+import { hostRoutingMiddleware } from "./middleware/host-routing.js";
+import {
+  loadAdminSession,
+  redirectIfAuthenticated,
+} from "./middleware/admin-auth.js";
+import {
+  getLoginPage,
+  postLogin,
+} from "./controllers/admin.controller.js";
+import { canAccessAdmin, subjectFromAdmin } from "./auth/authorization.js";
+import { isAdminPanelHost } from "./utils/panel-host.js";
 import type { RequestWithRawBody } from "./types/express-request.js";
 import {
   getAuthCallbackPage,
@@ -49,7 +60,41 @@ export function createApp() {
     });
   });
 
-  app.get("/login", getClientLoginPage);
+  app.use(hostRoutingMiddleware);
+
+  app.get("/", loadAdminSession, (req: Request, res: Response, next) => {
+    if (!isAdminPanelHost(req)) {
+      next();
+      return;
+    }
+    const subject = req.adminUser
+      ? subjectFromAdmin(req.adminUser, req.userProfile)
+      : null;
+    if (subject && canAccessAdmin(subject)) {
+      res.redirect("/admin");
+      return;
+    }
+    res.redirect("/login");
+  });
+
+  app.get("/login", loadAdminSession, (req: Request, res: Response, next) => {
+    if (isAdminPanelHost(req)) {
+      redirectIfAuthenticated(req, res, () => {
+        void getLoginPage(req, res, next);
+      });
+      return;
+    }
+    getClientLoginPage(req, res);
+  });
+
+  app.post("/login", (req: Request, res: Response, next) => {
+    if (isAdminPanelHost(req)) {
+      void postLogin(req, res, next);
+      return;
+    }
+    next();
+  });
+
   app.get("/auth/callback", getAuthCallbackPage);
   app.get("/claim/manual-review", getClaimManualReviewPage);
   app.get("/checkout/success", getCheckoutSuccessPage);
