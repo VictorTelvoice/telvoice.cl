@@ -104,6 +104,14 @@ export async function postAppAgentFeedback(
       rating: rating >= 4 ? 5 : 1,
       feedbackText: String(req.body?.feedbackText ?? req.body?.comment ?? "").trim() || null,
       lastQuestion: String(req.body?.lastQuestion ?? "").trim() || undefined,
+      lastReply: String(req.body?.lastReply ?? req.body?.agentReply ?? "").trim() || undefined,
+      intent: String(req.body?.intent ?? "").trim() || null,
+      confidence:
+        req.body?.confidence != null && Number.isFinite(Number(req.body.confidence))
+          ? Number(req.body.confidence)
+          : null,
+      userMessageId: String(req.body?.userMessageId ?? "").trim() || null,
+      agentMessageId: String(req.body?.agentMessageId ?? "").trim() || null,
     });
 
     const needsDetail = rating < 4;

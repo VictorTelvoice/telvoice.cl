@@ -223,3 +223,31 @@ export function __resetPanelAgentMemorySessionsForTests(): void {
 export function __memorySessionCountForTests(): number {
   return memorySessions.size;
 }
+
+/** Admin: historial de sesión sin filtro por empresa. */
+export async function listPanelAgentMessagesForAdmin(
+  sessionId: string,
+  limit = 50,
+): Promise<PanelAgentMessageRow[]> {
+  const mem = memorySessions.get(sessionId);
+  if (mem) {
+    return mem.messages.slice(-limit);
+  }
+
+  const { data, error } = await getSupabase()
+    .from("panel_agent_messages")
+    .select("id, session_id, role, content, metadata, created_at")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return [];
+    }
+    warnPersist("listPanelAgentMessagesForAdmin", error);
+    return [];
+  }
+
+  return (data ?? []) as PanelAgentMessageRow[];
+}

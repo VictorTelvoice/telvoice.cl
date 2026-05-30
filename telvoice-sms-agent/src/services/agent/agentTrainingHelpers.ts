@@ -135,3 +135,64 @@ export function buildArticlePrefill(row: UnansweredQuestionRow): {
     priority: row.channel === "web_client" ? 10 : 5,
   };
 }
+
+export function buildArticlePrefillFromFeedback(input: {
+  channel: string;
+  user_question: string | null;
+  agent_response: string | null;
+  proposed_answer: string | null;
+  detected_intent: string | null;
+  metadata: Record<string, unknown> | null;
+}): {
+  title: string;
+  category: string;
+  keywords: string[];
+  content: string;
+  allowed_channels: string[];
+  audience: string;
+  priority: number;
+} {
+  const question =
+    input.user_question?.trim() ||
+    metaString(input.metadata, "user_question") ||
+    "Feedback del agente";
+  const metaCategory = metaString(input.metadata, "proposed_category");
+  const metaKeywords = metaString(input.metadata, "proposed_keywords");
+  const metaAudience = metaString(input.metadata, "proposed_audience");
+  const metaChannels = metaString(input.metadata, "proposed_allowed_channels");
+  const metaTitle = metaString(input.metadata, "proposed_title");
+  const metaPriority = input.metadata?.proposed_priority;
+
+  return {
+    title: metaTitle || suggestTitleFromQuestion(question),
+    category:
+      metaCategory ||
+      suggestCategoryFromIntent(input.detected_intent),
+    keywords: metaKeywords
+      ? metaKeywords.split(",").map((k) => k.trim()).filter(Boolean)
+      : suggestKeywordsFromQuestion(null, question),
+    content:
+      input.proposed_answer?.trim() ||
+      input.agent_response?.trim() ||
+      "",
+    allowed_channels: metaChannels
+      ? metaChannels.split(",").map((c) => c.trim()).filter(Boolean)
+      : suggestAllowedChannels(input.channel),
+    audience: metaAudience || suggestAudienceForChannel(input.channel),
+    priority:
+      typeof metaPriority === "number" && Number.isFinite(metaPriority)
+        ? metaPriority
+        : input.channel === "web_client"
+          ? 10
+          : 5,
+  };
+}
+
+function metaString(
+  meta: Record<string, unknown> | null,
+  key: string,
+): string | null {
+  if (!meta || meta[key] == null) return null;
+  const v = String(meta[key]).trim();
+  return v || null;
+}
