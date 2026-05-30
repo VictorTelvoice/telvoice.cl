@@ -11,7 +11,11 @@ import type {
 import type { WholesaleTrafficType } from "../types/wholesale.js";
 import { ValidationError } from "../utils/errors.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
-import { decryptSecret, encryptSecret } from "../utils/secret-crypto.js";
+import {
+  decryptSmppSecret,
+  encryptSmppSecret,
+  SMPP_CREDENTIALS_UNAVAILABLE_MESSAGE,
+} from "../utils/secret-crypto.js";
 import {
   executeSmppBindTest,
   executeSmppSendTest,
@@ -146,11 +150,16 @@ async function loadConnectionConfig(id: string): Promise<SmppConnectionConfig> {
   if (!data) throw new ValidationError("Conexión SMPP no encontrada.");
 
   const row = data as WholesaleSmppConnectionRow;
-  const password = decryptSecret(row.password_encrypted);
+  let password: string;
+  try {
+    password = decryptSmppSecret(row.password_encrypted);
+  } catch (error) {
+    if (error instanceof ValidationError) throw error;
+    throw new ValidationError(SMPP_CREDENTIALS_UNAVAILABLE_MESSAGE);
+  }
+
   if (!password) {
-    throw new ValidationError(
-      "No se pudo descifrar el password SMPP. Verifique ENCRYPTION_KEY.",
-    );
+    throw new ValidationError(SMPP_CREDENTIALS_UNAVAILABLE_MESSAGE);
   }
 
   return {
@@ -182,7 +191,7 @@ export async function createSmppConnection(
       host: input.host,
       port: input.port,
       system_id: input.system_id,
-      password_encrypted: encryptSecret(input.password),
+      password_encrypted: encryptSmppSecret(input.password),
       system_type: input.system_type,
       bind_type: input.bind_type,
       source_addr_ton: input.source_addr_ton,
@@ -221,7 +230,7 @@ export async function updateSmppConnection(
     notes: input.notes,
   };
   if (input.password) {
-    patch.password_encrypted = encryptSecret(input.password);
+    patch.password_encrypted = encryptSmppSecret(input.password);
   }
 
   const { data, error } = await supabase
