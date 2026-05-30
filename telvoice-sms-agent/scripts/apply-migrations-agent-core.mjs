@@ -81,6 +81,13 @@ const MIGRATIONS = [
       WHERE title = 'Cómo enviar SMS desde el panel cliente'
       LIMIT 1`,
   },
+  {
+    id: "050",
+    file: "050_agent_feedback_review_flow.sql",
+    check: `SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'agent_feedback'
+        AND column_name = 'status'`,
+  },
 ];
 
 const connectionString = process.env.DATABASE_URL?.trim();

@@ -49,6 +49,9 @@ export function getPanelAgentWidgetScript(): string {
 
   var pendingActionId = null;
   var lastUserMessage = "";
+  var lastAgentReply = "";
+  var lastIntent = "";
+  var lastConfidence = null;
   var typingEl = null;
 
   var quickActions = [
@@ -138,7 +141,10 @@ export function getPanelAgentWidgetScript(): string {
           sessionId: sessionId,
           rating: rating,
           feedbackText: feedbackText,
-          lastQuestion: lastUserMessage
+          lastQuestion: lastUserMessage,
+          lastReply: lastAgentReply,
+          intent: lastIntent || undefined,
+          confidence: lastConfidence
         })
       });
       appendBubble("bot", rating >= 4 ? "Gracias por tu feedback." : "Gracias, lo revisaremos para mejorar.");
@@ -206,6 +212,9 @@ export function getPanelAgentWidgetScript(): string {
         try { localStorage.setItem(STORAGE_KEY, sessionId); } catch (e) {}
       }
       pendingActionId = data.pendingActionId || null;
+      lastAgentReply = data.reply || "";
+      lastIntent = data.intent || "";
+      lastConfidence = typeof data.confidence === "number" ? data.confidence : null;
       appendBubble("bot", data.reply || "");
       if (data.suggestedActions && data.suggestedActions.length) {
         var fromApi = data.suggestedActions.filter(function (a) { return a.message; }).slice(0, 6);

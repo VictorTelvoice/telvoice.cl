@@ -55,9 +55,16 @@ import {
 import {
   getAdminAgentCreateArticleForm,
   getAdminAgentFeedback,
+  getAdminAgentFeedbackCreateArticleForm,
+  getAdminAgentFeedbackDetail,
   getAdminAgentHub,
   getAdminAgentUnanswered,
   postAdminAgentCreateArticle,
+  postAdminAgentFeedbackCreateArticle,
+  postAdminAgentFeedbackCreateUnanswered,
+  postAdminAgentFeedbackIgnore,
+  postAdminAgentFeedbackMarkReviewed,
+  postAdminAgentFeedbackProposeAnswer,
   postAdminAgentIgnore,
   postAdminAgentMarkReviewed,
 } from "../controllers/admin-agent-training.controller.js";
@@ -676,6 +683,41 @@ adminRouter.post("/knowledge/:id/edit", requireAdminPage, postEditKnowledge);
 adminRouter.post("/knowledge/:id/delete", requireAdminPage, postDeleteKnowledge);
 adminRouter.get("/agent-training", requireAdminPage, getAdminAgentHub);
 adminRouter.get("/agent-training/feedback", requireAdminPage, getAdminAgentFeedback);
+adminRouter.get(
+  "/agent-training/feedback/:id/create-article",
+  requireAdminPage,
+  getAdminAgentFeedbackCreateArticleForm,
+);
+adminRouter.post(
+  "/agent-training/feedback/:id/create-article",
+  requireAdminPage,
+  postAdminAgentFeedbackCreateArticle,
+);
+adminRouter.post(
+  "/agent-training/feedback/:id/mark-reviewed",
+  requireAdminPage,
+  postAdminAgentFeedbackMarkReviewed,
+);
+adminRouter.post(
+  "/agent-training/feedback/:id/ignore",
+  requireAdminPage,
+  postAdminAgentFeedbackIgnore,
+);
+adminRouter.post(
+  "/agent-training/feedback/:id/propose-answer",
+  requireAdminPage,
+  postAdminAgentFeedbackProposeAnswer,
+);
+adminRouter.post(
+  "/agent-training/feedback/:id/create-unanswered",
+  requireAdminPage,
+  postAdminAgentFeedbackCreateUnanswered,
+);
+adminRouter.get(
+  "/agent-training/feedback/:id",
+  requireAdminPage,
+  getAdminAgentFeedbackDetail,
+);
 adminRouter.get(
   "/agent-training/unanswered",
   requireAdminPage,
