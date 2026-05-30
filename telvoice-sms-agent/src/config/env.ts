@@ -43,6 +43,8 @@ export type SmsProviderConfig = {
   allowRatePlanCompaniesToSend: boolean;
   liveTestAllowedCompanyIds: string[];
   liveTestAllowedNumbers: string[];
+  /** false = respeta SMS_LIVE_TEST_ALLOWED_NUMBERS en envíos del panel /app */
+  skipNumberWhitelist: boolean;
   liveTestDailyLimit: number;
   /** Si true, aplica tope diario (env + política telco). Por defecto el panel /app solo limita por saldo SMS. */
   enforceDailyLimit: boolean;
@@ -217,6 +219,11 @@ export const env = {
       optionalEnv("ALLOW_RATE_PLAN_COMPANIES_TO_SEND", "true") === "true",
     liveTestAllowedCompanyIds: parseCsvEnv("SMS_LIVE_TEST_ALLOWED_COMPANY_IDS"),
     liveTestAllowedNumbers: parseCsvEnv("SMS_LIVE_TEST_ALLOWED_NUMBERS"),
+    skipNumberWhitelist:
+      optionalEnv(
+        "SMS_PANEL_SKIP_NUMBER_WHITELIST",
+        optionalEnv("SMS_CAMPAIGN_SKIP_NUMBER_WHITELIST", "true"),
+      ) === "true",
     liveTestDailyLimit: parsePositiveIntEnv("SMS_LIVE_TEST_DAILY_LIMIT", 10_000),
     enforceDailyLimit:
       optionalEnv("SMS_ENFORCE_DAILY_LIMIT", "false") === "true",

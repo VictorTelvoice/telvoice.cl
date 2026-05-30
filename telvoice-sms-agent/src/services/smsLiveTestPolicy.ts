@@ -30,14 +30,21 @@ export async function resolveCompanyLiveSendAuthorized(
   return isCompanyAuthorizedForPanelSmsSend(companyId);
 }
 
+export function isPanelNumberWhitelistEnforced(): boolean {
+  return (
+    env.smsProvider.liveTestAllowedNumbers.length > 0 &&
+    !env.smsProvider.skipNumberWhitelist
+  );
+}
+
 export function isNumberAllowedForLiveTest(normalizedPhone: string): boolean {
+  if (!isPanelNumberWhitelistEnforced()) {
+    return true;
+  }
   if (isRegisteredVerifyNumber(normalizedPhone)) {
     return true;
   }
   const allowed = env.smsProvider.liveTestAllowedNumbers;
-  if (allowed.length === 0) {
-    return true;
-  }
   const digits = normalizedPhone.replace(/[^\d+]/g, "");
   return allowed.some((n) => {
     const a = n.replace(/[^\d+]/g, "");

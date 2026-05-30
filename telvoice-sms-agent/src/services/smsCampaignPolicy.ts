@@ -1,7 +1,10 @@
 import { env } from "../config/env.js";
 import { AppError } from "../utils/errors.js";
-import { resolveCompanyLiveSendAuthorized } from "./smsLiveTestPolicy.js";
-import { isNumberAllowedForLiveTest } from "./smsLiveTestPolicy.js";
+import {
+  isNumberAllowedForLiveTest,
+  isPanelNumberWhitelistEnforced,
+  resolveCompanyLiveSendAuthorized,
+} from "./smsLiveTestPolicy.js";
 import { isAsmscConfigured } from "./sms-providers/realApiProvider.js";
 import { validateRecipientNumber } from "./smsSegmentService.js";
 
@@ -45,7 +48,7 @@ export async function assertCampaignRecipientAllowed(input: {
   }
 
   if (
-    !env.smsCampaign.skipNumberWhitelist &&
+    isPanelNumberWhitelistEnforced() &&
     !isNumberAllowedForLiveTest(phone.normalized)
   ) {
     throw new AppError(

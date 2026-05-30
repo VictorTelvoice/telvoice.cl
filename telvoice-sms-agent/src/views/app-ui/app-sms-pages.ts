@@ -278,7 +278,10 @@ export function renderAppSendSmsPage(
     ? panel.verifyNumbers.map((v) => v.entry.phone)
     : [];
   const envAllowed = lt?.allowedNumbersNormalized ?? [];
-  const allowedLiveNumbers = [...new Set([...envAllowed, ...verifyPhonesForJs])];
+  const numbersRestricted = lt?.authorizedNumbersConfigured ?? false;
+  const allowedLiveNumbers = numbersRestricted
+    ? [...new Set([...envAllowed, ...verifyPhonesForJs])]
+    : [];
 
   const dailyRemaining = !lt
     ? "—"
@@ -534,7 +537,7 @@ export function renderAppSendSmsPage(
       var avail = ${avail};
       var maxLiveSegments = ${lt?.maxSegments ?? 3};
       var canSubmit = ${canSubmit ? "true" : "false"};
-      var numbersRestricted = ${lt?.authorizedNumbersConfigured ? "true" : "false"};
+      var numbersRestricted = ${numbersRestricted ? "true" : "false"};
       var allowedLiveNumbers = ${JSON.stringify(allowedLiveNumbers)};
       var defaultVerifyMsg = ${JSON.stringify(defaultVerifyMsg)};
       var initialMode = ${JSON.stringify(activeMode)};
@@ -768,11 +771,14 @@ export function renderAppSendSmsPage(
           var ms = countMassStats();
           return ms.valid > 0 && (ms.hasPerRowMessages || (ta && (ta.value || '').trim()));
         }
-        if(!numbersRestricted && allowedLiveNumbers.length === 0) return true;
+        if(!numbersRestricted){
+          if(!toInput) return true;
+          return !!(toInput.value || '').trim();
+        }
         if(!toInput) return true;
         var v = (toInput.value || '').trim();
         if(!v) return false;
-        if(!allowedLiveNumbers.length && !numbersRestricted) return true;
+        if(!allowedLiveNumbers.length) return true;
         var digits = normalizePhoneDigits(v);
         return allowedLiveNumbers.some(function(n){
           var a = normalizePhoneDigits(n);
@@ -882,7 +888,7 @@ export function renderAppSendSmsPage(
             segWarn.hidden = true;
           }
         }
-        if(numWarn) numWarn.hidden = isBulkMode(mode) || numOk || (!numbersRestricted && allowedLiveNumbers.length === 0);
+        if(numWarn) numWarn.hidden = isBulkMode(mode) || numOk || !numbersRestricted;
         if(massWarn) massWarn.hidden = bulkOk || !isBulkMode(mode);
         var disabled = overSeg || !numOk || !schedOk || !bulkOk || !balanceOk;
         if(submitBtn) submitBtn.disabled = !canSubmit || disabled;

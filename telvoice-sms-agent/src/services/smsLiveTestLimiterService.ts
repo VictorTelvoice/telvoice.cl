@@ -13,6 +13,7 @@ import { findCompanyById } from "./companyService.js";
 import {
   isLiveTestGloballyEnabled,
   isNumberAllowedForLiveTest,
+  isPanelNumberWhitelistEnforced,
   resolveCompanyLiveSendAuthorized,
 } from "./smsLiveTestPolicy.js";
 import { resolveRouteForMessage } from "./smsRoutingService.js";
@@ -338,7 +339,7 @@ export async function getLiveTestSendPageStatus(
   const companyAuthorized = await resolveCompanyLiveSendAuthorized(companyId);
   const allowedNumbers = env.smsProvider.liveTestAllowedNumbers;
   const maskedNumbers = allowedNumbers.map(maskPhoneForDisplay);
-  const numbersRestricted = allowedNumbers.length > 0;
+  const numbersRestricted = isPanelNumberWhitelistEnforced();
 
   let routeActive = false;
   let providerActive = false;
@@ -494,7 +495,7 @@ export async function getLiveTestSendPageStatus(
     dailyRemaining,
     maxSegments: limits.maxSegments,
     maskedNumbers,
-    authorizedNumbersConfigured: allowedNumbers.length > 0,
+    authorizedNumbersConfigured: numbersRestricted,
     canSelectLiveTest,
     liveTestBlockReason,
     recipientAllowed,
