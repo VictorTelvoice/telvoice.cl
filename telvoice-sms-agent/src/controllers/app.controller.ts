@@ -234,23 +234,35 @@ async function trySendProductionCampaignFromForm(
   idempotencyKey: string,
 ): Promise<{ result: PanelCampaignSendResult; activeMode: AppSendMode } | null> {
   const sendMode = String(req.body?.send_mode ?? "single") as AppSendMode;
-  if (sendMode !== "mass" && sendMode !== "scheduled") {
+  if (sendMode === "template") {
+    const recipients = collectRecipientsFromSendForm(req);
+    if (recipients.length <= 1) {
+      return null;
+    }
+  } else if (sendMode !== "mass" && sendMode !== "scheduled") {
     return null;
   }
+
+  const campaignMode: "mass" | "scheduled" =
+    sendMode === "scheduled" ? "scheduled" : "mass";
 
   const massPayload = collectMassCampaignRows(req);
   if (massPayload.rows.length === 0) {
     throw new AppError(
       sendMode === "scheduled"
         ? "Agrega destinatarios con lista, CSV o archivo con columnas número y mensaje."
-        : "Agrega al menos un destinatario válido (lista o CSV).",
+        : sendMode === "template"
+          ? "Selecciona una agenda con al menos un contacto válido."
+          : "Agrega al menos un destinatario válido (lista o CSV).",
       400,
     );
   }
 
   if (!massPayload.hasPerRowMessages && !massPayload.defaultMessage) {
     throw new AppError(
-      "Indica un mensaje común o sube un CSV con columnas número y mensaje.",
+      sendMode === "template"
+        ? "Selecciona una plantilla SMS o escribe el mensaje."
+        : "Indica un mensaje común o sube un CSV con columnas número y mensaje.",
       400,
     );
   }
@@ -260,7 +272,11 @@ async function trySendProductionCampaignFromForm(
   ).trim();
   const campaignName =
     String(req.body?.campaign_name ?? "").trim() ||
-    (sendMode === "scheduled" ? "Envío programado" : "Campaña masiva");
+    (sendMode === "scheduled"
+      ? "Envío programado"
+      : sendMode === "template"
+        ? "Envío desde plantilla"
+        : "Campaña masiva");
 
   let scheduledAt: string | null = null;
   if (sendMode === "scheduled") {
@@ -289,8 +305,8 @@ async function trySendProductionCampaignFromForm(
     message: massPayload.defaultMessage,
     rows: massPayload.rows,
     campaignName,
-    mode: sendMode,
-    scheduledAt,
+    mode: campaignMode,
+    scheduledAt: campaignMode === "scheduled" ? scheduledAt : null,
     createdBy:
       ctx.profile.profileId ?? ctx.profile.adminUserId ?? undefined,
     sendSource: `app_send_sms_${sendMode}`,
