@@ -380,7 +380,7 @@ export function getAdminStyles(): string {
       gap: 1.25rem;
       margin-bottom: 1.25rem;
     }
-    .tv-dash-grid--2 { grid-template-columns: repeat(2, 1fr); }
+    .tv-dash-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .tv-panel {
       background: var(--tv-surface);
       border: 1px solid var(--tv-border);

@@ -133,7 +133,6 @@ export function getPanelResponsiveStyles(): string {
       }
       .table-wrap,
       .tv-mass-table-wrap .table-wrap,
-      .tv-client-dash-table-inner,
       .tv-orders-table-wrap,
       .tv-inbox-table-wrap {
         margin-left: -0.25rem;
@@ -141,7 +140,8 @@ export function getPanelResponsiveStyles(): string {
         border-radius: 10px;
         -webkit-overflow-scrolling: touch;
       }
-      .tv-table--dash {
+      .tv-dlr-report__table-inner .tv-table--dash,
+      .tv-orders-table-wrap .tv-table {
         min-width: 520px;
       }
       .tv-dash-pie {

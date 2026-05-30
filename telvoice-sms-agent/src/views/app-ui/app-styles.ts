@@ -1262,6 +1262,44 @@ export function getAppPanelStyles(): string {
     }
     .tv-client-dash-tables {
       margin-bottom: 0;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
+      align-items: stretch;
+      width: 100%;
+      min-width: 0;
+    }
+    .tv-client-dash-tables .tv-dash-block {
+      min-width: 0;
+      max-width: 100%;
+    }
+    .tv-client-dash-tables .tv-client-dash-table-panel {
+      min-width: 0;
+      width: 100%;
+    }
+    .tv-client-dash-tables .tv-client-dash-table-inner {
+      padding: 0.85rem 1rem 1rem;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tv-client-dash-tables .tv-table--dash {
+      width: 100%;
+      min-width: 0;
+      table-layout: fixed;
+    }
+    .tv-client-dash-tables .tv-table--dash th,
+    .tv-client-dash-tables .tv-table--dash td {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding: 0.65rem 0.75rem;
+      font-size: 0.82rem;
+    }
+    .tv-client-dash-tables .tv-table--dash thead th {
+      padding: 0.55rem 0.75rem;
+      font-size: 0.68rem;
+    }
+    .tv-client-dashboard .tv-client-dash-tables table {
+      min-width: 0;
     }
     .tv-table-empty {
       color: var(--tv-muted);
