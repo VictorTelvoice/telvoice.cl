@@ -280,6 +280,11 @@ export const env = {
     fromAddress: optionalEnv("EMAIL_FROM_ADDRESS", "no-reply@telvoice.cl"),
     replyTo: optionalEnv("EMAIL_REPLY_TO", "soporte@telvoice.cl"),
   },
+  clientPanel: {
+    /** POST /app/buy-sms (pago manual). Desactivado por defecto hasta habilitar operación. */
+    manualCheckoutEnabled:
+      optionalEnv("CLIENT_PANEL_MANUAL_CHECKOUT_ENABLED", "false") === "true",
+  },
   defaultRetailRatePlan: {
     ratePlanId: optionalEnv(
       "PUBLIC_CHECKOUT_DEFAULT_RATE_PLAN_ID",

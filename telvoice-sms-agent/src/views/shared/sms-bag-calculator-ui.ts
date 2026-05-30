@@ -1,6 +1,7 @@
 import { canOperateClientPanel } from "../../types/roles.js";
 import {
   SMS_BAG_CALC_MAX_VOLUME,
+  SMS_BAG_CALC_PANEL_MAX_WIDTH_PX,
   type VolumeTierRange,
 } from "../../utils/smsBagCalculator.js";
 import type { AppPageContext } from "../app-ui/app-page-wrap.js";
@@ -20,13 +21,19 @@ export function getSmsBagCalculatorStyles(): string {
     }
     .tv-app-client .tv-buy-sms-page {
       box-sizing: border-box;
-      width: min(100%, 920px) !important;
-      max-width: 920px !important;
+      width: min(100%, ${SMS_BAG_CALC_PANEL_MAX_WIDTH_PX}px) !important;
+      max-width: ${SMS_BAG_CALC_PANEL_MAX_WIDTH_PX}px !important;
       margin-left: auto !important;
       margin-right: auto !important;
-      padding-left: clamp(1rem, 2.5vw, 2.5rem);
-      padding-right: clamp(1rem, 2.5vw, 2.5rem);
+      padding-left: 1rem;
+      padding-right: 1rem;
       min-width: 0;
+    }
+    @media (min-width: 640px) {
+      .tv-app-client .tv-buy-sms-page {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+      }
     }
     .tv-app-client .tv-buy-sms-calc {
       width: 100%;
@@ -39,12 +46,12 @@ export function getSmsBagCalculatorStyles(): string {
       box-shadow: none;
     }
     .tv-buy-sms-calc .section-header {
-      margin-bottom: 2.5rem;
+      margin-bottom: 2rem;
       text-align: center;
     }
     @media (min-width: 768px) {
       .tv-buy-sms-calc .section-header {
-        margin-bottom: 3rem;
+        margin-bottom: 2.5rem;
       }
     }
     .tv-buy-sms-calc .section-eyebrow {
@@ -57,22 +64,22 @@ export function getSmsBagCalculatorStyles(): string {
     }
     .tv-buy-sms-calc .calc-hero-title {
       margin: 0.75rem 0 0;
-      font-size: clamp(1.35rem, 2.8vw, 1.75rem);
+      font-size: clamp(1.25rem, 2.4vw, 1.5rem);
       font-weight: 700;
       line-height: 1.2;
       letter-spacing: -0.02em;
       color: #1a1c20;
     }
     .tv-buy-sms-calc .calc-hero-intro {
-      margin: 1rem auto 0;
-      max-width: 42rem;
-      font-size: 1.125rem;
-      line-height: 1.75rem;
+      margin: 0.75rem auto 0;
+      max-width: 36rem;
+      font-size: 1rem;
+      line-height: 1.6rem;
       color: #43474e;
       text-align: center;
     }
     .tv-buy-sms-calc .calc-panel {
-      margin-top: 2.5rem;
+      margin-top: 2rem;
       border-radius: 1.25rem;
       border: 1px solid rgba(0, 82, 204, 0.1);
       background: #ffffff;
@@ -82,8 +89,8 @@ export function getSmsBagCalculatorStyles(): string {
     }
     @media (min-width: 640px) {
       .tv-buy-sms-calc .calc-panel {
-        margin-top: 3rem;
-        padding: 2.5rem 3rem;
+        margin-top: 2.5rem;
+        padding: 2rem 2.25rem;
       }
     }
     .tv-buy-sms-calc .calc-slider-block {
@@ -178,9 +185,9 @@ export function getSmsBagCalculatorStyles(): string {
     @media (min-width: 768px) {
       .tv-buy-sms-calc .calc-tier-chips {
         display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 0.35rem;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        gap: 0.3rem;
       }
       .tv-buy-sms-calc .calc-tier-chip {
         display: inline-flex;
@@ -468,13 +475,19 @@ function serializeCalcConfig(config: SmsBagCalculatorPanelConfig): string {
   return JSON.stringify(config).replace(/</g, "\\u003c");
 }
 
+export type SmsBagCalculatorPanelOptions = {
+  mercadoPagoAvailable: boolean;
+  manualCheckoutEnabled: boolean;
+};
+
 export function renderSmsBagCalculatorPanel(
   ctx: AppPageContext,
   config: SmsBagCalculatorPanelConfig,
-  options: { mercadoPagoAvailable: boolean },
+  options: SmsBagCalculatorPanelOptions,
 ): string {
   const canBuy = canOperateClientPanel(ctx.profile.role);
   const mpAvailable = options.mercadoPagoAvailable;
+  const manualEnabled = options.manualCheckoutEnabled;
   const configJson = serializeCalcConfig(config);
   const maxLabel = new Intl.NumberFormat("es-CL").format(config.calcMaxVolume);
 
@@ -493,17 +506,21 @@ export function renderSmsBagCalculatorPanel(
         : "";
 
   const manualButton = canBuy
-    ? `<form method="post" action="/app/buy-sms" id="tv-buy-calc-manual-form">
+    ? manualEnabled
+      ? `<form method="post" action="/app/buy-sms" id="tv-buy-calc-manual-form">
         <input type="hidden" name="sms_quantity" id="tv-buy-calc-manual-qty" value="1000" />
         <button type="submit" class="calc-cta-btn calc-cta-btn--secondary" id="tv-buy-calc-manual-btn">
           Solicitar pago manual
         </button>
       </form>`
+      : `<button type="button" class="calc-cta-btn calc-cta-btn--secondary" id="tv-buy-calc-manual-btn" disabled title="El pago manual aún no está disponible">
+          Solicitar pago manual
+        </button>`
     : `<p class="calc-readonly-note">Tu rol es solo lectura. Contacta al administrador de la cuenta para comprar SMS.</p>`;
 
   const mpNote = mpAvailable
     ? `<p class="calc-cta-note">Pago con Mercado Pago: redirección segura. El saldo se acredita cuando el webhook confirma el pago aprobado.</p>`
-    : `<p class="calc-cta-note">Mercado Pago no está configurado. Usa pago manual temporal.</p>`;
+    : `<p class="calc-cta-note">Mercado Pago no está configurado. Contacta a soporte para completar tu compra.</p>`;
 
   return `<section class="tv-buy-sms-calc" aria-labelledby="tv-buy-calc-title">
       <header class="section-header">

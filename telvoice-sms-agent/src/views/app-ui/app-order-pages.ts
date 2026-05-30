@@ -32,11 +32,14 @@ function supportOrderHref(orderId: string): string {
 export function renderAppBuySmsPage(
   ctx: AppPageContext,
   calcConfig: SmsBagCalculatorPanelConfig,
-  mercadoPagoAvailable: boolean,
+  checkoutOptions: {
+    mercadoPagoAvailable: boolean;
+    manualCheckoutEnabled: boolean;
+  },
 ): string {
   const body = `
     <div class="tv-buy-sms-page">
-      ${renderSmsBagCalculatorPanel(ctx, calcConfig, { mercadoPagoAvailable })}
+      ${renderSmsBagCalculatorPanel(ctx, calcConfig, checkoutOptions)}
     </div>`;
   return wrapAppPage(ctx, "buy-sms", "Comprar SMS", body, {
     bodyClass: "tv-app-client--buy-sms",
