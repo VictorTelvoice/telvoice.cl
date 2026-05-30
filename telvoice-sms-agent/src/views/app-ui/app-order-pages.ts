@@ -38,7 +38,9 @@ export function renderAppBuySmsPage(
     <div class="tv-buy-sms-page">
       ${renderSmsBagCalculatorPanel(ctx, calcConfig, { mercadoPagoAvailable })}
     </div>`;
-  return wrapAppPage(ctx, "buy-sms", "Comprar SMS", body);
+  return wrapAppPage(ctx, "buy-sms", "Comprar SMS", body, {
+    bodyClass: "tv-app-client--buy-sms",
+  });
 }
 
 function renderOrderCreatedConfirmation(order: SmsOrderWithDetails): string {

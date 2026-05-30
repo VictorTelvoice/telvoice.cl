@@ -29,6 +29,7 @@ export type AppLayoutOptions = {
   body: string;
   activeNav: string;
   topbar: AppLayoutTopbar;
+  bodyClass?: string;
 };
 
 function userInitials(name: string): string {
@@ -132,6 +133,9 @@ const SIDEBAR_SCRIPT = `<script>
 </script>`;
 
 export function renderAppLayout(options: AppLayoutOptions): string {
+  const bodyClass = options.bodyClass
+    ? ` tv-app-client ${escapeHtml(options.bodyClass)}`
+    : " tv-app-client";
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -146,7 +150,7 @@ export function renderAppLayout(options: AppLayoutOptions): string {
   ${renderPanelStylesheetLink()}
   ${renderTelvoiceAgentStylesheetLink()}
 </head>
-<body class="tv-admin tv-app-client">
+<body class="tv-admin${bodyClass}">
   <div class="tv-app">
     <div class="tv-overlay" id="tv-sidebar-overlay" aria-hidden="true"></div>
     ${renderSidebar(options.activeNav)}

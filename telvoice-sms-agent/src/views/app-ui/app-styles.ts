@@ -1,4 +1,5 @@
 import { getOrderUiSharedStyles } from "../shared/order-ui-styles.js";
+import { getSmsBagCalculatorStyles } from "../shared/sms-bag-calculator-ui.js";
 
 /** Estilos adicionales del panel cliente /app */
 export function getAppPanelStyles(): string {
@@ -916,6 +917,8 @@ export function getAppPanelStyles(): string {
       flex-direction: column;
       gap: 0.75rem;
       width: 100%;
+      min-width: 0;
+      max-width: 100%;
     }
     .tv-dash-block__head {
       display: flex;
@@ -1878,5 +1881,6 @@ export function getAppPanelStyles(): string {
         gap: 1rem;
       }
     }
+    ${getSmsBagCalculatorStyles()}
   `;
 }
