@@ -16,11 +16,18 @@ import {
 import { getCompanyBalance } from "../services/smsWalletService.js";
 import { listTransactionsByCompany } from "../services/walletTransactionService.js";
 import { isMercadoPagoConfigured } from "../config/env.js";
+import { getPricingTiersForQuote } from "../services/smsPricingTierService.js";
 import { getCompanyPaymentCard, saveCompanyPaymentCardPreferences } from "../services/companyPaymentCardService.js";
 import { startPaymentCardSetupCheckout } from "../services/mercadoPagoClientPanelService.js";
 import type { PaymentBillingMode } from "../types/company-payment-card.js";
 import { filterClientAccountOrders, isClientAccountOrder, isQaTransaction, parseOrderListFilter } from "../utils/order-display.js";
 import { validateUuidParam } from "../utils/validation.js";
+import { resolveBuySmsPackageId } from "../utils/buy-sms-body.js";
+import { IVA_RATE } from "../utils/clp-format.js";
+import {
+  buildVolumeTierRanges,
+  SMS_BAG_CALC_MAX_VOLUME,
+} from "../utils/smsBagCalculator.js";
 import type { AppPageContext } from "../views/app-ui/app-page-wrap.js";
 import {
   renderNoCompanyPage,
@@ -456,8 +463,19 @@ export async function getAppBuySms(
   next: NextFunction,
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
-    const packages = await getClientCatalogPackages(ctx.company.country);
-    return renderAppBuySmsPage(ctx, packages, isMercadoPagoConfigured());
+    const tiers = await getPricingTiersForQuote(ctx.company.country);
+    const error =
+      typeof req.query.error === "string" ? req.query.error.trim() : undefined;
+    const pageCtx = error ? { ...ctx, error } : ctx;
+    return renderAppBuySmsPage(
+      pageCtx,
+      {
+        volumeTierRanges: buildVolumeTierRanges(tiers, SMS_BAG_CALC_MAX_VOLUME),
+        calcMaxVolume: SMS_BAG_CALC_MAX_VOLUME,
+        ivaRate: IVA_RATE,
+      },
+      isMercadoPagoConfigured(),
+    );
   });
 }
 
@@ -477,10 +495,8 @@ export async function postAppBuySms(
       return;
     }
 
-    const packageId = validateUuidParam(
-      String(req.body?.package_id ?? ""),
-      "package_id",
-    );
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const packageId = await resolveBuySmsPackageId(body, ctx.company.country);
 
     const order = await createOrder({
       companyId: ctx.company.id,

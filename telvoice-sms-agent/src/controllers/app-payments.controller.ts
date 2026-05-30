@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { canOperateClientPanel } from "../types/roles.js";
 import { isMercadoPagoConfigured } from "../config/env.js";
+import { resolveBuySmsPackageId } from "../utils/buy-sms-body.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
   assertOrderBelongsToCompany,
@@ -48,10 +49,14 @@ export async function postAppBuySmsMercadoPago(
       return;
     }
 
-    const packageId = validateUuidParam(
-      String(req.body?.package_id ?? ""),
-      "package_id",
-    );
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const company = await findCompanyById(profile.companyId);
+    if (!company) {
+      res.redirect("/app/buy-sms?error=Empresa%20no%20asociada");
+      return;
+    }
+
+    const packageId = await resolveBuySmsPackageId(body, company.country);
 
     const checkout = await startClientPanelMercadoPagoCheckout({
       companyId: profile.companyId,

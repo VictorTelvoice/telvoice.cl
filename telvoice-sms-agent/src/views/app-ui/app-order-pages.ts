@@ -1,6 +1,4 @@
-import { canOperateClientPanel } from "../../types/roles.js";
 import type { SmsOrderWithDetails } from "../../types/wallet.js";
-import type { SmsPackageRow } from "../../types/wallet.js";
 import {
   buildOrderTimeline,
   checkoutModeLabel,
@@ -21,70 +19,33 @@ import {
   renderOrderShortIdCell,
   renderOrderTimeline,
 } from "./app-order-ui.js";
+import {
+  renderSmsBagCalculatorPanel,
+  type SmsBagCalculatorPanelConfig,
+} from "../shared/sms-bag-calculator-ui.js";
 
 function supportOrderHref(orderId: string): string {
   return `/app/support?order=${encodeURIComponent(orderId)}`;
 }
 
-/** Bolsas ocultas en el catálogo del panel cliente (QA / pruebas internas). */
-const HIDDEN_CLIENT_PACKAGE_NAMES = new Set([
-  "Bolsa Chile 200 SMS",
-  "Bolsa Chile 300 SMS",
-]);
 
 export function renderAppBuySmsPage(
   ctx: AppPageContext,
-  packages: SmsPackageRow[],
+  calcConfig: SmsBagCalculatorPanelConfig,
   mercadoPagoAvailable: boolean,
 ): string {
-  const canBuy = canOperateClientPanel(ctx.profile.role);
-  const visiblePackages = packages.filter(
-    (p) => !HIDDEN_CLIENT_PACKAGE_NAMES.has(p.name.trim()),
-  );
-
-  const cards = visiblePackages.length
-    ? visiblePackages
-        .map((p) => {
-          const mpBtn = canBuy && mercadoPagoAvailable
-            ? `<form method="post" action="/app/buy-sms/mercadopago" style="margin-bottom:0.35rem">
-                <input type="hidden" name="package_id" value="${escapeHtml(p.id)}" />
-                <button type="submit" class="btn btn-primary btn-sm" style="width:100%">Pagar con Mercado Pago</button>
-              </form>`
-            : "";
-          const manualBtn = canBuy
-            ? `<form method="post" action="/app/buy-sms">
-                <input type="hidden" name="package_id" value="${escapeHtml(p.id)}" />
-                <button type="submit" class="btn btn-secondary btn-sm" style="width:100%">Solicitar pago manual</button>
-              </form>`
-            : `<button type="button" class="btn btn-secondary btn-sm" disabled style="width:100%" title="Tu rol es solo lectura">Solo lectura</button>`;
-          return `<article class="tv-package-card">
-            <h3 style="margin:0;font-size:1rem">${escapeHtml(p.name)}</h3>
-            <div class="tv-package-card__qty">${fmtSms(p.sms_quantity)} SMS</div>
-            <div class="tv-package-card__price">${fmtMoney(Number(p.total_price), p.currency)}</div>
-            <div class="tv-package-card__unit">${p.unit_price != null ? `${fmtMoney(Number(p.unit_price), p.currency)} / SMS` : ""}</div>
-            ${mpBtn}
-            ${manualBtn}
-          </article>`;
-        })
-        .join("")
-    : `<p class="tv-page-sub">No hay bolsas disponibles para compra en este momento. Contacta a soporte.</p>`;
-
-  const mpNote = mercadoPagoAvailable
-    ? `<p class="field-hint">Pago con Mercado Pago: redirección segura. El saldo se acredita cuando el webhook confirma el pago aprobado.</p>`
-    : `<p class="field-hint">Mercado Pago no está configurado en el servidor. Usa pago manual temporal.</p>`;
-
   const body = `
     ${renderPageHeader({
       title: "Comprar SMS",
-      subtitle: "Elige bolsa y método de pago.",
+      subtitle: "Arma tu bolsa con la misma calculadora del sitio telvoice.cl.",
     })}
-    <div class="tv-package-grid">${cards}</div>
-    ${mpNote}
-    <section class="tv-panel tv-panel--hint" style="margin-top:1.25rem">
-      <h2 class="tv-panel__title">Pago manual temporal</h2>
+    <div class="tv-buy-sms-page">
+      ${renderSmsBagCalculatorPanel(ctx, calcConfig, { mercadoPagoAvailable })}
+    </div>
+    <section class="tv-panel tv-panel--hint" style="margin-top:0.25rem">
       <div class="tv-panel__body">
         <p style="margin:0">Si eliges pago manual, el equipo Telvoice validará la compra antes de acreditar SMS.</p>
-        <p class="field-hint" style="margin:0.75rem 0 0">Los precios incluyen IVA según tu contrato.</p>
+        <p class="field-hint" style="margin:0.75rem 0 0">Los precios incluyen IVA según tramos comerciales vigentes.</p>
       </div>
     </section>`;
   return wrapAppPage(ctx, "buy-sms", "Comprar SMS", body);
