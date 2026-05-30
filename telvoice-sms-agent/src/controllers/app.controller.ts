@@ -15,7 +15,7 @@ import {
 } from "../services/smsOrderService.js";
 import { getCompanyBalance } from "../services/smsWalletService.js";
 import { listTransactionsByCompany } from "../services/walletTransactionService.js";
-import { isMercadoPagoConfigured } from "../config/env.js";
+import { env, isMercadoPagoConfigured } from "../config/env.js";
 import { getPricingTiersForQuote } from "../services/smsPricingTierService.js";
 import { getCompanyPaymentCard, saveCompanyPaymentCardPreferences } from "../services/companyPaymentCardService.js";
 import { startPaymentCardSetupCheckout } from "../services/mercadoPagoClientPanelService.js";
@@ -474,7 +474,10 @@ export async function getAppBuySms(
         calcMaxVolume: SMS_BAG_CALC_MAX_VOLUME,
         ivaRate: IVA_RATE,
       },
-      isMercadoPagoConfigured(),
+      {
+        mercadoPagoAvailable: isMercadoPagoConfigured(),
+        manualCheckoutEnabled: env.clientPanel.manualCheckoutEnabled,
+      },
     );
   });
 }
@@ -492,6 +495,13 @@ export async function postAppBuySms(
 
     if (!canOperateClientPanel(ctx.profile.role)) {
       res.redirect("/app/buy-sms?error=No%20tienes%20permiso%20para%20comprar");
+      return;
+    }
+
+    if (!env.clientPanel.manualCheckoutEnabled) {
+      res.redirect(
+        "/app/buy-sms?error=El%20pago%20manual%20no%20est%C3%A1%20disponible%20a%C3%BAn.",
+      );
       return;
     }
 
