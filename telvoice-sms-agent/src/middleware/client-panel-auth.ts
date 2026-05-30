@@ -11,6 +11,7 @@ import {
   renderAppLoginRequiredPage,
 } from "../views/app-ui/placeholder-page.js";
 import { renderAdminForbiddenPage } from "../views/admin-ui/forbidden-page.js";
+import { adminPanelUrl } from "../utils/panel-host.js";
 
 /** Requiere sesión válida para rutas /app. */
 export function requireClientPanelPage(
@@ -37,7 +38,7 @@ async function enforceClientPanel(
   const subject = subjectFromAdmin(req.adminUser, profile);
 
   if (isTelvoiceInternalRole(subject.role) && !isSuperadmin(subject)) {
-    res.redirect("/admin");
+    res.redirect(adminPanelUrl("/admin"));
     return;
   }
 
@@ -50,7 +51,7 @@ async function enforceClientPanel(
   }
 
   if (canAccessAdmin(subject) && !canAccessClient(subject)) {
-    res.redirect("/admin");
+    res.redirect(adminPanelUrl("/admin"));
     return;
   }
 

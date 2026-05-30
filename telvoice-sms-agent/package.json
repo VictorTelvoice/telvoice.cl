@@ -17,6 +17,7 @@
     "setup:env:force": "tsx scripts/setup-env.ts --force",
     "verify:setup": "tsx scripts/verify-setup.ts",
     "verify:agent-core": "tsx scripts/verify-agent-core.ts",
+    "verify:admin-subdomain": "node scripts/verify-admin-subdomain-routing.mjs",
     "test:agent-persona": "tsx scripts/test-agent-persona.ts",
     "test:panel-agent-session": "node scripts/test-panel-agent-session.mjs",
     "test:panel-agent-send-sms": "tsx scripts/test-panel-agent-send-sms.ts",

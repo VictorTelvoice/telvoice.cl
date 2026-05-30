@@ -86,6 +86,7 @@ Completa como mínimo:
 | `NODE_ENV` | `production` |
 | `PORT` | `3001` |
 | `PUBLIC_APP_URL` | `https://agent.telvoice.cl` |
+| `PUBLIC_ADMIN_URL` | `https://admin.telvoice.cl` |
 | `PUBLIC_WEBHOOK_BASE_URL` | `https://agent.telvoice.cl` |
 | `SUPABASE_URL` | URL del proyecto Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | clave `service_role` |
@@ -234,6 +235,33 @@ sudo certbot --nginx -d agent.telvoice.cl
 ```
 
 Certbot configura HTTPS automáticamente. La renovación queda programada por defecto.
+
+### 9.1 Superadmin — admin.telvoice.cl
+
+DNS (registro A):
+
+| Tipo | Nombre | Valor |
+|------|--------|-------|
+| A | admin | IP del VPS (ej. `2.24.120.99`) |
+
+Copia `deploy/admin.telvoice.cl.nginx.conf` a `/etc/nginx/sites-available/admin.telvoice.cl`, activa y recarga:
+
+```bash
+sudo ln -sf /etc/nginx/sites-available/admin.telvoice.cl /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d admin.telvoice.cl
+```
+
+En `.env` del VPS agrega:
+
+```bash
+PUBLIC_ADMIN_URL=https://admin.telvoice.cl
+```
+
+Rutas:
+
+- Superadmin: `https://admin.telvoice.cl/admin` (login en `/login`)
+- Panel cliente / API / webhooks: siguen en `https://agent.telvoice.cl`
 
 ---
 
