@@ -1597,6 +1597,21 @@
       padding: 1.15rem 1.2rem;
       min-height: 108px;
     }
+    a.tv-kpi-link {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      border-radius: var(--tv-radius);
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    a.tv-kpi-link:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+    }
+    a.tv-kpi-link:focus-visible {
+      outline: 2px solid var(--tv-primary);
+      outline-offset: 2px;
+    }
     .tv-wholesale-actions {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -1638,6 +1653,10 @@
     .tv-table--wholesale th {
       font-size: 0.68rem;
       white-space: nowrap;
+    }
+    .tv-table--wholesale .tv-wholesale-col-margin,
+    .tv-table--wholesale th.tv-wholesale-col-margin {
+      background: #f8fafc;
     }
     .tv-wholesale-rate-preview {
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;

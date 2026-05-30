@@ -293,7 +293,9 @@ function renderCustomerSelect(
   </select>`;
 }
 
-// ── Hub ────────────────────────────────────────────────────────────────────────
+function renderWholesaleKpiLink(href: string, cardHtml: string): string {
+  return `<a href="${escapeHtml(href)}" class="tv-kpi-link">${cardHtml}</a>`;
+}
 
 export function renderWholesaleHubPage(
   opts: BaseOpts & { dashboard: WholesaleDashboardSnapshot },
@@ -302,48 +304,48 @@ export function renderWholesaleHubPage(
     opts.dashboard;
 
   const kpiGrid = `<div class="tv-kpi-grid tv-kpi-grid--wholesale">
-    ${renderKpiCard({
+    ${renderWholesaleKpiLink("/admin/wholesale/providers", renderKpiCard({
       label: "Proveedores activos",
       value: String(kpis.activeProviders),
       hint: "Live o aprobados",
       icon: "hub",
       variant: "primary",
-    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale')}
-    ${renderKpiCard({
+    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale'))}
+    ${renderWholesaleKpiLink("/admin/wholesale/routes", renderKpiCard({
       label: "Rutas live",
       value: String(kpis.routesLive),
       hint: "Listas para vender",
       icon: "route",
       variant: "success",
-    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale')}
-    ${renderKpiCard({
+    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale'))}
+    ${renderWholesaleKpiLink("/admin/wholesale/routes", renderKpiCard({
       label: "Rutas en testing",
       value: String(kpis.routesTesting),
       hint: "En validación",
       icon: "science",
       variant: "warn",
-    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale')}
-    ${renderKpiCard({
+    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale'))}
+    ${renderWholesaleKpiLink("/admin/wholesale/rates", renderKpiCard({
       label: "Ofertas pendientes",
       value: String(kpis.pendingOffers),
       hint: "Draft o en prueba",
       icon: "mail",
       variant: "warn",
-    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale')}
-    ${renderKpiCard({
+    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale'))}
+    ${renderWholesaleKpiLink("/admin/wholesale/customers", renderKpiCard({
       label: "Clientes wholesale",
       value: String(kpis.customers),
       hint: "Pipeline comercial",
       icon: "business",
       variant: "default",
-    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale')}
-    ${renderKpiCard({
+    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale'))}
+    ${renderWholesaleKpiLink("/admin/wholesale/opportunities", renderKpiCard({
       label: "Oportunidades abiertas",
       value: String(kpis.openOpportunities),
       hint: "Draft, testing o aprobadas",
       icon: "trending_up",
       variant: "primary",
-    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale')}
+    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale'))}
   </div>`;
 
   const quickActions = `<div class="tv-wholesale-actions">
@@ -414,11 +416,12 @@ export function renderWholesaleHubPage(
           <td><strong>${escapeHtml(o.company_name ?? "—")}</strong></td>
           <td>${escapeHtml(o.country_code ?? "—")}</td>
           <td class="tv-wholesale-vol">${fmtVolume(o.volume_estimate)}</td>
+          <td class="tv-wholesale-price">${o.target_price != null ? fmtRate(Number(o.target_price), o.currency) : "—"}</td>
           <td>${wholesaleStatusBadge(o.commercial_status)}</td>
         </tr>`,
         )
         .join("")
-    : renderEmptyRow(4, "Sin oportunidades en pipeline.");
+    : renderEmptyRow(5, "Sin oportunidades en pipeline.");
 
   const summaries = `<div class="tv-wholesale-summary-grid">
     ${renderSummaryPanel({
@@ -454,7 +457,7 @@ export function renderWholesaleHubPage(
       href: "/admin/wholesale/opportunities",
       linkLabel: "Ver pipeline",
       tableHtml: `<table class="tv-table tv-table--compact tv-table--wholesale"><thead><tr>
-        <th>Cliente</th><th>País</th><th>Volumen est.</th><th>Estado</th>
+        <th>Cliente</th><th>País</th><th>Volumen est.</th><th>Precio objetivo</th><th>Estado</th>
       </tr></thead><tbody>${pipelineRows}</tbody></table>`,
     })}
   </div>`;
@@ -584,9 +587,10 @@ export function renderWholesaleRoutesListPage(
         <td>${escapeHtml(trafficTypeLabel(r.traffic_type))}</td>
         <td class="tv-wholesale-price">${Number(r.cost).toFixed(4)}</td>
         <td class="tv-wholesale-price">${Number(r.sale_price).toFixed(4)}</td>
-        <td>${renderMarginCell(Number(r.cost), Number(r.sale_price))}</td>
+        <td class="tv-wholesale-col-margin">${renderMarginCell(Number(r.cost), Number(r.sale_price))}</td>
         <td>${escapeHtml(r.currency)}</td>
         <td>${r.tps}</td>
+        <td>${escapeHtml(qualityLabel(r.quality_estimate))}</td>
         <td>${wholesaleStatusBadge(r.status)}</td>
         <td class="tv-table-actions">
           <a href="/admin/wholesale/routes/${escapeHtml(r.id)}/edit" class="row-link">Editar</a>
@@ -595,7 +599,7 @@ export function renderWholesaleRoutesListPage(
       </tr>`;
         })
         .join("")
-    : renderEmptyRow(10, "Sin rutas wholesale registradas.");
+    : renderEmptyRow(11, "Sin rutas wholesale registradas.");
 
   const body = `
     ${renderPageHeader({
@@ -607,8 +611,8 @@ export function renderWholesaleRoutesListPage(
     <div class="table-wrap"><table class="tv-table tv-table--compact tv-table--wholesale">
       <thead><tr>
         <th>Proveedor</th><th>País</th><th>Operador</th><th>Tráfico</th>
-        <th>Costo</th><th>Precio venta</th><th>Margen</th><th>Moneda</th>
-        <th>TPS</th><th>Estado</th><th></th>
+        <th>Costo</th><th>Precio venta</th><th class="tv-wholesale-col-margin">Margen</th><th>Moneda</th>
+        <th>TPS</th><th>Calidad</th><th>Estado</th><th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>`;
