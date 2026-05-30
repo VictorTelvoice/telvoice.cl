@@ -92,56 +92,99 @@ function renderTemplateOptions(
 
 type AppSendMode = "single" | "mass" | "scheduled" | "template";
 
+function sendModeDisplayLabel(mode: AppSendMode): string {
+  const labels: Record<AppSendMode, string> = {
+    single: "SMS individual",
+    mass: "Campaña masiva",
+    scheduled: "Envío programado",
+    template: "Desde plantilla",
+  };
+  return labels[mode] ?? mode;
+}
+
+function defaultCampaignNameForMode(mode: AppSendMode): string {
+  const names: Record<AppSendMode, string> = {
+    single: "SMS individual",
+    mass: "Campaña masiva",
+    scheduled: "Envío programado",
+    template: "Envío desde plantilla",
+  };
+  return names[mode];
+}
+
+/** Nombre legible en modal; evita “Campaña masiva” cuando el modo real es plantilla. */
+function campaignDisplayName(activeMode: AppSendMode, rawName: string): string {
+  const trimmed = rawName.trim();
+  const def = defaultCampaignNameForMode(activeMode);
+  if (!trimmed) return def;
+  if (activeMode === "template" && trimmed === "Campaña masiva") return def;
+  if (activeMode === "scheduled" && trimmed === "Campaña masiva") return def;
+  return trimmed;
+}
+
 function sendConfirmSuccessMeta(
   activeMode: AppSendMode,
   campaignResult?: PanelCampaignSendResult | null,
   sendResult?: MockSmsSendResult | null,
-): { title: string; subtitle: string; variant: string; icon: string } {
+): {
+  title: string;
+  subtitle: string;
+  hint?: string;
+  variant: string;
+  icon: string;
+} {
   if (campaignResult) {
     const isQueued = campaignResult.queued > 0 && campaignResult.sent === 0;
     const isScheduled =
       activeMode === "scheduled" || campaignResult.mode === "scheduled";
     if (isScheduled && isQueued) {
       return {
-        title: "¡Envío programado!",
-        subtitle: "Tu campaña quedó agendada y se despachará a la hora indicada.",
+        title: "Envío programado",
+        subtitle:
+          "Tus mensajes quedaron programados para la fecha seleccionada.",
+        hint: "Puedes seguir el avance desde Bandeja o Campañas.",
         variant: "scheduled",
         icon: "event_available",
       };
     }
     if (isQueued) {
       return {
-        title: "¡Envío exitoso!",
-        subtitle: "Tu campaña fue aceptada y se está procesando en segundo plano.",
+        title: "Campaña aceptada",
+        subtitle:
+          "Tus mensajes fueron recibidos correctamente y quedaron en cola para procesamiento.",
+        hint: "Puedes seguir el avance desde Bandeja o Campañas.",
         variant: "queued",
-        icon: "check_circle",
+        icon: "task_alt",
       };
     }
     if (isScheduled) {
       return {
-        title: "¡Campaña programada!",
+        title: "Campaña programada",
         subtitle: "Los mensajes se enviarán según la programación configurada.",
+        hint: "Puedes seguir el avance desde Bandeja o Campañas.",
         variant: "scheduled",
         icon: "schedule_send",
       };
     }
     return {
-      title: "¡Campaña completada!",
+      title: "Campaña completada",
       subtitle: "El despacho masivo finalizó correctamente.",
+      hint: "Puedes revisar el detalle en Bandeja o Campañas.",
       variant: "success",
       icon: "check_circle",
     };
   }
   if (sendResult) {
     return {
-      title: "¡SMS enviado!",
+      title: "SMS enviado",
       subtitle: "Tu mensaje fue registrado y está en proceso de entrega.",
+      hint: "Puedes seguir el estado en Bandeja.",
       variant: "success",
       icon: "check_circle",
     };
   }
   return {
-    title: "¡Envío confirmado!",
+    title: "Envío confirmado",
     subtitle: "La operación se completó correctamente.",
     variant: "success",
     icon: "check_circle",
@@ -166,8 +209,9 @@ function renderSendConfirmModal(opts: {
 
   const meta = sendConfirmSuccessMeta(activeMode, campaignResult, sendResult);
   let statsHtml = "";
-  let detailsHtml = "";
-  let footLinks = "";
+  let metaRowsHtml = "";
+  let opsNoteHtml = "";
+  let footSecondary = "";
 
   if (campaignResult) {
     const scheduledLabel = campaignResult.scheduledAt
@@ -177,84 +221,94 @@ function renderSendConfirmModal(opts: {
         )
       : "";
     const isQueued = campaignResult.queued > 0 && campaignResult.sent === 0;
+    const smsStatLabel = isQueued ? "SMS estimados" : "SMS debitados";
+    const smsStatValue = isQueued
+      ? String(campaignResult.queued)
+      : String(campaignResult.smsConsumed);
 
     statsHtml = `<div class="tv-send-confirm-modal__stats">
       ${renderConfirmStat("Destinatarios", String(campaignResult.totalRecipients), true)}
       ${isQueued
         ? renderConfirmStat("En cola", String(campaignResult.queued), true)
         : renderConfirmStat("Enviados", String(campaignResult.sent), true)}
-      ${campaignResult.failed > 0
-        ? renderConfirmStat("Fallidos", String(campaignResult.failed))
-        : renderConfirmStat("SMS usados", String(campaignResult.smsConsumed))}
-      ${renderConfirmStat("Saldo", `${fmtSms(campaignResult.balanceAfter)} SMS`)}
+      ${renderConfirmStat(smsStatLabel, smsStatValue)}
+      ${renderConfirmStat("Saldo actual", `${fmtSms(campaignResult.balanceAfter)} SMS`)}
     </div>`;
 
-    detailsHtml = `<div class="tv-send-confirm-modal__details">
-      <div class="tv-send-confirm-detail">
-        <span class="tv-send-confirm-detail__label">Campaña</span>
-        <strong class="tv-send-confirm-detail__value">${escapeHtml(campaignResult.campaignName)}</strong>
+    metaRowsHtml = `<dl class="tv-send-confirm-modal__meta">
+      <div class="tv-send-confirm-meta-row">
+        <dt>Modo</dt>
+        <dd>${escapeHtml(sendModeDisplayLabel(activeMode))}</dd>
+      </div>
+      <div class="tv-send-confirm-meta-row">
+        <dt>Campaña</dt>
+        <dd>${escapeHtml(campaignDisplayName(activeMode, campaignResult.campaignName))}</dd>
       </div>
       ${scheduledLabel
-        ? `<div class="tv-send-confirm-detail">
-            <span class="tv-send-confirm-detail__label">Programado para</span>
-            <strong class="tv-send-confirm-detail__value">${escapeHtml(scheduledLabel)}</strong>
+        ? `<div class="tv-send-confirm-meta-row">
+            <dt>Programado para</dt>
+            <dd>${escapeHtml(scheduledLabel)}</dd>
           </div>`
         : ""}
-      ${isQueued
-        ? `<p class="tv-send-confirm-modal__note">
-            <span class="material-symbols-outlined" aria-hidden="true">info</span>
-            Despacho en segundo plano (~20 SMS/s según TPS). Puedes seguir el avance en Campañas o Bandeja.
-          </p>`
-        : ""}
-    </div>`;
+    </dl>`;
 
-    footLinks = `<a href="/app/campaigns" class="btn btn-ghost btn-sm">Ver campañas</a>
-      <a href="/app/inbox" class="btn btn-ghost btn-sm">Ir a bandeja</a>`;
+    if (isQueued) {
+      opsNoteHtml = `<p class="tv-send-confirm-modal__ops-note">El despacho se procesa en segundo plano según la capacidad disponible de la ruta. No es necesario mantener esta pantalla abierta.</p>`;
+    }
+
+    footSecondary = `<a href="/app/campaigns" class="btn btn-secondary btn-sm tv-send-confirm-modal__foot-btn">Ver campañas</a>
+      <a href="/app/inbox" class="btn btn-secondary btn-sm tv-send-confirm-modal__foot-btn">Ir a bandeja</a>`;
   } else if (sendResult) {
-    statsHtml = `<div class="tv-send-confirm-modal__stats">
+    statsHtml = `<div class="tv-send-confirm-modal__stats tv-send-confirm-modal__stats--3">
       ${renderConfirmStat("Destino", sendResult.recipientNumber)}
       ${renderConfirmStat("Segmentos", String(sendResult.segments), true)}
-      ${renderConfirmStat("Saldo", `${fmtSms(sendResult.balanceAfter)} SMS`)}
+      ${renderConfirmStat("Saldo actual", `${fmtSms(sendResult.balanceAfter)} SMS`)}
     </div>`;
-    detailsHtml = `<div class="tv-send-confirm-modal__details">
-      <div class="tv-send-confirm-detail">
-        <span class="tv-send-confirm-detail__label">Estado</span>
-        <span class="tv-send-confirm-detail__value">${renderPanelMessageStatusBadge(sendResult.status, sendResult.sendMode)}</span>
+    metaRowsHtml = `<dl class="tv-send-confirm-modal__meta">
+      <div class="tv-send-confirm-meta-row">
+        <dt>Modo</dt>
+        <dd>${escapeHtml(sendModeDisplayLabel(activeMode))}</dd>
       </div>
-      <p class="tv-send-confirm-modal__note">
-        <span class="material-symbols-outlined" aria-hidden="true">info</span>
-        «Entregado» se actualiza cuando el operador confirma vía webhook DLR.
-      </p>
-    </div>`;
-    footLinks = `<a href="/app/inbox" class="btn btn-ghost btn-sm">Ir a bandeja</a>`;
-  } else {
-    detailsHtml = `<p class="tv-send-confirm-modal__lead">${escapeHtml(flash ?? "")}</p>`;
+      <div class="tv-send-confirm-meta-row">
+        <dt>Estado</dt>
+        <dd>${renderPanelMessageStatusBadge(sendResult.status, sendResult.sendMode)}</dd>
+      </div>
+    </dl>`;
+    opsNoteHtml = `<p class="tv-send-confirm-modal__ops-note">El estado «Entregado» se actualiza cuando el operador confirma la entrega vía webhook DLR.</p>`;
+    footSecondary = `<a href="/app/inbox" class="btn btn-secondary btn-sm tv-send-confirm-modal__foot-btn">Ir a bandeja</a>`;
+  } else if (flash) {
+    metaRowsHtml = `<p class="tv-send-confirm-modal__lead">${escapeHtml(flash)}</p>`;
+    footSecondary = `<a href="/app/inbox" class="btn btn-secondary btn-sm tv-send-confirm-modal__foot-btn">Ir a bandeja</a>`;
   }
 
-  const flashNote =
-    flash && (campaignResult || sendResult)
-      ? `<p class="tv-send-confirm-modal__flash">${escapeHtml(flash)}</p>`
-      : "";
+  const hintHtml = meta.hint
+    ? `<p class="tv-send-confirm-modal__hint">${escapeHtml(meta.hint)}</p>`
+    : "";
 
   return `<div class="tv-send-confirm-modal" id="tv-send-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="tv-send-confirm-title" aria-hidden="false">
     <div class="tv-send-confirm-modal__backdrop" data-tv-send-confirm-close tabindex="-1"></div>
     <div class="tv-send-confirm-modal__panel tv-send-confirm-modal__panel--${meta.variant}">
-      <button type="button" class="tv-send-confirm-modal__close btn btn-ghost btn-sm" data-tv-send-confirm-close aria-label="Cerrar">✕</button>
-      <div class="tv-send-confirm-modal__hero">
-        <div class="tv-send-confirm-modal__icon-wrap" aria-hidden="true">
+      <button type="button" class="tv-send-confirm-modal__close" data-tv-send-confirm-close aria-label="Cerrar">
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+      <header class="tv-send-confirm-modal__hero">
+        <div class="tv-send-confirm-modal__icon-wrap tv-send-confirm-modal__icon-wrap--${meta.variant}" aria-hidden="true">
           <span class="material-symbols-outlined tv-send-confirm-modal__icon">${meta.icon}</span>
         </div>
         <h2 class="tv-send-confirm-modal__title" id="tv-send-confirm-title">${escapeHtml(meta.title)}</h2>
         <p class="tv-send-confirm-modal__subtitle">${escapeHtml(meta.subtitle)}</p>
-      </div>
+        ${hintHtml}
+      </header>
       <div class="tv-send-confirm-modal__body">
-        ${flashNote}
         ${statsHtml}
-        ${detailsHtml}
+        ${metaRowsHtml}
+        ${opsNoteHtml}
       </div>
       <footer class="tv-send-confirm-modal__foot">
-        <div class="tv-send-confirm-modal__foot-links">${footLinks}</div>
-        <button type="button" class="btn btn-primary" data-tv-send-confirm-close>Entendido</button>
+        <div class="tv-send-confirm-modal__foot-actions">
+          ${footSecondary}
+          <button type="button" class="btn btn-primary tv-send-confirm-modal__foot-btn tv-send-confirm-modal__foot-btn--primary" data-tv-send-confirm-close>Entendido</button>
+        </div>
       </footer>
     </div>
   </div>`;
