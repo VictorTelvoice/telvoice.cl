@@ -270,6 +270,9 @@ WHERE NOT EXISTS (
 
 -- ========== PARTE 6: Comercial Telvoice.cl — ejecutar también 006 y 007 si actualizas una BD existente ==========
 
+-- ========== PARTE 7: Wholesale Core (049_wholesale_core.sql) ==========
+-- Ejecutar supabase/migrations/049_wholesale_core.sql en instalaciones existentes.
+
 -- =============================================================================
 -- Fin. Si no hubo errores, la base de datos está lista.
 -- =============================================================================

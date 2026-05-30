@@ -190,6 +190,45 @@ import {
   redirectIfAuthenticated,
   requireAdminPage,
 } from "../middleware/admin-auth.js";
+import {
+  getWholesaleHub,
+  getWholesaleCustomerEditForm,
+  getWholesaleCustomerNewForm,
+  getWholesaleCustomersList,
+  getWholesaleOpportunitiesList,
+  getWholesaleOpportunityEditForm,
+  getWholesaleOpportunityNewForm,
+  getWholesaleProviderEditForm,
+  getWholesaleProviderNewForm,
+  getWholesaleProvidersList,
+  getWholesaleRateOfferEditForm,
+  getWholesaleRateOfferNewForm,
+  getWholesaleRateOffersList,
+  getWholesaleRouteEditForm,
+  getWholesaleRouteNewForm,
+  getWholesaleRouteTestEditForm,
+  getWholesaleRouteTestNewForm,
+  getWholesaleRouteTestsList,
+  getWholesaleRoutesList,
+  postCreateWholesaleCustomer,
+  postCreateWholesaleOpportunity,
+  postCreateWholesaleProvider,
+  postCreateWholesaleRateOffer,
+  postCreateWholesaleRoute,
+  postCreateWholesaleRouteTest,
+  postDeleteWholesaleCustomer,
+  postDeleteWholesaleOpportunity,
+  postDeleteWholesaleProvider,
+  postDeleteWholesaleRateOffer,
+  postDeleteWholesaleRoute,
+  postDeleteWholesaleRouteTest,
+  postEditWholesaleCustomer,
+  postEditWholesaleOpportunity,
+  postEditWholesaleProvider,
+  postEditWholesaleRateOffer,
+  postEditWholesaleRoute,
+  postEditWholesaleRouteTest,
+} from "../controllers/admin-wholesale.controller.js";
 
 export const adminRouter = Router();
 
@@ -282,6 +321,103 @@ adminRouter.post(
   "/rate-plans/:id/traffic",
   requireAdminPage,
   postUpdateRatePlanTraffic,
+);
+adminRouter.get("/wholesale", requireAdminPage, getWholesaleHub);
+adminRouter.get("/wholesale/providers", requireAdminPage, getWholesaleProvidersList);
+adminRouter.get("/wholesale/providers/new", requireAdminPage, getWholesaleProviderNewForm);
+adminRouter.post("/wholesale/providers", requireAdminPage, postCreateWholesaleProvider);
+adminRouter.get(
+  "/wholesale/providers/:id/edit",
+  requireAdminPage,
+  getWholesaleProviderEditForm,
+);
+adminRouter.post(
+  "/wholesale/providers/:id/edit",
+  requireAdminPage,
+  postEditWholesaleProvider,
+);
+adminRouter.post(
+  "/wholesale/providers/:id/delete",
+  requireAdminPage,
+  postDeleteWholesaleProvider,
+);
+adminRouter.get("/wholesale/routes", requireAdminPage, getWholesaleRoutesList);
+adminRouter.get("/wholesale/routes/new", requireAdminPage, getWholesaleRouteNewForm);
+adminRouter.post("/wholesale/routes", requireAdminPage, postCreateWholesaleRoute);
+adminRouter.get("/wholesale/routes/:id/edit", requireAdminPage, getWholesaleRouteEditForm);
+adminRouter.post("/wholesale/routes/:id/edit", requireAdminPage, postEditWholesaleRoute);
+adminRouter.post("/wholesale/routes/:id/delete", requireAdminPage, postDeleteWholesaleRoute);
+adminRouter.get("/wholesale/rates", requireAdminPage, getWholesaleRateOffersList);
+adminRouter.get("/wholesale/rates/new", requireAdminPage, getWholesaleRateOfferNewForm);
+adminRouter.post("/wholesale/rates", requireAdminPage, postCreateWholesaleRateOffer);
+adminRouter.get("/wholesale/rates/:id/edit", requireAdminPage, getWholesaleRateOfferEditForm);
+adminRouter.post("/wholesale/rates/:id/edit", requireAdminPage, postEditWholesaleRateOffer);
+adminRouter.post("/wholesale/rates/:id/delete", requireAdminPage, postDeleteWholesaleRateOffer);
+adminRouter.get("/wholesale/route-tests", requireAdminPage, getWholesaleRouteTestsList);
+adminRouter.get(
+  "/wholesale/route-tests/new",
+  requireAdminPage,
+  getWholesaleRouteTestNewForm,
+);
+adminRouter.post("/wholesale/route-tests", requireAdminPage, postCreateWholesaleRouteTest);
+adminRouter.get(
+  "/wholesale/route-tests/:id/edit",
+  requireAdminPage,
+  getWholesaleRouteTestEditForm,
+);
+adminRouter.post(
+  "/wholesale/route-tests/:id/edit",
+  requireAdminPage,
+  postEditWholesaleRouteTest,
+);
+adminRouter.post(
+  "/wholesale/route-tests/:id/delete",
+  requireAdminPage,
+  postDeleteWholesaleRouteTest,
+);
+adminRouter.get("/wholesale/customers", requireAdminPage, getWholesaleCustomersList);
+adminRouter.get("/wholesale/customers/new", requireAdminPage, getWholesaleCustomerNewForm);
+adminRouter.post("/wholesale/customers", requireAdminPage, postCreateWholesaleCustomer);
+adminRouter.get(
+  "/wholesale/customers/:id/edit",
+  requireAdminPage,
+  getWholesaleCustomerEditForm,
+);
+adminRouter.post(
+  "/wholesale/customers/:id/edit",
+  requireAdminPage,
+  postEditWholesaleCustomer,
+);
+adminRouter.post(
+  "/wholesale/customers/:id/delete",
+  requireAdminPage,
+  postDeleteWholesaleCustomer,
+);
+adminRouter.get("/wholesale/opportunities", requireAdminPage, getWholesaleOpportunitiesList);
+adminRouter.get(
+  "/wholesale/opportunities/new",
+  requireAdminPage,
+  getWholesaleOpportunityNewForm,
+);
+adminRouter.post(
+  "/wholesale/opportunities",
+  requireAdminPage,
+  postCreateWholesaleOpportunity,
+);
+adminRouter.get(
+  "/wholesale/opportunities/:id/edit",
+  requireAdminPage,
+  getWholesaleOpportunityEditForm,
+);
+adminRouter.post(
+  "/wholesale/opportunities/:id/edit",
+  requireAdminPage,
+  postEditWholesaleOpportunity,
+);
+adminRouter.post(
+  "/wholesale/opportunities/:id/delete",
+  requireAdminPage,
+  postDeleteWholesaleOpportunity,
 );
 adminRouter.get("/orders", requireAdminPage, getSaOrdersPage);
 adminRouter.get("/orders/:id", requireAdminPage, getSaOrderDetailPage);

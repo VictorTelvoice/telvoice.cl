@@ -56,6 +56,12 @@ const ACTIVE_NAV_ALIASES: Record<string, string> = {
   send: "messages",
   inbox: "messages",
   contacts: "clients",
+  "wholesale-providers": "wholesale",
+  "wholesale-routes": "wholesale",
+  "wholesale-rates": "wholesale",
+  "wholesale-route-tests": "wholesale",
+  "wholesale-customers": "wholesale",
+  "wholesale-opportunities": "wholesale",
 };
 
 function resolveActiveNav(active: string): string {

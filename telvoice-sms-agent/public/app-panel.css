@@ -648,6 +648,11 @@
       font-family: inherit;
     }
     .tv-tab--active { background: #eef2ff; color: var(--tv-primary); }
+    a.tv-tab--link {
+      text-decoration: none;
+      display: inline-block;
+    }
+    a.tv-tab--link:hover { color: var(--tv-primary); }
     .tv-tab__count {
       margin-left: 0.35rem;
       background: var(--tv-bg);
