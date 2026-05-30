@@ -294,12 +294,18 @@ export function parseSmppConnectionForm(body: unknown, opts?: { isEdit?: boolean
   };
 }
 
-export async function listSmppConnections(): Promise<WholesaleSmppConnectionEnriched[]> {
+export async function listSmppConnections(options?: {
+  providerId?: string;
+}): Promise<WholesaleSmppConnectionEnriched[]> {
   const supabase = getSupabase();
-  const { data, error } = await supabase
+  let query = supabase
     .from("wholesale_smpp_connections")
     .select("*, wholesale_providers(name)")
     .order("created_at", { ascending: false });
+  if (options?.providerId) {
+    query = query.eq("provider_id", options.providerId);
+  }
+  const { data, error } = await query;
   dbError(error, "smppLab");
 
   const connections = (data ?? []).map((row) => {

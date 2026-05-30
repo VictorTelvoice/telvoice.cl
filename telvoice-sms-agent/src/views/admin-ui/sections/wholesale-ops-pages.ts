@@ -175,10 +175,10 @@ export function renderSmppLabHubPage(
 
   const body = `
     ${renderPageHeader({
-      title: "SMPP Lab",
+      title: "Vendor SMPP Accounts",
       subtitleHtml:
-        "Registrar conexiones SMPP de proveedores, ejecutar <strong>Test bind</strong> (solo conexión) y <strong>Send test SMS</strong> (submit_sm controlado). Solo superadmin.",
-      actions: renderBtn("Nueva conexión", {
+        "Cuentas SMPP upstream (modelo aSMSC). <strong>Test bind</strong> valida sesión; <strong>Send test SMS</strong> solo con autorización ops.",
+      actions: renderBtn("New SMPP Account", {
         href: "/admin/wholesale/smpp-lab/new",
         variant: "primary",
         icon: "add",
@@ -230,7 +230,7 @@ export function renderSmppLabHubPage(
       </section>
     </div>`;
 
-  return wrapWholesalePage(opts, "smpp-lab", "SMPP Lab", body);
+  return wrapWholesalePage(opts, "smpp-lab", "Vendor SMPP Accounts", body);
 }
 
 export function renderSmppConnectionFormPage(
@@ -412,17 +412,27 @@ export function renderInternationalRatePlansListPage(
   const rows = opts.plans.length
     ? opts.plans
         .map((p) => {
-          const price =
-            p.pending_price || (p.cost_price == null && p.sale_price == null)
-              ? '<span class="badge badge-warn">pending_price</span>'
-              : `${p.cost_price != null ? Number(p.cost_price).toFixed(4) : "—"} → ${p.sale_price != null ? Number(p.sale_price).toFixed(4) : "—"} ${escapeHtml(p.currency)}`;
+          const buyRate =
+            p.pending_price || p.cost_price == null
+              ? '<span class="badge badge-warn">pending</span>'
+              : `${Number(p.cost_price).toFixed(4)} ${escapeHtml(p.currency)}`;
+          const sellRate =
+            p.pending_price || p.sale_price == null
+              ? '<span class="badge badge-warn">pending</span>'
+              : `${Number(p.sale_price).toFixed(4)} ${escapeHtml(p.currency)}`;
+          const termination =
+            p.cost_price != null && p.sale_price != null
+              ? `${Number(p.sale_price).toFixed(4)} ${escapeHtml(p.currency)}`
+              : "—";
           return `<tr>
           <td><strong>${escapeHtml(p.country_iso)}</strong><br>${escapeHtml(p.country_name)}</td>
           <td>${escapeHtml(p.operator_name)}</td>
           <td>${escapeHtml(p.traffic_type)}</td>
           <td>${escapeHtml(p.provider_name ?? "—")}</td>
           <td>${escapeHtml(p.smpp_connection_label ?? "—")}</td>
-          <td>${price}</td>
+          <td class="tv-wholesale-price">${buyRate}</td>
+          <td class="tv-wholesale-price">${sellRate}</td>
+          <td class="tv-wholesale-price">${termination}</td>
           <td>${wholesaleStatusBadge(p.status)}</td>
           <td class="tv-table-actions">
             <a href="/admin/wholesale/international-rates/${escapeHtml(p.id)}/edit" class="row-link">Editar</a>
@@ -433,12 +443,19 @@ export function renderInternationalRatePlansListPage(
         </tr>`;
         })
         .join("")
-    : `<tr><td colspan="8"><div class="tv-wholesale-empty">Sin rate plans. Ejecute seed RO/GB/CL o cree manualmente.</div></td></tr>`;
+    : `<tr><td colspan="10"><div class="tv-wholesale-empty">Sin rate plans. Ejecute seed RO/GB/CL o cree manualmente.</div></td></tr>`;
+
+  const rateConcepts = `<div class="tv-rate-concepts" role="note">
+    <strong>Rate concepts (aSMSC-style):</strong>
+    <span><em>Buy rate</em> = costo proveedor (cost_price)</span>
+    <span><em>Sell rate</em> = tarifa cliente wholesale (sale_price)</span>
+    <span><em>Termination rate</em> = precio efectivo en ruta destino (Route Manager)</span>
+  </div>`;
 
   const body = `
     ${renderPageHeader({
-      title: "Rate plans internacionales",
-      subtitle: "Tarifas estructuradas por país, operador y tráfico. RO y GB prioritarios.",
+      title: "Vendor Rate Plans",
+      subtitle: "Tarifas estructuradas por país, operador y tráfico. RO / GB / CL prioritarios.",
       actions:
         renderBtn("Nuevo rate plan", {
           href: "/admin/wholesale/international-rates/new",
@@ -449,12 +466,16 @@ export function renderInternationalRatePlansListPage(
           <button type="submit" class="btn btn-secondary btn-sm">Seed RO/GB/CL draft</button>
         </form>`,
     })}
+    ${rateConcepts}
     <div class="table-wrap"><table class="tv-table tv-table--compact tv-table--wholesale">
-      <thead><tr><th>País</th><th>Operador</th><th>Tráfico</th><th>Proveedor</th><th>SMPP</th><th>Precios</th><th>Estado</th><th></th></tr></thead>
+      <thead><tr>
+        <th>País</th><th>Operador</th><th>Tráfico</th><th>Vendor</th><th>SMPP</th>
+        <th>Buy rate</th><th>Sell rate</th><th>Termination</th><th>Estado</th><th></th>
+      </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>`;
 
-  return wrapWholesalePage(opts, "international-rates", "Rate plans internacionales", body);
+  return wrapWholesalePage(opts, "international-rates", "Vendor Rate Plans", body);
 }
 
 export function renderInternationalRatePlanFormPage(
@@ -488,8 +509,12 @@ export function renderInternationalRatePlanFormPage(
         <div class="form-group"><label>Operador *</label><input name="operator_name" required class="tv-input-full" value="${escapeHtml(val(v, "operator_name", p?.operator_name ?? ""))}" /></div>
         <div class="form-group"><label>Tráfico</label>
           <select name="traffic_type" class="tv-input-full">
-            <option value="otp">otp</option><option value="transactional">transactional</option>
-            <option value="promotional">promotional</option><option value="mixed">mixed</option>
+            ${["otp", "transactional", "promotional", "mixed"]
+              .map(
+                (t) =>
+                  `<option value="${t}"${val(v, "traffic_type", p?.traffic_type ?? "promotional") === t ? " selected" : ""}>${t}</option>`,
+              )
+              .join("")}
           </select></div>
         <div class="form-group"><label>Proveedor</label>${renderProviderSelect(opts.providers, val(v, "provider_id", p?.provider_id ?? ""))}</div>
         <div class="form-group"><label>Conexión SMPP</label>${connSelect}</div>
@@ -497,18 +522,26 @@ export function renderInternationalRatePlanFormPage(
         <div class="form-group"><label>Sale price</label><input name="sale_price" class="tv-input-full" value="${escapeHtml(val(v, "sale_price", p?.sale_price != null ? String(p.sale_price) : ""))}" /></div>
         <div class="form-group"><label>Moneda</label>
           <select name="currency" class="tv-input-full">
-            <option value="USD">USD</option><option value="EUR">EUR</option><option value="CLP">CLP</option>
+            ${["USD", "EUR", "CLP", "GBP", "RON"]
+              .map(
+                (cur) =>
+                  `<option value="${cur}"${val(v, "currency", p?.currency ?? "USD") === cur ? " selected" : ""}>${cur}</option>`,
+              )
+              .join("")}
           </select></div>
         <div class="form-group"><label>Válido desde</label><input type="date" name="valid_from" class="tv-input-full" value="${escapeHtml(val(v, "valid_from", p?.valid_from ?? ""))}" /></div>
         <div class="form-group"><label>Válido hasta</label><input type="date" name="valid_until" class="tv-input-full" value="${escapeHtml(val(v, "valid_until", p?.valid_until ?? ""))}" /></div>
         <div class="form-group"><label>Estado</label>
           <select name="status" class="tv-input-full">
-            <option value="draft">draft</option><option value="testing">testing</option>
-            <option value="approved">approved</option><option value="live">live</option>
-            <option value="paused">paused</option><option value="rejected">rejected</option>
+            ${["draft", "testing", "approved", "live", "paused", "rejected"]
+              .map(
+                (s) =>
+                  `<option value="${s}"${val(v, "status", p?.status ?? "draft") === s ? " selected" : ""}>${s}</option>`,
+              )
+              .join("")}
           </select></div>
         <div class="form-group" style="grid-column:1/-1">
-          <label><input type="checkbox" name="pending_price" value="on"${p?.pending_price ? " checked" : ""} /> Precio pendiente (sin tarifa real aún)</label>
+          <label><input type="checkbox" name="pending_price" value="on"${(v && v.pending_price !== undefined) || p?.pending_price ? " checked" : ""} /> Buy/Sell rate pendiente (sin tarifa real aún)</label>
         </div>
         <div class="form-group" style="grid-column:1/-1"><label>Notas</label>
           <textarea name="notes" class="tv-input-full" rows="3">${escapeHtml(val(v, "notes", p?.notes ?? ""))}</textarea></div>

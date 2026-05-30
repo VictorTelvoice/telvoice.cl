@@ -1631,6 +1631,63 @@ export function getAdminStyles(): string {
       color: var(--tv-primary);
       box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
     }
+    .tv-nav-link--soon {
+      opacity: 0.55;
+      cursor: default;
+      pointer-events: none;
+    }
+    .tv-nav-soon {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      background: var(--tv-border);
+      color: var(--tv-muted);
+      margin-left: 0.35rem;
+    }
+    .tv-wholesale-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--tv-border);
+    }
+    .tv-wholesale-tab {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--tv-muted);
+      text-decoration: none;
+    }
+    .tv-wholesale-tab:hover { color: var(--tv-primary); background: var(--tv-bg); }
+    .tv-wholesale-tab--active {
+      color: var(--tv-primary);
+      background: var(--tv-bg);
+      box-shadow: inset 0 0 0 1px var(--tv-border);
+    }
+    .tv-wholesale-tab--soon {
+      opacity: 0.55;
+      font-size: 0.84rem;
+      color: var(--tv-muted);
+    }
+    .tv-rate-concepts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.25rem;
+      margin-bottom: 1rem;
+      padding: 0.75rem 1rem;
+      background: var(--tv-bg);
+      border: 1px solid var(--tv-border);
+      border-radius: 8px;
+      font-size: 0.84rem;
+      color: var(--tv-muted);
+    }
+    .tv-rate-concepts strong { color: var(--tv-text); margin-right: 0.5rem; }
     .tv-kpi-grid--wholesale {
       grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
       gap: 1rem;

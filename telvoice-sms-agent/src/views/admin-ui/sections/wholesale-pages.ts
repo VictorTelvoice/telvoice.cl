@@ -3,6 +3,7 @@ import type {
   WholesaleInternationalRatePlanEnriched,
   WholesaleSmppConnectionEnriched,
 } from "../../../types/smpp-lab.js";
+import { formatSmppPortPair } from "../../../types/smpp-lab.js";
 import {
   WHOLESALE_CUSTOMER_CONNECTION_TYPES,
   WHOLESALE_PROVIDER_CONNECTION_TYPES,
@@ -45,15 +46,15 @@ export type WholesaleSection =
   | "international-rates";
 
 const WHOLESALE_SECTIONS: { id: WholesaleSection; href: string; label: string }[] = [
-  { id: "hub", href: "/admin/wholesale", label: "Inicio" },
-  { id: "smpp-lab", href: "/admin/wholesale/smpp-lab", label: "SMPP Lab" },
-  { id: "international-rates", href: "/admin/wholesale/international-rates", label: "Rate plans intl." },
-  { id: "providers", href: "/admin/wholesale/providers", label: "Proveedores" },
-  { id: "routes", href: "/admin/wholesale/routes", label: "Rutas intl." },
-  { id: "rates", href: "/admin/wholesale/rates", label: "Ofertas rates" },
-  { id: "route-tests", href: "/admin/wholesale/route-tests", label: "Pruebas ruta" },
-  { id: "customers", href: "/admin/wholesale/customers", label: "Clientes SMPP/API" },
-  { id: "opportunities", href: "/admin/wholesale/opportunities", label: "Oportunidades" },
+  { id: "hub", href: "/admin/wholesale", label: "Dashboard" },
+  { id: "providers", href: "/admin/wholesale/providers", label: "Vendors" },
+  { id: "smpp-lab", href: "/admin/wholesale/smpp-lab", label: "Vendor SMPP Accounts" },
+  { id: "international-rates", href: "/admin/wholesale/international-rates", label: "Vendor Rate Plans" },
+  { id: "routes", href: "/admin/wholesale/routes", label: "Route Manager" },
+  { id: "customers", href: "/admin/wholesale/customers", label: "Customer Accounts" },
+  { id: "route-tests", href: "/admin/wholesale/route-tests", label: "Route Tests" },
+  { id: "rates", href: "/admin/wholesale/rates", label: "Rate offers (raw)" },
+  { id: "opportunities", href: "/admin/wholesale/opportunities", label: "Opportunities" },
 ];
 
 const STATUS_LABELS: Record<WholesaleStatus, string> = {
@@ -146,7 +147,7 @@ function wrapWholesale(
   return wrapAdminPage({
     admin: opts.admin,
     title,
-    activeNav: active === "smpp-lab" ? "wholesale-smpp-lab" : active === "international-rates" ? "wholesale-international-rates" : "wholesale",
+    activeNav: active === "smpp-lab" ? "wholesale-smpp-lab" : active === "international-rates" ? "wholesale-international-rates" : active === "providers" ? "wholesale-providers" : active === "routes" ? "wholesale-routes" : active === "customers" ? "wholesale-customers" : active === "route-tests" ? "wholesale-route-tests" : active === "opportunities" ? "wholesale-opportunities" : "wholesale",
     body: alerts + renderWholesaleScopeBanner() + renderWholesaleSubNav(active) + body,
     topbar: {
       smsBalance: "—",
@@ -556,19 +557,123 @@ export function renderWholesaleProvidersListPage(
   return wrapWholesale(opts, "providers", "Proveedores wholesale", body);
 }
 
-export function renderWholesaleProviderFormPage(
+export type ProviderEditTab =
+  | "overview"
+  | "smpp-accounts"
+  | "vendor-rates"
+  | "routes"
+  | "tests"
+  | "billing"
+  | "notes";
+
+const PROVIDER_EDIT_TABS: { id: ProviderEditTab; label: string; soon?: boolean }[] = [
+  { id: "overview", label: "Overview" },
+  { id: "smpp-accounts", label: "SMPP Accounts" },
+  { id: "vendor-rates", label: "Vendor Rates", soon: true },
+  { id: "routes", label: "Routes", soon: true },
+  { id: "tests", label: "Tests", soon: true },
+  { id: "billing", label: "Billing", soon: true },
+  { id: "notes", label: "Notes" },
+];
+
+function renderProviderEditTabs(providerId: string, active: ProviderEditTab): string {
+  const links = PROVIDER_EDIT_TABS.map((t) => {
+    if (t.soon) {
+      return `<span class="tv-wholesale-tab tv-wholesale-tab--soon">${escapeHtml(t.label)} <span class="tv-nav-soon">soon</span></span>`;
+    }
+    const href = `/admin/wholesale/providers/${escapeHtml(providerId)}/edit?tab=${t.id}`;
+    const cls =
+      active === t.id ? " tv-wholesale-tab--active" : "";
+    return `<a href="${href}" class="tv-wholesale-tab${cls}"${active === t.id ? ' aria-current="page"' : ""}>${escapeHtml(t.label)}</a>`;
+  }).join("");
+  return `<nav class="tv-wholesale-tabs" aria-label="Vendor sections">${links}</nav>`;
+}
+
+function smppBindResultCell(c: WholesaleSmppConnectionEnriched): string {
+  const last = c.last_bind_test;
+  if (!last) return "—";
+  if (last.result === "success") {
+    return `<span class="tv-smpp-status--active">OK</span> · ${last.latency_ms ?? "—"} ms`;
+  }
+  return `<span class="tv-smpp-status--failed">FAIL</span>`;
+}
+
+function renderProviderSmppAccountsPanel(
+  provider: WholesaleProviderRow,
+  accounts: WholesaleSmppConnectionEnriched[],
+): string {
+  const rows = accounts.length
+    ? accounts
+        .map((c) => {
+          const ports = formatSmppPortPair(
+            c.transmitter_port,
+            c.receiver_port,
+            c.port,
+          );
+          const credit =
+            c.credit_limit != null
+              ? `${Number(c.credit_limit).toFixed(0)} ${escapeHtml(c.currency ?? "USD")}`
+              : "—";
+          return `<tr>
+        <td><strong>${escapeHtml(c.label)}</strong></td>
+        <td>${escapeHtml(c.host)}</td>
+        <td><code>${escapeHtml(ports)}</code></td>
+        <td>${escapeHtml(c.bind_type)}</td>
+        <td>${c.submit_speed_per_second ?? c.tps_limit ?? "—"}</td>
+        <td>${c.sessions ?? 1}</td>
+        <td>${escapeHtml(c.currency ?? "USD")}</td>
+        <td>${credit}</td>
+        <td>${wholesaleStatusBadge(c.status)}</td>
+        <td>${smppBindResultCell(c)}</td>
+        <td class="tv-table-actions">
+          <a href="/admin/wholesale/smpp-lab/${escapeHtml(c.id)}/edit" class="row-link">Editar</a>
+          <form method="post" action="/admin/wholesale/smpp-lab/${escapeHtml(c.id)}/test-bind" style="display:inline">
+            <button type="submit" class="btn btn-ghost btn-sm">Test bind</button>
+          </form>
+        </td>
+      </tr>`;
+        })
+        .join("")
+    : renderEmptyRow(
+        11,
+        "Sin cuentas SMPP para este vendor. Cree PTG_2WAY u otra cuenta upstream.",
+      );
+
+  return `
+    ${renderPageHeader({
+      title: "SMPP Accounts",
+      subtitleHtml: `Cuentas SMPP upstream de <strong>${escapeHtml(provider.name)}</strong> (<code>${escapeHtml(provider.code)}</code>).`,
+      actions: renderBtn("New SMPP Account", {
+        href: `/admin/wholesale/smpp-lab/new?provider_id=${encodeURIComponent(provider.id)}`,
+        variant: "primary",
+        icon: "add",
+      }),
+    })}
+    <div class="table-wrap"><table class="tv-table tv-table--compact tv-table--wholesale tv-table--smpp-lab">
+      <thead><tr>
+        <th>Account Name</th><th>Host</th><th>Tx/Rx Port</th><th>Bind Type</th>
+        <th>Submit speed/sec</th><th>Sessions</th><th>Currency</th><th>Credit limit</th>
+        <th>Status</th><th>Last bind result</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+function renderProviderOverviewForm(
   opts: BaseOpts & {
     mode: "create" | "edit";
     provider?: WholesaleProviderRow;
     values?: Record<string, unknown>;
     error?: string;
+    editTab?: ProviderEditTab;
   },
 ): string {
   const p = opts.provider;
   const v = opts.values;
   const isEdit = opts.mode === "edit";
+  const tab = opts.editTab ?? "overview";
   const action = isEdit
-    ? `/admin/wholesale/providers/${escapeHtml(p!.id)}/edit`
+    ? `/admin/wholesale/providers/${escapeHtml(p!.id)}/edit?tab=${tab}`
     : "/admin/wholesale/providers";
 
   const connOptions = WHOLESALE_PROVIDER_CONNECTION_TYPES.map(
@@ -576,15 +681,15 @@ export function renderWholesaleProviderFormPage(
       `<option value="${t}"${val(v, "connection_type", p?.connection_type ?? "http_api") === t ? " selected" : ""}>${escapeHtml(connectionLabel(t))}</option>`,
   ).join("");
 
-  const form = `
+  return `
     ${opts.error ? `<div class="alert alert-error">${escapeHtml(opts.error)}</div>` : ""}
     <form method="post" action="${action}" class="tv-panel">
-      <h2 class="tv-panel__title">${isEdit ? "Editar proveedor" : "Nuevo proveedor"}</h2>
+      <h2 class="tv-panel__title">${isEdit ? "Vendor overview" : "Nuevo vendor"}</h2>
       <div class="tv-panel__body tv-form-grid">
         <div class="form-group"><label>Nombre *</label>
           <input type="text" name="name" required class="tv-input-full" value="${escapeHtml(val(v, "name", p?.name))}" /></div>
         <div class="form-group"><label>Código *</label>
-          <input type="text" name="code" required class="tv-input-full" value="${escapeHtml(val(v, "code", p?.code))}" placeholder="ej. carrier_xyz" /></div>
+          <input type="text" name="code" required class="tv-input-full" value="${escapeHtml(val(v, "code", p?.code))}" placeholder="ej. ptg_pacific" /></div>
         <div class="form-group"><label>País (ISO)</label>
           <input type="text" name="country_code" class="tv-input-full" value="${escapeHtml(val(v, "country_code", p?.country_code ?? "CL"))}" maxlength="3" /></div>
         <div class="form-group"><label>Tipo conexión</label>
@@ -601,19 +706,63 @@ export function renderWholesaleProviderFormPage(
           <textarea name="notes" class="tv-input-full" rows="3">${escapeHtml(val(v, "notes", p?.notes ?? ""))}</textarea></div>
       </div>
       <div class="tv-form-actions">
-        ${renderBtn(isEdit ? "Guardar cambios" : "Crear proveedor", { type: "submit", variant: "primary" })}
+        ${renderBtn(isEdit ? "Guardar cambios" : "Crear vendor", { type: "submit", variant: "primary" })}
         <a href="/admin/wholesale/providers" class="btn btn-ghost">Cancelar</a>
       </div>
     </form>`;
+}
 
-  return wrapWholesale(opts, "providers", isEdit ? "Editar proveedor" : "Nuevo proveedor", form);
+export function renderWholesaleProviderFormPage(
+  opts: BaseOpts & {
+    mode: "create" | "edit";
+    provider?: WholesaleProviderRow;
+    values?: Record<string, unknown>;
+    error?: string;
+    editTab?: ProviderEditTab;
+    smppAccounts?: WholesaleSmppConnectionEnriched[];
+  },
+): string {
+  const p = opts.provider;
+  const isEdit = opts.mode === "edit";
+  const tab = opts.editTab ?? "overview";
+
+  if (!isEdit || !p) {
+    return wrapWholesale(
+      opts,
+      "providers",
+      isEdit ? "Editar vendor" : "Nuevo vendor",
+      renderProviderOverviewForm(opts),
+    );
+  }
+
+  const tabs = renderProviderEditTabs(p.id, tab);
+  let body = tabs;
+
+  if (tab === "smpp-accounts") {
+    body += renderProviderSmppAccountsPanel(p, opts.smppAccounts ?? []);
+  } else if (tab === "notes") {
+    body += renderProviderOverviewForm({ ...opts, editTab: "notes" });
+  } else if (tab !== "overview") {
+    body += `<div class="tv-panel tv-wholesale-empty" style="margin-top:1rem"><p>Sección <strong>${escapeHtml(tab)}</strong> — próximamente. Ver <code>docs/telvoice-smpp-business-operating-model.md</code>.</p></div>`;
+  } else {
+    body += renderProviderOverviewForm({ ...opts, editTab: "overview" });
+  }
+
+  return wrapWholesale(opts, "providers", `Vendor · ${p.name}`, body);
 }
 
 // ── Routes ─────────────────────────────────────────────────────────────────────
 
+export type WholesaleRouteListRow = WholesaleRouteWithProvider & {
+  smpp_connection_label?: string | null;
+  rate_plan_label?: string | null;
+  last_bind_result?: string | null;
+  last_test_status?: string | null;
+};
+
 export function renderWholesaleRoutesListPage(
   opts: BaseOpts & {
-    routes: WholesaleRouteWithProvider[];
+    routes: WholesaleRouteListRow[];
     providers: WholesaleProviderRow[];
   },
 ): string {
@@ -622,16 +771,17 @@ export function renderWholesaleRoutesListPage(
         .map((r) => {
           return `<tr>
         <td>${escapeHtml(r.provider_name ?? "—")}<br><code class="tv-code-sm">${escapeHtml(r.provider_code ?? "")}</code></td>
+        <td>${escapeHtml(r.smpp_connection_label ?? "—")}</td>
+        <td>${escapeHtml(r.rate_plan_label ?? "—")}</td>
         <td>${escapeHtml(r.country_code)}${r.country_name ? `<br><span class="field-hint">${escapeHtml(r.country_name)}</span>` : ""}</td>
         <td>${escapeHtml(r.operator_name)}</td>
         <td>${escapeHtml(trafficTypeLabel(r.traffic_type))}</td>
-        <td class="tv-wholesale-price">${Number(r.cost).toFixed(4)}</td>
-        <td class="tv-wholesale-price">${Number(r.sale_price).toFixed(4)}</td>
-        <td class="tv-wholesale-col-margin">${renderMarginCell(Number(r.cost), Number(r.sale_price))}</td>
-        <td>${escapeHtml(r.currency)}</td>
         <td>${r.tps}</td>
-        <td>${escapeHtml(qualityLabel(r.quality_estimate))}</td>
+        <td><span class="field-hint" title="Prioridad — próximamente">—</span></td>
         <td>${wholesaleStatusBadge(r.status)}</td>
+        <td class="tv-wholesale-col-margin">${renderMarginCell(Number(r.cost), Number(r.sale_price))}</td>
+        <td>${r.last_bind_result ?? "—"}</td>
+        <td>${r.last_test_status ? wholesaleStatusBadge(r.last_test_status) : "—"}</td>
         <td class="tv-table-actions">
           <a href="/admin/wholesale/routes/${escapeHtml(r.id)}/edit" class="row-link">Editar</a>
           ${renderDeleteForm(`/admin/wholesale/routes/${r.id}/delete`, r.operator_name)}
@@ -639,25 +789,25 @@ export function renderWholesaleRoutesListPage(
       </tr>`;
         })
         .join("")
-    : renderEmptyRow(11, "Sin rutas wholesale registradas.");
+    : renderEmptyRow(13, "Sin rutas wholesale registradas.");
 
   const body = `
     ${renderPageHeader({
-      title: "Rutas wholesale",
+      title: "Route Manager",
       subtitleHtml:
-        'Rutas internacionales con costo, precio venta y margen. Distinto de <a href="/admin/routes">Rutas SMS</a> del telco Chile.',
+        'Terminación internacional: vendor, cuenta SMPP, rate plan, destino y margen. Distinto de <a href="/admin/routes">Rutas SMS Chile</a>.',
       actions: renderBtn("Nueva ruta", { href: "/admin/wholesale/routes/new", variant: "primary", icon: "add" }),
     })}
     <div class="table-wrap"><table class="tv-table tv-table--compact tv-table--wholesale">
       <thead><tr>
-        <th>Proveedor</th><th>País</th><th>Operador</th><th>Tráfico</th>
-        <th>Costo</th><th>Precio venta</th><th class="tv-wholesale-col-margin">Margen</th><th>Moneda</th>
-        <th>TPS</th><th>Calidad</th><th>Estado</th><th></th>
+        <th>Vendor</th><th>SMPP Account</th><th>Rate Plan</th><th>País</th><th>Operador</th><th>Tráfico</th>
+        <th>TPS</th><th>Priority</th><th>Status</th><th class="tv-wholesale-col-margin">Margin</th>
+        <th>Last bind</th><th>Last test</th><th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>`;
 
-  return wrapWholesale(opts, "routes", "Rutas wholesale", body);
+  return wrapWholesale(opts, "routes", "Route Manager", body);
 }
 
 export function renderWholesaleRouteFormPage(
@@ -945,8 +1095,15 @@ export function renderWholesaleCustomersListPage(
     : `<tr><td colspan="8" class="field-hint">Sin clientes wholesale registrados.</td></tr>`;
 
   const body = `
+    <div class="tv-wholesale-scope" role="note" style="margin-bottom:1rem">
+      <span class="material-symbols-outlined" aria-hidden="true">info</span>
+      <div>
+        <strong>Customer SMPP/API Accounts</strong> (próximamente): múltiples cuentas SMPP por cliente, API keys, DLR callback URL, TPS y rate plan asignado.
+        Ver <code>docs/telvoice-smpp-business-operating-model.md</code>.
+      </div>
+    </div>
     ${renderPageHeader({
-      title: "Clientes wholesale",
+      title: "Customer Accounts",
       subtitle: "Empresas interesadas en API, SMPP o conexión manual.",
       actions: renderBtn("Nuevo cliente", { href: "/admin/wholesale/customers/new", variant: "primary", icon: "add" }),
     })}

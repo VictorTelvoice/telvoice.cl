@@ -22,6 +22,7 @@ import {
   updateInternationalRatePlan,
 } from "../services/wholesaleInternationalRateService.js";
 import { listWholesaleProviders } from "../services/wholesaleService.js";
+import { resolveSmppVendorPrefill } from "../config/smpp-vendor-presets.js";
 import { ValidationError } from "../utils/errors.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
@@ -82,11 +83,15 @@ export async function getSmppConnectionNewForm(
 ): Promise<void> {
   try {
     const providers = await listWholesaleProviders();
+    const providerId =
+      typeof req.query.provider_id === "string" ? req.query.provider_id.trim() : "";
+    const prefill = resolveSmppVendorPrefill(providers, providerId || undefined);
     res.type("html").send(
       renderSmppConnectionFormPage({
         admin: req.adminUser!,
         mode: "create",
         providers,
+        values: prefill,
         ...flash(req),
       }),
     );

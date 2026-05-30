@@ -38,7 +38,7 @@ import {
   updateWholesaleRoute,
   updateWholesaleRouteTest,
 } from "../services/wholesaleService.js";
-import { listSmppConnections } from "../services/smppLabService.js";
+import { listSmppConnections, listSmppBindTests } from "../services/smppLabService.js";
 import { listInternationalRatePlans } from "../services/wholesaleInternationalRateService.js";
 import { ValidationError } from "../utils/errors.js";
 import { validateUuidParam } from "../utils/validation.js";
@@ -56,6 +56,8 @@ import {
   renderWholesaleRouteTestFormPage,
   renderWholesaleRouteTestsListPage,
   renderWholesaleRoutesListPage,
+  type ProviderEditTab,
+  type WholesaleRouteListRow,
 } from "../views/admin-ui/sections/wholesale-pages.js";
 
 function flash(req: Request): { success?: string; error?: string } {
@@ -63,6 +65,62 @@ function flash(req: Request): { success?: string; error?: string } {
     success: typeof req.query.success === "string" ? req.query.success : undefined,
     error: typeof req.query.error === "string" ? req.query.error : undefined,
   };
+}
+
+const PROVIDER_EDIT_TABS: ProviderEditTab[] = [
+  "overview",
+  "smpp-accounts",
+  "vendor-rates",
+  "routes",
+  "tests",
+  "billing",
+  "notes",
+];
+
+function parseProviderEditTab(raw: unknown): ProviderEditTab {
+  const key = typeof raw === "string" ? raw.trim() : "overview";
+  return (PROVIDER_EDIT_TABS as readonly string[]).includes(key)
+    ? (key as ProviderEditTab)
+    : "overview";
+}
+
+async function enrichWholesaleRoutesForList(): Promise<WholesaleRouteListRow[]> {
+  const [routes, connections, ratePlans, bindTests, routeTests] = await Promise.all([
+    listWholesaleRoutes(),
+    listSmppConnections(),
+    listInternationalRatePlans(),
+    listSmppBindTests(),
+    listWholesaleRouteTests(),
+  ]);
+
+  const connById = new Map(connections.map((c) => [c.id, c]));
+  const planById = new Map(
+    ratePlans.map((p) => [p.id, `${p.country_iso} · ${p.operator_name}`]),
+  );
+  const bindByConn = new Map<string, string>();
+  for (const t of bindTests) {
+    if (!bindByConn.has(t.connection_id)) {
+      bindByConn.set(t.connection_id, t.result === "success" ? "OK" : "FAIL");
+    }
+  }
+  const testByRoute = new Map<string, string>();
+  for (const t of routeTests) {
+    if (t.route_id && !testByRoute.has(t.route_id)) {
+      testByRoute.set(t.route_id, t.status);
+    }
+  }
+
+  return routes.map((r) => ({
+    ...r,
+    smpp_connection_label: r.smpp_connection_id
+      ? (connById.get(r.smpp_connection_id)?.label ?? null)
+      : null,
+    rate_plan_label: r.rate_plan_id ? (planById.get(r.rate_plan_id) ?? null) : null,
+    last_bind_result: r.smpp_connection_id
+      ? (bindByConn.get(r.smpp_connection_id) ?? null)
+      : null,
+    last_test_status: testByRoute.get(r.id) ?? null,
+  }));
 }
 
 // ── Hub ────────────────────────────────────────────────────────────────────────
@@ -150,12 +208,19 @@ export async function getWholesaleProviderEditForm(
 ): Promise<void> {
   try {
     const id = validateUuidParam(String(req.params.id ?? ""), "id");
-    const provider = await getWholesaleProviderById(id);
+    const tab = parseProviderEditTab(req.query.tab);
+    const [provider, smppAccounts] = await Promise.all([
+      getWholesaleProviderById(id),
+      listSmppConnections({ providerId: id }),
+    ]);
     res.type("html").send(
       renderWholesaleProviderFormPage({
         admin: req.adminUser!,
         mode: "edit",
         provider,
+        editTab: tab,
+        smppAccounts,
+        ...flash(req),
         error: typeof req.query.error === "string" ? req.query.error : undefined,
       }),
     );
@@ -171,20 +236,24 @@ export async function postEditWholesaleProvider(
 ): Promise<void> {
   try {
     const id = validateUuidParam(String(req.params.id ?? ""), "id");
+    const tab = parseProviderEditTab(req.query.tab);
     await updateWholesaleProvider(id, parseWholesaleProviderForm(req.body));
     res.redirect(
-      `/admin/wholesale/providers?success=${encodeURIComponent("Proveedor actualizado.")}`,
+      `/admin/wholesale/providers/${id}/edit?tab=${tab}&success=${encodeURIComponent("Vendor actualizado.")}`,
     );
   } catch (error) {
     if (error instanceof ValidationError) {
       const id = String(req.params.id ?? "");
       try {
         const provider = await getWholesaleProviderById(validateUuidParam(id, "id"));
+        const smppAccounts = await listSmppConnections({ providerId: provider.id });
         res.type("html").send(
           renderWholesaleProviderFormPage({
             admin: req.adminUser!,
             mode: "edit",
             provider,
+            editTab: parseProviderEditTab(req.query.tab),
+            smppAccounts,
             error: error.message,
             values: req.body as Record<string, unknown>,
           }),
@@ -223,7 +292,7 @@ export async function getWholesaleRoutesList(
 ): Promise<void> {
   try {
     const [routes, providers] = await Promise.all([
-      listWholesaleRoutes(),
+      enrichWholesaleRoutesForList(),
       listWholesaleProviders(),
     ]);
     res.type("html").send(

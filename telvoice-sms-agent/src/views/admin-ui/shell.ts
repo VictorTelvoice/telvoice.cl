@@ -57,14 +57,19 @@ const ACTIVE_NAV_ALIASES: Record<string, string> = {
   send: "messages",
   inbox: "messages",
   contacts: "clients",
-  "wholesale-providers": "wholesale",
-  "wholesale-routes": "wholesale",
-  "wholesale-rates": "wholesale",
-  "wholesale-route-tests": "wholesale",
-  "wholesale-customers": "wholesale",
-  "wholesale-opportunities": "wholesale",
+  "wholesale-providers": "wholesale-providers",
+  "wholesale-routes": "wholesale-routes",
+  "wholesale-rates": "wholesale-rates",
+  "wholesale-route-tests": "wholesale-route-tests",
+  "wholesale-customers": "wholesale-customers",
+  "wholesale-opportunities": "wholesale-opportunities",
   "wholesale-smpp-lab": "wholesale-smpp",
+  "wholesale-smpp-noc": "wholesale-smpp-noc",
   "wholesale-international-rates": "wholesale-intl-rates",
+  "billing-vendor": "billing-vendor",
+  "billing-customer": "billing-customer",
+  "billing-settlements": "billing-settlements",
+  "billing-margins": "billing-margins",
 };
 
 function resolveActiveNav(active: string): string {
@@ -76,6 +81,13 @@ function renderNavLinks(items: NavItem[], active: string): string {
   return items
     .map((item) => {
       const isActive = resolved === item.id;
+      if (item.comingSoon) {
+        return `<span class="tv-nav-link tv-nav-link--soon" title="Próximamente">
+        <span class="material-symbols-outlined" aria-hidden="true">${escapeHtml(item.icon)}</span>
+        ${escapeHtml(item.label)}
+        <span class="tv-nav-soon">soon</span>
+      </span>`;
+      }
       return `<a href="${item.href}" class="tv-nav-link${isActive ? " tv-nav-link--active" : ""}"${isActive ? ' aria-current="page"' : ""}>
         <span class="material-symbols-outlined" aria-hidden="true">${escapeHtml(item.icon)}</span>
         ${escapeHtml(item.label)}
