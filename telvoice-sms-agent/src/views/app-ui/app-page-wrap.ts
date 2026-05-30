@@ -37,11 +37,16 @@ export function buildAppTopbar(ctx: AppPageContext): AppLayoutTopbar {
   };
 }
 
+export type WrapAppPageOptions = {
+  bodyClass?: string;
+};
+
 export function wrapAppPage(
   ctx: AppPageContext,
   activeNav: string,
   title: string,
   body: string,
+  layoutOpts?: WrapAppPageOptions,
 ): string {
   const alert = ctx.error
     ? `<div class="alert alert-error">${escapeHtml(ctx.error)}</div>`
@@ -54,6 +59,7 @@ export function wrapAppPage(
     activeNav,
     topbar: buildAppTopbar(ctx),
     body: alert + body,
+    bodyClass: layoutOpts?.bodyClass,
   });
 }
 

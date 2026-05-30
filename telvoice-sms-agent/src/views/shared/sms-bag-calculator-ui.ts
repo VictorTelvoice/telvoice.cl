@@ -13,27 +13,30 @@ export type SmsBagCalculatorPanelConfig = {
 
 export function getSmsBagCalculatorStyles(): string {
   return `
-    .tv-buy-sms-page {
-      width: 100%;
+    .tv-app-client.tv-app-client--buy-sms .tv-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .tv-app-client .tv-buy-sms-page {
+      box-sizing: border-box;
+      width: min(100%, 920px) !important;
+      max-width: 920px !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      padding-left: clamp(1rem, 2.5vw, 2.5rem);
+      padding-right: clamp(1rem, 2.5vw, 2.5rem);
       min-width: 0;
     }
-    .tv-buy-sms-calc {
+    .tv-app-client .tv-buy-sms-calc {
       width: 100%;
+      max-width: 100%;
       min-width: 0;
       margin: 0;
       padding: 0;
       background: transparent;
       border: 0;
       box-shadow: none;
-    }
-    .tv-buy-sms-calc__inner {
-      width: 100%;
-      max-width: 920px;
-      margin-left: auto;
-      margin-right: auto;
-      padding-left: 0;
-      padding-right: 0;
-      box-sizing: border-box;
     }
     .tv-buy-sms-calc .section-header {
       margin-bottom: 2.5rem;
@@ -175,9 +178,9 @@ export function getSmsBagCalculatorStyles(): string {
     @media (min-width: 768px) {
       .tv-buy-sms-calc .calc-tier-chips {
         display: flex;
-        flex-wrap: nowrap;
-        justify-content: space-between;
-        gap: 0.3rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.35rem;
       }
       .tv-buy-sms-calc .calc-tier-chip {
         display: inline-flex;
@@ -502,9 +505,7 @@ export function renderSmsBagCalculatorPanel(
     ? `<p class="calc-cta-note">Pago con Mercado Pago: redirección segura. El saldo se acredita cuando el webhook confirma el pago aprobado.</p>`
     : `<p class="calc-cta-note">Mercado Pago no está configurado. Usa pago manual temporal.</p>`;
 
-  return `<style>${getSmsBagCalculatorStyles()}</style>
-  <section class="tv-buy-sms-calc" aria-labelledby="tv-buy-calc-title">
-    <div class="tv-buy-sms-calc__inner">
+  return `<section class="tv-buy-sms-calc" aria-labelledby="tv-buy-calc-title">
       <header class="section-header">
         <span class="section-eyebrow">Arma tu bolsa</span>
         <h2 id="tv-buy-calc-title" class="calc-hero-title">Bolsas SMS para cada etapa de tu empresa.</h2>
@@ -558,7 +559,6 @@ export function renderSmsBagCalculatorPanel(
           </p>
         </div>
       </div>
-    </div>
   </section>
   <script>
   (function () {

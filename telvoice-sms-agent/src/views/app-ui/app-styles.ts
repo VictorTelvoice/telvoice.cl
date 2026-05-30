@@ -1,4 +1,5 @@
 import { getOrderUiSharedStyles } from "../shared/order-ui-styles.js";
+import { getSmsBagCalculatorStyles } from "../shared/sms-bag-calculator-ui.js";
 
 /** Estilos adicionales del panel cliente /app */
 export function getAppPanelStyles(): string {
@@ -916,6 +917,8 @@ export function getAppPanelStyles(): string {
       flex-direction: column;
       gap: 0.75rem;
       width: 100%;
+      min-width: 0;
+      max-width: 100%;
     }
     .tv-dash-block__head {
       display: flex;
@@ -1262,6 +1265,25 @@ export function getAppPanelStyles(): string {
     }
     .tv-client-dash-tables {
       margin-bottom: 0;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+      width: 100%;
+      min-width: 0;
+    }
+    .tv-client-dash-tables .tv-dash-block {
+      min-width: 0;
+      width: 100%;
+    }
+    .tv-client-dash-tables .tv-client-dash-table-panel {
+      width: 100%;
+    }
+    .tv-client-dash-tables .tv-client-dash-table-inner {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tv-client-dashboard .tv-client-dash-tables .tv-table--dash {
+      min-width: 0;
+      width: 100%;
     }
     .tv-table-empty {
       color: var(--tv-muted);
@@ -1840,5 +1862,6 @@ export function getAppPanelStyles(): string {
         gap: 1rem;
       }
     }
+    ${getSmsBagCalculatorStyles()}
   `;
 }
