@@ -229,6 +229,23 @@ import {
   postEditWholesaleRoute,
   postEditWholesaleRouteTest,
 } from "../controllers/admin-wholesale.controller.js";
+import {
+  getInternationalRatePlanEditForm,
+  getInternationalRatePlanNewForm,
+  getInternationalRatePlansList,
+  getSmppConnectionEditForm,
+  getSmppConnectionNewForm,
+  getSmppLabHub,
+  postCreateInternationalRatePlan,
+  postCreateSmppConnection,
+  postDeleteInternationalRatePlan,
+  postDeleteSmppConnection,
+  postEditInternationalRatePlan,
+  postEditSmppConnection,
+  postSeedInternationalRatePlans,
+  postSmppBindTest,
+  postSmppSendTest,
+} from "../controllers/admin-wholesale-ops.controller.js";
 
 export const adminRouter = Router();
 
@@ -419,6 +436,28 @@ adminRouter.post(
   requireAdminPage,
   postDeleteWholesaleOpportunity,
 );
+
+adminRouter.get("/wholesale/smpp-lab", requireAdminPage, getSmppLabHub);
+adminRouter.get("/wholesale/smpp-lab/new", requireAdminPage, getSmppConnectionNewForm);
+adminRouter.post("/wholesale/smpp-lab/send-test", requireAdminPage, postSmppSendTest);
+adminRouter.post("/wholesale/smpp-lab", requireAdminPage, postCreateSmppConnection);
+adminRouter.get("/wholesale/smpp-lab/:id/edit", requireAdminPage, getSmppConnectionEditForm);
+adminRouter.post("/wholesale/smpp-lab/:id/edit", requireAdminPage, postEditSmppConnection);
+adminRouter.post("/wholesale/smpp-lab/:id/test-bind", requireAdminPage, postSmppBindTest);
+adminRouter.post("/wholesale/smpp-lab/:id/delete", requireAdminPage, postDeleteSmppConnection);
+
+adminRouter.get("/wholesale/international-rates", requireAdminPage, getInternationalRatePlansList);
+adminRouter.get("/wholesale/international-rates/new", requireAdminPage, getInternationalRatePlanNewForm);
+adminRouter.post("/wholesale/international-rates/seed", requireAdminPage, postSeedInternationalRatePlans);
+adminRouter.post("/wholesale/international-rates", requireAdminPage, postCreateInternationalRatePlan);
+adminRouter.get("/wholesale/international-rates/:id/edit", requireAdminPage, getInternationalRatePlanEditForm);
+adminRouter.post("/wholesale/international-rates/:id/edit", requireAdminPage, postEditInternationalRatePlan);
+adminRouter.post(
+  "/wholesale/international-rates/:id/delete",
+  requireAdminPage,
+  postDeleteInternationalRatePlan,
+);
+
 adminRouter.get("/orders", requireAdminPage, getSaOrdersPage);
 adminRouter.get("/orders/:id", requireAdminPage, getSaOrderDetailPage);
 adminRouter.post("/orders", requireAdminPage, postCreateOrder);

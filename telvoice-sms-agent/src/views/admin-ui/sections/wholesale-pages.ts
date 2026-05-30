@@ -1,4 +1,8 @@
 import type { AdminSessionUser } from "../../../types/admin.js";
+import type {
+  WholesaleInternationalRatePlanEnriched,
+  WholesaleSmppConnectionEnriched,
+} from "../../../types/smpp-lab.js";
 import {
   WHOLESALE_CUSTOMER_CONNECTION_TYPES,
   WHOLESALE_PROVIDER_CONNECTION_TYPES,
@@ -36,15 +40,19 @@ export type WholesaleSection =
   | "rates"
   | "route-tests"
   | "customers"
-  | "opportunities";
+  | "opportunities"
+  | "smpp-lab"
+  | "international-rates";
 
 const WHOLESALE_SECTIONS: { id: WholesaleSection; href: string; label: string }[] = [
   { id: "hub", href: "/admin/wholesale", label: "Inicio" },
+  { id: "smpp-lab", href: "/admin/wholesale/smpp-lab", label: "SMPP Lab" },
+  { id: "international-rates", href: "/admin/wholesale/international-rates", label: "Rate plans intl." },
   { id: "providers", href: "/admin/wholesale/providers", label: "Proveedores" },
-  { id: "routes", href: "/admin/wholesale/routes", label: "Rutas" },
+  { id: "routes", href: "/admin/wholesale/routes", label: "Rutas intl." },
   { id: "rates", href: "/admin/wholesale/rates", label: "Ofertas rates" },
-  { id: "route-tests", href: "/admin/wholesale/route-tests", label: "Pruebas" },
-  { id: "customers", href: "/admin/wholesale/customers", label: "Clientes" },
+  { id: "route-tests", href: "/admin/wholesale/route-tests", label: "Pruebas ruta" },
+  { id: "customers", href: "/admin/wholesale/customers", label: "Clientes SMPP/API" },
   { id: "opportunities", href: "/admin/wholesale/opportunities", label: "Oportunidades" },
 ];
 
@@ -138,7 +146,7 @@ function wrapWholesale(
   return wrapAdminPage({
     admin: opts.admin,
     title,
-    activeNav: "wholesale",
+    activeNav: active === "smpp-lab" ? "wholesale-smpp-lab" : active === "international-rates" ? "wholesale-international-rates" : "wholesale",
     body: alerts + renderWholesaleScopeBanner() + renderWholesaleSubNav(active) + body,
     topbar: {
       smsBalance: "—",
@@ -147,6 +155,16 @@ function wrapWholesale(
       companyName: "telvoice · wholesale",
     },
   });
+}
+
+/** Wrapper exportado para páginas wholesale adicionales (SMPP Lab, etc.). */
+export function wrapWholesalePage(
+  opts: BaseOpts,
+  active: WholesaleSection,
+  title: string,
+  body: string,
+): string {
+  return wrapWholesale(opts, active, title, body);
 }
 
 function fmtVolume(value: number | null | undefined): string {
@@ -300,8 +318,27 @@ function renderWholesaleKpiLink(href: string, cardHtml: string): string {
 export function renderWholesaleHubPage(
   opts: BaseOpts & { dashboard: WholesaleDashboardSnapshot },
 ): string {
-  const { kpis, sellableRoutes, pendingOffers, recentTests, pipelineOpportunities } =
+  const { kpis, sellableRoutes, pendingOffers, recentTests, pipelineOpportunities, smppNoc } =
     opts.dashboard;
+
+  const noc = smppNoc;
+  const nocPanel = noc
+    ? `<section class="tv-panel tv-wholesale-noc">
+    <div class="tv-panel__head"><div><h2>SMPP NOC</h2><p class="tv-panel__sub">Estado operativo conexiones y rate plans internacionales</p></div>
+    <a href="/admin/wholesale/smpp-lab" class="btn btn-ghost btn-sm">Abrir SMPP Lab</a></div>
+    <div class="tv-kpi-grid tv-kpi-grid--wholesale" style="margin-top:0">
+      ${renderKpiCard({ label: "Conexiones SMPP", value: String(noc.connectionsTotal), hint: `${noc.connectionsActive} activas`, icon: "cable", variant: "primary" }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale')}
+      ${renderKpiCard({ label: "Rate plans draft", value: String(noc.ratePlansDraft), hint: `${noc.ratePlansTesting} en testing`, icon: "currency_exchange", variant: "warn" }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale')}
+      ${renderKpiCard({ label: "Rate plans live", value: String(noc.ratePlansLive), hint: "Internacionales", icon: "public", variant: "success" }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale')}
+    </div>
+    <div class="tv-wholesale-noc__grid">
+      <div><strong>Último bind OK</strong><br>${noc.lastBindOk ? `${escapeHtml(noc.lastBindOk.tested_at)} · ${noc.lastBindOk.latency_ms ?? "—"} ms` : "—"}</div>
+      <div><strong>Último bind fallido</strong><br>${noc.lastBindFailed ? `${escapeHtml(noc.lastBindFailed.tested_at)} · ${escapeHtml(noc.lastBindFailed.error_message ?? "—")}` : "—"}</div>
+      <div><strong>Último SMS test</strong><br>${noc.lastSendTest ? `${escapeHtml(noc.lastSendTest.sent_at)} · ${escapeHtml(noc.lastSendTest.submit_status)} / DLR ${escapeHtml(noc.lastSendTest.dlr_status)}` : "—"}</div>
+      <div><strong>Rutas live por país</strong><br>${noc.routesLiveByCountry.length ? noc.routesLiveByCountry.map((r) => `${escapeHtml(r.country_iso)} (${r.count})`).join(", ") : "—"}</div>
+    </div>
+  </section>`
+    : "";
 
   const kpiGrid = `<div class="tv-kpi-grid tv-kpi-grid--wholesale">
     ${renderWholesaleKpiLink("/admin/wholesale/providers", renderKpiCard({
@@ -352,6 +389,8 @@ export function renderWholesaleHubPage(
     <section class="tv-panel tv-wholesale-actions__group">
       <h2 class="tv-panel__title">Operación</h2>
       <div class="tv-quick-grid">
+        ${renderQuickAction({ href: "/admin/wholesale/smpp-lab", label: "SMPP Lab", description: "Conexiones, bind test y SMS test", icon: "cable" })}
+        ${renderQuickAction({ href: "/admin/wholesale/international-rates", label: "Rate plans intl.", description: "RO, GB, CL y destinos globales", icon: "currency_exchange" })}
         ${renderQuickAction({ href: "/admin/wholesale/providers/new", label: "Nuevo proveedor", description: "Agregador o carrier internacional", icon: "hub" })}
         ${renderQuickAction({ href: "/admin/wholesale/routes/new", label: "Nueva ruta", description: "País, operador, costo y margen", icon: "route" })}
         ${renderQuickAction({ href: "/admin/wholesale/route-tests/new", label: "Registrar prueba", description: "Validar entrega antes de live", icon: "science" })}
@@ -469,6 +508,7 @@ export function renderWholesaleHubPage(
         "Centro operativo para proveedores, rutas internacionales, ofertas de rates, pruebas, clientes y oportunidades comerciales de Telvoice.net.",
     })}
     ${kpiGrid}
+    ${nocPanel}
     ${quickActions}
     ${renderSectionTitle("Resumen operativo", "Vista rápida de lo más relevante para operación y comercial wholesale.")}
     ${summaries}`;
@@ -625,6 +665,8 @@ export function renderWholesaleRouteFormPage(
     mode: "create" | "edit";
     route?: WholesaleRouteWithProvider;
     providers: WholesaleProviderRow[];
+    smppConnections?: WholesaleSmppConnectionEnriched[];
+    ratePlans?: WholesaleInternationalRatePlanEnriched[];
     values?: Record<string, unknown>;
     error?: string;
   },
@@ -635,6 +677,19 @@ export function renderWholesaleRouteFormPage(
   const action = isEdit
     ? `/admin/wholesale/routes/${escapeHtml(r!.id)}/edit`
     : "/admin/wholesale/routes";
+
+  const smppOpts = (opts.smppConnections ?? [])
+    .map(
+      (c) =>
+        `<option value="${escapeHtml(c.id)}"${val(v, "smpp_connection_id", r?.smpp_connection_id ?? "") === c.id ? " selected" : ""}>${escapeHtml(c.label)}</option>`,
+    )
+    .join("");
+  const rateOpts = (opts.ratePlans ?? [])
+    .map(
+      (p) =>
+        `<option value="${escapeHtml(p.id)}"${val(v, "rate_plan_id", r?.rate_plan_id ?? "") === p.id ? " selected" : ""}>${escapeHtml(p.country_iso)} · ${escapeHtml(p.operator_name)}</option>`,
+    )
+    .join("");
 
   const form = `
     ${opts.error ? `<div class="alert alert-error">${escapeHtml(opts.error)}</div>` : ""}
@@ -663,6 +718,10 @@ export function renderWholesaleRouteFormPage(
           ${renderQualitySelect("quality_estimate", val(v, "quality_estimate", r?.quality_estimate ?? "unknown"))}</div>
         <div class="form-group"><label>Estado</label>
           ${renderStatusSelect("status", val(v, "status", r?.status ?? "draft"))}</div>
+        <div class="form-group"><label>Conexión SMPP</label>
+          <select name="smpp_connection_id" class="tv-input-full"><option value="">—</option>${smppOpts}</select></div>
+        <div class="form-group"><label>Rate plan intl.</label>
+          <select name="rate_plan_id" class="tv-input-full"><option value="">—</option>${rateOpts}</select></div>
         <div class="form-group" style="grid-column:1/-1"><label>Notas</label>
           <textarea name="notes" class="tv-input-full" rows="3">${escapeHtml(val(v, "notes", r?.notes ?? ""))}</textarea></div>
       </div>

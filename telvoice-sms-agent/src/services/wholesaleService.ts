@@ -1,4 +1,5 @@
 import { getSupabase } from "../database/supabaseClient.js";
+import { buildSmppNocSnapshot } from "./smppLabService.js";
 import {
   WHOLESALE_CUSTOMER_CONNECTION_TYPES,
   WHOLESALE_PROVIDER_CONNECTION_TYPES,
@@ -254,6 +255,8 @@ export function parseWholesaleRouteForm(body: unknown) {
     currency: String(r.currency ?? "USD").trim().toUpperCase(),
     tps: Math.max(1, parseOptionalInt(r.tps) ?? 1),
     quality_estimate: parseQuality(r.quality_estimate),
+    smpp_connection_id: String(r.smpp_connection_id ?? "").trim() || null,
+    rate_plan_id: String(r.rate_plan_id ?? "").trim() || null,
     notes: String(r.notes ?? "").trim() || null,
     status: parseStatus(r.status),
   };
@@ -679,7 +682,7 @@ const OPEN_OPPORTUNITY_STATUSES = new Set<WholesaleStatus>([
 ]);
 
 export async function buildWholesaleDashboardSnapshot(): Promise<WholesaleDashboardSnapshot> {
-  const [providers, routes, offers, tests, customers, opportunities] =
+  const [providers, routes, offers, tests, customers, opportunities, smppNoc] =
     await Promise.all([
       listWholesaleProviders(),
       listWholesaleRoutes(),
@@ -687,6 +690,7 @@ export async function buildWholesaleDashboardSnapshot(): Promise<WholesaleDashbo
       listWholesaleRouteTests(),
       listWholesaleCustomers(),
       listWholesaleOpportunities(),
+      buildSmppNocSnapshot(),
     ]);
 
   const activeProviders = providers.filter((p) =>
@@ -723,5 +727,6 @@ export async function buildWholesaleDashboardSnapshot(): Promise<WholesaleDashbo
     pendingOffers: pendingOffersList,
     recentTests,
     pipelineOpportunities,
+    smppNoc,
   };
 }

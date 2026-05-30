@@ -38,6 +38,8 @@ import {
   updateWholesaleRoute,
   updateWholesaleRouteTest,
 } from "../services/wholesaleService.js";
+import { listSmppConnections } from "../services/smppLabService.js";
+import { listInternationalRatePlans } from "../services/wholesaleInternationalRateService.js";
 import { ValidationError } from "../utils/errors.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
@@ -243,12 +245,18 @@ export async function getWholesaleRouteNewForm(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const providers = await listWholesaleProviders();
+    const [providers, smppConnections, ratePlans] = await Promise.all([
+      listWholesaleProviders(),
+      listSmppConnections(),
+      listInternationalRatePlans(),
+    ]);
     res.type("html").send(
       renderWholesaleRouteFormPage({
         admin: req.adminUser!,
         mode: "create",
         providers,
+        smppConnections,
+        ratePlans,
         error: typeof req.query.error === "string" ? req.query.error : undefined,
       }),
     );
@@ -269,12 +277,18 @@ export async function postCreateWholesaleRoute(
     );
   } catch (error) {
     if (error instanceof ValidationError) {
-      const providers = await listWholesaleProviders();
+      const [providers, smppConnections, ratePlans] = await Promise.all([
+        listWholesaleProviders(),
+        listSmppConnections(),
+        listInternationalRatePlans(),
+      ]);
       res.type("html").send(
         renderWholesaleRouteFormPage({
           admin: req.adminUser!,
           mode: "create",
           providers,
+          smppConnections,
+          ratePlans,
           error: error.message,
           values: req.body as Record<string, unknown>,
         }),
@@ -292,9 +306,11 @@ export async function getWholesaleRouteEditForm(
 ): Promise<void> {
   try {
     const id = validateUuidParam(String(req.params.id ?? ""), "id");
-    const [route, providers] = await Promise.all([
+    const [route, providers, smppConnections, ratePlans] = await Promise.all([
       getWholesaleRouteById(id),
       listWholesaleProviders(),
+      listSmppConnections(),
+      listInternationalRatePlans(),
     ]);
     res.type("html").send(
       renderWholesaleRouteFormPage({
@@ -302,6 +318,8 @@ export async function getWholesaleRouteEditForm(
         mode: "edit",
         route,
         providers,
+        smppConnections,
+        ratePlans,
         error: typeof req.query.error === "string" ? req.query.error : undefined,
       }),
     );
@@ -325,9 +343,11 @@ export async function postEditWholesaleRoute(
     if (error instanceof ValidationError) {
       const routeId = String(req.params.id ?? "");
       try {
-        const [route, providers] = await Promise.all([
+        const [route, providers, smppConnections, ratePlans] = await Promise.all([
           getWholesaleRouteById(validateUuidParam(routeId, "id")),
           listWholesaleProviders(),
+          listSmppConnections(),
+          listInternationalRatePlans(),
         ]);
         res.type("html").send(
           renderWholesaleRouteFormPage({
@@ -335,6 +355,8 @@ export async function postEditWholesaleRoute(
             mode: "edit",
             route,
             providers,
+            smppConnections,
+            ratePlans,
             error: error.message,
             values: req.body as Record<string, unknown>,
           }),

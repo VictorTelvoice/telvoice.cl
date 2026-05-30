@@ -1560,7 +1560,19 @@ export function getAdminStyles(): string {
     }
     .tv-wholesale-scope strong { display: block; font-size: 0.88rem; margin-bottom: 0.15rem; }
     .tv-wholesale-scope a { font-weight: 600; }
-    .tv-wholesale-subnav {
+    .tv-wholesale-noc { margin-bottom: 1rem; }
+    .tv-wholesale-noc__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem 1rem;
+      margin-top: 0.85rem;
+      font-size: 0.85rem;
+      color: var(--tv-text-muted);
+    }
+    .tv-wholesale-noc__grid strong { color: var(--tv-text); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .tv-smpp-status--active { color: var(--tv-success); font-weight: 600; }
+    .tv-smpp-status--failed { color: var(--tv-danger); font-weight: 600; }
+    .tv-smpp-pwd-hint { font-size: 0.82rem; color: var(--tv-text-muted); }
       display: flex;
       flex-wrap: wrap;
       gap: 0.35rem;

@@ -74,6 +74,8 @@ export interface WholesaleRouteRow {
   currency: string;
   tps: number;
   quality_estimate: WholesaleQualityEstimate;
+  smpp_connection_id: string | null;
+  rate_plan_id: string | null;
   notes: string | null;
   status: WholesaleStatus;
   created_at: string;
@@ -172,4 +174,5 @@ export interface WholesaleDashboardSnapshot {
   pendingOffers: WholesaleRateOfferWithProvider[];
   recentTests: WholesaleRouteTestEnriched[];
   pipelineOpportunities: WholesaleOpportunityWithCustomer[];
+  smppNoc?: import("./smpp-lab.js").WholesaleSmppNocSnapshot;
 }

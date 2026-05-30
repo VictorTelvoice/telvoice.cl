@@ -6,22 +6,44 @@ export interface NavItem {
   icon: string;
 }
 
-export const MAIN_NAV: NavItem[] = [
+export interface NavSection {
+  id: string;
+  label: string;
+  items: NavItem[];
+}
+
+/** Retail Chile — bolsas SMS, clientes, telco operativo Chile. */
+export const RETAIL_CHILE_NAV: NavItem[] = [
   { id: "dashboard", href: "/admin", label: "Dashboard", icon: "dashboard" },
-  { id: "clients", href: "/admin/clients", label: "Clientes", icon: "business" },
+  { id: "clients", href: "/admin/clients", label: "Clientes retail", icon: "business" },
   { id: "pricing", href: "/admin/pricing", label: "Bolsas y tarifas", icon: "sell" },
+  { id: "orders", href: "/admin/orders", label: "Órdenes / compras", icon: "shopping_cart" },
+  { id: "wallets", href: "/admin/wallets", label: "Wallets", icon: "account_balance_wallet" },
   { id: "campaigns", href: "/admin/campaigns", label: "Campañas", icon: "campaign" },
   { id: "messages", href: "/admin/messages", label: "Mensajería", icon: "forum" },
   { id: "dlr", href: "/admin/dlr", label: "DLR / Estados", icon: "mark_email_read" },
-  { id: "providers", href: "/admin/providers", label: "Proveedores", icon: "hub" },
-  { id: "wholesale", href: "/admin/wholesale", label: "Wholesale", icon: "public" },
-  { id: "routes", href: "/admin/routes", label: "Rutas SMS", icon: "route" },
+  { id: "providers", href: "/admin/providers", label: "Proveedores Chile", icon: "hub" },
+  { id: "routes", href: "/admin/routes", label: "Rutas SMS Chile", icon: "route" },
   { id: "rate-plans", href: "/admin/rate-plans", label: "Planes tarifarios", icon: "payments" },
   { id: "traffic-control", href: "/admin/traffic-control", label: "Tráfico / TPS", icon: "speed" },
-  { id: "test", href: "/admin/test", label: "Test", icon: "science" },
-  { id: "orders", href: "/admin/orders", label: "Compras", icon: "shopping_cart" },
+  { id: "test", href: "/admin/test", label: "Test envío", icon: "science" },
+];
+
+/** Wholesale internacional — Telvoice.net / SMPP / rutas globales. */
+export const WHOLESALE_NAV: NavItem[] = [
+  { id: "wholesale", href: "/admin/wholesale", label: "Dashboard wholesale", icon: "public" },
+  { id: "wholesale-smpp", href: "/admin/wholesale/smpp-lab", label: "SMPP Lab", icon: "cable" },
+  {
+    id: "wholesale-intl-rates",
+    href: "/admin/wholesale/international-rates",
+    label: "Rate plans intl.",
+    icon: "currency_exchange",
+  },
+];
+
+/** Operación transversal — facturación, API, soporte, config. */
+export const OPERATIONS_NAV: NavItem[] = [
   { id: "email-logs", href: "/admin/email-logs", label: "Emails", icon: "mail" },
-  { id: "wallets", href: "/admin/wallets", label: "Saldos", icon: "account_balance_wallet" },
   { id: "invoices", href: "/admin/invoices", label: "Facturas", icon: "receipt_long" },
   { id: "support", href: "/admin/support", label: "Soporte", icon: "confirmation_number" },
   { id: "api-usage", href: "/admin/api-usage", label: "Uso de API", icon: "monitoring" },
@@ -30,6 +52,19 @@ export const MAIN_NAV: NavItem[] = [
   { id: "chat", href: "/admin/chat", label: "Chat soporte", icon: "support_agent" },
   { id: "reports", href: "/admin/reports", label: "Reportes", icon: "analytics" },
   { id: "settings", href: "/admin/settings", label: "Configuración", icon: "settings" },
+];
+
+export const NAV_SECTIONS: NavSection[] = [
+  { id: "retail", label: "Retail Chile", items: RETAIL_CHILE_NAV },
+  { id: "wholesale", label: "Wholesale internacional", items: WHOLESALE_NAV },
+  { id: "operations", label: "Operación", items: OPERATIONS_NAV },
+];
+
+/** Lista plana — compatibilidad con código que importa MAIN_NAV. */
+export const MAIN_NAV: NavItem[] = [
+  ...RETAIL_CHILE_NAV,
+  ...WHOLESALE_NAV,
+  ...OPERATIONS_NAV,
 ];
 
 /** Herramientas legacy y pruebas — no eliminar rutas existentes. */

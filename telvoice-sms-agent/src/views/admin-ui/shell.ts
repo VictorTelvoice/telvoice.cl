@@ -10,7 +10,7 @@ import {
   renderSidebarBrand,
   TV_BRAND,
 } from "../brand.js";
-import { LEGACY_NAV, MAIN_NAV } from "./nav.js";
+import { LEGACY_NAV, NAV_SECTIONS, type NavItem } from "./nav.js";
 import { getAdminStyles } from "./styles.js";
 
 export interface LayoutTopbarOptions {
@@ -62,16 +62,15 @@ const ACTIVE_NAV_ALIASES: Record<string, string> = {
   "wholesale-route-tests": "wholesale",
   "wholesale-customers": "wholesale",
   "wholesale-opportunities": "wholesale",
+  "wholesale-smpp-lab": "wholesale-smpp",
+  "wholesale-international-rates": "wholesale-intl-rates",
 };
 
 function resolveActiveNav(active: string): string {
   return ACTIVE_NAV_ALIASES[active] ?? active;
 }
 
-function renderNavLinks(
-  items: typeof MAIN_NAV,
-  active: string,
-): string {
+function renderNavLinks(items: NavItem[], active: string): string {
   const resolved = resolveActiveNav(active);
   return items
     .map((item) => {
@@ -85,12 +84,17 @@ function renderNavLinks(
 }
 
 function renderSidebar(active: string): string {
+  const sectionNav = NAV_SECTIONS.map(
+    (section) =>
+      `<div class="tv-sidebar__section">${escapeHtml(section.label)}</div>${renderNavLinks(section.items, active)}`,
+  ).join("");
+
   return `<aside class="tv-sidebar" id="tv-sidebar" aria-label="Menú principal">
     <div class="tv-sidebar__brand">
       ${renderSidebarBrand("/admin", { subtitle: "superadmin" })}
     </div>
     <nav class="tv-sidebar__nav">
-      ${renderNavLinks(MAIN_NAV, active)}
+      ${sectionNav}
       <div class="tv-sidebar__section">Herramientas y legacy</div>
       ${renderNavLinks(LEGACY_NAV, active)}
     </nav>
