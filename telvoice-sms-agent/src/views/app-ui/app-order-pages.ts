@@ -35,19 +35,9 @@ export function renderAppBuySmsPage(
   mercadoPagoAvailable: boolean,
 ): string {
   const body = `
-    ${renderPageHeader({
-      title: "Comprar SMS",
-      subtitle: "Arma tu bolsa con la misma calculadora del sitio telvoice.cl.",
-    })}
     <div class="tv-buy-sms-page">
       ${renderSmsBagCalculatorPanel(ctx, calcConfig, { mercadoPagoAvailable })}
-    </div>
-    <section class="tv-panel tv-panel--hint" style="margin-top:0.25rem">
-      <div class="tv-panel__body">
-        <p style="margin:0">Si eliges pago manual, el equipo Telvoice validará la compra antes de acreditar SMS.</p>
-        <p class="field-hint" style="margin:0.75rem 0 0">Los precios incluyen IVA según tramos comerciales vigentes.</p>
-      </div>
-    </section>`;
+    </div>`;
   return wrapAppPage(ctx, "buy-sms", "Comprar SMS", body);
 }
 
