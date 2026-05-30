@@ -12,6 +12,7 @@ import {
 } from "../brand.js";
 import { LEGACY_NAV, NAV_SECTIONS, type NavItem } from "./nav.js";
 import { getAdminStyles } from "./styles.js";
+import { renderPanelStylesheetLink } from "../shared/panel-stylesheet.js";
 
 export interface LayoutTopbarOptions {
   smsBalance?: string;
@@ -227,14 +228,7 @@ export function renderLayout(options: LayoutOptions): string {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
-  <style>
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-      vertical-align: middle;
-      user-select: none;
-    }
-    ${getAdminStyles()}
-  </style>
+  ${renderPanelStylesheetLink()}
   ${renderTelvoiceAgentStylesheetLink()}
 </head>
 <body class="tv-admin">

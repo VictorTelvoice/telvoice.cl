@@ -1,6 +1,4 @@
-import { readFileSync } from "node:fs";
 import { escapeHtml } from "../../utils/html.js";
-import { getPublicDir } from "../../utils/public-dir.js";
 import {
   brandPageTitle,
   renderFaviconLink,
@@ -11,26 +9,12 @@ import {
   getPanelAgentWidgetScript,
   renderPanelAgentWidget,
 } from "../../components/app/client-agent-widget.js";
+import { renderPanelStylesheetLink } from "../shared/panel-stylesheet.js";
 import {
   APP_NAV_PRIMARY,
   APP_NAV_REST,
   APP_NAV_SEND_SMS,
 } from "./app-nav.js";
-
-function appPanelStylesheetHref(): string {
-  try {
-    const ver = readFileSync(
-      `${getPublicDir()}/app-panel.ver`,
-      "utf8",
-    ).trim();
-    return ver ? `/app-panel.css?v=${encodeURIComponent(ver)}` : "/app-panel.css";
-  } catch {
-    return "/app-panel.css";
-  }
-}
-
-/** CSS estático generado por npm run build:app-css (cacheable). */
-const APP_PANEL_STYLESHEET = appPanelStylesheetHref();
 
 export type AppLayoutTopbar = {
   companyName: string;
@@ -159,7 +143,7 @@ export function renderAppLayout(options: AppLayoutOptions): string {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="${APP_PANEL_STYLESHEET}" />
+  ${renderPanelStylesheetLink()}
   ${renderTelvoiceAgentStylesheetLink()}
 </head>
 <body class="tv-admin tv-app-client">
@@ -187,7 +171,7 @@ export function renderAppMinimalPage(title: string, body: string): string {
   <title>${escapeHtml(brandPageTitle(title))}</title>
   ${renderFaviconLink()}
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="${APP_PANEL_STYLESHEET}" />
+  ${renderPanelStylesheetLink()}
 </head>
 <body class="tv-admin tv-app-client">
   <main class="tv-auth-wrap">${body}</main>
