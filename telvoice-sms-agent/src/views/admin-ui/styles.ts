@@ -1572,7 +1572,31 @@ export function getAdminStyles(): string {
     .tv-wholesale-noc__grid strong { color: var(--tv-text); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
     .tv-smpp-status--active { color: var(--tv-success); font-weight: 600; }
     .tv-smpp-status--failed { color: var(--tv-danger); font-weight: 600; }
-    .tv-smpp-pwd-hint { font-size: 0.82rem; color: var(--tv-text-muted); }
+    .tv-smpp-pwd-hint { font-size: 0.82rem; color: var(--tv-text-muted); margin-top: 0.35rem; }
+    .tv-smpp-form-sections { display: flex; flex-direction: column; gap: 1.25rem; }
+    .tv-smpp-form-section {
+      padding: 1rem 1.1rem;
+      border: 1px solid var(--tv-border);
+      border-radius: var(--tv-radius);
+      background: var(--tv-bg);
+    }
+    .tv-smpp-form-section__title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      margin: 0 0 0.85rem;
+      color: var(--tv-text);
+      letter-spacing: 0.02em;
+    }
+    .tv-smpp-vendor-form .tv-form-grid { gap: 0.75rem 1rem; }
+    .tv-checkbox-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.88rem;
+      cursor: pointer;
+    }
+    .tv-table--smpp-lab { min-width: 960px; }
+    .tv-wholesale-subnav {
       display: flex;
       flex-wrap: wrap;
       gap: 0.35rem;

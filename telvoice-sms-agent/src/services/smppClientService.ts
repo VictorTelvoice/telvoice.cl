@@ -1,8 +1,8 @@
 import smpp from "smpp";
 import type { SmppSession } from "smpp";
 import type { SmppBindType } from "../types/smpp-lab.js";
+import { enquireLinkIntervalMs } from "../types/smpp-lab.js";
 
-const BIND_TIMEOUT_MS = 20_000;
 const SEND_TIMEOUT_MS = 25_000;
 const DLR_WAIT_MS = 8_000;
 
@@ -36,14 +36,27 @@ export function sanitizeSmppErrorMessage(
 export interface SmppConnectionConfig {
   host: string;
   port: number;
+  transmitter_port: number;
+  receiver_port: number;
   system_id: string;
   password: string;
   system_type: string;
   bind_type: SmppBindType;
+  addr_ton: number;
+  addr_npi: number;
   source_addr_ton: number;
   source_addr_npi: number;
+  dest_addr_ton: number;
+  dest_addr_npi: number;
   source_address: string | null;
   enquire_link_interval: number;
+  response_timeout_seconds: number;
+  phone_number_prepend: string | null;
+  sender_id_prefix: string | null;
+  message_types_allowed: string;
+  tlv_tag: string | null;
+  tlv_value: string | null;
+  send_validity_period_as_null: boolean;
 }
 
 export interface SmppBindTestOutcome {
@@ -67,8 +80,8 @@ function bindParams(config: SmppConnectionConfig): Record<string, unknown> {
     password: config.password,
     system_type: config.system_type || "",
     interface_version: 0x34,
-    addr_ton: config.source_addr_ton,
-    addr_npi: config.source_addr_npi,
+    addr_ton: config.addr_ton,
+    addr_npi: config.addr_npi,
     address_range: config.source_address ?? "",
   };
 }
@@ -97,10 +110,53 @@ interface SmppPduResult {
   message_id?: string;
 }
 
+function bindTimeoutMs(config: SmppConnectionConfig): number {
+  const sec = config.response_timeout_seconds;
+  if (Number.isFinite(sec) && sec > 0) {
+    return Math.min(Math.max(sec * 1000, 5000), 120_000);
+  }
+  return 20_000;
+}
+
+function applyPhonePrepend(
+  destination: string,
+  prepend: string | null | undefined,
+): string {
+  const digits = destination.replace(/\D/g, "");
+  const prefix = String(prepend ?? "").replace(/\D/g, "");
+  if (!prefix) return digits;
+  if (digits.startsWith(prefix)) return digits;
+  return `${prefix}${digits}`;
+}
+
+function applySenderPrefix(
+  source: string,
+  prefix: string | null | undefined,
+): string {
+  const p = String(prefix ?? "").trim();
+  if (!p) return source;
+  if (source.startsWith(p)) return source;
+  return `${p}${source}`;
+}
+
+function buildOptionalTlv(
+  config: SmppConnectionConfig,
+): Record<string, unknown> | undefined {
+  const tagRaw = String(config.tlv_tag ?? "").trim();
+  const value = String(config.tlv_value ?? "").trim();
+  if (!tagRaw || !value) return undefined;
+  const tag = Number.parseInt(tagRaw, 10);
+  if (!Number.isFinite(tag) || tag <= 0) return undefined;
+  return { [`tlv_${tag}`]: value };
+}
+
 export async function executeSmppBindTest(
   config: SmppConnectionConfig,
 ): Promise<SmppBindTestOutcome> {
   const started = Date.now();
+  const timeoutMs = bindTimeoutMs(config);
+  const enquireMs = config.enquire_link_interval || enquireLinkIntervalMs(45);
+
   return new Promise((resolve) => {
     let settled = false;
     let session: SmppSession | null = null;
@@ -124,13 +180,13 @@ export async function executeSmppBindTest(
         error_message: "Connection timeout",
         latency_ms: Date.now() - started,
       });
-    }, BIND_TIMEOUT_MS);
+    }, timeoutMs);
 
     try {
       session = smpp.connect(
         {
           url: `smpp://${config.host}:${config.port}`,
-          auto_enquire_link_period: config.enquire_link_interval || 30_000,
+          auto_enquire_link_period: enquireMs,
         },
         () => {
           if (!session) return;
@@ -200,6 +256,32 @@ export async function executeSmppSendTest(
     message_text: string;
   },
 ): Promise<SmppSendTestOutcome> {
+  const timeoutMs = bindTimeoutMs(config) + SEND_TIMEOUT_MS + DLR_WAIT_MS;
+  const enquireMs = config.enquire_link_interval || enquireLinkIntervalMs(45);
+  const destination = applyPhonePrepend(
+    opts.destination_number,
+    config.phone_number_prepend,
+  );
+  const source = applySenderPrefix(
+    opts.source_address,
+    config.sender_id_prefix,
+  );
+
+  const submitParams: Record<string, unknown> = {
+    source_addr_ton: config.source_addr_ton,
+    source_addr_npi: config.source_addr_npi,
+    source_addr: source,
+    dest_addr_ton: config.dest_addr_ton,
+    dest_addr_npi: config.dest_addr_npi,
+    destination_addr: destination,
+    short_message: opts.message_text.slice(0, 160),
+    ...buildOptionalTlv(config),
+  };
+
+  if (config.send_validity_period_as_null) {
+    submitParams.validity_period = null;
+  }
+
   return new Promise((resolve) => {
     let settled = false;
     let session: SmppSession | null = null;
@@ -227,13 +309,13 @@ export async function executeSmppSendTest(
         error_message: "Send test timeout",
         dlr_status: dlrStatus,
       });
-    }, SEND_TIMEOUT_MS + DLR_WAIT_MS);
+    }, timeoutMs);
 
     try {
       session = smpp.connect(
         {
           url: `smpp://${config.host}:${config.port}`,
-          auto_enquire_link_period: config.enquire_link_interval || 30_000,
+          auto_enquire_link_period: enquireMs,
         },
         () => {
           if (!session) return;
@@ -261,15 +343,7 @@ export async function executeSmppSendTest(
               });
 
               session!.submit_sm(
-                {
-                  source_addr_ton: config.source_addr_ton,
-                  source_addr_npi: config.source_addr_npi,
-                  source_addr: opts.source_address,
-                  dest_addr_ton: 1,
-                  dest_addr_npi: 1,
-                  destination_addr: opts.destination_number.replace(/\D/g, ""),
-                  short_message: opts.message_text.slice(0, 160),
-                },
+                submitParams,
                 (submitPdu: { command_status: number; message_id?: string }) => {
                   if (submitPdu.command_status === 0) {
                     dlrTimer = setTimeout(() => {

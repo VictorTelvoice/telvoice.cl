@@ -1,10 +1,16 @@
 import type { AdminSessionUser } from "../../../types/admin.js";
 import {
+  formatSmppPortPair,
+  SMPP_ACCOUNT_TYPES,
   SMPP_BIND_TYPES,
   SMPP_CONNECTION_STATUSES,
+  SMPP_DEFAULT_MESSAGE_TYPES,
+  SMPP_LOG_LEVELS,
+  SMPP_ROUTE_TYPES,
   type WholesaleInternationalRatePlanEnriched,
   type WholesaleSmppBindTestRow,
   type WholesaleSmppConnectionEnriched,
+  type WholesaleSmppConnectionRow,
   type WholesaleSmppSendTestRow,
 } from "../../../types/smpp-lab.js";
 import type { WholesaleProviderRow } from "../../../types/wholesale.js";
@@ -26,6 +32,42 @@ function val(values: Record<string, unknown> | undefined, key: string, fallback 
     return String(values[key]);
   }
   return fallback;
+}
+
+function numVal(
+  values: Record<string, unknown> | undefined,
+  key: string,
+  c: WholesaleSmppConnectionRow | undefined,
+  fallback: number,
+): string {
+  if (values && values[key] !== undefined && values[key] !== null) {
+    return String(values[key]);
+  }
+  const raw = c?.[key as keyof WholesaleSmppConnectionRow];
+  if (raw != null && raw !== "") return String(raw);
+  return String(fallback);
+}
+
+function cbChecked(
+  values: Record<string, unknown> | undefined,
+  key: string,
+  c: WholesaleSmppConnectionRow | undefined,
+  fallback: boolean,
+): string {
+  if (values && values[key] !== undefined) {
+    const v = values[key];
+    return v === true || v === "yes" || v === "on" || v === "true" ? " checked" : "";
+  }
+  const raw = c?.[key as keyof WholesaleSmppConnectionRow];
+  const on = typeof raw === "boolean" ? raw : fallback;
+  return on ? " checked" : "";
+}
+
+function smppFormSection(title: string, body: string): string {
+  return `<section class="tv-smpp-form-section">
+    <h3 class="tv-smpp-form-section__title">${escapeHtml(title)}</h3>
+    <div class="tv-form-grid">${body}</div>
+  </section>`;
 }
 
 function smppStatusBadge(status: string): string {
@@ -78,13 +120,28 @@ export function renderSmppLabHubPage(
     ? opts.connections
         .map((c) => {
           const last = c.last_bind_test;
+          const ports = formatSmppPortPair(
+            c.transmitter_port,
+            c.receiver_port,
+            c.port,
+          );
+          const credit =
+            c.credit_limit != null
+              ? `${Number(c.credit_limit).toFixed(2)} ${escapeHtml(c.currency ?? "USD")}`
+              : "—";
+          const activeLabel = c.account_active === false ? " (inactive)" : "";
           return `<tr>
-          <td><strong>${escapeHtml(c.label)}</strong><br><span class="field-hint">${escapeHtml(c.host)}:${c.port}</span></td>
+          <td><strong>${escapeHtml(c.label)}</strong>${activeLabel ? `<span class="field-hint">${escapeHtml(activeLabel.trim())}</span>` : ""}</td>
           <td>${escapeHtml(c.provider_name ?? "—")}</td>
-          <td>${escapeHtml(c.system_id)}</td>
+          <td>${escapeHtml(c.host)}</td>
+          <td><code>${escapeHtml(ports)}</code></td>
           <td>${escapeHtml(c.bind_type)}</td>
+          <td>${c.submit_speed_per_second ?? c.tps_limit ?? "—"}</td>
+          <td>${c.sessions ?? 1}</td>
+          <td>${escapeHtml(c.currency ?? "USD")}</td>
+          <td>${credit}</td>
           <td>${smppStatusBadge(c.status)}</td>
-          <td>${last ? `${last.result === "success" ? "OK" : "FAIL"} · ${last.latency_ms ?? "—"} ms` : "—"}</td>
+          <td>${last ? `${last.result === "success" ? '<span class="tv-smpp-status--active">OK</span>' : '<span class="tv-smpp-status--failed">FAIL</span>'} · ${last.latency_ms ?? "—"} ms` : "—"}</td>
           <td class="tv-table-actions">
             <a href="/admin/wholesale/smpp-lab/${escapeHtml(c.id)}/edit" class="row-link">Editar</a>
             <form method="post" action="/admin/wholesale/smpp-lab/${escapeHtml(c.id)}/test-bind" style="display:inline">
@@ -94,7 +151,7 @@ export function renderSmppLabHubPage(
         </tr>`;
         })
         .join("")
-    : `<tr><td colspan="7"><div class="tv-wholesale-empty">Sin conexiones SMPP. Cree la primera para probar bind con proveedores RO/GB.</div></td></tr>`;
+    : `<tr><td colspan="12"><div class="tv-wholesale-empty">Sin cuentas SMPP. Cree la primera para registrar un proveedor tipo aSMSC.</div></td></tr>`;
 
   const bindRows = opts.bindTests.slice(0, 10).map(
     (t) => `<tr>
@@ -127,8 +184,12 @@ export function renderSmppLabHubPage(
         icon: "add",
       }),
     })}
-    <div class="table-wrap"><table class="tv-table tv-table--compact tv-table--wholesale">
-      <thead><tr><th>Conexión</th><th>Proveedor</th><th>System ID</th><th>Bind</th><th>Estado</th><th>Último test</th><th></th></tr></thead>
+    <div class="table-wrap"><table class="tv-table tv-table--compact tv-table--wholesale tv-table--smpp-lab">
+      <thead><tr>
+        <th>Account</th><th>Provider</th><th>Host</th><th>Tx/Rx Port</th><th>Bind</th>
+        <th>Speed/s</th><th>Sessions</th><th>Currency</th><th>Credit limit</th>
+        <th>Status</th><th>Last bind</th><th></th>
+      </tr></thead>
       <tbody>${connRows}</tbody>
     </table></div>
 
@@ -188,55 +249,161 @@ export function renderSmppConnectionFormPage(
     ? `/admin/wholesale/smpp-lab/${escapeHtml(c!.id)}/edit`
     : "/admin/wholesale/smpp-lab";
 
+  const txDefault = c?.transmitter_port ?? c?.port ?? 2775;
+  const rxDefault = c?.receiver_port ?? txDefault;
+
+  const sectionA = smppFormSection(
+    "A. Account",
+    `<div class="form-group"><label>Account Type</label>
+      <select name="account_type" class="tv-input-full">
+        ${SMPP_ACCOUNT_TYPES.map((t) => `<option value="${t}"${val(v, "account_type", c?.account_type ?? "smpp") === t ? " selected" : ""}>${t}</option>`).join("")}
+      </select></div>
+    <div class="form-group"><label>Account Name *</label>
+      <input name="label" required class="tv-input-full" value="${escapeHtml(val(v, "label", c?.label ?? ""))}" /></div>
+    <div class="form-group"><label>Provider</label>
+      ${renderProviderSelect(opts.providers, val(v, "provider_id", c?.provider_id ?? ""))}</div>
+    <div class="form-group"><label>Account Active</label>
+      <label class="tv-checkbox-inline"><input type="checkbox" name="account_active" value="yes"${cbChecked(v, "account_active", c, true)} /> Active</label></div>
+    <div class="form-group"><label>Operational status</label>
+      <select name="status" class="tv-input-full">
+        ${SMPP_CONNECTION_STATUSES.map((s) => `<option value="${s}"${val(v, "status", c?.status ?? "draft") === s ? " selected" : ""}>${s}</option>`).join("")}
+      </select></div>`,
+  );
+
+  const sectionB = smppFormSection(
+    "B. Credentials",
+    `<div class="form-group"><label>System ID *</label>
+      <input name="system_id" required class="tv-input-full" value="${escapeHtml(val(v, "system_id", c?.system_id ?? ""))}" /></div>
+    <div class="form-group"><label>Password ${isEdit ? "" : "*"}</label>
+      <input name="password" type="password" autocomplete="new-password" class="tv-input-full" ${isEdit ? "" : "required"} />
+      ${isEdit ? '<p class="tv-smpp-pwd-hint">Leave blank to keep current password.</p>' : ""}</div>
+    <div class="form-group"><label>System Type</label>
+      <input name="system_type" class="tv-input-full" value="${escapeHtml(val(v, "system_type", c?.system_type ?? ""))}" /></div>`,
+  );
+
+  const sectionC = smppFormSection(
+    "C. Network",
+    `<div class="form-group"><label>Host *</label>
+      <input name="host" required class="tv-input-full" value="${escapeHtml(val(v, "host", c?.host ?? ""))}" /></div>
+    <div class="form-group"><label>Transmitter Port</label>
+      <input name="transmitter_port" type="number" min="1" max="65535" class="tv-input-full" value="${escapeHtml(numVal(v, "transmitter_port", c, txDefault))}" /></div>
+    <div class="form-group"><label>Receiver Port</label>
+      <input name="receiver_port" type="number" min="1" max="65535" class="tv-input-full" value="${escapeHtml(numVal(v, "receiver_port", c, rxDefault))}" />
+      <p class="field-hint">Defaults to transmitter port if empty.</p></div>
+    <div class="form-group"><label>Bind Type / Connection Mode</label>
+      <select name="bind_type" class="tv-input-full">
+        ${SMPP_BIND_TYPES.map((b) => `<option value="${b}"${val(v, "bind_type", c?.bind_type ?? "transceiver") === b ? " selected" : ""}>${b}</option>`).join("")}
+      </select></div>`,
+  );
+
+  const sectionD = smppFormSection(
+    "D. Addressing TON/NPI",
+    `<div class="form-group"><label>Addr TON</label>
+      <input name="addr_ton" type="number" class="tv-input-full" value="${escapeHtml(numVal(v, "addr_ton", c, 0))}" /></div>
+    <div class="form-group"><label>Addr NPI</label>
+      <input name="addr_npi" type="number" class="tv-input-full" value="${escapeHtml(numVal(v, "addr_npi", c, 0))}" /></div>
+    <div class="form-group"><label>Source Addr TON</label>
+      <input name="source_addr_ton" type="number" class="tv-input-full" value="${escapeHtml(numVal(v, "source_addr_ton", c, 0))}" /></div>
+    <div class="form-group"><label>Source Addr NPI</label>
+      <input name="source_addr_npi" type="number" class="tv-input-full" value="${escapeHtml(numVal(v, "source_addr_npi", c, 0))}" /></div>
+    <div class="form-group"><label>Dest Addr TON</label>
+      <input name="dest_addr_ton" type="number" class="tv-input-full" value="${escapeHtml(numVal(v, "dest_addr_ton", c, 1))}" /></div>
+    <div class="form-group"><label>Dest Addr NPI</label>
+      <input name="dest_addr_npi" type="number" class="tv-input-full" value="${escapeHtml(numVal(v, "dest_addr_npi", c, 1))}" /></div>
+    <div class="form-group"><label>Default source address</label>
+      <input name="source_address" class="tv-input-full" value="${escapeHtml(val(v, "source_address", c?.source_address ?? ""))}" /></div>`,
+  );
+
+  const sectionE = smppFormSection(
+    "E. Performance",
+    `<div class="form-group"><label>Response Timeout (seconds)</label>
+      <input name="response_timeout_seconds" type="number" min="5" max="3600" class="tv-input-full" value="${escapeHtml(numVal(v, "response_timeout_seconds", c, 300))}" /></div>
+    <div class="form-group"><label>Enquire Link Interval (seconds)</label>
+      <input name="enquire_link_interval_seconds" type="number" min="1" max="3600" class="tv-input-full" value="${escapeHtml(numVal(v, "enquire_link_interval_seconds", c, c?.enquire_link_interval_seconds ?? (c?.enquire_link_interval ? Math.max(1, Math.round(c.enquire_link_interval / 1000)) : 45)))}" /></div>
+    <div class="form-group"><label>Submit Speed / Second</label>
+      <input name="submit_speed_per_second" type="number" min="1" class="tv-input-full" value="${escapeHtml(numVal(v, "submit_speed_per_second", c, 1))}" /></div>
+    <div class="form-group"><label>Delay Time (seconds)</label>
+      <input name="delay_time_seconds" type="number" min="0" class="tv-input-full" value="${escapeHtml(numVal(v, "delay_time_seconds", c, 0))}" /></div>
+    <div class="form-group"><label>Sessions</label>
+      <input name="sessions" type="number" min="1" class="tv-input-full" value="${escapeHtml(numVal(v, "sessions", c, 1))}" /></div>
+    <div class="form-group"><label>TPS Limit</label>
+      <input name="tps_limit" type="number" min="1" class="tv-input-full" value="${escapeHtml(numVal(v, "tps_limit", c, 1))}" /></div>`,
+  );
+
+  const sectionF = smppFormSection(
+    "F. Routing / Billing",
+    `<div class="form-group" style="grid-column:1/-1"><label>Message Types Allowed</label>
+      <input name="message_types_allowed" class="tv-input-full" value="${escapeHtml(val(v, "message_types_allowed", c?.message_types_allowed ?? SMPP_DEFAULT_MESSAGE_TYPES))}" /></div>
+    <div class="form-group"><label>Route Type</label>
+      <select name="route_type" class="tv-input-full">
+        ${SMPP_ROUTE_TYPES.map((rt) => `<option value="${rt}"${val(v, "route_type", c?.route_type ?? "direct") === rt ? " selected" : ""}>${rt}</option>`).join("")}
+      </select></div>
+    <div class="form-group"><label>Currency</label>
+      <select name="currency" class="tv-input-full">
+        ${["USD", "EUR", "CLP", "GBP", "RON"].map((cur) => `<option value="${cur}"${val(v, "currency", c?.currency ?? "USD") === cur ? " selected" : ""}>${cur}</option>`).join("")}
+      </select></div>
+    <div class="form-group"><label>Credit Limit</label>
+      <input name="credit_limit" type="number" step="0.01" min="0" class="tv-input-full" value="${escapeHtml(val(v, "credit_limit", c?.credit_limit != null ? String(c.credit_limit) : ""))}" /></div>
+    <div class="form-group"><label>Identifier</label>
+      <input name="identifier" class="tv-input-full" value="${escapeHtml(val(v, "identifier", c?.identifier ?? ""))}" /></div>`,
+  );
+
+  const sectionG = smppFormSection(
+    "G. Sender / Phone Rules",
+    `<div class="form-group"><label>Sender ID Prefix</label>
+      <input name="sender_id_prefix" class="tv-input-full" value="${escapeHtml(val(v, "sender_id_prefix", c?.sender_id_prefix ?? ""))}" /></div>
+    <div class="form-group"><label>Phone Number Prepend</label>
+      <input name="phone_number_prepend" class="tv-input-full" value="${escapeHtml(val(v, "phone_number_prepend", c?.phone_number_prepend ?? ""))}" /></div>`,
+  );
+
+  const sectionH = smppFormSection(
+    "H. Advanced",
+    `<div class="form-group"><label>Log Level</label>
+      <select name="log_level" class="tv-input-full">
+        ${SMPP_LOG_LEVELS.map((ll) => `<option value="${ll}"${val(v, "log_level", c?.log_level ?? "off") === ll ? " selected" : ""}>${ll}</option>`).join("")}
+      </select></div>
+    <div class="form-group"><label>TLV Tag</label>
+      <input name="tlv_tag" class="tv-input-full" placeholder="Optional numeric tag" value="${escapeHtml(val(v, "tlv_tag", c?.tlv_tag ?? ""))}" /></div>
+    <div class="form-group"><label>TLV Value</label>
+      <input name="tlv_value" class="tv-input-full" value="${escapeHtml(val(v, "tlv_value", c?.tlv_value ?? ""))}" /></div>
+    <div class="form-group"><label>ESME Acknowledgement</label>
+      <label class="tv-checkbox-inline"><input type="checkbox" name="esme_acknowledgement" value="yes"${cbChecked(v, "esme_acknowledgement", c, false)} /> Enabled</label></div>
+    <div class="form-group"><label>Send Validity Period as Null</label>
+      <label class="tv-checkbox-inline"><input type="checkbox" name="send_validity_period_as_null" value="yes"${cbChecked(v, "send_validity_period_as_null", c, false)} /> Enabled</label></div>
+    <div class="form-group"><label>Enable Affix For SMS ID</label>
+      <label class="tv-checkbox-inline"><input type="checkbox" name="enable_affix_for_sms_id" value="yes"${cbChecked(v, "enable_affix_for_sms_id", c, false)} /> Enabled</label></div>
+    <div class="form-group"><label>Enable decimal only for SMS ID</label>
+      <label class="tv-checkbox-inline"><input type="checkbox" name="enable_decimal_only_for_sms_id" value="yes"${cbChecked(v, "enable_decimal_only_for_sms_id", c, false)} /> Enabled</label></div>`,
+  );
+
+  const sectionI = smppFormSection(
+    "I. Future sections",
+    `<div class="form-group"><label>Auto Import Rate Plan</label>
+      <label class="tv-checkbox-inline"><input type="checkbox" name="auto_import_enabled" value="yes"${cbChecked(v, "auto_import_enabled", c, false)} /> Enable when rate import is wired</label></div>
+    <div class="form-group"><label>Secure Connection Settings</label>
+      <label class="tv-checkbox-inline"><input type="checkbox" name="secure_connection_enabled" value="yes"${cbChecked(v, "secure_connection_enabled", c, false)} /> Enable when TLS is wired</label></div>
+    <div class="form-group"><label>Delivery with Optional Parameters</label>
+      <label class="tv-checkbox-inline"><input type="checkbox" name="delivery_optional_parameters_enabled" value="yes"${cbChecked(v, "delivery_optional_parameters_enabled", c, false)} /> Enable when DLR optional params are wired</label></div>
+    <div class="form-group" style="grid-column:1/-1"><label>Notes</label>
+      <textarea name="notes" class="tv-input-full" rows="3">${escapeHtml(val(v, "notes", c?.notes ?? ""))}</textarea></div>`,
+  );
+
   const form = `
     ${opts.error ? `<div class="alert alert-error">${escapeHtml(opts.error)}</div>` : ""}
-    <form method="post" action="${action}" class="tv-panel">
-      <h2 class="tv-panel__title">${isEdit ? "Editar conexión SMPP" : "Nueva conexión SMPP"}</h2>
-      <div class="tv-panel__body tv-form-grid">
-        <div class="form-group"><label>Proveedor wholesale</label>
-          ${renderProviderSelect(opts.providers, val(v, "provider_id", c?.provider_id ?? ""))}</div>
-        <div class="form-group"><label>Nombre / label *</label>
-          <input name="label" required class="tv-input-full" value="${escapeHtml(val(v, "label", c?.label ?? ""))}" /></div>
-        <div class="form-group"><label>Host *</label>
-          <input name="host" required class="tv-input-full" value="${escapeHtml(val(v, "host", c?.host ?? ""))}" /></div>
-        <div class="form-group"><label>Port</label>
-          <input name="port" type="number" class="tv-input-full" value="${escapeHtml(val(v, "port", c?.port != null ? String(c.port) : "2775"))}" /></div>
-        <div class="form-group"><label>System ID *</label>
-          <input name="system_id" required class="tv-input-full" value="${escapeHtml(val(v, "system_id", c?.system_id ?? ""))}" /></div>
-        <div class="form-group"><label>Password ${isEdit ? "" : "*"}</label>
-          <input name="password" type="password" autocomplete="new-password" class="tv-input-full" ${isEdit ? "" : "required"} />
-          ${isEdit ? '<p class="tv-smpp-pwd-hint">Dejar vacío para mantener el password actual. Nunca se muestra en pantalla.</p>' : ""}</div>
-        <div class="form-group"><label>System type</label>
-          <input name="system_type" class="tv-input-full" value="${escapeHtml(val(v, "system_type", c?.system_type ?? ""))}" /></div>
-        <div class="form-group"><label>Bind type</label>
-          <select name="bind_type" class="tv-input-full">
-            ${SMPP_BIND_TYPES.map((b) => `<option value="${b}"${val(v, "bind_type", c?.bind_type ?? "transceiver") === b ? " selected" : ""}>${b}</option>`).join("")}
-          </select></div>
-        <div class="form-group"><label>Source TON</label>
-          <input name="source_addr_ton" type="number" class="tv-input-full" value="${escapeHtml(val(v, "source_addr_ton", c?.source_addr_ton != null ? String(c.source_addr_ton) : "0"))}" /></div>
-        <div class="form-group"><label>Source NPI</label>
-          <input name="source_addr_npi" type="number" class="tv-input-full" value="${escapeHtml(val(v, "source_addr_npi", c?.source_addr_npi != null ? String(c.source_addr_npi) : "0"))}" /></div>
-        <div class="form-group"><label>Source address</label>
-          <input name="source_address" class="tv-input-full" value="${escapeHtml(val(v, "source_address", c?.source_address ?? ""))}" /></div>
-        <div class="form-group"><label>TPS limit</label>
-          <input name="tps_limit" type="number" min="1" class="tv-input-full" value="${escapeHtml(val(v, "tps_limit", c?.tps_limit != null ? String(c.tps_limit) : "1"))}" /></div>
-        <div class="form-group"><label>Enquire link (ms)</label>
-          <input name="enquire_link_interval" type="number" min="5000" class="tv-input-full" value="${escapeHtml(val(v, "enquire_link_interval", c?.enquire_link_interval != null ? String(c.enquire_link_interval) : "30000"))}" /></div>
-        <div class="form-group"><label>Estado</label>
-          <select name="status" class="tv-input-full">
-            ${SMPP_CONNECTION_STATUSES.map((s) => `<option value="${s}"${val(v, "status", c?.status ?? "draft") === s ? " selected" : ""}>${s}</option>`).join("")}
-          </select></div>
-        <div class="form-group" style="grid-column:1/-1"><label>Notas</label>
-          <textarea name="notes" class="tv-input-full" rows="3">${escapeHtml(val(v, "notes", c?.notes ?? ""))}</textarea></div>
+    <form method="post" action="${action}" class="tv-panel tv-smpp-vendor-form">
+      <h2 class="tv-panel__title">${isEdit ? "Edit SMPP vendor account" : "New SMPP vendor account"}</h2>
+      <p class="tv-panel__sub">Modelo alineado con cuentas proveedor aSMSC/Almuqeet. Password nunca se muestra en pantalla.</p>
+      <div class="tv-panel__body tv-smpp-form-sections">
+        ${sectionA}${sectionB}${sectionC}${sectionD}${sectionE}${sectionF}${sectionG}${sectionH}${sectionI}
       </div>
       <div class="tv-form-actions">
-        ${renderBtn(isEdit ? "Guardar" : "Crear conexión", { type: "submit", variant: "primary" })}
-        <a href="/admin/wholesale/smpp-lab" class="btn btn-ghost">Cancelar</a>
+        ${renderBtn(isEdit ? "Save account" : "Create account", { type: "submit", variant: "primary" })}
+        <a href="/admin/wholesale/smpp-lab" class="btn btn-ghost">Cancel</a>
       </div>
     </form>
-    ${isEdit ? `<form method="post" action="/admin/wholesale/smpp-lab/${escapeHtml(c!.id)}/test-bind" style="margin-top:0.75rem"><button type="submit" class="btn btn-secondary">Test bind ahora</button></form>` : ""}`;
+    ${isEdit ? `<form method="post" action="/admin/wholesale/smpp-lab/${escapeHtml(c!.id)}/test-bind" style="margin-top:0.75rem"><button type="submit" class="btn btn-secondary">Test bind now</button></form>` : ""}`;
 
-  return wrapWholesalePage(opts, "smpp-lab", isEdit ? "Editar SMPP" : "Nueva conexión SMPP", form);
+  return wrapWholesalePage(opts, "smpp-lab", isEdit ? "Edit SMPP account" : "New SMPP account", form);
 }
 
 export function renderInternationalRatePlansListPage(
