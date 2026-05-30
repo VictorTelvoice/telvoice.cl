@@ -161,7 +161,7 @@ jobs:
           rm -rf "$CLONE_DIR"
           git clone --depth 1 --branch main "$REPO" "$CLONE_DIR"
 
-          rsync -a \
+          rsync -a --delete \
             --exclude node_modules \
             --exclude .env \
             --exclude dist \

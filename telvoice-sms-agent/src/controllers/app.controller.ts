@@ -476,7 +476,8 @@ export async function getAppBuySms(
       },
       {
         mercadoPagoAvailable: isMercadoPagoConfigured(),
-        manualCheckoutEnabled: env.clientPanel.manualCheckoutEnabled,
+        // Pago manual deshabilitado hasta habilitar operación (ignora env en prod).
+        manualCheckoutEnabled: false,
       },
     );
   });
