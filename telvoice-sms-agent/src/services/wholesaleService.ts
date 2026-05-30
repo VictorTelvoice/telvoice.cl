@@ -7,6 +7,7 @@ import {
   WHOLESALE_TRAFFIC_TYPES,
   type WholesaleCustomerConnectionType,
   type WholesaleCustomerRow,
+  type WholesaleDashboardSnapshot,
   type WholesaleOpportunityRow,
   type WholesaleOpportunityWithCustomer,
   type WholesaleProviderConnectionType,
@@ -669,4 +670,58 @@ export function formatRouteMarginPct(cost: number, salePrice: number): string {
   if (cost <= 0) return "—";
   const pct = ((salePrice - cost) / cost) * 100;
   return `${pct.toFixed(1)}%`;
+}
+
+const OPEN_OPPORTUNITY_STATUSES = new Set<WholesaleStatus>([
+  "draft",
+  "testing",
+  "approved",
+]);
+
+export async function buildWholesaleDashboardSnapshot(): Promise<WholesaleDashboardSnapshot> {
+  const [providers, routes, offers, tests, customers, opportunities] =
+    await Promise.all([
+      listWholesaleProviders(),
+      listWholesaleRoutes(),
+      listWholesaleRateOffers(),
+      listWholesaleRouteTests(),
+      listWholesaleCustomers(),
+      listWholesaleOpportunities(),
+    ]);
+
+  const activeProviders = providers.filter((p) =>
+    p.status === "live" || p.status === "approved",
+  ).length;
+  const routesLive = routes.filter((r) => r.status === "live").length;
+  const routesTesting = routes.filter((r) => r.status === "testing").length;
+  const pendingOffers = offers.filter((o) =>
+    o.status === "draft" || o.status === "testing",
+  ).length;
+  const openOpportunities = opportunities.filter((o) =>
+    OPEN_OPPORTUNITY_STATUSES.has(o.commercial_status),
+  ).length;
+
+  const sellableRoutes = routes
+    .filter((r) => r.status === "live" || r.status === "approved")
+    .slice(0, 6);
+  const pendingOffersList = offers
+    .filter((o) => o.status === "draft" || o.status === "testing")
+    .slice(0, 5);
+  const recentTests = tests.slice(0, 5);
+  const pipelineOpportunities = opportunities.slice(0, 5);
+
+  return {
+    kpis: {
+      activeProviders,
+      routesLive,
+      routesTesting,
+      pendingOffers,
+      customers: customers.length,
+      openOpportunities,
+    },
+    sellableRoutes,
+    pendingOffers: pendingOffersList,
+    recentTests,
+    pipelineOpportunities,
+  };
 }

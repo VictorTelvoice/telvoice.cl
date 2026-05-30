@@ -156,3 +156,20 @@ export interface WholesaleOpportunityRow {
 export interface WholesaleOpportunityWithCustomer extends WholesaleOpportunityRow {
   company_name?: string;
 }
+
+export interface WholesaleDashboardKpis {
+  activeProviders: number;
+  routesLive: number;
+  routesTesting: number;
+  pendingOffers: number;
+  customers: number;
+  openOpportunities: number;
+}
+
+export interface WholesaleDashboardSnapshot {
+  kpis: WholesaleDashboardKpis;
+  sellableRoutes: WholesaleRouteWithProvider[];
+  pendingOffers: WholesaleRateOfferWithProvider[];
+  recentTests: WholesaleRouteTestEnriched[];
+  pipelineOpportunities: WholesaleOpportunityWithCustomer[];
+}

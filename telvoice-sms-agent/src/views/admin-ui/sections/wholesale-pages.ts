@@ -6,6 +6,7 @@ import {
   WHOLESALE_STATUSES,
   WHOLESALE_TRAFFIC_TYPES,
   type WholesaleCustomerRow,
+  type WholesaleDashboardSnapshot,
   type WholesaleOpportunityWithCustomer,
   type WholesaleProviderRow,
   type WholesaleRateOfferWithProvider,
@@ -19,8 +20,8 @@ import {
 } from "../../../services/wholesaleService.js";
 import { escapeHtml, formatDate } from "../../../utils/html.js";
 import { wrapAdminPage } from "../admin-page-wrap.js";
+import { renderKpiCard, renderQuickAction, renderSectionTitle } from "../components.js";
 import { renderBtn, renderPageHeader } from "../page-kit.js";
-import { renderSuperadminBanner } from "../superadmin-kit.js";
 
 type BaseOpts = {
   admin: AdminSessionUser;
@@ -104,12 +105,24 @@ function connectionLabel(t: string): string {
   return m[t] ?? t;
 }
 
+function renderWholesaleScopeBanner(): string {
+  return `<div class="tv-wholesale-scope" role="note">
+    <span class="material-symbols-outlined" aria-hidden="true">public</span>
+    <div>
+      <strong>Telvoice.net · Wholesale Core</strong>
+      <span>Consola operativa wholesale — distinta de
+        <a href="/admin/providers">Proveedores SMS</a> (routing Chile retail) y
+        <a href="/admin/routes">Rutas SMS</a> (telco actual).</span>
+    </div>
+  </div>`;
+}
+
 function renderWholesaleSubNav(active: WholesaleSection): string {
   const links = WHOLESALE_SECTIONS.map(
     (s) =>
-      `<a href="${escapeHtml(s.href)}" class="tv-tab tv-tab--link${active === s.id ? " tv-tab--active" : ""}">${escapeHtml(s.label)}</a>`,
+      `<a href="${escapeHtml(s.href)}" class="tv-wholesale-subnav__link${active === s.id ? " tv-wholesale-subnav__link--active" : ""}"${active === s.id ? ' aria-current="page"' : ""}>${escapeHtml(s.label)}</a>`,
   ).join("");
-  return `<nav class="tv-tabs tv-tabs--links" role="navigation" aria-label="Wholesale">${links}</nav>`;
+  return `<nav class="tv-wholesale-subnav" role="navigation" aria-label="Wholesale">${links}</nav>`;
 }
 
 function wrapWholesale(
@@ -126,11 +139,7 @@ function wrapWholesale(
     admin: opts.admin,
     title,
     activeNav: "wholesale",
-    body:
-      alerts +
-      renderSuperadminBanner("Wholesale Core · Telvoice.net — registro interno sin conexión SMPP aún.") +
-      renderWholesaleSubNav(active) +
-      body,
+    body: alerts + renderWholesaleScopeBanner() + renderWholesaleSubNav(active) + body,
     topbar: {
       smsBalance: "—",
       routesLabel: "Wholesale",
@@ -138,6 +147,63 @@ function wrapWholesale(
       companyName: "telvoice · wholesale",
     },
   });
+}
+
+function fmtVolume(value: number | null | undefined): string {
+  if (value == null) return "—";
+  return value.toLocaleString("es-CL");
+}
+
+function fmtRate(value: number | null | undefined, currency = "USD"): string {
+  if (value == null) return "—";
+  return `${Number(value).toFixed(4)} ${currency}`;
+}
+
+function renderMarginCell(cost: number, salePrice: number): string {
+  const margin = computeRouteMargin(cost, salePrice);
+  const pct = formatRouteMarginPct(cost, salePrice);
+  return `<span class="tv-wholesale-margin">${margin.toFixed(4)}</span><span class="tv-wholesale-margin__pct">${escapeHtml(pct)}</span>`;
+}
+
+function renderRatePreview(raw: string, maxLines = 4): string {
+  const lines = raw.split(/\r?\n/).slice(0, maxLines).join("\n").trim();
+  const suffix = raw.split(/\r?\n/).length > maxLines ? "\n…" : "";
+  return `<div class="tv-wholesale-rate-preview">${escapeHtml(lines + suffix)}</div>`;
+}
+
+function deliveryBadge(status: string | null | undefined): string {
+  const key = (status ?? "").toLowerCase();
+  if (["delivered", "ok", "success"].includes(key)) {
+    return `<span class="tv-wholesale-dlr--ok">${escapeHtml(status ?? "—")}</span>`;
+  }
+  if (["failed", "error", "rejected"].includes(key)) {
+    return `<span class="tv-wholesale-dlr--err">${escapeHtml(status ?? "—")}</span>`;
+  }
+  if (key) return `<span class="tv-wholesale-dlr--warn">${escapeHtml(status!)}</span>`;
+  return "—";
+}
+
+function renderSummaryPanel(opts: {
+  title: string;
+  subtitle: string;
+  href: string;
+  linkLabel: string;
+  tableHtml: string;
+}): string {
+  return `<section class="tv-panel tv-wholesale-summary-panel">
+    <div class="tv-panel__head">
+      <div>
+        <h2>${escapeHtml(opts.title)}</h2>
+        <p class="tv-panel__sub">${escapeHtml(opts.subtitle)}</p>
+      </div>
+      <a href="${escapeHtml(opts.href)}" class="btn btn-ghost btn-sm">${escapeHtml(opts.linkLabel)}</a>
+    </div>
+    <div class="table-wrap">${opts.tableHtml}</div>
+  </section>`;
+}
+
+function renderEmptyRow(colspan: number, message: string): string {
+  return `<tr><td colspan="${colspan}"><div class="tv-wholesale-empty">${escapeHtml(message)}</div></td></tr>`;
 }
 
 function renderDeleteForm(action: string, label: string): string {
@@ -230,41 +296,179 @@ function renderCustomerSelect(
 // ── Hub ────────────────────────────────────────────────────────────────────────
 
 export function renderWholesaleHubPage(
-  opts: BaseOpts & {
-    counts: { providers: number; routes: number; customers: number; opportunities: number };
-  },
+  opts: BaseOpts & { dashboard: WholesaleDashboardSnapshot },
 ): string {
-  const cards = [
-    { label: "Proveedores", count: opts.counts.providers, href: "/admin/wholesale/providers" },
-    { label: "Rutas", count: opts.counts.routes, href: "/admin/wholesale/routes" },
-    { label: "Clientes wholesale", count: opts.counts.customers, href: "/admin/wholesale/customers" },
-    { label: "Oportunidades", count: opts.counts.opportunities, href: "/admin/wholesale/opportunities" },
-  ]
-    .map(
-      (c) => `<a href="${escapeHtml(c.href)}" class="tv-stat-chip tv-stat-chip--default" style="text-decoration:none">
-      <span class="tv-stat-chip__label">${escapeHtml(c.label)}</span>
-      <span class="tv-stat-chip__value">${c.count}</span>
-    </a>`,
-    )
-    .join("");
+  const { kpis, sellableRoutes, pendingOffers, recentTests, pipelineOpportunities } =
+    opts.dashboard;
+
+  const kpiGrid = `<div class="tv-kpi-grid tv-kpi-grid--wholesale">
+    ${renderKpiCard({
+      label: "Proveedores activos",
+      value: String(kpis.activeProviders),
+      hint: "Live o aprobados",
+      icon: "hub",
+      variant: "primary",
+    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale')}
+    ${renderKpiCard({
+      label: "Rutas live",
+      value: String(kpis.routesLive),
+      hint: "Listas para vender",
+      icon: "route",
+      variant: "success",
+    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale')}
+    ${renderKpiCard({
+      label: "Rutas en testing",
+      value: String(kpis.routesTesting),
+      hint: "En validación",
+      icon: "science",
+      variant: "warn",
+    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale')}
+    ${renderKpiCard({
+      label: "Ofertas pendientes",
+      value: String(kpis.pendingOffers),
+      hint: "Draft o en prueba",
+      icon: "mail",
+      variant: "warn",
+    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale')}
+    ${renderKpiCard({
+      label: "Clientes wholesale",
+      value: String(kpis.customers),
+      hint: "Pipeline comercial",
+      icon: "business",
+      variant: "default",
+    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale')}
+    ${renderKpiCard({
+      label: "Oportunidades abiertas",
+      value: String(kpis.openOpportunities),
+      hint: "Draft, testing o aprobadas",
+      icon: "trending_up",
+      variant: "primary",
+    }).replace('class="tv-kpi', 'class="tv-kpi tv-kpi--wholesale')}
+  </div>`;
+
+  const quickActions = `<div class="tv-wholesale-actions">
+    <section class="tv-panel tv-wholesale-actions__group">
+      <h2 class="tv-panel__title">Operación</h2>
+      <div class="tv-quick-grid">
+        ${renderQuickAction({ href: "/admin/wholesale/providers/new", label: "Nuevo proveedor", description: "Agregador o carrier internacional", icon: "hub" })}
+        ${renderQuickAction({ href: "/admin/wholesale/routes/new", label: "Nueva ruta", description: "País, operador, costo y margen", icon: "route" })}
+        ${renderQuickAction({ href: "/admin/wholesale/route-tests/new", label: "Registrar prueba", description: "Validar entrega antes de live", icon: "science" })}
+      </div>
+    </section>
+    <section class="tv-panel tv-wholesale-actions__group">
+      <h2 class="tv-panel__title">Comercial</h2>
+      <div class="tv-quick-grid">
+        ${renderQuickAction({ href: "/admin/wholesale/rates/new", label: "Pegar oferta rates", description: "Texto recibido por email o WhatsApp", icon: "content_paste" })}
+        ${renderQuickAction({ href: "/admin/wholesale/customers/new", label: "Nuevo cliente", description: "API, SMPP o conexión manual", icon: "person_add" })}
+        ${renderQuickAction({ href: "/admin/wholesale/opportunities/new", label: "Nueva oportunidad", description: "Volumen, país y precio objetivo", icon: "handshake" })}
+      </div>
+    </section>
+  </div>`;
+
+  const sellableRows = sellableRoutes.length
+    ? sellableRoutes
+        .map((r) => {
+          const cost = Number(r.cost);
+          const sale = Number(r.sale_price);
+          return `<tr>
+          <td><strong>${escapeHtml(r.country_code)}</strong>${r.country_name ? `<br><span class="field-hint">${escapeHtml(r.country_name)}</span>` : ""}</td>
+          <td>${escapeHtml(r.operator_name)}</td>
+          <td class="tv-wholesale-price">${Number(sale).toFixed(4)} ${escapeHtml(r.currency)}</td>
+          <td>${renderMarginCell(cost, sale)}</td>
+          <td>${wholesaleStatusBadge(r.status)}</td>
+        </tr>`;
+        })
+        .join("")
+    : renderEmptyRow(5, "Sin rutas live o aprobadas todavía.");
+
+  const offerRows = pendingOffers.length
+    ? pendingOffers
+        .map(
+          (o) => `<tr>
+          <td><strong>${escapeHtml(o.title ?? "Sin título")}</strong></td>
+          <td>${escapeHtml(o.provider_name ?? "—")}</td>
+          <td>${renderRatePreview(o.raw_text)}</td>
+          <td>${wholesaleStatusBadge(o.status)}</td>
+        </tr>`,
+        )
+        .join("")
+    : renderEmptyRow(4, "Sin ofertas pendientes de revisión.");
+
+  const testRows = recentTests.length
+    ? recentTests
+        .map(
+          (t) => `<tr>
+          <td>${escapeHtml(t.route_label ?? "—")}</td>
+          <td><code>${escapeHtml(t.test_number ?? "—")}</code></td>
+          <td>${deliveryBadge(t.delivery_status)}</td>
+          <td>${wholesaleStatusBadge(t.status)}</td>
+        </tr>`,
+        )
+        .join("")
+    : renderEmptyRow(4, "Sin pruebas registradas.");
+
+  const pipelineRows = pipelineOpportunities.length
+    ? pipelineOpportunities
+        .map(
+          (o) => `<tr>
+          <td><strong>${escapeHtml(o.company_name ?? "—")}</strong></td>
+          <td>${escapeHtml(o.country_code ?? "—")}</td>
+          <td class="tv-wholesale-vol">${fmtVolume(o.volume_estimate)}</td>
+          <td>${wholesaleStatusBadge(o.commercial_status)}</td>
+        </tr>`,
+        )
+        .join("")
+    : renderEmptyRow(4, "Sin oportunidades en pipeline.");
+
+  const summaries = `<div class="tv-wholesale-summary-grid">
+    ${renderSummaryPanel({
+      title: "Rutas disponibles para vender",
+      subtitle: "Últimas rutas live o aprobadas",
+      href: "/admin/wholesale/routes",
+      linkLabel: "Ver todas",
+      tableHtml: `<table class="tv-table tv-table--compact tv-table--wholesale"><thead><tr>
+        <th>País</th><th>Operador</th><th>Precio venta</th><th>Margen</th><th>Estado</th>
+      </tr></thead><tbody>${sellableRows}</tbody></table>`,
+    })}
+    ${renderSummaryPanel({
+      title: "Ofertas pendientes",
+      subtitle: "Rates en draft o testing",
+      href: "/admin/wholesale/rates",
+      linkLabel: "Ver ofertas",
+      tableHtml: `<table class="tv-table tv-table--compact tv-table--wholesale"><thead><tr>
+        <th>Título</th><th>Proveedor</th><th>Preview</th><th>Estado</th>
+      </tr></thead><tbody>${offerRows}</tbody></table>`,
+    })}
+    ${renderSummaryPanel({
+      title: "Pruebas recientes",
+      subtitle: "Resultado de entrega y DLR",
+      href: "/admin/wholesale/route-tests",
+      linkLabel: "Ver pruebas",
+      tableHtml: `<table class="tv-table tv-table--compact tv-table--wholesale"><thead><tr>
+        <th>Ruta</th><th>Número</th><th>DLR</th><th>Estado</th>
+      </tr></thead><tbody>${testRows}</tbody></table>`,
+    })}
+    ${renderSummaryPanel({
+      title: "Pipeline comercial",
+      subtitle: "Oportunidades wholesale recientes",
+      href: "/admin/wholesale/opportunities",
+      linkLabel: "Ver pipeline",
+      tableHtml: `<table class="tv-table tv-table--compact tv-table--wholesale"><thead><tr>
+        <th>Cliente</th><th>País</th><th>Volumen est.</th><th>Estado</th>
+      </tr></thead><tbody>${pipelineRows}</tbody></table>`,
+    })}
+  </div>`;
 
   const body = `
     ${renderPageHeader({
       title: "Wholesale Core",
-      subtitle: "Base interna Telvoice.net — proveedores, rutas internacionales, rates y pipeline comercial.",
+      subtitle:
+        "Centro operativo para proveedores, rutas internacionales, ofertas de rates, pruebas, clientes y oportunidades comerciales de Telvoice.net.",
     })}
-    <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:1.5rem">${cards}</div>
-    <section class="tv-panel">
-      <h2 class="tv-panel__title">Accesos rápidos</h2>
-      <div class="tv-panel__body" style="display:flex;flex-wrap:wrap;gap:0.5rem">
-        ${renderBtn("Nuevo proveedor", { href: "/admin/wholesale/providers/new", variant: "primary" })}
-        ${renderBtn("Nueva ruta", { href: "/admin/wholesale/routes/new", variant: "secondary" })}
-        ${renderBtn("Pegar oferta rates", { href: "/admin/wholesale/rates/new", variant: "secondary" })}
-        ${renderBtn("Registrar prueba", { href: "/admin/wholesale/route-tests/new", variant: "secondary" })}
-        ${renderBtn("Nuevo cliente", { href: "/admin/wholesale/customers/new", variant: "secondary" })}
-        ${renderBtn("Nueva oportunidad", { href: "/admin/wholesale/opportunities/new", variant: "secondary" })}
-      </div>
-    </section>`;
+    ${kpiGrid}
+    ${quickActions}
+    ${renderSectionTitle("Resumen operativo", "Vista rápida de lo más relevante para operación y comercial wholesale.")}
+    ${summaries}`;
 
   return wrapWholesale(opts, "hub", "Wholesale Core", body);
 }
@@ -295,13 +499,11 @@ export function renderWholesaleProvidersListPage(
   const body = `
     ${renderPageHeader({
       title: "Proveedores wholesale",
-      subtitle: "Agregadores y carriers internacionales para Telvoice.net.",
-      actions: renderBtn("Nuevo proveedor", { href: "/admin/wholesale/providers/new", variant: "primary", icon: "add" }).replace(
-        "btn btn-primary",
-        "btn btn-primary",
-      ),
+      subtitleHtml:
+        'Carriers y agregadores internacionales para <strong>Telvoice.net</strong>. No confundir con <a href="/admin/providers">Proveedores SMS</a> del routing Chile.',
+      actions: renderBtn("Nuevo proveedor", { href: "/admin/wholesale/providers/new", variant: "primary", icon: "add" }),
     })}
-    <div class="table-wrap"><table class="tv-table tv-table--compact">
+    <div class="table-wrap"><table class="tv-table tv-table--compact tv-table--wholesale">
       <thead><tr>
         <th>Proveedor</th><th>País</th><th>Conexión</th><th>Contacto</th><th>Estado</th><th></th>
       </tr></thead>
@@ -375,19 +577,16 @@ export function renderWholesaleRoutesListPage(
   const rows = opts.routes.length
     ? opts.routes
         .map((r) => {
-          const margin = computeRouteMargin(Number(r.cost), Number(r.sale_price));
-          const marginPct = formatRouteMarginPct(Number(r.cost), Number(r.sale_price));
           return `<tr>
         <td>${escapeHtml(r.provider_name ?? "—")}<br><code class="tv-code-sm">${escapeHtml(r.provider_code ?? "")}</code></td>
         <td>${escapeHtml(r.country_code)}${r.country_name ? `<br><span class="field-hint">${escapeHtml(r.country_name)}</span>` : ""}</td>
         <td>${escapeHtml(r.operator_name)}</td>
         <td>${escapeHtml(trafficTypeLabel(r.traffic_type))}</td>
-        <td>${Number(r.cost).toFixed(4)}</td>
-        <td>${Number(r.sale_price).toFixed(4)}</td>
-        <td>${margin.toFixed(4)} <span class="field-hint">(${marginPct})</span></td>
+        <td class="tv-wholesale-price">${Number(r.cost).toFixed(4)}</td>
+        <td class="tv-wholesale-price">${Number(r.sale_price).toFixed(4)}</td>
+        <td>${renderMarginCell(Number(r.cost), Number(r.sale_price))}</td>
         <td>${escapeHtml(r.currency)}</td>
         <td>${r.tps}</td>
-        <td>${escapeHtml(qualityLabel(r.quality_estimate))}</td>
         <td>${wholesaleStatusBadge(r.status)}</td>
         <td class="tv-table-actions">
           <a href="/admin/wholesale/routes/${escapeHtml(r.id)}/edit" class="row-link">Editar</a>
@@ -396,19 +595,20 @@ export function renderWholesaleRoutesListPage(
       </tr>`;
         })
         .join("")
-    : `<tr><td colspan="12" class="field-hint">Sin rutas registradas.</td></tr>`;
+    : renderEmptyRow(10, "Sin rutas wholesale registradas.");
 
   const body = `
     ${renderPageHeader({
       title: "Rutas wholesale",
-      subtitle: "Rutas internacionales con costo, precio venta y margen.",
+      subtitleHtml:
+        'Rutas internacionales con costo, precio venta y margen. Distinto de <a href="/admin/routes">Rutas SMS</a> del telco Chile.',
       actions: renderBtn("Nueva ruta", { href: "/admin/wholesale/routes/new", variant: "primary", icon: "add" }),
     })}
-    <div class="table-wrap"><table class="tv-table tv-table--compact">
+    <div class="table-wrap"><table class="tv-table tv-table--compact tv-table--wholesale">
       <thead><tr>
         <th>Proveedor</th><th>País</th><th>Operador</th><th>Tráfico</th>
         <th>Costo</th><th>Precio venta</th><th>Margen</th><th>Moneda</th>
-        <th>TPS</th><th>Calidad</th><th>Estado</th><th></th>
+        <th>TPS</th><th>Estado</th><th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>`;
@@ -478,33 +678,32 @@ export function renderWholesaleRateOffersListPage(
 ): string {
   const rows = opts.offers.length
     ? opts.offers
-        .map((o) => {
-          const preview = o.raw_text.slice(0, 120).replace(/\s+/g, " ");
-          return `<tr>
-        <td>${escapeHtml(o.title ?? "—")}</td>
+        .map(
+          (o) => `<tr>
+        <td><strong>${escapeHtml(o.title ?? "—")}</strong></td>
         <td>${escapeHtml(o.provider_name ?? "—")}</td>
         <td>${escapeHtml(o.country_code ?? "—")}</td>
-        <td><span class="field-hint" title="${escapeHtml(o.raw_text)}">${escapeHtml(preview)}${o.raw_text.length > 120 ? "…" : ""}</span></td>
+        <td>${renderRatePreview(o.raw_text)}</td>
         <td>${o.received_at ? formatDate(o.received_at) : "—"}</td>
         <td>${wholesaleStatusBadge(o.status)}</td>
         <td class="tv-table-actions">
           <a href="/admin/wholesale/rates/${escapeHtml(o.id)}/edit" class="row-link">Editar</a>
           ${renderDeleteForm(`/admin/wholesale/rates/${o.id}/delete`, o.title ?? "oferta")}
         </td>
-      </tr>`;
-        })
+      </tr>`,
+        )
         .join("")
-    : `<tr><td colspan="7" class="field-hint">Sin ofertas registradas.</td></tr>`;
+    : renderEmptyRow(7, "Sin ofertas de rates registradas.");
 
   const body = `
     ${renderPageHeader({
       title: "Ofertas de rates",
-      subtitle: "Pega texto recibido por correo o WhatsApp desde proveedores.",
+      subtitle: "Pega y revisa texto recibido por correo o WhatsApp desde proveedores internacionales.",
       actions: renderBtn("Nueva oferta", { href: "/admin/wholesale/rates/new", variant: "primary", icon: "add" }),
     })}
-    <div class="table-wrap"><table class="tv-table tv-table--compact">
+    <div class="table-wrap"><table class="tv-table tv-table--compact tv-table--wholesale">
       <thead><tr>
-        <th>Título</th><th>Proveedor</th><th>País</th><th>Vista previa</th><th>Recibida</th><th>Estado</th><th></th>
+        <th>Título</th><th>Proveedor</th><th>País</th><th>Texto recibido</th><th>Recibida</th><th>Estado</th><th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>`;
@@ -576,7 +775,7 @@ export function renderWholesaleRouteTestsListPage(
         <td>${escapeHtml(t.provider_name ?? "—")}</td>
         <td><code>${escapeHtml(t.test_number ?? "—")}</code></td>
         <td>${escapeHtml(t.destination_country ?? "—")}</td>
-        <td>${escapeHtml(t.delivery_status ?? "—")}</td>
+        <td>${deliveryBadge(t.delivery_status)}</td>
         <td>${t.tested_at ? formatDate(t.tested_at) : "—"}</td>
         <td>${wholesaleStatusBadge(t.status)}</td>
         <td class="tv-table-actions">
@@ -586,18 +785,18 @@ export function renderWholesaleRouteTestsListPage(
       </tr>`,
         )
         .join("")
-    : `<tr><td colspan="8" class="field-hint">Sin pruebas registradas.</td></tr>`;
+    : renderEmptyRow(8, "Sin pruebas de ruta registradas.");
 
   const body = `
     ${renderPageHeader({
       title: "Pruebas de rutas",
-      subtitle: "Registro manual de pruebas de entrega antes de activar rutas live.",
+      subtitle: "Registro manual de pruebas de entrega y DLR antes de activar rutas live.",
       actions: renderBtn("Nueva prueba", { href: "/admin/wholesale/route-tests/new", variant: "primary", icon: "add" }),
     })}
-    <div class="table-wrap"><table class="tv-table tv-table--compact">
+    <div class="table-wrap"><table class="tv-table tv-table--compact tv-table--wholesale">
       <thead><tr>
         <th>Ruta</th><th>Proveedor</th><th>Número prueba</th><th>País destino</th>
-        <th>Entrega</th><th>Fecha prueba</th><th>Estado</th><th></th>
+        <th>DLR / entrega</th><th>Fecha prueba</th><th>Estado</th><th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>`;
@@ -671,7 +870,7 @@ export function renderWholesaleCustomersListPage(
         <td>${escapeHtml(c.email ?? "—")}<br><span class="field-hint">${escapeHtml(c.whatsapp ?? "")}</span></td>
         <td>${escapeHtml(c.country_code)}${c.country_name ? `<br><span class="field-hint">${escapeHtml(c.country_name)}</span>` : ""}</td>
         <td>${escapeHtml(connectionLabel(c.connection_type))}</td>
-        <td>${c.monthly_volume_estimate != null ? c.monthly_volume_estimate.toLocaleString("es-CL") : "—"}</td>
+        <td class="tv-wholesale-vol">${fmtVolume(c.monthly_volume_estimate)}</td>
         <td>${wholesaleStatusBadge(c.commercial_status)}</td>
         <td class="tv-table-actions">
           <a href="/admin/wholesale/customers/${escapeHtml(c.id)}/edit" class="row-link">Editar</a>
@@ -688,7 +887,7 @@ export function renderWholesaleCustomersListPage(
       subtitle: "Empresas interesadas en API, SMPP o conexión manual.",
       actions: renderBtn("Nuevo cliente", { href: "/admin/wholesale/customers/new", variant: "primary", icon: "add" }),
     })}
-    <div class="table-wrap"><table class="tv-table tv-table--compact">
+    <div class="table-wrap"><table class="tv-table tv-table--compact tv-table--wholesale">
       <thead><tr>
         <th>Empresa</th><th>Contacto</th><th>Email / WhatsApp</th><th>País</th>
         <th>Conexión</th><th>Vol. mensual est.</th><th>Estado comercial</th><th></th>
@@ -766,8 +965,8 @@ export function renderWholesaleOpportunitiesListPage(
         <td>${escapeHtml(o.company_name ?? "—")}</td>
         <td>${escapeHtml(o.country_code ?? "—")}${o.country_name ? `<br><span class="field-hint">${escapeHtml(o.country_name)}</span>` : ""}</td>
         <td>${escapeHtml(trafficTypeLabel(o.traffic_type))}</td>
-        <td>${o.volume_estimate != null ? o.volume_estimate.toLocaleString("es-CL") : "—"}</td>
-        <td>${o.target_price != null ? `${Number(o.target_price).toFixed(4)} ${escapeHtml(o.currency)}` : "—"}</td>
+        <td class="tv-wholesale-vol">${fmtVolume(o.volume_estimate)}</td>
+        <td class="tv-wholesale-price">${o.target_price != null ? fmtRate(Number(o.target_price), o.currency) : "—"}</td>
         <td>${wholesaleStatusBadge(o.commercial_status)}</td>
         <td class="tv-table-actions">
           <a href="/admin/wholesale/opportunities/${escapeHtml(o.id)}/edit" class="row-link">Editar</a>
@@ -784,7 +983,7 @@ export function renderWholesaleOpportunitiesListPage(
       subtitle: "Pipeline wholesale vinculado a clientes, países y precios objetivo.",
       actions: renderBtn("Nueva oportunidad", { href: "/admin/wholesale/opportunities/new", variant: "primary", icon: "add" }),
     })}
-    <div class="table-wrap"><table class="tv-table tv-table--compact">
+    <div class="table-wrap"><table class="tv-table tv-table--compact tv-table--wholesale">
       <thead><tr>
         <th>Cliente</th><th>País</th><th>Tráfico</th><th>Volumen est.</th>
         <th>Precio objetivo</th><th>Estado comercial</th><th></th>

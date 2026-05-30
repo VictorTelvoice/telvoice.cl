@@ -18,6 +18,7 @@ import {
   getWholesaleRateOfferById,
   getWholesaleRouteById,
   getWholesaleRouteTestById,
+  buildWholesaleDashboardSnapshot,
   listWholesaleCustomers,
   listWholesaleOpportunities,
   listWholesaleProviders,
@@ -70,21 +71,11 @@ export async function getWholesaleHub(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const [providers, routes, customers, opportunities] = await Promise.all([
-      listWholesaleProviders(),
-      listWholesaleRoutes(),
-      listWholesaleCustomers(),
-      listWholesaleOpportunities(),
-    ]);
+    const dashboard = await buildWholesaleDashboardSnapshot();
     res.type("html").send(
       renderWholesaleHubPage({
         admin: req.adminUser!,
-        counts: {
-          providers: providers.length,
-          routes: routes.length,
-          customers: customers.length,
-          opportunities: opportunities.length,
-        },
+        dashboard,
         ...flash(req),
       }),
     );

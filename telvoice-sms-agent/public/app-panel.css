@@ -1542,6 +1542,145 @@
       min-width: 0;
       font-size: 0.8125rem;
     }
+    /* —— Wholesale Core (Telvoice.net) —— */
+    .tv-wholesale-scope {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.85rem 1rem;
+      margin-bottom: 0.85rem;
+      border-radius: var(--tv-radius);
+      border: 1px solid rgba(0, 82, 204, 0.18);
+      background: linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%);
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+    .tv-wholesale-scope .material-symbols-outlined {
+      color: var(--tv-primary);
+      font-size: 1.35rem;
+      margin-top: 0.1rem;
+    }
+    .tv-wholesale-scope strong { display: block; font-size: 0.88rem; margin-bottom: 0.15rem; }
+    .tv-wholesale-scope a { font-weight: 600; }
+    .tv-wholesale-subnav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-bottom: 1.1rem;
+      padding: 0.35rem;
+      background: var(--tv-bg);
+      border: 1px solid var(--tv-border);
+      border-radius: 10px;
+    }
+    .tv-wholesale-subnav__link {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.4rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--tv-muted);
+      text-decoration: none;
+      transition: background 0.15s, color 0.15s;
+    }
+    .tv-wholesale-subnav__link:hover { color: var(--tv-primary); background: #fff; }
+    .tv-wholesale-subnav__link--active {
+      background: #fff;
+      color: var(--tv-primary);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+    }
+    .tv-kpi-grid--wholesale {
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 1rem;
+    }
+    .tv-kpi--wholesale {
+      padding: 1.15rem 1.2rem;
+      min-height: 108px;
+    }
+    .tv-wholesale-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .tv-wholesale-actions__group .tv-panel__title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--tv-muted);
+    }
+    .tv-wholesale-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 960px) {
+      .tv-wholesale-summary-grid { grid-template-columns: 1fr; }
+    }
+    .tv-wholesale-summary-panel .tv-panel__head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .tv-wholesale-summary-panel .tv-panel__head h2 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+    .tv-wholesale-summary-panel .tv-panel__sub {
+      margin: 0.2rem 0 0;
+      font-size: 0.78rem;
+      color: var(--tv-muted);
+    }
+    .tv-table--wholesale th {
+      font-size: 0.68rem;
+      white-space: nowrap;
+    }
+    .tv-wholesale-rate-preview {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.72rem;
+      line-height: 1.4;
+      color: #334155;
+      background: #f8fafc;
+      border: 1px solid var(--tv-border);
+      border-radius: 8px;
+      padding: 0.45rem 0.55rem;
+      max-height: 4.2rem;
+      overflow: hidden;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .tv-wholesale-margin {
+      font-weight: 700;
+      color: var(--tv-ok);
+      white-space: nowrap;
+    }
+    .tv-wholesale-margin__pct {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--tv-muted);
+    }
+    .tv-wholesale-price {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .tv-wholesale-vol {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--tv-primary);
+    }
+    .tv-wholesale-dlr--ok { color: var(--tv-ok); font-weight: 600; }
+    .tv-wholesale-dlr--warn { color: var(--tv-warn); font-weight: 600; }
+    .tv-wholesale-dlr--err { color: var(--tv-err); font-weight: 600; }
+    .tv-wholesale-empty {
+      padding: 0.75rem 0;
+      font-size: 0.82rem;
+      color: var(--tv-muted);
+    }
     
     .tv-filter-tabs {
       display: flex;
