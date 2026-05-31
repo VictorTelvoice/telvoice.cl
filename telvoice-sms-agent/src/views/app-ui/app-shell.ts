@@ -89,9 +89,9 @@ function renderTopbar(tb: AppLayoutTopbar): string {
       </span>
     </div>
     <div class="tv-topbar__actions">
-      <a href="/app/send-sms" class="tv-btn-buy-sms">
-        <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">send</span>
-        Enviar SMS
+      <a href="/app/buy-sms" class="tv-btn-buy-sms" aria-label="Comprar bolsa SMS">
+        <span class="material-symbols-outlined tv-btn-buy-sms__icon" aria-hidden="true">shopping_cart</span>
+        <span class="tv-btn-buy-sms__label">Comprar SMS</span>
       </a>
       <button type="button" class="tv-topbar__icon-btn" aria-label="Notificaciones" title="Notificaciones">
         <span class="material-symbols-outlined" aria-hidden="true">notifications</span>

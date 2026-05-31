@@ -65,6 +65,7 @@ export function getAppPanelStyles(): string {
     .tv-app-client .tv-btn-buy-sms {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 0.35rem;
       padding: 0.45rem 0.9rem;
       background: linear-gradient(135deg, #0ea5e9, #0052cc);
@@ -74,6 +75,10 @@ export function getAppPanelStyles(): string {
       font-size: 0.88rem;
       text-decoration: none;
       border: none;
+      flex-shrink: 0;
+    }
+    .tv-app-client .tv-btn-buy-sms__icon {
+      font-size: 1.15rem;
     }
     .tv-app-client .tv-btn-buy-sms:hover { filter: brightness(1.05); text-decoration: none; }
     .tv-app-client .tv-pill--balance {
