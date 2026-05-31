@@ -1288,7 +1288,8 @@ export function getAppPanelStyles(): string {
     .tv-client-dash-table-panel .tv-table-empty {
       padding: 1.5rem 1rem !important;
     }
-    .tv-client-dash-tables {
+    .tv-client-dashboard .tv-client-dash-tables {
+      display: grid;
       margin-bottom: 0;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 1.25rem;
@@ -1345,8 +1346,15 @@ export function getAppPanelStyles(): string {
         padding: 0.95rem 1rem;
       }
     }
+    @media (max-width: 900px) {
+      .tv-client-dashboard .tv-client-dash-tables {
+        grid-template-columns: 1fr !important;
+      }
+    }
     @media (max-width: 640px) {
-      .tv-kpi-grid--client { grid-template-columns: 1fr; }
+      .tv-kpi-grid--client {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
       .tv-dash-quick-actions__grid {
         grid-template-columns: 1fr;
         padding: 1rem;
