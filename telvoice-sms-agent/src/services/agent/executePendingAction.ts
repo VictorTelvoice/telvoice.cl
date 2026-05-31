@@ -13,6 +13,7 @@ import { sendViaMockProvider } from "../mockSmsProviderService.js";
 import { debitSmsUsage, getCompanyBalance } from "../smsWalletService.js";
 import { calculateSmsSegments, validateRecipientNumber } from "../smsSegmentService.js";
 import { createSmsCampaign, updateSmsCampaign } from "../smsCampaignService.js";
+import { displayPhoneChile } from "./agentPanelCsvService.js";
 import type { StoredPendingAction } from "./pendingActions.js";
 
 const UUID_RE =
@@ -28,6 +29,131 @@ export function resolvePendingActionIdempotencyKey(pendingId: string): string {
     return id;
   }
   return randomUUID();
+}
+
+function fmtSmsCount(n: number): string {
+  return Math.max(0, Math.round(n)).toLocaleString("es-CL");
+}
+
+export type AgentConfirmBalanceInput = {
+  balanceBefore?: number | null;
+  balanceAfter?: number | null;
+  smsConsumed?: number | null;
+  smsEstimated?: number | null;
+};
+
+/** Deriva saldo/consumo cuando el proveedor aún no debitó todo (cola masiva). */
+export function resolveAgentConfirmBalances(
+  input: AgentConfirmBalanceInput,
+): { balanceBefore: number; smsConsumed: number; balanceAfter: number } {
+  let balanceBefore = Number(input.balanceBefore ?? 0);
+  let balanceAfter =
+    input.balanceAfter != null ? Number(input.balanceAfter) : Number.NaN;
+  let smsConsumed = Number(input.smsConsumed ?? 0);
+  const smsEstimated = Number(input.smsEstimated ?? 0);
+
+  if (smsConsumed <= 0 && smsEstimated > 0) {
+    smsConsumed = smsEstimated;
+  }
+  if (Number.isNaN(balanceAfter)) {
+    balanceAfter =
+      balanceBefore > 0
+        ? Math.max(0, balanceBefore - smsConsumed)
+        : 0;
+  }
+  if (smsConsumed <= 0 && balanceBefore > 0 && balanceAfter >= 0) {
+    smsConsumed = Math.max(0, balanceBefore - balanceAfter);
+  }
+  if (balanceBefore <= 0 && balanceAfter >= 0 && smsConsumed > 0) {
+    balanceBefore = balanceAfter + smsConsumed;
+  }
+
+  return {
+    balanceBefore: Math.max(0, balanceBefore),
+    smsConsumed: Math.max(0, smsConsumed),
+    balanceAfter: Math.max(0, balanceAfter),
+  };
+}
+
+function formatBalanceBlock(
+  balances: ReturnType<typeof resolveAgentConfirmBalances>,
+): string {
+  return (
+    `Saldo antes del envío: ${fmtSmsCount(balances.balanceBefore)} SMS\n` +
+    `SMS consumidos: ${fmtSmsCount(balances.smsConsumed)}\n` +
+    `Saldo actual: ${fmtSmsCount(balances.balanceAfter)} SMS`
+  );
+}
+
+export function formatAgentCampaignAcceptedMessage(input: {
+  validContacts: number;
+  queued: number;
+  smsEstimated: number;
+  referenceId: string;
+  balances: AgentConfirmBalanceInput;
+  pending?: StoredPendingAction;
+}): string {
+  const balances = resolveAgentConfirmBalances({
+    balanceBefore:
+      input.balances.balanceBefore ??
+      (input.pending?.payload.balance_before != null
+        ? Number(input.pending.payload.balance_before)
+        : undefined),
+    balanceAfter:
+      input.balances.balanceAfter ??
+      (input.pending?.payload.balance_after_estimated != null
+        ? Number(input.pending.payload.balance_after_estimated)
+        : undefined),
+    smsConsumed: input.balances.smsConsumed,
+    smsEstimated: input.smsEstimated ?? input.balances.smsEstimated,
+  });
+
+  return (
+    `Campaña aceptada.\n\n` +
+    `${formatBalanceBlock(balances)}\n\n` +
+    `Contactos válidos: ${fmtSmsCount(input.validContacts)}\n` +
+    `Mensajes en cola: ${fmtSmsCount(input.queued)}\n` +
+    `SMS estimados: ${fmtSmsCount(input.smsEstimated)}\n\n` +
+    `Puedes revisar el avance en Bandeja o Campañas.\n` +
+    `Referencia: ${input.referenceId}`
+  );
+}
+
+export function formatAgentSingleSmsAcceptedMessage(input: {
+  destination: string;
+  statusLine: string;
+  balances: AgentConfirmBalanceInput;
+  pending?: StoredPendingAction;
+}): string {
+  const payload = input.pending?.payload;
+  const payloadCost =
+    payload?.costSms != null
+      ? Number(payload.costSms)
+      : payload?.segments != null
+        ? Number(payload.segments)
+        : undefined;
+
+  const balances = resolveAgentConfirmBalances({
+    balanceBefore:
+      input.balances.balanceBefore ??
+      (payload?.balance_before != null
+        ? Number(payload.balance_before)
+        : undefined),
+    balanceAfter: input.balances.balanceAfter,
+    smsConsumed: input.balances.smsConsumed ?? payloadCost,
+    smsEstimated: input.balances.smsEstimated ?? payloadCost,
+  });
+
+  const digits = input.destination.replace(/\D/g, "");
+  const dest = digits.length >= 10 ? displayPhoneChile(digits) : input.destination;
+
+  return (
+    `SMS aceptado.\n\n` +
+    `${formatBalanceBlock(balances)}\n\n` +
+    `Destino: ${dest}\n` +
+    `Estado: ${input.statusLine}\n\n` +
+    `Puedes revisar el estado en Bandeja.`
+  );
 }
 
 function resolveCampaignSmsEstimate(
@@ -185,14 +311,16 @@ async function executeMockSingleSms(input: {
     actorUserId: input.userId,
   });
 
-  return (
-    `SMS aceptado.\n\n` +
-    `Destino: ${phone.normalized.replace(/\D/g, "").replace(/^56/, "569").slice(0, 11)}\n` +
-    `Estado: Enviado a cola (simulación)\n` +
-    `Referencia: ${pendingMessage.id}\n` +
-    `Crédito consumido/estimado: ${segmentInfo.costSms} SMS\n\n` +
-    `Puedes revisar el estado en Bandeja.`
-  );
+  const balanceAfter = (await getCompanyBalance(input.companyId)).availableSms;
+  return formatAgentSingleSmsAcceptedMessage({
+    destination: phone.normalized,
+    statusLine: "En cola (simulación)",
+    balances: {
+      balanceBefore: balance.availableSms,
+      balanceAfter,
+      smsConsumed: segmentInfo.costSms,
+    },
+  });
 }
 
 async function executeMockCampaignCsv(input: {
@@ -271,15 +399,18 @@ async function executeMockCampaignCsv(input: {
   });
 
   const after = await getCompanyBalance(input.companyId);
-  return (
-    `Campaña aceptada.\n\n` +
-    `Contactos válidos: ${queued.toLocaleString("es-CL")}\n` +
-    `Mensajes en cola: ${queued.toLocaleString("es-CL")}\n` +
-    `SMS estimados: ${totalCost.toLocaleString("es-CL")}\n` +
-    `Crédito disponible después del envío: ${after.availableSms.toLocaleString("es-CL")} SMS\n\n` +
-    `Puedes revisar el avance en Bandeja o Campañas.\n` +
-    `Referencia campaña: ${campaign.id}`
-  );
+  return formatAgentCampaignAcceptedMessage({
+    validContacts: queued,
+    queued,
+    smsEstimated: totalCost,
+    referenceId: campaign.id,
+    balances: {
+      balanceBefore: balance.availableSms,
+      balanceAfter: after.availableSms,
+      smsConsumed: totalCost,
+      smsEstimated: totalCost,
+    },
+  });
 }
 
 export async function executePendingAction(
@@ -314,14 +445,16 @@ export async function executePendingAction(
             sendSource: APP_CLIENT_LIVE_SOURCE,
             idempotencyKey,
           });
-          return (
-            `SMS aceptado.\n\n` +
-            `Destino: ${result.recipientNumber.replace(/\D/g, "").replace(/^\+?56/, "56")}\n` +
-            `Estado: En cola / enviado a proveedor\n` +
-            `Referencia: ${result.messageId}\n` +
-            `Crédito estimado: ${result.segments} SMS\n\n` +
-            `Puedes revisar el estado en Bandeja.`
-          );
+          return formatAgentSingleSmsAcceptedMessage({
+            destination: result.recipientNumber,
+            statusLine: "En cola / enviado a proveedor",
+            balances: {
+              balanceBefore: result.balanceBefore,
+              balanceAfter: result.balanceAfter,
+              smsConsumed: result.segments,
+            },
+            pending,
+          });
         } catch (err) {
           return formatAgentSmsSendError(err, pending);
         }
@@ -360,15 +493,19 @@ export async function executePendingAction(
             idempotencyKey,
           });
           const smsEstimate = resolveCampaignSmsEstimate(pending, result);
-          return (
-            `Campaña aceptada.\n\n` +
-            `Contactos válidos: ${result.totalRecipients.toLocaleString("es-CL")}\n` +
-            `Mensajes en cola: ${result.queued.toLocaleString("es-CL")}\n` +
-            `SMS estimados: ${smsEstimate.toLocaleString("es-CL")}\n` +
-            `Crédito disponible después del envío: ${result.balanceAfter.toLocaleString("es-CL")} SMS\n\n` +
-            `Puedes revisar el avance en Bandeja o Campañas.\n` +
-            `Referencia: ${result.campaignId}`
-          );
+          return formatAgentCampaignAcceptedMessage({
+            validContacts: result.totalRecipients,
+            queued: result.queued,
+            smsEstimated: smsEstimate,
+            referenceId: result.campaignId,
+            balances: {
+              balanceBefore: result.balanceBefore,
+              balanceAfter: result.balanceAfter,
+              smsConsumed: result.smsConsumed,
+              smsEstimated: smsEstimate,
+            },
+            pending,
+          });
         } catch (err) {
           return formatAgentSmsSendError(err, pending);
         }

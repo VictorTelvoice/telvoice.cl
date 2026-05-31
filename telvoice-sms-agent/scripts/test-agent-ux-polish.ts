@@ -18,6 +18,11 @@ import {
   updateConversationMemory,
 } from "../src/services/agent/agentConversationMemory.js";
 import type { StoredPendingAction } from "../src/services/agent/pendingActions.js";
+import {
+  resolveAgentConfirmBalances,
+  formatAgentCampaignAcceptedMessage,
+  formatAgentSingleSmsAcceptedMessage,
+} from "../src/services/agent/executePendingAction.js";
 
 function testCampaignGuidedRouting(): void {
   const r = routeAgentIntent("Ayúdame a crear una campaña", "web_client", {
@@ -57,6 +62,40 @@ function testCancelNoFallbackCta(): void {
   });
   assert.ok(!composed.includes(persona.defaultCTA));
   console.log("✓ cancelar flujo sin CTA fallback extra");
+}
+
+function testConfirmMessageCopy(): void {
+  const b = resolveAgentConfirmBalances({
+    balanceBefore: 997,
+    balanceAfter: 994,
+    smsConsumed: 0,
+    smsEstimated: 3,
+  });
+  assert.equal(b.smsConsumed, 3);
+  assert.equal(b.balanceAfter, 994);
+
+  const campaign = formatAgentCampaignAcceptedMessage({
+    validContacts: 3,
+    queued: 3,
+    smsEstimated: 3,
+    referenceId: "camp-uuid",
+    balances: { balanceBefore: 997, balanceAfter: 994, smsConsumed: 3 },
+  });
+  assert.match(campaign, /Saldo antes del envío: 997 SMS/);
+  assert.match(campaign, /SMS consumidos: 3/);
+  assert.match(campaign, /Saldo actual: 994 SMS/);
+  assert.match(campaign, /Contactos válidos: 3/);
+  assert.ok(!/Crédito disponible después del envío/i.test(campaign));
+
+  const single = formatAgentSingleSmsAcceptedMessage({
+    destination: "56934449937",
+    statusLine: "En cola / enviado a proveedor",
+    balances: { balanceBefore: 997, balanceAfter: 996, smsConsumed: 1 },
+  });
+  assert.match(single, /SMS aceptado/);
+  assert.match(single, /Saldo actual: 996 SMS/);
+  assert.match(single, /Destino:/);
+  console.log("✓ copy confirmación con saldo antes/consumido/actual");
 }
 
 function testSmsEstimateFromPayload(): void {
@@ -178,6 +217,7 @@ async function main(): Promise<void> {
   testCampaignGuidedRouting();
   testFallbackNotDuplicated();
   testCancelNoFallbackCta();
+  testConfirmMessageCopy();
   testSmsEstimateFromPayload();
   testTruncateFileName();
   testAttachButtonClass();

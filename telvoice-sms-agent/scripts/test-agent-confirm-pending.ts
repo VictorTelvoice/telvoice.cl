@@ -105,6 +105,9 @@ async function testConfirmExecutesPending(): Promise<void> {
 
   assert.equal(r.intent, "confirm");
   assert.match(r.reply, /Campaña aceptada|SMS aceptado/i);
+  assert.match(r.reply, /Saldo antes del envío/i);
+  assert.match(r.reply, /Saldo actual/i);
+  assert.ok(!/Crédito disponible después del envío/i.test(r.reply));
   assert.ok(!/Revisé tu planilla/i.test(r.reply), `no debe repetir resumen: ${r.reply.slice(0, 120)}`);
   assert.equal(r.showAttachButton, false);
   assert.equal(r.clearCsvUpload, true);
