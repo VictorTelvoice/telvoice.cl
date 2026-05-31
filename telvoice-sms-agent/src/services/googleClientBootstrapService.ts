@@ -19,7 +19,7 @@ export async function bootstrapClientFromGoogle(input: {
   email: string;
   name: string;
   avatarUrl?: string | null;
-}): Promise<{ user: AdminSessionUser; jwt: string }> {
+}): Promise<{ user: AdminSessionUser; jwt: string; isNewAccount: boolean }> {
   const email = input.email.trim().toLowerCase();
   if (!email) {
     throw new AppError("Email requerido.", 400);
@@ -27,6 +27,7 @@ export async function bootstrapClientFromGoogle(input: {
 
   // 1) Admin user (sesión actual del panel usa admin_users + JWT)
   const existing = await findAdminByEmail(email);
+  const hadAdmin = Boolean(existing);
   const admin =
     existing ??
     (await createAdminUser({
@@ -56,6 +57,9 @@ export async function bootstrapClientFromGoogle(input: {
   if (profErr) {
     wrapSupabaseError(profErr, "bootstrapClient.profile.select");
   }
+
+  const hadCompany = Boolean(existingProfile?.company_id);
+  const isNewAccount = !hadAdmin || !hadCompany;
 
   let companyId: string | null = existingProfile?.company_id ?? null;
   if (!companyId) {
@@ -108,7 +112,7 @@ export async function bootstrapClientFromGoogle(input: {
     await getOrCreateCompanyWallet(companyId, "CL");
   }
 
-  return { user: sessionUser, jwt: signAdminToken(sessionUser) };
+  return { user: sessionUser, jwt: signAdminToken(sessionUser), isNewAccount };
 }
 
 export { getAdminJwtCookieName, getClientJwtCookieName, getJwtCookieOptions };

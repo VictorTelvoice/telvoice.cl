@@ -85,6 +85,8 @@ export async function postAppAgentChat(
       sessionId: result.sessionId,
       clearCsvUpload: result.clearCsvUpload === true,
       closeWidget: result.closeWidget === true,
+      showAttachButton: result.showAttachButton === true,
+      sendSmsFlowStep: result.sendSmsFlowStep ?? null,
     });
   } catch (err) {
     const status = err instanceof AppError ? err.statusCode : 500;
@@ -256,6 +258,9 @@ export async function postAppAgentUploadCsv(
       requiresConfirmation: flowReply.requiresConfirmation ?? false,
       pendingActionId: flowReply.pendingActionId ?? null,
       sessionId: flowReply.sessionId,
+      showAttachButton: flowReply.showAttachButton === true,
+      sendSmsFlowStep: flowReply.sendSmsFlowStep ?? null,
+      clearCsvUpload: flowReply.clearCsvUpload === true,
     });
   } catch (err) {
     const status = err instanceof AppError ? err.statusCode : 500;

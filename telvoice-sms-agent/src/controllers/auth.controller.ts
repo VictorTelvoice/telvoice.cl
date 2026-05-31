@@ -32,7 +32,7 @@ export async function postBootstrapClient(
       return;
     }
 
-    const { jwt } = await bootstrapClientFromGoogle({
+    const { jwt, isNewAccount } = await bootstrapClientFromGoogle({
       supabaseUserId: verified.userId,
       email: verified.email,
       name: verified.name,
@@ -40,7 +40,7 @@ export async function postBootstrapClient(
     });
 
     res.cookie(getClientJwtCookieName(), jwt, getJwtCookieOptions());
-    res.json({ ok: true });
+    res.json({ ok: true, is_new_account: isNewAccount });
   } catch (error) {
     next(error);
   }

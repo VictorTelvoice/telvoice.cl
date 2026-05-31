@@ -198,7 +198,8 @@ export function isMessageRequestedByAgent(memory: {
   sendSmsFlowStep?: string;
 }): boolean {
   return (
-    memory.waitingForMessage === true || memory.sendSmsFlowStep === "need_message"
+    memory.waitingForMessage === true ||
+    memory.sendSmsFlowStep === "need_message"
   );
 }
 

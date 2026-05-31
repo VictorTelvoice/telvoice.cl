@@ -21,7 +21,9 @@ import { matchesSendSmsFlowIntent } from "./agentSendSmsIntent.js";
 import {
   clearSendSmsFlowMemory,
   postAgentSendQuickActions,
+  tryActiveSendSmsFlowFirst,
 } from "./agentSendSmsFlow.js";
+import { shouldSkipKnowledgeForSendFlow } from "./agentSendSmsFlowUi.js";
 import { getAgentPersona } from "./agentPersona.js";
 import {
   getConversationMemory,
@@ -110,6 +112,7 @@ async function handleConfirmCancel(
       suggestedActions: CLIENT_QUICK,
       clearCsvUpload: true,
       closeWidget: !flowActive,
+      showAttachButton: false,
     };
   }
 
@@ -148,6 +151,7 @@ async function handleConfirmCancel(
     sessionId,
     suggestedActions: postAgentSendQuickActions(pendingType),
     clearCsvUpload: true,
+    showAttachButton: false,
   };
 }
 
@@ -389,6 +393,34 @@ export async function runAgentCore(
     metadata,
   };
 
+  if (channel === "web_client" && companyId) {
+    const flowFirst = await tryActiveSendSmsFlowFirst(
+      message,
+      execCtx,
+      sessionId,
+      memory,
+      metadata,
+    );
+    if (flowFirst) {
+      let flowOut = await finalizeResponse(
+        request,
+        sessionId,
+        companyId,
+        flowFirst,
+        message,
+      );
+      sessionId = await persistTurn(
+        channel,
+        companyId,
+        request.userId,
+        sessionId,
+        message,
+        flowOut,
+      );
+      return { ...flowOut, sessionId };
+    }
+  }
+
   const route = routeAgentIntent(message, channel, {
     command,
     authorized,
@@ -517,7 +549,10 @@ export async function runAgentCore(
     }
   }
 
+  const memoryBeforeKnowledge = await getConversationMemory(sessionId, channel);
+
   if (
+    !shouldSkipKnowledgeForSendFlow(memoryBeforeKnowledge, String(response.intent)) &&
     response.confidence < 0.45 &&
     response.intent !== "commercial" &&
     response.intent !== "knowledge" &&

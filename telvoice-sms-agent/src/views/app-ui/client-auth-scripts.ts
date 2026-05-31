@@ -82,7 +82,13 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
       if (statusEl) statusEl.textContent = t;
     }
 
-    setStatus("Creando cuenta en Telvoice…");
+    const claimToken = localStorage.getItem("telvoice_claim_token");
+    if (claimToken) {
+      setStatus("Activando compra pendiente…");
+    } else {
+      setStatus("Iniciando sesión…");
+    }
+
     const payload = {
       supabase_user_id: user.id,
       email: user.email || null,
@@ -102,21 +108,29 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
       },
       body: JSON.stringify(payload),
     });
+    let bootJson = { is_new_account: false };
+    try {
+      bootJson = await boot.json();
+    } catch {
+      if (!boot.ok) {
+        tvAuthFail("bootstrap_failed", "HTTP " + boot.status);
+        return;
+      }
+    }
+
     if (!boot.ok) {
-      let errBody = "";
-      try {
-        errBody = await boot.text();
-      } catch {}
       tvAuthFail(
         "bootstrap_failed",
-        "HTTP " + boot.status + (errBody ? " " + errBody.slice(0, 120) : ""),
+        "HTTP " + boot.status + (bootJson && bootJson.error ? " " + String(bootJson.error) : ""),
       );
       return;
     }
 
-    const claimToken = localStorage.getItem("telvoice_claim_token");
+    if (bootJson.is_new_account && !claimToken) {
+      setStatus("Creando cuenta en Telvoice…");
+    }
+
     if (claimToken) {
-      setStatus("Activando compra pendiente…");
       const claim = await fetch("/api/public/claim", {
         method: "POST",
         headers: {

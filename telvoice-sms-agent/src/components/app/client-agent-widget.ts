@@ -80,6 +80,17 @@ export function getPanelAgentWidgetScript(): string {
     } catch (e) {}
   }
 
+  function setAttachVisible(show) {
+    if (attachBtn) {
+      attachBtn.hidden = !show;
+    }
+    if (csvInput && !show) {
+      csvInput.value = "";
+    }
+  }
+
+  setAttachVisible(false);
+
   function setOpen(open) {
     root.classList.toggle("tva-root--chat-open", open);
     if (panel) panel.classList.toggle("is-open", open);
@@ -298,6 +309,7 @@ export function getPanelAgentWidgetScript(): string {
     if (data.clearCsvUpload) {
       clearCsvChip();
     }
+    setAttachVisible(data.showAttachButton === true);
     if (data.closeWidget) {
       setOpen(false);
     }

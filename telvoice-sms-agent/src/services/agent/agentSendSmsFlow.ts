@@ -30,13 +30,28 @@ import {
 import type { AgentCoreResponse, AgentExecutionContext, AgentSuggestedAction } from "./types.js";
 import type { RoutedIntent } from "./agentIntentRouter.js";
 import type { ConversationMemory } from "./agentConversationMemory.js";
+import {
+  enrichPanelFlowUi,
+  isFlowExitCommand,
+  SEND_SMS_FLOW_STEP,
+  shouldForceSendSmsFlow,
+} from "./agentSendSmsFlowUi.js";
 
 const FLOW_INTENT = "send_sms_flow";
 
+const FLOW_ROUTE: RoutedIntent = {
+  intent: "send_sms_flow",
+  confidence: 0.95,
+  commercialQuantity: null,
+  requiresAuth: true,
+  operationalCommand: null,
+};
+
 function baseResponse(
   partial: Partial<AgentCoreResponse> & { sessionId: string; reply: string },
+  memory?: ConversationMemory,
 ): AgentCoreResponse {
-  return {
+  const res: AgentCoreResponse = {
     suggestedActions: [],
     quote: null,
     requiresConfirmation: false,
@@ -46,6 +61,27 @@ function baseResponse(
     intent: FLOW_INTENT,
     ...partial,
   };
+  return memory ? enrichPanelFlowUi(res, memory) : res;
+}
+
+/** Prioriza el flujo activo sobre knowledge u otros intents. */
+export async function tryActiveSendSmsFlowFirst(
+  message: string,
+  ctx: AgentExecutionContext,
+  sessionId: string,
+  memory: ConversationMemory,
+  metadata?: Record<string, unknown>,
+): Promise<AgentCoreResponse | null> {
+  if (ctx.channel !== "web_client" || !ctx.companyId) {
+    return null;
+  }
+  if (isFlowExitCommand(message)) {
+    return null;
+  }
+  if (!shouldForceSendSmsFlow(memory)) {
+    return null;
+  }
+  return handleSendSmsFlow(FLOW_ROUTE, message, ctx, sessionId, metadata);
 }
 
 async function resolveCompanySenderId(companyId: string): Promise<string> {
@@ -108,8 +144,8 @@ async function replyAskMessageFirst(input: {
   confidence: number;
   campaignGuided?: boolean;
 }): Promise<AgentCoreResponse> {
-  await setFlowMemory(input.sessionId, input.channel, input.companyId, {
-    sendSmsFlowStep: "need_message",
+  const mem = await setFlowMemory(input.sessionId, input.channel, input.companyId, {
+    sendSmsFlowStep: SEND_SMS_FLOW_STEP.NEED_MESSAGE,
     waitingForMessage: true,
     waitingForRecipient: false,
     waitingForCsv: false,
@@ -119,13 +155,18 @@ async function replyAskMessageFirst(input: {
     sendSmsDestMode: undefined,
     campaignGuided: input.campaignGuided === true,
   });
-  return baseResponse({
-    reply: input.campaignGuided ? ASK_CAMPAIGN_MESSAGE_REPLY : ASK_MESSAGE_REPLY,
-    confidence: input.confidence,
-    sessionId: input.sessionId,
-    safeToExecute: false,
-    suggestedActions: cancelOnlyActions(),
-  });
+  return baseResponse(
+    {
+      reply: input.campaignGuided ? ASK_CAMPAIGN_MESSAGE_REPLY : ASK_MESSAGE_REPLY,
+      confidence: input.confidence,
+      sessionId: input.sessionId,
+      safeToExecute: false,
+      suggestedActions: cancelOnlyActions(),
+      showAttachButton: false,
+      sendSmsFlowStep: SEND_SMS_FLOW_STEP.NEED_MESSAGE,
+    },
+    mem,
+  );
 }
 
 function insufficientBalanceActions(): AgentSuggestedAction[] {
@@ -235,26 +276,28 @@ async function buildSingleSummaryResponse(input: {
 
   await clearSendSmsFlowMemory(input.sessionId, input.ctx.channel, input.ctx.companyId);
 
+  const after = balance.availableSms - segmentInfo.costSms;
+
   return baseResponse({
     reply:
-      `Preparé este envío:\n\n` +
-      `Tipo: SMS individual\n` +
-      `Destino: ${displayPhone}\n` +
-      `Remitente: ${input.companyLabel} (${input.senderId})\n` +
+      `Revisé tu envío.\n\n` +
+      `Número destino: ${displayPhone}\n` +
       `Mensaje: ${input.message}\n` +
-      `Segmentos estimados: ${segmentInfo.segments}\n` +
+      `Segmentos: ${segmentInfo.segments}\n` +
       `Crédito requerido: ${segmentInfo.costSms} SMS\n` +
-      `Crédito disponible: ${balance.availableSms.toLocaleString("es-CL")} SMS\n\n` +
-      `Para enviarlo, responde: Confirmo.`,
+      `Crédito disponible: ${balance.availableSms.toLocaleString("es-CL")} SMS\n` +
+      `Saldo estimado después del envío: ${after.toLocaleString("es-CL")} SMS\n\n` +
+      `Si estás de acuerdo, responde Confirmo.`,
     confidence: input.route.confidence,
     requiresConfirmation: true,
     pendingActionId: pending.id,
     safeToExecute: false,
     sessionId: input.sessionId,
+    showAttachButton: false,
+    sendSmsFlowStep: SEND_SMS_FLOW_STEP.REVIEW_SINGLE_SMS,
     suggestedActions: [
-      { label: "Confirmo", message: "Confirmo" },
+      { label: "Confirmo", message: "Confirmo", variant: "primary" },
       { label: "Cancelar", message: "Cancelar" },
-      { label: "Ver bandeja", href: "/app/inbox" },
     ],
   });
 }
@@ -349,33 +392,51 @@ async function buildCsvSummaryResponse(input: {
     context: input.ctx,
   });
 
-  await clearSendSmsFlowMemory(input.sessionId, input.ctx.channel, input.ctx.companyId);
+  const reviewMem = await setFlowMemory(
+    input.sessionId,
+    input.ctx.channel,
+    input.ctx.companyId,
+    {
+      sendSmsFlowStep: SEND_SMS_FLOW_STEP.REVIEW_CAMPAIGN_CSV,
+      pendingSmsMessage: input.message,
+      pendingCsvUploadId: input.uploadId,
+      sendSmsDestMode: "csv",
+      waitingForMessage: false,
+      waitingForRecipient: false,
+      waitingForCsv: false,
+    },
+  );
 
   const preview =
     parsed.previewValid.length > 0
       ? `\nVista previa: ${parsed.previewValid.join(", ")}${count > 5 ? "…" : ""}`
       : "";
 
-  return baseResponse({
-    reply:
-      `Revisé tu planilla.\n\n` +
-      `Contactos válidos: ${count.toLocaleString("es-CL")}\n` +
-      `Contactos inválidos: ${parsed.invalidCount.toLocaleString("es-CL")}\n` +
-      `Duplicados omitidos: ${parsed.duplicateCount.toLocaleString("es-CL")}\n` +
-      `Mensaje: ${input.message}\n` +
-      `Segmentos por contacto: ${segmentInfo.segments}\n` +
-      `Crédito requerido: ${totalSms.toLocaleString("es-CL")} SMS\n` +
-      `Crédito disponible: ${balance.availableSms.toLocaleString("es-CL")} SMS\n` +
-      `Saldo estimado después del envío: ${after.toLocaleString("es-CL")} SMS` +
-      preview +
-      `\n\n¿Confirmas el envío de esta campaña?\n\nResponde: Confirmo\no escribe: Cancelar.`,
-    confidence: input.route.confidence,
-    requiresConfirmation: true,
-    pendingActionId: pending.id,
-    safeToExecute: false,
-    sessionId: input.sessionId,
-    suggestedActions: csvReadyActions(),
-  });
+  return baseResponse(
+    {
+      reply:
+        `Revisé tu planilla.\n\n` +
+        `Contactos válidos: ${count.toLocaleString("es-CL")}\n` +
+        `Contactos inválidos: ${parsed.invalidCount.toLocaleString("es-CL")}\n` +
+        `Duplicados omitidos: ${parsed.duplicateCount.toLocaleString("es-CL")}\n` +
+        `Mensaje: ${input.message}\n` +
+        `Segmentos por contacto: ${segmentInfo.segments}\n` +
+        `Crédito requerido: ${totalSms.toLocaleString("es-CL")} SMS\n` +
+        `Crédito disponible: ${balance.availableSms.toLocaleString("es-CL")} SMS\n` +
+        `Saldo estimado después del envío: ${after.toLocaleString("es-CL")} SMS` +
+        preview +
+        `\n\nSi estás de acuerdo, responde Confirmo.`,
+      confidence: input.route.confidence,
+      requiresConfirmation: true,
+      pendingActionId: pending.id,
+      safeToExecute: false,
+      sessionId: input.sessionId,
+      showAttachButton: true,
+      sendSmsFlowStep: SEND_SMS_FLOW_STEP.REVIEW_CAMPAIGN_CSV,
+      suggestedActions: csvReadyActions(),
+    },
+    reviewMem,
+  );
 }
 
 export async function handleSendSmsFlow(
@@ -497,7 +558,7 @@ export async function handleSendSmsFlow(
       pendingSmsMessage: msgBody,
       pendingCsvUploadId: csvUploadId,
       sendSmsDestMode: "csv",
-      sendSmsFlowStep: "confirm_ready",
+      sendSmsFlowStep: SEND_SMS_FLOW_STEP.REVIEW_CAMPAIGN_CSV,
       waitingForMessage: false,
       waitingForRecipient: false,
       waitingForCsv: false,
@@ -524,57 +585,58 @@ export async function handleSendSmsFlow(
 
   if (msgBody && !phone && !csvUploadId) {
     if (matchesCsvDestChoice(message)) {
-      await setFlowMemory(sessionId, ctx.channel, ctx.companyId, {
+      const csvMem = await setFlowMemory(sessionId, ctx.channel, ctx.companyId, {
         pendingSmsMessage: msgBody,
-        sendSmsFlowStep: "need_csv_file",
+        sendSmsFlowStep: SEND_SMS_FLOW_STEP.NEED_CSV_FILE,
         sendSmsDestMode: "csv",
         waitingForMessage: false,
         waitingForRecipient: false,
         waitingForCsv: true,
       });
-      return baseResponse({
-        reply:
-          "Perfecto. Adjunta una planilla CSV con una columna de números de teléfono.\n\n" +
-          "Puedes usar una columna llamada:\n" +
-          "telefono, phone, numero, número, destinatario o mobile.\n\n" +
-          "Cuando la subas, revisaré los contactos válidos, calcularé el consumo y te mostraré el resumen antes de enviar.",
+      return baseResponse(
+        {
+          reply:
+            "Perfecto. Adjunta una planilla CSV con una columna de números de teléfono.\n\n" +
+            "Puedes usar una columna llamada:\n" +
+            "telefono, phone, numero, número, destinatario o mobile.\n\n" +
+            "Cuando la subas, revisaré los contactos válidos, calcularé el consumo y te mostraré el resumen antes de enviar.",
+          confidence: route.confidence,
+          sessionId,
+          safeToExecute: false,
+          suggestedActions: [
+            { label: "Adjuntar CSV", message: "__attach_csv__" },
+            { label: "Enviar a un número", message: "Enviar a un número" },
+            { label: "Cancelar", message: "Cancelar" },
+          ],
+        },
+        csvMem,
+      );
+    }
+
+    const destMem = await setFlowMemory(sessionId, ctx.channel, ctx.companyId, {
+      pendingSmsMessage: msgBody,
+      sendSmsFlowStep: SEND_SMS_FLOW_STEP.NEED_RECIPIENT_OR_CSV,
+      waitingForMessage: false,
+      waitingForRecipient: true,
+      waitingForCsv: true,
+    });
+    const destIntro =
+      "Perfecto, ya tengo el mensaje.\n\n" +
+      "Ahora dime a quién quieres enviarlo.\n\n" +
+      "Puedes:\n\n" +
+      "1. Escribir un número en formato internacional, por ejemplo 569XXXXXXXX.\n" +
+      "2. Adjuntar una planilla CSV con los números de teléfono.";
+
+    return baseResponse(
+      {
+        reply: destIntro,
         confidence: route.confidence,
         sessionId,
         safeToExecute: false,
-        suggestedActions: [
-          { label: "Adjuntar CSV", message: "__attach_csv__" },
-          { label: "Enviar a un número", message: "Enviar a un número" },
-          { label: "Cancelar", message: "Cancelar" },
-        ],
-      });
-    }
-
-    await setFlowMemory(sessionId, ctx.channel, ctx.companyId, {
-      pendingSmsMessage: msgBody,
-      sendSmsFlowStep: "need_dest",
-      waitingForMessage: false,
-      waitingForRecipient: true,
-      waitingForCsv: false,
-    });
-    const destIntro = memory.campaignGuided
-      ? "Perfecto, ya tengo el mensaje de la campaña.\n\n" +
-        "¿Cómo quieres cargar los destinatarios?\n\n" +
-        "1. Adjuntar una planilla CSV con números de teléfono.\n" +
-        "2. Escribir un número para un envío de prueba (569XXXXXXXX).\n" +
-        "3. Usar contactos guardados o armar la lista manual en Campañas del panel."
-      : "Perfecto, ya tengo el mensaje.\n\n" +
-        "Ahora dime a quién quieres enviarlo.\n\n" +
-        "Puedes:\n\n" +
-        "1. Escribir un número en formato internacional, por ejemplo 569XXXXXXXX.\n" +
-        "2. Adjuntar una planilla CSV con los números de teléfono.";
-
-    return baseResponse({
-      reply: destIntro,
-      confidence: route.confidence,
-      sessionId,
-      safeToExecute: false,
-      suggestedActions: destChoiceActions(),
-    });
+        suggestedActions: destChoiceActions(),
+      },
+      destMem,
+    );
   }
 
   if (msgBody && phone) {

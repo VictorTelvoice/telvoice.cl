@@ -70,6 +70,10 @@ export type AgentCoreResponse = {
   clearCsvUpload?: boolean;
   /** Panel: cerrar chat tras salir sin flujo activo */
   closeWidget?: boolean;
+  /** Panel: mostrar botón adjuntar CSV en el input del widget */
+  showAttachButton?: boolean;
+  /** Panel: paso actual del flujo SMS/campaña (para UI) */
+  sendSmsFlowStep?: string;
 };
 
 export type PendingActionType =

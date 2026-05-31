@@ -27,6 +27,7 @@
     "test:agent-pending-idempotency": "tsx scripts/test-agent-pending-idempotency.ts",
     "test:agent-feedback-cases": "tsx scripts/test-agent-feedback-cases.ts",
     "test:agent-ux-polish": "tsx scripts/test-agent-ux-polish.ts",
+    "test:agent-send-flow-ui": "tsx scripts/test-agent-send-flow-ui.ts",
     "migrate:agent-core": "node scripts/apply-migrations-agent-core.mjs",
     "debug:supabase": "tsx scripts/debug-supabase.ts",
     "debug:supabase-rest": "tsx scripts/debug-supabase-rest.ts",
