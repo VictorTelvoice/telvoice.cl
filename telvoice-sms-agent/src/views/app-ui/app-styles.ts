@@ -86,6 +86,22 @@ export function getAppPanelStyles(): string {
       color: #047857;
       font-weight: 600;
     }
+    @media (max-width: 900px) {
+      .tv-app-client .tv-topbar__pills .tv-pill--account-status {
+        display: none !important;
+      }
+      .tv-app-client .tv-topbar__pills .tv-pill:not(.tv-pill--balance) {
+        display: none !important;
+      }
+      .tv-app-client .tv-topbar__pills .tv-pill--balance .tv-pill__text {
+        display: inline !important;
+        font-weight: 700;
+        font-size: 0.82rem;
+      }
+      .tv-app-client .tv-topbar__pills .tv-pill--balance {
+        flex-shrink: 0;
+      }
+    }
     .tv-package-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -1715,9 +1731,34 @@ export function getAppPanelStyles(): string {
     .tv-invoice-notice .tv-panel__body {
       padding: 1rem 1.25rem;
     }
-    .tv-app-client .tv-invoice__filters-grid,
+    .tv-app-client .tv-invoice__filters-grid {
+      grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    }
     .tv-app-client .tv-inbox__filters-grid {
       grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    }
+    @media (max-width: 900px) {
+      .tv-app-client .tv-inbox-report .tv-inbox__filters-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        align-items: end;
+      }
+    }
+    @media (max-width: 640px) {
+      .tv-app-client .tv-inbox-report .tv-inbox__filters-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 0.65rem;
+      }
+      .tv-app-client .tv-inbox-report .tv-inbox__filters-grid > .tv-filter-field {
+        min-width: 0;
+      }
+      .tv-app-client .tv-inbox-report .tv-inbox__filters-grid .tv-dlr-report__filter-actions {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: flex-start;
+        align-self: end;
+      }
     }
     .tv-app-client .tv-invoice__filters-grid .tv-dlr-report__filter-actions,
     .tv-app-client .tv-inbox__filters-grid .tv-dlr-report__filter-actions {

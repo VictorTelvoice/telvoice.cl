@@ -80,11 +80,11 @@ function renderTopbar(tb: AppLayoutTopbar): string {
         <span class="material-symbols-outlined" aria-hidden="true">business</span>
         <span class="tv-pill__text">${escapeHtml(tb.companyName)}</span>
       </span>
-      <span class="tv-pill tv-pill--balance" title="SMS disponibles">
+      <span class="tv-pill tv-pill--balance" title="Saldo SMS">
         <span class="material-symbols-outlined" aria-hidden="true">sms</span>
-        <span class="tv-pill__text">${escapeHtml(tb.smsAvailable)} disponibles</span>
+        <span class="tv-pill__text">${escapeHtml(tb.smsAvailable)} SMS</span>
       </span>
-      <span class="tv-pill ${statusClass}" title="Estado cuenta">
+      <span class="tv-pill tv-pill--account-status ${statusClass}" title="Estado cuenta">
         <span class="tv-pill__text">${escapeHtml(tb.accountStatus)}</span>
       </span>
     </div>
