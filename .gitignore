@@ -7,3 +7,7 @@ node_modules/
 .deploy-keys/
 .pip_pkgs/
 data/orders/*.json
+*.bak
+.backup*
+**/.backup-*
+**/scripts/.backup-*
