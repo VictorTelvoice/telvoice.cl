@@ -3,6 +3,7 @@ import { env } from "../../config/env.js";
 import { APP_CLIENT_LIVE_SOURCE } from "../../constants/panel-sms-mode.js";
 import { AppError } from "../../utils/errors.js";
 import { sendPanelSms } from "../smsSendService.js";
+import { sendPanelCampaign } from "../smsPanelCampaignSendService.js";
 import {
   createPanelSmsMessage,
   insertPanelDeliveryEvent,
@@ -11,7 +12,7 @@ import {
 import { sendViaMockProvider } from "../mockSmsProviderService.js";
 import { debitSmsUsage, getCompanyBalance } from "../smsWalletService.js";
 import { calculateSmsSegments, validateRecipientNumber } from "../smsSegmentService.js";
-import { createSmsCampaign } from "../smsCampaignService.js";
+import { createSmsCampaign, updateSmsCampaign } from "../smsCampaignService.js";
 import type { StoredPendingAction } from "./pendingActions.js";
 
 async function executeMockSingleSms(input: {
@@ -95,12 +96,100 @@ async function executeMockSingleSms(input: {
     actorUserId: input.userId,
   });
 
+  return (
+    `SMS aceptado.\n\n` +
+    `Destino: ${phone.normalized.replace(/\D/g, "").replace(/^56/, "569").slice(0, 11)}\n` +
+    `Estado: Enviado a cola (simulación)\n` +
+    `Referencia: ${pendingMessage.id}\n` +
+    `Crédito consumido/estimado: ${segmentInfo.costSms} SMS\n\n` +
+    `Puedes revisar el estado en Bandeja.`
+  );
+}
+
+async function executeMockCampaignCsv(input: {
+  companyId: string;
+  userId: string | null;
+  message: string;
+  senderId: string;
+  recipients: string[];
+  campaignName: string;
+}): Promise<string> {
+  const segmentInfo = calculateSmsSegments(input.message);
+  const totalCost = input.recipients.length * segmentInfo.costSms;
+  const balance = await getCompanyBalance(input.companyId);
+  if (balance.availableSms < totalCost) {
+    throw new AppError(
+      "Saldo insuficiente. Compra más SMS en /app/buy-sms antes de enviar.",
+      400,
+    );
+  }
+
+  const campaign = await createSmsCampaign({
+    companyId: input.companyId,
+    name: input.campaignName,
+    message: input.message,
+    senderId: input.senderId,
+    status: "processing",
+    estimatedSmsCost: totalCost,
+    createdBy: input.userId,
+    metadata: { source: "panel_agent_csv", mode: "mock" },
+  });
+
+  let queued = 0;
+  for (const raw of input.recipients.slice(0, 500)) {
+    const phone = validateRecipientNumber(raw);
+    if (!phone.ok || !phone.normalized) {
+      continue;
+    }
+    const pendingMessage = await createPanelSmsMessage({
+      companyId: input.companyId,
+      campaignId: campaign.id,
+      recipientNumber: phone.normalized,
+      senderId: input.senderId,
+      message: input.message,
+      segments: segmentInfo.segments,
+      costSms: segmentInfo.costSms,
+      status: "queued",
+      mode: "mock",
+      provider: "mock",
+      metadata: { source: "panel_agent_csv" },
+    });
+    const mockResult = sendViaMockProvider({
+      to: phone.normalized,
+      from: input.senderId,
+      message: input.message,
+      segments: segmentInfo.segments,
+    });
+    await updatePanelSmsMessage(pendingMessage.id, {
+      status: "delivered",
+      provider_message_id: mockResult.providerMessageId,
+      sent_at: mockResult.sentAt,
+    });
+    await debitSmsUsage({
+      companyId: input.companyId,
+      amount: segmentInfo.costSms,
+      referenceType: "sms_message",
+      referenceId: pendingMessage.id,
+      description: "Consumo SMS agente CSV (mock)",
+      actorUserId: input.userId,
+    });
+    queued += 1;
+  }
+
+  await updateSmsCampaign(campaign.id, {
+    status: "completed",
+    real_sms_cost: totalCost,
+  });
+
   const after = await getCompanyBalance(input.companyId);
   return (
-    `Envío simulado confirmado a ${phone.normalized}.\n` +
-    `Mensaje ID: ${pendingMessage.id}\n` +
-    `Costo: ${segmentInfo.costSms} SMS · Saldo restante: ${after.availableSms.toLocaleString("es-CL")}.\n` +
-    `Revisa /app/inbox.`
+    `Campaña aceptada.\n\n` +
+    `Contactos válidos: ${queued.toLocaleString("es-CL")}\n` +
+    `Mensajes en cola: ${queued.toLocaleString("es-CL")}\n` +
+    `SMS estimados: ${totalCost.toLocaleString("es-CL")}\n` +
+    `Crédito disponible después del envío: ${after.availableSms.toLocaleString("es-CL")} SMS\n\n` +
+    `Puedes revisar el avance en Bandeja o Campañas.\n` +
+    `Referencia campaña: ${campaign.id}`
   );
 }
 
@@ -136,10 +225,57 @@ export async function executePendingAction(
             idempotencyKey: `agent-pending-${pending.id}`,
           });
           return (
-            `SMS enviado a ${result.recipientNumber}.\n` +
-            `Mensaje ID: ${result.messageId}\n` +
-            `Costo: ${result.segments} SMS · Saldo restante: ${result.balanceAfter.toLocaleString("es-CL")}.\n` +
-            `Revisa /app/inbox.`
+            `SMS aceptado.\n\n` +
+            `Destino: ${result.recipientNumber.replace(/\D/g, "").replace(/^\+?56/, "56")}\n` +
+            `Estado: Enviado a cola/proveedor\n` +
+            `Referencia: ${result.messageId}\n` +
+            `Crédito consumido/estimado: ${result.segments} SMS\n\n` +
+            `Puedes revisar el estado en Bandeja.`
+          );
+        } catch (err) {
+          return formatAgentSmsSendError(err);
+        }
+      }
+
+      case "send_campaign_csv": {
+        const message = String(pending.payload.message ?? "");
+        const senderId = String(pending.payload.sender_id ?? "TELVOICE");
+        const recipients = (pending.payload.valid_recipients as string[]) ?? [];
+        const campaignName = String(
+          pending.payload.campaign_name ?? `Agente CSV ${new Date().toISOString().slice(0, 10)}`,
+        );
+
+        if (env.smsProvider.mode === "mock") {
+          return await executeMockCampaignCsv({
+            companyId,
+            userId,
+            message,
+            senderId,
+            recipients,
+            campaignName,
+          });
+        }
+
+        try {
+          const result = await sendPanelCampaign({
+            companyId,
+            senderId,
+            message,
+            recipients,
+            campaignName,
+            mode: "mass",
+            createdBy: userId,
+            sendSource: "app_send_sms_campaign",
+            idempotencyKey: `agent-csv-${pending.id}`,
+          });
+          return (
+            `Campaña aceptada.\n\n` +
+            `Contactos válidos: ${result.totalRecipients.toLocaleString("es-CL")}\n` +
+            `Mensajes en cola: ${result.queued.toLocaleString("es-CL")}\n` +
+            `SMS estimados: ${result.smsConsumed.toLocaleString("es-CL")}\n` +
+            `Crédito disponible después del envío: ${result.balanceAfter.toLocaleString("es-CL")} SMS\n\n` +
+            `Puedes revisar el avance en Bandeja o Campañas.\n` +
+            `Referencia: ${result.campaignId}`
           );
         } catch (err) {
           return formatAgentSmsSendError(err);

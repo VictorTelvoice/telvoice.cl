@@ -17,7 +17,8 @@ import {
 import { executePendingAction } from "./executePendingAction.js";
 import { recordUnansweredQuestion } from "./agentUnansweredService.js";
 import { searchKnowledgeForChannel } from "./tools/searchKnowledgeTool.js";
-import { matchesSendSmsIntent } from "./agentSendSmsIntent.js";
+import { matchesSendSmsFlowIntent } from "./agentSendSmsIntent.js";
+import { clearSendSmsFlowMemory } from "./agentSendSmsFlow.js";
 import { getAgentPersona } from "./agentPersona.js";
 import {
   getConversationMemory,
@@ -74,12 +75,7 @@ async function handleConfirmCancel(
     if (pending) {
       await clearPendingActionDb(pending.id, "cancelled");
     }
-    await updateConversationMemory(
-      sessionId,
-      ctx.channel,
-      { pendingSmsPhone: undefined, pendingSmsMessage: undefined },
-      ctx.companyId,
-    );
+    await clearSendSmsFlowMemory(sessionId, ctx.channel, ctx.companyId);
     return {
       reply: composeAgentResponse({
         persona,
@@ -113,12 +109,7 @@ async function handleConfirmCancel(
 
   const rawReply = await executePendingAction(pending);
   await clearPendingActionDb(pending.id, "confirmed");
-  await updateConversationMemory(
-    sessionId,
-    ctx.channel,
-    { pendingSmsPhone: undefined, pendingSmsMessage: undefined },
-    ctx.companyId,
-  );
+  await clearSendSmsFlowMemory(sessionId, ctx.channel, ctx.companyId);
 
   return {
     reply: composeAgentResponse({
@@ -373,6 +364,7 @@ export async function runAgentCore(
     companyId: companyId ?? "",
     userId: request.userId ?? null,
     sessionId,
+    metadata,
   };
 
   const route = routeAgentIntent(message, channel, {
@@ -508,9 +500,10 @@ export async function runAgentCore(
     response.intent !== "commercial" &&
     response.intent !== "knowledge" &&
     response.intent !== "send_sms" &&
+    response.intent !== "send_sms_flow" &&
     response.intent !== "campaign_draft" &&
     response.intent !== "technical_doubt" &&
-    !matchesSendSmsIntent(message) &&
+    !matchesSendSmsFlowIntent(message) &&
     !/\b(ayudame a crear|ayúdame a crear|crear\s+(?:una\s+)?campana)\b/i.test(message)
   ) {
     const k = await searchKnowledgeForChannel(message, channel);

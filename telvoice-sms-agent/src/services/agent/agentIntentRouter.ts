@@ -13,7 +13,7 @@ import {
   matchesCommercialBuyIntentNormalized,
   normalizeCommercialText,
 } from "./agentCommercialText.js";
-import { matchesSendSmsIntent } from "./agentSendSmsIntent.js";
+import { matchesSendSmsFlowIntent } from "./agentSendSmsIntent.js";
 import type { ConversationMemory } from "./agentConversationMemory.js";
 import type { AgentChannel, AgentIntent } from "./types.js";
 
@@ -39,6 +39,7 @@ function requiresCompanyIntent(intent: AgentIntent): boolean {
     "campaign_cost",
     "contact_list",
     "send_sms",
+    "send_sms_flow",
     "launch_campaign",
     "reports",
     "invoices",
@@ -186,43 +187,6 @@ export function routeAgentIntent(
     };
   }
 
-  if (matchesSendSmsIntent(text)) {
-    if (channel === "landing") {
-      return {
-        intent: "send_sms",
-        confidence: 0.92,
-        commercialQuantity: null,
-        requiresAuth: false,
-        operationalCommand: null,
-      };
-    }
-    return {
-      intent: "send_sms",
-      confidence: 0.92,
-      commercialQuantity: null,
-      requiresAuth: true,
-      operationalCommand: channel === "telegram" ? "enviar" : null,
-    };
-  }
-
-  if (memory.pendingSmsPhone || memory.pendingSmsMessage) {
-    const followPhone = text.match(/^(?:al\s+)?(\+?56\s?9[\d\s]{8,}|9\d{8})\s*$/i);
-    const followBody =
-      !matchesSendSmsIntent(text) &&
-      !CONFIRM_RE.test(normalized) &&
-      !CANCEL_RE.test(normalized) &&
-      text.trim().length >= 2;
-    if (followPhone || followBody) {
-      return {
-        intent: "send_sms",
-        confidence: 0.88,
-        commercialQuantity: null,
-        requiresAuth: true,
-        operationalCommand: null,
-      };
-    }
-  }
-
   const tg = channel === "telegram" ? classifyTelegramIntent(text, options?.command ?? "") : null;
   const op = tg?.operationalCommand ?? null;
 
@@ -235,6 +199,50 @@ export function routeAgentIntent(
   if (op === "enviar") {
     return { intent: "send_sms", confidence: 0.9, commercialQuantity: null, requiresAuth: true, operationalCommand: op };
   }
+
+  if (channel !== "telegram" && matchesSendSmsFlowIntent(text)) {
+    if (channel === "landing") {
+      return {
+        intent: "send_sms_flow",
+        confidence: 0.92,
+        commercialQuantity: null,
+        requiresAuth: false,
+        operationalCommand: null,
+      };
+    }
+    return {
+      intent: "send_sms_flow",
+      confidence: 0.92,
+      commercialQuantity: null,
+      requiresAuth: true,
+      operationalCommand: null,
+    };
+  }
+
+  if (
+    channel !== "telegram" &&
+    (memory.sendSmsFlowActive ||
+      memory.sendSmsFlowStep ||
+      memory.pendingSmsMessage ||
+      memory.pendingCsvUploadId)
+  ) {
+    const followPhone = text.match(/^(?:al\s+)?(\+?56[\s-]?9[\d\s-]{8,}|9[\d\s-]{8,})\s*$/i);
+    const followBody =
+      !matchesSendSmsFlowIntent(text) &&
+      !CONFIRM_RE.test(normalized) &&
+      !CANCEL_RE.test(normalized) &&
+      text.trim().length >= 2;
+    if (followPhone || followBody || /^(adjuntar|csv|planilla)\b/i.test(normalized)) {
+      return {
+        intent: "send_sms_flow",
+        confidence: 0.88,
+        commercialQuantity: null,
+        requiresAuth: true,
+        operationalCommand: null,
+      };
+    }
+  }
+
   if (op === "ayuda") {
     return { intent: "capabilities", confidence: 0.9, commercialQuantity: null, requiresAuth: false, operationalCommand: op };
   }

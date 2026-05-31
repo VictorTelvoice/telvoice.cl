@@ -4,31 +4,32 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
 import {
-  matchesSendSmsIntent,
+  matchesSendSmsFlowIntent,
   parseSendSmsDraft,
 } from "../src/services/agent/agentSendSmsIntent.js";
 import { routeAgentIntent } from "../src/services/agent/agentIntentRouter.js";
 import { runAgentCore } from "../src/services/agent/agentCore.js";
 
 function testIntentMatching(): void {
-  assert.equal(matchesSendSmsIntent("envia un sms por mi"), true);
-  assert.equal(matchesSendSmsIntent("envía un sms por mí"), true);
-  assert.equal(matchesSendSmsIntent("quiero enviar un sms"), true);
-  assert.equal(matchesSendSmsIntent("necesito enviar un mensaje"), true);
-  assert.equal(matchesSendSmsIntent("manda un sms"), true);
-  assert.equal(matchesSendSmsIntent("enviar mensaje a 56934449937"), true);
-  assert.equal(matchesSendSmsIntent("puedo enviar un sms desde aqui?"), true);
-  assert.equal(matchesSendSmsIntent("quiero enviar campaña masiva"), false);
+  assert.equal(matchesSendSmsFlowIntent("envia un sms por mi"), true);
+  assert.equal(matchesSendSmsFlowIntent("Enviar un SMS, puedes hacerlo por mí?"), true);
+  assert.equal(matchesSendSmsFlowIntent("envía un sms por mí"), true);
+  assert.equal(matchesSendSmsFlowIntent("quiero enviar un sms"), true);
+  assert.equal(matchesSendSmsFlowIntent("necesito enviar un mensaje"), true);
+  assert.equal(matchesSendSmsFlowIntent("manda un sms"), true);
+  assert.equal(matchesSendSmsFlowIntent("enviar mensaje a 56934449937"), true);
+  assert.equal(matchesSendSmsFlowIntent("puedo enviar un sms desde aqui?"), true);
+  assert.equal(matchesSendSmsFlowIntent("quiero enviar campaña masiva"), true);
 
   const r1 = routeAgentIntent("envia un sms por mi", "web_client", { memory: {} });
-  assert.equal(r1.intent, "send_sms");
+  assert.equal(r1.intent, "send_sms_flow");
   assert.ok(r1.confidence >= 0.9);
 
   const r2 = routeAgentIntent("envia sms a 56934449937", "web_client", { memory: {} });
-  assert.equal(r2.intent, "send_sms");
+  assert.equal(r2.intent, "send_sms_flow");
 
   const landing = routeAgentIntent("quiero enviar un sms", "landing", { memory: {} });
-  assert.equal(landing.intent, "send_sms");
+  assert.equal(landing.intent, "send_sms_flow");
 
   const draft = parseSendSmsDraft(
     "envia sms a 56934449937 con el texto hola prueba",

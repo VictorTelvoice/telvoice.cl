@@ -27,8 +27,8 @@ const CASES: Case[] = [
   { channel: "landing", message: "cuánto cuesta 70000 mensajes", expectIntent: "commercial", expectQuote: true },
   { channel: "landing", message: "necesito una bolsa de mensajes", expectIntent: "commercial", expectQuote: false },
   { channel: "landing", message: "necesito mensajes para mi empresa", expectIntent: "commercial", expectQuote: false },
-  { channel: "landing", message: "quiero enviar campañas", expectIntent: "commercial" },
-  { channel: "landing", message: "quiero enviar un sms", expectIntent: "send_sms" },
+  { channel: "landing", message: "quiero enviar campañas", expectIntent: "register" },
+  { channel: "landing", message: "quiero enviar un sms", expectIntent: "register" },
   { channel: "telegram", message: "quiero comprar mensajes", expectIntent: "commercial" },
   { channel: "telegram", message: "cotizar 30000 mensajes", expectIntent: "commercial", expectQuote: true },
   { channel: "telegram", message: "saldo", expectIntent: "unknown" },
@@ -36,8 +36,8 @@ const CASES: Case[] = [
     ? [
         { channel: "web_client" as const, message: "quiero comprar más mensajes", companyId: TEST_COMPANY, expectIntent: "commercial" },
         { channel: "web_client" as const, message: "necesito cargar saldo", companyId: TEST_COMPANY, expectIntent: "commercial" },
-        { channel: "web_client" as const, message: "quiero enviar campaña", companyId: TEST_COMPANY, expectIntent: "campaign_draft" },
-        { channel: "web_client" as const, message: "envia un sms por mi", companyId: TEST_COMPANY, expectIntent: "send_sms" },
+        { channel: "web_client" as const, message: "quiero enviar campaña", companyId: TEST_COMPANY, expectIntent: "send_sms_flow" },
+        { channel: "web_client" as const, message: "envia un sms por mi", companyId: TEST_COMPANY, expectIntent: "send_sms_flow" },
       ]
     : []),
 ];

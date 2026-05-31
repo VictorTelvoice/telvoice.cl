@@ -24,6 +24,8 @@ export function renderPanelAgentWidget(): string {
     rootId: ROOT_ID,
     fabId: FAB_ID,
     panelId: PANEL_ID,
+    showCsvAttach: true,
+    inputPlaceholder: "Escribe tu mensaje…",
   });
 }
 
@@ -40,6 +42,9 @@ export function getPanelAgentWidgetScript(): string {
   var input = document.getElementById("${ROOT_ID}-input");
   var sendBtn = document.getElementById("${ROOT_ID}-send");
   var quick = document.getElementById("${ROOT_ID}-quick");
+  var csvInput = document.getElementById("${ROOT_ID}-csv");
+  var attachBtn = document.getElementById("${ROOT_ID}-attach");
+  var fileHint = document.getElementById("${ROOT_ID}-file-hint");
 
   var STORAGE_KEY = "tvp_agent_session";
   var sessionId = "";
@@ -171,7 +176,15 @@ export function getPanelAgentWidgetScript(): string {
       b.type = "button";
       b.textContent = qa.label;
       b.addEventListener("click", function () {
-        if (input) input.value = qa.message;
+        if (qa.message === "__attach_csv__") {
+          triggerCsvPick();
+          return;
+        }
+        if (qa.href) {
+          window.location.href = qa.href;
+          return;
+        }
+        if (input) input.value = qa.message || "";
         if (form) form.requestSubmit();
       });
       quick.appendChild(b);
@@ -205,6 +218,71 @@ export function getPanelAgentWidgetScript(): string {
     } catch (e) {}
   }
 
+  function applyAgentResponse(data) {
+    if (data.sessionId) {
+      sessionId = data.sessionId;
+      try { localStorage.setItem(STORAGE_KEY, sessionId); } catch (e) {}
+    }
+    pendingActionId = data.pendingActionId || null;
+    lastAgentReply = data.reply || "";
+    lastIntent = data.intent || "";
+    lastConfidence = typeof data.confidence === "number" ? data.confidence : null;
+    appendBubble("bot", data.reply || "", {
+      user: lastUserMessage,
+      agent: lastAgentReply,
+      intent: lastIntent,
+      confidence: lastConfidence
+    });
+    if (data.suggestedActions && data.suggestedActions.length) {
+      var fromApi = data.suggestedActions.slice(0, 8);
+      quickActions = fromApi;
+      renderQuick();
+    }
+  }
+
+  function triggerCsvPick() {
+    if (csvInput) csvInput.click();
+  }
+
+  async function uploadCsvFile(file) {
+    if (!file || !sessionId) return;
+    if (file.size > 5 * 1024 * 1024) {
+      appendBubble("bot", "El archivo supera 5 MB. Usa una planilla más pequeña.");
+      return;
+    }
+    var name = file.name || "planilla.csv";
+    if (fileHint) {
+      fileHint.hidden = false;
+      fileHint.textContent = "Subiendo " + name + "…";
+    }
+    lastUserMessage = "Adjunté planilla: " + name;
+    appendBubble("user", lastUserMessage);
+    showTyping();
+    try {
+      var text = await file.text();
+      var res = await fetch("/api/app/agent/upload-csv", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: sessionId, csvText: text })
+      });
+      var data = await res.json();
+      removeTyping();
+      if (!data.success) {
+        appendBubble("bot", data.error || "No pude leer la planilla.");
+        return;
+      }
+      applyAgentResponse(data);
+      if (fileHint) {
+        fileHint.hidden = false;
+        fileHint.textContent = "Archivo: " + name;
+      }
+    } catch (e) {
+      removeTyping();
+      appendBubble("bot", "Error al subir la planilla. Intenta de nuevo.");
+    }
+  }
+
   async function sendMessage(text) {
     var msg = String(text || "").trim();
     if (!msg) return;
@@ -231,25 +309,7 @@ export function getPanelAgentWidgetScript(): string {
         appendBubble("bot", data.error || "No pude procesar tu mensaje.");
         return;
       }
-      if (data.sessionId) {
-        sessionId = data.sessionId;
-        try { localStorage.setItem(STORAGE_KEY, sessionId); } catch (e) {}
-      }
-      pendingActionId = data.pendingActionId || null;
-      lastAgentReply = data.reply || "";
-      lastIntent = data.intent || "";
-      lastConfidence = typeof data.confidence === "number" ? data.confidence : null;
-      appendBubble("bot", data.reply || "", {
-        user: lastUserMessage,
-        agent: lastAgentReply,
-        intent: lastIntent,
-        confidence: lastConfidence
-      });
-      if (data.suggestedActions && data.suggestedActions.length) {
-        var fromApi = data.suggestedActions.filter(function (a) { return a.message; }).slice(0, 6);
-        if (fromApi.length) quickActions = fromApi;
-        renderQuick();
-      }
+      applyAgentResponse(data);
     } catch (e) {
       removeTyping();
       appendBubble("bot", "Error de conexión. Intenta de nuevo.");
@@ -273,6 +333,15 @@ export function getPanelAgentWidgetScript(): string {
     form.addEventListener("submit", function (ev) {
       ev.preventDefault();
       sendMessage(input ? input.value : "");
+    });
+  }
+
+  if (attachBtn && csvInput) {
+    attachBtn.addEventListener("click", function () { triggerCsvPick(); });
+    csvInput.addEventListener("change", function () {
+      var file = csvInput.files && csvInput.files[0];
+      if (file) uploadCsvFile(file);
+      csvInput.value = "";
     });
   }
 

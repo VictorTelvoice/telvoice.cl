@@ -95,6 +95,13 @@ const MIGRATIONS = [
       WHERE title = 'Número de destino no autorizado en Telvoice'
       LIMIT 1`,
   },
+  {
+    id: "052",
+    file: "052_agent_panel_sms_flow_knowledge.sql",
+    check: `SELECT 1 FROM knowledge_articles
+      WHERE title = 'Cómo enviar SMS desde el agente del panel cliente'
+      LIMIT 1`,
+  },
 ];
 
 const connectionString = process.env.DATABASE_URL?.trim();

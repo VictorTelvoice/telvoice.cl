@@ -4,6 +4,16 @@ import { runAgentCore } from "../services/agent/agentCore.js";
 import { listPanelAgentMessages } from "../services/agent/panelAgentSessionService.js";
 import { AppError, DatabaseError } from "../utils/errors.js";
 import { recordAgentFeedback } from "../services/agent/agentFeedbackService.js";
+import {
+  AGENT_CSV_MAX_BYTES,
+  parseAgentRecipientCsv,
+} from "../services/agent/agentPanelCsvService.js";
+import { saveAgentCsvUpload } from "../services/agent/agentCsvUploadStore.js";
+import {
+  getConversationMemory,
+  updateConversationMemory,
+} from "../services/agent/agentConversationMemory.js";
+import { handleSendSmsFlow } from "../services/agent/agentSendSmsFlow.js";
 
 const PERSIST_FRIENDLY_REPLY =
   "Tuve un problema guardando el historial de esta conversación, pero puedo seguir ayudándote. ¿Quieres que revise saldo, campañas, últimos envíos o compra de SMS?";
@@ -127,6 +137,122 @@ export async function postAppAgentFeedback(
     res.status(status).json({
       success: false,
       error: err instanceof Error ? err.message : "Error al guardar feedback",
+    });
+  }
+}
+
+export async function postAppAgentUploadCsv(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const companyId = req.userProfile?.companyId ?? req.adminUser?.companyId;
+    if (!companyId) {
+      res.status(403).json({ success: false, error: "Empresa no asociada." });
+      return;
+    }
+
+    const sessionId = String(req.body?.sessionId ?? req.body?.session_id ?? "").trim();
+    if (!sessionId) {
+      res.status(400).json({ success: false, error: "sessionId requerido." });
+      return;
+    }
+
+    const csvText = String(req.body?.csvText ?? req.body?.csv_text ?? "").trim();
+    if (!csvText) {
+      res.status(400).json({ success: false, error: "Contenido CSV requerido." });
+      return;
+    }
+
+    const byteLen = Buffer.byteLength(csvText, "utf8");
+    if (byteLen > AGENT_CSV_MAX_BYTES) {
+      res.status(400).json({
+        success: false,
+        error: `El archivo supera el máximo de ${Math.round(AGENT_CSV_MAX_BYTES / (1024 * 1024))} MB.`,
+      });
+      return;
+    }
+
+    const parsed = parseAgentRecipientCsv(csvText);
+    const userId =
+      req.userProfile?.profileId ??
+      req.userProfile?.adminUserId ??
+      req.adminUser?.id ??
+      null;
+
+    const upload = saveAgentCsvUpload({
+      companyId,
+      sessionId,
+      userId,
+      parsed,
+    });
+
+    const memory = await getConversationMemory(sessionId, "web_client");
+    const msgBody = memory.pendingSmsMessage?.trim() ?? null;
+
+    await updateConversationMemory(
+      sessionId,
+      "web_client",
+      {
+        sendSmsFlowActive: true,
+        pendingCsvUploadId: upload.id,
+        sendSmsDestMode: "csv",
+        sendSmsFlowStep: msgBody ? "confirm_ready" : "need_csv_file",
+      },
+      companyId,
+    );
+
+    if (!msgBody) {
+      res.json({
+        success: true,
+        uploadId: upload.id,
+        summary: parsed,
+        reply:
+          "Recibí tu planilla. Antes de calcular el envío, dime qué mensaje quieres enviar en el SMS.",
+        intent: "send_sms_flow",
+        requiresMessage: true,
+        sessionId,
+      });
+      return;
+    }
+
+    const flowReply = await handleSendSmsFlow(
+      {
+        intent: "send_sms_flow",
+        confidence: 0.9,
+        commercialQuantity: null,
+        requiresAuth: true,
+        operationalCommand: null,
+      },
+      msgBody,
+      {
+        channel: "web_client",
+        companyId,
+        userId,
+        sessionId,
+        metadata: { csvUploadId: upload.id },
+      },
+      sessionId,
+      { csvUploadId: upload.id },
+    );
+
+    res.json({
+      success: true,
+      uploadId: upload.id,
+      summary: parsed,
+      reply: flowReply.reply,
+      intent: flowReply.intent,
+      confidence: flowReply.confidence,
+      suggestedActions: flowReply.suggestedActions ?? [],
+      requiresConfirmation: flowReply.requiresConfirmation ?? false,
+      pendingActionId: flowReply.pendingActionId ?? null,
+      sessionId: flowReply.sessionId,
+    });
+  } catch (err) {
+    const status = err instanceof AppError ? err.statusCode : 500;
+    res.status(status).json({
+      success: false,
+      error: err instanceof Error ? err.message : "Error al procesar CSV.",
     });
   }
 }

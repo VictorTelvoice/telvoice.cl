@@ -19,6 +19,10 @@ export type ConversationMemory = {
   lastUserQuestion?: string;
   pendingSmsPhone?: string;
   pendingSmsMessage?: string;
+  sendSmsFlowActive?: boolean;
+  sendSmsFlowStep?: string;
+  sendSmsDestMode?: "single" | "csv";
+  pendingCsvUploadId?: string;
   updatedAt?: string;
 };
 

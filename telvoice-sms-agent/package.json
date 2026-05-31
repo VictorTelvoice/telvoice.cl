@@ -23,6 +23,7 @@
     "test:agent-persona": "tsx scripts/test-agent-persona.ts",
     "test:panel-agent-session": "node scripts/test-panel-agent-session.mjs",
     "test:panel-agent-send-sms": "tsx scripts/test-panel-agent-send-sms.ts",
+    "test:panel-agent-send-sms-flow": "tsx scripts/test-panel-agent-send-sms-flow.ts",
     "test:agent-feedback-cases": "tsx scripts/test-agent-feedback-cases.ts",
     "migrate:agent-core": "node scripts/apply-migrations-agent-core.mjs",
     "debug:supabase": "tsx scripts/debug-supabase.ts",

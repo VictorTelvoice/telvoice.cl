@@ -16,6 +16,7 @@ export type AgentIntent =
   | "campaign_cost"
   | "contact_list"
   | "send_sms"
+  | "send_sms_flow"
   | "launch_campaign"
   | "knowledge"
   | "capabilities"
@@ -67,6 +68,7 @@ export type AgentCoreResponse = {
 
 export type PendingActionType =
   | "send_single_sms"
+  | "send_campaign_csv"
   | "launch_campaign"
   | "create_checkout"
   | "send_campaign";
@@ -78,4 +80,5 @@ export type AgentExecutionContext = {
   companyId: string;
   userId: string | null;
   sessionId: string;
+  metadata?: Record<string, unknown>;
 };

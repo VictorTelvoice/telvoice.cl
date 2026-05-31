@@ -249,7 +249,8 @@ export async function dispatchRoutedIntent(
     }
 
     case "send_sms":
-      return handleSendSmsFlow(route, message, ctx, sessionId);
+    case "send_sms_flow":
+      return handleSendSmsFlow(route, message, ctx, sessionId, ctx.metadata);
 
     case "reports":
       return baseResponse({

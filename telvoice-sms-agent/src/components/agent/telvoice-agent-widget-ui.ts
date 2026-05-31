@@ -52,6 +52,8 @@ export type TelvoiceAgentWidgetShellOptions = {
   rootExtraClass?: string;
   inputPlaceholder?: string;
   showInput?: boolean;
+  /** Panel cliente: adjuntar CSV en el chat del agente */
+  showCsvAttach?: boolean;
 };
 
 export function renderTelvoiceAgentWidgetShell(options: TelvoiceAgentWidgetShellOptions): string {
@@ -92,9 +94,20 @@ export function renderTelvoiceAgentWidgetShell(options: TelvoiceAgentWidgetShell
     ${
       showInput
         ? `<form class="tva-form" id="${options.rootId}-form">
+      ${
+        options.showCsvAttach
+          ? `<input type="file" id="${options.rootId}-csv" accept=".csv,text/csv,text/plain" class="tva-csv-input" hidden />
+      <button type="button" class="tva-attach" id="${options.rootId}-attach" aria-label="Adjuntar CSV" title="Adjuntar planilla CSV">📎</button>`
+          : ""
+      }
       <input type="text" id="${options.rootId}-input" placeholder="${placeholder}" autocomplete="off" maxlength="2000" />
       <button type="submit" id="${options.rootId}-send">Enviar</button>
-    </form>`
+    </form>
+    ${
+      options.showCsvAttach
+        ? `<p class="tva-file-hint" id="${options.rootId}-file-hint" hidden></p>`
+        : ""
+    }`
         : ""
     }
   </div>
