@@ -1486,6 +1486,11 @@ export function getAppPanelStyles(): string {
     @media (max-width: 1280px) {
       .tv-kpi-grid--report { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
+    @media (max-width: 1024px) {
+      .tv-kpi-grid--client.tv-kpi-grid--report {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
     @media (max-width: 900px) {
       .tv-app-client .tv-dlr-report__filters-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
@@ -1497,9 +1502,37 @@ export function getAppPanelStyles(): string {
     }
     @media (max-width: 640px) {
       .tv-app-client .tv-dlr-report__filters-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        grid-template-columns: 1fr !important;
+        gap: 0.65rem;
       }
-      .tv-kpi-grid--report { grid-template-columns: 1fr; }
+      .tv-app-client .tv-dlr-report__filter-actions {
+        justify-content: flex-start;
+      }
+      .tv-kpi-grid--report {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.5rem;
+      }
+      .tv-kpi-grid--report .tv-kpi {
+        min-height: 0;
+        padding: 0.7rem 0.45rem 0.75rem;
+      }
+      .tv-kpi-grid--report .tv-kpi__head {
+        margin-bottom: 0.35rem;
+        gap: 0.25rem;
+      }
+      .tv-kpi-grid--report .tv-kpi__icon {
+        font-size: 1rem;
+      }
+      .tv-kpi-grid--report .tv-kpi__label {
+        font-size: 0.62rem;
+        line-height: 1.2;
+      }
+      .tv-kpi-grid--report .tv-kpi__value {
+        font-size: clamp(0.85rem, 3.2vw, 1.05rem);
+      }
+      .tv-kpi-grid--report .tv-kpi__hint {
+        display: none;
+      }
     }
     .tv-wallet-report.tv-client-dashboard {
       display: flex;
@@ -1511,8 +1544,11 @@ export function getAppPanelStyles(): string {
     .tv-app-client .tv-wallet-report__filters-grid {
       grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     }
+    .tv-wallet-report__type-row {
+      display: contents;
+    }
     .tv-app-client .tv-wallet-report__filters-grid .tv-dlr-report__filter-actions {
-      grid-column: 4 / -1;
+      grid-column: auto;
     }
     .tv-wallet-report__filter-hint {
       font-size: 0.82rem;
@@ -1537,8 +1573,27 @@ export function getAppPanelStyles(): string {
       .tv-app-client .tv-wallet-report__filters-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
       }
-      .tv-app-client .tv-wallet-report__filters-grid .tv-dlr-report__filter-actions {
+      .tv-app-client .tv-wallet-report__type-row {
+        display: flex;
         grid-column: 1 / -1;
+        align-items: flex-end;
+        gap: 0.5rem;
+        flex-wrap: nowrap;
+      }
+      .tv-app-client .tv-wallet-report__type-row .tv-filter-field {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .tv-app-client .tv-wallet-report__type-row .tv-dlr-report__filter-actions {
+        flex: 0 0 auto;
+        grid-column: auto;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+      }
+    }
+    @media (max-width: 640px) {
+      .tv-app-client .tv-wallet-report__filters-grid {
+        grid-template-columns: 1fr 1fr !important;
       }
     }
     .tv-wallet-pay-kpi {
@@ -1832,6 +1887,41 @@ export function getAppPanelStyles(): string {
     .tv-app-client .tv-page-head--row {
       gap: 1rem;
     }
+    .tv-app-client .tv-page-head--title-cta {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      column-gap: 0.75rem;
+      row-gap: 0.3rem;
+    }
+    .tv-app-client .tv-page-head--title-cta > div:first-child {
+      display: contents;
+    }
+    .tv-app-client .tv-page-head--title-cta .tv-page-title {
+      grid-column: 1;
+      grid-row: 1;
+      margin: 0;
+      align-self: center;
+    }
+    .tv-app-client .tv-page-head--title-cta .tv-page-sub {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      margin: 0;
+    }
+    .tv-app-client .tv-page-head--title-cta .tv-page-actions {
+      grid-column: 2;
+      grid-row: 1;
+      width: auto;
+      flex-shrink: 0;
+      align-self: center;
+      justify-content: flex-end;
+    }
+    .tv-app-client .tv-page-head--title-cta .tv-page-actions .btn,
+    .tv-app-client .tv-page-head--title-cta .tv-page-actions .tv-btn-campaign {
+      width: auto;
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
     .tv-app-client .tv-page-actions {
       display: flex;
       flex-wrap: wrap;
@@ -1890,15 +1980,15 @@ export function getAppPanelStyles(): string {
     @media (max-width: 768px) {
       .tv-orders-table-wrap { display: none; }
       .tv-orders-cards { display: flex; }
-      .tv-app-client .tv-page-head--row {
+      .tv-app-client .tv-page-head--row:not(.tv-page-head--title-cta) {
         flex-direction: column;
         align-items: stretch;
       }
-      .tv-app-client .tv-page-actions {
+      .tv-app-client .tv-page-head--row:not(.tv-page-head--title-cta) .tv-page-actions {
         justify-content: stretch;
       }
-      .tv-app-client .tv-page-actions .btn,
-      .tv-app-client .tv-page-actions .tv-btn-campaign {
+      .tv-app-client .tv-page-head--row:not(.tv-page-head--title-cta) .tv-page-actions .btn,
+      .tv-app-client .tv-page-head--row:not(.tv-page-head--title-cta) .tv-page-actions .tv-btn-campaign {
         flex: 1 1 calc(50% - 0.25rem);
         min-width: 0;
         justify-content: center;

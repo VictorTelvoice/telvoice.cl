@@ -48,18 +48,18 @@ export function getPanelResponsiveStyles(): string {
     }
 
     @media (max-width: 900px) {
-      .tv-page-head--row {
+      .tv-page-head--row:not(.tv-page-head--title-cta) {
         flex-direction: column;
         align-items: stretch;
         gap: 0.75rem;
       }
-      .tv-page-actions {
+      .tv-page-head--row:not(.tv-page-head--title-cta) .tv-page-actions {
         width: 100%;
         justify-content: flex-start;
       }
-      .tv-page-actions .btn,
-      .tv-page-actions .tv-btn-campaign,
-      .tv-page-actions a.btn {
+      .tv-page-head--row:not(.tv-page-head--title-cta) .tv-page-actions .btn,
+      .tv-page-head--row:not(.tv-page-head--title-cta) .tv-page-actions .tv-btn-campaign,
+      .tv-page-head--row:not(.tv-page-head--title-cta) .tv-page-actions a.btn {
         flex: 1 1 auto;
         min-width: 0;
         justify-content: center;
@@ -216,14 +216,14 @@ export function getPanelResponsiveStyles(): string {
       .tv-page-sub {
         font-size: 0.88rem;
       }
-      .tv-page-actions {
+      .tv-page-head--row:not(.tv-page-head--title-cta) .tv-page-actions {
         flex-direction: column;
         align-items: stretch;
       }
-      .tv-page-actions .btn,
-      .tv-page-actions .tv-btn-campaign,
-      .tv-page-actions a.btn,
-      .tv-page-actions button {
+      .tv-page-head--row:not(.tv-page-head--title-cta) .tv-page-actions .btn,
+      .tv-page-head--row:not(.tv-page-head--title-cta) .tv-page-actions .tv-btn-campaign,
+      .tv-page-head--row:not(.tv-page-head--title-cta) .tv-page-actions a.btn,
+      .tv-page-head--row:not(.tv-page-head--title-cta) .tv-page-actions button {
         width: 100%;
       }
       .tv-app-client .tv-topbar__actions .tv-btn-buy-sms {

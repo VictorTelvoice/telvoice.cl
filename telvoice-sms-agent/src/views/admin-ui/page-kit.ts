@@ -7,11 +7,14 @@ export function renderPageHeader(options: {
   /** HTML interno de confianza (badges, etc.). No usar con input de usuario. */
   subtitleHtml?: string;
   actions?: string;
+  /** Clases extra en el &lt;header&gt; (ej. tv-page-head--title-cta). */
+  headClass?: string;
 }): string {
   const sub =
     options.subtitleHtml ??
     escapeHtml(options.subtitle ?? "");
-  return `<header class="tv-page-head tv-page-head--row">
+  const headExtra = options.headClass ? ` ${options.headClass}` : "";
+  return `<header class="tv-page-head tv-page-head--row${headExtra}">
     <div>
       <h1 class="tv-page-title">${escapeHtml(options.title)}</h1>
       <p class="tv-page-sub">${sub}</p>
@@ -29,13 +32,15 @@ export function renderBtn(
     disabled?: boolean;
     title?: string;
     icon?: string;
+    size?: "sm";
   },
 ): string {
   const variant = opts?.variant ?? "secondary";
+  const sizeCls = opts?.size === "sm" ? " btn-sm" : "";
   const cls =
     variant === "campaign"
       ? "tv-btn-campaign"
-      : `btn btn-${variant === "primary" ? "primary" : variant === "ghost" ? "ghost" : "secondary"}`;
+      : `btn btn-${variant === "primary" ? "primary" : variant === "ghost" ? "ghost" : "secondary"}${sizeCls}`;
   const icon = opts?.icon
     ? `<span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">${escapeHtml(opts.icon)}</span>`
     : "";

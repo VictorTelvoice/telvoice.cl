@@ -107,10 +107,12 @@ export function renderAppWalletPage(
           <div class="tv-dlr-report__filters-grid tv-wallet-report__filters-grid">
             ${renderFilterField("Desde", `<input type="date" name="start_date" class="tv-filter-input" value="${escapeHtml(filters.startDate ?? "")}" />`)}
             ${renderFilterField("Hasta", `<input type="date" name="end_date" class="tv-filter-input" value="${escapeHtml(filters.endDate ?? "")}" />`)}
-            ${renderFilterField("Tipo", renderTypeSelect(filters.type))}
-            <div class="tv-dlr-report__filter-actions">
-              <button type="submit" class="btn btn-primary btn-sm">Buscar movimientos</button>
-              <a class="btn btn-ghost btn-sm" href="/app/wallet">Limpiar</a>
+            <div class="tv-wallet-report__type-row">
+              ${renderFilterField("Tipo", renderTypeSelect(filters.type))}
+              <div class="tv-dlr-report__filter-actions">
+                <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+                <a class="btn btn-ghost btn-sm" href="/app/wallet">Limpiar</a>
+              </div>
             </div>
           </div>
         </form>

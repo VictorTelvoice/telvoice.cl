@@ -246,7 +246,7 @@ export function renderAppReportsPage(
       </header>
       <div class="tv-panel__body tv-dlr-report__filters-body">
         <form method="get" action="/app/reports" class="tv-dlr-report__filters-form">
-          <div class="tv-dlr-report__filters-grid" style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0.85rem 1rem;align-items:end;width:100%;box-sizing:border-box">
+          <div class="tv-dlr-report__filters-grid">
             ${renderFilterField("Start Date", `<input type="date" name="start_date" class="tv-filter-input" value="${escapeHtml(filters.startDate ?? "")}" />`)}
             ${renderFilterField("End Date", `<input type="date" name="end_date" class="tv-filter-input" value="${escapeHtml(filters.endDate ?? "")}" />`)}
             ${renderFilterField("Sender ID", `<input type="text" name="sender_id" class="tv-filter-input" placeholder="Sender ID (opcional)" value="${escapeHtml(filters.senderId ?? "")}" />`)}
