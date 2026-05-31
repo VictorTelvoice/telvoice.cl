@@ -1552,12 +1552,15 @@ export function getAppPanelStyles(): string {
       }
     }
     @media (max-width: 640px) {
-      .tv-app-client .tv-dlr-report__filters-grid {
-        grid-template-columns: 1fr !important;
+      .tv-app-client .tv-dlr-report__filters-grid,
+      .tv-app-client .tv-inbox__filters-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         gap: 0.65rem;
       }
       .tv-app-client .tv-dlr-report__filter-actions {
+        grid-column: 1 / -1;
         justify-content: flex-start;
+        flex-wrap: wrap;
       }
       .tv-kpi-grid--report {
         grid-template-columns: repeat(3, minmax(0, 1fr));

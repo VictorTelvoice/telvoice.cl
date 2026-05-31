@@ -1322,10 +1322,13 @@ export function renderAppCampaignsPage(
     ${renderPageHeader({
       title: "Campañas",
       subtitle: "Borradores y campañas SMS con envío real vía operador (aSMSC).",
-      actions: [
-        renderBtn("Nueva campaña", { href: "/app/campaigns/new", variant: "primary", icon: "campaign" }),
-        renderBtn("Envío SMS", { href: "/app/send-sms", variant: "secondary" }),
-      ].join(" "),
+      headClass: "tv-page-head--title-cta",
+      actions: renderBtn("Nueva campaña", {
+        href: "/app/campaigns/new",
+        variant: "primary",
+        icon: "campaign",
+        size: "sm",
+      }),
     })}
     <div class="tv-client-dashboard tv-dlr-report tv-campaigns-report">
       ${kpis}

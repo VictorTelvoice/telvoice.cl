@@ -124,10 +124,12 @@ export function renderAppWalletPage(
     ${renderPageHeader({
       title: "Mi saldo",
       subtitle: `Resumen de ${escapeHtml(ctx.company.name)}`,
+      headClass: "tv-page-head--title-cta",
       actions: renderBtn("Comprar SMS", {
         href: "/app/buy-sms",
         variant: "primary",
         icon: "shopping_cart",
+        size: "sm",
       }),
     })}
     ${filtersPanel}
