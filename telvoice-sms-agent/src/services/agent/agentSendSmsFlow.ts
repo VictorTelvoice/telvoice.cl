@@ -14,11 +14,13 @@ import { getAgentCsvUpload } from "./agentCsvUploadStore.js";
 import { displayPhoneChile } from "./agentPanelCsvService.js";
 import {
   extractPhoneFromText,
+  isMessageRequestedByAgent,
+  isSendSmsIntentOnly,
   matchesCsvDestChoice,
   matchesSendSmsFlowIntent,
   parseFollowUpSmsBody,
   parseSendSmsDraft,
-  isOnlySendIntentStarter,
+  sanitizePendingSmsMessage,
 } from "./agentSendSmsIntent.js";
 import {
   getConversationMemory,
@@ -63,6 +65,39 @@ function destChoiceActions(): AgentSuggestedAction[] {
   ];
 }
 
+const ASK_MESSAGE_REPLY =
+  "Claro que sí, puedo ayudarte a preparar el envío desde tu cuenta Telvoice.\n\n" +
+  "Primero dime qué mensaje quieres enviar.";
+
+function cancelOnlyActions(): AgentSuggestedAction[] {
+  return [{ label: "Cancelar", message: "Cancelar" }];
+}
+
+async function replyAskMessageFirst(input: {
+  sessionId: string;
+  channel: AgentExecutionContext["channel"];
+  companyId: string;
+  confidence: number;
+}): Promise<AgentCoreResponse> {
+  await setFlowMemory(input.sessionId, input.channel, input.companyId, {
+    sendSmsFlowStep: "need_message",
+    waitingForMessage: true,
+    waitingForRecipient: false,
+    waitingForCsv: false,
+    pendingSmsMessage: undefined,
+    pendingSmsPhone: undefined,
+    pendingCsvUploadId: undefined,
+    sendSmsDestMode: undefined,
+  });
+  return baseResponse({
+    reply: ASK_MESSAGE_REPLY,
+    confidence: input.confidence,
+    sessionId: input.sessionId,
+    safeToExecute: false,
+    suggestedActions: cancelOnlyActions(),
+  });
+}
+
 function insufficientBalanceActions(): AgentSuggestedAction[] {
   return [
     { label: "Comprar más SMS", href: "/app/buy-sms" },
@@ -97,6 +132,9 @@ export async function clearSendSmsFlowMemory(
       sendSmsFlowActive: undefined,
       sendSmsFlowStep: undefined,
       sendSmsDestMode: undefined,
+      waitingForMessage: undefined,
+      waitingForRecipient: undefined,
+      waitingForCsv: undefined,
       pendingSmsPhone: undefined,
       pendingSmsMessage: undefined,
       pendingCsvUploadId: undefined,
@@ -355,10 +393,19 @@ export async function handleSendSmsFlow(
 
   if (ctx.channel === "telegram") {
     const tgDraft = parseSendSmsDraft(message);
-    const tgMsg =
-      tgDraft.message ?? memory.pendingSmsMessage ?? parseFollowUpSmsBody(message);
+    let tgMsg =
+      tgDraft.message ?? sanitizePendingSmsMessage(memory.pendingSmsMessage) ?? null;
     const tgPhone =
       tgDraft.phone ?? memory.pendingSmsPhone ?? extractPhoneFromText(message);
+    if (!tgMsg && tgPhone) {
+      const rest = message
+        .replace(new RegExp(tgPhone.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), "")
+        .replace(/\b(enviar|envía|envia|mandar|manda)\b/gi, "")
+        .trim();
+      if (rest.length >= 2 && !isSendSmsIntentOnly(rest)) {
+        tgMsg = rest;
+      }
+    }
     if (!tgMsg || !tgPhone) {
       return baseResponse({
         reply:
@@ -379,16 +426,32 @@ export async function handleSendSmsFlow(
     });
   }
 
+  memory = {
+    ...memory,
+    pendingSmsMessage:
+      sanitizePendingSmsMessage(memory.pendingSmsMessage) ?? undefined,
+  };
+
+  if (isSendSmsIntentOnly(message)) {
+    return replyAskMessageFirst({
+      sessionId,
+      channel: ctx.channel,
+      companyId: ctx.companyId,
+      confidence: route.confidence,
+    });
+  }
+
   const draft = parseSendSmsDraft(message);
-  let msgBody = draft.message ?? memory.pendingSmsMessage ?? null;
+  let msgBody =
+    draft.message ?? sanitizePendingSmsMessage(memory.pendingSmsMessage) ?? null;
   let phone = draft.phone ?? memory.pendingSmsPhone ?? null;
   const csvUploadId =
     (typeof metadata?.csvUploadId === "string" ? metadata.csvUploadId : null) ??
     memory.pendingCsvUploadId ??
     null;
 
-  if (!msgBody) {
-    const followUp = parseFollowUpSmsBody(message);
+  if (!msgBody && isMessageRequestedByAgent(memory)) {
+    const followUp = parseFollowUpSmsBody(message, { waitingForMessage: true });
     if (followUp) {
       msgBody = followUp;
     }
@@ -407,6 +470,9 @@ export async function handleSendSmsFlow(
       pendingCsvUploadId: csvUploadId,
       sendSmsDestMode: "csv",
       sendSmsFlowStep: "confirm_ready",
+      waitingForMessage: false,
+      waitingForRecipient: false,
+      waitingForCsv: false,
     });
     return buildCsvSummaryResponse({
       ctx,
@@ -419,43 +485,13 @@ export async function handleSendSmsFlow(
     });
   }
 
-  if (isOnlySendIntentStarter(message) && !msgBody) {
-    await setFlowMemory(sessionId, ctx.channel, ctx.companyId, {
-      sendSmsFlowStep: "need_message",
-    });
-    return baseResponse({
-      reply:
-        "Claro que sí, puedo ayudarte a preparar el envío desde tu cuenta Telvoice.\n\n" +
-        "Primero dime qué mensaje quieres enviar.",
-      confidence: route.confidence,
+  if (!msgBody && !phone && !csvUploadId && matchesSendSmsFlowIntent(message)) {
+    return replyAskMessageFirst({
       sessionId,
-      safeToExecute: false,
-      suggestedActions: [{ label: "Cancelar", message: "Cancelar" }],
+      channel: ctx.channel,
+      companyId: ctx.companyId,
+      confidence: route.confidence,
     });
-  }
-
-  if (!msgBody && !phone && !csvUploadId) {
-    if (matchesSendSmsFlowIntent(message)) {
-      await setFlowMemory(sessionId, ctx.channel, ctx.companyId, {
-        sendSmsFlowStep: "need_message",
-      });
-      return baseResponse({
-        reply:
-          "Claro que sí, puedo ayudarte a preparar el envío desde tu cuenta Telvoice.\n\n" +
-          "Primero dime qué mensaje quieres enviar.",
-        confidence: route.confidence,
-        sessionId,
-        safeToExecute: false,
-        suggestedActions: [{ label: "Cancelar", message: "Cancelar" }],
-      });
-    }
-  }
-
-  if (msgBody && !phone && !csvUploadId && memory.sendSmsFlowStep !== "need_dest") {
-    const combined = parseSendSmsDraft(message);
-    if (combined.phone) {
-      phone = combined.phone;
-    }
   }
 
   if (msgBody && !phone && !csvUploadId) {
@@ -464,6 +500,9 @@ export async function handleSendSmsFlow(
         pendingSmsMessage: msgBody,
         sendSmsFlowStep: "need_csv_file",
         sendSmsDestMode: "csv",
+        waitingForMessage: false,
+        waitingForRecipient: false,
+        waitingForCsv: true,
       });
       return baseResponse({
         reply:
@@ -485,6 +524,9 @@ export async function handleSendSmsFlow(
     await setFlowMemory(sessionId, ctx.channel, ctx.companyId, {
       pendingSmsMessage: msgBody,
       sendSmsFlowStep: "need_dest",
+      waitingForMessage: false,
+      waitingForRecipient: true,
+      waitingForCsv: false,
     });
     return baseResponse({
       reply:
@@ -525,24 +567,25 @@ export async function handleSendSmsFlow(
   }
 
   if (!msgBody && phone) {
+    await setFlowMemory(sessionId, ctx.channel, ctx.companyId, {
+      pendingSmsPhone: phone,
+      sendSmsFlowStep: "need_message",
+      waitingForMessage: true,
+      waitingForRecipient: false,
+    });
     return baseResponse({
       reply: `Tengo el número ${displayPhoneChile(phone)}. Primero dime qué mensaje quieres enviar.`,
       confidence: route.confidence,
       sessionId,
       safeToExecute: false,
+      suggestedActions: cancelOnlyActions(),
     });
   }
 
-  await setFlowMemory(sessionId, ctx.channel, ctx.companyId, {
-    sendSmsFlowStep: "need_message",
-  });
-  return baseResponse({
-    reply:
-      "Claro que sí, puedo ayudarte a preparar el envío desde tu cuenta Telvoice.\n\n" +
-      "Primero dime qué mensaje quieres enviar.",
-    confidence: route.confidence,
+  return replyAskMessageFirst({
     sessionId,
-    safeToExecute: false,
-    suggestedActions: [{ label: "Cancelar", message: "Cancelar" }],
+    channel: ctx.channel,
+    companyId: ctx.companyId,
+    confidence: route.confidence,
   });
 }

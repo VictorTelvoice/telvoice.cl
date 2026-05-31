@@ -22,6 +22,9 @@ export type ConversationMemory = {
   sendSmsFlowActive?: boolean;
   sendSmsFlowStep?: string;
   sendSmsDestMode?: "single" | "csv";
+  waitingForMessage?: boolean;
+  waitingForRecipient?: boolean;
+  waitingForCsv?: boolean;
   pendingCsvUploadId?: string;
   updatedAt?: string;
 };

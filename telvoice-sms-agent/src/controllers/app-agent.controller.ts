@@ -14,6 +14,7 @@ import {
   updateConversationMemory,
 } from "../services/agent/agentConversationMemory.js";
 import { handleSendSmsFlow } from "../services/agent/agentSendSmsFlow.js";
+import { sanitizePendingSmsMessage } from "../services/agent/agentSendSmsIntent.js";
 
 const PERSIST_FRIENDLY_REPLY =
   "Tuve un problema guardando el historial de esta conversación, pero puedo seguir ayudándote. ¿Quieres que revise saldo, campañas, últimos envíos o compra de SMS?";
@@ -188,7 +189,7 @@ export async function postAppAgentUploadCsv(
     });
 
     const memory = await getConversationMemory(sessionId, "web_client");
-    const msgBody = memory.pendingSmsMessage?.trim() ?? null;
+    const msgBody = sanitizePendingSmsMessage(memory.pendingSmsMessage);
 
     await updateConversationMemory(
       sessionId,

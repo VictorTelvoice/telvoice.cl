@@ -13,7 +13,10 @@ import {
   matchesCommercialBuyIntentNormalized,
   normalizeCommercialText,
 } from "./agentCommercialText.js";
-import { matchesSendSmsFlowIntent } from "./agentSendSmsIntent.js";
+import {
+  matchesSendSmsFlowIntent,
+  parseFollowUpSmsBody,
+} from "./agentSendSmsIntent.js";
 import type { ConversationMemory } from "./agentConversationMemory.js";
 import type { AgentChannel, AgentIntent } from "./types.js";
 
@@ -228,10 +231,13 @@ export function routeAgentIntent(
   ) {
     const followPhone = text.match(/^(?:al\s+)?(\+?56[\s-]?9[\d\s-]{8,}|9[\d\s-]{8,})\s*$/i);
     const followBody =
-      !matchesSendSmsFlowIntent(text) &&
+      parseFollowUpSmsBody(text, {
+        waitingForMessage:
+          memory.waitingForMessage === true ||
+          memory.sendSmsFlowStep === "need_message",
+      }) != null &&
       !CONFIRM_RE.test(normalized) &&
-      !CANCEL_RE.test(normalized) &&
-      text.trim().length >= 2;
+      !CANCEL_RE.test(normalized);
     if (followPhone || followBody || /^(adjuntar|csv|planilla)\b/i.test(normalized)) {
       return {
         intent: "send_sms_flow",
