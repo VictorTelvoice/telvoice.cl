@@ -280,6 +280,33 @@ export function getSmsBagCalculatorStyles(): string {
       color: #1a1c20;
     }
     .tv-buy-sms-calc .calc-result-total-wrap { text-align: left; }
+    @media (max-width: 767px) {
+      .tv-buy-sms-calc .calc-result-grid {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        text-align: center;
+      }
+      .tv-buy-sms-calc .calc-result-dl {
+        width: 100%;
+        max-width: 20rem;
+        margin-left: auto;
+        margin-right: auto;
+        text-align: center;
+      }
+      .tv-buy-sms-calc .calc-result-row {
+        text-align: center;
+      }
+      .tv-buy-sms-calc .calc-result-total-wrap {
+        width: 100%;
+        max-width: 20rem;
+        margin-left: auto;
+        margin-right: auto;
+        text-align: center;
+      }
+      .tv-buy-sms-calc .calc-result-note {
+        text-align: center;
+      }
+    }
     @media (min-width: 768px) {
       .tv-buy-sms-calc .calc-result-total-wrap { text-align: right; }
     }
@@ -343,33 +370,51 @@ export function getSmsBagCalculatorStyles(): string {
       background: linear-gradient(180deg, #faf8ff 0%, #f5f7fc 100%);
       border-radius: 1.25rem;
       padding: 1.25rem 1.5rem;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
+      overflow: visible;
     }
     @media (min-width: 768px) {
-      .tv-buy-sms-calc .pack-includes { padding: 1.5rem 2rem; }
+      .tv-buy-sms-calc .pack-includes {
+        padding: 1.5rem 2rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
     }
     .tv-buy-sms-calc .pack-includes-list {
       list-style: none;
       margin: 0;
       padding: 0;
       display: flex;
-      flex-wrap: nowrap;
-      justify-content: center;
-      align-items: center;
-      gap: 0.75rem 1.5rem;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.65rem;
+      width: 100%;
     }
     @media (min-width: 768px) {
-      .tv-buy-sms-calc .pack-includes-list { gap: 1rem 2rem; }
+      .tv-buy-sms-calc .pack-includes-list {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem 2rem;
+        width: auto;
+      }
     }
     .tv-buy-sms-calc .pack-includes-item {
-      display: inline-flex;
+      display: flex;
       align-items: center;
+      justify-content: center;
       gap: 0.5rem;
       font-size: 0.8125rem;
       line-height: 1.35;
       color: #43474e;
-      white-space: nowrap;
+      white-space: normal;
+      text-align: center;
+    }
+    @media (min-width: 768px) {
+      .tv-buy-sms-calc .pack-includes-item {
+        display: inline-flex;
+        white-space: nowrap;
+      }
     }
     .tv-buy-sms-calc .pack-includes-item .material-symbols-outlined {
       font-size: 1.125rem;

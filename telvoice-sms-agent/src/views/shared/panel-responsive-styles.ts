@@ -226,9 +226,18 @@ export function getPanelResponsiveStyles(): string {
       .tv-page-actions button {
         width: 100%;
       }
-      .tv-topbar__actions .tv-btn-buy-sms {
-        padding-left: 0.55rem;
-        padding-right: 0.55rem;
+      .tv-app-client .tv-topbar__actions .tv-btn-buy-sms {
+        width: 2.5rem;
+        height: 2.5rem;
+        padding: 0;
+        gap: 0;
+        border-radius: 10px;
+      }
+      .tv-app-client .tv-topbar__actions .tv-btn-buy-sms__label {
+        display: none;
+      }
+      .tv-app-client .tv-topbar__actions .tv-btn-buy-sms__icon {
+        font-size: 1.25rem;
       }
       .tv-topbar__actions .logout-form .btn {
         padding: 0.35rem 0.5rem;
