@@ -11,9 +11,9 @@ function testCampaignIntent(): void {
   const r = routeAgentIntent("Ayúdame a crear una campaña", "web_client", {
     memory: {},
   });
-  assert.equal(r.intent, "campaign_draft");
+  assert.equal(r.intent, "send_sms_flow");
   assert.ok(r.confidence >= 0.85);
-  console.log("✓ Ayúdame a crear una campaña → campaign_draft");
+  console.log("✓ Ayúdame a crear una campaña → send_sms_flow guiado");
 }
 
 function testUnauthorizedDestination(): void {

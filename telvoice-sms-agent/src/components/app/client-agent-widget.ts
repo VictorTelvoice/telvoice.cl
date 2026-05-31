@@ -45,8 +45,13 @@ export function getPanelAgentWidgetScript(): string {
   var csvInput = document.getElementById("${ROOT_ID}-csv");
   var attachBtn = document.getElementById("${ROOT_ID}-attach");
   var fileHint = document.getElementById("${ROOT_ID}-file-hint");
+  var fileNameEl = document.getElementById("${ROOT_ID}-file-name");
+  var fileMetaEl = document.getElementById("${ROOT_ID}-file-meta");
+  var fileLabelEl = document.getElementById("${ROOT_ID}-file-label");
+  var fileClearBtn = document.getElementById("${ROOT_ID}-file-clear");
 
   var STORAGE_KEY = "tvp_agent_session";
+  var csvChipState = { name: "", validCount: null };
   var sessionId = "";
   try {
     sessionId = localStorage.getItem(STORAGE_KEY) || "";
@@ -168,6 +173,52 @@ export function getPanelAgentWidgetScript(): string {
     } catch (e) {}
   }
 
+  function truncateFileName(name, maxLen) {
+    var n = String(name || "planilla.csv");
+    var max = maxLen || 28;
+    if (n.length <= max) return n;
+    var ext = n.lastIndexOf(".") > 0 ? n.slice(n.lastIndexOf(".")) : "";
+    var baseMax = Math.max(8, max - ext.length - 1);
+    return n.slice(0, baseMax) + "…" + ext;
+  }
+
+  function clearCsvChip() {
+    csvChipState = { name: "", validCount: null };
+    if (fileHint) {
+      fileHint.hidden = true;
+      fileHint.classList.remove("tva-csv-chip-wrap--loading");
+    }
+    if (fileNameEl) fileNameEl.textContent = "";
+    if (fileMetaEl) fileMetaEl.textContent = "";
+    if (fileLabelEl) fileLabelEl.textContent = "CSV cargado";
+    if (csvInput) csvInput.value = "";
+  }
+
+  function showCsvChip(opts) {
+    if (!fileHint) return;
+    var name = opts.name || "planilla.csv";
+    csvChipState.name = name;
+    csvChipState.validCount = opts.validCount != null ? opts.validCount : null;
+    fileHint.hidden = false;
+    fileHint.classList.toggle("tva-csv-chip-wrap--loading", !!opts.uploading);
+    if (fileLabelEl) {
+      fileLabelEl.textContent = opts.uploading ? "Subiendo CSV…" : "CSV cargado";
+    }
+    if (fileNameEl) {
+      fileNameEl.textContent = "· " + truncateFileName(name);
+    }
+    if (fileMetaEl) {
+      if (opts.uploading) {
+        fileMetaEl.textContent = "";
+      } else if (opts.validCount != null && opts.validCount >= 0) {
+        fileMetaEl.textContent =
+          "· " + opts.validCount + " contacto" + (opts.validCount === 1 ? "" : "s") + " válido" + (opts.validCount === 1 ? "" : "s");
+      } else {
+        fileMetaEl.textContent = "";
+      }
+    }
+  }
+
   function renderQuick() {
     if (!quick) return;
     quick.innerHTML = "";
@@ -175,6 +226,12 @@ export function getPanelAgentWidgetScript(): string {
       var b = document.createElement("button");
       b.type = "button";
       b.textContent = qa.label;
+      if (qa.variant === "primary" || qa.href) {
+        b.classList.add("tva-quick--primary");
+      }
+      if (qa.message === "__attach_csv__") {
+        b.classList.add("tva-quick--attach");
+      }
       b.addEventListener("click", function () {
         if (qa.message === "__attach_csv__") {
           triggerCsvPick();
@@ -238,6 +295,12 @@ export function getPanelAgentWidgetScript(): string {
       quickActions = fromApi;
       renderQuick();
     }
+    if (data.clearCsvUpload) {
+      clearCsvChip();
+    }
+    if (data.closeWidget) {
+      setOpen(false);
+    }
   }
 
   function triggerCsvPick() {
@@ -248,17 +311,11 @@ export function getPanelAgentWidgetScript(): string {
     if (!file || !sessionId) return;
     if (file.size > 5 * 1024 * 1024) {
       appendBubble("bot", "El archivo supera 5 MB. Usa una planilla más pequeña.");
-      if (fileHint) {
-        fileHint.hidden = true;
-        fileHint.className = "tva-file-hint";
-      }
+      clearCsvChip();
       return;
     }
     var name = file.name || "planilla.csv";
-    if (fileHint) {
-      fileHint.hidden = false;
-      fileHint.textContent = "Subiendo " + name + "…";
-    }
+    showCsvChip({ name: name, uploading: true });
     lastUserMessage = "Adjunté planilla: " + name;
     appendBubble("user", lastUserMessage);
     showTyping();
@@ -268,25 +325,22 @@ export function getPanelAgentWidgetScript(): string {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId: sessionId, csvText: text })
+        body: JSON.stringify({ sessionId: sessionId, csvText: text, fileName: name })
       });
       var data = await res.json();
       removeTyping();
       if (!data.success) {
         appendBubble("bot", data.error || "No pude leer la planilla.");
-        if (fileHint) {
-          fileHint.hidden = false;
-          fileHint.className = "tva-file-hint";
-          fileHint.textContent = "";
-        }
+        clearCsvChip();
         return;
       }
       applyAgentResponse(data);
-      if (fileHint) {
-        fileHint.hidden = false;
-        fileHint.className = "tva-file-hint tva-file-hint--ok";
-        fileHint.textContent = "Archivo cargado: " + name;
-      }
+      var chip = data.csvFileChip || {};
+      showCsvChip({
+        name: chip.fileName || name,
+        validCount: chip.validCount != null ? chip.validCount : null,
+        uploading: false
+      });
     } catch (e) {
       removeTyping();
       appendBubble("bot", "Error al subir la planilla. Intenta de nuevo.");
@@ -352,6 +406,13 @@ export function getPanelAgentWidgetScript(): string {
       var file = csvInput.files && csvInput.files[0];
       if (file) uploadCsvFile(file);
       csvInput.value = "";
+    });
+  }
+
+  if (fileClearBtn) {
+    fileClearBtn.addEventListener("click", function () {
+      clearCsvChip();
+      if (input) input.focus();
     });
   }
 

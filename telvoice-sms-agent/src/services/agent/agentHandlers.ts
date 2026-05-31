@@ -228,9 +228,18 @@ export async function dispatchRoutedIntent(
       });
 
     case "campaign_draft": {
-      const draftMessage =
-        message.replace(/crear campaña|nueva campaña|borrador/gi, "").trim() ||
-        "Mensaje de campaña Telvoice";
+      const draftMessage = message
+        .replace(/crear campaña|nueva campaña|borrador|borrador de campaña/gi, "")
+        .trim();
+      if (!draftMessage || draftMessage.length < 3) {
+        return handleSendSmsFlow(
+          { ...route, intent: "send_sms_flow" },
+          message,
+          ctx,
+          sessionId,
+          ctx.metadata,
+        );
+      }
       const result = await toolCreateCampaignDraft({
         companyId: ctx.companyId,
         userId: ctx.userId,
@@ -243,7 +252,11 @@ export async function dispatchRoutedIntent(
         confidence: route.confidence,
         sessionId,
         suggestedActions: [
-          { label: "Abrir borrador", href: `/app/campaigns/${result.campaignId}` },
+          {
+            label: "Abrir borrador",
+            href: `/app/campaigns/${result.campaignId}`,
+            variant: "primary",
+          },
         ],
       });
     }

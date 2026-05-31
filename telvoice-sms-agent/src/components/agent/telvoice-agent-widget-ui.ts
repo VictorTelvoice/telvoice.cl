@@ -1,6 +1,23 @@
 /** UI compartida del agente flotante Telvoice (misma estética que landing). */
 
+import { readFileSync } from "node:fs";
+import { getPublicDir } from "../../utils/public-dir.js";
+
 export const TELVOICE_AGENT_WIDGET_CSS_HREF = "/css/telvoice-agent-widget.css";
+
+export function telvoiceAgentWidgetStylesheetHref(): string {
+  try {
+    const ver = readFileSync(
+      `${getPublicDir()}/telvoice-agent-widget.ver`,
+      "utf8",
+    ).trim();
+    return ver
+      ? `${TELVOICE_AGENT_WIDGET_CSS_HREF}?v=${encodeURIComponent(ver)}`
+      : TELVOICE_AGENT_WIDGET_CSS_HREF;
+  } catch {
+    return TELVOICE_AGENT_WIDGET_CSS_HREF;
+  }
+}
 export const TELVOICE_AGENT_ISOTIPO = "/assets/telvoice-agent-isotipo.png";
 
 export type TelvoiceAgentWidgetVariant = "app" | "admin";
@@ -28,7 +45,7 @@ export const TELVOICE_AGENT_LABELS: Record<TelvoiceAgentWidgetVariant, TelvoiceA
 };
 
 export function renderTelvoiceAgentStylesheetLink(): string {
-  return `<link rel="stylesheet" href="${TELVOICE_AGENT_WIDGET_CSS_HREF}" />`;
+  return `<link rel="stylesheet" href="${telvoiceAgentWidgetStylesheetHref()}" />`;
 }
 
 /** Banner de identidad en páginas hub de entrenamiento (superadmin). */
@@ -97,7 +114,7 @@ export function renderTelvoiceAgentWidgetShell(options: TelvoiceAgentWidgetShell
       ${
         options.showCsvAttach
           ? `<input type="file" id="${options.rootId}-csv" accept=".csv,text/csv,text/plain" class="tva-csv-input" hidden />
-      <button type="button" class="tva-attach" id="${options.rootId}-attach" aria-label="Adjuntar CSV" title="Adjuntar planilla CSV">📎</button>`
+      <button type="button" class="tva-attach" id="${options.rootId}-attach" aria-label="Adjuntar CSV" title="Adjuntar planilla CSV"><span class="tva-attach__icon" aria-hidden="true">📎</span></button>`
           : ""
       }
       <input type="text" id="${options.rootId}-input" placeholder="${placeholder}" autocomplete="off" maxlength="2000" />
@@ -105,7 +122,17 @@ export function renderTelvoiceAgentWidgetShell(options: TelvoiceAgentWidgetShell
     </form>
     ${
       options.showCsvAttach
-        ? `<p class="tva-file-hint" id="${options.rootId}-file-hint" hidden></p>`
+        ? `<div class="tva-csv-chip-wrap" id="${options.rootId}-file-hint" hidden>
+      <div class="tva-csv-chip" role="status">
+        <span class="tva-csv-chip__icon" aria-hidden="true">📎</span>
+        <span class="tva-csv-chip__body">
+          <span class="tva-csv-chip__label" id="${options.rootId}-file-label">CSV cargado</span>
+          <span class="tva-csv-chip__name" id="${options.rootId}-file-name"></span>
+          <span class="tva-csv-chip__meta" id="${options.rootId}-file-meta"></span>
+        </span>
+        <button type="button" class="tva-csv-chip__action" id="${options.rootId}-file-clear">Quitar</button>
+      </div>
+    </div>`
         : ""
     }`
         : ""

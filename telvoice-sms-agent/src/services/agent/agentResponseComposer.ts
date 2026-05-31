@@ -31,6 +31,22 @@ function formatQuoteSummary(quote: CommercialQuoteResult): string {
   );
 }
 
+function replyAlreadyIncludesCta(body: string, cta: string): boolean {
+  const norm = (s: string) =>
+    s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{M}/gu, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  const b = norm(body);
+  const c = norm(cta);
+  if (!c || c.length < 12) {
+    return false;
+  }
+  return b.includes(c) || b.includes(c.slice(0, Math.min(48, c.length)));
+}
+
 function intentAck(intent: string, channel: AgentChannel): string | null {
   const map: Record<string, string> = {
     commercial: "Perfecto, te cotizo.",
@@ -126,7 +142,15 @@ export function composeAgentResponse(input: ComposeInput): string {
     }
   }
 
-  if (confidence < 0.45 && intent !== "commercial" && intent !== "knowledge") {
+  const composedSoFar = parts.join("\n\n");
+  if (
+    confidence < 0.45 &&
+    intent !== "commercial" &&
+    intent !== "knowledge" &&
+    intent !== "cancel" &&
+    intent !== "confirm" &&
+    !replyAlreadyIncludesCta(composedSoFar, persona.defaultCTA)
+  ) {
     parts.push(persona.defaultCTA);
   }
 

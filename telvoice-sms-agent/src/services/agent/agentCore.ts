@@ -18,7 +18,10 @@ import { executePendingAction } from "./executePendingAction.js";
 import { recordUnansweredQuestion } from "./agentUnansweredService.js";
 import { searchKnowledgeForChannel } from "./tools/searchKnowledgeTool.js";
 import { matchesSendSmsFlowIntent } from "./agentSendSmsIntent.js";
-import { clearSendSmsFlowMemory } from "./agentSendSmsFlow.js";
+import {
+  clearSendSmsFlowMemory,
+  postAgentSendQuickActions,
+} from "./agentSendSmsFlow.js";
 import { getAgentPersona } from "./agentPersona.js";
 import {
   getConversationMemory,
@@ -67,29 +70,46 @@ async function handleConfirmCancel(
     (metadata?.pendingActionId
       ? await getPendingActionDb(String(metadata.pendingActionId))
       : null) ?? (await findPendingForSessionDb(sessionId, ctx.companyId));
+  const trimmed = message.trim();
   const isCancel =
-    /^(cancelar|cancelo|no confirmo|anular|detener)\b/i.test(message.trim()) ||
-    (pending != null && /^(no|nop)\b/i.test(message.trim().toLowerCase()));
+    /^(cancelar|cancelo|no confirmo|anular|detener|salir|cerrar|terminar)\b/i.test(
+      trimmed,
+    ) ||
+    (pending != null && /^(no|nop)\b/i.test(trimmed.toLowerCase()));
 
   if (isCancel) {
+    const memory = await getConversationMemory(sessionId, ctx.channel);
+    const flowActive =
+      Boolean(pending) ||
+      memory.sendSmsFlowActive === true ||
+      Boolean(memory.sendSmsFlowStep) ||
+      Boolean(memory.pendingSmsMessage) ||
+      Boolean(memory.pendingCsvUploadId);
+
     if (pending) {
       await clearPendingActionDb(pending.id, "cancelled");
     }
     await clearSendSmsFlowMemory(sessionId, ctx.channel, ctx.companyId);
+
+    const rawReply = flowActive
+      ? "Listo, cancelé este flujo. Puedes pedirme enviar un SMS, crear una campaña o revisar tu saldo cuando quieras."
+      : "Listo. Si necesitas algo más, aquí estaré.";
+
     return {
       reply: composeAgentResponse({
         persona,
         channel: ctx.channel,
         intent: "cancel",
-        rawReply: "Acción cancelada.",
+        rawReply,
         memory: await getConversationMemory(sessionId, ctx.channel),
         confidence: 0.99,
-        acknowledgment: persona.defaultCTA,
       }),
       intent: "cancel",
       confidence: 0.99,
       sessionId,
       suggestedActions: CLIENT_QUICK,
+      clearCsvUpload: true,
+      closeWidget: !flowActive,
     };
   }
 
@@ -107,6 +127,7 @@ async function handleConfirmCancel(
     throw new AppError("Acción no autorizada para esta empresa.", 403);
   }
 
+  const pendingType = pending.type;
   const rawReply = await executePendingAction(pending);
   await clearPendingActionDb(pending.id, "confirmed");
   await clearSendSmsFlowMemory(sessionId, ctx.channel, ctx.companyId);
@@ -125,7 +146,8 @@ async function handleConfirmCancel(
     requiresConfirmation: false,
     safeToExecute: true,
     sessionId,
-    suggestedActions: CLIENT_QUICK,
+    suggestedActions: postAgentSendQuickActions(pendingType),
+    clearCsvUpload: true,
   };
 }
 

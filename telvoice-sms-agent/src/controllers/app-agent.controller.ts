@@ -83,6 +83,8 @@ export async function postAppAgentChat(
       leadRequired: result.leadRequired ?? false,
       safeToExecute: result.safeToExecute ?? true,
       sessionId: result.sessionId,
+      clearCsvUpload: result.clearCsvUpload === true,
+      closeWidget: result.closeWidget === true,
     });
   } catch (err) {
     const status = err instanceof AppError ? err.statusCode : 500;
@@ -241,6 +243,12 @@ export async function postAppAgentUploadCsv(
       success: true,
       uploadId: upload.id,
       summary: parsed,
+      csvFileChip: {
+        fileName: String(req.body?.fileName ?? "planilla.csv").slice(0, 120),
+        validCount: parsed.validRecipients.length,
+        invalidCount: parsed.invalidCount,
+        duplicateCount: parsed.duplicateCount,
+      },
       reply: flowReply.reply,
       intent: flowReply.intent,
       confidence: flowReply.confidence,

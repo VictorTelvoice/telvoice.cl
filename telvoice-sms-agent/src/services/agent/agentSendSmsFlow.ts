@@ -17,6 +17,7 @@ import {
   isMessageRequestedByAgent,
   isSendSmsIntentOnly,
   matchesCsvDestChoice,
+  matchesCampaignGuidedIntent,
   matchesSendSmsFlowIntent,
   parseFollowUpSmsBody,
   parseSendSmsDraft,
@@ -69,8 +70,35 @@ const ASK_MESSAGE_REPLY =
   "Claro que sí, puedo ayudarte a preparar el envío desde tu cuenta Telvoice.\n\n" +
   "Primero dime qué mensaje quieres enviar.";
 
+const ASK_CAMPAIGN_MESSAGE_REPLY =
+  "Claro, armemos tu campaña paso a paso.\n\n" +
+  "Primero dime qué mensaje quieres enviar.";
+
 function cancelOnlyActions(): AgentSuggestedAction[] {
   return [{ label: "Cancelar", message: "Cancelar" }];
+}
+
+function csvReadyActions(): AgentSuggestedAction[] {
+  return [
+    { label: "Confirmo", message: "Confirmo", variant: "primary" },
+    { label: "Cancelar", message: "Cancelar" },
+    { label: "Cambiar CSV", message: "__attach_csv__" },
+  ];
+}
+
+function postSendSuccessActions(csvCampaign: boolean): AgentSuggestedAction[] {
+  if (csvCampaign) {
+    return [
+      { label: "Ver bandeja", href: "/app/inbox", variant: "primary" },
+      { label: "Crear otra campaña", message: "Ayúdame a crear una campaña" },
+      { label: "Ver saldo", message: "¿Cuánto saldo tengo?" },
+    ];
+  }
+  return [
+    { label: "Ver bandeja", href: "/app/inbox", variant: "primary" },
+    { label: "Enviar otro SMS", message: "Quiero enviar un sms" },
+    { label: "Ver saldo", message: "¿Cuánto saldo tengo?" },
+  ];
 }
 
 async function replyAskMessageFirst(input: {
@@ -78,6 +106,7 @@ async function replyAskMessageFirst(input: {
   channel: AgentExecutionContext["channel"];
   companyId: string;
   confidence: number;
+  campaignGuided?: boolean;
 }): Promise<AgentCoreResponse> {
   await setFlowMemory(input.sessionId, input.channel, input.companyId, {
     sendSmsFlowStep: "need_message",
@@ -88,9 +117,10 @@ async function replyAskMessageFirst(input: {
     pendingSmsPhone: undefined,
     pendingCsvUploadId: undefined,
     sendSmsDestMode: undefined,
+    campaignGuided: input.campaignGuided === true,
   });
   return baseResponse({
-    reply: ASK_MESSAGE_REPLY,
+    reply: input.campaignGuided ? ASK_CAMPAIGN_MESSAGE_REPLY : ASK_MESSAGE_REPLY,
     confidence: input.confidence,
     sessionId: input.sessionId,
     safeToExecute: false,
@@ -138,6 +168,7 @@ export async function clearSendSmsFlowMemory(
       pendingSmsPhone: undefined,
       pendingSmsMessage: undefined,
       pendingCsvUploadId: undefined,
+      campaignGuided: undefined,
     },
     companyId,
   );
@@ -343,12 +374,7 @@ async function buildCsvSummaryResponse(input: {
     pendingActionId: pending.id,
     safeToExecute: false,
     sessionId: input.sessionId,
-    suggestedActions: [
-      { label: "Confirmo", message: "Confirmo" },
-      { label: "Cancelar", message: "Cancelar" },
-      { label: "Ver campañas", href: "/app/campaigns" },
-      { label: "Comprar más SMS", href: "/app/buy-sms" },
-    ],
+    suggestedActions: csvReadyActions(),
   });
 }
 
@@ -432,12 +458,14 @@ export async function handleSendSmsFlow(
       sanitizePendingSmsMessage(memory.pendingSmsMessage) ?? undefined,
   };
 
-  if (isSendSmsIntentOnly(message)) {
+  if (isSendSmsIntentOnly(message) || matchesCampaignGuidedIntent(message)) {
     return replyAskMessageFirst({
       sessionId,
       channel: ctx.channel,
       companyId: ctx.companyId,
       confidence: route.confidence,
+      campaignGuided:
+        matchesCampaignGuidedIntent(message) || memory.campaignGuided === true,
     });
   }
 
@@ -528,13 +556,20 @@ export async function handleSendSmsFlow(
       waitingForRecipient: true,
       waitingForCsv: false,
     });
-    return baseResponse({
-      reply:
-        "Perfecto, ya tengo el mensaje.\n\n" +
+    const destIntro = memory.campaignGuided
+      ? "Perfecto, ya tengo el mensaje de la campaña.\n\n" +
+        "¿Cómo quieres cargar los destinatarios?\n\n" +
+        "1. Adjuntar una planilla CSV con números de teléfono.\n" +
+        "2. Escribir un número para un envío de prueba (569XXXXXXXX).\n" +
+        "3. Usar contactos guardados o armar la lista manual en Campañas del panel."
+      : "Perfecto, ya tengo el mensaje.\n\n" +
         "Ahora dime a quién quieres enviarlo.\n\n" +
         "Puedes:\n\n" +
         "1. Escribir un número en formato internacional, por ejemplo 569XXXXXXXX.\n" +
-        "2. Adjuntar una planilla CSV con los números de teléfono.",
+        "2. Adjuntar una planilla CSV con los números de teléfono.";
+
+    return baseResponse({
+      reply: destIntro,
       confidence: route.confidence,
       sessionId,
       safeToExecute: false,
@@ -587,5 +622,12 @@ export async function handleSendSmsFlow(
     channel: ctx.channel,
     companyId: ctx.companyId,
     confidence: route.confidence,
+    campaignGuided: memory.campaignGuided === true,
   });
+}
+
+export function postAgentSendQuickActions(
+  pendingType: string | undefined,
+): AgentSuggestedAction[] {
+  return postSendSuccessActions(pendingType === "send_campaign_csv");
 }

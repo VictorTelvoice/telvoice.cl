@@ -26,6 +26,7 @@
     "test:panel-agent-send-sms-flow": "tsx scripts/test-panel-agent-send-sms-flow.ts",
     "test:agent-pending-idempotency": "tsx scripts/test-agent-pending-idempotency.ts",
     "test:agent-feedback-cases": "tsx scripts/test-agent-feedback-cases.ts",
+    "test:agent-ux-polish": "tsx scripts/test-agent-ux-polish.ts",
     "migrate:agent-core": "node scripts/apply-migrations-agent-core.mjs",
     "debug:supabase": "tsx scripts/debug-supabase.ts",
     "debug:supabase-rest": "tsx scripts/debug-supabase-rest.ts",

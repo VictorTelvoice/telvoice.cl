@@ -4,6 +4,7 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
 import {
+  matchesCampaignGuidedIntent,
   matchesSendSmsFlowIntent,
   parseFollowUpSmsBody,
   isSendSmsIntentOnly,
@@ -12,6 +13,11 @@ import {
   sanitizePendingSmsMessage,
   isCorruptedIntentPhrase,
 } from "../src/services/agent/agentSendSmsIntent.js";
+import {
+  composeAgentResponse,
+  composeLowConfidenceReply,
+} from "../src/services/agent/agentResponseComposer.js";
+import { getAgentPersona } from "../src/services/agent/agentPersona.js";
 import { routeAgentIntent } from "../src/services/agent/agentIntentRouter.js";
 import { parseAgentRecipientCsv } from "../src/services/agent/agentPanelCsvService.js";
 import { runAgentCore } from "../src/services/agent/agentCore.js";
@@ -63,10 +69,31 @@ function testIntentRouting(): void {
   const camp = routeAgentIntent("quiero enviar una campaña", "web_client", { memory: {} });
   assert.equal(camp.intent, "send_sms_flow");
 
+  const guided = routeAgentIntent("Ayúdame a crear una campaña", "web_client", {
+    memory: {},
+  });
+  assert.equal(guided.intent, "send_sms_flow");
+  assert.ok(matchesCampaignGuidedIntent("Ayúdame a crear una campaña"));
+
   const landing = routeAgentIntent("quiero enviar un sms", "landing", { memory: {} });
   assert.equal(landing.intent, "send_sms_flow");
 
   console.log("✓ intención send_sms_flow");
+}
+
+function testFallbackNotDuplicated(): void {
+  const persona = getAgentPersona("web_client");
+  const low = composeLowConfidenceReply(persona, "web_client");
+  const composed = composeAgentResponse({
+    persona,
+    channel: "web_client",
+    intent: "unknown",
+    rawReply: low,
+    memory: {},
+    confidence: 0.35,
+  });
+  assert.equal((composed.match(/¿Quieres revisar saldo/g) ?? []).length, 1);
+  console.log("✓ fallback sin CTA duplicado");
 }
 
 function testCsvParse(): void {
@@ -249,6 +276,7 @@ async function main(): Promise<void> {
   console.log("=== test:panel-agent-send-sms-flow ===\n");
   testIntentHelpers();
   testIntentRouting();
+  testFallbackNotDuplicated();
   testCsvParse();
   await testGuidedFlowMock();
   await testLandingNoSend();

@@ -42,6 +42,8 @@ export type AgentSuggestedAction = {
   label: string;
   message?: string;
   href?: string;
+  /** primary = botón destacado (p. ej. Abrir borrador) */
+  variant?: "primary" | "secondary";
 };
 
 export type AgentCoreRequest = {
@@ -64,6 +66,10 @@ export type AgentCoreResponse = {
   leadRequired?: boolean;
   safeToExecute?: boolean;
   sessionId: string;
+  /** Panel: limpiar chip CSV del widget tras confirmación exitosa */
+  clearCsvUpload?: boolean;
+  /** Panel: cerrar chat tras salir sin flujo activo */
+  closeWidget?: boolean;
 };
 
 export type PendingActionType =

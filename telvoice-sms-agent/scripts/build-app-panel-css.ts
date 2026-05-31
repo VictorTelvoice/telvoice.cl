@@ -20,6 +20,10 @@ const outPath = path.join(root, "public", "app-panel.css");
 const css = `${MATERIAL_SYMBOLS_FIX}${getAdminStyles()}${getAppPanelStyles()}`;
 
 writeFileSync(outPath, css, "utf8");
+const ver = String(Date.now());
 const verPath = path.join(root, "public", "app-panel.ver");
-writeFileSync(verPath, String(Date.now()), "utf8");
+writeFileSync(verPath, ver, "utf8");
+const agentVerPath = path.join(root, "public", "telvoice-agent-widget.ver");
+writeFileSync(agentVerPath, ver, "utf8");
 console.info(`[build:app-css] ${outPath} (${css.length} bytes)`);
+console.info(`[build:app-css] cache bust: app-panel.ver + telvoice-agent-widget.ver`);

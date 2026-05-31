@@ -26,6 +26,7 @@ export type ConversationMemory = {
   waitingForRecipient?: boolean;
   waitingForCsv?: boolean;
   pendingCsvUploadId?: string;
+  campaignGuided?: boolean;
   updatedAt?: string;
 };
 

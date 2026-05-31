@@ -30,6 +30,28 @@ export function resolvePendingActionIdempotencyKey(pendingId: string): string {
   return randomUUID();
 }
 
+function resolveCampaignSmsEstimate(
+  pending: StoredPendingAction,
+  result: {
+    smsConsumed: number;
+    queued: number;
+    totalRecipients: number;
+  },
+): number {
+  const fromPayload = Number(pending.payload.estimated_total_sms ?? 0);
+  if (fromPayload > 0) {
+    return fromPayload;
+  }
+  if (result.smsConsumed > 0) {
+    return result.smsConsumed;
+  }
+  const perContact = Number(pending.payload.segments_per_contact ?? 1);
+  if (result.queued > 0) {
+    return result.queued * perContact;
+  }
+  return result.totalRecipients * perContact;
+}
+
 function logAgentSendFailure(pending: StoredPendingAction, err: unknown): void {
   const technical = err instanceof Error ? err.message : String(err ?? "");
   const stack = err instanceof Error ? err.stack : undefined;
@@ -337,11 +359,12 @@ export async function executePendingAction(
             sendSource: "app_send_sms_campaign",
             idempotencyKey,
           });
+          const smsEstimate = resolveCampaignSmsEstimate(pending, result);
           return (
             `Campaña aceptada.\n\n` +
             `Contactos válidos: ${result.totalRecipients.toLocaleString("es-CL")}\n` +
             `Mensajes en cola: ${result.queued.toLocaleString("es-CL")}\n` +
-            `SMS estimados: ${result.smsConsumed.toLocaleString("es-CL")}\n` +
+            `SMS estimados: ${smsEstimate.toLocaleString("es-CL")}\n` +
             `Crédito disponible después del envío: ${result.balanceAfter.toLocaleString("es-CL")} SMS\n\n` +
             `Puedes revisar el avance en Bandeja o Campañas.\n` +
             `Referencia: ${result.campaignId}`

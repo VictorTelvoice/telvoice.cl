@@ -31,7 +31,7 @@ export type RoutedIntent = {
 const CONFIRM_RE =
   /^(confirmo|si confirmo|sí confirmo|confirmar|ok confirmo|si confirmar|sí confirmar|confirmar envio|confirmar envío|enviar ahora|sí, confirmar|si, confirmar|confirmo envio|confirmo envío)\b/i;
 const CANCEL_RE =
-  /^(cancelar|cancelo|no confirmo|anular|detener)\b/i;
+  /^(cancelar|cancelo|no confirmo|anular|detener|salir|cerrar|terminar)\b/i;
 
 function requiresCompanyIntent(intent: AgentIntent): boolean {
   return [
@@ -348,11 +348,7 @@ export function routeAgentIntent(
     };
   }
 
-  if (
-    /\b(ayudame a crear|ayúdame a crear|crear\s+(?:una\s+)?campana|crear\s+(?:una\s+)?campaña|nueva campaña|borrador|enviar campaña|enviar campana|quiero campaña)\b/.test(
-      normalized,
-    )
-  ) {
+  if (/\b(borrador\s+de\s+campana|borrador\s+de\s+campaña|solo\s+borrador|crear\s+borrador)\b/.test(normalized)) {
     return { intent: "campaign_draft", confidence: 0.88, commercialQuantity: null, requiresAuth: true, operationalCommand: null };
   }
 
