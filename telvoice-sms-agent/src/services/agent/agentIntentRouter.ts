@@ -29,9 +29,17 @@ export type RoutedIntent = {
 };
 
 const CONFIRM_RE =
-  /^(confirmo|si confirmo|sí confirmo|confirmar|ok confirmo|si confirmar|sí confirmar|confirmar envio|confirmar envío|enviar ahora|sí, confirmar|si, confirmar|confirmo envio|confirmo envío)\b/i;
+  /^(confirmo|si confirmo|sí confirmo|confirmar|ok confirmo|si confirmar|sí confirmar|confirmar envio|confirmar envío|confirmar campaña|confirmar campana|confirmar envío|enviar ahora|sí, confirmar|si, confirmar|confirmo envio|confirmo envío)\b/i;
 const CANCEL_RE =
   /^(cancelar|cancelo|no confirmo|anular|detener|salir|cerrar|terminar)\b/i;
+
+export function matchesConfirmIntent(message: string): boolean {
+  return CONFIRM_RE.test(normalizeIntentText(message.trim()));
+}
+
+export function matchesCancelIntent(message: string): boolean {
+  return CANCEL_RE.test(normalizeIntentText(message.trim()));
+}
 
 function requiresCompanyIntent(intent: AgentIntent): boolean {
   return [

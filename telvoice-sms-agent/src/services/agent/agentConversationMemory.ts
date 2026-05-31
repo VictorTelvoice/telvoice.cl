@@ -27,6 +27,8 @@ export type ConversationMemory = {
   waitingForCsv?: boolean;
   pendingCsvUploadId?: string;
   campaignGuided?: boolean;
+  /** Timestamp ms: última confirmación de pending_action (evitar doble Confirmo). */
+  lastPendingConfirmAt?: number;
   updatedAt?: string;
 };
 

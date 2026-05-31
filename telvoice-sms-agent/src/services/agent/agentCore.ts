@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { AppError } from "../../utils/errors.js";
 import {
+  matchesCancelIntent,
+  matchesConfirmIntent,
   routeAgentIntent,
   UNAUTHORIZED_PRIVATE_MSG,
 } from "./agentIntentRouter.js";
@@ -117,12 +119,49 @@ async function handleConfirmCancel(
   }
 
   if (!pending) {
+    const mem = await getConversationMemory(sessionId, ctx.channel);
+    const recentlyConfirmed =
+      typeof mem.lastPendingConfirmAt === "number" &&
+      Date.now() - mem.lastPendingConfirmAt < 15 * 60 * 1000;
+
+    if (recentlyConfirmed) {
+      await clearSendSmsFlowMemory(sessionId, ctx.channel, ctx.companyId);
+      return {
+        reply: composeAgentResponse({
+          persona,
+          channel: ctx.channel,
+          intent: "confirm",
+          rawReply:
+            "Esta acción ya fue procesada. Puedes revisar el estado en Bandeja o iniciar una nueva campaña.",
+          memory: await getConversationMemory(sessionId, ctx.channel),
+          confidence: 0.95,
+        }),
+        intent: "confirm",
+        confidence: 0.95,
+        sessionId,
+        suggestedActions: postAgentSendQuickActions("send_campaign_csv"),
+        clearCsvUpload: true,
+        showAttachButton: false,
+      };
+    }
+
+    await clearSendSmsFlowMemory(sessionId, ctx.channel, ctx.companyId);
     return {
-      reply: "No hay acciones pendientes de confirmación.",
+      reply: composeAgentResponse({
+        persona,
+        channel: ctx.channel,
+        intent: "confirm",
+        rawReply:
+          "No encontré una acción pendiente para confirmar. Prepararé el envío nuevamente para que puedas revisarlo antes de enviarlo.",
+        memory: await getConversationMemory(sessionId, ctx.channel),
+        confidence: 0.7,
+      }),
       intent: "confirm",
-      confidence: 0.5,
+      confidence: 0.7,
       sessionId,
       suggestedActions: CLIENT_QUICK,
+      clearCsvUpload: true,
+      showAttachButton: false,
     };
   }
 
@@ -134,6 +173,12 @@ async function handleConfirmCancel(
   const rawReply = await executePendingAction(pending);
   await clearPendingActionDb(pending.id, "confirmed");
   await clearSendSmsFlowMemory(sessionId, ctx.channel, ctx.companyId);
+  await updateConversationMemory(
+    sessionId,
+    ctx.channel,
+    { lastPendingConfirmAt: Date.now() },
+    ctx.companyId,
+  );
 
   return {
     reply: composeAgentResponse({
@@ -393,6 +438,37 @@ export async function runAgentCore(
     metadata,
   };
 
+  const route = routeAgentIntent(message, channel, {
+    command,
+    authorized,
+    memory,
+  });
+
+  const isConfirmOrCancel =
+    route.intent === "confirm" ||
+    route.intent === "cancel" ||
+    matchesConfirmIntent(message) ||
+    matchesCancelIntent(message);
+
+  if (isConfirmOrCancel) {
+    if (!companyId && channel === "web_client") {
+      throw new AppError("Sesión de empresa requerida.", 401);
+    }
+    if (companyId) {
+      execCtx.companyId = companyId;
+    }
+    const result = await handleConfirmCancel(message, execCtx, sessionId, metadata);
+    sessionId = await persistTurn(
+      channel,
+      companyId,
+      request.userId,
+      sessionId,
+      message,
+      result,
+    );
+    return { ...result, sessionId };
+  }
+
   if (channel === "web_client" && companyId) {
     const flowFirst = await tryActiveSendSmsFlowFirst(
       message,
@@ -419,31 +495,6 @@ export async function runAgentCore(
       );
       return { ...flowOut, sessionId };
     }
-  }
-
-  const route = routeAgentIntent(message, channel, {
-    command,
-    authorized,
-    memory,
-  });
-
-  if (route.intent === "confirm" || route.intent === "cancel") {
-    if (!companyId && channel === "web_client") {
-      throw new AppError("Sesión de empresa requerida.", 401);
-    }
-    if (companyId) {
-      execCtx.companyId = companyId;
-    }
-    const result = await handleConfirmCancel(message, execCtx, sessionId, metadata);
-    sessionId = await persistTurn(
-      channel,
-      companyId,
-      request.userId,
-      sessionId,
-      message,
-      result,
-    );
-    return { ...result, sessionId };
   }
 
   if (route.requiresAuth && !companyId && channel !== "landing") {

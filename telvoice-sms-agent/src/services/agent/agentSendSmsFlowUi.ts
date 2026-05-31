@@ -19,6 +19,19 @@ export function isFlowExitCommand(message: string): boolean {
   );
 }
 
+/** No interceptar confirmación/cancelación en el flujo SMS activo. */
+export function isConfirmOrCancelCommand(message: string): boolean {
+  const t = message.trim();
+  if (
+    /^(confirmo|si confirmo|sí confirmo|confirmar|ok confirmo|si confirmar|sí confirmar|confirmar envio|confirmar envío|confirmar campaña|confirmar campana|enviar ahora|sí, confirmar|si, confirmar|confirmo envio|confirmo envío)\b/i.test(
+      t,
+    )
+  ) {
+    return true;
+  }
+  return isFlowExitCommand(t);
+}
+
 export function isActiveSendSmsFlow(memory: ConversationMemory): boolean {
   return Boolean(
     memory.sendSmsFlowActive ||

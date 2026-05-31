@@ -32,7 +32,7 @@ import type { RoutedIntent } from "./agentIntentRouter.js";
 import type { ConversationMemory } from "./agentConversationMemory.js";
 import {
   enrichPanelFlowUi,
-  isFlowExitCommand,
+  isConfirmOrCancelCommand,
   SEND_SMS_FLOW_STEP,
   shouldForceSendSmsFlow,
 } from "./agentSendSmsFlowUi.js";
@@ -75,7 +75,7 @@ export async function tryActiveSendSmsFlowFirst(
   if (ctx.channel !== "web_client" || !ctx.companyId) {
     return null;
   }
-  if (isFlowExitCommand(message)) {
+  if (isConfirmOrCancelCommand(message)) {
     return null;
   }
   if (!shouldForceSendSmsFlow(memory)) {
@@ -210,6 +210,7 @@ export async function clearSendSmsFlowMemory(
       pendingSmsMessage: undefined,
       pendingCsvUploadId: undefined,
       campaignGuided: undefined,
+      lastPendingConfirmAt: undefined,
     },
     companyId,
   );
@@ -553,7 +554,7 @@ export async function handleSendSmsFlow(
     }
   }
 
-  if (csvUploadId && msgBody) {
+  if (csvUploadId && msgBody && !isConfirmOrCancelCommand(message)) {
     memory = await setFlowMemory(sessionId, ctx.channel, ctx.companyId, {
       pendingSmsMessage: msgBody,
       pendingCsvUploadId: csvUploadId,
