@@ -86,9 +86,12 @@ export function getPanelResponsiveStyles(): string {
       .tv-send-main {
         order: 1;
       }
-      .tv-dash-grid--2,
-      .tv-client-dash-tables {
+      .tv-dash-grid--2:not(.tv-client-dash-tables) {
         grid-template-columns: 1fr;
+      }
+      .tv-client-dashboard .tv-client-dash-tables {
+        display: grid;
+        grid-template-columns: 1fr !important;
       }
       .tv-stat-chips:not(.tv-stat-chips--ops) {
         flex-wrap: wrap;
@@ -197,8 +200,10 @@ export function getPanelResponsiveStyles(): string {
     }
 
     @media (max-width: 640px) {
-      .tv-kpi-grid--client,
-      .tv-kpi-grid {
+      .tv-kpi-grid--client {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .tv-kpi-grid:not(.tv-kpi-grid--client) {
         grid-template-columns: 1fr;
       }
       .tv-mode-grid {

@@ -230,10 +230,10 @@ export function renderAppDashboardPage(
     ${renderPageHeader({
       title: "Dashboard",
       subtitle: `Resumen de ${escapeHtml(ctx.company.name)}`,
-      actions: renderBtn("Comprar SMS", {
-        href: "/app/buy-sms",
+      actions: renderBtn("Enviar SMS", {
+        href: "/app/send-sms",
         variant: "primary",
-        icon: "shopping_cart",
+        icon: "send",
       }),
     })}
     <div class="tv-kpi-grid tv-kpi-grid--client">
