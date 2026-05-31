@@ -2009,6 +2009,9 @@
       .tv-mode-grid {
         grid-template-columns: 1fr !important;
       }
+      .tv-app-send-page .tv-mode-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
       .tv-page-title {
         font-size: 1.35rem;
         line-height: 1.25;
@@ -2704,6 +2707,57 @@
     }
     .tv-app-send-page .tv-page-header {
       margin-bottom: 0;
+    }
+    .tv-app-send-page .tv-head-nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .tv-app-send-page .tv-head-nav-btn__icon {
+      font-size: 1.2rem;
+    }
+    @media (max-width: 640px) {
+      .tv-app-send-page .tv-page-head--send .tv-page-actions {
+        grid-row: 1 / span 2;
+        align-self: center;
+      }
+      .tv-app-send-page .tv-header-send-btn,
+      .tv-app-send-page #tv-header-send-btn {
+        display: none !important;
+      }
+      .tv-app-send-page .tv-head-nav-btn__label {
+        display: none;
+      }
+      .tv-app-send-page .tv-head-nav-btn {
+        width: 2.5rem;
+        height: 2.5rem;
+        padding: 0;
+        justify-content: center;
+        gap: 0;
+        border-radius: 10px;
+      }
+      .tv-app-send-page .tv-mode-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+      }
+      .tv-app-send-page .tv-mode-card {
+        padding: 0.7rem 0.55rem;
+      }
+      .tv-app-send-page .tv-mode-card__icon {
+        font-size: 1.15rem;
+        margin-bottom: 0.25rem;
+      }
+      .tv-app-send-page .tv-mode-card__label {
+        font-size: 0.8rem;
+      }
+      .tv-app-send-page .tv-mode-card__desc {
+        font-size: 0.68rem;
+        line-height: 1.3;
+      }
+      .tv-app-send-page .tv-stat-chips--ops {
+        display: none !important;
+      }
     }
     .tv-send-outcome {
       margin: 0;

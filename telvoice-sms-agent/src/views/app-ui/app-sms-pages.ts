@@ -356,10 +356,16 @@ export function renderAppSendSmsPage(
   const suggestedSenderId = suggestSenderIdFromCompanyName(ctx.company.name);
   const companyDisplayName = ctx.company.name.trim() || "Tu empresa";
 
+  const headerNavBtn = (label: string, href: string, icon: string) =>
+    `<a href="${escapeHtml(href)}" class="btn btn-ghost btn-sm tv-head-nav-btn" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
+      <span class="material-symbols-outlined tv-head-nav-btn__icon" aria-hidden="true">${escapeHtml(icon)}</span>
+      <span class="tv-head-nav-btn__label">${escapeHtml(label)}</span>
+    </a>`;
+
   const headerActions = `
-    ${renderBtn("Bandeja", { href: "/app/inbox", variant: "ghost" })}
-    ${renderBtn("Reportes", { href: "/app/reports", variant: "ghost" })}
-    <button type="submit" form="tv-app-send-form" class="tv-btn-campaign" id="tv-header-send-btn" ${submitDisabled}>
+    ${headerNavBtn("Bandeja", "/app/inbox", "inbox")}
+    ${headerNavBtn("Reportes", "/app/reports", "bar_chart")}
+    <button type="submit" form="tv-app-send-form" class="tv-btn-campaign tv-header-send-btn" id="tv-header-send-btn" ${submitDisabled}>
       <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">send</span>
       Enviar SMS
     </button>`;
@@ -548,6 +554,7 @@ export function renderAppSendSmsPage(
     ${renderPageHeader({
       title: "Enviar SMS",
       subtitle: "Individual, campaña masiva, programación o plantillas preaprobadas.",
+      headClass: "tv-page-head--title-cta tv-page-head--send",
       actions: panel ? headerActions : undefined,
     })}
     ${errorBlock}

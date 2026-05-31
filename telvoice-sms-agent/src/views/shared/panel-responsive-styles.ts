@@ -209,6 +209,9 @@ export function getPanelResponsiveStyles(): string {
       .tv-mode-grid {
         grid-template-columns: 1fr !important;
       }
+      .tv-app-send-page .tv-mode-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
       .tv-page-title {
         font-size: 1.35rem;
         line-height: 1.25;
