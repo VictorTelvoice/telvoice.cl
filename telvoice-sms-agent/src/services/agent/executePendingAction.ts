@@ -15,6 +15,73 @@ import { calculateSmsSegments, validateRecipientNumber } from "../smsSegmentServ
 import { createSmsCampaign, updateSmsCampaign } from "../smsCampaignService.js";
 import type { StoredPendingAction } from "./pendingActions.js";
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const AGENT_SEND_SAFE_ERROR =
+  "No pude completar el envío por un problema interno de validación. El equipo Telvoice puede revisarlo con el registro de esta operación. No se descontó saldo si el envío no fue aceptado.";
+
+/** Clave idempotente válida para sendPanelSms / sendPanelCampaign (UUID v4). */
+export function resolvePendingActionIdempotencyKey(pendingId: string): string {
+  const id = pendingId.trim();
+  if (UUID_RE.test(id)) {
+    return id;
+  }
+  return randomUUID();
+}
+
+function logAgentSendFailure(pending: StoredPendingAction, err: unknown): void {
+  const technical = err instanceof Error ? err.message : String(err ?? "");
+  const stack = err instanceof Error ? err.stack : undefined;
+  console.error(
+    "[agent-send]",
+    JSON.stringify({
+      pending_action_id: pending.id,
+      company_id: pending.context.companyId,
+      user_id: pending.context.userId,
+      channel: pending.context.channel,
+      action_type: pending.type,
+      session_id: pending.context.sessionId,
+      error: technical,
+      stack,
+      phase: "execute_before_provider_accept",
+    }),
+  );
+}
+
+export function formatAgentSmsSendError(
+  err: unknown,
+  pending?: StoredPendingAction,
+): string {
+  if (pending) {
+    logAgentSendFailure(pending, err);
+  }
+  const technical = err instanceof Error ? err.message : String(err ?? "");
+  if (/idempotency|uuid\s+válido|uuid valido/i.test(technical)) {
+    return AGENT_SEND_SAFE_ERROR;
+  }
+  if (err instanceof AppError) {
+    const msg = err.message;
+    if (/idempotency|uuid\s+válido|uuid valido/i.test(msg)) {
+      return AGENT_SEND_SAFE_ERROR;
+    }
+    if (/saldo|insuficiente|wallet/i.test(msg)) {
+      return "No tienes saldo suficiente para este envío. Puedo ayudarte a comprar más SMS.";
+    }
+    if (/proveedor|provider|rechaz|no aceptó/i.test(msg)) {
+      return `El proveedor rechazó el SMS. Motivo: ${msg}`;
+    }
+    if (err.statusCode >= 500) {
+      return AGENT_SEND_SAFE_ERROR;
+    }
+    if (err.statusCode >= 400 && !/idempotency/i.test(msg)) {
+      return msg;
+    }
+    return AGENT_SEND_SAFE_ERROR;
+  }
+  return AGENT_SEND_SAFE_ERROR;
+}
+
 async function executeMockSingleSms(input: {
   companyId: string;
   userId: string | null;
@@ -215,6 +282,7 @@ export async function executePendingAction(
         }
 
         try {
+          const idempotencyKey = resolvePendingActionIdempotencyKey(pending.id);
           const result = await sendPanelSms({
             companyId,
             to,
@@ -222,18 +290,18 @@ export async function executePendingAction(
             senderId,
             createdBy: userId,
             sendSource: APP_CLIENT_LIVE_SOURCE,
-            idempotencyKey: `agent-pending-${pending.id}`,
+            idempotencyKey,
           });
           return (
             `SMS aceptado.\n\n` +
             `Destino: ${result.recipientNumber.replace(/\D/g, "").replace(/^\+?56/, "56")}\n` +
-            `Estado: Enviado a cola/proveedor\n` +
+            `Estado: En cola / enviado a proveedor\n` +
             `Referencia: ${result.messageId}\n` +
-            `Crédito consumido/estimado: ${result.segments} SMS\n\n` +
+            `Crédito estimado: ${result.segments} SMS\n\n` +
             `Puedes revisar el estado en Bandeja.`
           );
         } catch (err) {
-          return formatAgentSmsSendError(err);
+          return formatAgentSmsSendError(err, pending);
         }
       }
 
@@ -257,6 +325,7 @@ export async function executePendingAction(
         }
 
         try {
+          const idempotencyKey = resolvePendingActionIdempotencyKey(pending.id);
           const result = await sendPanelCampaign({
             companyId,
             senderId,
@@ -266,7 +335,7 @@ export async function executePendingAction(
             mode: "mass",
             createdBy: userId,
             sendSource: "app_send_sms_campaign",
-            idempotencyKey: `agent-csv-${pending.id}`,
+            idempotencyKey,
           });
           return (
             `Campaña aceptada.\n\n` +
@@ -278,7 +347,7 @@ export async function executePendingAction(
             `Referencia: ${result.campaignId}`
           );
         } catch (err) {
-          return formatAgentSmsSendError(err);
+          return formatAgentSmsSendError(err, pending);
         }
       }
 
@@ -301,20 +370,6 @@ export async function executePendingAction(
       default:
         return "Acción no reconocida.";
     }
-}
-
-function formatAgentSmsSendError(err: unknown): string {
-  if (err instanceof AppError) {
-    const msg = err.message;
-    if (/saldo|insuficiente|wallet/i.test(msg)) {
-      return "No tienes saldo suficiente para este envío. Puedo ayudarte a comprar más SMS.";
-    }
-    if (/proveedor|provider|rechaz|no aceptó/i.test(msg)) {
-      return `El proveedor rechazó el SMS. Motivo: ${msg}`;
-    }
-    return msg;
-  }
-  return "El proveedor rechazó el SMS. Revisa la configuración de tu cuenta o contacta soporte.";
 }
 
 export function buildSendSmsPendingPayload(input: {

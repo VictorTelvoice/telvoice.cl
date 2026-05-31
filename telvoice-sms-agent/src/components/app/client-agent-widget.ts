@@ -248,6 +248,10 @@ export function getPanelAgentWidgetScript(): string {
     if (!file || !sessionId) return;
     if (file.size > 5 * 1024 * 1024) {
       appendBubble("bot", "El archivo supera 5 MB. Usa una planilla más pequeña.");
+      if (fileHint) {
+        fileHint.hidden = true;
+        fileHint.className = "tva-file-hint";
+      }
       return;
     }
     var name = file.name || "planilla.csv";
@@ -270,12 +274,18 @@ export function getPanelAgentWidgetScript(): string {
       removeTyping();
       if (!data.success) {
         appendBubble("bot", data.error || "No pude leer la planilla.");
+        if (fileHint) {
+          fileHint.hidden = false;
+          fileHint.className = "tva-file-hint";
+          fileHint.textContent = "";
+        }
         return;
       }
       applyAgentResponse(data);
       if (fileHint) {
         fileHint.hidden = false;
-        fileHint.textContent = "Archivo: " + name;
+        fileHint.className = "tva-file-hint tva-file-hint--ok";
+        fileHint.textContent = "Archivo cargado: " + name;
       }
     } catch (e) {
       removeTyping();
