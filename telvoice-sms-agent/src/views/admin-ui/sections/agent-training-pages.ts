@@ -2,7 +2,11 @@ import type { AdminSessionUser } from "../../../types/admin.js";
 import type { KnowledgeArticleRow } from "../../../types/knowledge.js";
 import type { UnansweredQuestionRow } from "../../../services/agent/agentUnansweredService.js";
 import type { UnansweredStats } from "../../../services/agent/agentUnansweredService.js";
-import type { AgentFeedbackRow, AgentFeedbackDetail, FeedbackStats } from "../../../services/agent/agentFeedbackService.js";
+import type {
+  AgentFeedbackListItem,
+  AgentFeedbackDetail,
+  FeedbackStats,
+} from "../../../services/agent/agentFeedbackService.js";
 import {
   renderTelvoiceAgentHubBanner,
   TELVOICE_AGENT_LABELS,
@@ -342,7 +346,7 @@ export function renderAgentTrainingCreateArticleForm(options: {
 
 export function renderAgentTrainingFeedbackList(options: {
   admin: AdminSessionUser;
-  rows: AgentFeedbackRow[];
+  rows: AgentFeedbackListItem[];
   stats: FeedbackStats;
   filters: {
     rating?: "helpful" | "not_helpful" | "all";
@@ -390,11 +394,13 @@ export function renderAgentTrainingFeedbackList(options: {
           const isNegative = r.rating != null && r.rating <= 2;
           const rowClass = isNegative ? ' style="background:#fff7f7"' : "";
           const question =
+            ("user_question" in r && typeof r.user_question === "string" && r.user_question) ||
             (r.metadata &&
               typeof r.metadata.user_question === "string" &&
               r.metadata.user_question) ||
             "—";
           const answer =
+            ("agent_response" in r && typeof r.agent_response === "string" && r.agent_response) ||
             (r.metadata &&
               typeof r.metadata.agent_response === "string" &&
               r.metadata.agent_response) ||
@@ -581,7 +587,11 @@ export function renderAgentTrainingFeedbackDetail(options: {
       <form method="post" action="/admin/agent-training/feedback/${escapeHtml(d.id)}/ignore" style="display:inline" onsubmit="return confirm('¿Ignorar este feedback?');">
         <button type="submit" class="btn btn-ghost">Ignorar</button>
       </form>
+      <form method="post" action="/admin/agent-training/feedback/${escapeHtml(d.id)}/backfill" style="display:inline">
+        <button type="submit" class="btn btn-ghost">Sincronizar pregunta/respuesta</button>
+      </form>
     </div>
+    <p class="field-hint" style="margin:-0.5rem 0 1rem">Test de regresión: <code>npm run test:agent-feedback-cases</code> (casos derivados de feedback negativo).</p>
     <div class="tv-panel" style="margin-bottom:1rem">
       <h3 style="margin:0 0 0.75rem">Elaborar respuesta correcta</h3>
       <form method="post" action="/admin/agent-training/feedback/${escapeHtml(d.id)}/propose-answer">

@@ -316,6 +316,14 @@ export function routeAgentIntent(
     return { intent: "dlr_help", confidence: 0.82, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
   }
 
+  if (
+    /\b(no esta autorizado|no está autorizado|numero.*autorizado|número.*autorizado|destino.*autorizado|no autorizado|whitelist|ip no autorizada)\b/.test(
+      normalized,
+    )
+  ) {
+    return { intent: "dlr_help", confidence: 0.88, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
+  }
+
   if (/\b(cotizar|comprar|quiero \d+.*sms)\b/.test(normalized)) {
     return {
       intent: "quote_purchase",
@@ -327,11 +335,11 @@ export function routeAgentIntent(
   }
 
   if (
-    /\b(crear campana|crear campaña|nueva campaña|borrador|enviar campaña|enviar campana|quiero campaña)\b/.test(
+    /\b(ayudame a crear|ayúdame a crear|crear\s+(?:una\s+)?campana|crear\s+(?:una\s+)?campaña|nueva campaña|borrador|enviar campaña|enviar campana|quiero campaña)\b/.test(
       normalized,
     )
   ) {
-    return { intent: "campaign_draft", confidence: 0.8, commercialQuantity: null, requiresAuth: true, operationalCommand: null };
+    return { intent: "campaign_draft", confidence: 0.88, commercialQuantity: null, requiresAuth: true, operationalCommand: null };
   }
 
   if (/\b(enviar campana|lanzar campaña)\b/.test(normalized)) {
@@ -347,7 +355,9 @@ export function routeAgentIntent(
   }
 
   if (
-    /\b(api|smpp|whitelist|ip |encoding|segmento tecnico)\b/.test(normalized) &&
+    /\b(api|integrar|integracion|integración|smpp|whitelist|ip |encoding|segmento tecnico)\b/.test(
+      normalized,
+    ) &&
     !commercial &&
     !commercialBuy
   ) {

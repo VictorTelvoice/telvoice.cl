@@ -88,6 +88,13 @@ const MIGRATIONS = [
       WHERE table_schema = 'public' AND table_name = 'agent_feedback'
         AND column_name = 'status'`,
   },
+  {
+    id: "051",
+    file: "051_agent_feedback_knowledge_fixes.sql",
+    check: `SELECT 1 FROM knowledge_articles
+      WHERE title = 'Número de destino no autorizado en Telvoice'
+      LIMIT 1`,
+  },
 ];
 
 const connectionString = process.env.DATABASE_URL?.trim();

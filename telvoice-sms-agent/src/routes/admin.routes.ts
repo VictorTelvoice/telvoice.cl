@@ -61,6 +61,7 @@ import {
   getAdminAgentUnanswered,
   postAdminAgentCreateArticle,
   postAdminAgentFeedbackCreateArticle,
+  postAdminAgentFeedbackBackfill,
   postAdminAgentFeedbackCreateUnanswered,
   postAdminAgentFeedbackIgnore,
   postAdminAgentFeedbackMarkReviewed,
@@ -672,7 +673,13 @@ adminRouter.post(
 adminRouter.post(
   "/agent-training/feedback/:id/create-unanswered",
   requireAdminPage,
+  postAdminAgentFeedbackBackfill,
   postAdminAgentFeedbackCreateUnanswered,
+);
+adminRouter.post(
+  "/agent-training/feedback/:id/backfill",
+  requireAdminPage,
+  postAdminAgentFeedbackBackfill,
 );
 adminRouter.get(
   "/agent-training/feedback/:id",

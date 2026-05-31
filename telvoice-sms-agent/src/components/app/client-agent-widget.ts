@@ -98,7 +98,7 @@ export function getPanelAgentWidgetScript(): string {
     log.scrollTop = log.scrollHeight;
   }
 
-  function appendBubble(role, text) {
+  function appendBubble(role, text, turnCtx) {
     removeTyping();
     var wrap = document.createElement("div");
     wrap.className = "tva-msg-wrap tva-msg-wrap--" + (role === "user" ? "user" : "bot");
@@ -107,6 +107,12 @@ export function getPanelAgentWidgetScript(): string {
     el.textContent = String(text || "").replace(/\\*\\*/g, "");
     wrap.appendChild(el);
     if (role !== "user" && sessionId) {
+      var ctx = turnCtx || {
+        user: lastUserMessage,
+        agent: lastAgentReply,
+        intent: lastIntent,
+        confidence: lastConfidence
+      };
       var fb = document.createElement("div");
       fb.className = "tva-feedback";
       fb.setAttribute("role", "group");
@@ -114,13 +120,13 @@ export function getPanelAgentWidgetScript(): string {
       var up = document.createElement("button");
       up.type = "button";
       up.textContent = "👍 Me sirvió";
-      up.addEventListener("click", function () { sendFeedback(5, ""); });
+      up.addEventListener("click", function () { sendFeedback(5, "", ctx); });
       var down = document.createElement("button");
       down.type = "button";
       down.textContent = "👎 No me sirvió";
       down.addEventListener("click", function () {
         var c = window.prompt("¿Qué faltó en la respuesta?");
-        sendFeedback(1, c || "");
+        sendFeedback(1, c || "", ctx);
       });
       fb.appendChild(up);
       fb.appendChild(down);
@@ -130,8 +136,14 @@ export function getPanelAgentWidgetScript(): string {
     log.scrollTop = log.scrollHeight;
   }
 
-  async function sendFeedback(rating, feedbackText) {
+  async function sendFeedback(rating, feedbackText, turnCtx) {
     if (!sessionId) return;
+    var ctx = turnCtx || {
+      user: lastUserMessage,
+      agent: lastAgentReply,
+      intent: lastIntent,
+      confidence: lastConfidence
+    };
     try {
       await fetch("/api/app/agent/feedback", {
         method: "POST",
@@ -141,10 +153,10 @@ export function getPanelAgentWidgetScript(): string {
           sessionId: sessionId,
           rating: rating,
           feedbackText: feedbackText,
-          lastQuestion: lastUserMessage,
-          lastReply: lastAgentReply,
-          intent: lastIntent || undefined,
-          confidence: lastConfidence
+          lastQuestion: ctx.user || lastUserMessage,
+          lastReply: ctx.agent || lastAgentReply,
+          intent: ctx.intent || lastIntent || undefined,
+          confidence: ctx.confidence != null ? ctx.confidence : lastConfidence
         })
       });
       appendBubble("bot", rating >= 4 ? "Gracias por tu feedback." : "Gracias, lo revisaremos para mejorar.");
@@ -175,8 +187,20 @@ export function getPanelAgentWidgetScript(): string {
       var data = await res.json();
       if (!data.success || !data.messages) return;
       log.innerHTML = "";
+      var pendingUser = "";
       data.messages.forEach(function (m) {
-        appendBubble(m.role === "user" ? "user" : "bot", m.content);
+        if (m.role === "user") {
+          pendingUser = m.content;
+          appendBubble("user", m.content);
+        } else {
+          var meta = m.metadata || {};
+          appendBubble("bot", m.content, {
+            user: pendingUser,
+            agent: m.content,
+            intent: meta.intent || "",
+            confidence: typeof meta.confidence === "number" ? meta.confidence : null
+          });
+        }
       });
     } catch (e) {}
   }
@@ -215,7 +239,12 @@ export function getPanelAgentWidgetScript(): string {
       lastAgentReply = data.reply || "";
       lastIntent = data.intent || "";
       lastConfidence = typeof data.confidence === "number" ? data.confidence : null;
-      appendBubble("bot", data.reply || "");
+      appendBubble("bot", data.reply || "", {
+        user: lastUserMessage,
+        agent: lastAgentReply,
+        intent: lastIntent,
+        confidence: lastConfidence
+      });
       if (data.suggestedActions && data.suggestedActions.length) {
         var fromApi = data.suggestedActions.filter(function (a) { return a.message; }).slice(0, 6);
         if (fromApi.length) quickActions = fromApi;

@@ -508,7 +508,10 @@ export async function runAgentCore(
     response.intent !== "commercial" &&
     response.intent !== "knowledge" &&
     response.intent !== "send_sms" &&
-    !matchesSendSmsIntent(message)
+    response.intent !== "campaign_draft" &&
+    response.intent !== "technical_doubt" &&
+    !matchesSendSmsIntent(message) &&
+    !/\b(ayudame a crear|ayúdame a crear|crear\s+(?:una\s+)?campana)\b/i.test(message)
   ) {
     const k = await searchKnowledgeForChannel(message, channel);
     if (k.matched && k.confidence > response.confidence) {

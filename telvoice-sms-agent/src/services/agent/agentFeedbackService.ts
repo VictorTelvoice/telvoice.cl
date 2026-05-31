@@ -6,6 +6,10 @@ import {
   listPanelAgentMessagesForAdmin,
   type PanelAgentMessageRow,
 } from "./panelAgentSessionService.js";
+import {
+  deriveQaFromMessages,
+  resolveFeedbackQaFromSession,
+} from "./agentFeedbackContext.js";
 import { recordUnansweredQuestion } from "./agentUnansweredService.js";
 import type { AgentChannel } from "./types.js";
 
@@ -36,6 +40,11 @@ export type AgentFeedbackRow = {
   confidence: number | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
+};
+
+export type AgentFeedbackListItem = AgentFeedbackRow & {
+  user_question: string | null;
+  agent_response: string | null;
 };
 
 export type AgentFeedbackDetail = AgentFeedbackRow & {
@@ -113,26 +122,22 @@ function metaString(
   return v || null;
 }
 
-function deriveQaFromMessages(messages: PanelAgentMessageRow[]): {
-  user_question: string | null;
-  agent_response: string | null;
-} {
-  let user_question: string | null = null;
-  let agent_response: string | null = null;
-  for (let i = messages.length - 1; i >= 0; i -= 1) {
-    const m = messages[i];
-    if (!m) continue;
-    if (!agent_response && m.role === "assistant") {
-      agent_response = m.content;
-    }
-    if (!user_question && m.role === "user") {
-      user_question = m.content;
-    }
-    if (user_question && agent_response) {
-      break;
-    }
+function qaForListRow(
+  row: AgentFeedbackRow,
+  messages: PanelAgentMessageRow[],
+): { user_question: string | null; agent_response: string | null } {
+  const fromMeta = {
+    user_question: metaString(row.metadata, "user_question"),
+    agent_response: metaString(row.metadata, "agent_response"),
+  };
+  if (fromMeta.user_question && fromMeta.agent_response) {
+    return fromMeta;
   }
-  return { user_question, agent_response };
+  const fromSession = deriveQaFromMessages(messages, row.created_at);
+  return {
+    user_question: fromMeta.user_question ?? fromSession.user_question,
+    agent_response: fromMeta.agent_response ?? fromSession.agent_response,
+  };
 }
 
 export async function recordAgentFeedback(input: {
@@ -150,18 +155,41 @@ export async function recordAgentFeedback(input: {
   intent?: string | null;
   confidence?: number | null;
 }): Promise<void> {
+  let lastQuestion = input.lastQuestion?.trim() ?? "";
+  let lastReply = input.lastReply?.trim() ?? "";
+  let intent = input.intent ?? null;
+  let confidence = input.confidence ?? null;
+
+  if ((!lastQuestion || !lastReply) && input.sessionId) {
+    const resolved = await resolveFeedbackQaFromSession({
+      sessionId: input.sessionId,
+    });
+    if (!lastQuestion && resolved.user_question) {
+      lastQuestion = resolved.user_question;
+    }
+    if (!lastReply && resolved.agent_response) {
+      lastReply = resolved.agent_response;
+    }
+    if (!intent && resolved.intent) {
+      intent = resolved.intent;
+    }
+    if (confidence == null && resolved.confidence != null) {
+      confidence = resolved.confidence;
+    }
+  }
+
   const metadata: Record<string, unknown> = {};
-  if (input.lastQuestion) {
-    metadata.user_question = input.lastQuestion.slice(0, 2000);
+  if (lastQuestion) {
+    metadata.user_question = lastQuestion.slice(0, 2000);
   }
-  if (input.lastReply) {
-    metadata.agent_response = input.lastReply.slice(0, 4000);
+  if (lastReply) {
+    metadata.agent_response = lastReply.slice(0, 4000);
   }
-  if (input.intent) {
-    metadata.intent = input.intent;
+  if (intent) {
+    metadata.intent = intent;
   }
-  if (input.confidence != null && Number.isFinite(input.confidence)) {
-    metadata.confidence = input.confidence;
+  if (confidence != null && Number.isFinite(confidence)) {
+    metadata.confidence = confidence;
   }
 
   const row = {
@@ -176,11 +204,9 @@ export async function recordAgentFeedback(input: {
     feedback_text: input.feedbackText?.trim().slice(0, 2000) ?? null,
     resolved: input.rating >= 4,
     status: input.rating >= 4 ? "reviewed" : "new",
-    detected_intent: input.intent ?? null,
+    detected_intent: intent,
     confidence:
-      input.confidence != null && Number.isFinite(input.confidence)
-        ? input.confidence
-        : null,
+      confidence != null && Number.isFinite(confidence) ? confidence : null,
     metadata,
   };
 
@@ -202,15 +228,15 @@ export async function recordAgentFeedback(input: {
     }
   }
 
-  if (input.rating <= 2 && input.lastQuestion) {
+  if (input.rating <= 2 && lastQuestion) {
     await recordUnansweredQuestion({
       channel: input.channel,
       sessionId: input.sessionId,
       userId: input.userId,
       companyId: input.companyId,
-      question: input.lastQuestion,
-      detectedIntent: input.intent ?? "negative_feedback",
-      confidence: input.confidence ?? 0.4,
+      question: lastQuestion,
+      detectedIntent: intent ?? "negative_feedback",
+      confidence: confidence ?? 0.4,
       suggestedCategory: "soporte",
     });
   }
@@ -218,7 +244,7 @@ export async function recordAgentFeedback(input: {
 
 export async function listAgentFeedback(
   filters: FeedbackListFilters = {},
-): Promise<AgentFeedbackRow[]> {
+): Promise<AgentFeedbackListItem[]> {
   const limit = filters.limit ?? 150;
   let query = getSupabase()
     .from("agent_feedback")
@@ -259,7 +285,9 @@ export async function listAgentFeedback(
 
   if (error) {
     if (isMissingTableError(error)) {
-      return filterMemoryFeedback(memoryFeedback, filters).slice(0, limit);
+      return enrichFeedbackListRows(
+        filterMemoryFeedback(memoryFeedback, filters).slice(0, limit),
+      );
     }
     wrapSupabaseError(error, "listAgentFeedback");
   }
@@ -281,7 +309,44 @@ export async function listAgentFeedback(
     });
   }
 
-  return rows;
+  return enrichFeedbackListRows(rows);
+}
+
+async function enrichFeedbackListRows(
+  rows: AgentFeedbackRow[],
+): Promise<AgentFeedbackListItem[]> {
+  if (!rows.length) return [];
+
+  const sessionIds = [...new Set(rows.map((r) => r.session_id))];
+  const messagesBySession = new Map<string, PanelAgentMessageRow[]>();
+
+  await Promise.all(
+    sessionIds.map(async (sid) => {
+      const msgs = await listPanelAgentMessagesForAdmin(sid, 40);
+      messagesBySession.set(sid, msgs);
+    }),
+  );
+
+  return rows.map((row) => {
+    const msgs = messagesBySession.get(row.session_id) ?? [];
+    const qa = qaForListRow(row, msgs);
+    const fromSession = deriveQaFromMessages(msgs, row.created_at);
+    return {
+      ...row,
+      user_question: qa.user_question,
+      agent_response: qa.agent_response,
+      detected_intent:
+        row.detected_intent ??
+        metaString(row.metadata, "intent") ??
+        fromSession.intent,
+      confidence:
+        row.confidence ??
+        (metaString(row.metadata, "confidence")
+          ? Number(metaString(row.metadata, "confidence"))
+          : null) ??
+        fromSession.confidence,
+    };
+  });
 }
 
 function filterMemoryFeedback(
@@ -392,7 +457,7 @@ async function enrichFeedbackDetail(
     user_question: metaString(row.metadata, "user_question"),
     agent_response: metaString(row.metadata, "agent_response"),
   };
-  const fromMessages = deriveQaFromMessages(messages);
+  const fromMessages = deriveQaFromMessages(messages, row.created_at);
 
   let company_name: string | null = null;
   if (row.company_id) {
@@ -408,9 +473,37 @@ async function enrichFeedbackDetail(
     ...row,
     user_question: fromMeta.user_question ?? fromMessages.user_question,
     agent_response: fromMeta.agent_response ?? fromMessages.agent_response,
+    detected_intent:
+      row.detected_intent ?? fromMessages.intent ?? metaString(row.metadata, "intent"),
+    confidence:
+      row.confidence ??
+      fromMessages.confidence ??
+      (metaString(row.metadata, "confidence")
+        ? Number(metaString(row.metadata, "confidence"))
+        : null),
     company_name,
     messages,
   };
+}
+
+export async function backfillFeedbackContext(id: string): Promise<AgentFeedbackDetail> {
+  const detail = await getAgentFeedbackById(id);
+  const meta = { ...(detail.metadata ?? {}) };
+  if (detail.user_question) meta.user_question = detail.user_question;
+  if (detail.agent_response) meta.agent_response = detail.agent_response;
+  if (detail.detected_intent) meta.intent = detail.detected_intent;
+  if (detail.confidence != null) meta.confidence = detail.confidence;
+
+  await getSupabase()
+    .from("agent_feedback")
+    .update({
+      metadata: meta,
+      detected_intent: detail.detected_intent,
+      confidence: detail.confidence,
+    })
+    .eq("id", id);
+
+  return getAgentFeedbackById(id);
 }
 
 export async function markFeedbackReviewed(

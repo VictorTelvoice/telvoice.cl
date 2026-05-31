@@ -18,6 +18,7 @@ import {
 import { ValidationError } from "../utils/errors.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
+  backfillFeedbackContext,
   createUnansweredFromFeedback,
   getAgentFeedbackById,
   getAgentFeedbackStats,
@@ -411,6 +412,22 @@ export async function postAdminAgentFeedbackCreateUnanswered(
     await createUnansweredFromFeedback(id);
     res.redirect(
       `/admin/agent-training/feedback/${id}?success=${encodeURIComponent("Pregunta sin respuesta creada (o deduplicada).")}`,
+    );
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function postAdminAgentFeedbackBackfill(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = validateUuidParam(String(req.params.id ?? ""), "id");
+    await backfillFeedbackContext(id);
+    res.redirect(
+      `/admin/agent-training/feedback/${id}?success=${encodeURIComponent("Pregunta y respuesta sincronizadas desde la sesión.")}`,
     );
   } catch (error) {
     next(error);

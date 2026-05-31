@@ -26,6 +26,7 @@ import {
   extractCommercialQuantity,
 } from "./agentCommercialText.js";
 import type { CommercialQuoteResult } from "../../types/commercial.js";
+import { buildTechnicalDoubtReply } from "./agentTechnicalReplies.js";
 
 function toolCtx(ctx: AgentExecutionContext): AgentToolContext {
   return {
@@ -391,9 +392,20 @@ export async function dispatchRoutedIntent(
       });
 
     case "technical_doubt": {
+      const structured = buildTechnicalDoubtReply(message);
+      if (structured) {
+        return baseResponse({
+          reply: structured,
+          intent: "technical_doubt",
+          confidence: 0.9,
+          sessionId,
+        });
+      }
       const k = await searchKnowledgeForChannel(message, ctx.channel);
       return baseResponse({
-        reply: k.matched ? k.reply : "Consulta técnica: revisa API y documentación en el panel o pide whitelist IP en soporte.",
+        reply: k.matched
+          ? k.reply
+          : "Consulta técnica: revisa API y documentación en el panel o pide whitelist IP en soporte.",
         intent: k.matched ? "knowledge" : "technical_doubt",
         confidence: k.confidence || route.confidence,
         sessionId,

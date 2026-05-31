@@ -31,16 +31,28 @@ export const optimizeSmsCopyTool = {
       return { ok: false, summary: "Pega el mensaje a optimizar.", error: "empty" };
     }
     const analysis = analyzeSmsText(original);
-    const short = shortenCommercial(original);
-    const shortAnalysis = analyzeSmsText(short);
+    let short = shortenCommercial(original);
+    let shortAnalysis = analyzeSmsText(short);
 
     const lines = [
       `Original: ${analysis.characters} caracteres, ${analysis.segments} segmento(s).`,
       "",
-      "Versión más corta sugerida:",
-      `«${short}»`,
-      `${shortAnalysis.characters} caracteres, ${shortAnalysis.segments} segmento(s).`,
     ];
+
+    if (shortAnalysis.characters >= analysis.characters) {
+      short = original;
+      shortAnalysis = analysis;
+      lines.push(
+        "Tu mensaje ya es breve (1 segmento). No agregué texto extra para no aumentar el costo.",
+        `«${original}»`,
+      );
+    } else {
+      lines.push(
+        "Versión más corta sugerida:",
+        `«${short}»`,
+        `${shortAnalysis.characters} caracteres, ${shortAnalysis.segments} segmento(s).`,
+      );
+    }
 
     if (input.tone === "formal") {
       lines.push("", "Versión formal: mantén saludo breve y CTA explícito.");
