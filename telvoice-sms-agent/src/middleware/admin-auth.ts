@@ -6,7 +6,11 @@ import {
   resolveAdminSession,
   verifyAdminToken,
 } from "../services/adminAuthService.js";
-import { canAccessClientPanel } from "../types/roles.js";
+import {
+  canAccessAdminPanel,
+  canAccessClientPanel,
+  normalizeRole,
+} from "../types/roles.js";
 import { getCurrentUserProfile } from "../services/userProfileService.js";
 import type { AdminSessionUser } from "../types/admin.js";
 import type { UserProfileContext } from "../types/tenant.js";
@@ -34,9 +38,10 @@ async function attachProfile(req: Request): Promise<void> {
   req.userProfile = profile;
 
   if (profile) {
+    const adminRole = normalizeRole(req.adminUser.role);
     req.adminUser = {
       ...req.adminUser,
-      role: profile.role,
+      role: canAccessAdminPanel(adminRole) ? adminRole : profile.role,
       companyId: profile.companyId,
       profileId: profile.profileId,
     };

@@ -7,7 +7,7 @@ import {
 } from "../types/roles.js";
 import { subjectFromAdmin } from "../auth/authorization.js";
 import {
-  authenticateAdmin,
+  authenticateAdminForAdminPanel,
   getAdminJwtCookieName,
   getClientJwtCookieName,
   getJwtCookieOptions,
@@ -49,7 +49,6 @@ import { getConfiguredDlrWebhookUrl } from "../utils/dlr-callback.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
   adminLoginPath,
-  agentPanelUrl,
   isAdminPanelHost,
 } from "../utils/panel-host.js";
 
@@ -153,7 +152,6 @@ export async function postRegister(
       resolvePostAuthRedirect(
         subjectFromAdmin(result.user, regProfile).role,
         nextPath,
-        req,
       ),
     );
   } catch (error) {
@@ -178,7 +176,7 @@ export async function postLogin(
       return;
     }
 
-    const admin = await authenticateAdmin(email, password);
+    const admin = await authenticateAdminForAdminPanel(email, password);
     if (!admin) {
       res.redirect(
         `${adminLoginPath(req)}?error=${encodeURIComponent("Credenciales inválidas.")}&next=${encodeURIComponent(nextPath)}`,
@@ -193,8 +191,20 @@ export async function postLogin(
       role: subjectFromAdmin(admin, profile).role,
       companyId: profile?.companyId ?? admin.companyId,
     };
+
+    if (
+      isAdminPanelHost(req) &&
+      canAccessClientPanel(sessionUser.role) &&
+      !canAccessAdminPanel(sessionUser.role)
+    ) {
+      res.redirect(
+        `${adminLoginPath(req)}?error=${encodeURIComponent("Esta cuenta es del panel cliente. Ingresa en agent.telvoice.cl.")}&next=${encodeURIComponent(nextPath)}`,
+      );
+      return;
+    }
+
     setSessionCookies(res, sessionUser, profile);
-    res.redirect(resolvePostAuthRedirect(sessionUser.role, nextPath, req));
+    res.redirect(resolvePostAuthRedirect(sessionUser.role, nextPath));
   } catch (error) {
     next(error);
   }
@@ -231,16 +241,9 @@ function setSessionCookies(
   res.cookie(getAdminJwtCookieName(), token, opts);
 }
 
-function resolvePostAuthRedirect(
-  role: string,
-  nextPath: string,
-  req: Request,
-): string {
+function resolvePostAuthRedirect(role: string, nextPath: string): string {
   if (canAccessClientPanel(role) && !canAccessAdminPanel(role)) {
     const appPath = nextPath.startsWith("/app") ? nextPath : "/app";
-    if (isAdminPanelHost(req)) {
-      return agentPanelUrl(appPath);
-    }
     return appPath;
   }
   if (canAccessAdminPanel(role) && nextPath.startsWith("/app")) {

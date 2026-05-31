@@ -57,6 +57,24 @@ export async function createAdminUser(input: {
   return data as AdminUserRow;
 }
 
+export async function updateAdminUser(
+  id: string,
+  patch: { password_hash?: string; role?: string; name?: string },
+): Promise<AdminUserRow> {
+  const { data, error } = await getSupabase()
+    .from("admin_users")
+    .update(patch)
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) {
+    wrapSupabaseError(error, "updateAdminUser");
+  }
+
+  return data as AdminUserRow;
+}
+
 export async function countAdminUsers(): Promise<number> {
   const { count, error } = await getSupabase()
     .from("admin_users")

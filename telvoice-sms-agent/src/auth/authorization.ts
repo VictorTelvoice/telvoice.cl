@@ -19,8 +19,15 @@ export function subjectFromAdmin(
   admin: AdminSessionUser,
   profile?: UserProfileContext | null,
 ): AuthSubject {
+  const adminRole = normalizeRole(admin.role);
+  const profileRole = profile ? normalizeRole(profile.role) : null;
+  // admin_users es la fuente de verdad para roles internos; el perfil cliente no debe degradar superadmin.
+  const role = canAccessAdminPanel(adminRole)
+    ? adminRole
+    : (profileRole ?? adminRole);
+
   return {
-    role: profile?.role ?? admin.role,
+    role,
     companyId: profile?.companyId ?? admin.companyId ?? null,
     id: profile?.profileId ?? admin.id,
   };

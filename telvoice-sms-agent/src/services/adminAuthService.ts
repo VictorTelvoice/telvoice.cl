@@ -10,6 +10,7 @@ import {
   createAdminUser,
   findAdminByEmail,
   findAdminById,
+  updateAdminUser,
 } from "./adminUserService.js";
 
 const BCRYPT_ROUNDS = 12;
@@ -99,6 +100,69 @@ export async function authenticateAdmin(
     name: admin.name,
     role: admin.role,
   };
+}
+
+function isConfiguredSuperadminLogin(email: string, password: string): boolean {
+  const configuredEmail = env.admin.superadminEmail?.trim().toLowerCase();
+  const configuredPassword = env.admin.superadminPassword;
+  if (!configuredEmail || !configuredPassword) {
+    return false;
+  }
+  return email.trim().toLowerCase() === configuredEmail && password === configuredPassword;
+}
+
+/** Eleva o crea superadmin cuando el login coincide con SUPERADMIN_EMAIL/PASSWORD del entorno. */
+export async function ensureSuperadminFromEnvCredentials(input: {
+  email: string;
+  password: string;
+  name?: string;
+}): Promise<AdminSessionUser | null> {
+  const email = input.email.trim().toLowerCase();
+  if (!isConfiguredSuperadminLogin(email, input.password)) {
+    return null;
+  }
+
+  const password_hash = await hashPassword(input.password);
+  const existing = await findAdminByEmail(email);
+
+  if (existing) {
+    const admin = await updateAdminUser(existing.id, {
+      role: ROLES.SUPERADMIN,
+      password_hash,
+    });
+    return {
+      id: admin.id,
+      email: admin.email,
+      name: admin.name,
+      role: admin.role,
+    };
+  }
+
+  const admin = await createAdminUser({
+    email,
+    password_hash,
+    name: input.name?.trim() || email.split("@")[0] || "Superadmin",
+    role: ROLES.SUPERADMIN,
+  });
+
+  return {
+    id: admin.id,
+    email: admin.email,
+    name: admin.name,
+    role: admin.role,
+  };
+}
+
+/** Login panel admin: credenciales normales o superadmin seedeado por env. */
+export async function authenticateAdminForAdminPanel(
+  email: string,
+  password: string,
+): Promise<AdminSessionUser | null> {
+  const admin = await authenticateAdmin(email, password);
+  if (admin) {
+    return admin;
+  }
+  return ensureSuperadminFromEnvCredentials({ email, password });
 }
 
 export async function resolveAdminSession(
