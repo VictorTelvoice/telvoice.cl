@@ -13,14 +13,11 @@ npm ci
 rm -rf dist
 npm run build
 test -f public/app-panel.css || { echo "Falta public/app-panel.css — ejecuta npm run build:app-css"; exit 1; }
-grep -q 'label: "SMS hoy"' dist/views/app-ui/app-pages.js || {
-  echo "ERROR: build sin KPI «SMS hoy»"
-  exit 1
-}
+APP_ROOT="$ROOT" npm run verify:agent-deploy
 
-echo "→ pm2 (cwd $ROOT)"
+echo "→ pm2 (ecosystem $ROOT)"
 pm2 delete telvoice-sms-agent 2>/dev/null || true
-pm2 start dist/index.js --name telvoice-sms-agent --cwd "$ROOT"
+pm2 start ecosystem.config.cjs --update-env
 pm2 save 2>/dev/null || true
 
 echo "→ health"

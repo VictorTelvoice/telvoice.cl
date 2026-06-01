@@ -234,14 +234,14 @@ jobs:
           }
           echo "Artefactos agentCore/agentPurchaseFlow verificados"
 
-          if ! grep -q 'label: "SMS hoy"' dist/views/app-ui/app-pages.js; then
-            echo "::error::Build sin etiqueta KPI «SMS hoy» en dist/views/app-ui/app-pages.js"
+          if ! grep -q 'label: "SMS Hoy"' dist/views/app-ui/app-pages.js; then
+            echo "::error::Build sin etiqueta KPI «SMS Hoy» en dist/views/app-ui/app-pages.js"
             head -n 220 dist/views/app-ui/app-pages.js | tail -n 40 || true
             exit 1
           fi
 
           pm2 delete telvoice-sms-agent 2>/dev/null || true
-          pm2 start dist/index.js --name telvoice-sms-agent --cwd "$APP_PATH"
+          pm2 start ecosystem.config.cjs --update-env
           pm2 save 2>/dev/null || true
 
           echo "=== PM2 ==="
@@ -258,8 +258,11 @@ jobs:
           sleep 3
 
           health_ok=0
+          health_body=""
           for attempt in $(seq 1 10); do
-            if curl -sf --connect-timeout 5 --max-time 15 "$HEALTH_URL"; then
+            health_body=$(curl -sf --connect-timeout 5 --max-time 15 "$HEALTH_URL" || true)
+            if [ -n "$health_body" ]; then
+              echo "$health_body"
               echo ""
               echo "Health local OK (intento ${attempt}/10)"
               health_ok=1
@@ -280,6 +283,14 @@ jobs:
             exit 1
           fi
 
+          if ! echo "$health_body" | grep -q "\"build\":\"${DEPLOY_SHA}\""; then
+            echo "::error::Health local sin build SHA esperado (${DEPLOY_SHA})"
+            echo "Respuesta: $health_body"
+            pm2 describe telvoice-sms-agent 2>&1 | head -30 || true
+            exit 1
+          fi
+          echo "Build local verificado: ${DEPLOY_SHA}"
+
           test -f dist/index.js && echo "DEPLOY_OK=dist/index.js"
           REMOTE
 
@@ -298,14 +309,13 @@ jobs:
               echo "Health público OK (intento ${attempt}/10)"
               if echo "$body" | grep -q "\"build\":\"${DEPLOY_SHA}\""; then
                 echo "Build SHA en producción coincide con el commit desplegado."
-              else
-                echo "::warning::Health OK pero build SHA no coincide aún (puede ser deploy anterior sin GIT_COMMIT_SHA)."
+                exit 0
               fi
-              exit 0
+              echo "Health público sin build ${DEPLOY_SHA}: $body"
             fi
             echo "Health público intento ${attempt}/10 falló; reintento en 3s..."
             sleep 3
           done
-          echo "::error::Health público no respondió tras 10 intentos"
+          echo "::error::Health público no coincide con el commit desplegado (${DEPLOY_SHA})"
           curl -sv --connect-timeout 10 --max-time 20 https://agent.telvoice.cl/health 2>&1 | head -40 || true
           exit 1

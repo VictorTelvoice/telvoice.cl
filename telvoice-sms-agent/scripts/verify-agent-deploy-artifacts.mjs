@@ -98,4 +98,13 @@ console.log(`✓ telvoice-agent-widget.ver (${ver})`);
 const pkg = JSON.parse(read("package.json"));
 console.log(`✓ package version ${pkg.version}`);
 
+const appPages = read("dist/views/app-ui/app-pages.js");
+const kpiMatch = appPages.match(/label:\s*"([^"]+)"[\s\S]{0,120}?smsTodayTotal/);
+if (!kpiMatch || kpiMatch[1] !== "SMS Hoy") {
+  throw new Error(
+    `KPI dashboard incorrecto: esperado «SMS Hoy», encontrado «${kpiMatch?.[1] ?? "—"}»`,
+  );
+}
+console.log("✓ KPI dashboard: SMS Hoy");
+
 console.log("\nOK — artefactos de deploy del agente verificados.");
