@@ -74,6 +74,11 @@ export type AgentCoreResponse = {
   showAttachButton?: boolean;
   /** Panel: paso actual del flujo SMS/campaña (para UI) */
   sendSmsFlowStep?: string;
+  /** Panel: URL checkout MercadoPago desde agente */
+  paymentUrl?: string | null;
+  orderId?: string | null;
+  /** Panel: botón destacado de pago en widget */
+  showPaymentButton?: boolean;
 };
 
 export type PendingActionType =

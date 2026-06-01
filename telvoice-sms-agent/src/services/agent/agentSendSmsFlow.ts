@@ -36,6 +36,7 @@ import {
   SEND_SMS_FLOW_STEP,
   shouldForceSendSmsFlow,
 } from "./agentSendSmsFlowUi.js";
+import { handleInsufficientBalanceOffer } from "./agentPurchaseFlow.js";
 
 const FLOW_INTENT = "send_sms_flow";
 
@@ -169,13 +170,6 @@ async function replyAskMessageFirst(input: {
   );
 }
 
-function insufficientBalanceActions(): AgentSuggestedAction[] {
-  return [
-    { label: "Comprar más SMS", href: "/app/buy-sms" },
-    { label: "Adjuntar otra lista", message: "Adjuntar CSV" },
-    { label: "Cancelar", message: "Cancelar" },
-  ];
-}
 
 async function setFlowMemory(
   sessionId: string,
@@ -216,7 +210,7 @@ export async function clearSendSmsFlowMemory(
   );
 }
 
-async function buildSingleSummaryResponse(input: {
+export async function buildSingleSummaryResponse(input: {
   ctx: AgentExecutionContext;
   sessionId: string;
   phone: string;
@@ -241,19 +235,16 @@ async function buildSingleSummaryResponse(input: {
   const displayPhone = displayPhoneChile(validated.normalized.replace(/\D/g, ""));
 
   if (balance.availableSms < segmentInfo.costSms) {
-    await clearSendSmsFlowMemory(input.sessionId, input.ctx.channel, input.ctx.companyId);
-    const missing = segmentInfo.costSms - balance.availableSms;
-    return baseResponse({
-      reply:
-        `No tienes saldo suficiente para este envío.\n\n` +
-        `Crédito requerido: ${segmentInfo.costSms} SMS\n` +
-        `Crédito disponible: ${balance.availableSms.toLocaleString("es-CL")} SMS\n` +
-        `Faltan: ${missing.toLocaleString("es-CL")} SMS\n\n` +
-        `Puedo ayudarte a comprar más SMS o reducir destinatarios.`,
-      confidence: input.route.confidence,
+    return handleInsufficientBalanceOffer({
+      ctx: input.ctx,
       sessionId: input.sessionId,
-      safeToExecute: false,
-      suggestedActions: insufficientBalanceActions(),
+      route: input.route,
+      kind: "single",
+      requiredSms: segmentInfo.costSms,
+      availableSms: balance.availableSms,
+      message: input.message,
+      phone: input.phone,
+      senderId: input.senderId,
     });
   }
 
@@ -303,7 +294,7 @@ async function buildSingleSummaryResponse(input: {
   });
 }
 
-async function buildCsvSummaryResponse(input: {
+export async function buildCsvSummaryResponse(input: {
   ctx: AgentExecutionContext;
   sessionId: string;
   message: string;
@@ -350,19 +341,16 @@ async function buildCsvSummaryResponse(input: {
   const after = balance.availableSms - totalSms;
 
   if (balance.availableSms < totalSms) {
-    await clearSendSmsFlowMemory(input.sessionId, input.ctx.channel, input.ctx.companyId);
-    const missing = totalSms - balance.availableSms;
-    return baseResponse({
-      reply:
-        `No tienes saldo suficiente para este envío.\n\n` +
-        `Crédito requerido: ${totalSms.toLocaleString("es-CL")} SMS\n` +
-        `Crédito disponible: ${balance.availableSms.toLocaleString("es-CL")} SMS\n` +
-        `Faltan: ${missing.toLocaleString("es-CL")} SMS\n\n` +
-        `Puedo ayudarte a comprar más SMS o reducir la lista de contactos.`,
-      confidence: input.route.confidence,
+    return handleInsufficientBalanceOffer({
+      ctx: input.ctx,
       sessionId: input.sessionId,
-      safeToExecute: false,
-      suggestedActions: insufficientBalanceActions(),
+      route: input.route,
+      kind: "csv",
+      requiredSms: totalSms,
+      availableSms: balance.availableSms,
+      message: input.message,
+      csvUploadId: input.uploadId,
+      senderId: input.senderId,
     });
   }
 

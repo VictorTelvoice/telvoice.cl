@@ -29,6 +29,24 @@ export type ConversationMemory = {
   campaignGuided?: boolean;
   /** Timestamp ms: última confirmación de pending_action (evitar doble Confirmo). */
   lastPendingConfirmAt?: number;
+  /** Flujo compra SMS en el agente panel */
+  purchaseFlowStep?: string;
+  pendingPurchaseQuantity?: number;
+  pendingPurchaseQuote?: CommercialQuoteResult | null;
+  pendingPurchaseOrderId?: string;
+  pendingPaymentUrl?: string;
+  /** Envío/campaña bloqueados por saldo insuficiente (sin pending_action de envío) */
+  blockedSendDueToBalance?: {
+    kind: "single" | "csv";
+    requiredSms: number;
+    availableSms: number;
+    shortfall: number;
+    suggestedPurchaseQty: number;
+    message: string;
+    phone?: string;
+    csvUploadId?: string;
+    senderId?: string;
+  };
   updatedAt?: string;
 };
 

@@ -25,6 +25,11 @@ import {
   postAgentSendQuickActions,
   tryActiveSendSmsFlowFirst,
 } from "./agentSendSmsFlow.js";
+import {
+  detectPurchaseIntent,
+  handleBuySmsFlow,
+  tryActivePurchaseFlowFirst,
+} from "./agentPurchaseFlow.js";
 import { shouldSkipKnowledgeForSendFlow } from "./agentSendSmsFlowUi.js";
 import { getAgentPersona } from "./agentPersona.js";
 import {
@@ -494,6 +499,62 @@ export async function runAgentCore(
         flowOut,
       );
       return { ...flowOut, sessionId };
+    }
+
+    memory = await getConversationMemory(sessionId, channel);
+
+    const purchaseFirst = await tryActivePurchaseFlowFirst(
+      message,
+      execCtx,
+      sessionId,
+      memory,
+    );
+    if (purchaseFirst) {
+      const purchaseOut = await finalizeResponse(
+        request,
+        sessionId,
+        companyId,
+        purchaseFirst,
+        message,
+      );
+      sessionId = await persistTurn(
+        channel,
+        companyId,
+        request.userId,
+        sessionId,
+        message,
+        purchaseOut,
+      );
+      return { ...purchaseOut, sessionId };
+    }
+
+    if (detectPurchaseIntent(message, memory)) {
+      memory = await getConversationMemory(sessionId, channel);
+      const buyFlow = await handleBuySmsFlow({
+        message,
+        ctx: execCtx,
+        sessionId,
+        memory,
+        route,
+      });
+      if (buyFlow) {
+        const buyOut = await finalizeResponse(
+          request,
+          sessionId,
+          companyId,
+          buyFlow,
+          message,
+        );
+        sessionId = await persistTurn(
+          channel,
+          companyId,
+          request.userId,
+          sessionId,
+          message,
+          buyOut,
+        );
+        return { ...buyOut, sessionId };
+      }
     }
   }
 

@@ -87,6 +87,9 @@ export async function postAppAgentChat(
       closeWidget: result.closeWidget === true,
       showAttachButton: result.showAttachButton === true,
       sendSmsFlowStep: result.sendSmsFlowStep ?? null,
+      paymentUrl: result.paymentUrl ?? null,
+      orderId: result.orderId ?? null,
+      showPaymentButton: result.showPaymentButton === true,
     });
   } catch (err) {
     const status = err instanceof AppError ? err.statusCode : 500;
