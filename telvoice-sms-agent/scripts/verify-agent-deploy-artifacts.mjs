@@ -45,6 +45,14 @@ assertFile("dist/services/agent/agentCore.js", "agentCore.js");
 assertFile("dist/services/agent/agentPurchaseFlow.js", "agentPurchaseFlow.js");
 assertFile("dist/services/agent/executePendingAction.js", "executePendingAction.js");
 assertFile("dist/services/agent/agentSendSmsFlowUi.js", "agentSendSmsFlowUi.js");
+assertFile(
+  "dist/services/agent/agentSalesMetricsService.js",
+  "agentSalesMetricsService.js",
+);
+assertFile(
+  "dist/controllers/admin-agent-sales.controller.js",
+  "admin-agent-sales.controller.js",
+);
 
 assertIncludes(
   "dist/services/agent/agentCore.js",

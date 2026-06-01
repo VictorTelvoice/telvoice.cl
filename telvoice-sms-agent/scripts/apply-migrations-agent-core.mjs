@@ -102,6 +102,12 @@ const MIGRATIONS = [
       WHERE title = 'Cómo enviar SMS desde el agente del panel cliente'
       LIMIT 1`,
   },
+  {
+    id: "053",
+    file: "053_agent_sales_events.sql",
+    check: `SELECT 1 FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'agent_sales_events'`,
+  },
 ];
 
 const connectionString = process.env.DATABASE_URL?.trim();

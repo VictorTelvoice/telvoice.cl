@@ -32,6 +32,8 @@
     "test:agent-confirm-pending": "tsx scripts/test-agent-confirm-pending.ts",
     "test:agent-purchase-flow": "tsx scripts/test-agent-purchase-flow.ts",
     "test:agent-sales": "tsx scripts/test-agent-sales-metrics.ts",
+    "audit:agent-sales-prod": "node scripts/audit-agent-sales-prod.mjs",
+    "audit:agent-sales-link-prod": "node scripts/run-licantravel-agent-sales-link-prod.mjs",
     "migrate:agent-core": "node scripts/apply-migrations-agent-core.mjs",
     "debug:supabase": "tsx scripts/debug-supabase.ts",
     "debug:supabase-rest": "tsx scripts/debug-supabase-rest.ts",
