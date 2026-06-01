@@ -50,7 +50,57 @@ export type BlockedSendDueToBalance = {
 };
 
 const PAYMENT_LINK_RE =
-  /\b(generar link de pago|generar enlace|link de pago|enlace de pago|pagar ahora|abrir pago|pagar con mercadopago|mercadopago)\b/i;
+  /\b(generar link de pago|generar enlace|link de pago|enlace de pago|pagar ahora|abrir pago|pagar con mercadopago|mercadopago|crear link|quiero pagar)\b/i;
+
+export function isPurchasePaymentConfirmation(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return false;
+  }
+  const normalized = trimmed
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .trim();
+  const affirmatives = new Set([
+    "si",
+    "s",
+    "ok",
+    "dale",
+    "claro",
+    "de acuerdo",
+    "bueno",
+    "listo",
+    "perfecto",
+    "va",
+    "vamos",
+    "sip",
+    "sep",
+    "ya",
+  ]);
+  if (affirmatives.has(normalized)) {
+    return true;
+  }
+  return PAYMENT_LINK_RE.test(trimmed);
+}
+
+export function hasActivePurchaseQuote(memory: ConversationMemory): boolean {
+  const qty =
+    memory.pendingPurchaseQuantity ??
+    memory.pendingPurchaseQuote?.quoted_quantity ??
+    null;
+  if (!qty || qty <= 0) {
+    return false;
+  }
+  const step = memory.purchaseFlowStep;
+  return (
+    step === PURCHASE_FLOW_STEP.REVIEW_QUOTE ||
+    step === PURCHASE_FLOW_STEP.INSUFFICIENT_SEND ||
+    step === PURCHASE_FLOW_STEP.PAYMENT_READY ||
+    Boolean(memory.pendingPurchaseQuote)
+  );
+}
 
 const MANUAL_QUOTE_RE =
   /\b(solicitar cotizacion|solicitar cotización|cotizacion comercial|cotización comercial|hablar con ejecutivo|ejecutivo|registrar solicitud)\b/i;
@@ -600,11 +650,21 @@ export async function handleBuySmsFlow(input: {
     });
   }
 
+  if (isPurchasePaymentConfirmation(trimmed)) {
+    if (hasActivePurchaseQuote(memory)) {
+      return buildPaymentLinkResponse(ctx, sessionId, memory);
+    }
+    return basePurchaseResponse({
+      sessionId,
+      reply:
+        "Para generar el link necesito primero saber cuántos SMS quieres comprar. ¿Cuántos SMS deseas cargar?",
+      suggestedActions: needQuantityActions(),
+    });
+  }
+
   if (
     PAYMENT_LINK_RE.test(trimmed) &&
-    (memory.purchaseFlowStep === PURCHASE_FLOW_STEP.REVIEW_QUOTE ||
-      memory.purchaseFlowStep === PURCHASE_FLOW_STEP.INSUFFICIENT_SEND ||
-      memory.pendingPurchaseQuote)
+    hasActivePurchaseQuote(memory)
   ) {
     return buildPaymentLinkResponse(ctx, sessionId, memory);
   }
@@ -672,7 +732,9 @@ export async function handleBuySmsFlow(input: {
 
   if (
     memory.purchaseFlowStep === PURCHASE_FLOW_STEP.NEED_QUANTITY ||
-    (detectPurchaseIntent(trimmed, memory) && !qtyFromText)
+    (detectPurchaseIntent(trimmed, memory) &&
+      !qtyFromText &&
+      !hasActivePurchaseQuote(memory))
   ) {
     await updateConversationMemory(
       sessionId,

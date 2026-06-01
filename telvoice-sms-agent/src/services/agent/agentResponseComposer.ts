@@ -33,7 +33,7 @@ function formatQuoteSummary(quote: CommercialQuoteResult): string {
 
 /** Respuesta ya armada por agentPurchaseFlow (evitar resumen markdown duplicado). */
 function isDetailedPurchaseFlowReply(rawReply: string): boolean {
-  return /precio unitario neto|total a pagar|generar link de pago|cotización:\s*\n/i.test(
+  return /precio unitario neto|total a pagar|generar link de pago|cotización:\s*\n|preparé tu compra|puedes pagar aquí/i.test(
     rawReply,
   );
 }

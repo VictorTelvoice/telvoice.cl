@@ -28,6 +28,9 @@ import {
 import {
   detectPurchaseIntent,
   handleBuySmsFlow,
+  hasActivePurchaseQuote,
+  isPurchasePaymentConfirmation,
+  PURCHASE_FLOW_STEP,
   tryActivePurchaseFlowFirst,
 } from "./agentPurchaseFlow.js";
 import { shouldSkipKnowledgeForSendFlow } from "./agentSendSmsFlowUi.js";
@@ -357,18 +360,22 @@ async function finalizeResponse(
     extractSmsQuantityFromText(message) ??
     undefined;
 
-  memory = await updateConversationMemory(
-    sessionId,
-    channel,
-    {
-      lastIntent: String(response.intent),
-      lastQuantity: qty ?? memory.lastQuantity,
-      lastQuote: response.quote ?? memory.lastQuote,
-      lastTopic: String(response.intent),
-      userDisplayName: userName ?? memory.userDisplayName,
-    },
-    companyId,
-  );
+  const memoryPatch: Parameters<typeof updateConversationMemory>[2] = {
+    lastIntent: String(response.intent),
+    lastQuantity: qty ?? memory.lastQuantity,
+    lastQuote: response.quote ?? memory.lastQuote,
+    lastTopic: String(response.intent),
+    userDisplayName: userName ?? memory.userDisplayName,
+  };
+  if (response.intent === "quote_purchase" && response.quote) {
+    memoryPatch.purchaseFlowStep =
+      memory.purchaseFlowStep ?? PURCHASE_FLOW_STEP.REVIEW_QUOTE;
+    memoryPatch.pendingPurchaseQuote =
+      memory.pendingPurchaseQuote ?? response.quote;
+    memoryPatch.pendingPurchaseQuantity =
+      memory.pendingPurchaseQuantity ?? response.quote.quoted_quantity;
+  }
+  memory = await updateConversationMemory(sessionId, channel, memoryPatch, companyId);
 
   if (channel === "landing") {
     response = await applyLandingLeadFlow(message, sessionId, response, memory);
@@ -455,7 +462,13 @@ export async function runAgentCore(
     matchesConfirmIntent(message) ||
     matchesCancelIntent(message);
 
-  if (isConfirmOrCancel) {
+  const purchasePaymentConfirm =
+    channel === "web_client" &&
+    companyId &&
+    hasActivePurchaseQuote(memory) &&
+    isPurchasePaymentConfirmation(message);
+
+  if (isConfirmOrCancel && !purchasePaymentConfirm) {
     if (!companyId && channel === "web_client") {
       throw new AppError("Sesión de empresa requerida.", 401);
     }
@@ -475,6 +488,33 @@ export async function runAgentCore(
   }
 
   if (channel === "web_client" && companyId) {
+    if (purchasePaymentConfirm) {
+      const payFirst = await tryActivePurchaseFlowFirst(
+        message,
+        execCtx,
+        sessionId,
+        memory,
+      );
+      if (payFirst) {
+        const payOut = await finalizeResponse(
+          request,
+          sessionId,
+          companyId,
+          payFirst,
+          message,
+        );
+        sessionId = await persistTurn(
+          channel,
+          companyId,
+          request.userId,
+          sessionId,
+          message,
+          payOut,
+        );
+        return { ...payOut, sessionId };
+      }
+    }
+
     const flowFirst = await tryActiveSendSmsFlowFirst(
       message,
       execCtx,
