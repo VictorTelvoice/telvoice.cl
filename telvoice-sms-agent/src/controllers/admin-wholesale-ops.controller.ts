@@ -23,7 +23,7 @@ import {
 } from "../services/wholesaleInternationalRateService.js";
 import { listWholesaleProviders } from "../services/wholesaleService.js";
 import { resolveSmppVendorPrefill } from "../config/smpp-vendor-presets.js";
-import { ValidationError } from "../utils/errors.js";
+import { DatabaseError, ValidationError } from "../utils/errors.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
   renderInternationalRatePlanFormPage,
@@ -47,6 +47,52 @@ function redirectWithMessage(
 ): void {
   const q = kind === "success" ? "success" : "error";
   res.redirect(`${path}?${q}=${encodeURIComponent(message)}`);
+}
+
+const SMPP_ACCOUNT_SAVED_MESSAGE = "SMPP account saved successfully.";
+
+function smppCreateSuccessRedirectPath(
+  row: { id: string },
+  providerId: string | null,
+): string {
+  if (providerId) {
+    return `/admin/wholesale/providers/${providerId}/edit?tab=smpp-accounts`;
+  }
+  return `/admin/wholesale/smpp-lab/${row.id}/edit`;
+}
+
+function smppSaveErrorMessage(error: unknown): string {
+  if (error instanceof ValidationError) {
+    return error.message;
+  }
+  if (error instanceof DatabaseError) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes("duplicate") || msg.includes("unique")) {
+      return "An SMPP account with this name or system ID already exists.";
+    }
+    if (msg.includes("wholesale_smpp_connections")) {
+      return "Could not save SMPP account. Database error — contact ops if this persists.";
+    }
+    return "Could not save SMPP account. Please try again.";
+  }
+  return "Could not save SMPP account. Please try again.";
+}
+
+async function renderSmppCreateFormError(
+  res: Response,
+  req: Request,
+  errorMessage: string,
+): Promise<void> {
+  const providers = await listWholesaleProviders();
+  res.type("html").send(
+    renderSmppConnectionFormPage({
+      admin: req.adminUser!,
+      mode: "create",
+      providers,
+      values: req.body as Record<string, unknown>,
+      error: errorMessage,
+    }),
+  );
 }
 
 // ── SMPP Lab ─────────────────────────────────────────────────────────────────
@@ -110,22 +156,13 @@ export async function postCreateSmppConnection(
     const row = await createSmppConnection(input);
     redirectWithMessage(
       res,
-      `/admin/wholesale/smpp-lab/${row.id}/edit`,
+      smppCreateSuccessRedirectPath(row, input.provider_id),
       "success",
-      "Conexión SMPP creada.",
+      SMPP_ACCOUNT_SAVED_MESSAGE,
     );
   } catch (error) {
-    if (error instanceof ValidationError) {
-      const providers = await listWholesaleProviders();
-      res.type("html").send(
-        renderSmppConnectionFormPage({
-          admin: req.adminUser!,
-          mode: "create",
-          providers,
-          values: req.body as Record<string, unknown>,
-          error: error.message,
-        }),
-      );
+    if (error instanceof ValidationError || error instanceof DatabaseError) {
+      await renderSmppCreateFormError(res, req, smppSaveErrorMessage(error));
       return;
     }
     next(error);
@@ -165,12 +202,15 @@ export async function postEditSmppConnection(
   try {
     const id = validateUuidParam(String(req.params.id ?? ""), "id");
     const input = parseSmppConnectionForm(req.body, { isEdit: true });
-    await updateSmppConnection(id, input);
+    const updated = await updateSmppConnection(id, input);
+    const providerId = input.provider_id ?? updated.provider_id ?? null;
     redirectWithMessage(
       res,
-      `/admin/wholesale/smpp-lab/${id}/edit`,
+      providerId
+        ? `/admin/wholesale/providers/${providerId}/edit?tab=smpp-accounts`
+        : `/admin/wholesale/smpp-lab/${id}/edit`,
       "success",
-      "Conexión actualizada.",
+      SMPP_ACCOUNT_SAVED_MESSAGE,
     );
   } catch (error) {
     if (error instanceof ValidationError) {

@@ -245,8 +245,12 @@ export function renderSmppConnectionFormPage(
   const c = opts.connection;
   const v = opts.values;
   const isEdit = opts.mode === "edit";
+  const providerIdFromValues = val(v, "provider_id", c?.provider_id ?? "");
   const action = isEdit
     ? `/admin/wholesale/smpp-lab/${escapeHtml(c!.id)}/edit`
+    : "/admin/wholesale/smpp-lab";
+  const cancelHref = providerIdFromValues
+    ? `/admin/wholesale/providers/${escapeHtml(providerIdFromValues)}/edit?tab=smpp-accounts`
     : "/admin/wholesale/smpp-lab";
 
   const txDefault = c?.transmitter_port ?? c?.port ?? 2775;
@@ -389,6 +393,7 @@ export function renderSmppConnectionFormPage(
   );
 
   const form = `
+    ${opts.success ? `<div class="alert alert-success">${escapeHtml(opts.success)}</div>` : ""}
     ${opts.error ? `<div class="alert alert-error">${escapeHtml(opts.error)}</div>` : ""}
     <form method="post" action="${action}" class="tv-panel tv-smpp-vendor-form">
       <h2 class="tv-panel__title">${isEdit ? "Edit SMPP vendor account" : "New SMPP vendor account"}</h2>
@@ -398,7 +403,7 @@ export function renderSmppConnectionFormPage(
       </div>
       <div class="tv-form-actions">
         ${renderBtn(isEdit ? "Save account" : "Create account", { type: "submit", variant: "primary" })}
-        <a href="/admin/wholesale/smpp-lab" class="btn btn-ghost">Cancel</a>
+        <a href="${cancelHref}" class="btn btn-ghost">Cancel</a>
       </div>
     </form>
     ${isEdit ? `<form method="post" action="/admin/wholesale/smpp-lab/${escapeHtml(c!.id)}/test-bind" style="margin-top:0.75rem"><button type="submit" class="btn btn-secondary">Test bind now</button></form>` : ""}`;
