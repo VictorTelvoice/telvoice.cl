@@ -170,7 +170,7 @@ Otros comandos útiles:
 
 ```bash
 pm2 status
-pm2 restart telvoice-sms-agent
+cd /var/www/telvoice-sms-agent && rm -rf dist && npm run build && npm run verify:agent-deploy && pm2 delete telvoice-sms-agent 2>/dev/null; pm2 start ecosystem.config.cjs --update-env
 pm2 logs telvoice-sms-agent --lines 100
 ```
 
@@ -324,7 +324,7 @@ git pull origin main
 # cd telvoice-sms-agent
 npm ci
 npm run build
-pm2 restart telvoice-sms-agent
+cd /var/www/telvoice-sms-agent && rm -rf dist && npm run build && npm run verify:agent-deploy && pm2 delete telvoice-sms-agent 2>/dev/null; pm2 start ecosystem.config.cjs --update-env
 ```
 
 O ejecuta: `bash scripts/deploy-vps.sh` (desde la carpeta del agente en el servidor).
