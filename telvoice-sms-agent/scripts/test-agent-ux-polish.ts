@@ -12,6 +12,7 @@ import {
   composeLowConfidenceReply,
 } from "../src/services/agent/agentResponseComposer.js";
 import { getAgentPersona } from "../src/services/agent/agentPersona.js";
+import { getAgentPersona } from "../src/services/agent/agentPersona.js";
 import { runAgentCore } from "../src/services/agent/agentCore.js";
 import {
   getConversationMemory,
@@ -62,6 +63,35 @@ function testCancelNoFallbackCta(): void {
   });
   assert.ok(!composed.includes(persona.defaultCTA));
   console.log("✓ cancelar flujo sin CTA fallback extra");
+}
+
+function testPurchaseReplyNotDuplicatedInComposer(): void {
+  const persona = getAgentPersona("web_client");
+  const raw =
+    "Perfecto. Te cotizo 30.000 SMS para Chile.\n\n" +
+    "Precio unitario neto: $7\n" +
+    "Valor neto: $210.000\n" +
+    "IVA: $39.900\n" +
+    "Total a pagar: $249.900 CLP\n\n" +
+    "¿Quieres que genere el link de pago por MercadoPago?";
+  const composed = composeAgentResponse({
+    persona,
+    channel: "web_client",
+    intent: "quote_purchase",
+    rawReply: raw,
+    memory: {},
+    confidence: 0.92,
+    quote: {
+      quoted_quantity: 30_000,
+      total_with_iva: 249_900,
+      unit_price: 7,
+      tier_label: "Desde 15.000 SMS",
+    } as never,
+  });
+  assert.ok(!/\*\*30\.000 SMS\*\*/.test(composed));
+  assert.ok(!/Perfecto, revisemos el precio/i.test(composed));
+  assert.ok(composed.includes("Precio unitario neto"));
+  console.log("✓ compositor no duplica cotización de compra");
 }
 
 function testConfirmMessageCopy(): void {
@@ -217,6 +247,7 @@ async function main(): Promise<void> {
   testCampaignGuidedRouting();
   testFallbackNotDuplicated();
   testCancelNoFallbackCta();
+  testPurchaseReplyNotDuplicatedInComposer();
   testConfirmMessageCopy();
   testSmsEstimateFromPayload();
   testTruncateFileName();

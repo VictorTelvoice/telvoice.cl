@@ -7,6 +7,10 @@
 #   VPS_SSH_PORT (default: 22)
 #
 # Ver docs/deploy-agent.md para configuración y diagnóstico.
+#
+# Build en VPS: rsync excluye dist/ (se preserva hasta rm -rf dist). Sin limpiar dist,
+# archivos .js huérfanos o desactualizados pueden quedar (p. ej. agentCore.js viejo
+# mientras agentPurchaseFlow.js es nuevo). Siempre: rm -rf dist && npm run build.
 
 name: Deploy agent.telvoice.cl
 
@@ -93,10 +97,12 @@ jobs:
             SSH_USER="$VPS_USER"
           fi
           SSH_OK_USER=""
+          for attempt in 1 2 3; do
           for candidate in "$SSH_USER" root; do
             [ -n "$candidate" ] || continue
-            echo "Probando SSH con usuario: ${candidate}"
+            echo "Probando SSH con usuario: ${candidate} (intento ${attempt}/3)"
             if ssh -i ~/.ssh/deploy_key -p "$PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes \
+              -o ConnectTimeout=20 \
               -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
               "${candidate}@${VPS_HOST}" env APP_PATH="$APP_PATH" bash -s <<'REMOTE'
           set -euo pipefail
@@ -116,8 +122,12 @@ jobs:
             then
               SSH_OK_USER="$candidate"
               echo "SSH_OK_USER=${candidate}" >> "$GITHUB_ENV"
-              break
+              break 2
             fi
+          done
+          [ -n "${SSH_OK_USER:-}" ] && break
+          echo "SSH intento ${attempt}/3 falló; reintento en 15s..."
+          sleep 15
           done
           if [ -z "$SSH_OK_USER" ]; then
             echo "::error::No se pudo autenticar por SSH con VPS_USER ni con root."
@@ -192,22 +202,46 @@ jobs:
             if ! grep -q '^PUBLIC_WEBHOOK_BASE_URL=' "$APP_PATH/.env" 2>/dev/null; then
               set_env_key PUBLIC_WEBHOOK_BASE_URL 'https://agent.telvoice.cl'
             fi
+            set_env_key GIT_COMMIT_SHA "$DEPLOY_SHA"
           fi
 
           rm -rf "$CLONE_DIR"
 
           cd "$APP_PATH"
           npm ci
+          npm run typecheck
+          echo "=== Limpieza dist (rsync excluye dist; sin rm quedan .js obsoletos) ==="
+          rm -rf dist
+          npm run build
           npm run migrate:agent-core
           npm run verify:agent-core
-          npm run typecheck
-          npm run build
+          APP_ROOT="$APP_PATH" npm run verify:agent-deploy
 
-          if pm2 describe telvoice-sms-agent >/dev/null 2>&1; then
-            pm2 restart telvoice-sms-agent --update-env
-          else
-            pm2 start dist/index.js --name telvoice-sms-agent
+          CORE="$APP_PATH/dist/services/agent/agentCore.js"
+          test -f "$CORE" || { echo "::error::Falta $CORE"; exit 1; }
+          grep -q 'agentPurchaseFlow' "$CORE" || {
+            echo "::error::agentCore.js no importa agentPurchaseFlow"
+            exit 1
+          }
+          test -f "$APP_PATH/dist/services/agent/agentPurchaseFlow.js" || {
+            echo "::error::Falta agentPurchaseFlow.js"
+            exit 1
+          }
+          grep -q 'formatAgentCampaignAcceptedMessage' \
+            "$APP_PATH/dist/services/agent/executePendingAction.js" || {
+            echo "::error::executePendingAction.js desactualizado"
+            exit 1
+          }
+          echo "Artefactos agentCore/agentPurchaseFlow verificados"
+
+          if ! grep -q 'label: "SMS hoy"' dist/views/app-ui/app-pages.js; then
+            echo "::error::Build sin etiqueta KPI «SMS hoy» en dist/views/app-ui/app-pages.js"
+            head -n 220 dist/views/app-ui/app-pages.js | tail -n 40 || true
+            exit 1
           fi
+
+          pm2 delete telvoice-sms-agent 2>/dev/null || true
+          pm2 start dist/index.js --name telvoice-sms-agent --cwd "$APP_PATH"
           pm2 save 2>/dev/null || true
 
           echo "=== PM2 ==="
@@ -250,14 +284,23 @@ jobs:
           REMOTE
 
       - name: Verificar health público
+        env:
+          DEPLOY_SHA: ${{ github.sha }}
         run: |
           set -e
           echo "=== Health público (https://agent.telvoice.cl/health) ==="
           sleep 3
           for attempt in $(seq 1 10); do
-            if curl -sf --connect-timeout 10 --max-time 20 https://agent.telvoice.cl/health; then
+            body=$(curl -sf --connect-timeout 10 --max-time 20 https://agent.telvoice.cl/health || true)
+            if [ -n "$body" ]; then
+              echo "$body"
               echo ""
               echo "Health público OK (intento ${attempt}/10)"
+              if echo "$body" | grep -q "\"build\":\"${DEPLOY_SHA}\""; then
+                echo "Build SHA en producción coincide con el commit desplegado."
+              else
+                echo "::warning::Health OK pero build SHA no coincide aún (puede ser deploy anterior sin GIT_COMMIT_SHA)."
+              fi
               exit 0
             fi
             echo "Health público intento ${attempt}/10 falló; reintento en 3s..."

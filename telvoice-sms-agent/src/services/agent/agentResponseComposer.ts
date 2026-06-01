@@ -31,6 +31,13 @@ function formatQuoteSummary(quote: CommercialQuoteResult): string {
   );
 }
 
+/** Respuesta ya armada por agentPurchaseFlow (evitar resumen markdown duplicado). */
+function isDetailedPurchaseFlowReply(rawReply: string): boolean {
+  return /precio unitario neto|total a pagar|generar link de pago|cotización:\s*\n/i.test(
+    rawReply,
+  );
+}
+
 function replyAlreadyIncludesCta(body: string, cta: string): boolean {
   const norm = (s: string) =>
     s
@@ -105,22 +112,28 @@ export function composeAgentResponse(input: ComposeInput): string {
   }
 
   const parts: string[] = [];
+  const purchaseFlowReply =
+    intent === "quote_purchase" && isDetailedPurchaseFlowReply(rawReply);
 
   if (acknowledgment) {
     parts.push(acknowledgment);
-  } else {
+  } else if (!purchaseFlowReply) {
     const ack = intentAck(intent, channel);
     if (
-    ack &&
-    confidence >= 0.55 &&
-    !rawReply.startsWith(ack) &&
-    !rawReply.toLowerCase().includes(ack.toLowerCase().slice(0, 12))
-  ) {
+      ack &&
+      confidence >= 0.55 &&
+      !rawReply.startsWith(ack) &&
+      !rawReply.toLowerCase().includes(ack.toLowerCase().slice(0, 12))
+    ) {
       parts.push(ack);
     }
   }
 
-  if (quote && (intent === "commercial" || intent === "quote_purchase")) {
+  if (
+    quote &&
+    (intent === "commercial" || intent === "quote_purchase") &&
+    !purchaseFlowReply
+  ) {
     parts.push(formatQuoteSummary(quote));
     if (channel === "landing") {
       parts.push(
