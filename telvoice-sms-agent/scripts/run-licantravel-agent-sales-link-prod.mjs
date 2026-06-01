@@ -15,8 +15,18 @@ const BASE = (
 )
   .replace(/\/$/, "")
   .replace(/^http:\/\/localhost(:\d+)?$/i, "https://agent.telvoice.cl");
+function parseArgs(argv) {
+  let companyId = process.env.TEST_COMPANY_ID?.trim() ?? "";
+  for (let i = 2; i < argv.length; i++) {
+    if (argv[i] === "--company-id" && argv[i + 1]) {
+      companyId = argv[++i];
+    }
+  }
+  return companyId;
+}
+
 const COMPANY_ID =
-  process.env.TEST_COMPANY_ID?.trim() || "259eb2a3-47a1-4788-908b-9d8986f04027";
+  parseArgs(process.argv) || "259eb2a3-47a1-4788-908b-9d8986f04027";
 const LICAN_EMAIL = "licantravel@gmail.com";
 const CLIENT_COOKIE = "tv_client_session";
 const ADMIN_COOKIE = "tv_admin_session";
