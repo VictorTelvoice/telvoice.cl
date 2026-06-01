@@ -240,7 +240,7 @@ export function renderAppDashboardPage(
     })}
     <div class="tv-kpi-grid tv-kpi-grid--client">
       ${renderKpiCard({
-        label: "SMS Hoy",
+        label: "SMS hoy",
         value: fmtSms(stats.smsTodayTotal),
         hint:
           stats.smsTodayDestinations > 0 &&
