@@ -79,6 +79,8 @@ export type AgentCoreResponse = {
   orderId?: string | null;
   /** Panel: botón destacado de pago en widget */
   showPaymentButton?: boolean;
+  /** Panel: reiniciar flujo local (pending action, CSV) tras saludo puro */
+  resetFlow?: boolean;
 };
 
 export type PendingActionType =

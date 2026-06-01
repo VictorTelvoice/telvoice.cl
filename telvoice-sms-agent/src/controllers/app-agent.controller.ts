@@ -56,6 +56,14 @@ export async function postAppAgentChat(
       req.adminUser?.id ??
       null;
 
+    const userLocalHourRaw = req.body?.userLocalHour ?? req.body?.user_local_hour;
+    const userLocalHour =
+      typeof userLocalHourRaw === "number" && Number.isFinite(userLocalHourRaw)
+        ? Math.floor(userLocalHourRaw)
+        : typeof userLocalHourRaw === "string" && /^\d{1,2}$/.test(userLocalHourRaw)
+          ? Math.floor(Number(userLocalHourRaw))
+          : undefined;
+
     const result = await runAgentCore({
       channel: "web_client",
       message,
@@ -68,6 +76,15 @@ export async function postAppAgentChat(
           : {}),
         pendingActionId,
         page: req.body?.page,
+        userDisplayName: req.userProfile?.fullName ?? req.adminUser?.name ?? undefined,
+        userFullName: req.userProfile?.fullName ?? undefined,
+        userTimezone:
+          typeof req.body?.userTimezone === "string"
+            ? req.body.userTimezone
+            : typeof req.body?.user_timezone === "string"
+              ? req.body.user_timezone
+              : undefined,
+        userLocalHour,
       },
     });
 
@@ -90,6 +107,7 @@ export async function postAppAgentChat(
       paymentUrl: result.paymentUrl ?? null,
       orderId: result.orderId ?? null,
       showPaymentButton: result.showPaymentButton === true,
+      resetFlow: result.resetFlow === true,
     });
   } catch (err) {
     const status = err instanceof AppError ? err.statusCode : 500;

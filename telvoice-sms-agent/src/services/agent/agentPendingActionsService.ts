@@ -176,6 +176,40 @@ async function expirePendingActionDb(id: string): Promise<void> {
     .eq("id", id);
 }
 
+/** Cancela todas las acciones pendientes de una sesión (p. ej. saludo puro). */
+export async function cancelAllPendingForSessionDb(
+  sessionId: string,
+  companyId: string,
+): Promise<void> {
+  for (const [id, row] of memoryFallback.entries()) {
+    if (
+      row.context.sessionId === sessionId &&
+      row.context.companyId === companyId
+    ) {
+      memoryFallback.delete(id);
+    }
+  }
+
+  const { data, error } = await getSupabase()
+    .from("agent_pending_actions")
+    .select("id")
+    .eq("session_id", sessionId)
+    .eq("company_id", companyId)
+    .eq("status", "pending");
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return;
+    }
+    wrapSupabaseError(error, "cancelAllPendingForSessionDb");
+  }
+
+  for (const row of data ?? []) {
+    const id = (row as { id: string }).id;
+    await clearPendingActionDb(id, "cancelled");
+  }
+}
+
 export async function clearPendingActionDb(
   id: string,
   status: "confirmed" | "cancelled",

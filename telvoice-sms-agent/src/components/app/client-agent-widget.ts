@@ -291,7 +291,11 @@ export function getPanelAgentWidgetScript(): string {
       sessionId = data.sessionId;
       try { localStorage.setItem(STORAGE_KEY, sessionId); } catch (e) {}
     }
-    pendingActionId = data.pendingActionId || null;
+    if (data.resetFlow) {
+      pendingActionId = null;
+    } else {
+      pendingActionId = data.pendingActionId || null;
+    }
     lastAgentReply = data.reply || "";
     lastIntent = data.intent || "";
     lastConfidence = typeof data.confidence === "number" ? data.confidence : null;
@@ -376,6 +380,10 @@ export function getPanelAgentWidgetScript(): string {
           message: msg,
           sessionId: sessionId || undefined,
           pendingActionId: pendingActionId,
+          userTimezone: (function () {
+            try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { return undefined; }
+          })(),
+          userLocalHour: new Date().getHours(),
           metadata: { page: window.location.pathname }
         })
       });

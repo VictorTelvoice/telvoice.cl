@@ -53,6 +53,10 @@ import {
 import { extractSmsQuantityFromText } from "../commercialQuoteService.js";
 import { isLikelyCommercialPhrase } from "./agentCommercialText.js";
 import { recordAgentFeedback } from "./agentFeedbackService.js";
+import {
+  handlePureGreetingReset,
+  isPureGreeting,
+} from "./agentGreetingReset.js";
 import type {
   AgentCoreRequest,
   AgentCoreResponse,
@@ -449,6 +453,24 @@ export async function runAgentCore(
     sessionId,
     metadata,
   };
+
+  if (channel === "web_client" && companyId && isPureGreeting(message)) {
+    const greetingOut = await handlePureGreetingReset({
+      sessionId,
+      channel,
+      companyId,
+      metadata,
+    });
+    sessionId = await persistTurn(
+      channel,
+      companyId,
+      request.userId,
+      sessionId,
+      message,
+      greetingOut,
+    );
+    return { ...greetingOut, sessionId };
+  }
 
   const route = routeAgentIntent(message, channel, {
     command,
