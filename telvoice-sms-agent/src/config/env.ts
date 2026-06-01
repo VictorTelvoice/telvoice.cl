@@ -202,6 +202,10 @@ export const env = {
   apiKeys: {
     pepper: optionalEnv("API_KEY_PEPPER"),
   },
+  /** SHA del commit desplegado (escrito por CI/CD en el VPS). */
+  deploy: {
+    gitSha: optionalEnv("GIT_COMMIT_SHA"),
+  },
   /** URL pública del agente (producción: https://agent.telvoice.cl) */
   publicAppUrl: optionalEnv("PUBLIC_APP_URL", "http://localhost:3001").replace(
     /\/$/,

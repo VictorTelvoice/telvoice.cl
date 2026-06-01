@@ -10,15 +10,17 @@ git pull origin main
 
 echo "→ npm ci && build"
 npm ci
+rm -rf dist
 npm run build
 test -f public/app-panel.css || { echo "Falta public/app-panel.css — ejecuta npm run build:app-css"; exit 1; }
+grep -q 'label: "SMS hoy"' dist/views/app-ui/app-pages.js || {
+  echo "ERROR: build sin KPI «SMS hoy»"
+  exit 1
+}
 
-echo "→ pm2 restart"
-if pm2 describe telvoice-sms-agent >/dev/null 2>&1; then
-  pm2 restart telvoice-sms-agent
-else
-  pm2 start dist/index.js --name telvoice-sms-agent
-fi
+echo "→ pm2 (cwd $ROOT)"
+pm2 delete telvoice-sms-agent 2>/dev/null || true
+pm2 start dist/index.js --name telvoice-sms-agent --cwd "$ROOT"
 pm2 save 2>/dev/null || true
 
 echo "→ health"

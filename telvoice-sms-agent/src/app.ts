@@ -17,6 +17,7 @@ import {
   postLogin,
 } from "./controllers/admin.controller.js";
 import { canAccessAdmin, subjectFromAdmin } from "./auth/authorization.js";
+import { env } from "./config/env.js";
 import { isAdminPanelHost } from "./utils/panel-host.js";
 import type { RequestWithRawBody } from "./types/express-request.js";
 import {
@@ -57,6 +58,7 @@ export function createApp() {
       success: true,
       service: "telvoice-sms-agent",
       status: "ok",
+      ...(env.deploy.gitSha ? { build: env.deploy.gitSha } : {}),
     });
   });
 
