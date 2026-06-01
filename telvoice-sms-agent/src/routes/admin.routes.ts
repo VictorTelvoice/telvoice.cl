@@ -70,6 +70,10 @@ import {
   postAdminAgentMarkReviewed,
 } from "../controllers/admin-agent-training.controller.js";
 import {
+  getAgentSalesConversationPage,
+  getAgentSalesPage,
+} from "../controllers/admin-agent-sales.controller.js";
+import {
   getAdminTestPage,
   getAdminTelsimInboundPreview,
   postAdminTestQaSend,
@@ -643,6 +647,12 @@ adminRouter.post("/knowledge", requireAdminPage, postCreateKnowledge);
 adminRouter.get("/knowledge/:id/edit", requireAdminPage, getKnowledgeEditForm);
 adminRouter.post("/knowledge/:id/edit", requireAdminPage, postEditKnowledge);
 adminRouter.post("/knowledge/:id/delete", requireAdminPage, postDeleteKnowledge);
+adminRouter.get("/agent-sales", requireAdminPage, getAgentSalesPage);
+adminRouter.get(
+  "/agent-sales/conversations/:sessionId",
+  requireAdminPage,
+  getAgentSalesConversationPage,
+);
 adminRouter.get("/agent-training", requireAdminPage, getAdminAgentHub);
 adminRouter.get("/agent-training/feedback", requireAdminPage, getAdminAgentFeedback);
 adminRouter.get(

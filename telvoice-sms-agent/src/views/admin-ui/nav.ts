@@ -46,6 +46,7 @@ export const LEGACY_NAV: NavItem[] = [
   { id: "products", href: "/admin/products", label: "Productos (legacy)", icon: "inventory_2" },
   { id: "knowledge", href: "/admin/knowledge", label: "Knowledge base", icon: "menu_book" },
   { id: "agent-training", href: "/admin/agent-training", label: "Agente Telvoice", icon: "psychology" },
+  { id: "agent-sales", href: "/admin/agent-sales", label: "Ventas del Agente", icon: "storefront" },
   { id: "calculator", href: "/admin/calculator", label: "Calculadora", icon: "calculate" },
   { id: "web-leads", href: "/admin/web-agent/leads", label: "Leads web", icon: "language" },
 ];

@@ -27,6 +27,7 @@ import type { RoutedIntent } from "./agentIntentRouter.js";
 import { findCompanyById } from "../companyService.js";
 import { routeAgentIntent } from "./agentIntentRouter.js";
 import { matchesSendSmsFlowIntent } from "./agentSendSmsIntent.js";
+import { recordAgentSalesEvent } from "./agentSalesEventsService.js";
 
 export const PURCHASE_FLOW_STEP = {
   NEED_QUANTITY: "need_quantity",
@@ -179,6 +180,20 @@ export async function buildManualQuoteResponse(input: {
     input.ctx.companyId,
   );
 
+  void recordAgentSalesEvent({
+    eventType: "manual_quote_requested",
+    channel: input.ctx.channel,
+    sessionId: input.sessionId,
+    companyId: input.ctx.companyId,
+    userId: input.ctx.userId,
+    quantitySms: quote.quoted_quantity,
+    unitPriceNet: quote.unit_price,
+    subtotalNet: quote.subtotal,
+    iva: quote.iva,
+    totalClp: quote.total_with_iva,
+    metadata: { requested_quantity: quote.requested_quantity },
+  });
+
   return basePurchaseResponse({
     sessionId: input.sessionId,
     reply:
@@ -233,6 +248,19 @@ export async function buildPurchaseQuoteResponse(input: {
     },
     input.ctx.companyId,
   );
+
+  void recordAgentSalesEvent({
+    eventType: "quote_created",
+    channel: input.ctx.channel,
+    sessionId: input.sessionId,
+    companyId: input.ctx.companyId,
+    userId: input.ctx.userId,
+    quantitySms: quote.quoted_quantity,
+    unitPriceNet: quote.unit_price,
+    subtotalNet: quote.subtotal,
+    iva: quote.iva,
+    totalClp: quote.total_with_iva,
+  });
 
   const intro =
     input.intro ??
@@ -303,6 +331,26 @@ export async function handleInsufficientBalanceOffer(input: {
     input.ctx.companyId,
   );
 
+  void recordAgentSalesEvent({
+    eventType: "insufficient_balance_detected",
+    channel: input.ctx.channel,
+    sessionId: input.sessionId,
+    companyId: input.ctx.companyId,
+    userId: input.ctx.userId,
+    quantitySms: quote.quoted_quantity,
+    unitPriceNet: quote.unit_price,
+    subtotalNet: quote.subtotal,
+    iva: quote.iva,
+    totalClp: quote.total_with_iva,
+    metadata: {
+      available_sms: input.availableSms,
+      required_sms: input.requiredSms,
+      shortfall,
+      recommended_bag: quote.quoted_quantity,
+      kind: input.kind,
+    },
+  });
+
   const sendLabel =
     input.kind === "csv"
       ? `Tu campaña necesita ${input.requiredSms.toLocaleString("es-CL")} SMS y actualmente tienes ${input.availableSms.toLocaleString("es-CL")} SMS disponibles.`
@@ -366,6 +414,26 @@ async function buildPaymentLinkResponse(
       },
       ctx.companyId,
     );
+
+    void recordAgentSalesEvent({
+      eventType: purchase.reusedExistingOrder
+        ? "payment_link_reused"
+        : "payment_link_created",
+      channel: ctx.channel,
+      sessionId,
+      companyId: ctx.companyId,
+      userId: ctx.userId,
+      quantitySms: purchase.quote.quoted_quantity,
+      unitPriceNet: purchase.quote.unit_price,
+      subtotalNet: purchase.quote.subtotal,
+      iva: purchase.quote.iva,
+      totalClp: purchase.quote.total_with_iva,
+      orderId: purchase.orderId,
+      paymentStatus: "pending",
+      metadata: memory.blockedSendDueToBalance
+        ? { agent_blocked_send: true }
+        : {},
+    });
 
     const reuseNote = purchase.reusedExistingOrder
       ? "\n(Reutilicé el link de pago pendiente de esta cotización.)\n"
