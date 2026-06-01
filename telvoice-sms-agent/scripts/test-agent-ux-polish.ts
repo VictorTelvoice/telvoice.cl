@@ -12,7 +12,6 @@ import {
   composeLowConfidenceReply,
 } from "../src/services/agent/agentResponseComposer.js";
 import { getAgentPersona } from "../src/services/agent/agentPersona.js";
-import { getAgentPersona } from "../src/services/agent/agentPersona.js";
 import { runAgentCore } from "../src/services/agent/agentCore.js";
 import {
   getConversationMemory,
