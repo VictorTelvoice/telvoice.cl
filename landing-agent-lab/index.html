@@ -36,7 +36,7 @@
       },
     };
   </script>
-  <link rel="stylesheet" href="../css/landing-agent-lab.css?v=20260704" />
+  <link rel="stylesheet" href="../css/landing-agent-lab.css?v=20260711" />
 </head>
 <body class="font-body antialiased">
   <div class="lab-bg-wrap" aria-hidden="true">
@@ -679,7 +679,7 @@
         </div>
       </section>
 
-      <!-- 6. Panel + API + numeración propia -->
+      <!-- 6. Panel + API -->
       <section class="lab-section" id="panel-api" aria-labelledby="panel-api-titulo" tabindex="-1">
         <div class="lab-section-inner">
           <header class="lab-header-center">
@@ -705,16 +705,14 @@
               <p class="mt-4 text-sm text-slate-500">Acceso API sujeto a validación comercial y configuración técnica.</p>
             </article>
           </div>
+        </div>
+      </section>
 
-          <div class="lab-num-band lab-num-band--compact">
-            <p class="text-slate-300 leading-relaxed text-center max-w-2xl mx-auto">
-              ¿Necesitas números reales para agentes, OTP autorizado o webhooks? Revisa la sección
-              <a href="#numeracion" class="text-lab-cyan hover:underline font-medium">Numeración Telvoice</a>
-              o solicita orientación desde el agente.
-            </p>
-            <p class="mt-4 text-center">
-              <a href="#numeracion" class="lab-btn-secondary inline-flex" data-track="click_ver_numeracion_panel">Ver números reales Telvoice</a>
-            </p>
+      <!-- Numeración: CTA dedicado -->
+      <section class="lab-section lab-section--compact" aria-label="Acceso a numeración Telvoice">
+        <div class="lab-section-inner">
+          <div class="lab-num-band lab-num-band--cta">
+            <a href="#numeracion" class="lab-btn-secondary inline-flex" data-track="click_ver_numeracion_cta">Ver números reales Telvoice</a>
           </div>
         </div>
       </section>
@@ -728,10 +726,6 @@
             <h2 id="calc-titulo" class="calc-hero-title lab-section-title mt-3">Calcula tu bolsa SMS</h2>
             <p class="calc-hero-intro lab-section-intro mt-4">
               Selecciona la cantidad de SMS y revisa el total antes de comprar.
-            </p>
-            <p class="calc-plans-bridge mt-4">
-              Los planes del agente incluyen la línea y la operación asistida. Las bolsas SMS se usan para campañas y consumo adicional.
-              <a href="planes-agente.html" class="calc-plans-bridge__link" data-track="click_calc_ver_planes">Ver planes del agente</a>
             </p>
           </header>
           <div class="calc-panel">

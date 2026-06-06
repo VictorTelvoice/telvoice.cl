@@ -371,6 +371,16 @@ html.lab-theme body {
   }
 }
 
+.lab-section--compact {
+  padding: 2rem 0;
+}
+
+@media (min-width: 768px) {
+  .lab-section--compact {
+    padding: 2.5rem 0;
+  }
+}
+
 .lab-section-inner {
   width: 100%;
   max-width: var(--lab-w-page);
@@ -2444,6 +2454,14 @@ html.lab-theme body {
 
 .lab-num-band--compact header {
   display: none;
+}
+
+.lab-num-band--cta {
+  padding: 1.5rem 1.75rem;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .lab-num-band .lab-eyebrow {
