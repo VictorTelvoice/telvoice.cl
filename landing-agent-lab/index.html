@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html class="dark lab-theme" lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Agente Telvoice con número SMS exclusivo: campañas, validaciones privadas y gestión operativa empresarial sin depender del celular de un gerente." />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Telvoice Lab | Agente SMS con número exclusivo</title>
+  <link rel="icon" href="../assets/telvoice-isotipo.png" type="image/png" sizes="any" />
+  <meta name="theme-color" content="#050814" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;family=Montserrat:wght@600;700;800&amp;display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#0052cc",
+            "lab-cyan": "#22d3ee",
+            "lab-purple": "#818cf8",
+          },
+          fontFamily: {
+            h1: ["Montserrat", "sans-serif"],
+            h2: ["Montserrat", "sans-serif"],
+            h3: ["Montserrat", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+          },
+          maxWidth: {
+            "container-max": "1120px",
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="../css/landing-agent-lab.css?v=20260704" />
+</head>
+<body class="font-body antialiased">
+  <div class="lab-bg-wrap" aria-hidden="true">
+    <div class="lab-bg-radial lab-bg-radial--1"></div>
+    <div class="lab-bg-radial lab-bg-radial--2"></div>
+    <div class="lab-bg-radial lab-bg-radial--3"></div>
+    <div class="lab-bg-grid"></div>
+    <svg class="lab-bg-network" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" fill="none">
+      <path stroke="rgba(56,189,248,0.15)" stroke-width="1" d="M0 400 Q300 300 600 400 T1200 350" />
+      <path stroke="rgba(129,140,248,0.12)" stroke-width="1" d="M0 200 Q400 350 800 150 T1200 250" />
+      <path stroke="rgba(59,130,246,0.1)" stroke-width="1" d="M100 600 L350 450 L600 520 L850 380 L1100 480" />
+      <circle fill="rgba(34,211,238,0.4)" r="3" cx="100" cy="600" />
+      <circle fill="rgba(59,130,246,0.5)" r="3" cx="350" cy="450" />
+      <circle fill="rgba(129,140,248,0.4)" r="3" cx="600" cy="520" />
+      <circle fill="rgba(34,211,238,0.35)" r="3" cx="850" cy="380" />
+      <circle fill="rgba(59,130,246,0.4)" r="3" cx="1100" cy="480" />
+    </svg>
+  </div>
+
+  <div class="lab-content">
+    <!-- 1. Header -->
+    <nav class="lab-nav sticky top-0 z-50 w-full" aria-label="Navegación principal">
+      <div class="lab-shell flex justify-between items-center gap-4 py-4">
+        <a href="#" class="lab-logo-link flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-lab-cyan" data-scroll-top aria-label="Telvoice, ir al inicio">
+          <img src="../assets/telvoice-isotipo.png" alt="Telvoice" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" />
+          <span class="font-h3 font-bold tracking-tight lowercase">
+            <span class="lab-logo-word text-white">telvoice</span>
+          </span>
+        </a>
+        <ul class="hidden lg:flex gap-1 items-center">
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="#como-funciona">Cómo funciona</a></li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="#agente-telvoice">Agente</a></li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="#casos-uso">Casos de uso</a></li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="#panel-api">Panel + API</a></li>
+          <li class="lab-nav-dropdown">
+            <button type="button" class="lab-nav-link lab-nav-dropdown-toggle font-body text-sm rounded-full px-4 py-2" id="nav-precios-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-precios-menu">Precios</button>
+            <ul class="lab-nav-dropdown-menu" id="nav-precios-menu" role="menu" aria-labelledby="nav-precios-toggle" hidden>
+              <li role="none"><a class="lab-nav-dropdown-link" href="#calculadora" role="menuitem" data-track="click_nav_armar_bolsa">Armar tu bolsa</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="planes-agente.html" role="menuitem" data-track="click_nav_planes_agente">Planes Agente</a></li>
+            </ul>
+          </li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="#faq">FAQ</a></li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="../ayuda/">Ayuda</a></li>
+        </ul>
+        <div class="flex items-center gap-2 shrink-0">
+          <a href="https://agent.telvoice.cl/login" class="lab-btn-primary lab-btn-nav hidden sm:inline-flex" data-track="click_probar_agente_nav">Probar el agente</a>
+          <button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-white/15 text-white" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
+            <span class="material-symbols-outlined" id="menu-icon-open">menu</span>
+            <span class="material-symbols-outlined hidden" id="menu-icon-close">close</span>
+          </button>
+        </div>
+      </div>
+      <div id="mobile-panel" class="hidden lg:hidden border-t border-white/10 py-4 lab-shell">
+        <ul class="flex flex-col gap-1">
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="#como-funciona">Cómo funciona</a></li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="#agente-telvoice">Agente Telvoice</a></li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="#casos-uso">Casos de uso</a></li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="#panel-api">Panel + API</a></li>
+          <li class="lab-nav-dropdown lab-nav-dropdown--mobile">
+            <button type="button" class="lab-nav-dropdown-toggle block lab-nav-link w-full text-left py-3 rounded-xl" id="nav-precios-toggle-mobile" aria-expanded="false" aria-controls="nav-precios-menu-mobile">Precios</button>
+            <ul class="lab-nav-dropdown-menu lab-nav-dropdown-menu--mobile" id="nav-precios-menu-mobile" hidden>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="#calculadora" data-track="click_nav_armar_bolsa_mobile">Armar tu bolsa</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="planes-agente.html" data-track="click_nav_planes_agente_mobile">Planes Agente</a></li>
+            </ul>
+          </li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="#faq">FAQ</a></li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="../ayuda/">Centro de ayuda</a></li>
+        </ul>
+        <a href="https://agent.telvoice.cl/login" class="lab-btn-primary w-full mt-3 text-center" data-track="click_probar_agente_nav_mobile">Probar el agente</a>
+      </div>
+    </nav>
+
+    <main>
+      <!-- 2. Hero — teléfono protagonista -->
+      <section class="lab-hero lab-hero--phone-lead" id="inicio" aria-labelledby="hero-title">
+        <div class="lab-shell">
+          <div class="lab-hero-grid">
+            <div class="lab-hero-copy-col lab-hero-copy-col--support">
+              <div class="lab-hero-slider" id="hero-copy-slider" data-autoplay="7000">
+                <div class="lab-hero-copy-stack">
+                  <!-- Slide 1: SMS masivos -->
+                  <article class="lab-hero-slide is-active" data-slide="0" aria-hidden="false">
+                    <div class="lab-hero-eyebrow">
+                      <span class="lab-hero-pill-dot" aria-hidden="true"></span>
+                      <span>SMS masivos en Chile</span>
+                    </div>
+                    <h1 id="hero-title" class="lab-hero-title lab-hero-title--compact">
+                      SMS masivos en Chile, con rutas directas y sin contratos
+                    </h1>
+                    <p class="lab-hero-subtitle lab-hero-subtitle--compact">
+                      Envía promociones, notificaciones y recordatorios por SMS con una plataforma empresarial rápida, asistida por Telvoice y preparada para operar campañas con validación previa.
+                    </p>
+                  </article>
+
+                  <!-- Slide 2: Números móviles reales -->
+                  <article class="lab-hero-slide" data-slide="1" aria-hidden="true">
+                    <div class="lab-hero-eyebrow">
+                      <span class="lab-hero-pill-dot" aria-hidden="true"></span>
+                      <span>Números móviles reales</span>
+                    </div>
+                    <h2 class="lab-hero-title lab-hero-title--compact">
+                      SIM real para las cuentas digitales de tu empresa
+                    </h2>
+                    <p class="lab-hero-subtitle lab-hero-subtitle--compact">
+                      Centraliza registros, recepción SMS y verificación 2FA autorizada con una numeración móvil real de Telvoice, sin depender del teléfono personal de un gerente o colaborador.
+                    </p>
+                  </article>
+
+                  <!-- Slide 3: Agente conversacional -->
+                  <article class="lab-hero-slide" data-slide="2" aria-hidden="true">
+                    <div class="lab-hero-eyebrow">
+                      <span class="lab-hero-pill-dot" aria-hidden="true"></span>
+                      <span>Agente conversacional Telvoice</span>
+                    </div>
+                    <h2 class="lab-hero-title lab-hero-title--compact">
+                      Escala tus Agentes de IA con Números Reales.
+                    </h2>
+                    <p class="lab-hero-subtitle lab-hero-subtitle--compact">
+                      El Agente Telvoice puede orientar campañas, explicar estados, guiar compras de saldo y asistir la operación de tus números y mensajes desde una experiencia conversacional.
+                    </p>
+                  </article>
+                </div>
+
+                <div class="lab-hero-cap-stack">
+                  <div class="lab-hero-cap-slide is-active" data-slide="0" aria-hidden="false">
+                    <div class="lab-hero-capabilities">
+                      <div class="lab-hero-capabilities-grid">
+                        <article class="lab-hero-capability-item">
+                          <span class="lab-hero-capability__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2 5 5h-5V4zM8 13h8v2H8v-2zm0 4h5v2H8v-2z"/></svg></span>
+                          <div class="lab-hero-capability__body">
+                            <strong class="lab-hero-capability__title">Campañas CSV</strong>
+                            <p class="lab-hero-capability__text">Carga tu base, valida contactos y prepara campañas en minutos.</p>
+                          </div>
+                        </article>
+                        <article class="lab-hero-capability-item">
+                          <span class="lab-hero-capability__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg></span>
+                          <div class="lab-hero-capability__body">
+                            <strong class="lab-hero-capability__title">Compra online</strong>
+                            <p class="lab-hero-capability__text">Compra bolsas SMS desde el panel y activa saldo para tus envíos.</p>
+                          </div>
+                        </article>
+                        <article class="lab-hero-capability-item">
+                          <span class="lab-hero-capability__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14-4-4 1.41-1.41L12 14.17l6.59-6.59L20 9l-8 8z"/></svg></span>
+                          <div class="lab-hero-capability__body">
+                            <strong class="lab-hero-capability__title">Control antes de enviar</strong>
+                            <p class="lab-hero-capability__text">Revisa consumo, destinatarios y confirmación antes de ejecutar.</p>
+                          </div>
+                        </article>
+                        <article class="lab-hero-capability-item">
+                          <span class="lab-hero-capability__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg></span>
+                          <div class="lab-hero-capability__body">
+                            <strong class="lab-hero-capability__title">Estados de entrega</strong>
+                            <p class="lab-hero-capability__text">Consulta reportes y estados DLR para entender el resultado de tus mensajes.</p>
+                          </div>
+                        </article>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="lab-hero-cap-slide" data-slide="1" aria-hidden="true">
+                    <div class="lab-hero-capabilities">
+                      <div class="lab-hero-capabilities-grid">
+                        <article class="lab-hero-capability-item">
+                          <span class="lab-hero-capability__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 5c0-2.21-1.79-4-4-4S11 2.79 11 5H7v2h1v11c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V7h1V5h-4zm-4-2c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2zm2 14H9V7h8v10z"/></svg></span>
+                          <div class="lab-hero-capability__body">
+                            <strong class="lab-hero-capability__title">SIM real única</strong>
+                            <p class="lab-hero-capability__text">Usa numeración móvil real para cuentas propias o corporativas.</p>
+                          </div>
+                        </article>
+                        <article class="lab-hero-capability-item">
+                          <span class="lab-hero-capability__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg></span>
+                          <div class="lab-hero-capability__body">
+                            <strong class="lab-hero-capability__title">Recepción SMS</strong>
+                            <p class="lab-hero-capability__text">Centraliza mensajes, códigos y respuestas en un canal empresarial.</p>
+                          </div>
+                        </article>
+                        <article class="lab-hero-capability-item">
+                          <span class="lab-hero-capability__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></span>
+                          <div class="lab-hero-capability__body">
+                            <strong class="lab-hero-capability__title">Verificación 2FA autorizada</strong>
+                            <p class="lab-hero-capability__text">Opera procesos de seguridad y validación bajo control de tu empresa.</p>
+                          </div>
+                        </article>
+                        <article class="lab-hero-capability-item">
+                          <span class="lab-hero-capability__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></span>
+                          <div class="lab-hero-capability__body">
+                            <strong class="lab-hero-capability__title">Separación operativa</strong>
+                            <p class="lab-hero-capability__text">Evita depender del teléfono personal de gerentes o colaboradores.</p>
+                          </div>
+                        </article>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="lab-hero-cap-slide" data-slide="2" aria-hidden="true">
+                    <div class="lab-hero-capabilities">
+                      <div class="lab-hero-capabilities-grid">
+                        <article class="lab-hero-capability-item">
+                          <span class="lab-hero-capability__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></span>
+                          <div class="lab-hero-capability__body">
+                            <strong class="lab-hero-capability__title">Asistencia comercial</strong>
+                            <p class="lab-hero-capability__text">Responde dudas, orienta compras y ayuda a entender el servicio.</p>
+                          </div>
+                        </article>
+                        <article class="lab-hero-capability-item">
+                          <span class="lab-hero-capability__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M18 11v2h4v-2h-4zm-2 6.61c.96.71 2.21 1.65 3.2 2.39.4-.53.8-1.08 1.2-1.6-.99-.74-2.24-1.68-3.2-2.4-.4.54-.8 1.08-1.2 1.61zM20.4 5.6c-.4-.53-.8-1.08-1.2-1.6-.99.74-2.24 1.68-3.2 2.4.4.53.8 1.08 1.2 1.6.96-.72 2.21-1.65 3.2-2.4zM4 9c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h1v4h2v-4h1l5 3V6L8 9H4zm11.5 3c0-1.33-.58-2.53-1.5-3.35v6.69c.92-.81 1.5-2.01 1.5-3.34z"/></svg></span>
+                          <div class="lab-hero-capability__body">
+                            <strong class="lab-hero-capability__title">Gestión de campañas</strong>
+                            <p class="lab-hero-capability__text">Guía la preparación de campañas SMS y revisa información antes de enviar.</p>
+                          </div>
+                        </article>
+                        <article class="lab-hero-capability-item">
+                          <span class="lab-hero-capability__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 14H7v-2h4v2zm6 0h-2v-2h2v2zm0-4h-8v-2h8v2zm0-4h-8V7h8v2z"/></svg></span>
+                          <div class="lab-hero-capability__body">
+                            <strong class="lab-hero-capability__title">Validación previa</strong>
+                            <p class="lab-hero-capability__text">Ayuda a revisar contactos, consumo estimado y condiciones de operación.</p>
+                          </div>
+                        </article>
+                        <article class="lab-hero-capability-item">
+                          <span class="lab-hero-capability__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg></span>
+                          <div class="lab-hero-capability__body">
+                            <strong class="lab-hero-capability__title">Comunicación empresarial</strong>
+                            <p class="lab-hero-capability__text">Centraliza consultas y procesos SMS desde una experiencia conversacional.</p>
+                          </div>
+                        </article>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="lab-hero-cta-stack">
+                  <div class="lab-hero-cta-slide is-active" data-slide="0" aria-hidden="false">
+                    <div class="lab-hero-cta-row">
+                      <a href="#precios" class="lab-btn-primary" data-track="click_comprar_sms_hero">Comprar SMS</a>
+                      <a href="https://agent.telvoice.cl/login" class="lab-btn-secondary" data-track="click_probar_agente_hero">Probar el agente</a>
+                    </div>
+                  </div>
+                  <div class="lab-hero-cta-slide" data-slide="1" aria-hidden="true">
+                    <div class="lab-hero-cta-row">
+                      <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_solicitar_numero_hero">Solicitar número real</a>
+                      <a href="#casos-uso" class="lab-btn-secondary" data-track="click_ver_casos_uso_hero">Ver casos de uso</a>
+                    </div>
+                  </div>
+                  <div class="lab-hero-cta-slide" data-slide="2" aria-hidden="true">
+                    <div class="lab-hero-cta-row">
+                      <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_probar_agente_hero_slide3">Probar el agente</a>
+                      <a href="planes-agente.html" class="lab-btn-secondary" data-track="click_ver_planes_hero">Ver planes del agente</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="lab-hero-visual">
+              <div class="lab-hero-stage">
+                <div class="lab-agent-link" aria-hidden="true">
+                  <span class="lab-agent-link__glow"></span>
+                  <span class="lab-agent-link__beam"></span>
+                </div>
+                <div class="lab-phone-wrap" aria-label="Agente Especializado Telvoice en número SMS exclusivo">
+                  <div class="lab-phone-float">
+                    <div class="lab-phone-notch" aria-hidden="true"></div>
+                    <div class="lab-phone-screen">
+                      <div class="lab-phone-header">
+                        <span id="lab-phone-agent-iso" class="lab-phone-header-logo tva-agent-iso-slot" aria-hidden="true"></span>
+                        <div class="lab-phone-header-text">
+                          <p class="lab-phone-header-title">Agente Especializado</p>
+                          <p class="lab-phone-header-sub">Número exclusivo Telvoice</p>
+                          <p class="lab-phone-header-status lab-phone-header-status--online">En línea</p>
+                        </div>
+                        <span class="lab-phone-header-sms material-symbols-outlined" aria-hidden="true">sms</span>
+                      </div>
+                      <div id="hero-agent-embed" class="lab-phone-agent-embed"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <nav class="lab-hero-dots" aria-label="Servicios destacados Telvoice">
+              <button type="button" class="lab-hero-dot is-active" data-slide-to="0" aria-label="Ver SMS masivos" aria-current="true"></button>
+              <button type="button" class="lab-hero-dot" data-slide-to="1" aria-label="Ver números reales"></button>
+              <button type="button" class="lab-hero-dot" data-slide-to="2" aria-label="Ver agente"></button>
+            </nav>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Cómo funciona -->
+      <section class="lab-section lab-section--tight-top" id="como-funciona" aria-labelledby="como-funciona-titulo" tabindex="-1">
+        <div class="lab-section-inner">
+          <header class="lab-header-center">
+            <span class="lab-eyebrow">Cómo funciona</span>
+            <h2 id="como-funciona-titulo" class="lab-section-title mt-4">Operación SMS con asistencia guiada</h2>
+            <p class="lab-section-intro">Prepara tu campaña, valida tu base, revisa el consumo estimado y confirma antes de enviar. El agente te guía paso a paso para reducir errores y mantener control sobre cada envío.</p>
+          </header>
+          <ol class="lab-steps-grid">
+            <li class="lab-glass-card p-6">
+              <span class="lab-step-num">1</span>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Define tu mensaje</h3>
+              <p class="mt-2 text-sm leading-relaxed text-slate-400">Indica si enviarás una promoción, alerta, recordatorio, cobranza o notificación a tus clientes.</p>
+            </li>
+            <li class="lab-glass-card p-6">
+              <span class="lab-step-num">2</span>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Prepara destinatarios</h3>
+              <p class="mt-2 text-sm leading-relaxed text-slate-400">Carga un CSV o usa una plantilla guardada. El agente revisa formato, duplicados y números válidos.</p>
+            </li>
+            <li class="lab-glass-card p-6">
+              <span class="lab-step-num">3</span>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Revisa consumo y saldo</h3>
+              <p class="mt-2 text-sm leading-relaxed text-slate-400">Visualiza SMS estimados, segmentos, costo y saldo requerido antes de ejecutar.</p>
+            </li>
+            <li class="lab-glass-card lab-glass-card--glow p-6">
+              <span class="lab-step-num">4</span>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Confirma y mide</h3>
+              <p class="mt-2 text-sm leading-relaxed text-slate-400">Envía solo con confirmación y revisa estados de entrega, DLR y resultados desde el panel.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 4. Agente Telvoice -->
+      <div id="servicios" class="h-0 w-0 overflow-hidden scroll-mt-24" aria-hidden="true"></div>
+      <section class="lab-section" id="agente-telvoice" aria-labelledby="agente-titulo" tabindex="-1">
+        <div class="lab-section-inner">
+          <div class="lab-agent-layout grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+            <header class="lg:col-span-5 lab-header-left">
+              <span class="lab-eyebrow">Agente Telvoice</span>
+              <h2 id="agente-titulo" class="lab-section-title mt-4 text-left lg:text-left">Tu operador SMS dentro del panel Telvoice</h2>
+              <p class="lab-section-intro lg:mx-0 lg:text-left mt-4">
+                El agente vive conectado a tu cuenta: cotiza, guía compras, prepara campañas CSV, consulta saldo, revisa últimos envíos y explica estados DLR en lenguaje claro.
+              </p>
+              <div class="mt-8 flex flex-wrap gap-4">
+                <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_probar_agente_seccion">Probar el agente</a>
+                <button type="button" id="nav-demo" class="lab-btn-secondary hidden" aria-hidden="true">Agente comercial</button>
+              </div>
+              <figure class="lab-agent-section-showcase" aria-hidden="true">
+                <picture>
+                  <source type="image/webp" srcset="../assets/telvoice-agent-section-pointing.webp" />
+                  <img
+                    class="lab-agent-section-showcase__img"
+                    src="../assets/telvoice-agent-section-pointing.png"
+                    alt=""
+                    width="420"
+                    height="420"
+                    loading="lazy"
+                    decoding="async"
+                    draggable="false"
+                  />
+                </picture>
+              </figure>
+            </header>
+            <div class="lg:col-span-7 lab-agent-feature-grid grid grid-cols-1 sm:grid-cols-2">
+              <article class="lab-glass-card lab-glass-card--glow">
+                <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">payments</span></div>
+                <h3>Cotiza y compra saldo</h3>
+                <p>Calcula bolsas SMS según volumen y guía la compra desde el panel con menos fricción operativa.</p>
+              </article>
+              <article class="lab-glass-card">
+                <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">upload_file</span></div>
+                <h3>Prepara campañas CSV</h3>
+                <p>Carga contactos, revisa formato y obtén un resumen antes de programar el envío.</p>
+              </article>
+              <article class="lab-glass-card">
+                <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">fact_check</span></div>
+                <h3>Valida contactos y segmentos</h3>
+                <p>Detecta duplicados, contactos inválidos y segmentos para reducir errores antes de enviar.</p>
+              </article>
+              <article class="lab-glass-card">
+                <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">monitoring</span></div>
+                <h3>Consulta saldo y DLR</h3>
+                <p>Revisa consumo, saldo disponible y estados de entrega explicados en lenguaje operativo.</p>
+              </article>
+              <article class="lab-glass-card lab-glass-card--glow">
+                <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">verified</span></div>
+                <h3>Confirma antes de enviar</h3>
+                <p>Las acciones sensibles requieren confirmación explícita. Nada se debita sin tu aprobación.</p>
+              </article>
+              <article class="lab-glass-card">
+                <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">speed</span></div>
+                <h3>Reduce pantallas y errores operativos</h3>
+                <p>Menos pasos manuales entre cotización, preparación y ejecución de campañas SMS.</p>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Numeración exclusiva Telvoice -->
+      <section class="lab-section" id="numeracion" aria-labelledby="numeracion-titulo" tabindex="-1">
+        <div class="lab-section-inner lab-section-inner--numeracion">
+          <header class="lab-header-center">
+            <span class="lab-eyebrow">Numeración Telvoice</span>
+            <h2 id="numeracion-titulo" class="lab-section-title mt-4">Deja de depender de un celular físico para gestionar los SMS de tu empresa</h2>
+            <p class="lab-section-intro">
+              Recibe SMS, códigos 2FA autorizados y respuestas de clientes desde una numeración real. Centraliza la gestión en tu panel, Telegram o flujos conectados por API, sin que el número crítico de tu empresa dependa del teléfono personal de un gerente.
+            </p>
+          </header>
+          <div class="lab-num-grid mt-10">
+            <article class="lab-num-card lab-glass-card">
+              <div class="lab-num-card__visual" aria-hidden="true">
+                <svg class="lab-num-scene" viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="lab-num-g1" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#0a1628"/>
+                      <stop offset="100%" stop-color="#0f2347"/>
+                    </linearGradient>
+                    <linearGradient id="lab-num-accent" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#0052cc"/>
+                      <stop offset="100%" stop-color="#38bdf8"/>
+                    </linearGradient>
+                    <filter id="lab-num-glow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="3" result="b"/>
+                      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                    <linearGradient id="simPlastic" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#f8fafc"/>
+                      <stop offset="55%" stop-color="#e2e8f0"/>
+                      <stop offset="100%" stop-color="#cbd5e1"/>
+                    </linearGradient>
+                    <linearGradient id="simGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#fef3c7"/>
+                      <stop offset="28%" stop-color="#eab308"/>
+                      <stop offset="62%" stop-color="#ca8a04"/>
+                      <stop offset="100%" stop-color="#fde68a"/>
+                    </linearGradient>
+                  </defs>
+                  <rect width="360" height="200" fill="url(#lab-num-g1)" rx="12"/>
+                  <ellipse cx="180" cy="112" rx="38" ry="6" fill="rgba(0,0,0,0.28)"/>
+                  <g transform="translate(180 96)">
+                    <path d="M-28 -20 H10 L28 -2 V20 H-28 Z" fill="url(#simPlastic)" stroke="rgba(148,163,184,0.55)" stroke-width="0.75"/>
+                    <path d="M-26 -18 H9 L26 -1 V18 H-26 Z" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="0.45"/>
+                    <path d="M-28 -20 H10 L28 -2 V20 H-28 Z" fill="none" stroke="rgba(56,189,248,0.22)" stroke-width="1.2" filter="url(#lab-num-glow)"/>
+                    <g transform="translate(0 2)">
+                      <rect x="-18" y="-2" width="22" height="14" rx="1.5" fill="url(#simGold)" stroke="#92400e" stroke-width="0.35"/>
+                      <rect x="-14" y="2" width="14" height="6" rx="0.8" fill="#fcd34d" opacity="0.45"/>
+                      <rect x="6" y="-2" width="10" height="9" rx="1" fill="url(#simGold)" stroke="#92400e" stroke-width="0.35"/>
+                      <rect x="6" y="9" width="10" height="7" rx="1" fill="url(#simGold)" stroke="#92400e" stroke-width="0.35"/>
+                      <rect x="-8" y="9" width="12" height="7" rx="1" fill="url(#simGold)" stroke="#92400e" stroke-width="0.35"/>
+                      <rect x="-18" y="9" width="8" height="7" rx="1" fill="url(#simGold)" stroke="#92400e" stroke-width="0.35"/>
+                      <line x1="-18" y1="5" x2="16" y2="5" stroke="rgba(180,83,9,0.25)" stroke-width="0.5"/>
+                    </g>
+                  </g>
+                  <path d="M72 88 L152 92" stroke="rgba(56,189,248,0.35)" stroke-width="1.5" stroke-dasharray="4 3"/>
+                  <path d="M208 92 L288 88" stroke="rgba(56,189,248,0.35)" stroke-width="1.5" stroke-dasharray="4 3"/>
+                  <path d="M180 74 L180 36" stroke="rgba(56,189,248,0.35)" stroke-width="1.5" stroke-dasharray="4 3"/>
+                  <rect x="36" y="64" width="72" height="48" rx="8" fill="rgba(14,22,48,0.9)" stroke="rgba(120,160,255,0.25)"/>
+                  <rect x="44" y="72" width="40" height="4" rx="2" fill="rgba(56,189,248,0.7)"/>
+                  <rect x="44" y="80" width="56" height="3" rx="1.5" fill="rgba(148,163,184,0.35)"/>
+                  <rect x="44" y="87" width="48" height="3" rx="1.5" fill="rgba(148,163,184,0.25)"/>
+                  <text x="72" y="118" text-anchor="middle" fill="#94a3b8" font-family="Inter,sans-serif" font-size="8" font-weight="600">Panel</text>
+                  <circle cx="180" cy="22" r="15" fill="#229ED9" stroke="rgba(125,211,252,0.45)" stroke-width="1"/>
+                  <path fill="#fff" d="M173.5 22.2 L185.8 17.1 C186.4 16.8 186.9 17.2 186.7 17.9 L184.9 26.4 C184.7 27.2 184.1 27.4 183.4 27 L179.8 24.5 L177.4 27.4 C177.1 27.7 176.8 27.8 176.5 27.6 L176.7 24.1 L182.1 19.4 C182.4 19.1 182 18.9 181.6 19.2 L175.8 23.2 L172.4 22.2 C171.7 22 171.7 21.5 172.5 21.2 L173.5 22.2 Z"/>
+                  <text x="180" y="48" text-anchor="middle" fill="#94a3b8" font-family="Inter,sans-serif" font-size="8" font-weight="600">Telegram</text>
+                  <rect x="252" y="64" width="72" height="48" rx="8" fill="rgba(14,22,48,0.9)" stroke="rgba(120,160,255,0.25)"/>
+                  <text x="268" y="84" fill="#38bdf8" font-family="monospace" font-size="9">&lt;/&gt;</text>
+                  <rect x="268" y="90" width="44" height="3" rx="1.5" fill="rgba(148,163,184,0.35)"/>
+                  <rect x="268" y="97" width="36" height="3" rx="1.5" fill="rgba(148,163,184,0.25)"/>
+                  <text x="288" y="118" text-anchor="middle" fill="#94a3b8" font-family="Inter,sans-serif" font-size="8" font-weight="600">API</text>
+                  <rect x="118" y="148" width="124" height="36" rx="8" fill="rgba(8,14,36,0.6)" stroke="rgba(148,163,184,0.15)" stroke-dasharray="3 3"/>
+                  <line x1="132" y1="166" x2="228" y2="166" stroke="rgba(248,113,113,0.5)" stroke-width="1.5"/>
+                  <text x="180" y="162" text-anchor="middle" fill="rgba(148,163,184,0.55)" font-family="Inter,sans-serif" font-size="7">Sin teléfono físico</text>
+                </svg>
+              </div>
+              <div class="lab-num-card__body">
+                <h3 class="lab-num-card__title">Número real, gestión digital</h3>
+                <p class="lab-num-card__text">Tu línea puede estar disponible desde el panel, Telegram o integraciones, sin tener que manipular un teléfono físico cada vez que llega un SMS.</p>
+              </div>
+            </article>
+            <article class="lab-num-card lab-glass-card">
+              <div class="lab-num-card__visual" aria-hidden="true">
+                <svg class="lab-num-scene" viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+                  <defs>
+                    <marker id="lab-num-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                      <path d="M0,0 L6,3 L0,6 Z" fill="#38bdf8"/>
+                    </marker>
+                  </defs>
+                  <rect width="360" height="200" fill="url(#lab-num-g1)" rx="12"/>
+                  <rect x="108" y="28" width="144" height="144" rx="18" fill="rgba(8,14,36,0.75)" stroke="rgba(120,160,255,0.22)" stroke-width="1.5"/>
+                  <rect x="124" y="48" width="112" height="32" rx="8" fill="rgba(0,82,204,0.22)" stroke="rgba(56,189,248,0.3)"/>
+                  <circle cx="140" cy="64" r="8" fill="rgba(34,197,94,0.25)" stroke="rgba(34,197,94,0.5)"/>
+                  <path d="M136 64 L139 67 L145 61" stroke="#86efac" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                  <text x="156" y="60" fill="#e2e8f0" font-family="Inter,sans-serif" font-size="8" font-weight="600">2FA autorizado</text>
+                  <text x="156" y="72" fill="#38bdf8" font-family="monospace" font-size="11" font-weight="700">482 901</text>
+                  <rect x="124" y="88" width="112" height="28" rx="8" fill="rgba(14,22,48,0.85)" stroke="rgba(120,160,255,0.15)"/>
+                  <text x="136" y="106" fill="#94a3b8" font-family="Inter,sans-serif" font-size="8">SMS entrante</text>
+                  <text x="220" y="106" text-anchor="end" fill="#64748b" font-family="Inter,sans-serif" font-size="7">09:41</text>
+                  <rect x="124" y="122" width="112" height="28" rx="8" fill="rgba(14,22,48,0.85)" stroke="rgba(120,160,255,0.15)"/>
+                  <text x="136" y="140" fill="#94a3b8" font-family="Inter,sans-serif" font-size="8">Respuesta cliente</text>
+                  <circle cx="228" cy="136" r="5" fill="#38bdf8" filter="url(#lab-num-glow)"/>
+                  <rect x="28" y="72" width="56" height="56" rx="28" fill="rgba(0,82,204,0.15)" stroke="rgba(56,189,248,0.25)"/>
+                  <text x="56" y="104" text-anchor="middle" fill="#38bdf8" font-family="Inter,sans-serif" font-size="9" font-weight="700">SMS</text>
+                  <path d="M84 100 L108 88" stroke="rgba(56,189,248,0.4)" stroke-width="1.5" marker-end="url(#lab-num-arrow)"/>
+                </svg>
+              </div>
+              <div class="lab-num-card__body">
+                <h3 class="lab-num-card__title">SMS y 2FA autorizados</h3>
+                <p class="lab-num-card__text">Recibe códigos, verificaciones y mensajes de servicios compatibles usando una numeración real controlada por tu empresa.</p>
+              </div>
+            </article>
+            <article class="lab-num-card lab-glass-card">
+              <div class="lab-num-card__visual" aria-hidden="true">
+                <svg class="lab-num-scene" viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+                  <rect width="360" height="200" fill="url(#lab-num-g1)" rx="12"/>
+                  <rect x="118" y="56" width="124" height="88" rx="12" fill="rgba(0,82,204,0.2)" stroke="rgba(56,189,248,0.35)" stroke-width="1.5" filter="url(#lab-num-glow)"/>
+                  <rect x="134" y="72" width="92" height="8" rx="4" fill="rgba(56,189,248,0.55)"/>
+                  <rect x="134" y="86" width="72" height="4" rx="2" fill="rgba(148,163,184,0.3)"/>
+                  <rect x="134" y="94" width="80" height="4" rx="2" fill="rgba(148,163,184,0.22)"/>
+                  <rect x="134" y="102" width="64" height="4" rx="2" fill="rgba(148,163,184,0.18)"/>
+                  <text x="180" y="128" text-anchor="middle" fill="#94a3b8" font-family="Inter,sans-serif" font-size="8" font-weight="600">Buzón empresarial</text>
+                  <circle cx="56" cy="72" r="22" fill="rgba(14,22,48,0.9)" stroke="rgba(120,160,255,0.3)"/>
+                  <circle cx="56" cy="66" r="8" fill="rgba(56,189,248,0.35)"/>
+                  <path d="M44 88 Q56 78 68 88" stroke="rgba(148,163,184,0.4)" fill="none"/>
+                  <text x="56" y="104" text-anchor="middle" fill="#64748b" font-family="Inter,sans-serif" font-size="7">Gerencia</text>
+                  <path d="M78 80 L118 76" stroke="rgba(56,189,248,0.3)" stroke-width="1.2" stroke-dasharray="3 2"/>
+                  <circle cx="304" cy="72" r="22" fill="rgba(14,22,48,0.9)" stroke="rgba(120,160,255,0.3)"/>
+                  <circle cx="304" cy="66" r="8" fill="rgba(129,140,248,0.4)"/>
+                  <path d="M292 88 Q304 78 316 88" stroke="rgba(148,163,184,0.4)" fill="none"/>
+                  <text x="304" y="104" text-anchor="middle" fill="#64748b" font-family="Inter,sans-serif" font-size="7">Ventas</text>
+                  <path d="M282 80 L242 76" stroke="rgba(56,189,248,0.3)" stroke-width="1.2" stroke-dasharray="3 2"/>
+                  <circle cx="56" cy="148" r="18" fill="rgba(14,22,48,0.9)" stroke="rgba(120,160,255,0.25)"/>
+                  <circle cx="56" cy="143" r="6" fill="rgba(34,211,238,0.4)"/>
+                  <text x="56" y="174" text-anchor="middle" fill="#64748b" font-family="Inter,sans-serif" font-size="7">Soporte</text>
+                  <path d="M74 140 L118 128" stroke="rgba(56,189,248,0.25)" stroke-width="1.2" stroke-dasharray="3 2"/>
+                  <circle cx="304" cy="148" r="18" fill="rgba(14,22,48,0.9)" stroke="rgba(120,160,255,0.25)"/>
+                  <circle cx="304" cy="143" r="6" fill="rgba(59,130,246,0.45)"/>
+                  <text x="304" y="174" text-anchor="middle" fill="#64748b" font-family="Inter,sans-serif" font-size="7">Ops</text>
+                  <path d="M286 140 L242 128" stroke="rgba(56,189,248,0.25)" stroke-width="1.2" stroke-dasharray="3 2"/>
+                </svg>
+              </div>
+              <div class="lab-num-card__body">
+                <h3 class="lab-num-card__title">Acceso para tu equipo</h3>
+                <p class="lab-num-card__text">Gerencia, soporte, ventas u operaciones pueden consultar mensajes sin depender de una sola persona o de un equipo físico guardado en la oficina.</p>
+              </div>
+            </article>
+            <article class="lab-num-card lab-glass-card lab-glass-card--glow">
+              <div class="lab-num-card__visual" aria-hidden="true">
+                <svg class="lab-num-scene" viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+                  <rect width="360" height="200" fill="url(#lab-num-g1)" rx="12"/>
+                  <rect x="88" y="32" width="184" height="136" rx="12" fill="rgba(8,14,36,0.82)" stroke="rgba(120,160,255,0.2)"/>
+                  <rect x="104" y="48" width="72" height="6" rx="3" fill="rgba(56,189,248,0.55)"/>
+                  <text x="104" y="68" fill="#64748b" font-family="Inter,sans-serif" font-size="7">Historial de mensajes</text>
+                  <line x1="112" y1="88" x2="112" y2="152" stroke="rgba(56,189,248,0.25)" stroke-width="2"/>
+                  <circle cx="112" cy="88" r="4" fill="#38bdf8" filter="url(#lab-num-glow)"/>
+                  <rect x="124" y="80" width="132" height="18" rx="6" fill="rgba(14,22,48,0.95)" stroke="rgba(120,160,255,0.12)"/>
+                  <text x="132" y="92" fill="#e2e8f0" font-family="Inter,sans-serif" font-size="7">SMS recibido · +56 9…</text>
+                  <text x="248" y="92" fill="#64748b" font-family="Inter,sans-serif" font-size="6">Hoy 10:24</text>
+                  <circle cx="112" cy="112" r="4" fill="rgba(56,189,248,0.6)"/>
+                  <rect x="124" y="104" width="132" height="18" rx="6" fill="rgba(14,22,48,0.95)" stroke="rgba(120,160,255,0.12)"/>
+                  <text x="132" y="116" fill="#cbd5e1" font-family="Inter,sans-serif" font-size="7">2FA · código verificado</text>
+                  <text x="248" y="116" fill="#64748b" font-family="Inter,sans-serif" font-size="6">Ayer 18:02</text>
+                  <circle cx="112" cy="136" r="4" fill="rgba(56,189,248,0.45)"/>
+                  <rect x="124" y="128" width="132" height="18" rx="6" fill="rgba(14,22,48,0.95)" stroke="rgba(120,160,255,0.12)"/>
+                  <text x="132" y="140" fill="#cbd5e1" font-family="Inter,sans-serif" font-size="7">Respuesta cliente · entregado</text>
+                  <text x="248" y="140" fill="#64748b" font-family="Inter,sans-serif" font-size="6">12 mar</text>
+                  <rect x="280" y="48" width="48" height="20" rx="6" fill="rgba(34,197,94,0.12)" stroke="rgba(34,197,94,0.3)"/>
+                  <text x="304" y="61" text-anchor="middle" fill="#86efac" font-family="Inter,sans-serif" font-size="7" font-weight="600">Audit</text>
+                </svg>
+              </div>
+              <div class="lab-num-card__body">
+                <h3 class="lab-num-card__title">Historial y trazabilidad</h3>
+                <p class="lab-num-card__text">Mantén registro de mensajes recibidos, fechas, números y eventos importantes para controlar comunicaciones sensibles.</p>
+              </div>
+            </article>
+          </div>
+          <div class="lab-num-cta mt-10 flex justify-center">
+            <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_solicitar_numero_numeracion">Solicitar número Telvoice</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Casos de uso -->
+      <section class="lab-section" id="casos-uso" aria-labelledby="casos-titulo" tabindex="-1">
+        <div class="lab-section-inner">
+          <header class="lab-header-center">
+            <span class="lab-eyebrow">Casos de uso</span>
+            <h2 id="casos-titulo" class="lab-section-title mt-4">Adecuado a tu infraestructura</h2>
+            <p class="lab-section-intro">
+              Conecta tu IA, tus automatizaciones o tu equipo a números reales Telvoice. Opera campañas, validaciones autorizadas y comunicaciones críticas sin depender de un teléfono físico a la mano.
+            </p>
+          </header>
+          <div class="lab-casos-grid lab-casos-grid--triple">
+            <a href="casos-de-uso/uso-individual-validaciones/" class="lab-caso-card-link" data-track="click_caso_uso_individual">
+              <article class="lab-glass-card lab-caso-card lab-caso-card--primary p-6 sm:p-8">
+                <div class="lab-icon-wrap lab-icon-wrap--caso"><span class="material-symbols-outlined" aria-hidden="true">verified_user</span></div>
+                <h3 class="mt-4">Uso individual &amp; validaciones</h3>
+                <p class="lab-caso-intro">Para usuarios, operadores o equipos que necesitan recibir SMS, proteger cuentas y separar comunicaciones sensibles del móvil personal.</p>
+                <ul class="lab-caso-list" role="list">
+                  <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Chips físicos reales para cuentas y canales autorizados.</li>
+                  <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Menos dependencia de numeraciones VoIP en servicios que requieren SMS real.</li>
+                  <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Privacidad operativa sin exponer tu móvil personal.</li>
+                  <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Mayor control para cuentas bancarias, fintech o cripto bajo uso autorizado.</li>
+                  <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Recepción de SMS de servicios internacionales compatibles.</li>
+                </ul>
+                <span class="lab-caso-card__cta">Ver caso de uso <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></span>
+              </article>
+            </a>
+            <a href="casos-de-uso/ia-automatizacion/" class="lab-caso-card-link" data-track="click_caso_uso_ia_automatizacion">
+              <article class="lab-glass-card lab-caso-card lab-caso-card--primary">
+                <div class="lab-icon-wrap lab-icon-wrap--caso"><span class="material-symbols-outlined" aria-hidden="true">smart_toy</span></div>
+                <h3 class="mt-4">IA &amp; automatización</h3>
+                <p class="lab-caso-intro">Conecta agentes, bots y automatizaciones a números reales para operar flujos SMS, OTP autorizados y eventos por API/webhooks.</p>
+                <ul class="lab-caso-list" role="list">
+                  <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Integración con Make, n8n y Zapier mediante API/webhooks.</li>
+                  <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Agentes de IA con capacidad de recibir eventos SMS y OTP autorizados.</li>
+                  <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Webhooks para activar flujos propios en tiempo real.</li>
+                  <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Sincronización multi-número para equipos comerciales o agentes de ventas.</li>
+                  <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Bot de Telegram para recibir SMS, OTP autorizados y alertas operativas.</li>
+                </ul>
+                <span class="lab-caso-card__cta">Explorar automatización <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></span>
+              </article>
+            </a>
+            <article class="lab-glass-card lab-caso-card lab-caso-card--primary lab-glass-card--glow">
+              <div class="lab-icon-wrap lab-icon-wrap--caso"><span class="material-symbols-outlined" aria-hidden="true">account_balance</span></div>
+              <h3 class="mt-4">Empresas, fintech &amp; growth</h3>
+              <p class="lab-caso-intro">Para empresas que necesitan administrar numeración, validaciones, campañas y respuestas SMS sin depender de hardware físico o teléfonos personales.</p>
+              <ul class="lab-caso-list" role="list">
+                <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Acceso compartido para equipos sin manipular hardware físico.</li>
+                <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Gestión de múltiples cuentas corporativas o sellers autorizados.</li>
+                <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Dashboard para consulta y descarga de SMS históricos.</li>
+                <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Validaciones autorizadas para operaciones fintech, exchanges o procesos sensibles.</li>
+                <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Validación de leads calificados mediante canales SMS y WhatsApp autorizados.</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Panel + API + numeración propia -->
+      <section class="lab-section" id="panel-api" aria-labelledby="panel-api-titulo" tabindex="-1">
+        <div class="lab-section-inner">
+          <header class="lab-header-center">
+            <span class="lab-eyebrow">Panel + API</span>
+            <h2 id="panel-api-titulo" class="lab-section-title mt-4">Panel web, API bajo solicitud y operación conectada</h2>
+            <p class="lab-section-intro">Gestiona campañas desde el panel Telvoice e integra vía API cuando tu operación lo requiera. Telvoice concentra la operación SMS; las extensiones de numeración propia se habilitan según caso de uso.</p>
+          </header>
+          <div class="lab-panel-duo mb-8">
+            <article class="lab-glass-card p-6 sm:p-8">
+              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">dashboard</span></div>
+              <h3 class="mt-4 font-h3 text-lg font-semibold text-white">Panel de operación SMS</h3>
+              <p class="mt-3 text-slate-400 leading-relaxed">Compra saldo, carga contactos, prepara campañas y revisa resultados. El agente operativo vive conectado a tu cuenta para asistir en cada paso.</p>
+              <ul class="mt-5 space-y-2 text-sm text-slate-400">
+                <li class="flex gap-2"><span class="material-symbols-outlined text-lab-cyan text-lg shrink-0" aria-hidden="true">check_circle</span> Consulta de saldo y consumo</li>
+                <li class="flex gap-2"><span class="material-symbols-outlined text-lab-cyan text-lg shrink-0" aria-hidden="true">check_circle</span> Campañas CSV con validación previa</li>
+                <li class="flex gap-2"><span class="material-symbols-outlined text-lab-cyan text-lg shrink-0" aria-hidden="true">check_circle</span> Resumen antes de enviar</li>
+              </ul>
+            </article>
+            <article class="lab-glass-card p-6 sm:p-8">
+              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">api</span></div>
+              <h3 class="mt-4 font-h3 text-lg font-semibold text-white">API REST bajo solicitud</h3>
+              <p class="mt-3 text-slate-400 leading-relaxed">Conecta CRM, ecommerce o sistemas internos para integrar envíos programados. Telvoice entrega orientación técnica según tu caso de uso y volumen.</p>
+              <p class="mt-4 text-sm text-slate-500">Acceso API sujeto a validación comercial y configuración técnica.</p>
+            </article>
+          </div>
+
+          <div class="lab-num-band lab-num-band--compact">
+            <p class="text-slate-300 leading-relaxed text-center max-w-2xl mx-auto">
+              ¿Necesitas números reales para agentes, OTP autorizado o webhooks? Revisa la sección
+              <a href="#numeracion" class="text-lab-cyan hover:underline font-medium">Numeración Telvoice</a>
+              o solicita orientación desde el agente.
+            </p>
+            <p class="mt-4 text-center">
+              <a href="#numeracion" class="lab-btn-secondary inline-flex" data-track="click_ver_numeracion_panel">Ver números reales Telvoice</a>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. Precios / bolsas SMS -->
+      <section id="calculadora" class="lab-section section-calc scroll-mt-24" aria-labelledby="calc-titulo" tabindex="-1">
+        <div id="precios" class="h-0 w-0 overflow-hidden" aria-hidden="true"></div>
+        <div class="lab-section-inner lab-section-inner--calc">
+          <header class="lab-header-center">
+            <span class="lab-eyebrow">Bolsas SMS</span>
+            <h2 id="calc-titulo" class="calc-hero-title lab-section-title mt-3">Calcula tu bolsa SMS</h2>
+            <p class="calc-hero-intro lab-section-intro mt-4">
+              Selecciona la cantidad de SMS y revisa el total antes de comprar.
+            </p>
+            <p class="calc-plans-bridge mt-4">
+              Los planes del agente incluyen la línea y la operación asistida. Las bolsas SMS se usan para campañas y consumo adicional.
+              <a href="planes-agente.html" class="calc-plans-bridge__link" data-track="click_calc_ver_planes">Ver planes del agente</a>
+            </p>
+          </header>
+          <div class="calc-panel">
+            <div class="calc-slider-block">
+              <div class="calc-slider-head">
+                <span class="calc-slider-label">Cantidad de SMS</span>
+                <span id="calcVol" class="calc-vol-display" aria-live="polite">1.000 SMS</span>
+              </div>
+              <label for="calcSlider" class="sr-only">Cantidad de SMS</label>
+              <input id="calcSlider" class="calc-range-input w-full" type="range" min="0" max="109" step="1" value="0" aria-valuemin="1000" aria-valuemax="120000" aria-valuenow="1000" />
+              <div id="calcSliderSuggestions" class="calc-tier-chips" role="group" aria-label="Cantidades sugeridas por tramo de precio"></div>
+            </div>
+            <div class="calc-result-panel" aria-live="polite">
+              <h3 class="calc-result-heading">Detalle de bolsa</h3>
+              <p id="calcQty" class="calc-result-qty">1.000 SMS</p>
+              <span id="calcTierLabel" class="sr-only">Bolsa 1.000 SMS</span>
+              <div class="calc-result-breakdown">
+                <div class="calc-result-row">
+                  <span class="calc-result-row-label">Precio unitario</span>
+                  <span id="calcPxSMS" class="calc-result-row-value">$10 + IVA por SMS</span>
+                </div>
+                <div class="calc-result-row">
+                  <span class="calc-result-row-label">Subtotal</span>
+                  <span id="calcSubtotal" class="calc-result-row-value">$10.000</span>
+                </div>
+                <div class="calc-result-row">
+                  <span class="calc-result-row-label">IVA 19%</span>
+                  <span id="calcIva" class="calc-result-row-value">$1.900</span>
+                </div>
+              </div>
+              <div class="calc-result-total-row">
+                <span class="calc-result-total-label">Total</span>
+                <strong id="calcTotal" class="calc-result-total-value">$11.900</strong>
+              </div>
+              <p id="calcStatus" class="calc-result-status">Ideal para validar operación y primeros envíos controlados.</p>
+              <div class="calc-cta-wrap">
+                <button type="button" id="calc-buy-btn" class="calc-cta-btn calc-cta-btn--buy lab-btn-primary w-full" data-track="click_comprar_online_calc">Comprar bolsa SMS</button>
+                <p class="calc-result-note">Saldo para campañas SMS. Los envíos requieren confirmación antes de ejecutar.</p>
+                <p class="calc-result-links">
+                  <button type="button" id="calc-quote-link" class="calc-cta-link" data-track="click_cotiza_alto_volumen">¿Volúmenes mayores o numeración propia? Cotiza con el agente</button>
+                  · <a href="https://agent.telvoice.cl/login" class="text-lab-cyan hover:underline" data-track="click_solicitar_orientacion_calc">Solicitar orientación</a>
+                </p>
+              </div>
+            </div>
+            <p class="calc-footnote">Bolsas desde 1.000 SMS · MercadoPago desde el panel · Resumen antes de enviar · API bajo solicitud</p>
+            <div class="lab-pack-includes pack-includes-block">
+              <p class="pack-includes-title">Todas las bolsas incluyen</p>
+              <ul class="pack-includes-list">
+                <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Plataforma web para gestión de envíos</li>
+                <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Reportería de campañas</li>
+                <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Acceso API sujeto a solicitud</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. FAQ -->
+      <section class="lab-section" id="faq" aria-labelledby="faq-titulo" tabindex="-1">
+        <div class="lab-section-inner lab-section-inner--faq">
+          <header class="lab-header-center">
+            <span class="lab-eyebrow">Preguntas frecuentes</span>
+            <h2 id="faq-titulo" class="lab-section-title mt-4">Operación SMS con agente telco</h2>
+          </header>
+          <div class="space-y-3 mt-8">
+            <details class="faq-details group">
+              <summary class="flex items-center justify-between gap-4">
+                <span>¿El agente envía SMS automáticamente?</span>
+                <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
+              </summary>
+              <p class="faq-answer pt-4">No. El agente puede preparar, calcular y resumir una acción, pero los envíos y débitos requieren confirmación explícita.</p>
+            </details>
+            <details class="faq-details group">
+              <summary class="flex items-center justify-between gap-4">
+                <span>¿Puedo empezar sin integrar API?</span>
+                <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
+              </summary>
+              <p class="faq-answer pt-4">Sí. Puedes operar desde el panel comprando saldo, cargando contactos, preparando campañas y revisando resultados.</p>
+            </details>
+            <details class="faq-details group">
+              <summary class="flex items-center justify-between gap-4">
+                <span>¿Telvoice ofrece numeración propia?</span>
+                <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
+              </summary>
+              <p class="faq-answer pt-4">Sí. Telvoice puede habilitar numeración propia, números dedicados y canal SMS empresarial para OTP, bots, API/webhooks y agentes conectados a tu operación, según validación comercial y configuración técnica.</p>
+            </details>
+            <details class="faq-details group">
+              <summary class="flex items-center justify-between gap-4">
+                <span>¿Puedo usarlo para OTP o validaciones?</span>
+                <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
+              </summary>
+              <p class="faq-answer pt-4">Sí, bajo configuración técnica y validación comercial según el tipo de tráfico, volumen y caso de uso.</p>
+            </details>
+            <details class="faq-details group">
+              <summary class="flex items-center justify-between gap-4">
+                <span>¿La comunicación es completamente autónoma?</span>
+                <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
+              </summary>
+              <p class="faq-answer pt-4">La plataforma puede asistir flujos operativos, pero las acciones sensibles deben operar con reglas, permisos y confirmación explícita.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. CTA final -->
+      <section class="lab-cta-final lab-section" aria-labelledby="cta-final-titulo">
+        <div class="lab-section-inner lab-section-inner--cta text-center">
+          <h2 id="cta-final-titulo" class="lab-section-title">Opera campañas SMS con control y asistencia operativa</h2>
+          <p class="lab-section-intro mt-4">Conecta tu operación con un agente telco, valida contactos antes de enviar y escala hacia numeración propia cuando tu negocio lo necesite.</p>
+          <div class="lab-cta-final__actions mt-10">
+            <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_probar_agente_final">Probar el agente</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 10. Footer -->
+    <footer class="lab-footer" role="contentinfo">
+      <div class="lab-shell pt-14 pb-6">
+        <div class="grid grid-cols-1 gap-12 border-b border-white/10 pb-12 md:grid-cols-2 lg:grid-cols-12 lg:gap-10">
+          <div class="lg:col-span-4">
+            <a href="#" class="inline-flex items-center gap-2" data-scroll-top aria-label="Telvoice, ir al inicio">
+              <img src="../assets/telvoice-isotipo.png" alt="" width="40" height="40" class="h-10 w-10 object-contain" aria-hidden="true" />
+              <span class="font-bold lowercase text-white lab-logo-word">telvoice</span>
+            </a>
+            <p class="mt-4 max-w-sm text-sm leading-relaxed text-slate-400">
+              Operación SMS empresarial con agente telco y panel web. Numeración propia Telvoice, campañas asistidas y canal SMS dedicado para tu operación.
+            </p>
+            <p class="mt-3 text-xs text-slate-500">Versión experimental · <a href="../" class="hover:text-lab-cyan">Ver landing actual</a></p>
+          </div>
+          <div class="grid grid-cols-2 gap-10 sm:grid-cols-3 md:col-span-2 lg:col-span-8 lg:grid-cols-3">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Producto</p>
+              <ul class="mt-4 space-y-3 text-sm">
+                <li><a href="#agente-telvoice">Agente Telvoice</a></li>
+                <li><a href="planes-agente.html">Planes del agente</a></li>
+                <li><a href="#numeracion">Números reales</a></li>
+                <li><a href="#precios">Bolsas SMS</a></li>
+                <li><a href="#panel-api">Panel + API</a></li>
+                <li><a href="https://agent.telvoice.cl/login" target="_blank" rel="noopener noreferrer">Acceso agente</a></li>
+              </ul>
+            </div>
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Recursos</p>
+              <ul class="mt-4 space-y-3 text-sm">
+                <li><a href="#casos-uso">Casos de uso</a></li>
+                <li><a href="#faq">FAQ</a></li>
+                <li><a href="../ayuda/">Centro de ayuda</a></li>
+                <li><a href="https://portal.telvoice.net/" target="_blank" rel="noopener noreferrer">Portal cliente</a></li>
+              </ul>
+            </div>
+            <div class="col-span-2 sm:col-span-1">
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Legal</p>
+              <ul class="mt-4 space-y-3 text-sm">
+                <li><a href="../terminos-y-condiciones/">Términos y condiciones</a></li>
+                <li><a href="../politica-de-privacidad/">Política de privacidad</a></li>
+                <li><a href="../uso-responsable/">Uso responsable</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="pt-8 text-sm text-slate-500">
+          <p>© 2026 Telvoice.cl. Todos los derechos reservados.</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Modal checkout (reutiliza telvoice-app.js) -->
+  <div id="compra-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="compra-modal-title">
+    <div class="modal-panel" role="document">
+      <div class="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-5 py-4 sm:px-6">
+        <h2 id="compra-modal-title" class="font-h3 text-xl font-semibold text-gray-900">Comprar bolsa SMS online</h2>
+        <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100" data-close-modal aria-label="Cerrar">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="px-5 py-5 sm:px-6 sm:py-6">
+        <div id="checkout-summary" class="checkout-summary" aria-live="polite"></div>
+        <p class="mt-3 text-sm text-gray-600">Completa tus datos y serás redirigido a Mercado Pago para pagar en pesos chilenos (CLP).</p>
+        <p id="compra-sandbox-hint" class="checkout-sandbox-hint mt-3 hidden text-sm text-gray-600" role="note"></p>
+        <form id="compra-form" class="mt-5 space-y-4" novalidate data-checkout-form onsubmit="event.preventDefault(); return false;">
+          <input type="hidden" id="compra-plan-id" value="" aria-hidden="true" />
+          <input type="text" id="compra-website" class="hidden" tabindex="-1" autocomplete="off" aria-hidden="true" />
+          <div>
+            <label for="compra-nombre" class="mb-1.5 block text-sm font-medium text-gray-900">Nombre o empresa</label>
+            <input id="compra-nombre" type="text" required maxlength="120" class="w-full rounded-xl border-gray-300 bg-white focus:border-primary focus:ring-primary" autocomplete="name" />
+          </div>
+          <div>
+            <label for="compra-razon-social" class="mb-1.5 block text-sm font-medium text-gray-900">Razón social <span class="font-normal text-gray-500">(opcional, factura)</span></label>
+            <input id="compra-razon-social" type="text" maxlength="160" class="w-full rounded-xl border-gray-300 bg-white focus:border-primary focus:ring-primary" autocomplete="organization" />
+          </div>
+          <div>
+            <label for="compra-rut" class="mb-1.5 block text-sm font-medium text-gray-900">RUT</label>
+            <input id="compra-rut" type="text" required maxlength="20" class="w-full rounded-xl border-gray-300 bg-white focus:border-primary focus:ring-primary" placeholder="12.345.678-9" />
+          </div>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label for="compra-email" class="mb-1.5 block text-sm font-medium text-gray-900">Email</label>
+              <input id="compra-email" type="email" required maxlength="120" class="w-full rounded-xl border-gray-300 bg-white focus:border-primary focus:ring-primary" autocomplete="email" />
+            </div>
+            <div>
+              <label for="compra-whatsapp" class="mb-1.5 block text-sm font-medium text-gray-900">WhatsApp</label>
+              <input id="compra-whatsapp" type="tel" required maxlength="20" class="w-full rounded-xl border-gray-300 bg-white focus:border-primary focus:ring-primary" autocomplete="tel" placeholder="+56 9 1234 5678" />
+            </div>
+          </div>
+          <p id="compra-error" class="checkout-error" hidden role="alert"></p>
+          <button type="button" id="compra-submit" class="checkout-submit w-full rounded-full bg-primary py-3.5 font-semibold text-white shadow-sm transition hover:opacity-90">Pagar con Mercado Pago</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/telvoice-config.js"></script>
+  <script src="../js/telvoice-app.js"></script>
+  <script>
+    (function () {
+      var labPage = "/landing-agent-lab/";
+      window.TELVOICE_LANDING_PAGE = labPage;
+      var track = window.TelvoiceTrack;
+      if (typeof track === "function") {
+        window.TelvoiceTrack = function (name, detail) {
+          track(name, Object.assign({ landing_page: labPage }, detail || {}));
+        };
+      }
+    })();
+  </script>
+  <script>
+    (function () {
+      var slider = document.getElementById("hero-copy-slider");
+      var heroSection = document.getElementById("inicio");
+      if (!slider || !heroSection) {
+        return;
+      }
+
+      var slides = slider.querySelectorAll(".lab-hero-slide");
+      var capSlides = slider.querySelectorAll(".lab-hero-cap-slide");
+      var ctaSlides = slider.querySelectorAll(".lab-hero-cta-slide");
+      var dots = heroSection.querySelectorAll(".lab-hero-dot");
+      var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var autoplayMs = reduced ? 0 : Number(slider.getAttribute("data-autoplay")) || 7000;
+      var transitionMs = reduced ? 0 : 620;
+      var current = 0;
+      var timer = null;
+      var hoverPaused = false;
+
+      function setActiveGroup(nodes, index) {
+        nodes.forEach(function (node, i) {
+          var active = i === index;
+          node.classList.toggle("is-active", active);
+          node.classList.remove("is-exiting");
+          node.setAttribute("aria-hidden", active ? "false" : "true");
+        });
+      }
+
+      function updateDots(index) {
+        dots.forEach(function (dot, i) {
+          var active = i === index;
+          dot.classList.toggle("is-active", active);
+          if (active) {
+            dot.setAttribute("aria-current", "true");
+          } else {
+            dot.removeAttribute("aria-current");
+          }
+        });
+      }
+
+      function goTo(index) {
+        index = parseInt(index, 10);
+        if (isNaN(index) || !slides.length) {
+          return;
+        }
+        index = ((index % slides.length) + slides.length) % slides.length;
+
+        var outgoing = slides[current];
+        var incoming = slides[index];
+
+        if (outgoing && outgoing !== incoming) {
+          outgoing.classList.remove("is-active");
+          outgoing.classList.add("is-exiting");
+          outgoing.setAttribute("aria-hidden", "true");
+          window.setTimeout(function () {
+            outgoing.classList.remove("is-exiting");
+          }, transitionMs);
+        }
+
+        if (incoming) {
+          incoming.classList.add("is-active");
+          incoming.classList.remove("is-exiting");
+          incoming.setAttribute("aria-hidden", "false");
+        }
+
+        slides.forEach(function (slide, i) {
+          if (i !== index) {
+            slide.classList.remove("is-active");
+            slide.setAttribute("aria-hidden", "true");
+          }
+        });
+
+        setActiveGroup(capSlides, index);
+        setActiveGroup(ctaSlides, index);
+        updateDots(index);
+        current = index;
+        resetAutoplay();
+      }
+
+      function nextSlide() {
+        goTo(current + 1);
+      }
+
+      function clearAutoplay() {
+        if (timer) {
+          window.clearInterval(timer);
+          timer = null;
+        }
+      }
+
+      function resetAutoplay() {
+        clearAutoplay();
+        if (autoplayMs <= 0 || hoverPaused) {
+          return;
+        }
+        timer = window.setInterval(nextSlide, autoplayMs);
+      }
+
+      heroSection.addEventListener("click", function (e) {
+        var dot = e.target.closest(".lab-hero-dot");
+        if (!dot) {
+          return;
+        }
+        e.preventDefault();
+        goTo(dot.getAttribute("data-slide-to"));
+      });
+
+      slider.addEventListener("mouseenter", function () {
+        hoverPaused = true;
+        clearAutoplay();
+      });
+      slider.addEventListener("mouseleave", function () {
+        hoverPaused = false;
+        resetAutoplay();
+      });
+
+      goTo(0);
+    })();
+  </script>
+  <script>
+    (function () {
+      function setDropdownOpen(toggle, menu, open) {
+        if (!toggle || !menu) {
+          return;
+        }
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        menu.hidden = !open;
+        toggle.closest(".lab-nav-dropdown").classList.toggle("is-open", open);
+      }
+
+      document.querySelectorAll(".lab-nav-dropdown").forEach(function (wrap) {
+        var toggle = wrap.querySelector(".lab-nav-dropdown-toggle");
+        var menu = wrap.querySelector(".lab-nav-dropdown-menu");
+        if (!toggle || !menu) {
+          return;
+        }
+
+        toggle.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var open = toggle.getAttribute("aria-expanded") !== "true";
+          document.querySelectorAll(".lab-nav-dropdown.is-open").forEach(function (other) {
+            if (other !== wrap) {
+              setDropdownOpen(
+                other.querySelector(".lab-nav-dropdown-toggle"),
+                other.querySelector(".lab-nav-dropdown-menu"),
+                false
+              );
+            }
+          });
+          setDropdownOpen(toggle, menu, open);
+        });
+
+        menu.querySelectorAll("a").forEach(function (link) {
+          link.addEventListener("click", function () {
+            setDropdownOpen(toggle, menu, false);
+          });
+        });
+      });
+
+      document.addEventListener("click", function (e) {
+        if (e.target.closest(".lab-nav-dropdown")) {
+          return;
+        }
+        document.querySelectorAll(".lab-nav-dropdown").forEach(function (wrap) {
+          setDropdownOpen(
+            wrap.querySelector(".lab-nav-dropdown-toggle"),
+            wrap.querySelector(".lab-nav-dropdown-menu"),
+            false
+          );
+        });
+      });
+
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          document.querySelectorAll(".lab-nav-dropdown").forEach(function (wrap) {
+            setDropdownOpen(
+              wrap.querySelector(".lab-nav-dropdown-toggle"),
+              wrap.querySelector(".lab-nav-dropdown-menu"),
+              false
+            );
+          });
+        }
+      });
+    })();
+  </script>
+  <script src="../js/telvoice-web-agent-loader.js?v=20260704" data-root="../" data-embed-target="#hero-agent-embed"></script>
+</body>
+</html>

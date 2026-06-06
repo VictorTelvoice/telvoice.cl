@@ -6,6 +6,7 @@
     "node": ">=18"
   },
   "scripts": {
+    "serve:lab": "node scripts/serve-lab.mjs",
     "test:web-agent-intent": "node scripts/verify-web-agent-intent.mjs"
   },
   "dependencies": {

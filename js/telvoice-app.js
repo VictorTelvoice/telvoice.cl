@@ -295,6 +295,15 @@
     return "$" + fmt(amount) + " + IVA";
   }
 
+  function calcTierRecommendation(vol) {
+    var v = snapCalcVolume(vol);
+    if (v <= 4000) return "Ideal para validar operación y primeros envíos controlados.";
+    if (v <= 9000) return "Buen equilibrio para campañas recurrentes con operación supervisada.";
+    if (v <= 49000) return "Tramo recomendado para operación comercial activa.";
+    if (v <= 99000) return "Precio unitario optimizado para mayor volumen empresarial.";
+    return "Configuración orientada a alto volumen y operación escalada.";
+  }
+
   function formatCalcTotalWithIva(net) {
     return "$" + fmt(Math.round(net * (1 + IVA_RATE)));
   }
@@ -922,7 +931,11 @@
     var calcVol = qs("calcVol");
     var calcQty = qs("calcQty");
     var calcPxSMS = qs("calcPxSMS");
+    var calcSubtotal = qs("calcSubtotal");
+    var calcIva = qs("calcIva");
     var calcTotal = qs("calcTotal");
+    var calcTierLabel = qs("calcTierLabel");
+    var calcStatus = qs("calcStatus");
     var buyBtn = qs("calc-buy-btn");
     var suggestionsEl = qs("calcSliderSuggestions");
     var sliderMax = CALC_VOLUMES.length - 1;
@@ -954,9 +967,14 @@
       if (!tier) return;
 
       var net = vol * tier.pxSMS;
+      var tax = Math.round(net * IVA_RATE);
       if (calcQty) calcQty.textContent = fmt(vol) + " SMS";
+      if (calcTierLabel) calcTierLabel.textContent = "Bolsa " + fmt(vol) + " SMS";
       if (calcPxSMS) calcPxSMS.textContent = "$" + tier.pxSMS + " + IVA por SMS";
-      if (calcTotal) calcTotal.textContent = formatCalcTotalWithIva(net);
+      if (calcSubtotal) calcSubtotal.textContent = "$" + fmt(net);
+      if (calcIva) calcIva.textContent = "$" + fmt(tax);
+      if (calcTotal) calcTotal.textContent = "$" + fmt(net + tax);
+      if (calcStatus) calcStatus.textContent = calcTierRecommendation(vol);
 
       if (suggestionsEl) {
         suggestionsEl.querySelectorAll(".calc-tier-chip").forEach(function (btn) {
@@ -969,7 +987,7 @@
       var calcPlan = planFromCalcVolume(vol);
       if (buyBtn && calcPlan) {
         buyBtn.hidden = false;
-        buyBtn.textContent = "Comprar " + fmt(calcPlan.sms) + " SMS online";
+        buyBtn.textContent = "Comprar bolsa SMS";
       }
 
       if (lastTrackVol !== vol) {

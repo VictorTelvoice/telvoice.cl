@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html class="dark lab-theme" lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="IA y automatización con numeración real Telvoice: conecta agentes, bots, Make, n8n, Zapier y webhooks a números reales para recibir SMS, OTP autorizados y eventos operativos." />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>IA &amp; automatización | Telvoice Lab</title>
+  <link rel="icon" href="../../../assets/telvoice-isotipo.png" type="image/png" sizes="any" />
+  <meta name="theme-color" content="#050814" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;family=Montserrat:wght@600;700;800&amp;display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#0052cc",
+            "lab-cyan": "#22d3ee",
+            "lab-purple": "#818cf8",
+          },
+          fontFamily: {
+            h1: ["Montserrat", "sans-serif"],
+            h2: ["Montserrat", "sans-serif"],
+            h3: ["Montserrat", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="../../../css/landing-agent-lab.css?v=20260708" />
+</head>
+<body class="font-body antialiased">
+  <div class="lab-bg-wrap" aria-hidden="true">
+    <div class="lab-bg-radial lab-bg-radial--1"></div>
+    <div class="lab-bg-radial lab-bg-radial--2"></div>
+    <div class="lab-bg-radial lab-bg-radial--3"></div>
+    <div class="lab-bg-grid"></div>
+  </div>
+
+  <div class="lab-content">
+    <nav class="lab-nav sticky top-0 z-50 w-full" aria-label="Navegación principal">
+      <div class="lab-shell flex justify-between items-center gap-4 py-4">
+        <a href="../../" class="lab-logo-link flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-lab-cyan" aria-label="Telvoice Lab, ir al inicio">
+          <img src="../../../assets/telvoice-isotipo.png" alt="Telvoice" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" />
+          <span class="font-h3 font-bold tracking-tight lowercase">
+            <span class="lab-logo-word text-white">telvoice</span>
+          </span>
+        </a>
+        <ul class="hidden lg:flex gap-1 items-center">
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="../../#como-funciona">Cómo funciona</a></li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="../../#agente-telvoice">Agente</a></li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2 is-active" href="../../#casos-uso">Casos de uso</a></li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="../../#panel-api">Panel + API</a></li>
+          <li class="lab-nav-dropdown">
+            <button type="button" class="lab-nav-link lab-nav-dropdown-toggle font-body text-sm rounded-full px-4 py-2" id="nav-precios-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-precios-menu">Precios</button>
+            <ul class="lab-nav-dropdown-menu" id="nav-precios-menu" role="menu" aria-labelledby="nav-precios-toggle" hidden>
+              <li role="none"><a class="lab-nav-dropdown-link" href="../../#calculadora" role="menuitem">Armar tu bolsa</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="../../planes-agente.html" role="menuitem">Planes Agente</a></li>
+            </ul>
+          </li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="../../#faq">FAQ</a></li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="../../../ayuda/">Ayuda</a></li>
+        </ul>
+        <div class="flex items-center gap-2 shrink-0">
+          <a href="https://agent.telvoice.cl/login" class="lab-btn-primary lab-btn-nav hidden sm:inline-flex" data-track="click_probar_agente_nav_caso_ia">Probar el agente</a>
+          <button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-white/15 text-white" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
+            <span class="material-symbols-outlined" id="menu-icon-open">menu</span>
+            <span class="material-symbols-outlined hidden" id="menu-icon-close">close</span>
+          </button>
+        </div>
+      </div>
+      <div id="mobile-panel" class="hidden lg:hidden border-t border-white/10 py-4 lab-shell">
+        <ul class="flex flex-col gap-1">
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="../../#como-funciona">Cómo funciona</a></li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="../../#agente-telvoice">Agente Telvoice</a></li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="../../#casos-uso">Casos de uso</a></li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="../../#panel-api">Panel + API</a></li>
+          <li class="lab-nav-dropdown lab-nav-dropdown--mobile">
+            <button type="button" class="lab-nav-dropdown-toggle block lab-nav-link w-full text-left py-3 rounded-xl" id="nav-precios-toggle-mobile" aria-expanded="false" aria-controls="nav-precios-menu-mobile">Precios</button>
+            <ul class="lab-nav-dropdown-menu lab-nav-dropdown-menu--mobile" id="nav-precios-menu-mobile" hidden>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="../../#calculadora">Armar tu bolsa</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="../../planes-agente.html">Planes Agente</a></li>
+            </ul>
+          </li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="../../#faq">FAQ</a></li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="../../../ayuda/">Centro de ayuda</a></li>
+        </ul>
+        <a href="https://agent.telvoice.cl/login" class="lab-btn-primary w-full mt-3 text-center">Probar el agente</a>
+      </div>
+    </nav>
+
+    <main class="lab-caso-page">
+      <!-- Hero -->
+      <section class="lab-section lab-section--tight-top lab-caso-page-hero" aria-labelledby="caso-hero-titulo">
+        <div class="lab-section-inner">
+          <nav class="lab-breadcrumb" aria-label="Ruta de navegación">
+            <ol class="lab-breadcrumb__list">
+              <li><a href="../../">Lab</a></li>
+              <li><a href="../../#casos-uso">Casos de uso</a></li>
+              <li><span aria-current="page">IA &amp; automatización</span></li>
+            </ol>
+          </nav>
+          <div class="lab-caso-page-hero__grid">
+            <header class="lab-caso-page-hero__header">
+              <span class="lab-eyebrow">Caso de uso</span>
+              <h1 id="caso-hero-titulo" class="lab-section-title mt-4">IA y automatización conectadas a números reales</h1>
+              <p class="lab-caso-page-hero__intro mt-4">
+                Conecta agentes, bots y flujos automáticos a números reales Telvoice para recibir SMS, operar OTP autorizados, activar webhooks y centralizar eventos sin depender de un teléfono físico.
+              </p>
+              <p class="lab-caso-page-hero__lead mt-4">
+                Tus agentes y automatizaciones también necesitan un canal SMS real. Con Telvoice, puedes conectar numeración real con panel, Telegram, API o webhooks para recibir mensajes, activar eventos y operar validaciones autorizadas bajo control operativo.
+              </p>
+              <div class="lab-caso-hero-flow" aria-hidden="true">
+                <span class="lab-caso-hero-flow__node"><span class="material-symbols-outlined">sim_card</span>Número Telvoice</span>
+                <span class="lab-caso-hero-flow__arrow material-symbols-outlined">arrow_forward</span>
+                <span class="lab-caso-hero-flow__node"><span class="material-symbols-outlined">sms</span>SMS recibido</span>
+                <span class="lab-caso-hero-flow__arrow material-symbols-outlined">arrow_forward</span>
+                <span class="lab-caso-hero-flow__node"><span class="material-symbols-outlined">webhook</span>Webhook / API</span>
+                <span class="lab-caso-hero-flow__arrow material-symbols-outlined">arrow_forward</span>
+                <span class="lab-caso-hero-flow__node"><span class="material-symbols-outlined">hub</span>Make · n8n · Zapier</span>
+                <span class="lab-caso-hero-flow__arrow material-symbols-outlined">arrow_forward</span>
+                <span class="lab-caso-hero-flow__node"><span class="material-symbols-outlined">smart_toy</span>Agente IA</span>
+                <span class="lab-caso-hero-flow__arrow material-symbols-outlined">arrow_forward</span>
+                <span class="lab-caso-hero-flow__node"><span class="material-symbols-outlined">send</span>Telegram</span>
+              </div>
+              <div class="lab-caso-page-hero__actions mt-8">
+                <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_conectar_automatizacion_caso_ia">Conectar mi automatización</a>
+                <a href="../../#casos-uso" class="lab-btn-secondary" data-track="click_volver_casos_uso_ia">Volver a Casos de uso</a>
+              </div>
+            </header>
+            <div class="lab-caso-page-hero__visual" aria-hidden="true">
+              <picture>
+                <source srcset="../../../assets/telvoice-agent-caso-ia-hero.webp" type="image/webp" />
+                <img
+                  src="../../../assets/telvoice-agent-caso-ia-hero.png"
+                  alt="Agente Telvoice conectando automatizaciones y flujos SMS a numeración real"
+                  width="512"
+                  height="512"
+                  class="lab-caso-page-hero__img"
+                  decoding="async"
+                  loading="eager"
+                />
+              </picture>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- El problema -->
+      <section class="lab-section lab-caso-page-section" aria-labelledby="caso-problema-titulo">
+        <div class="lab-section-inner">
+          <div class="lab-caso-problem-grid">
+            <header class="lab-header-left lab-caso-problem-grid__copy">
+              <h2 id="caso-problema-titulo" class="lab-section-title">Tus automatizaciones no deberían depender de un teléfono en un escritorio</h2>
+              <p class="lab-section-intro mt-4">
+                Muchos procesos digitales siguen dependiendo de un celular físico para recibir códigos, mensajes o alertas importantes. Eso vuelve la operación lenta, frágil y difícil de escalar. Si un agente, bot o flujo necesita reaccionar a un SMS, el mensaje debe llegar a un sistema gestionado, no a un dispositivo aislado.
+              </p>
+            </header>
+            <ul class="lab-problem-list lab-caso-problem-grid__list" role="list">
+              <li>
+                <span class="material-symbols-outlined lab-problem-list__icon" aria-hidden="true">smartphone</span>
+                <span>Dependencia de un equipo físico para recibir SMS</span>
+              </li>
+              <li>
+                <span class="material-symbols-outlined lab-problem-list__icon" aria-hidden="true">content_copy</span>
+                <span>Procesos manuales para copiar códigos o mensajes</span>
+              </li>
+              <li>
+                <span class="material-symbols-outlined lab-problem-list__icon" aria-hidden="true">history</span>
+                <span>Falta de trazabilidad sobre eventos importantes</span>
+              </li>
+              <li>
+                <span class="material-symbols-outlined lab-problem-list__icon" aria-hidden="true">link_off</span>
+                <span>Dificultad para conectar SMS con bots o automatizaciones</span>
+              </li>
+              <li>
+                <span class="material-symbols-outlined lab-problem-list__icon" aria-hidden="true">groups</span>
+                <span>Operación limitada cuando hay varios números o equipos</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- La solución -->
+      <section class="lab-section lab-caso-page-section" aria-labelledby="caso-solucion-titulo">
+        <div class="lab-section-inner">
+          <header class="lab-header-center">
+            <h2 id="caso-solucion-titulo" class="lab-section-title">Números reales conectados a tus flujos digitales</h2>
+            <p class="lab-section-intro mt-4">
+              Telvoice permite conectar números reales a flujos de automatización, agentes de IA, bots, Telegram o sistemas internos mediante API y webhooks. Así cada SMS recibido puede convertirse en un evento útil para tu operación.
+            </p>
+          </header>
+          <div class="lab-caso-detail-grid lab-caso-detail-grid--solution">
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap lab-icon-wrap--caso"><span class="material-symbols-outlined" aria-hidden="true">hub</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Integración con Make, n8n y Zapier</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Conecta eventos SMS a herramientas de automatización para activar tareas, alertas, registros o flujos internos.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap lab-icon-wrap--caso"><span class="material-symbols-outlined" aria-hidden="true">smart_toy</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Agentes de IA con capacidad SMS</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Permite que tus agentes reciban eventos SMS y trabajen con información proveniente de una numeración real bajo uso autorizado.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap lab-icon-wrap--caso"><span class="material-symbols-outlined" aria-hidden="true">webhook</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Webhooks en tiempo real</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Cada SMS recibido puede disparar un webhook hacia tus sistemas para iniciar procesos, validar información o notificar a tu equipo.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap lab-icon-wrap--caso"><span class="material-symbols-outlined" aria-hidden="true">dialpad</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Sincronización multi-número</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Centraliza varios números para equipos comerciales, agentes de ventas, operaciones o flujos especializados.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap lab-icon-wrap--caso"><span class="material-symbols-outlined" aria-hidden="true">send</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Bot de Telegram para SMS y OTP autorizados</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Recibe SMS, códigos y alertas operativas en Telegram para tener acceso rápido sin manipular un teléfono físico.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Para quién -->
+      <section class="lab-section lab-caso-page-section" aria-labelledby="caso-audiencia-titulo">
+        <div class="lab-section-inner">
+          <header class="lab-header-center">
+            <h2 id="caso-audiencia-titulo" class="lab-section-title">Pensado para equipos que automatizan operaciones reales</h2>
+          </header>
+          <div class="lab-caso-audience-grid">
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">code</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Equipos técnicos</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Para conectar recepción SMS a sistemas internos, dashboards, APIs o flujos de monitoreo.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">campaign</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Agencias y growth teams</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Para gestionar números, validaciones y respuestas SMS en campañas, cuentas o procesos comerciales autorizados.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">psychology</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Operaciones con agentes IA</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Para dar a un agente o bot capacidad de recibir eventos SMS y responder dentro de reglas definidas por la empresa.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">support_agent</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Equipos de ventas y soporte</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Para distribuir mensajes, respuestas y alertas hacia las personas correctas sin depender de un celular físico.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Ejemplos -->
+      <section class="lab-section lab-caso-page-section lab-caso-page-section--center" aria-labelledby="caso-ejemplos-titulo">
+        <div class="lab-section-inner">
+          <header class="lab-header-center">
+            <h2 id="caso-ejemplos-titulo" class="lab-section-title">Ejemplos de automatización con números reales</h2>
+          </header>
+          <ul class="lab-caso-examples-list" role="list">
+            <li class="lab-glass-card lab-caso-example-item">
+              <span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>
+              <span>Enviar un SMS recibido a un canal de Telegram</span>
+            </li>
+            <li class="lab-glass-card lab-caso-example-item">
+              <span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>
+              <span>Activar un flujo en Make cuando llega un código autorizado</span>
+            </li>
+            <li class="lab-glass-card lab-caso-example-item">
+              <span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>
+              <span>Registrar mensajes entrantes en una hoja, CRM o dashboard</span>
+            </li>
+            <li class="lab-glass-card lab-caso-example-item">
+              <span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>
+              <span>Notificar a ventas cuando llega una respuesta de cliente</span>
+            </li>
+            <li class="lab-glass-card lab-caso-example-item">
+              <span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>
+              <span>Conectar múltiples números a un panel de operación</span>
+            </li>
+            <li class="lab-glass-card lab-caso-example-item">
+              <span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>
+              <span>Entregar eventos SMS a un agente IA para análisis o clasificación</span>
+            </li>
+            <li class="lab-glass-card lab-caso-example-item">
+              <span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>
+              <span>Usar webhooks para procesos internos de validación autorizada</span>
+            </li>
+            <li class="lab-glass-card lab-caso-example-item">
+              <span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>
+              <span>Crear alertas cuando llega un mensaje crítico</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Flujo técnico -->
+      <section class="lab-section lab-caso-page-section" aria-labelledby="caso-flujo-titulo">
+        <div class="lab-section-inner">
+          <header class="lab-header-center">
+            <h2 id="caso-flujo-titulo" class="lab-section-title">De SMS recibido a evento automatizado</h2>
+          </header>
+          <div class="lab-caso-flow-grid">
+            <article class="lab-caso-flow-step">
+              <span class="lab-caso-flow-step__num">1</span>
+              <span class="material-symbols-outlined lab-caso-flow-step__icon" aria-hidden="true">sms</span>
+              <h3>Llega un SMS</h3>
+              <p>El mensaje entra a una numeración real Telvoice.</p>
+            </article>
+            <article class="lab-caso-flow-step">
+              <span class="lab-caso-flow-step__num">2</span>
+              <span class="material-symbols-outlined lab-caso-flow-step__icon" aria-hidden="true">inventory_2</span>
+              <h3>Telvoice lo registra</h3>
+              <p>El evento queda disponible para consulta y trazabilidad.</p>
+            </article>
+            <article class="lab-caso-flow-step">
+              <span class="lab-caso-flow-step__num">3</span>
+              <span class="material-symbols-outlined lab-caso-flow-step__icon" aria-hidden="true">webhook</span>
+              <h3>Se dispara un webhook</h3>
+              <p>El SMS puede enviarse a tu sistema, bot o herramienta de automatización.</p>
+            </article>
+            <article class="lab-caso-flow-step">
+              <span class="lab-caso-flow-step__num">4</span>
+              <span class="material-symbols-outlined lab-caso-flow-step__icon" aria-hidden="true">hub</span>
+              <h3>Tu flujo actúa</h3>
+              <p>Make, n8n, Zapier, Telegram o tu API procesan el evento.</p>
+            </article>
+            <article class="lab-caso-flow-step">
+              <span class="lab-caso-flow-step__num">5</span>
+              <span class="material-symbols-outlined lab-caso-flow-step__icon" aria-hidden="true">verified_user</span>
+              <h3>Tu equipo mantiene control</h3>
+              <p>La operación sigue reglas, permisos y uso autorizado.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Beneficios -->
+      <section class="lab-section lab-caso-page-section" aria-labelledby="caso-beneficios-titulo">
+        <div class="lab-section-inner">
+          <header class="lab-header-center">
+            <h2 id="caso-beneficios-titulo" class="lab-section-title">Qué gana tu operación al conectar SMS con automatización</h2>
+          </header>
+          <div class="lab-caso-benefits-grid">
+            <article class="lab-glass-card lab-caso-benefit-card lab-caso-benefit-card--rich p-5">
+              <span class="material-symbols-outlined lab-caso-benefit-card__icon" aria-hidden="true">touch_app</span>
+              <h3>Menos operación manual</h3>
+              <p>Evita copiar mensajes o códigos desde un celular físico hacia tus sistemas.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-benefit-card lab-caso-benefit-card--rich p-5">
+              <span class="material-symbols-outlined lab-caso-benefit-card__icon" aria-hidden="true">timeline</span>
+              <h3>Mayor trazabilidad</h3>
+              <p>Registra eventos, fechas, números y mensajes importantes en un entorno gestionado.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-benefit-card lab-caso-benefit-card--rich p-5">
+              <span class="material-symbols-outlined lab-caso-benefit-card__icon" aria-hidden="true">bolt</span>
+              <h3>Mejor respuesta operativa</h3>
+              <p>Dispara alertas o flujos cuando llega un SMS relevante para tu negocio.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-benefit-card lab-caso-benefit-card--rich p-5">
+              <span class="material-symbols-outlined lab-caso-benefit-card__icon" aria-hidden="true">dialpad</span>
+              <h3>Escalabilidad multi-número</h3>
+              <p>Gestiona varios números y flujos sin depender de dispositivos físicos dispersos.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <section class="lab-cta-final lab-section" aria-labelledby="caso-cta-titulo">
+        <div class="lab-section-inner lab-section-inner--cta text-center">
+          <h2 id="caso-cta-titulo" class="lab-section-title">Conecta tus agentes y automatizaciones a números reales Telvoice</h2>
+          <p class="lab-section-intro mt-4 max-w-2xl mx-auto">
+            Si tu operación necesita recibir SMS, OTP autorizados o respuestas de clientes dentro de flujos digitales, Telvoice puede ayudarte a conectar numeración real con panel, Telegram, API o webhooks.
+          </p>
+          <div class="lab-cta-final__actions mt-10 flex flex-wrap justify-center gap-3">
+            <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_conectar_automatizacion_caso_cta">Conectar mi automatización</a>
+            <button type="button" class="lab-btn-secondary" id="open-agent-caso-ia" data-track="click_hablar_agente_caso_ia">Hablar con el agente</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="lab-footer" role="contentinfo">
+      <div class="lab-shell pt-14 pb-6">
+        <div class="grid grid-cols-1 gap-12 border-b border-white/10 pb-12 md:grid-cols-2 lg:grid-cols-12 lg:gap-10">
+          <div class="lg:col-span-4">
+            <a href="../../" class="inline-flex items-center gap-2" aria-label="Telvoice Lab, ir al inicio">
+              <img src="../../../assets/telvoice-isotipo.png" alt="" width="40" height="40" class="h-10 w-10 object-contain" aria-hidden="true" />
+              <span class="font-bold lowercase text-white lab-logo-word">telvoice</span>
+            </a>
+            <p class="mt-4 text-sm text-slate-400 leading-relaxed max-w-xs">Operación SMS empresarial con agente telco y panel web. Numeración propia Telvoice, campañas asistidas y canal SMS dedicado.</p>
+            <p class="mt-3 text-xs text-slate-500">Versión experimental · <a href="../../">Ver landing lab</a></p>
+          </div>
+          <div class="grid grid-cols-2 gap-10 sm:grid-cols-3 md:col-span-2 lg:col-span-8 lg:grid-cols-3">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Producto</p>
+              <ul class="mt-4 space-y-3 text-sm">
+                <li><a href="../../#agente-telvoice">Agente Telvoice</a></li>
+                <li><a href="../../planes-agente.html">Planes del agente</a></li>
+                <li><a href="../../#numeracion">Números reales</a></li>
+                <li><a href="../../#precios">Bolsas SMS</a></li>
+                <li><a href="../../#panel-api">Panel + API</a></li>
+              </ul>
+            </div>
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Recursos</p>
+              <ul class="mt-4 space-y-3 text-sm">
+                <li><a href="../../#casos-uso">Casos de uso</a></li>
+                <li><a href="../uso-individual-validaciones/">Uso individual &amp; validaciones</a></li>
+                <li><a href="./" aria-current="page">IA &amp; automatización</a></li>
+                <li><a href="../../#faq">FAQ</a></li>
+                <li><a href="../../../ayuda/">Centro de ayuda</a></li>
+              </ul>
+            </div>
+            <div class="col-span-2 sm:col-span-1">
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Legal</p>
+              <ul class="mt-4 space-y-3 text-sm">
+                <li><a href="../../../terminos-y-condiciones/">Términos y condiciones</a></li>
+                <li><a href="../../../politica-de-privacidad/">Política de privacidad</a></li>
+                <li><a href="../../../uso-responsable/">Uso responsable</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="pt-8 text-sm text-slate-500">
+          <p>© 2026 Telvoice.cl. Todos los derechos reservados.</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var toggle = document.getElementById("menu-toggle");
+      var panel = document.getElementById("mobile-panel");
+      if (toggle && panel) {
+        toggle.addEventListener("click", function () {
+          var open = panel.classList.toggle("hidden");
+          toggle.setAttribute("aria-expanded", open ? "false" : "true");
+          document.getElementById("menu-icon-open").classList.toggle("hidden", !open);
+          document.getElementById("menu-icon-close").classList.toggle("hidden", open);
+        });
+      }
+
+      function setDropdownOpen(toggleEl, menu, open) {
+        if (!toggleEl || !menu) return;
+        toggleEl.setAttribute("aria-expanded", open ? "true" : "false");
+        menu.hidden = !open;
+        toggleEl.closest(".lab-nav-dropdown").classList.toggle("is-open", open);
+      }
+
+      document.querySelectorAll(".lab-nav-dropdown").forEach(function (wrap) {
+        var t = wrap.querySelector(".lab-nav-dropdown-toggle");
+        var menu = wrap.querySelector(".lab-nav-dropdown-menu");
+        if (!t || !menu) return;
+        t.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var open = t.getAttribute("aria-expanded") !== "true";
+          document.querySelectorAll(".lab-nav-dropdown.is-open").forEach(function (other) {
+            if (other !== wrap) {
+              setDropdownOpen(other.querySelector(".lab-nav-dropdown-toggle"), other.querySelector(".lab-nav-dropdown-menu"), false);
+            }
+          });
+          setDropdownOpen(t, menu, open);
+        });
+        menu.querySelectorAll("a").forEach(function (link) {
+          link.addEventListener("click", function () { setDropdownOpen(t, menu, false); });
+        });
+      });
+
+      var openAgentBtn = document.getElementById("open-agent-caso-ia");
+      if (openAgentBtn) {
+        openAgentBtn.addEventListener("click", function () {
+          if (typeof window.TELVOICE_OPEN_AGENT === "function") {
+            window.TELVOICE_OPEN_AGENT({
+              message: "Quiero conectar automatizaciones y flujos a numeración real Telvoice."
+            });
+          } else {
+            window.location.href = "https://agent.telvoice.cl/login";
+          }
+        });
+      }
+    })();
+  </script>
+  <script src="../../../js/telvoice-web-agent-loader.js?v=20260704" data-root="../../../"></script>
+</body>
+</html>

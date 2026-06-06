@@ -4,7 +4,9 @@
  * data-root: prefijo hasta la raíz del sitio ("" en home, "../" en ayuda/, etc.)
  */
 (function () {
-  var script = document.currentScript;
+  var script =
+    document.currentScript ||
+    document.querySelector('script[src*="telvoice-web-agent-loader.js"]');
   if (!script) {
     return;
   }
@@ -13,6 +15,11 @@
     root = "";
   }
   window.TELVOICE_WEB_AGENT_ROOT = root;
+
+  var embedTarget = script.getAttribute("data-embed-target");
+  if (embedTarget) {
+    window.TELVOICE_WEB_AGENT_EMBED = embedTarget;
+  }
 
   function loadCss(href) {
     if (document.querySelector('link[data-tva-css="1"]')) {
@@ -25,14 +32,30 @@
     document.head.appendChild(link);
   }
 
+  var AGENT_JS_VERSION = "20260702";
+
   function loadJs(src) {
-    if (document.querySelector('script[data-tva-js="1"]')) {
-      return;
+    var versionedSrc =
+      src + (src.indexOf("?") >= 0 ? "&" : "?") + "v=" + AGENT_JS_VERSION;
+    var existing = document.querySelector('script[data-tva-js="1"]');
+    if (existing) {
+      if (existing.src.indexOf("v=" + AGENT_JS_VERSION) >= 0) {
+        if (typeof window.TELVOICE_WEB_AGENT_INIT === "function") {
+          window.TELVOICE_WEB_AGENT_INIT();
+        }
+        return;
+      }
+      existing.remove();
     }
     var s = document.createElement("script");
-    s.src = src;
+    s.src = versionedSrc;
     s.defer = true;
     s.setAttribute("data-tva-js", "1");
+    s.onload = function () {
+      if (typeof window.TELVOICE_WEB_AGENT_INIT === "function") {
+        window.TELVOICE_WEB_AGENT_INIT();
+      }
+    };
     document.body.appendChild(s);
   }
 

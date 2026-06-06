@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="tva-iso-ring" x1="24" y1="104" x2="104" y2="24" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6d5dfc"/>
+      <stop offset="45%" stop-color="#0052cc"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+    <linearGradient id="tva-iso-inner" x1="36" y1="28" x2="92" y2="78" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#eef6ff"/>
+    </linearGradient>
+    <radialGradient id="tva-iso-glow" cx="0.5" cy="0.42" r="0.52">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="64" cy="58" r="54" fill="url(#tva-iso-glow)"/>
+  <g class="tva-agent-symbol">
+    <path fill="url(#tva-iso-inner)" stroke="url(#tva-iso-ring)" stroke-width="3.5" stroke-linejoin="round" d="M40 24h48a10 10 0 0 1 10 10v38a10 10 0 0 1-10 10H50l-10 16 6-16H40a10 10 0 0 1-10-10V34a10 10 0 0 1 10-10z"/>
+    <path fill="none" stroke="#0052cc" stroke-width="2.4" stroke-linecap="round" opacity="0.28" d="M42 42h26"/>
+    <path fill="none" stroke="#0052cc" stroke-width="2.4" stroke-linecap="round" opacity="0.42" d="M42 52h36"/>
+    <path fill="#2563eb" d="M52 66a12 12 0 0 0 24 0H52z"/>
+    <circle class="agent-signal-dot" cx="82" cy="36" r="3" fill="#22d3ee"/>
+    <path fill="none" stroke="#38bdf8" stroke-width="1.2" stroke-linecap="round" opacity="0.55" d="M78 58c3-2 6-2 9 0"/>
+  </g>
+</svg>
