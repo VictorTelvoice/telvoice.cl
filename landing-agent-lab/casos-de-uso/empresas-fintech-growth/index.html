@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html class="dark lab-theme" lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Numeración real Telvoice para empresas, fintech y growth: centraliza SMS, validaciones autorizadas, historial y acceso por equipos sin depender de teléfonos personales." />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Empresas, fintech &amp; growth | Telvoice Lab</title>
+  <link rel="icon" href="../../../assets/telvoice-isotipo.png" type="image/png" sizes="any" />
+  <meta name="theme-color" content="#050814" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;family=Montserrat:wght@600;700;800&amp;display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#0052cc",
+            "lab-cyan": "#22d3ee",
+            "lab-purple": "#818cf8",
+          },
+          fontFamily: {
+            h1: ["Montserrat", "sans-serif"],
+            h2: ["Montserrat", "sans-serif"],
+            h3: ["Montserrat", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="../../../css/landing-agent-lab.css?v=20260709" />
+</head>
+<body class="font-body antialiased">
+  <div class="lab-bg-wrap" aria-hidden="true">
+    <div class="lab-bg-radial lab-bg-radial--1"></div>
+    <div class="lab-bg-radial lab-bg-radial--2"></div>
+    <div class="lab-bg-radial lab-bg-radial--3"></div>
+    <div class="lab-bg-grid"></div>
+  </div>
+
+  <div class="lab-content">
+    <nav class="lab-nav sticky top-0 z-50 w-full" aria-label="Navegación principal">
+      <div class="lab-shell flex justify-between items-center gap-4 py-4">
+        <a href="../../" class="lab-logo-link flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-lab-cyan" aria-label="Telvoice Lab, ir al inicio">
+          <img src="../../../assets/telvoice-isotipo.png" alt="Telvoice" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" />
+          <span class="font-h3 font-bold tracking-tight lowercase">
+            <span class="lab-logo-word text-white">telvoice</span>
+          </span>
+        </a>
+        <ul class="hidden lg:flex gap-1 items-center">
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="../../#como-funciona">Cómo funciona</a></li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="../../#agente-telvoice">Agente</a></li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2 is-active" href="../../#casos-uso">Casos de uso</a></li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="../../#panel-api">Panel + API</a></li>
+          <li class="lab-nav-dropdown">
+            <button type="button" class="lab-nav-link lab-nav-dropdown-toggle font-body text-sm rounded-full px-4 py-2" id="nav-precios-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-precios-menu">Precios</button>
+            <ul class="lab-nav-dropdown-menu" id="nav-precios-menu" role="menu" aria-labelledby="nav-precios-toggle" hidden>
+              <li role="none"><a class="lab-nav-dropdown-link" href="../../#calculadora" role="menuitem">Armar tu bolsa</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="../../planes-agente.html" role="menuitem">Planes Agente</a></li>
+            </ul>
+          </li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="../../#faq">FAQ</a></li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="../../../ayuda/">Ayuda</a></li>
+        </ul>
+        <div class="flex items-center gap-2 shrink-0">
+          <a href="https://agent.telvoice.cl/login" class="lab-btn-primary lab-btn-nav hidden sm:inline-flex" data-track="click_probar_agente_nav_caso_fintech">Probar el agente</a>
+          <button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-white/15 text-white" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
+            <span class="material-symbols-outlined" id="menu-icon-open">menu</span>
+            <span class="material-symbols-outlined hidden" id="menu-icon-close">close</span>
+          </button>
+        </div>
+      </div>
+      <div id="mobile-panel" class="hidden lg:hidden border-t border-white/10 py-4 lab-shell">
+        <ul class="flex flex-col gap-1">
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="../../#como-funciona">Cómo funciona</a></li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="../../#agente-telvoice">Agente Telvoice</a></li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="../../#casos-uso">Casos de uso</a></li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="../../#panel-api">Panel + API</a></li>
+          <li class="lab-nav-dropdown lab-nav-dropdown--mobile">
+            <button type="button" class="lab-nav-dropdown-toggle block lab-nav-link w-full text-left py-3 rounded-xl" id="nav-precios-toggle-mobile" aria-expanded="false" aria-controls="nav-precios-menu-mobile">Precios</button>
+            <ul class="lab-nav-dropdown-menu lab-nav-dropdown-menu--mobile" id="nav-precios-menu-mobile" hidden>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="../../#calculadora">Armar tu bolsa</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="../../planes-agente.html">Planes Agente</a></li>
+            </ul>
+          </li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="../../#faq">FAQ</a></li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="../../../ayuda/">Centro de ayuda</a></li>
+        </ul>
+        <a href="https://agent.telvoice.cl/login" class="lab-btn-primary w-full mt-3 text-center">Probar el agente</a>
+      </div>
+    </nav>
+
+    <main class="lab-caso-page">
+      <!-- Hero -->
+      <section class="lab-section lab-section--tight-top lab-caso-page-hero" aria-labelledby="caso-hero-titulo">
+        <div class="lab-section-inner">
+          <nav class="lab-breadcrumb" aria-label="Ruta de navegación">
+            <ol class="lab-breadcrumb__list">
+              <li><a href="../../">Lab</a></li>
+              <li><a href="../../#casos-uso">Casos de uso</a></li>
+              <li><span aria-current="page">Empresas, fintech &amp; growth</span></li>
+            </ol>
+          </nav>
+          <div class="lab-caso-page-hero__grid">
+            <header class="lab-caso-page-hero__header">
+              <span class="lab-eyebrow">Caso de uso</span>
+              <h1 id="caso-hero-titulo" class="lab-section-title mt-4">Numeración real para empresas, fintech y growth</h1>
+              <p class="lab-caso-page-hero__intro mt-4">
+                Centraliza SMS, validaciones autorizadas, respuestas de clientes y operaciones sensibles con números reales Telvoice. Entrega acceso a tu equipo sin depender de teléfonos personales, hardware físico aislado o procesos difíciles de auditar.
+              </p>
+              <p class="lab-caso-page-hero__lead mt-4">
+                La comunicación SMS sensible de una empresa no debe depender de teléfonos personales ni dispositivos aislados. Con Telvoice, tu empresa puede gestionar numeración real, validaciones autorizadas, respuestas de clientes y eventos SMS desde un entorno controlado, trazable y preparado para operar con equipos.
+              </p>
+              <div class="lab-caso-hero-flow" aria-hidden="true">
+                <span class="lab-caso-hero-flow__node"><span class="material-symbols-outlined">sim_card</span>Número Telvoice</span>
+                <span class="lab-caso-hero-flow__arrow material-symbols-outlined">arrow_forward</span>
+                <span class="lab-caso-hero-flow__node"><span class="material-symbols-outlined">sms</span>SMS recibido</span>
+                <span class="lab-caso-hero-flow__arrow material-symbols-outlined">arrow_forward</span>
+                <span class="lab-caso-hero-flow__node"><span class="material-symbols-outlined">dashboard</span>Panel empresarial</span>
+                <span class="lab-caso-hero-flow__arrow material-symbols-outlined">arrow_forward</span>
+                <span class="lab-caso-hero-flow__node"><span class="material-symbols-outlined">groups</span>Equipo</span>
+                <span class="lab-caso-hero-flow__arrow material-symbols-outlined">arrow_forward</span>
+                <span class="lab-caso-hero-flow__node"><span class="material-symbols-outlined">api</span>API / Agente</span>
+              </div>
+              <div class="lab-caso-page-hero__actions mt-8">
+                <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_solicitar_fintech_caso_hero">Solicitar solución empresarial</a>
+                <a href="../../#casos-uso" class="lab-btn-secondary" data-track="click_volver_casos_uso_fintech">Volver a Casos de uso</a>
+              </div>
+            </header>
+            <div class="lab-caso-page-hero__visual" aria-hidden="true">
+              <picture>
+                <source srcset="../../../assets/telvoice-agent-caso-fintech-hero.webp?v=20260710" type="image/webp" />
+                <img
+                  src="../../../assets/telvoice-agent-caso-fintech-hero.png?v=20260710"
+                  alt="Agente Telvoice operando numeración empresarial para fintech, growth y equipos corporativos"
+                  width="512"
+                  height="512"
+                  class="lab-caso-page-hero__img"
+                  decoding="async"
+                  loading="eager"
+                />
+              </picture>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- El problema -->
+      <section class="lab-section lab-caso-page-section" aria-labelledby="caso-problema-titulo">
+        <div class="lab-section-inner">
+          <div class="lab-caso-problem-grid">
+            <header class="lab-header-left lab-caso-problem-grid__copy">
+              <h2 id="caso-problema-titulo" class="lab-section-title">Cuando los SMS críticos dependen de una persona, la operación pierde control</h2>
+              <p class="lab-section-intro mt-4">
+                En muchas empresas, los accesos, validaciones, respuestas de clientes o mensajes importantes terminan llegando al teléfono personal de un gerente, operador o vendedor. Eso genera dependencia, poca trazabilidad y riesgo operativo. Si el número es parte de la operación, debe estar disponible para el equipo y gestionado desde una infraestructura empresarial.
+              </p>
+            </header>
+            <ul class="lab-problem-list lab-caso-problem-grid__list" role="list">
+              <li>
+                <span class="material-symbols-outlined lab-problem-list__icon" aria-hidden="true">smartphone</span>
+                <span>Dependencia de teléfonos personales</span>
+              </li>
+              <li>
+                <span class="material-symbols-outlined lab-problem-list__icon" aria-hidden="true">lock_person</span>
+                <span>Acceso limitado a mensajes críticos</span>
+              </li>
+              <li>
+                <span class="material-symbols-outlined lab-problem-list__icon" aria-hidden="true">fact_check</span>
+                <span>Dificultad para auditar validaciones y respuestas</span>
+              </li>
+              <li>
+                <span class="material-symbols-outlined lab-problem-list__icon" aria-hidden="true">person_off</span>
+                <span>Riesgo operativo cuando una persona no está disponible</span>
+              </li>
+              <li>
+                <span class="material-symbols-outlined lab-problem-list__icon" aria-hidden="true">history</span>
+                <span>Falta de historial centralizado para equipos</span>
+              </li>
+              <li>
+                <span class="material-symbols-outlined lab-problem-list__icon" aria-hidden="true">visibility_off</span>
+                <span>Procesos sensibles sin trazabilidad suficiente</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- La solución -->
+      <section class="lab-section lab-caso-page-section" aria-labelledby="caso-solucion-titulo">
+        <div class="lab-section-inner">
+          <header class="lab-header-center">
+            <h2 id="caso-solucion-titulo" class="lab-section-title">Números reales gestionados como infraestructura empresarial</h2>
+            <p class="lab-section-intro mt-4">
+              Telvoice permite que empresas, fintech y equipos de growth operen con numeración real para recibir SMS, validar procesos autorizados, gestionar respuestas y centralizar comunicaciones sensibles. Todo desde un entorno preparado para equipos, historial, panel, Telegram, API o webhooks.
+            </p>
+          </header>
+          <div class="lab-caso-detail-grid lab-caso-detail-grid--solution">
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap lab-icon-wrap--caso"><span class="material-symbols-outlined" aria-hidden="true">groups</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Acceso compartido para equipos</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Permite que gerencia, soporte, ventas u operaciones consulten mensajes sin manipular un teléfono físico ni depender de una sola persona.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap lab-icon-wrap--caso"><span class="material-symbols-outlined" aria-hidden="true">corporate_fare</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Gestión de cuentas corporativas</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Administra cuentas propias, sellers autorizados, plataformas internas o procesos comerciales que requieren recepción SMS bajo control empresarial.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap lab-icon-wrap--caso"><span class="material-symbols-outlined" aria-hidden="true">dashboard</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Dashboard e historial SMS</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Consulta, filtra y descarga mensajes históricos para mantener trazabilidad sobre códigos, respuestas, fechas y eventos importantes.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap lab-icon-wrap--caso"><span class="material-symbols-outlined" aria-hidden="true">verified_user</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Validaciones autorizadas para procesos sensibles</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Opera verificaciones, confirmaciones y alertas relacionadas con fintech, exchanges, bancos, growth o cuentas corporativas bajo uso permitido.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap lab-icon-wrap--caso"><span class="material-symbols-outlined" aria-hidden="true">campaign</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Leads y respuestas de clientes</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Usa SMS y canales autorizados para validar leads, recibir respuestas y activar procesos comerciales sin perder trazabilidad.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Para quién -->
+      <section class="lab-section lab-caso-page-section" aria-labelledby="caso-audiencia-titulo">
+        <div class="lab-section-inner">
+          <header class="lab-header-center">
+            <h2 id="caso-audiencia-titulo" class="lab-section-title">Pensado para equipos que necesitan control y continuidad</h2>
+          </header>
+          <div class="lab-caso-audience-grid">
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">account_balance</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Fintech y operaciones financieras</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Para procesos donde las validaciones, alertas y respuestas deben estar centralizadas, auditables y disponibles para el equipo autorizado.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">trending_up</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Equipos de growth y marketing</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Para validar leads, administrar campañas, recibir respuestas y trabajar con números dedicados a procesos comerciales.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">storefront</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Sellers y cuentas corporativas</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Para equipos que gestionan cuentas propias o corporativas en plataformas compatibles y necesitan separar los SMS del móvil personal.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-detail-card p-6">
+              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">support_agent</span></div>
+              <h3 class="mt-4 font-h3 text-base font-semibold text-white">Soporte y operaciones internas</h3>
+              <p class="mt-3 text-slate-400 text-sm leading-relaxed">Para centralizar respuestas, confirmaciones y comunicaciones sensibles en un canal gestionado por la empresa.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Ejemplos -->
+      <section class="lab-section lab-caso-page-section lab-caso-page-section--center" aria-labelledby="caso-ejemplos-titulo">
+        <div class="lab-section-inner">
+          <header class="lab-header-center">
+            <h2 id="caso-ejemplos-titulo" class="lab-section-title">Ejemplos de uso empresarial</h2>
+          </header>
+          <ul class="lab-caso-examples-list" role="list">
+            <li class="lab-glass-card lab-caso-example-item">
+              <span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>
+              <span>Recibir SMS de cuentas corporativas y servicios compatibles</span>
+            </li>
+            <li class="lab-glass-card lab-caso-example-item">
+              <span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>
+              <span>Centralizar códigos 2FA autorizados para procesos internos</span>
+            </li>
+            <li class="lab-glass-card lab-caso-example-item">
+              <span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>
+              <span>Consultar historial de mensajes recibidos por fecha, número o cuenta</span>
+            </li>
+            <li class="lab-glass-card lab-caso-example-item">
+              <span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>
+              <span>Entregar acceso a un equipo sin compartir un teléfono físico</span>
+            </li>
+            <li class="lab-glass-card lab-caso-example-item">
+              <span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>
+              <span>Validar leads calificados mediante SMS o canales autorizados</span>
+            </li>
+            <li class="lab-glass-card lab-caso-example-item">
+              <span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>
+              <span>Gestionar respuestas de clientes desde un entorno empresarial</span>
+            </li>
+            <li class="lab-glass-card lab-caso-example-item">
+              <span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>
+              <span>Conectar eventos SMS a un CRM, dashboard, agente o API</span>
+            </li>
+            <li class="lab-glass-card lab-caso-example-item">
+              <span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>
+              <span>Separar la comunicación sensible del móvil personal de un gerente</span>
+            </li>
+            <li class="lab-glass-card lab-caso-example-item">
+              <span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>
+              <span>Mantener continuidad operativa aunque una persona no esté disponible</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Flujo operativo -->
+      <section class="lab-section lab-caso-page-section" aria-labelledby="caso-flujo-titulo">
+        <div class="lab-section-inner">
+          <header class="lab-header-center">
+            <h2 id="caso-flujo-titulo" class="lab-section-title">De número aislado a operación empresarial</h2>
+          </header>
+          <div class="lab-caso-flow-grid">
+            <article class="lab-caso-flow-step">
+              <span class="lab-caso-flow-step__num">1</span>
+              <span class="material-symbols-outlined lab-caso-flow-step__icon" aria-hidden="true">sim_card</span>
+              <h3>Asignas una numeración real</h3>
+              <p>Telvoice entrega una línea para uso empresarial, según disponibilidad y validación comercial.</p>
+            </article>
+            <article class="lab-caso-flow-step">
+              <span class="lab-caso-flow-step__num">2</span>
+              <span class="material-symbols-outlined lab-caso-flow-step__icon" aria-hidden="true">sms</span>
+              <h3>Recibes SMS y respuestas</h3>
+              <p>Los mensajes llegan a un entorno gestionado, no a un teléfono personal aislado.</p>
+            </article>
+            <article class="lab-caso-flow-step">
+              <span class="lab-caso-flow-step__num">3</span>
+              <span class="material-symbols-outlined lab-caso-flow-step__icon" aria-hidden="true">groups</span>
+              <h3>Tu equipo accede con control</h3>
+              <p>Personas autorizadas pueden consultar mensajes, historial y eventos relevantes.</p>
+            </article>
+            <article class="lab-caso-flow-step">
+              <span class="lab-caso-flow-step__num">4</span>
+              <span class="material-symbols-outlined lab-caso-flow-step__icon" aria-hidden="true">hub</span>
+              <h3>Conectas panel, Telegram o API</h3>
+              <p>Los SMS pueden integrarse a flujos operativos, alertas o sistemas internos.</p>
+            </article>
+            <article class="lab-caso-flow-step">
+              <span class="lab-caso-flow-step__num">5</span>
+              <span class="material-symbols-outlined lab-caso-flow-step__icon" aria-hidden="true">fact_check</span>
+              <h3>Mantienes trazabilidad</h3>
+              <p>La empresa conserva registro y control sobre comunicaciones sensibles.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Beneficios -->
+      <section class="lab-section lab-caso-page-section" aria-labelledby="caso-beneficios-titulo">
+        <div class="lab-section-inner">
+          <header class="lab-header-center">
+            <h2 id="caso-beneficios-titulo" class="lab-section-title">Qué gana tu empresa al centralizar la numeración</h2>
+          </header>
+          <div class="lab-caso-benefits-grid">
+            <article class="lab-glass-card lab-caso-benefit-card lab-caso-benefit-card--rich p-5">
+              <span class="material-symbols-outlined lab-caso-benefit-card__icon" aria-hidden="true">tune</span>
+              <h3>Más control operativo</h3>
+              <p>Los mensajes sensibles dejan de depender de un teléfono personal o de un dispositivo guardado en una oficina.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-benefit-card lab-caso-benefit-card--rich p-5">
+              <span class="material-symbols-outlined lab-caso-benefit-card__icon" aria-hidden="true">timeline</span>
+              <h3>Mejor trazabilidad</h3>
+              <p>Registra mensajes, códigos, respuestas y eventos importantes para consultas o auditoría interna.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-benefit-card lab-caso-benefit-card--rich p-5">
+              <span class="material-symbols-outlined lab-caso-benefit-card__icon" aria-hidden="true">groups</span>
+              <h3>Acceso para equipos</h3>
+              <p>Permite que varias áreas trabajen sobre una numeración gestionada, sin compartir físicamente un equipo.</p>
+            </article>
+            <article class="lab-glass-card lab-caso-benefit-card lab-caso-benefit-card--rich p-5">
+              <span class="material-symbols-outlined lab-caso-benefit-card__icon" aria-hidden="true">sync_saved_locally</span>
+              <h3>Continuidad empresarial</h3>
+              <p>La operación sigue disponible aunque una persona no esté conectada o no tenga el teléfono en la mano.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <section class="lab-cta-final lab-section" aria-labelledby="caso-cta-titulo">
+        <div class="lab-section-inner lab-section-inner--cta text-center">
+          <h2 id="caso-cta-titulo" class="lab-section-title">Centraliza la numeración crítica de tu empresa con Telvoice</h2>
+          <p class="lab-section-intro mt-4 max-w-2xl mx-auto">
+            Si tu empresa necesita recibir SMS, validar procesos autorizados, consultar historial o dar acceso a equipos sin depender de teléfonos personales, Telvoice puede ayudarte a operar con números reales desde un entorno gestionado.
+          </p>
+          <div class="lab-cta-final__actions mt-10 flex flex-wrap justify-center gap-3">
+            <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_solicitar_fintech_caso_cta">Solicitar solución empresarial</a>
+            <button type="button" class="lab-btn-secondary" id="open-agent-caso-fintech" data-track="click_hablar_agente_caso_fintech">Hablar con el agente</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="lab-footer" role="contentinfo">
+      <div class="lab-shell pt-14 pb-6">
+        <div class="grid grid-cols-1 gap-12 border-b border-white/10 pb-12 md:grid-cols-2 lg:grid-cols-12 lg:gap-10">
+          <div class="lg:col-span-4">
+            <a href="../../" class="inline-flex items-center gap-2" aria-label="Telvoice Lab, ir al inicio">
+              <img src="../../../assets/telvoice-isotipo.png" alt="" width="40" height="40" class="h-10 w-10 object-contain" aria-hidden="true" />
+              <span class="font-bold lowercase text-white lab-logo-word">telvoice</span>
+            </a>
+            <p class="mt-4 text-sm text-slate-400 leading-relaxed max-w-xs">Operación SMS empresarial con agente telco y panel web. Numeración propia Telvoice, campañas asistidas y canal SMS dedicado.</p>
+            <p class="mt-3 text-xs text-slate-500">Versión experimental · <a href="../../">Ver landing lab</a></p>
+          </div>
+          <div class="grid grid-cols-2 gap-10 sm:grid-cols-3 md:col-span-2 lg:col-span-8 lg:grid-cols-3">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Producto</p>
+              <ul class="mt-4 space-y-3 text-sm">
+                <li><a href="../../#agente-telvoice">Agente Telvoice</a></li>
+                <li><a href="../../planes-agente.html">Planes del agente</a></li>
+                <li><a href="../../#numeracion">Números reales</a></li>
+                <li><a href="../../#precios">Bolsas SMS</a></li>
+                <li><a href="../../#panel-api">Panel + API</a></li>
+              </ul>
+            </div>
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Recursos</p>
+              <ul class="mt-4 space-y-3 text-sm">
+                <li><a href="../../#casos-uso">Casos de uso</a></li>
+                <li><a href="../uso-individual-validaciones/">Uso individual &amp; validaciones</a></li>
+                <li><a href="../ia-automatizacion/">IA &amp; automatización</a></li>
+                <li><a href="./" aria-current="page">Empresas, fintech &amp; growth</a></li>
+                <li><a href="../../#faq">FAQ</a></li>
+                <li><a href="../../../ayuda/">Centro de ayuda</a></li>
+              </ul>
+            </div>
+            <div class="col-span-2 sm:col-span-1">
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Legal</p>
+              <ul class="mt-4 space-y-3 text-sm">
+                <li><a href="../../../terminos-y-condiciones/">Términos y condiciones</a></li>
+                <li><a href="../../../politica-de-privacidad/">Política de privacidad</a></li>
+                <li><a href="../../../uso-responsable/">Uso responsable</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="pt-8 text-sm text-slate-500">
+          <p>© 2026 Telvoice.cl. Todos los derechos reservados.</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var toggle = document.getElementById("menu-toggle");
+      var panel = document.getElementById("mobile-panel");
+      if (toggle && panel) {
+        toggle.addEventListener("click", function () {
+          var open = panel.classList.toggle("hidden");
+          toggle.setAttribute("aria-expanded", open ? "false" : "true");
+          document.getElementById("menu-icon-open").classList.toggle("hidden", !open);
+          document.getElementById("menu-icon-close").classList.toggle("hidden", open);
+        });
+      }
+
+      function setDropdownOpen(toggleEl, menu, open) {
+        if (!toggleEl || !menu) return;
+        toggleEl.setAttribute("aria-expanded", open ? "true" : "false");
+        menu.hidden = !open;
+        toggleEl.closest(".lab-nav-dropdown").classList.toggle("is-open", open);
+      }
+
+      document.querySelectorAll(".lab-nav-dropdown").forEach(function (wrap) {
+        var t = wrap.querySelector(".lab-nav-dropdown-toggle");
+        var menu = wrap.querySelector(".lab-nav-dropdown-menu");
+        if (!t || !menu) return;
+        t.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var open = t.getAttribute("aria-expanded") !== "true";
+          document.querySelectorAll(".lab-nav-dropdown.is-open").forEach(function (other) {
+            if (other !== wrap) {
+              setDropdownOpen(other.querySelector(".lab-nav-dropdown-toggle"), other.querySelector(".lab-nav-dropdown-menu"), false);
+            }
+          });
+          setDropdownOpen(t, menu, open);
+        });
+        menu.querySelectorAll("a").forEach(function (link) {
+          link.addEventListener("click", function () { setDropdownOpen(t, menu, false); });
+        });
+      });
+
+      var openAgentBtn = document.getElementById("open-agent-caso-fintech");
+      if (openAgentBtn) {
+        openAgentBtn.addEventListener("click", function () {
+          if (typeof window.TELVOICE_OPEN_AGENT === "function") {
+            window.TELVOICE_OPEN_AGENT({
+              message: "Quiero una solución empresarial Telvoice para fintech, growth y operación con numeración real."
+            });
+          } else {
+            window.location.href = "https://agent.telvoice.cl/login";
+          }
+        });
+      }
+    })();
+  </script>
+  <script src="../../../js/telvoice-web-agent-loader.js?v=20260704" data-root="../../../"></script>
+</body>
+</html>
