@@ -55,7 +55,15 @@
         <ul class="hidden lg:flex gap-1 items-center">
           <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="../../#como-funciona">Cómo funciona</a></li>
           <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="../../#agente-telvoice">Agente</a></li>
-          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2 is-active" href="../../#casos-uso">Casos de uso</a></li>
+          <li class="lab-nav-dropdown">
+            <button type="button" class="lab-nav-link lab-nav-dropdown-toggle font-body text-sm rounded-full px-4 py-2 is-active" id="nav-casos-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-casos-menu">Casos de uso</button>
+            <ul class="lab-nav-dropdown-menu" id="nav-casos-menu" role="menu" aria-labelledby="nav-casos-toggle" hidden>
+              <li role="none"><a class="lab-nav-dropdown-link" href="../../#casos-uso" role="menuitem">Ver todos</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="../uso-individual-validaciones/" role="menuitem" aria-current="page">Uso individual &amp; validaciones</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="../ia-automatizacion/" role="menuitem">IA &amp; automatización</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="../empresas-fintech-growth/" role="menuitem">Empresas, fintech &amp; growth</a></li>
+            </ul>
+          </li>
           <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="../../#panel-api">Panel + API</a></li>
           <li class="lab-nav-dropdown">
             <button type="button" class="lab-nav-link lab-nav-dropdown-toggle font-body text-sm rounded-full px-4 py-2" id="nav-precios-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-precios-menu">Precios</button>
@@ -79,7 +87,15 @@
         <ul class="flex flex-col gap-1">
           <li><a class="block lab-nav-link py-3 rounded-xl" href="../../#como-funciona">Cómo funciona</a></li>
           <li><a class="block lab-nav-link py-3 rounded-xl" href="../../#agente-telvoice">Agente Telvoice</a></li>
-          <li><a class="block lab-nav-link py-3 rounded-xl" href="../../#casos-uso">Casos de uso</a></li>
+          <li class="lab-nav-dropdown lab-nav-dropdown--mobile">
+            <button type="button" class="lab-nav-dropdown-toggle block lab-nav-link w-full text-left py-3 rounded-xl is-active" id="nav-casos-toggle-mobile" aria-expanded="false" aria-controls="nav-casos-menu-mobile">Casos de uso</button>
+            <ul class="lab-nav-dropdown-menu lab-nav-dropdown-menu--mobile" id="nav-casos-menu-mobile" hidden>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="../../#casos-uso">Ver todos</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="../uso-individual-validaciones/" aria-current="page">Uso individual &amp; validaciones</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="../ia-automatizacion/">IA &amp; automatización</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="../empresas-fintech-growth/">Empresas, fintech &amp; growth</a></li>
+            </ul>
+          </li>
           <li><a class="block lab-nav-link py-3 rounded-xl" href="../../#panel-api">Panel + API</a></li>
           <li class="lab-nav-dropdown lab-nav-dropdown--mobile">
             <button type="button" class="lab-nav-dropdown-toggle block lab-nav-link w-full text-left py-3 rounded-xl" id="nav-precios-toggle-mobile" aria-expanded="false" aria-controls="nav-precios-menu-mobile">Precios</button>

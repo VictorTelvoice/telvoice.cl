@@ -69,7 +69,15 @@
         <ul class="hidden lg:flex gap-1 items-center">
           <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="#como-funciona">Cómo funciona</a></li>
           <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="#agente-telvoice">Agente</a></li>
-          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="#casos-uso">Casos de uso</a></li>
+          <li class="lab-nav-dropdown">
+            <button type="button" class="lab-nav-link lab-nav-dropdown-toggle font-body text-sm rounded-full px-4 py-2" id="nav-casos-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-casos-menu">Casos de uso</button>
+            <ul class="lab-nav-dropdown-menu" id="nav-casos-menu" role="menu" aria-labelledby="nav-casos-toggle" hidden>
+              <li role="none"><a class="lab-nav-dropdown-link" href="#casos-uso" role="menuitem" data-track="click_nav_casos_todos">Ver todos</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="casos-de-uso/uso-individual-validaciones/" role="menuitem" data-track="click_nav_caso_individual">Uso individual &amp; validaciones</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="casos-de-uso/ia-automatizacion/" role="menuitem" data-track="click_nav_caso_ia">IA &amp; automatización</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="casos-de-uso/empresas-fintech-growth/" role="menuitem" data-track="click_nav_caso_fintech">Empresas, fintech &amp; growth</a></li>
+            </ul>
+          </li>
           <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="#panel-api">Panel + API</a></li>
           <li class="lab-nav-dropdown">
             <button type="button" class="lab-nav-link lab-nav-dropdown-toggle font-body text-sm rounded-full px-4 py-2" id="nav-precios-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-precios-menu">Precios</button>
@@ -93,7 +101,15 @@
         <ul class="flex flex-col gap-1">
           <li><a class="block lab-nav-link py-3 rounded-xl" href="#como-funciona">Cómo funciona</a></li>
           <li><a class="block lab-nav-link py-3 rounded-xl" href="#agente-telvoice">Agente Telvoice</a></li>
-          <li><a class="block lab-nav-link py-3 rounded-xl" href="#casos-uso">Casos de uso</a></li>
+          <li class="lab-nav-dropdown lab-nav-dropdown--mobile">
+            <button type="button" class="lab-nav-dropdown-toggle block lab-nav-link w-full text-left py-3 rounded-xl" id="nav-casos-toggle-mobile" aria-expanded="false" aria-controls="nav-casos-menu-mobile">Casos de uso</button>
+            <ul class="lab-nav-dropdown-menu lab-nav-dropdown-menu--mobile" id="nav-casos-menu-mobile" hidden>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="#casos-uso" data-track="click_nav_casos_todos_mobile">Ver todos</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="casos-de-uso/uso-individual-validaciones/" data-track="click_nav_caso_individual_mobile">Uso individual &amp; validaciones</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="casos-de-uso/ia-automatizacion/" data-track="click_nav_caso_ia_mobile">IA &amp; automatización</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="casos-de-uso/empresas-fintech-growth/" data-track="click_nav_caso_fintech_mobile">Empresas, fintech &amp; growth</a></li>
+            </ul>
+          </li>
           <li><a class="block lab-nav-link py-3 rounded-xl" href="#panel-api">Panel + API</a></li>
           <li class="lab-nav-dropdown lab-nav-dropdown--mobile">
             <button type="button" class="lab-nav-dropdown-toggle block lab-nav-link w-full text-left py-3 rounded-xl" id="nav-precios-toggle-mobile" aria-expanded="false" aria-controls="nav-precios-menu-mobile">Precios</button>
@@ -621,8 +637,7 @@
               <article class="lab-glass-card lab-caso-card lab-caso-card--primary p-6 sm:p-8">
                 <div class="lab-icon-wrap lab-icon-wrap--caso"><span class="material-symbols-outlined" aria-hidden="true">verified_user</span></div>
                 <h3 class="mt-4">Uso individual &amp; validaciones</h3>
-                <p class="lab-caso-intro">Para usuarios, operadores o equipos que necesitan recibir SMS, proteger cuentas y separar comunicaciones sensibles del móvil personal.</p>
-                <ul class="lab-caso-list" role="list">
+                <ul class="lab-caso-list mt-4" role="list">
                   <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Chips físicos reales para cuentas y canales autorizados.</li>
                   <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Menos dependencia de numeraciones VoIP en servicios que requieren SMS real.</li>
                   <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Privacidad operativa sin exponer tu móvil personal.</li>
@@ -636,8 +651,7 @@
               <article class="lab-glass-card lab-caso-card lab-caso-card--primary">
                 <div class="lab-icon-wrap lab-icon-wrap--caso"><span class="material-symbols-outlined" aria-hidden="true">smart_toy</span></div>
                 <h3 class="mt-4">IA &amp; automatización</h3>
-                <p class="lab-caso-intro">Conecta agentes, bots y automatizaciones a números reales para operar flujos SMS, OTP autorizados y eventos por API/webhooks.</p>
-                <ul class="lab-caso-list" role="list">
+                <ul class="lab-caso-list mt-4" role="list">
                   <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Integración con Make, n8n y Zapier mediante API/webhooks.</li>
                   <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Agentes de IA con capacidad de recibir eventos SMS y OTP autorizados.</li>
                   <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Webhooks para activar flujos propios en tiempo real.</li>
@@ -651,8 +665,7 @@
               <article class="lab-glass-card lab-caso-card lab-caso-card--primary lab-glass-card--glow">
                 <div class="lab-icon-wrap lab-icon-wrap--caso"><span class="material-symbols-outlined" aria-hidden="true">account_balance</span></div>
                 <h3 class="mt-4">Empresas, fintech &amp; growth</h3>
-                <p class="lab-caso-intro">Para empresas que necesitan administrar numeración, validaciones, campañas y respuestas SMS sin depender de hardware físico o teléfonos personales.</p>
-                <ul class="lab-caso-list" role="list">
+                <ul class="lab-caso-list mt-4" role="list">
                   <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Acceso compartido para equipos sin manipular hardware físico.</li>
                   <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Gestión de múltiples cuentas corporativas o sellers autorizados.</li>
                   <li><span class="material-symbols-outlined lab-caso-check" aria-hidden="true">check_circle</span>Dashboard para consulta y descarga de SMS históricos.</li>
@@ -827,7 +840,6 @@
       <section class="lab-cta-final lab-section" aria-labelledby="cta-final-titulo">
         <div class="lab-section-inner lab-section-inner--cta text-center">
           <h2 id="cta-final-titulo" class="lab-section-title">Opera campañas SMS con control y asistencia operativa</h2>
-          <p class="lab-section-intro mt-4">Conecta tu operación con un agente telco, valida contactos antes de enviar y escala hacia numeración propia cuando tu negocio lo necesite.</p>
           <div class="lab-cta-final__actions mt-10">
             <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_probar_agente_final">Probar el agente</a>
           </div>
