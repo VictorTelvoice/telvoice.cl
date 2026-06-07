@@ -2,10 +2,8 @@ import type { AdminSessionUser } from "../../../types/admin.js";
 import type { SimActivationRequestListItem } from "../../../types/sim-activation.js";
 import { simActivationStatusLabel } from "../../../services/simActivationService.js";
 import { formatClp } from "../../../utils/clp-format.js";
-import type {
-  AdminClientNumberItem,
-  AdminNumeracionesFilters,
-} from "../../../services/adminClientNumberService.js";
+import type { AdminClientNumberItem } from "../../../services/adminClientNumberService.js";
+import type { AdminNumeracionesFilters } from "../../../services/adminClientNumberService.js";
 import type { CompanyRow } from "../../../types/tenant.js";
 import type { ClientNumberStatus, ClientNumberType } from "../../../types/client-numbers.js";
 import {
@@ -13,6 +11,10 @@ import {
   clientNumberTypeLabel,
 } from "../../../services/clientNumberService.js";
 import { escapeHtml, formatDate } from "../../../utils/html.js";
+import {
+  renderAgentModuleStyles,
+  renderQaLabBadge,
+} from "../../shared/agent-module-styles.js";
 import { wrapAdminPage } from "../admin-page-wrap.js";
 import {
   renderBtn,
@@ -96,7 +98,8 @@ function renderCreateForm(
 
   return renderPanel(
     "Crear numeración",
-    `<form method="post" action="/admin/numeraciones" class="tv-admin-num-form">
+    `<p class="field-hint" style="margin:0 0 1rem">Para pruebas use proveedor <strong>QA / Telvoice Lab</strong> — quedará marcada como numeración de laboratorio.</p>
+    <form method="post" action="/admin/numeraciones" class="tv-admin-num-form">
       <label>Empresa<select name="company_id" class="tv-filter-input" required>${companyOpts}</select></label>
       <label>Número<input type="text" name="number" class="tv-filter-input" placeholder="+569..." required /></label>
       <label>País<input type="text" name="country_code" class="tv-filter-input" value="CL" maxlength="4" /></label>
@@ -112,12 +115,21 @@ function renderCreateForm(
         <option value="reserved">Reservado</option>
         <option value="suspended">Suspendido</option>
       </select></label>
-      <label>Proveedor<input type="text" name="provider" class="tv-filter-input" /></label>
-      <label>SIM slot<input type="text" name="sim_slot" class="tv-filter-input" /></label>
-      <label>Gateway ID<input type="text" name="gateway_id" class="tv-filter-input" /></label>
+      <label>Proveedor<input type="text" name="provider" class="tv-filter-input" placeholder="QA / Telvoice Lab" /></label>
+      <label>Gateway<input type="text" name="gateway_id" class="tv-filter-input" placeholder="qa-gateway" /></label>
+      <label>SIM slot<input type="text" name="sim_slot" class="tv-filter-input" placeholder="lab-slot-1" /></label>
       <button type="submit" class="btn btn-primary">Crear numeración</button>
     </form>`,
   );
+}
+
+function renderCapabilities(caps: AdminClientNumberItem["capabilities"]): string {
+  const items: string[] = [];
+  if (caps.receive_sms) items.push("MO");
+  if (caps.send_sms) items.push("MT");
+  if (caps.otp_authorized) items.push("OTP");
+  if (caps.api_webhook) items.push("API");
+  return items.length ? items.join(" · ") : "—";
 }
 
 function renderTable(numbers: AdminClientNumberItem[]): string {
@@ -128,13 +140,15 @@ function renderTable(numbers: AdminClientNumberItem[]): string {
     .map((n) => {
       const statusCls =
         n.status === "active" ? "ok" : n.status === "pending_activation" ? "warn" : "muted";
-      return `<tr>
-        <td><strong>${escapeHtml(n.number)}</strong></td>
+      return `<tr${/qa|lab/i.test(n.provider ?? "") ? ' class="tv-row-qa"' : ""}>
+        <td><strong>${escapeHtml(n.number)}</strong>${renderQaLabBadge(n.provider)}</td>
         <td>${escapeHtml(n.company_name)}</td>
         <td>${escapeHtml(clientNumberTypeLabel(n.type))}</td>
         <td>${escapeHtml(n.country_code ?? "CL")}</td>
         <td><span class="badge badge-${statusCls}">${escapeHtml(clientNumberStatusLabel(n.status))}</span></td>
         <td>${escapeHtml(n.provider ?? "—")}</td>
+        <td>${escapeHtml(n.gateway_id ?? "—")}${n.sim_slot ? `<br><small>slot: ${escapeHtml(n.sim_slot)}</small>` : ""}</td>
+        <td>${renderCapabilities(n.capabilities)}</td>
         <td>${n.activated_at ? formatDate(n.activated_at) : "—"}</td>
         <td>
           <form method="post" action="/admin/numeraciones/${escapeHtml(n.id)}/status" style="display:inline-flex;gap:0.35rem;align-items:center">
@@ -146,7 +160,7 @@ function renderTable(numbers: AdminClientNumberItem[]): string {
                 )
                 .join("")}
             </select>
-            <button type="submit" class="btn btn-ghost btn-sm">Actualizar</button>
+            <button type="submit" class="btn btn-ghost btn-sm">Cambiar estado</button>
           </form>
         </td>
       </tr>`;
@@ -154,7 +168,7 @@ function renderTable(numbers: AdminClientNumberItem[]): string {
     .join("");
 
   return `<div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-    <th>Número</th><th>Empresa</th><th>Tipo</th><th>País</th><th>Estado</th><th>Proveedor</th><th>Activación</th><th>Acciones</th>
+    <th>Número</th><th>Empresa</th><th>Tipo</th><th>País</th><th>Estado</th><th>Proveedor</th><th>Gateway / SIM</th><th>Capacidades</th><th>Activación</th><th>Acciones</th>
   </tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
@@ -247,11 +261,9 @@ export function renderAdminNumeracionesPage(
         : renderSimActivationsTable(ctx.simActivations),
     )}
     ${ctx.showCreateForm !== false ? renderCreateForm(ctx.companies, ctx.prefillCompanyId) : ""}
-    ${renderTable(ctx.numbers)}
-    <style>
-      .tv-admin-num-form { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:0.75rem; align-items:end; }
-      .tv-admin-num-form label { display:flex; flex-direction:column; gap:0.25rem; font-size:0.85rem; }
-    </style>`;
+    ${renderPanel("Numeraciones registradas", renderTable(ctx.numbers))}
+    <style>.tv-row-qa { background: rgba(245,158,11,0.04); }</style>
+    ${renderAgentModuleStyles()}`;
 
   return wrap(opts, body);
 }
