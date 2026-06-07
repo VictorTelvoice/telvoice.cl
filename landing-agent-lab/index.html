@@ -36,7 +36,7 @@
       },
     };
   </script>
-  <link rel="stylesheet" href="../css/landing-agent-lab.css?v=20260713" />
+  <link rel="stylesheet" href="../css/landing-agent-lab.css?v=20260714" />
 </head>
 <body class="font-body antialiased">
   <div class="lab-bg-wrap" aria-hidden="true">
@@ -714,15 +714,6 @@
         </div>
       </section>
 
-      <!-- Numeración: CTA dedicado -->
-      <section class="lab-section lab-section--compact" aria-label="Acceso a numeración Telvoice">
-        <div class="lab-section-inner">
-          <div class="lab-num-band lab-num-band--cta">
-            <a href="#numeracion" class="lab-btn-secondary inline-flex" data-track="click_ver_numeracion_cta">Ver números reales Telvoice</a>
-          </div>
-        </div>
-      </section>
-
       <!-- 7. Precios / bolsas SMS -->
       <section id="calculadora" class="lab-section section-calc scroll-mt-24" aria-labelledby="calc-titulo" tabindex="-1">
         <div id="precios" class="h-0 w-0 overflow-hidden" aria-hidden="true"></div>
@@ -1030,6 +1021,11 @@
   </div>
 
   <script src="../js/telvoice-config.js"></script>
+  <script>
+    window.TELVOICE_CONFIG = Object.assign({}, window.TELVOICE_CONFIG || {}, {
+      showRetail200PurchaseChip: false,
+    });
+  </script>
   <script src="../js/telvoice-app.js"></script>
   <script>
     (function () {

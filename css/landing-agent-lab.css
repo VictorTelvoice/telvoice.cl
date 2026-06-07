@@ -17,7 +17,7 @@
   --lab-w-page: 1120px;
   --lab-w-hero: 1080px;
   --lab-w-header: 820px;
-  --lab-w-calc: 960px;
+  --lab-w-calc: 820px;
   --lab-w-faq: 720px;
   --lab-w-copy: 38.75rem;   /* ~620px */
   --lab-w-panel: 20rem;     /* 320px — mismo ancho teléfono telvoice.cl */
@@ -4262,6 +4262,25 @@ html.lab-theme body {
   align-items: center;
   order: -1;
   min-width: 0;
+}
+
+.lab-caso-page-hero__showcase {
+  margin: 0 auto;
+  max-width: min(100%, 18rem);
+}
+
+@media (min-width: 768px) {
+  .lab-caso-page-hero__showcase {
+    max-width: 20rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lab-caso-page-hero__showcase {
+    max-width: 22rem;
+    margin-left: auto;
+    margin-right: 0;
+  }
 }
 
 @media (min-width: 1024px) {
