@@ -219,7 +219,7 @@ export function renderAppDashboardPage(
     : `<tr><td colspan="4" class="tv-table-empty">Sin movimientos recientes.</td></tr>`;
 
   const welcomeBanner = options?.showWelcomeBanner
-    ? `<div class="alert alert-success" role="status" style="margin-bottom:1rem">
+    ? `<div class="tv-lab-alert" role="status" style="margin-bottom:0.25rem">
         Bienvenido. Tus SMS ya fueron cargados.
       </div>`
     : "";

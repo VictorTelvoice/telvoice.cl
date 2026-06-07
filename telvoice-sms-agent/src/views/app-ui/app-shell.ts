@@ -10,6 +10,7 @@ import {
   renderPanelAgentWidget,
 } from "../../components/app/client-agent-widget.js";
 import { renderPanelStylesheetLink } from "../shared/panel-stylesheet.js";
+import { renderLabBackgroundHtml } from "./lab-theme-styles.js";
 import {
   APP_NAV_PRIMARY,
   APP_NAV_REST,
@@ -141,6 +142,7 @@ export function renderAppLayout(options: AppLayoutOptions): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#050814" />
   <title>${escapeHtml(brandPageTitle(options.title))}</title>
   ${renderFaviconLink()}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -150,7 +152,8 @@ export function renderAppLayout(options: AppLayoutOptions): string {
   ${renderPanelStylesheetLink()}
   ${renderTelvoiceAgentStylesheetLink()}
 </head>
-<body class="tv-admin${bodyClass}">
+<body class="tv-admin tv-lab-theme${bodyClass}">
+  ${renderLabBackgroundHtml()}
   <div class="tv-app">
     <div class="tv-overlay" id="tv-sidebar-overlay" aria-hidden="true"></div>
     ${renderSidebar(options.activeNav)}
@@ -166,19 +169,28 @@ export function renderAppLayout(options: AppLayoutOptions): string {
 </html>`;
 }
 
-export function renderAppMinimalPage(title: string, body: string): string {
+export function renderClientAuthPage(title: string, body: string): string {
   return `<!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="tv-lab-theme">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#050814" />
   <title>${escapeHtml(brandPageTitle(title))}</title>
   ${renderFaviconLink()}
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
   ${renderPanelStylesheetLink()}
 </head>
-<body class="tv-admin tv-app-client">
+<body class="tv-lab-auth">
+  ${renderLabBackgroundHtml()}
   <main class="tv-auth-wrap">${body}</main>
 </body>
 </html>`;
+}
+
+export function renderAppMinimalPage(title: string, body: string): string {
+  return renderClientAuthPage(title, body);
 }

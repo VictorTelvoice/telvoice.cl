@@ -4,13 +4,7 @@ import { getSmsBagCalculatorStyles } from "../shared/sms-bag-calculator-ui.js";
 /** Estilos adicionales del panel cliente /app */
 export function getAppPanelStyles(): string {
   return `
-    .tv-app-client .tv-sidebar {
-      background: linear-gradient(180deg, #0c4a9e 0%, #0a2458 100%);
-    }
-    .tv-app-client .tv-brand-lockup__sub {
-      color: #7dd3fc;
-      font-weight: 600;
-    }
+    /* Sidebar/topbar Lab: ver lab-theme-styles.ts (.tv-lab-theme) */
     .tv-app-client .tv-sidebar__nav {
       display: flex;
       flex-direction: column;
@@ -31,22 +25,8 @@ export function getAppPanelStyles(): string {
       width: 32px;
       height: 32px;
     }
-    .tv-app-client .tv-nav-link--send {
-      background: var(--tv-primary, #0052cc);
-      color: #fff;
-      font-weight: 500;
-    }
     .tv-app-client .tv-nav-link--send .material-symbols-outlined {
       opacity: 1;
-    }
-    .tv-app-client .tv-nav-link--send:hover {
-      background: var(--tv-primary-dark, #003d99);
-      color: #fff;
-    }
-    .tv-app-client .tv-nav-link--send.tv-nav-link--active {
-      background: linear-gradient(90deg, rgba(14, 165, 233, 0.35), rgba(91, 33, 182, 0.25));
-      color: #fff;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
     }
     .tv-app-client .tv-sidebar__badge {
       display: inline-block;
@@ -56,10 +36,7 @@ export function getAppPanelStyles(): string {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      background: rgba(125, 211, 252, 0.2);
-      color: #e0f2fe;
       border-radius: 999px;
-      border: 1px solid rgba(125, 211, 252, 0.35);
     }
     .tv-app-client .tv-topbar__search { display: none; }
     .tv-app-client .tv-btn-buy-sms {
@@ -68,9 +45,7 @@ export function getAppPanelStyles(): string {
       justify-content: center;
       gap: 0.35rem;
       padding: 0.45rem 0.9rem;
-      background: linear-gradient(135deg, #0ea5e9, #0052cc);
       color: #fff;
-      border-radius: 10px;
       font-weight: 600;
       font-size: 0.88rem;
       text-decoration: none;
@@ -81,11 +56,6 @@ export function getAppPanelStyles(): string {
       font-size: 1.15rem;
     }
     .tv-app-client .tv-btn-buy-sms:hover { filter: brightness(1.05); text-decoration: none; }
-    .tv-app-client .tv-pill--balance {
-      background: rgba(5, 150, 105, 0.12);
-      color: #047857;
-      font-weight: 600;
-    }
     @media (max-width: 900px) {
       .tv-app-client .tv-topbar__pills .tv-pill--account-status {
         display: none !important;

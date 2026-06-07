@@ -1,6 +1,6 @@
 import { escapeHtml } from "../../utils/html.js";
 import { renderAuthBrand } from "../brand.js";
-import { renderLayout } from "../admin-ui/shell.js";
+import { renderClientAuthPage } from "./app-shell.js";
 import { googleAuthConfigOrError } from "./google-auth-env.js";
 import {
   renderAuthCallbackBrowserScript,
@@ -47,12 +47,12 @@ export function renderClientLoginPage(options?: {
       : renderLoginBrowserScript(cfg.url, cfg.key);
 
   const body = `
-    <div class="tv-auth-card" style="max-width:520px">
-      ${renderAuthBrand("telvoice", "Panel cliente")}
-      <h2 class="tv-page-title" style="margin:0 0 0.35rem">Entra a Telvoice</h2>
-      <p class="tv-page-sub" style="margin:0 0 1rem">Accede o crea tu cuenta para comenzar a enviar SMS.</p>
+    <div class="tv-lab-glass-card">
+      ${renderAuthBrand("telvoice", "Panel cliente · SMS masivos")}
+      <h2 class="tv-page-title" style="margin:0 0 0.35rem;font-size:1.35rem">Entra a Telvoice</h2>
+      <p class="tv-page-sub" style="margin:0 0 1.15rem">Accede o crea tu cuenta para comenzar a enviar SMS.</p>
       ${errorBlock}
-      <button type="button" class="btn btn-primary tv-auth-submit" id="tv-google-login" ${"errorHtml" in cfg ? "disabled" : ""}>
+      <button type="button" class="btn btn-primary tv-auth-submit tv-lab-btn-primary" id="tv-google-login" ${"errorHtml" in cfg ? "disabled" : ""}>
         <span class="material-symbols-outlined" aria-hidden="true" style="font-size:1.1rem">login</span>
         Continuar con Google
       </button>
@@ -63,32 +63,32 @@ export function renderClientLoginPage(options?: {
         "errorHtml" in cfg
           ? ""
           : `
-      <div class="tv-auth-divider" style="margin:1.25rem 0;display:flex;align-items:center;gap:0.75rem">
-        <span style="flex:1;height:1px;background:var(--tv-border)"></span>
-        <span class="field-hint" style="margin:0">O ingresa con tu correo</span>
-        <span style="flex:1;height:1px;background:var(--tv-border)"></span>
+      <div class="tv-lab-auth-divider">
+        <span class="tv-lab-auth-divider__line"></span>
+        <span class="tv-lab-auth-divider__text">O ingresa con tu correo</span>
+        <span class="tv-lab-auth-divider__line"></span>
       </div>
       <label class="field-label" for="tv-email-login">Correo electrónico</label>
       <input type="email" id="tv-email-login" class="input" name="email" autocomplete="email" placeholder="tu@empresa.cl" />
-      <button type="button" class="btn btn-ghost tv-auth-submit" id="tv-magic-link-btn" style="margin-top:0.65rem;width:100%">
+      <button type="button" class="btn btn-ghost tv-auth-submit tv-lab-btn-secondary" id="tv-magic-link-btn" style="margin-top:0.65rem">
         Enviar enlace de acceso
       </button>
       <p id="tv-magic-status" class="field-hint" style="margin:0.65rem 0 0" aria-live="polite"></p>
       <style>
-        .tv-magic-ok { color: var(--tv-ok); }
-        .tv-magic-error { color: var(--tv-err); }
+        .tv-magic-ok { color: #6ee7b7; }
+        .tv-magic-error { color: #fca5a5; }
       </style>`
       }
     </div>
     ${authScript}`;
 
-  return renderLayout({ title: "Login", body, showNav: false });
+  return renderClientAuthPage("Login", body);
 }
 
 export function renderAuthCallbackPage(): string {
   const cfg = googleAuthConfigOrError();
   const body = `
-    <div class="tv-auth-card" style="max-width:520px">
+    <div class="tv-lab-glass-card">
       ${renderAuthBrand("telvoice", "Conectando…")}
       <p class="tv-page-sub" style="margin:0">Estamos validando tu cuenta. Un momento…</p>
       <p class="field-hint" id="tv-auth-status" style="margin:0.85rem 0 0">Procesando.</p>
@@ -99,24 +99,24 @@ export function renderAuthCallbackPage(): string {
         : renderAuthCallbackBrowserScript(cfg.url, cfg.key)
     }`;
 
-  return renderLayout({ title: "Auth callback", body, showNav: false });
+  return renderClientAuthPage("Auth callback", body);
 }
 
 export function renderClaimManualReviewPage(): string {
   const body = `
-    <div class="tv-auth-card" style="max-width:520px">
+    <div class="tv-lab-glass-card">
       ${renderAuthBrand("telvoice", "Revisión manual")}
-      <h2 class="tv-page-title" style="margin:0 0 0.35rem">Tu pago quedó en revisión</h2>
+      <h2 class="tv-page-title" style="margin:0 0 0.35rem;font-size:1.25rem">Tu pago quedó en revisión</h2>
       <p class="tv-page-sub" style="margin:0 0 1rem">
         Detectamos una diferencia entre el correo autenticado y el correo del pago. No acreditamos automáticamente tu bolsa.
       </p>
       <p class="field-hint" style="margin:0">
         Nuestro equipo revisará el caso. Si necesitas acelerar, escribe a soporte con tu correo y comprobante.
       </p>
-      <div class="tv-quick-actions" style="margin-top:1rem">
-        <a class="btn btn-primary" href="/app/dashboard">Ir al dashboard</a>
-        <a class="btn btn-ghost" href="/login">Volver al login</a>
+      <div style="display:flex;flex-direction:column;gap:0.65rem;margin-top:1.25rem">
+        <a class="btn btn-primary tv-lab-btn-primary" href="/app/dashboard">Ir al dashboard</a>
+        <a class="btn btn-ghost tv-lab-btn-secondary" href="/login">Volver al login</a>
       </div>
     </div>`;
-  return renderLayout({ title: "Revisión manual", body, showNav: false });
+  return renderClientAuthPage("Revisión manual", body);
 }
