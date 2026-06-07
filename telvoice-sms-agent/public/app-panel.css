@@ -2135,22 +2135,40 @@
       margin: 0.5rem 0.35rem;
       background: rgba(255, 255, 255, 0.12);
     }
+    .tv-app-client .tv-sidebar__brand {
+      padding: 1.05rem 1rem 0.9rem;
+    }
+    .tv-app-client .tv-brand-lockup {
+      align-items: center;
+      gap: 0.65rem;
+    }
+    .tv-app-client .tv-brand-lockup__text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.15rem;
+      min-height: 34px;
+    }
     .tv-app-client .tv-brand-lockup .tv-brand-isotipo {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
+    }
+    .tv-app-client .tv-brand-wordmark {
+      font-size: 1.125rem;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+    .tv-app-client .tv-brand-lockup__sub {
+      margin-top: 0;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: none;
+      line-height: 1.2;
+      opacity: 0.92;
     }
     .tv-app-client .tv-nav-link--send .material-symbols-outlined {
       opacity: 1;
-    }
-    .tv-app-client .tv-sidebar__badge {
-      display: inline-block;
-      margin-top: 0.35rem;
-      padding: 0.16rem 0.44rem;
-      font-size: 0.544rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      border-radius: 999px;
     }
     .tv-app-client .tv-topbar__search { display: none; }
     .tv-app-client .tv-btn-buy-sms {
@@ -5077,12 +5095,8 @@
       color: #fff !important;
     }
     .tv-lab-theme.tv-app-client .tv-brand-lockup__sub {
-      color: var(--tv-lab-cyan);
-    }
-    .tv-lab-theme.tv-app-client .tv-sidebar__badge {
-      background: rgba(56, 189, 248, 0.12);
-      color: var(--tv-lab-cyan);
-      border-color: rgba(56, 189, 248, 0.28);
+      color: rgba(125, 211, 252, 0.92);
+      font-weight: 600;
     }
     .tv-lab-theme.tv-app-client .tv-sidebar__nav-divider {
       background: var(--tv-lab-border);
@@ -5792,12 +5806,8 @@
       color: #fff !important;
     }
     .tv-light-theme.tv-app-client .tv-brand-lockup__sub {
-      color: rgba(148, 197, 255, 0.95);
-    }
-    .tv-light-theme.tv-app-client .tv-sidebar__badge {
-      background: rgba(14, 165, 233, 0.18);
-      color: #bae6fd;
-      border: 1px solid rgba(56, 189, 248, 0.28);
+      color: rgba(186, 230, 253, 0.95);
+      font-weight: 600;
     }
     .tv-light-theme.tv-app-client .tv-sidebar__nav-divider {
       background: rgba(255, 255, 255, 0.12);

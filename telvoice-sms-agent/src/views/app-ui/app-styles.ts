@@ -21,22 +21,40 @@ export function getAppPanelStyles(): string {
       margin: 0.5rem 0.35rem;
       background: rgba(255, 255, 255, 0.12);
     }
+    .tv-app-client .tv-sidebar__brand {
+      padding: 1.05rem 1rem 0.9rem;
+    }
+    .tv-app-client .tv-brand-lockup {
+      align-items: center;
+      gap: 0.65rem;
+    }
+    .tv-app-client .tv-brand-lockup__text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.15rem;
+      min-height: 34px;
+    }
     .tv-app-client .tv-brand-lockup .tv-brand-isotipo {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
+    }
+    .tv-app-client .tv-brand-wordmark {
+      font-size: 1.125rem;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+    .tv-app-client .tv-brand-lockup__sub {
+      margin-top: 0;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: none;
+      line-height: 1.2;
+      opacity: 0.92;
     }
     .tv-app-client .tv-nav-link--send .material-symbols-outlined {
       opacity: 1;
-    }
-    .tv-app-client .tv-sidebar__badge {
-      display: inline-block;
-      margin-top: 0.35rem;
-      padding: 0.16rem 0.44rem;
-      font-size: 0.544rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      border-radius: 999px;
     }
     .tv-app-client .tv-topbar__search { display: none; }
     .tv-app-client .tv-btn-buy-sms {

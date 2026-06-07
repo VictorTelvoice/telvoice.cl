@@ -96,12 +96,8 @@ export function getLightPanelThemeStyles(): string {
       color: #fff !important;
     }
     .tv-light-theme.tv-app-client .tv-brand-lockup__sub {
-      color: rgba(148, 197, 255, 0.95);
-    }
-    .tv-light-theme.tv-app-client .tv-sidebar__badge {
-      background: rgba(14, 165, 233, 0.18);
-      color: #bae6fd;
-      border: 1px solid rgba(56, 189, 248, 0.28);
+      color: rgba(186, 230, 253, 0.95);
+      font-weight: 600;
     }
     .tv-light-theme.tv-app-client .tv-sidebar__nav-divider {
       background: rgba(255, 255, 255, 0.12);

@@ -68,7 +68,7 @@ function renderNavLinks(active: string): string {
 function renderSidebar(active: string): string {
   return `<aside class="tv-sidebar" id="tv-sidebar" aria-label="Menú cliente">
     <div class="tv-sidebar__brand">
-      ${renderSidebarBrand("/app/dashboard", { badge: "Panel cliente" })}
+      ${renderSidebarBrand("/app/dashboard", { subtitle: "Panel cliente" })}
     </div>
     <nav class="tv-sidebar__nav">
       ${renderNavLinks(active)}
@@ -157,7 +157,7 @@ export function renderAppLayout(options: AppLayoutOptions): string {
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
   ${renderPanelStylesheetLink()}
-  ${renderTelvoiceAgentStylesheetLink({ lab: true })}
+  ${renderTelvoiceAgentStylesheetLink({ lab: true, panelLight: true })}
 </head>
 <body class="tv-admin${bodyClass}">
   ${renderPanelThemeBootScript()}

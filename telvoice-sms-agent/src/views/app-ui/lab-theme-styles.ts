@@ -240,12 +240,8 @@ export function getLabPanelThemeStyles(): string {
       color: #fff !important;
     }
     .tv-lab-theme.tv-app-client .tv-brand-lockup__sub {
-      color: var(--tv-lab-cyan);
-    }
-    .tv-lab-theme.tv-app-client .tv-sidebar__badge {
-      background: rgba(56, 189, 248, 0.12);
-      color: var(--tv-lab-cyan);
-      border-color: rgba(56, 189, 248, 0.28);
+      color: rgba(125, 211, 252, 0.92);
+      font-weight: 600;
     }
     .tv-lab-theme.tv-app-client .tv-sidebar__nav-divider {
       background: var(--tv-lab-border);
