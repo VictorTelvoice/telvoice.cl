@@ -48,6 +48,7 @@ import {
   getAppMercadoPagoContinuePay,
   getAppMercadoPagoReturn,
   postAppBuySmsMercadoPago,
+  postAppBuySmsMercadoPagoSubscribe,
 } from "../controllers/app-payments.controller.js";
 import {
   getAppApi,
@@ -78,6 +79,18 @@ import {
   postAppSmsTemplateDuplicate,
   postAppSmsTemplateUpdate,
 } from "../controllers/app-templates.controller.js";
+import {
+  getAppAgente,
+  getAppAgentPlans,
+  getAppNumberIntegrations,
+  getAppNumeraciones,
+  getAppSmsInbox,
+  getAppSmsInboxExportCsv,
+  postAppAgentPlanRequest,
+  postAppNumberIntegrations,
+  postAppNumberWebhookTest,
+  postAppSmsInboxMarkRead,
+} from "../controllers/app-numeraciones.controller.js";
 import { postClientLogout } from "../controllers/admin.controller.js";
 import { loadClientSession } from "../middleware/admin-auth.js";
 import { requireClientPanelPage } from "../middleware/client-panel-auth.js";
@@ -96,6 +109,11 @@ appRouter.post(
   "/buy-sms/mercadopago",
   requireClientPanelPage,
   postAppBuySmsMercadoPago,
+);
+appRouter.post(
+  "/buy-sms/mercadopago/subscribe",
+  requireClientPanelPage,
+  postAppBuySmsMercadoPagoSubscribe,
 );
 
 appRouter.get("/payments/mercadopago/success", requireClientPanelPage, (req, res, next) =>
@@ -244,3 +262,30 @@ appRouter.post(
 );
 appRouter.get("/settings", requireClientPanelPage, getAppSettings);
 appRouter.post("/settings", requireClientPanelPage, postAppSettings);
+
+appRouter.get("/numeraciones", requireClientPanelPage, getAppNumeraciones);
+appRouter.get(
+  "/numeraciones/:id/integraciones",
+  requireClientPanelPage,
+  getAppNumberIntegrations,
+);
+appRouter.post(
+  "/numeraciones/:id/integraciones",
+  requireClientPanelPage,
+  postAppNumberIntegrations,
+);
+appRouter.post(
+  "/numeraciones/:id/webhook/test",
+  requireClientPanelPage,
+  postAppNumberWebhookTest,
+);
+appRouter.get("/sms-inbox", requireClientPanelPage, getAppSmsInbox);
+appRouter.get("/sms-inbox/export.csv", requireClientPanelPage, getAppSmsInboxExportCsv);
+appRouter.post(
+  "/sms-inbox/:id/read",
+  requireClientPanelPage,
+  postAppSmsInboxMarkRead,
+);
+appRouter.get("/agente", requireClientPanelPage, getAppAgente);
+appRouter.get("/planes-agente", requireClientPanelPage, getAppAgentPlans);
+appRouter.post("/planes-agente/request", requireClientPanelPage, postAppAgentPlanRequest);

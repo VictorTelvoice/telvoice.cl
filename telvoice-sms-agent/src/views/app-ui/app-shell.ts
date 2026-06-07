@@ -18,6 +18,7 @@ import {
   renderPanelThemeToggleScript,
 } from "./panel-theme.js";
 import {
+  APP_NAV_AGENT_LINE,
   APP_NAV_PRIMARY,
   APP_NAV_REST,
   APP_NAV_SEND_SMS,
@@ -58,9 +59,12 @@ function renderNavLink(item: { id: string; label: string; href: string; icon: st
 function renderNavLinks(active: string): string {
   const send = renderNavLink(APP_NAV_SEND_SMS, active, " tv-nav-link--send");
   const primary = APP_NAV_PRIMARY.map((item) => renderNavLink(item, active)).join("");
+  const agentLine = APP_NAV_AGENT_LINE.map((item) => renderNavLink(item, active)).join("");
   const rest = APP_NAV_REST.map((item) => renderNavLink(item, active)).join("");
   return `${send}
     <div class="tv-sidebar__nav-group">${primary}</div>
+    <div class="tv-sidebar__nav-divider" role="presentation"></div>
+    <div class="tv-sidebar__nav-group tv-sidebar__nav-group--agent">${agentLine}</div>
     <div class="tv-sidebar__nav-divider" role="presentation"></div>
     <div class="tv-sidebar__nav-group tv-sidebar__nav-group--secondary">${rest}</div>`;
 }

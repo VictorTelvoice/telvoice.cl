@@ -1,0 +1,16 @@
+-- Seed opcional para probar pantallas de numeraciones (ejecutar manualmente).
+-- Reemplaza COMPANY_ID con el UUID de una empresa de prueba.
+
+-- INSERT INTO client_numbers (
+--   company_id, number, country_code, type, status,
+--   capabilities, activated_at, expires_at
+-- ) VALUES (
+--   'COMPANY_ID'::uuid,
+--   '+56912345678',
+--   'CL',
+--   'sim_real',
+--   'active',
+--   '{"receive_sms": true, "send_sms": true, "otp_authorized": true, "api_webhook": false}'::jsonb,
+--   now() - interval '30 days',
+--   now() + interval '335 days'
+-- );

@@ -1,5 +1,9 @@
 import { randomUUID } from "crypto";
-import { planItemTitle, planItemDescription } from "../../lib/plans.js";
+import { resolveCheckoutPlan } from "../../lib/calc-plans.js";
+import {
+  checkoutPlanItemDescription,
+  checkoutPlanItemTitle,
+} from "../../lib/sim-plans.js";
 import { resolveCheckoutPlan } from "../../lib/calc-plans.js";
 import {
   createOrderRecord,
@@ -132,8 +136,8 @@ export default async function handler(req, res) {
     const preference = await createCheckoutPreference({
       order,
       plan,
-      itemTitle: planItemTitle(plan),
-      itemDescription: planItemDescription(plan),
+      itemTitle: checkoutPlanItemTitle(plan),
+      itemDescription: checkoutPlanItemDescription(plan),
     });
 
     order = await updateOrder(orderId, {

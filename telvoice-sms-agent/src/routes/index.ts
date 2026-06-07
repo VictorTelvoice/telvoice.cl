@@ -9,6 +9,7 @@ import { webhookRouter } from "./webhook.routes.js";
 import { v1Router } from "./v1.routes.js";
 import { mercadoPagoWebhookHandler } from "../controllers/mercadopago.controller.js";
 import { appAgentRouter } from "./app-agent.routes.js";
+import { appNumeracionesApiRouter } from "./app-numeraciones-api.routes.js";
 import { webAgentRouter } from "./web-agent.routes.js";
 
 export const apiRouter = Router();
@@ -25,4 +26,5 @@ apiRouter.use("/webhooks", webhookRouter);
 apiRouter.use("/asmsc", balanceRouter);
 apiRouter.use("/telegram", telegramRouter);
 apiRouter.use("/app/agent", appAgentRouter);
+apiRouter.use("/app", appNumeracionesApiRouter);
 apiRouter.use("/web-agent", webAgentRouter);

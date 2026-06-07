@@ -1,4 +1,5 @@
 import { getPlan } from "../../lib/plans.js";
+import { getSimPlan } from "../../lib/sim-plans.js";
 import {
   getOrder,
   updateOrder,
@@ -53,6 +54,15 @@ function mapPaymentToOrderStatus(mpStatus) {
   if (mpStatus === "cancelled") return "cancelled";
   if (mpStatus === "refunded" || mpStatus === "charged_back") return "cancelled";
   return null;
+}
+
+function resolveOrderPlan(order) {
+  if (order.plan_id === "calc") return { ok: true, plan: null };
+  const plan = getPlan(order.plan_id) || getSimPlan(order.plan_id);
+  if (!plan || plan.total_amount !== order.total_amount) {
+    return { ok: false, plan: null };
+  }
+  return { ok: true, plan };
 }
 
 async function processPayment(paymentId, rawWebhook) {
@@ -134,8 +144,8 @@ async function processPayment(paymentId, rawWebhook) {
       return;
     }
     if (order.plan_id !== "calc") {
-      const plan = getPlan(order.plan_id);
-      if (!plan || plan.total_amount !== expectedTotal) {
+      const planCheck = resolveOrderPlan(order);
+      if (!planCheck.ok) {
         console.error("[webhook] plan inválido en orden", order.id);
         return;
       }

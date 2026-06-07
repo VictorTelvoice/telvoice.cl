@@ -14,8 +14,13 @@ import {
 import { saveCompanyPaymentCardPreferences } from "./companyPaymentCardService.js";
 import {
   createClientPanelCheckoutPreference,
+  createMercadoPagoPreapproval,
   type MercadoPagoPayerInput,
 } from "./mercadoPagoService.js";
+import {
+  attachPreapprovalToSubscription,
+  createPendingSmsMpSubscription,
+} from "./smsMpSubscriptionService.js";
 
 export type ClientPanelCheckoutResult = {
   orderId: string;
@@ -180,4 +185,70 @@ export async function startPaymentCardSetupCheckout(input: {
   }
 
   return result;
+}
+
+/** Suscripción mensual Mercado Pago (Preapproval) para bolsa de la calculadora. */
+export async function startClientPanelMercadoPagoSubscription(input: {
+  companyId: string;
+  packageId: string;
+  smsQuantity: number;
+  monthlyAmount: number;
+  createdBy?: string | null;
+  payer: MercadoPagoPayerInput;
+}): Promise<ClientPanelCheckoutResult & { subscriptionId: string }> {
+  if (!isMercadoPagoConfigured()) {
+    throw new AppError(
+      "MercadoPago no está configurado en este servidor.",
+      503,
+      "MP_NOT_CONFIGURED",
+    );
+  }
+
+  const pkg = await getSmsPackageById(input.packageId);
+  if (!pkg || !pkg.is_active) {
+    throw new AppError("Bolsa SMS no encontrada o inactiva.", 404);
+  }
+
+  const expected = Math.round(Number(pkg.total_price));
+  if (Math.round(input.monthlyAmount) !== expected) {
+    throw new AppError("El monto de la suscripción no coincide con la bolsa.", 400);
+  }
+
+  const subscription = await createPendingSmsMpSubscription({
+    companyId: input.companyId,
+    packageId: input.packageId,
+    smsQuantity: input.smsQuantity,
+    monthlyAmount: expected,
+    currency: pkg.currency,
+  });
+
+  const preapproval = await createMercadoPagoPreapproval({
+    externalReference: subscription.id,
+    reason: `Suscripción mensual — ${pkg.name}`,
+    monthlyAmount: expected,
+    payerEmail: input.payer.email,
+    backUrl: `${env.publicAppUrl}/app/payments/mercadopago/success?subscription=1`,
+    metadata: {
+      source: "client_panel",
+      checkout_mode: "mercadopago_subscription",
+      company_id: input.companyId,
+      package_id: input.packageId,
+      sms_quantity: String(input.smsQuantity),
+      subscription_id: subscription.id,
+    },
+  });
+
+  await attachPreapprovalToSubscription({
+    companyId: input.companyId,
+    subscriptionId: subscription.id,
+    mpPreapprovalId: preapproval.preapproval_id ?? "",
+    mpInitPoint: preapproval.checkout_url,
+  });
+
+  return {
+    orderId: subscription.id,
+    checkoutUrl: preapproval.checkout_url,
+    preferenceId: preapproval.preapproval_id,
+    subscriptionId: subscription.id,
+  };
 }

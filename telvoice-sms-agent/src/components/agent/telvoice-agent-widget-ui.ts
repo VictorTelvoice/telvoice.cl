@@ -24,6 +24,38 @@ export const TELVOICE_AGENT_FLOATING_WEBP = "/assets/telvoice-agent-floating-cle
 export const TELVOICE_AGENT_PROFILE_PNG = "/assets/telvoice-agent-profile.png";
 export const TELVOICE_AGENT_PROFILE_WEBP = "/assets/telvoice-agent-profile.webp";
 export const TELVOICE_AGENT_WIDGET_LAB_CSS_HREF = "/css/telvoice-agent-widget-lab.css";
+export const TELVOICE_AGENT_WIDGET_LIGHT_CSS_HREF = "/css/telvoice-agent-widget-light.css";
+
+function agentWidgetCssHref(path: string): string {
+  try {
+    const ver = readFileSync(
+      `${getPublicDir()}/telvoice-agent-widget.ver`,
+      "utf8",
+    ).trim();
+    return ver ? `${path}?v=${encodeURIComponent(ver)}` : path;
+  } catch {
+    return path;
+  }
+}
+
+export type TelvoiceAgentStylesheetOptions = {
+  /** Panel /app: carga overrides tema Lab oscuro */
+  lab?: boolean;
+  /** Panel /app: carga overrides modo claro (requiere .tv-light-theme en body) */
+  panelLight?: boolean;
+};
+
+export function renderTelvoiceAgentStylesheetLink(options?: TelvoiceAgentStylesheetOptions): string {
+  const base = `<link rel="stylesheet" href="${telvoiceAgentWidgetStylesheetHref()}" />`;
+  const extras: string[] = [];
+  if (options?.lab) {
+    extras.push(`<link rel="stylesheet" href="${agentWidgetCssHref(TELVOICE_AGENT_WIDGET_LAB_CSS_HREF)}" />`);
+  }
+  if (options?.panelLight) {
+    extras.push(`<link rel="stylesheet" href="${agentWidgetCssHref(TELVOICE_AGENT_WIDGET_LIGHT_CSS_HREF)}" />`);
+  }
+  return extras.length ? `${base}\n${extras.join("\n")}` : base;
+}
 
 export type TelvoiceAgentWidgetVariant = "app" | "admin";
 
@@ -48,23 +80,6 @@ export const TELVOICE_AGENT_LABELS: Record<TelvoiceAgentWidgetVariant, TelvoiceA
     dialogAriaLabel: "Asistente Telvoice para superadmin",
   },
 };
-
-export function renderTelvoiceAgentStylesheetLink(options?: { lab?: boolean }): string {
-  const base = `<link rel="stylesheet" href="${telvoiceAgentWidgetStylesheetHref()}" />`;
-  if (!options?.lab) return base;
-  try {
-    const ver = readFileSync(
-      `${getPublicDir()}/telvoice-agent-widget.ver`,
-      "utf8",
-    ).trim();
-    const href = ver
-      ? `${TELVOICE_AGENT_WIDGET_LAB_CSS_HREF}?v=${encodeURIComponent(ver)}`
-      : TELVOICE_AGENT_WIDGET_LAB_CSS_HREF;
-    return `${base}\n<link rel="stylesheet" href="${href}" />`;
-  } catch {
-    return `${base}\n<link rel="stylesheet" href="${TELVOICE_AGENT_WIDGET_LAB_CSS_HREF}" />`;
-  }
-}
 
 /** Banner de identidad en páginas hub de entrenamiento (superadmin). */
 export function renderTelvoiceAgentHubBanner(labels: TelvoiceAgentWidgetLabels): string {

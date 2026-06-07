@@ -543,6 +543,12 @@ export function renderSmsBagCalculatorPanel(
         <button type="submit" class="calc-cta-btn calc-cta-btn--primary" id="tv-buy-calc-mp-btn">
           Pagar con Mercado Pago
         </button>
+      </form>
+      <form method="post" action="/app/buy-sms/mercadopago/subscribe" id="tv-buy-calc-sub-form">
+        <input type="hidden" name="sms_quantity" id="tv-buy-calc-sub-qty" value="1000" />
+        <button type="submit" class="calc-cta-btn calc-cta-btn--secondary" id="tv-buy-calc-sub-btn" title="Cargo automático cada mes por el mismo monto">
+          Suscripción mensual
+        </button>
       </form>`
       : canBuy
         ? `<button type="button" class="calc-cta-btn calc-cta-btn--primary" disabled title="Mercado Pago no disponible">
@@ -564,7 +570,7 @@ export function renderSmsBagCalculatorPanel(
     : `<p class="calc-readonly-note">Tu rol es solo lectura. Contacta al administrador de la cuenta para comprar SMS.</p>`;
 
   const mpNote = mpAvailable
-    ? `<p class="calc-cta-note">Pago con Mercado Pago: redirección segura. El saldo se acredita cuando el webhook confirma el pago aprobado.</p>`
+    ? `<p class="calc-cta-note">Pago único o suscripción mensual con Mercado Pago. El saldo se acredita cuando el webhook confirma cada cargo aprobado.</p>`
     : `<p class="calc-cta-note">Mercado Pago no está configurado. Contacta a soporte para completar tu compra.</p>`;
 
   return `<section class="tv-buy-sms-calc" aria-labelledby="tv-buy-calc-title">
@@ -684,8 +690,10 @@ export function renderSmsBagCalculatorPanel(
     var calcTotal = document.getElementById("tvCalcTotal");
     var suggestionsEl = document.getElementById("tvCalcSliderSuggestions");
     var mpQty = document.getElementById("tv-buy-calc-mp-qty");
+    var subQty = document.getElementById("tv-buy-calc-sub-qty");
     var manualQty = document.getElementById("tv-buy-calc-manual-qty");
     var mpBtn = document.getElementById("tv-buy-calc-mp-btn");
+    var subBtn = document.getElementById("tv-buy-calc-sub-btn");
     var sliderMax = CALC_VOLUMES.length - 1;
     function setSliderProgress() {
       var idx = +slider.value;
@@ -694,6 +702,7 @@ export function renderSmsBagCalculatorPanel(
     }
     function syncHiddenQty(vol) {
       if (mpQty) mpQty.value = String(vol);
+      if (subQty) subQty.value = String(vol);
       if (manualQty) manualQty.value = String(vol);
     }
     function updateCalc() {
@@ -713,6 +722,7 @@ export function renderSmsBagCalculatorPanel(
       if (calcIva) calcIva.textContent = formatMoney(iva);
       if (calcTotal) calcTotal.textContent = formatMoney(net + iva);
       if (mpBtn) mpBtn.textContent = "Pagar " + fmt(vol) + " SMS con Mercado Pago";
+      if (subBtn) subBtn.textContent = "Suscripción mensual · " + fmt(vol) + " SMS";
       syncHiddenQty(vol);
       if (suggestionsEl) {
         suggestionsEl.querySelectorAll(".calc-tier-chip").forEach(function (btn) {

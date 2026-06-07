@@ -1,20 +1,30 @@
 import { getSupabase } from "../database/supabaseClient.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
-import { getMercadoPagoPayment } from "./mercadoPagoService.js";
+import { getMercadoPagoPayment, getMercadoPagoPreapproval } from "./mercadoPagoService.js";
 import {
   isClientPanelMercadoPagoOrder,
   loadOrderForWebhook,
 } from "./mercadoPagoClientPanelService.js";
 import {
   confirmOrderCredit,
+  createOrder,
   getOrderById,
   markOrderPaid,
   patchOrderFields,
 } from "./smsOrderService.js";
-import { isPublicCheckoutOrder } from "../utils/order-display.js";
+import {
+  CLIENT_PANEL_ORDER_METADATA,
+  isPublicCheckoutOrder,
+} from "../utils/order-display.js";
 import { sendPaymentReceivedClaimEmail } from "./transactionalEmailService.js";
 import { hasPurchaseCreditForOrder } from "./walletTransactionService.js";
 import { syncPaymentCardFromOrderMetadata } from "./companyPaymentCardService.js";
+import {
+  findSubscriptionByExternalReference,
+  findSubscriptionByPreapprovalId,
+  recordSubscriptionPayment,
+  updateSmsMpSubscriptionStatus,
+} from "./smsMpSubscriptionService.js";
 import { runBillingSyncBestEffort } from "./billingSyncService.js";
 import type { MercadoPagoPaymentRecord } from "./mercadoPagoService.js";
 import type { SmsOrderRow } from "../types/wallet.js";
@@ -286,6 +296,166 @@ export async function processPublicCheckoutMercadoPagoWebhook(
 }
 
 /** Ignora pagos cuyo external_reference no es orden del panel (landing u otros). */
+function subscriptionRefFromPayment(
+  payment: MercadoPagoPaymentRecord & { preapproval_id?: string },
+): string | null {
+  const meta = payment.metadata ?? {};
+  const fromMeta =
+    typeof meta.subscription_id === "string" ? meta.subscription_id.trim() : "";
+  if (fromMeta) {
+    return fromMeta;
+  }
+  const ext = payment.external_reference?.trim();
+  if (ext) {
+    return ext;
+  }
+  const pre = payment.preapproval_id?.trim();
+  return pre || null;
+}
+
+export async function processMercadoPagoPreapprovalWebhook(
+  preapprovalId: string,
+): Promise<{ ok: boolean; result?: string; subscriptionId?: string }> {
+  const pre = await getMercadoPagoPreapproval(preapprovalId);
+  const ref = pre.external_reference?.trim();
+  if (!ref) {
+    return { ok: true, result: "no_external_reference" };
+  }
+
+  const found = await findSubscriptionByExternalReference(ref);
+  if (!found) {
+    const byMp = await findSubscriptionByPreapprovalId(preapprovalId);
+    if (!byMp) {
+      return { ok: true, result: "subscription_not_found" };
+    }
+    await applyPreapprovalStatus(byMp.companyId, byMp.subscription.id, pre);
+    return { ok: true, subscriptionId: byMp.subscription.id, result: pre.status };
+  }
+
+  await applyPreapprovalStatus(found.companyId, found.subscription.id, pre);
+  return { ok: true, subscriptionId: found.subscription.id, result: pre.status };
+}
+
+async function applyPreapprovalStatus(
+  companyId: string,
+  subscriptionId: string,
+  pre: { status?: string; id?: string },
+): Promise<void> {
+  const status = (pre.status ?? "").toLowerCase();
+  if (status === "authorized") {
+    await updateSmsMpSubscriptionStatus({
+      companyId,
+      subscriptionId,
+      status: "authorized",
+      mpPreapprovalId: pre.id ?? null,
+    });
+    return;
+  }
+  if (status === "paused") {
+    await updateSmsMpSubscriptionStatus({
+      companyId,
+      subscriptionId,
+      status: "paused",
+      mpPreapprovalId: pre.id ?? null,
+    });
+    return;
+  }
+  if (status === "cancelled") {
+    await updateSmsMpSubscriptionStatus({
+      companyId,
+      subscriptionId,
+      status: "cancelled",
+      mpPreapprovalId: pre.id ?? null,
+    });
+  }
+}
+
+export async function processSubscriptionMercadoPagoPayment(
+  paymentId: string,
+): Promise<{ handled: boolean; orderId?: string; result?: string }> {
+  const payment = await getMercadoPagoPayment(paymentId);
+  if (payment.status !== "approved") {
+    return { handled: false };
+  }
+
+  const ref = subscriptionRefFromPayment(
+    payment as MercadoPagoPaymentRecord & { preapproval_id?: string },
+  );
+  if (!ref) {
+    return { handled: false };
+  }
+
+  let found = await findSubscriptionByExternalReference(ref);
+  if (!found) {
+    const preId =
+      (payment as { preapproval_id?: string }).preapproval_id?.trim() ?? ref;
+    found = await findSubscriptionByPreapprovalId(preId);
+  }
+  if (!found) {
+    return { handled: false };
+  }
+
+  const { companyId, subscription } = found;
+  const paidAmount = Math.round(Number(payment.transaction_amount ?? 0));
+  if (paidAmount !== subscription.monthlyAmount) {
+    console.warn(
+      "[mp-webhook] suscripción monto distinto",
+      paidAmount,
+      subscription.monthlyAmount,
+      subscription.id,
+    );
+    return { handled: true, result: "amount_mismatch" };
+  }
+
+  const payRef = `MP-SUB-${paymentId}`;
+  const { data: existing } = await getSupabase()
+    .from("sms_orders")
+    .select("id, credit_status")
+    .eq("payment_reference", payRef)
+    .maybeSingle();
+
+  if (existing?.credit_status === "credited") {
+    return { handled: true, orderId: existing.id as string, result: "already_credited" };
+  }
+
+  let orderId: string;
+  if (existing?.id) {
+    orderId = String(existing.id);
+  } else {
+    const created = await createOrder({
+      companyId,
+      packageId: subscription.packageId,
+      paymentProvider: "mercadopago",
+      paymentReference: payRef,
+      metadata: {
+        ...CLIENT_PANEL_ORDER_METADATA,
+        checkout_mode: "mercadopago_subscription",
+        subscription_id: subscription.id,
+        subscription_payment: true,
+        mercadopago_payment_id: String(payment.id),
+        mercadopago_preapproval_id: subscription.mpPreapprovalId,
+      },
+    });
+    orderId = created.id;
+  }
+
+  const orderRow = await getOrderById(orderId);
+  if (!orderRow) {
+    return { handled: false };
+  }
+
+  const metaPatch = mergeMpMetadata(orderRow, payment);
+  const creditResult = await creditApprovedOrder(orderId, orderRow, metaPatch);
+  await recordSubscriptionPayment({
+    companyId,
+    subscriptionId: subscription.id,
+    orderId,
+  });
+  await syncPaymentCardFromOrderMetadata(companyId, orderRow.metadata, payment);
+
+  return creditResult;
+}
+
 export async function routeMercadoPagoWebhook(
   paymentId: string,
 ): Promise<{ ok: boolean; skipped?: string; orderId?: string; result?: string }> {
@@ -297,6 +467,14 @@ export async function routeMercadoPagoWebhook(
 
   const order = await getOrderById(orderId);
   if (!order) {
+    const sub = await processSubscriptionMercadoPagoPayment(paymentId);
+    if (sub.handled) {
+      return {
+        ok: true,
+        orderId: sub.orderId,
+        result: sub.result ?? "subscription_payment",
+      };
+    }
     return { ok: true, skipped: "order_not_in_sms_orders" };
   }
 

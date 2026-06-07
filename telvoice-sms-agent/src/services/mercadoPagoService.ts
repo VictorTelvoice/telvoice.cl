@@ -430,3 +430,114 @@ export async function getMercadoPagoPayment(
 
   return data;
 }
+
+export type MercadoPagoPreapprovalRecord = {
+  id?: string;
+  status?: string;
+  external_reference?: string;
+  init_point?: string;
+  sandbox_init_point?: string;
+  payer_email?: string;
+  reason?: string;
+  auto_recurring?: {
+    transaction_amount?: number;
+    currency_id?: string;
+  };
+};
+
+export async function createMercadoPagoPreapproval(input: {
+  externalReference: string;
+  reason: string;
+  monthlyAmount: number;
+  payerEmail: string;
+  backUrl: string;
+  metadata?: Record<string, string>;
+}): Promise<{
+  preapproval_id: string | null;
+  checkout_url: string;
+  init_point: string | null;
+  sandbox_init_point: string | null;
+}> {
+  const token = env.mercadopago.accessToken;
+  if (!token) {
+    throw new AppError(
+      "MercadoPago no configurado (MERCADOPAGO_ACCESS_TOKEN).",
+      503,
+      "MP_NOT_CONFIGURED",
+    );
+  }
+
+  const payerEmail = resolvePayerEmail(input.payerEmail);
+  const body = {
+    reason: input.reason.slice(0, 256),
+    external_reference: input.externalReference,
+    payer_email: payerEmail,
+    auto_recurring: {
+      frequency: 1,
+      frequency_type: "months",
+      transaction_amount: Math.round(input.monthlyAmount),
+      currency_id: "CLP",
+    },
+    back_url: input.backUrl,
+    notification_url: `${env.publicAppUrl}/api/mercadopago/webhook`,
+    status: "pending",
+    metadata: input.metadata ?? {},
+  };
+
+  const res = await fetch(`${MP_API}/preapproval`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = (await res.json().catch(() => ({}))) as MercadoPagoPreapprovalRecord & {
+    message?: string;
+  };
+
+  if (!res.ok) {
+    console.error("[mercadoPagoService] preapproval error", res.status, data);
+    throw new AppError(
+      data.message ?? "No se pudo crear la suscripción en MercadoPago.",
+      502,
+      "MP_PREAPPROVAL_FAILED",
+    );
+  }
+
+  return {
+    preapproval_id: data.id ?? null,
+    checkout_url: checkoutRedirectUrl(data),
+    init_point: data.init_point ?? null,
+    sandbox_init_point: data.sandbox_init_point ?? null,
+  };
+}
+
+export async function getMercadoPagoPreapproval(
+  preapprovalId: string,
+): Promise<MercadoPagoPreapprovalRecord> {
+  const token = env.mercadopago.accessToken;
+  if (!token) {
+    throw new AppError("MercadoPago no configurado.", 503, "MP_NOT_CONFIGURED");
+  }
+
+  const res = await fetch(`${MP_API}/preapproval/${preapprovalId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const data = (await res.json().catch(() => ({}))) as MercadoPagoPreapprovalRecord & {
+    message?: string;
+  };
+
+  if (!res.ok) {
+    console.error("[mercadoPagoService] get preapproval error", res.status);
+    throw new AppError(
+      data.message ?? "No se pudo consultar la suscripción en MercadoPago.",
+      502,
+      "MP_PREAPPROVAL_FETCH_FAILED",
+    );
+  }
+
+  return data;
+}

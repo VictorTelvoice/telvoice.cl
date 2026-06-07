@@ -7,7 +7,9 @@ import {
   assertOrderBelongsToCompany,
   resolveMercadoPagoInitPoint,
   startClientPanelMercadoPagoCheckout,
+  startClientPanelMercadoPagoSubscription,
 } from "../services/mercadoPagoClientPanelService.js";
+import { resolveSmsPackageForCalculatorQuantity } from "../services/clientPanelBagCheckoutService.js";
 import type { AppPageContext } from "../views/app-ui/app-page-wrap.js";
 import { renderNoCompanyPage } from "../views/app-ui/app-page-wrap.js";
 import { wrapAppPage } from "../views/app-ui/app-page-wrap.js";
@@ -73,6 +75,66 @@ export async function postAppBuySmsMercadoPago(
   } catch (error) {
     const msg =
       error instanceof Error ? error.message : "No se pudo iniciar el pago";
+    res.redirect(`/app/buy-sms?error=${encodeURIComponent(msg)}`);
+  }
+}
+
+export async function postAppBuySmsMercadoPagoSubscribe(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const profile = req.userProfile;
+    if (!profile?.companyId) {
+      res.redirect("/app/buy-sms?error=Empresa%20no%20asociada");
+      return;
+    }
+    if (!canOperateClientPanel(profile.role)) {
+      res.redirect("/app/buy-sms?error=No%20tienes%20permiso%20para%20comprar");
+      return;
+    }
+    if (!isMercadoPagoConfigured()) {
+      res.redirect(
+        "/app/buy-sms?error=MercadoPago%20no%20est%C3%A1%20disponible.",
+      );
+      return;
+    }
+
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const company = await findCompanyById(profile.companyId);
+    if (!company) {
+      res.redirect("/app/buy-sms?error=Empresa%20no%20asociada");
+      return;
+    }
+
+    const packageId = await resolveBuySmsPackageId(body, company.country);
+    const rawQty = body.sms_quantity ?? body.smsQuantity;
+    const smsQuantity =
+      typeof rawQty === "number"
+        ? rawQty
+        : Number.parseInt(String(rawQty ?? ""), 10);
+    const resolved = await resolveSmsPackageForCalculatorQuantity(
+      Number.isFinite(smsQuantity) ? smsQuantity : 1000,
+      company.country,
+    );
+
+    const checkout = await startClientPanelMercadoPagoSubscription({
+      companyId: profile.companyId,
+      packageId: packageId || resolved.packageId,
+      smsQuantity: resolved.quotedQuantity,
+      monthlyAmount: resolved.totalWithIva,
+      createdBy: profile.profileId ?? profile.adminUserId ?? undefined,
+      payer: {
+        email: profile.email,
+        name: profile.fullName,
+        phone: null,
+      },
+    });
+
+    res.redirect(checkout.checkoutUrl);
+  } catch (error) {
+    const msg =
+      error instanceof Error ? error.message : "No se pudo iniciar la suscripción";
     res.redirect(`/app/buy-sms?error=${encodeURIComponent(msg)}`);
   }
 }
