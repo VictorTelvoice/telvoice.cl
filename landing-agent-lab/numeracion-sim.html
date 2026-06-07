@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html class="dark lab-theme" lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Planes de numeración SIM real en Chile: Starter, Pro y Power con SMS entrantes y salientes incluidos para validaciones autorizadas y automatización." />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Números SIM reales | Telvoice Lab</title>
+  <link rel="icon" href="../assets/telvoice-isotipo.png" type="image/png" sizes="any" />
+  <meta name="theme-color" content="#050814" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;family=Montserrat:wght@600;700;800&amp;display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#0052cc",
+            "lab-cyan": "#22d3ee",
+            "lab-purple": "#818cf8",
+          },
+          fontFamily: {
+            h1: ["Montserrat", "sans-serif"],
+            h2: ["Montserrat", "sans-serif"],
+            h3: ["Montserrat", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="../css/landing-agent-lab.css?v=20260716" />
+</head>
+<body class="font-body antialiased">
+  <div class="lab-bg-wrap" aria-hidden="true">
+    <div class="lab-bg-radial lab-bg-radial--1"></div>
+    <div class="lab-bg-radial lab-bg-radial--2"></div>
+    <div class="lab-bg-radial lab-bg-radial--3"></div>
+    <div class="lab-bg-grid"></div>
+  </div>
+
+  <div class="lab-content">
+    <nav class="lab-nav sticky top-0 z-50 w-full" aria-label="Navegación principal">
+      <div class="lab-shell flex justify-between items-center gap-4 py-4">
+        <a href="./" class="lab-logo-link flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-lab-cyan" aria-label="Telvoice Lab, ir al inicio">
+          <img src="../assets/telvoice-isotipo.png" alt="Telvoice" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" />
+          <span class="font-h3 font-bold tracking-tight lowercase">
+            <span class="lab-logo-word text-white">telvoice</span>
+          </span>
+        </a>
+        <ul class="hidden lg:flex gap-1 items-center">
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="./#como-funciona">Cómo funciona</a></li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="./#agente-telvoice">Agente</a></li>
+          <li class="lab-nav-dropdown">
+            <button type="button" class="lab-nav-link lab-nav-dropdown-toggle font-body text-sm rounded-full px-4 py-2" id="nav-casos-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-casos-menu">Casos de uso</button>
+            <ul class="lab-nav-dropdown-menu" id="nav-casos-menu" role="menu" aria-labelledby="nav-casos-toggle" hidden>
+              <li role="none"><a class="lab-nav-dropdown-link" href="./#casos-uso" role="menuitem">Ver todos</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="casos-de-uso/uso-individual-validaciones/" role="menuitem">Uso individual &amp; validaciones</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="casos-de-uso/ia-automatizacion/" role="menuitem">IA &amp; automatización</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="casos-de-uso/empresas-fintech-growth/" role="menuitem">Empresas, fintech &amp; growth</a></li>
+            </ul>
+          </li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="./#panel-api">Panel + API</a></li>
+          <li class="lab-nav-dropdown">
+            <button type="button" class="lab-nav-link lab-nav-dropdown-toggle font-body text-sm rounded-full px-4 py-2 is-active" id="nav-precios-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-precios-menu">Precios</button>
+            <ul class="lab-nav-dropdown-menu" id="nav-precios-menu" role="menu" aria-labelledby="nav-precios-toggle" hidden>
+              <li role="none"><a class="lab-nav-dropdown-link" href="./#calculadora" role="menuitem">Armar tu bolsa</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="numeracion-sim.html" role="menuitem" aria-current="page">Números SIM reales</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="planes-agente.html" role="menuitem">Planes Agente</a></li>
+            </ul>
+          </li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="./#faq">FAQ</a></li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="../ayuda/">Ayuda</a></li>
+        </ul>
+        <div class="flex items-center gap-2 shrink-0">
+          <a href="https://agent.telvoice.cl/login" class="lab-btn-primary lab-btn-nav hidden sm:inline-flex">Probar el agente</a>
+          <button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-white/15 text-white" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
+            <span class="material-symbols-outlined" id="menu-icon-open">menu</span>
+            <span class="material-symbols-outlined hidden" id="menu-icon-close">close</span>
+          </button>
+        </div>
+      </div>
+      <div id="mobile-panel" class="hidden lg:hidden border-t border-white/10 py-4 lab-shell">
+        <ul class="flex flex-col gap-1">
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="./#como-funciona">Cómo funciona</a></li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="./#agente-telvoice">Agente Telvoice</a></li>
+          <li class="lab-nav-dropdown lab-nav-dropdown--mobile">
+            <button type="button" class="lab-nav-dropdown-toggle block lab-nav-link w-full text-left py-3 rounded-xl" id="nav-casos-toggle-mobile" aria-expanded="false" aria-controls="nav-casos-menu-mobile">Casos de uso</button>
+            <ul class="lab-nav-dropdown-menu lab-nav-dropdown-menu--mobile" id="nav-casos-menu-mobile" hidden>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="./#casos-uso">Ver todos</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="casos-de-uso/uso-individual-validaciones/">Uso individual &amp; validaciones</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="casos-de-uso/ia-automatizacion/">IA &amp; automatización</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="casos-de-uso/empresas-fintech-growth/">Empresas, fintech &amp; growth</a></li>
+            </ul>
+          </li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="./#panel-api">Panel + API</a></li>
+          <li class="lab-nav-dropdown lab-nav-dropdown--mobile">
+            <button type="button" class="lab-nav-dropdown-toggle block lab-nav-link w-full text-left py-3 rounded-xl is-active" id="nav-precios-toggle-mobile" aria-expanded="false" aria-controls="nav-precios-menu-mobile">Precios</button>
+            <ul class="lab-nav-dropdown-menu lab-nav-dropdown-menu--mobile" id="nav-precios-menu-mobile" hidden>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="./#calculadora">Armar tu bolsa</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="numeracion-sim.html" aria-current="page">Números SIM reales</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="planes-agente.html">Planes Agente</a></li>
+            </ul>
+          </li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="./#faq">FAQ</a></li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="../ayuda/">Centro de ayuda</a></li>
+        </ul>
+        <a href="https://agent.telvoice.cl/login" class="lab-btn-primary w-full mt-3 text-center">Probar el agente</a>
+      </div>
+    </nav>
+
+    <main id="numeracion-sim" class="lab-sim-page">
+      <section class="lab-section lab-section--tight-top" aria-labelledby="sim-hero-title" tabindex="-1">
+        <div class="lab-section-inner lab-section-inner--precios">
+          <header class="lab-header-center">
+            <span class="lab-eyebrow">Numeración SIM real</span>
+            <h1 id="sim-hero-title" class="lab-section-title mt-3 text-[clamp(1.35rem,3.5vw,2rem)]">Números SIM reales en Chile para recibir y enviar SMS</h1>
+            <p class="lab-section-intro mt-4">Activa una numeración móvil real en Chile para recibir SMS, operar validaciones autorizadas, conectar automatizaciones y enviar mensajes salientes desde una plataforma empresarial.</p>
+            <div class="sim-intro-pills" aria-label="Características principales">
+              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">sim_card</span> SIM real en Chile</span>
+              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">sms</span> Recepción SMS</span>
+              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">send</span> SMS salientes incluidos</span>
+              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">verified_user</span> Validaciones autorizadas</span>
+              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">hub</span> API y Webhooks</span>
+            </div>
+            <p class="sim-support-text">Una solución Telvoice basada en infraestructura Telsim para empresas que necesitan números reales, trazabilidad y control operativo.</p>
+            <div class="agent-plans-hero__actions mt-8">
+              <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_sim_especialista_hero">Hablar con un especialista</a>
+              <a href="./#calculadora" class="lab-btn-secondary" data-track="click_ver_bolsas_sim_hero">Ver bolsas SMS</a>
+            </div>
+          </header>
+
+          <div class="sim-plans-grid">
+            <article class="sim-plan-card sim-plan-card--starter lab-glass-card">
+              <p class="sim-plan-name">Starter</p>
+              <span class="sim-plan-badge"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:0.9rem">send</span> 1.000 SMS salientes incluidos</span>
+              <p class="sim-plan-price">Desde $19.990 <span class="sim-plan-price-sub">/ mes</span></p>
+              <p class="sim-plan-price-sub">por número SIM real</p>
+              <p class="sim-plan-desc">Para usuarios, emprendedores y equipos pequeños que necesitan un número móvil real en Chile para recibir SMS y operar procesos autorizados sin usar un teléfono personal.</p>
+              <ul class="sim-plan-features">
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Número SIM real en Chile</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Recepción de SMS entrantes</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> 1.000 SMS salientes mensuales</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Visualización de mensajes en plataforma</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Notificaciones en tiempo real</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Uso en cuentas propias y procesos autorizados</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Soporte técnico vía ticket</li>
+              </ul>
+              <div class="sim-plan-learn">
+                <p class="sim-plan-learn-label">Saber más</p>
+                <p class="sim-plan-learn-text">Usuarios individuales, validaciones autorizadas y operación básica.</p>
+              </div>
+              <a href="https://agent.telvoice.cl/login" class="sim-plan-cta sim-plan-cta--primary" data-sim-plan="Starter" data-track="click_sim_plan_starter">Activar Starter</a>
+            </article>
+
+            <article class="sim-plan-card sim-plan-card--featured sim-plan-card--pro lab-glass-card">
+              <span class="sim-plan-ribbon sim-plan-ribbon--popular">Más popular</span>
+              <p class="sim-plan-name">Pro</p>
+              <span class="sim-plan-badge"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:0.9rem">send</span> 2.000 SMS salientes incluidos</span>
+              <p class="sim-plan-price">Desde $39.990 <span class="sim-plan-price-sub">/ mes</span></p>
+              <p class="sim-plan-price-sub">por número SIM real</p>
+              <p class="sim-plan-desc">Para equipos de IA, automatizadores, DevOps y empresas que necesitan recibir SMS, conectar eventos y enviar mensajes desde un número real.</p>
+              <ul class="sim-plan-features">
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Todo lo incluido en Starter</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> 2.000 SMS salientes mensuales</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Acceso a API y Webhooks</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Integración con TelegramBot</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Automatizaciones SMS autorizadas</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Alertas y eventos en tiempo real</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Historial de mensajes</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Soporte técnico vía ticket y chat</li>
+              </ul>
+              <div class="sim-plan-learn">
+                <p class="sim-plan-learn-label">Saber más</p>
+                <p class="sim-plan-learn-text">Equipos IA, DevOps, automatizadores y operaciones digitales.</p>
+              </div>
+              <a href="https://agent.telvoice.cl/login" class="sim-plan-cta sim-plan-cta--primary" data-sim-plan="Pro" data-track="click_sim_plan_pro">Activar Pro</a>
+            </article>
+
+            <article class="sim-plan-card sim-plan-card--power lab-glass-card">
+              <span class="sim-plan-ribbon sim-plan-ribbon--power">Potencia total</span>
+              <p class="sim-plan-name">Power</p>
+              <span class="sim-plan-badge"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:0.9rem">send</span> 4.000 SMS salientes incluidos</span>
+              <p class="sim-plan-price">Desde $99.990 <span class="sim-plan-price-sub">/ mes</span></p>
+              <p class="sim-plan-price-sub">por número SIM real</p>
+              <p class="sim-plan-desc">Para empresas, fintech, plataformas, growth y operaciones críticas que necesitan mayor capacidad, control y soporte prioritario.</p>
+              <ul class="sim-plan-features">
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Todo lo incluido en Pro</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> 4.000 SMS salientes mensuales</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Seguridad y control empresarial</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Integraciones personalizadas</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Webhooks avanzados</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Priorización operativa</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Soporte prioritario</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Revisión de caso de uso antes de activación</li>
+              </ul>
+              <div class="sim-plan-learn">
+                <p class="sim-plan-learn-label">Saber más</p>
+                <p class="sim-plan-learn-text">Fintech, corporativos, plataformas y operación crítica.</p>
+              </div>
+              <a href="https://agent.telvoice.cl/login" class="sim-plan-cta sim-plan-cta--primary" data-sim-plan="Power" data-track="click_sim_plan_power">Activar Power</a>
+            </article>
+          </div>
+
+          <div class="mt-12 md:mt-16">
+            <h2 class="lab-section-title text-center text-xl">¿Qué estás contratando?</h2>
+            <p class="lab-section-intro mt-4 text-center max-w-3xl mx-auto">Cada plan incluye una numeración SIM real en Chile, recepción de SMS entrantes y una cantidad mensual de SMS salientes. Esta solución está pensada para empresas, equipos técnicos y automatizadores que necesitan operar comunicaciones móviles reales sin depender de un teléfono personal.</p>
+            <div class="sim-explainer-grid">
+              <div class="sim-explainer-card lab-glass-card">
+                <span class="material-symbols-outlined" aria-hidden="true">sim_card</span>
+                <h3 class="text-base font-semibold text-white mt-3">Número SIM real</h3>
+                <p>Operación sobre infraestructura SIM real, no numeración VoIP genérica.</p>
+              </div>
+              <div class="sim-explainer-card lab-glass-card">
+                <span class="material-symbols-outlined" aria-hidden="true">sms</span>
+                <h3 class="text-base font-semibold text-white mt-3">Recepción SMS</h3>
+                <p>Recibe mensajes, respuestas y códigos de validación en procesos autorizados.</p>
+              </div>
+              <div class="sim-explainer-card lab-glass-card">
+                <span class="material-symbols-outlined" aria-hidden="true">send</span>
+                <h3 class="text-base font-semibold text-white mt-3">SMS salientes incluidos</h3>
+                <p>Cada plan incluye una cantidad mensual de mensajes salientes para pruebas, alertas, respuestas o automatizaciones.</p>
+              </div>
+              <div class="sim-explainer-card lab-glass-card">
+                <span class="material-symbols-outlined" aria-hidden="true">hub</span>
+                <h3 class="text-base font-semibold text-white mt-3">Automatización</h3>
+                <p>Desde el plan Pro puedes conectar eventos mediante API, Webhooks o TelegramBot.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="sim-agent-block lab-glass-card">
+            <h2 class="lab-section-title text-xl">Potencia tu número SIM real con un Agente Telvoice</h2>
+            <p class="mt-3 text-slate-400 leading-relaxed max-w-3xl">La numeración SIM real te entrega el canal. El Agente Telvoice agrega inteligencia conversacional para interpretar mensajes, recibir órdenes, consultar saldos, enviar alertas y conectar tus SMS con procesos internos.</p>
+            <div class="sim-compare-grid">
+              <div class="sim-compare-col lab-glass-card">
+                <h3 class="text-sm font-bold text-lab-cyan">Numeración SIM real</h3>
+                <ul>
+                  <li>Recibe SMS</li>
+                  <li>Envía SMS salientes</li>
+                  <li>Entrega acceso a plataforma</li>
+                  <li>Permite webhooks en planes avanzados</li>
+                </ul>
+              </div>
+              <div class="sim-compare-col lab-glass-card">
+                <h3 class="text-sm font-bold text-lab-cyan">Agente Telvoice</h3>
+                <ul>
+                  <li>Interpreta mensajes</li>
+                  <li>Responde consultas</li>
+                  <li>Ejecuta comandos autorizados</li>
+                  <li>Automatiza flujos</li>
+                  <li>Genera reportes y alertas</li>
+                </ul>
+              </div>
+            </div>
+            <div class="mt-6 text-center md:text-left">
+              <a href="planes-agente.html" class="lab-btn-primary" data-track="click_ver_planes_agente_sim">Ver planes del Agente Telvoice</a>
+            </div>
+          </div>
+
+          <div class="sim-responsible-block lab-glass-card">
+            <h2 class="lab-section-title text-xl">Uso autorizado y operación empresarial</h2>
+            <p class="mt-3 text-slate-400 leading-relaxed">La numeración SIM real de Telvoice está diseñada para cuentas propias, procesos autorizados, comunicaciones empresariales, validaciones permitidas y automatizaciones legítimas. No está destinada a suplantación, abuso, spam, evasión de controles ni recepción de códigos de cuentas de terceros.</p>
+            <ul>
+              <li><span class="material-symbols-outlined" aria-hidden="true">info</span> Activación sujeta a validación comercial.</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">info</span> Disponibilidad de numeración según stock operativo.</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">info</span> Uso permitido solo en cuentas propias o procesos autorizados.</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">info</span> Consumo adicional de SMS se cotiza por separado.</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">info</span> Integraciones avanzadas pueden requerir setup inicial.</li>
+            </ul>
+          </div>
+
+          <div class="sim-final-cta">
+            <h2 class="lab-section-title text-xl">Activa tu número SIM real en Chile con Telvoice</h2>
+            <p class="lab-section-intro mt-3 max-w-2xl mx-auto">Elige un plan, recibe tu numeración y comienza a operar SMS entrantes, SMS salientes y automatizaciones desde una plataforma diseñada para empresas.</p>
+            <div class="sim-final-cta-actions">
+              <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_sim_especialista">Hablar con un especialista</a>
+              <a href="./#calculadora" class="lab-btn-secondary" data-track="click_ver_bolsas_desde_sim">Ver bolsas SMS</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="lab-footer" role="contentinfo">
+      <div class="lab-shell pt-14 pb-6">
+        <div class="grid grid-cols-1 gap-12 border-b border-white/10 pb-12 md:grid-cols-2 lg:grid-cols-12 lg:gap-10">
+          <div class="lg:col-span-4">
+            <a href="./" class="inline-flex items-center gap-2" aria-label="Telvoice Lab, ir al inicio">
+              <img src="../assets/telvoice-isotipo.png" alt="" width="40" height="40" class="h-10 w-10 object-contain" aria-hidden="true" />
+              <span class="font-bold lowercase text-white lab-logo-word">telvoice</span>
+            </a>
+            <p class="mt-4 max-w-sm text-sm leading-relaxed text-slate-400">
+              Operación SMS empresarial con agente telco y panel web. Numeración propia Telvoice, campañas asistidas y canal SMS dedicado para tu operación.
+            </p>
+          </div>
+          <div class="grid grid-cols-2 gap-10 sm:grid-cols-3 md:col-span-2 lg:col-span-8 lg:grid-cols-3">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Producto</p>
+              <ul class="mt-4 space-y-3 text-sm">
+                <li><a href="./#agente-telvoice">Agente Telvoice</a></li>
+                <li><a href="planes-agente.html">Planes del agente</a></li>
+                <li><a href="numeracion-sim.html" aria-current="page">Números SIM reales</a></li>
+                <li><a href="./#calculadora">Bolsas SMS</a></li>
+                <li><a href="./#panel-api">Panel + API</a></li>
+              </ul>
+            </div>
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Recursos</p>
+              <ul class="mt-4 space-y-3 text-sm">
+                <li><a href="./#casos-uso">Casos de uso</a></li>
+                <li><a href="./#faq">FAQ</a></li>
+                <li><a href="../ayuda/">Centro de ayuda</a></li>
+              </ul>
+            </div>
+            <div class="col-span-2 sm:col-span-1">
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Legal</p>
+              <ul class="mt-4 space-y-3 text-sm">
+                <li><a href="../terminos-y-condiciones/">Términos y condiciones</a></li>
+                <li><a href="../politica-de-privacidad/">Política de privacidad</a></li>
+                <li><a href="../uso-responsable/">Uso responsable</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="pt-8 text-sm text-slate-500">
+          <p>© 2026 Telvoice.cl. Todos los derechos reservados.</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var toggle = document.getElementById("menu-toggle");
+      var panel = document.getElementById("mobile-panel");
+      if (toggle && panel) {
+        toggle.addEventListener("click", function () {
+          var open = panel.classList.toggle("hidden");
+          toggle.setAttribute("aria-expanded", open ? "false" : "true");
+          document.getElementById("menu-icon-open").classList.toggle("hidden", !open);
+          document.getElementById("menu-icon-close").classList.toggle("hidden", open);
+        });
+      }
+
+      function setDropdownOpen(toggleEl, menu, open) {
+        if (!toggleEl || !menu) return;
+        toggleEl.setAttribute("aria-expanded", open ? "true" : "false");
+        menu.hidden = !open;
+        toggleEl.closest(".lab-nav-dropdown").classList.toggle("is-open", open);
+      }
+
+      document.querySelectorAll(".lab-nav-dropdown").forEach(function (wrap) {
+        var t = wrap.querySelector(".lab-nav-dropdown-toggle");
+        var menu = wrap.querySelector(".lab-nav-dropdown-menu");
+        if (!t || !menu) return;
+        t.addEventListener("click", function () {
+          var willOpen = !wrap.classList.contains("is-open");
+          document.querySelectorAll(".lab-nav-dropdown.is-open").forEach(function (other) {
+            if (other !== wrap) {
+              setDropdownOpen(other.querySelector(".lab-nav-dropdown-toggle"), other.querySelector(".lab-nav-dropdown-menu"), false);
+            }
+          });
+          setDropdownOpen(t, menu, willOpen);
+        });
+      });
+
+      document.addEventListener("click", function (e) {
+        if (e.target.closest(".lab-nav-dropdown")) return;
+        document.querySelectorAll(".lab-nav-dropdown.is-open").forEach(function (wrap) {
+          setDropdownOpen(wrap.querySelector(".lab-nav-dropdown-toggle"), wrap.querySelector(".lab-nav-dropdown-menu"), false);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
