@@ -1359,6 +1359,15 @@
           var menu = wrap.querySelector(".site-nav-dropdown-menu");
           if (t && menu) setSiteNavDropdownOpen(t, menu, false);
         });
+        document.querySelectorAll(".lab-nav-dropdown.is-open").forEach(function (wrap) {
+          var t = wrap.querySelector(".lab-nav-dropdown-toggle");
+          var menu = wrap.querySelector(".lab-nav-dropdown-menu");
+          if (t && menu) {
+            t.setAttribute("aria-expanded", "false");
+            menu.setAttribute("hidden", "");
+            wrap.classList.remove("is-open");
+          }
+        });
       });
     });
 

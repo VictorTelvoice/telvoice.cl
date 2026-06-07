@@ -68,7 +68,8 @@
           <li class="lab-nav-dropdown">
             <button type="button" class="lab-nav-link lab-nav-dropdown-toggle font-body text-sm rounded-full px-4 py-2 is-active" id="nav-precios-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-precios-menu">Precios</button>
             <ul class="lab-nav-dropdown-menu" id="nav-precios-menu" role="menu" aria-labelledby="nav-precios-toggle" hidden>
-              <li role="none"><a class="lab-nav-dropdown-link" href="./#calculadora" role="menuitem">Armar tu bolsa</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="./#calculadora" role="menuitem" data-precios-nav="bolsas">Armar tu bolsa</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="./index.html#numeracion-sim" role="menuitem" data-precios-nav="sim" data-track="click_nav_numeros_sim">Números SIM reales</a></li>
               <li role="none"><a class="lab-nav-dropdown-link" href="planes-agente.html" role="menuitem" aria-current="page">Planes Agente</a></li>
             </ul>
           </li>
@@ -100,7 +101,8 @@
           <li class="lab-nav-dropdown lab-nav-dropdown--mobile">
             <button type="button" class="lab-nav-dropdown-toggle block lab-nav-link w-full text-left py-3 rounded-xl" id="nav-precios-toggle-mobile" aria-expanded="false" aria-controls="nav-precios-menu-mobile">Precios</button>
             <ul class="lab-nav-dropdown-menu lab-nav-dropdown-menu--mobile" id="nav-precios-menu-mobile" hidden>
-              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="./#calculadora">Armar tu bolsa</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="./#calculadora" data-precios-nav="bolsas">Armar tu bolsa</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="./index.html#numeracion-sim" data-precios-nav="sim" data-track="click_nav_numeros_sim_mobile">Números SIM reales</a></li>
               <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="planes-agente.html" aria-current="page">Planes Agente</a></li>
             </ul>
           </li>
@@ -521,7 +523,7 @@
               <ul class="mt-4 space-y-3 text-sm">
                 <li><a href="./#agente-telvoice">Agente Telvoice</a></li>
                 <li><a href="planes-agente.html" aria-current="page">Planes del agente</a></li>
-                <li><a href="./#numeracion">Números reales</a></li>
+                <li><a href="./index.html#numeracion-sim">Números SIM reales</a></li>
                 <li><a href="./#precios">Bolsas SMS</a></li>
                 <li><a href="./#panel-api">Panel + API</a></li>
               </ul>
