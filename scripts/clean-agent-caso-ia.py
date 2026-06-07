@@ -13,9 +13,9 @@ from rembg import remove
 from scipy import ndimage
 
 CANVAS = 1024
-SRC = ROOT / "assets/telvoice-agent-caso-ia-source.png"
-OUT_PNG = ROOT / "assets/telvoice-agent-caso-ia-hero.png"
-OUT_WEBP = ROOT / "assets/telvoice-agent-caso-ia-hero.webp"
+SRC = ROOT / "assets/telvoice-agent-caso-ia-y-automatizacion-source.png"
+OUT_PNG = ROOT / "assets/telvoice-agent-caso-ia-y-automatizacion-hero.png"
+OUT_WEBP = ROOT / "assets/telvoice-agent-caso-ia-y-automatizacion-hero.webp"
 
 
 def flood_border_bg(spread: np.ndarray, avg: np.ndarray, spread_max: float, avg_min: float) -> np.ndarray:
