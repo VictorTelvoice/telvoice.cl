@@ -6,6 +6,10 @@
     return document.body.getAttribute("data-hc-root") || "../";
   }
 
+  function labPath() {
+    return root() + "landing-agent-lab/";
+  }
+
   function esc(s) {
     if (s == null) return "";
     return String(s)
@@ -39,66 +43,76 @@
     return count + " guías";
   }
 
-  /** Mismo contenedor que casos de uso (section-inner) */
-  var HC_SHELL = "section-inner py-stack-lg md:py-stack-xl";
-  /** Grilla centrada como .casos-grid */
-  var HC_GRID =
-    "mx-auto mt-8 grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3 md:gap-8";
-  var HC_GRID_TWO =
-    "mx-auto mt-8 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 md:gap-8";
+  var HC_SHELL = "lab-shell lab-section-inner py-10 md:py-14";
+  var HC_GRID = "hc-grid mx-auto mt-8 grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3 md:gap-8";
+  var HC_GRID_TWO = "hc-grid mx-auto mt-8 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 md:gap-8";
+
+  function renderBgWrap() {
+    return (
+      '<div class="lab-bg-wrap" aria-hidden="true">' +
+      '<div class="lab-bg-radial lab-bg-radial--1"></div>' +
+      '<div class="lab-bg-radial lab-bg-radial--2"></div>' +
+      '<div class="lab-bg-radial lab-bg-radial--3"></div>' +
+      '<div class="lab-bg-grid"></div></div>'
+    );
+  }
 
   function renderHeader(active) {
     var r = root();
+    var lab = labPath();
+    var activeClass = " is-active";
     return (
-      '<nav class="bg-surface/90 backdrop-blur-md sticky top-0 z-50 border-b border-outline-variant/30 w-full">' +
-      '<div class="flex justify-between items-center gap-4 py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 lg:pl-28 lg:pr-10 max-w-container-max mx-auto">' +
+      '<nav class="lab-nav sticky top-0 z-50 w-full" aria-label="Navegación principal">' +
+      '<div class="lab-shell flex justify-between items-center gap-4 py-4">' +
       '<a href="' +
-      r +
-      '" class="flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" aria-label="telvoice.cl, ir al inicio">' +
+      lab +
+      '" class="lab-logo-link flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-lab-cyan" aria-label="Telvoice, ir al inicio">' +
       '<img src="' +
       r +
-      'assets/telvoice-isotipo.png" alt="" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" aria-hidden="true" />' +
-      '<span class="font-h3 text-h3 font-bold tracking-tight lowercase inline-flex items-baseline">' +
-      '<span class="text-black">telvoice</span><span class="font-h3 text-body-lg font-bold tracking-tight hero-grad-text">.cl</span></span></a>' +
+      'assets/telvoice-isotipo.png" alt="Telvoice" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" />' +
+      '<span class="font-h3 font-bold tracking-tight lowercase"><span class="lab-logo-word text-white">telvoice</span></span></a>' +
       '<ul class="hidden lg:flex gap-1 items-center">' +
-      '<li><a class="font-body-md text-body-md rounded-full px-4 py-2 transition-colors ' +
-      (active === "home"
-        ? "text-primary bg-surface-container-low"
-        : "text-on-surface-variant hover:text-primary hover:bg-surface-container-low") +
+      '<li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2' +
+      (active === "home" ? activeClass : "") +
       '" href="' +
       r +
       'ayuda/">Centro de ayuda</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
-      r +
-      '#precios">Precios</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
-      r +
+      '<li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="' +
+      lab +
+      '#calculadora">Precios</a></li>' +
+      '<li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="' +
+      lab +
       '#casos-uso">Casos de uso</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
-      r +
-      '#contacto">Contacto</a></li>' +
+      '<li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="' +
+      lab +
+      '#faq">FAQ</a></li>' +
       "</ul>" +
-      '<div class="nav-actions flex items-center gap-2 shrink-0">' +
-      '<a class="nav-sales-btn hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm font-semibold" href="' +
+      '<div class="flex items-center gap-2 shrink-0">' +
+      '<a class="lab-btn-primary lab-btn-nav hidden sm:inline-flex" href="' +
       esc(HC.portalUrl) +
       '" target="_blank" rel="noopener noreferrer">Ir al portal</a>' +
-      '<button type="button" id="hc-menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant/60 text-on-background" aria-expanded="false" aria-controls="hc-mobile-panel" aria-label="Abrir menú">' +
+      '<button type="button" id="hc-menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-white/15 text-white" aria-expanded="false" aria-controls="hc-mobile-panel" aria-label="Abrir menú">' +
       '<span class="material-symbols-outlined" id="hc-menu-open">menu</span>' +
       '<span class="material-symbols-outlined hidden" id="hc-menu-close">close</span></button>' +
       "</div></div>" +
-      '<div id="hc-mobile-panel" class="hidden lg:hidden border-t border-outline-variant/30 bg-surface/95 backdrop-blur-md py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 max-w-container-max mx-auto">' +
+      '<div id="hc-mobile-panel" class="hidden lg:hidden border-t border-white/10 py-4 lab-shell">' +
       '<ul class="flex flex-col gap-1">' +
-      '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
+      '<li><a class="block lab-nav-link py-3 rounded-xl' +
+      (active === "home" ? activeClass : "") +
+      '" href="' +
       r +
       'ayuda/">Centro de ayuda</a></li>' +
-      '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
-      r +
-      '#precios">Precios</a></li>' +
-      '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
-      r +
-      '#contacto">Contacto</a></li>' +
+      '<li><a class="block lab-nav-link py-3 rounded-xl" href="' +
+      lab +
+      '#calculadora">Precios</a></li>' +
+      '<li><a class="block lab-nav-link py-3 rounded-xl" href="' +
+      lab +
+      '#casos-uso">Casos de uso</a></li>' +
+      '<li><a class="block lab-nav-link py-3 rounded-xl" href="' +
+      lab +
+      '#faq">FAQ</a></li>' +
       "</ul>" +
-      '<a class="mt-2 block w-full rounded-full bg-primary py-3 text-center font-body-md font-semibold text-on-primary hover:bg-surface-tint" href="' +
+      '<a class="lab-btn-primary w-full mt-3 text-center" href="' +
       esc(HC.portalUrl) +
       '" target="_blank" rel="noopener noreferrer">Ir al portal</a>' +
       "</div></nav>"
@@ -107,72 +121,61 @@
 
   function renderFooter() {
     var r = root();
+    var lab = labPath();
     return (
-      '<footer class="bg-primary text-on-primary" role="contentinfo">' +
-      '<div class="max-w-container-max mx-auto px-4 sm:px-margin-page pt-14 pb-6">' +
-      '<div class="grid grid-cols-1 gap-12 border-b border-on-primary/20 pb-12 md:grid-cols-2 lg:grid-cols-12 lg:gap-10">' +
+      '<footer class="lab-footer" role="contentinfo">' +
+      '<div class="lab-shell pt-14 pb-6">' +
+      '<div class="grid grid-cols-1 gap-12 border-b border-white/10 pb-12 md:grid-cols-2 lg:grid-cols-12 lg:gap-10">' +
       '<div class="lg:col-span-4">' +
       '<a href="' +
-      r +
-      '" class="inline-flex items-center gap-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary" aria-label="telvoice.cl, ir al inicio">' +
+      lab +
+      '" class="inline-flex items-center gap-2" aria-label="Telvoice, ir al inicio">' +
       '<img src="' +
       r +
       'assets/telvoice-isotipo.png" alt="" width="40" height="40" class="h-10 w-10 object-contain" aria-hidden="true" decoding="async" />' +
-      '<span class="font-h3 text-h3 font-bold tracking-tight lowercase inline-flex items-baseline text-on-primary">' +
-      '<span>telvoice</span><span class="font-h3 text-body-lg font-bold leading-none">.cl</span></span></a>' +
-      '<p class="mt-4 max-w-sm font-body-md text-body-md leading-relaxed text-on-primary/85">SMS masivos para empresas en Chile: bolsas prepago, precios por volumen, pago online y API.</p>' +
-      '<div class="mt-6 flex flex-wrap gap-3">' +
-      '<a href="' +
-      r +
-      '#calculadora" class="inline-flex items-center justify-center rounded-full bg-on-primary px-5 py-2.5 font-body-md text-body-md font-semibold text-primary shadow-sm transition hover:bg-primary-fixed hover:text-on-primary-fixed">Calcular precio</a>' +
-      '<a href="' +
-      esc(HC.portalUrl) +
-      '" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-full border-2 border-on-primary/50 bg-transparent px-5 py-2.5 font-body-md text-body-md font-semibold text-on-primary transition hover:border-on-primary hover:bg-on-primary/10">Ir al portal</a>' +
-      "</div></div>" +
+      '<span class="font-bold lowercase text-white lab-logo-word">telvoice</span></a>' +
+      '<p class="mt-4 max-w-sm text-sm leading-relaxed text-slate-400">Tutoriales y guías para usar el portal cliente Telvoice: envío de SMS, reportes DLR y gestión de cuenta.</p>' +
+      "</div>" +
       '<div class="grid grid-cols-2 gap-10 sm:grid-cols-3 md:col-span-2 lg:col-span-8 lg:grid-cols-3">' +
-      '<div><p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Telvoice.cl</p><ul class="mt-4 space-y-3">' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      '#inicio">SMS masivos Chile</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      '#precios">Bolsas SMS</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      '#api">API SMS</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      '#empresas">Empresas</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      '#contacto">Contacto</a></li></ul></div>' +
-      '<div><p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Recursos</p><ul class="mt-4 space-y-3">' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      '#calculadora">Calculadora</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      '#casos-uso">Casos de uso</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
+      '<div><p class="text-xs font-bold uppercase tracking-wider text-slate-500">Producto</p><ul class="mt-4 space-y-3 text-sm">' +
+      '<li><a href="' +
+      lab +
+      '#agente-telvoice">Agente Telvoice</a></li>' +
+      '<li><a href="' +
+      lab +
+      'planes-agente.html">Planes del agente</a></li>' +
+      '<li><a href="' +
+      lab +
+      '#numeracion">Números reales</a></li>' +
+      '<li><a href="' +
+      lab +
+      '#calculadora">Bolsas SMS</a></li></ul></div>' +
+      '<div><p class="text-xs font-bold uppercase tracking-wider text-slate-500">Recursos</p><ul class="mt-4 space-y-3 text-sm">' +
+      '<li><a href="' +
       r +
       'ayuda/">Centro de ayuda</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
+      '<li><a href="' +
+      lab +
+      '#casos-uso">Casos de uso</a></li>' +
+      '<li><a href="' +
+      lab +
+      '#faq">FAQ</a></li>' +
+      '<li><a href="' +
       esc(HC.portalUrl) +
       '" target="_blank" rel="noopener noreferrer">Portal cliente</a></li></ul></div>' +
-      '<div class="col-span-2 sm:col-span-1"><p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Legal</p><ul class="mt-4 space-y-3">' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
+      '<div class="col-span-2 sm:col-span-1"><p class="text-xs font-bold uppercase tracking-wider text-slate-500">Legal</p><ul class="mt-4 space-y-3 text-sm">' +
+      '<li><a href="' +
       r +
       'terminos-y-condiciones/">Términos y condiciones</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
+      '<li><a href="' +
       r +
       'politica-de-privacidad/">Política de privacidad</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
+      '<li><a href="' +
       r +
       'uso-responsable/">Uso responsable</a></li></ul></div></div></div>' +
       '<div class="flex flex-col gap-4 pt-8 sm:flex-row sm:items-center sm:justify-between">' +
-      '<p class="font-body-sm text-body-sm text-on-primary/65">© 2026 Telvoice.cl. Todos los derechos reservados.</p>' +
-      '<p class="font-body-sm text-body-sm text-on-primary/55">Mensajería empresarial · Chile</p>' +
-      "</div></div></footer>"
+      '<p class="text-sm text-slate-500">© 2026 Telvoice.cl. Todos los derechos reservados.</p>' +
+      '<p class="text-sm text-slate-600">Centro de ayuda · Chile</p></div></div></footer>'
     );
   }
 
@@ -184,34 +187,34 @@
 
   function renderFaqItem(item) {
     return (
-      '<details class="faq-details group rounded-2xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm open:border-primary/25 open:shadow-md">' +
-      '<summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left font-body-lg text-body-lg font-semibold text-on-background transition hover:bg-surface-container-low/80 sm:px-6 sm:py-5">' +
+      '<details class="hc-faq-details group">' +
+      '<summary class="hc-faq-summary">' +
       "<span>" +
       esc(item.question) +
-      '</span><span class="faq-chevron material-symbols-outlined shrink-0 text-on-surface-variant transition-transform duration-200" aria-hidden="true">add</span></summary>' +
-      '<div class="border-t border-outline-variant/40 px-5 pb-5 pt-0 sm:px-6 sm:pb-6">' +
-      '<div class="pt-4 font-body-md text-body-md leading-relaxed text-on-surface-variant">' +
+      '</span><span class="material-symbols-outlined hc-faq-chevron shrink-0" aria-hidden="true">add</span></summary>' +
+      '<div class="hc-faq-body">' +
+      '<div class="hc-faq-answer">' +
       item.answer +
       "</div></div></details>"
     );
   }
 
   function renderFaqSections() {
-    var r = root();
+    var lab = labPath();
     return (HC.faqSections || [])
       .map(function (sec) {
         var items = (sec.items || []).map(renderFaqItem).join("");
         return (
-          '<section class="faq-section-group" aria-labelledby="faq-sec-' +
+          '<section class="hc-faq-group" aria-labelledby="faq-sec-' +
           esc(sec.id) +
           '">' +
           '<h2 id="faq-sec-' +
           esc(sec.id) +
-          '" class="font-h3 text-h3 text-on-background">' +
+          '" class="lab-section-title text-xl md:text-2xl">' +
           esc(sec.title) +
           "</h2>" +
           (sec.description
-            ? '<p class="mt-2 font-body-md text-body-md text-on-surface-variant leading-relaxed">' +
+            ? '<p class="mt-2 text-sm text-slate-400 leading-relaxed">' +
               esc(sec.description) +
               "</p>"
             : "") +
@@ -221,36 +224,34 @@
         );
       })
       .join("") +
-      '<p class="pt-4 text-center font-body-md text-body-md text-on-surface-variant">¿Quieres comprar una bolsa o cotizar? Visita <a href="' +
-      r +
-      '#precios" class="font-semibold text-primary hover:underline">Precios</a> o <a href="' +
-      r +
-      '#contacto" class="font-semibold text-primary hover:underline">Contacto</a>.</p>';
+      '<p class="pt-4 text-center text-sm text-slate-400">¿Quieres comprar una bolsa o cotizar? Visita <a href="' +
+      lab +
+      '#calculadora" class="font-semibold text-lab-cyan hover:underline">Precios</a> o el <a href="' +
+      lab +
+      '" class="font-semibold text-lab-cyan hover:underline">Telvoice Lab</a>.</p>';
   }
 
   function renderCard(opts) {
     var badge = opts.meta
-      ? '<span class="shrink-0 rounded-full bg-primary/10 px-2.5 py-0.5 font-label-caps text-label-caps font-bold uppercase tracking-wider text-primary">' +
-        esc(opts.meta) +
-        "</span>"
+      ? '<span class="hc-card-badge shrink-0">' + esc(opts.meta) + "</span>"
       : "";
     return (
       '<a href="' +
       esc(opts.href) +
-      '" class="ui-card group flex h-full flex-col rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-6 no-underline text-inherit transition hover:-translate-y-0.5">' +
+      '" class="hc-card lab-glass-card group">' +
       '<div class="mb-4 flex items-start justify-between gap-3">' +
-      '<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary" aria-hidden="true">' +
+      '<div class="hc-card-icon" aria-hidden="true">' +
       '<span class="material-symbols-outlined text-[1.5rem]">' +
       esc(opts.icon || "article") +
       "</span></div>" +
       badge +
       "</div>" +
-      '<h3 class="font-h3 text-h3 text-on-background">' +
+      '<h3 class="font-h3 text-lg font-semibold text-white">' +
       esc(opts.title) +
       "</h3>" +
-      '<p class="mt-3 flex-1 font-body-md text-body-md text-on-surface-variant leading-relaxed">' +
+      '<p class="mt-3 flex-1 text-sm text-slate-400 leading-relaxed">' +
       esc(opts.description) +
-      '</p><span class="mt-5 inline-flex items-center gap-1 font-body-md text-body-md font-semibold text-primary">Ver guía <span class="material-symbols-outlined text-lg transition-transform group-hover:translate-x-0.5" aria-hidden="true">arrow_forward</span></span></a>'
+      '</p><span class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-lab-cyan">Ver guía <span class="material-symbols-outlined text-lg transition-transform group-hover:translate-x-0.5" aria-hidden="true">arrow_forward</span></span></a>'
     );
   }
 
@@ -269,11 +270,16 @@
   }
 
   function mountShell(active) {
-    document.body.className =
-      "bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col";
+    document.documentElement.className = "dark lab-theme";
+    document.body.className = "font-body antialiased";
     document.body.insertAdjacentHTML(
       "afterbegin",
-      renderHeader(active) + '<main class="flex-1 w-full" id="hc-main"></main>' + renderFooter()
+      renderBgWrap() +
+        '<div class="lab-content">' +
+        renderHeader(active) +
+        '<main class="lab-section lab-section--tight-top" id="hc-main"></main>' +
+        renderFooter() +
+        "</div>"
     );
     bindMobileNav();
     if (!document.querySelector("script[data-tva-loader]")) {
@@ -302,6 +308,7 @@
 
   window.HC_UTILS = {
     root: root,
+    labPath: labPath,
     esc: esc,
     articleUrl: articleUrl,
     categoryUrl: categoryUrl,

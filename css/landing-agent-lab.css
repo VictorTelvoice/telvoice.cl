@@ -3257,6 +3257,14 @@ html.lab-theme body {
   transition: transform 0.2s;
 }
 
+.lab-theme .faq-more[hidden] {
+  display: none;
+}
+
+.lab-theme #faq-show-more {
+  margin-top: 0.5rem;
+}
+
 /* Modal checkout — mantiene legibilidad clara */
 .lab-theme .modal-backdrop {
   position: fixed;

@@ -36,7 +36,7 @@
       },
     };
   </script>
-  <link rel="stylesheet" href="../css/landing-agent-lab.css?v=20260711" />
+  <link rel="stylesheet" href="../css/landing-agent-lab.css?v=20260713" />
 </head>
 <body class="font-body antialiased">
   <div class="lab-bg-wrap" aria-hidden="true">
@@ -446,7 +446,7 @@
             <span class="lab-eyebrow">Numeración Telvoice</span>
             <h2 id="numeracion-titulo" class="lab-section-title mt-4">Deja de depender de un celular físico para gestionar los SMS de tu empresa</h2>
             <p class="lab-section-intro">
-              Recibe SMS, códigos 2FA autorizados y respuestas de clientes desde una numeración real. Centraliza la gestión en tu panel, Telegram o flujos conectados por API, sin que el número crítico de tu empresa dependa del teléfono personal de un gerente.
+              Recibe SMS, códigos 2FA autorizados y respuestas de clientes. Centraliza la gestión en tu panel, Telegram o flujos conectados por API, sin que el número crítico de tu empresa dependa del teléfono personal de un gerente.
             </p>
           </header>
           <div class="lab-num-grid mt-10">
@@ -616,7 +616,13 @@
               </div>
             </article>
           </div>
-          <div class="lab-num-cta mt-10 flex justify-center">
+          <div class="lab-num-band lab-num-band--compact mt-10">
+            <p class="text-slate-300 leading-relaxed text-center max-w-2xl mx-auto">
+              ¿Necesitas números reales para agentes, OTP autorizado o webhooks? Revisa la sección
+              <a href="#numeracion" class="text-lab-cyan hover:underline font-medium">Numeración Telvoice</a>.
+            </p>
+          </div>
+          <div class="lab-num-cta mt-6 flex justify-center">
             <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_solicitar_numero_numeracion">Solicitar número Telvoice</a>
           </div>
         </div>
@@ -629,7 +635,7 @@
             <span class="lab-eyebrow">Casos de uso</span>
             <h2 id="casos-titulo" class="lab-section-title mt-4">Adecuado a tu infraestructura</h2>
             <p class="lab-section-intro">
-              Conecta tu IA, tus automatizaciones o tu equipo a números reales Telvoice. Opera campañas, validaciones autorizadas y comunicaciones críticas sin depender de un teléfono físico a la mano.
+              Opera campañas, validaciones autorizadas y comunicaciones críticas sin depender de un teléfono físico a la mano.
             </p>
           </header>
           <div class="lab-casos-grid lab-casos-grid--triple">
@@ -766,7 +772,6 @@
                 <p class="calc-result-note">Saldo para campañas SMS. Los envíos requieren confirmación antes de ejecutar.</p>
                 <p class="calc-result-links">
                   <button type="button" id="calc-quote-link" class="calc-cta-link" data-track="click_cotiza_alto_volumen">¿Volúmenes mayores o numeración propia? Cotiza con el agente</button>
-                  · <a href="https://agent.telvoice.cl/login" class="text-lab-cyan hover:underline" data-track="click_solicitar_orientacion_calc">Solicitar orientación</a>
                 </p>
               </div>
             </div>
@@ -788,44 +793,130 @@
         <div class="lab-section-inner lab-section-inner--faq">
           <header class="lab-header-center">
             <span class="lab-eyebrow">Preguntas frecuentes</span>
-            <h2 id="faq-titulo" class="lab-section-title mt-4">Operación SMS con agente telco</h2>
+            <h2 id="faq-titulo" class="lab-section-title mt-4">¿Tienes dudas?</h2>
+            <p class="lab-section-intro mt-4">Revisa las <a href="../ayuda/" class="text-lab-cyan hover:underline font-medium">guías del centro de ayuda</a> para el portal SMS o consulta las preguntas más comunes aquí.</p>
           </header>
-          <div class="space-y-3 mt-8">
+          <div class="mx-auto mt-8 max-w-3xl space-y-3">
             <details class="faq-details group">
               <summary class="flex items-center justify-between gap-4">
-                <span>¿El agente envía SMS automáticamente?</span>
+                <span>¿Qué es una bolsa de SMS?</span>
                 <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
               </summary>
-              <p class="faq-answer pt-4">No. El agente puede preparar, calcular y resumir una acción, pero los envíos y débitos requieren confirmación explícita.</p>
+              <p class="faq-answer pt-4">Es una cantidad prepagada de mensajes que puedes comprar para enviar campañas, notificaciones o recordatorios a teléfonos en Chile.</p>
             </details>
             <details class="faq-details group">
               <summary class="flex items-center justify-between gap-4">
-                <span>¿Puedo empezar sin integrar API?</span>
+                <span>¿Cómo funciona el envío de SMS masivos?</span>
                 <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
               </summary>
-              <p class="faq-answer pt-4">Sí. Puedes operar desde el panel comprando saldo, cargando contactos, preparando campañas y revisando resultados.</p>
+              <p class="faq-answer pt-4">Puedes enviar SMS desde tu sistema vía nuestra API REST o desde el panel de administración web. Solo debes subir tu base de datos de teléfonos, redactar el mensaje y programar el envío. Los mensajes se procesan hacia la red chilena con rutas orientadas a una entrega estable.</p>
             </details>
             <details class="faq-details group">
               <summary class="flex items-center justify-between gap-4">
-                <span>¿Telvoice ofrece numeración propia?</span>
+                <span>¿En cuánto tiempo se integra la API?</span>
                 <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
               </summary>
-              <p class="faq-answer pt-4">Sí. Telvoice puede habilitar numeración propia, números dedicados y canal SMS empresarial para OTP, bots, API/webhooks y agentes conectados a tu operación, según validación comercial y configuración técnica.</p>
+              <p class="faq-answer pt-4">La integración vía API dependerá del sistema del cliente, el tipo de uso y la validación técnica. Telvoice puede entregar orientación para facilitar el proceso, junto con documentación y ejemplos según el tipo de integración requerida.</p>
             </details>
             <details class="faq-details group">
               <summary class="flex items-center justify-between gap-4">
-                <span>¿Puedo usarlo para OTP o validaciones?</span>
+                <span>¿Qué operadores móviles incluyen?</span>
                 <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
               </summary>
-              <p class="faq-answer pt-4">Sí, bajo configuración técnica y validación comercial según el tipo de tráfico, volumen y caso de uso.</p>
+              <p class="faq-answer pt-4">Cubrimos los cuatro operadores principales de Chile: Entel, Movistar, Claro y WOM, con rutas orientadas a maximizar la entrega hacia sus redes móviles.</p>
             </details>
             <details class="faq-details group">
               <summary class="flex items-center justify-between gap-4">
-                <span>¿La comunicación es completamente autónoma?</span>
+                <span>¿Los SMS vencen?</span>
                 <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
               </summary>
-              <p class="faq-answer pt-4">La plataforma puede asistir flujos operativos, pero las acciones sensibles deben operar con reglas, permisos y confirmación explícita.</p>
+              <p class="faq-answer pt-4">Las condiciones de uso y vigencia se informan al momento de comprar cada bolsa. Para volúmenes altos podemos acordar condiciones especiales en tu cotización.</p>
             </details>
+            <div id="faq-more" class="faq-more space-y-3" hidden>
+              <details class="faq-details group">
+                <summary class="flex items-center justify-between gap-4">
+                  <span>¿Tienen soporte técnico en Chile?</span>
+                  <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
+                </summary>
+                <p class="faq-answer pt-4">Sí. Telvoice.cl es operado por TelefoníaChile LTDA, empresa establecida en Chile. Nuestro equipo técnico y comercial está disponible en horario local y puedes comunicarte en español para cualquier consulta o incidencia.</p>
+              </details>
+              <details class="faq-details group">
+                <summary class="flex items-center justify-between gap-4">
+                  <span>¿Cómo se emite la factura?</span>
+                  <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
+                </summary>
+                <p class="faq-answer pt-4">Emitimos factura electrónica afecta al IVA por cada período facturado, en pesos chilenos (CLP). La factura se envía automáticamente al correo registrado y queda disponible en el portal del SII bajo el RUT de TelefoníaChile LTDA.</p>
+              </details>
+              <details class="faq-details group">
+                <summary class="flex items-center justify-between gap-4">
+                  <span>¿Puedo enviar SMS desde mi propio sistema?</span>
+                  <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
+                </summary>
+                <p class="faq-answer pt-4">Sí. Telvoice puede entregar integración vía API para empresas que necesitan automatizar envíos.</p>
+              </details>
+              <details class="faq-details group">
+                <summary class="flex items-center justify-between gap-4">
+                  <span>¿Sirve para campañas promocionales?</span>
+                  <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
+                </summary>
+                <p class="faq-answer pt-4">Sí, siempre que la empresa utilice bases autorizadas y respete las buenas prácticas de comunicación.</p>
+              </details>
+              <details class="faq-details group">
+                <summary class="flex items-center justify-between gap-4">
+                  <span>¿Puedo cotizar grandes volúmenes?</span>
+                  <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
+                </summary>
+                <p class="faq-answer pt-4">Sí. Para volúmenes sobre 100.000 SMS mensuales puedes solicitar una cotización especial desde la sección Empresas o el formulario de contacto.</p>
+              </details>
+              <details class="faq-details group">
+                <summary class="flex items-center justify-between gap-4">
+                  <span>¿Telvoice.cl es lo mismo que portal.telvoice.net?</span>
+                  <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
+                </summary>
+                <p class="faq-answer pt-4">Telvoice.cl está enfocado en el mercado chileno y en la compra de bolsas SMS. portal.telvoice.net es el portal cliente donde envías mensajes, revisas reportes y administras tu cuenta.</p>
+              </details>
+              <details class="faq-details group">
+                <summary class="flex items-center justify-between gap-4">
+                  <span>¿El agente envía SMS automáticamente?</span>
+                  <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
+                </summary>
+                <p class="faq-answer pt-4">No. El agente puede preparar, calcular y resumir una acción, pero los envíos y débitos requieren confirmación explícita.</p>
+              </details>
+              <details class="faq-details group">
+                <summary class="flex items-center justify-between gap-4">
+                  <span>¿Puedo empezar sin integrar API?</span>
+                  <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
+                </summary>
+                <p class="faq-answer pt-4">Sí. Puedes operar desde el panel comprando saldo, cargando contactos, preparando campañas y revisando resultados.</p>
+              </details>
+              <details class="faq-details group">
+                <summary class="flex items-center justify-between gap-4">
+                  <span>¿Telvoice ofrece numeración propia?</span>
+                  <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
+                </summary>
+                <p class="faq-answer pt-4">Sí. Telvoice puede habilitar numeración propia, números dedicados y canal SMS empresarial para OTP, bots, API/webhooks y agentes conectados a tu operación, según validación comercial y configuración técnica.</p>
+              </details>
+              <details class="faq-details group">
+                <summary class="flex items-center justify-between gap-4">
+                  <span>¿Puedo usarlo para OTP o validaciones?</span>
+                  <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
+                </summary>
+                <p class="faq-answer pt-4">Sí, bajo configuración técnica y validación comercial según el tipo de tráfico, volumen y caso de uso.</p>
+              </details>
+              <details class="faq-details group">
+                <summary class="flex items-center justify-between gap-4">
+                  <span>¿La comunicación es completamente autónoma?</span>
+                  <span class="faq-chevron material-symbols-outlined shrink-0" aria-hidden="true">add</span>
+                </summary>
+                <p class="faq-answer pt-4">La plataforma puede asistir flujos operativos, pero las acciones sensibles deben operar con reglas, permisos y confirmación explícita.</p>
+              </details>
+            </div>
+            <div class="pt-2 text-center">
+              <button type="button" id="faq-show-more" class="lab-btn-secondary inline-flex items-center justify-center gap-2" aria-expanded="false" aria-controls="faq-more">
+                <span id="faq-show-more-text">Ver más preguntas frecuentes</span>
+                <span class="material-symbols-outlined text-[1.25rem]" aria-hidden="true">expand_more</span>
+              </button>
+            </div>
           </div>
         </div>
       </section>
