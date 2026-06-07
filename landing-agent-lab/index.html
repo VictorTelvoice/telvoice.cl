@@ -36,7 +36,7 @@
       },
     };
   </script>
-  <link rel="stylesheet" href="../css/landing-agent-lab.css?v=20260715" />
+  <link rel="stylesheet" href="../css/landing-agent-lab.css?v=20260717" />
 </head>
 <body class="font-body antialiased">
   <div class="lab-bg-wrap" aria-hidden="true">
@@ -78,7 +78,7 @@
               <li role="none"><a class="lab-nav-dropdown-link" href="casos-de-uso/empresas-fintech-growth/" role="menuitem" data-track="click_nav_caso_fintech">Empresas, fintech &amp; growth</a></li>
             </ul>
           </li>
-          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="#panel-api">Panel + API</a></li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="panel-api.html">Panel + API</a></li>
           <li class="lab-nav-dropdown">
             <button type="button" class="lab-nav-link lab-nav-dropdown-toggle font-body text-sm rounded-full px-4 py-2" id="nav-precios-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-precios-menu">Precios</button>
             <ul class="lab-nav-dropdown-menu" id="nav-precios-menu" role="menu" aria-labelledby="nav-precios-toggle" hidden>
@@ -111,7 +111,7 @@
               <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="casos-de-uso/empresas-fintech-growth/" data-track="click_nav_caso_fintech_mobile">Empresas, fintech &amp; growth</a></li>
             </ul>
           </li>
-          <li><a class="block lab-nav-link py-3 rounded-xl" href="#panel-api">Panel + API</a></li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="panel-api.html">Panel + API</a></li>
           <li class="lab-nav-dropdown lab-nav-dropdown--mobile">
             <button type="button" class="lab-nav-dropdown-toggle block lab-nav-link w-full text-left py-3 rounded-xl" id="nav-precios-toggle-mobile" aria-expanded="false" aria-controls="nav-precios-menu-mobile">Precios</button>
             <ul class="lab-nav-dropdown-menu lab-nav-dropdown-menu--mobile" id="nav-precios-menu-mobile" hidden>
@@ -687,31 +687,41 @@
         </div>
       </section>
 
-      <!-- 6. Panel + API -->
+      <!-- 6. Panel + API (teaser) -->
       <section class="lab-section" id="panel-api" aria-labelledby="panel-api-titulo" tabindex="-1">
         <div class="lab-section-inner">
           <header class="lab-header-center">
             <span class="lab-eyebrow">Panel + API</span>
-            <h2 id="panel-api-titulo" class="lab-section-title mt-4">Panel web, API bajo solicitud y operación conectada</h2>
-            <p class="lab-section-intro">Gestiona campañas desde el panel Telvoice e integra vía API cuando tu operación lo requiera. Telvoice concentra la operación SMS; las extensiones de numeración propia se habilitan según caso de uso.</p>
+            <h2 id="panel-api-titulo" class="lab-section-title mt-4">Conecta Telvoice a tu operación</h2>
+            <p class="lab-section-intro">Panel web, Bot de Telegram, Webhooks o API REST. Elige la forma más simple o más avanzada para operar campañas, recibir eventos e integrar tus sistemas.</p>
           </header>
-          <div class="lab-panel-duo mb-8">
-            <article class="lab-glass-card p-6 sm:p-8">
-              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">dashboard</span></div>
-              <h3 class="mt-4 font-h3 text-lg font-semibold text-white">Panel de operación SMS</h3>
-              <p class="mt-3 text-slate-400 leading-relaxed">Compra saldo, carga contactos, prepara campañas y revisa resultados. El agente operativo vive conectado a tu cuenta para asistir en cada paso.</p>
-              <ul class="mt-5 space-y-2 text-sm text-slate-400">
-                <li class="flex gap-2"><span class="material-symbols-outlined text-lab-cyan text-lg shrink-0" aria-hidden="true">check_circle</span> Consulta de saldo y consumo</li>
-                <li class="flex gap-2"><span class="material-symbols-outlined text-lab-cyan text-lg shrink-0" aria-hidden="true">check_circle</span> Campañas CSV con validación previa</li>
-                <li class="flex gap-2"><span class="material-symbols-outlined text-lab-cyan text-lg shrink-0" aria-hidden="true">check_circle</span> Resumen antes de enviar</li>
-              </ul>
-            </article>
-            <article class="lab-glass-card p-6 sm:p-8">
-              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">api</span></div>
-              <h3 class="mt-4 font-h3 text-lg font-semibold text-white">API REST bajo solicitud</h3>
-              <p class="mt-3 text-slate-400 leading-relaxed">Conecta CRM, ecommerce o sistemas internos para integrar envíos programados. Telvoice entrega orientación técnica según tu caso de uso y volumen.</p>
-              <p class="mt-4 text-sm text-slate-500">Acceso API sujeto a validación comercial y configuración técnica.</p>
-            </article>
+          <div class="lab-conn-teaser">
+            <div class="conn-types-grid conn-types-grid--teaser">
+              <article class="conn-type-card lab-glass-card">
+                <span class="conn-type-card__icon material-symbols-outlined" aria-hidden="true">dashboard</span>
+                <h3 class="conn-type-card__title">Panel web</h3>
+                <p class="conn-type-card__text">Campañas, saldo y reportes en una interfaz simple.</p>
+              </article>
+              <article class="conn-type-card lab-glass-card">
+                <span class="conn-type-card__icon material-symbols-outlined" aria-hidden="true">send</span>
+                <h3 class="conn-type-card__title">Telegram Bot</h3>
+                <p class="conn-type-card__text">SMS y alertas directo en Telegram.</p>
+              </article>
+              <article class="conn-type-card lab-glass-card">
+                <span class="conn-type-card__icon material-symbols-outlined" aria-hidden="true">hub</span>
+                <h3 class="conn-type-card__title">Webhooks</h3>
+                <p class="conn-type-card__text">Eventos automáticos a tus flujos.</p>
+              </article>
+              <article class="conn-type-card lab-glass-card">
+                <span class="conn-type-card__icon material-symbols-outlined" aria-hidden="true">api</span>
+                <h3 class="conn-type-card__title">API REST</h3>
+                <p class="conn-type-card__text">Integración con CRM, ecommerce y sistemas propios.</p>
+              </article>
+            </div>
+            <div class="lab-conn-teaser__actions">
+              <a href="panel-api.html" class="lab-btn-primary" data-track="click_ver_panel_api_teaser">Ver conexiones</a>
+              <a href="https://agent.telvoice.cl/login" class="lab-btn-secondary" data-track="click_probar_agente_panel_teaser">Probar el agente</a>
+            </div>
           </div>
         </div>
       </section>
@@ -943,7 +953,7 @@
                 <li><a href="planes-agente.html">Planes del agente</a></li>
                 <li><a href="numeracion-sim.html">Números SIM reales</a></li>
                 <li><a href="#precios">Bolsas SMS</a></li>
-                <li><a href="#panel-api">Panel + API</a></li>
+                <li><a href="panel-api.html">Panel + API</a></li>
                 <li><a href="https://agent.telvoice.cl/login" target="_blank" rel="noopener noreferrer">Acceso agente</a></li>
               </ul>
             </div>

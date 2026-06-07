@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html class="dark lab-theme" lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Conecta Telvoice a tu operación por panel web, Bot de Telegram, Webhooks o API REST. Campañas SMS, automatizaciones e integraciones empresariales." />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Panel + Conexiones | Telvoice Lab</title>
+  <link rel="icon" href="../assets/telvoice-isotipo.png" type="image/png" sizes="any" />
+  <meta name="theme-color" content="#050814" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;family=Montserrat:wght@600;700;800&amp;display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#0052cc",
+            "lab-cyan": "#22d3ee",
+            "lab-purple": "#818cf8",
+          },
+          fontFamily: {
+            h1: ["Montserrat", "sans-serif"],
+            h2: ["Montserrat", "sans-serif"],
+            h3: ["Montserrat", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="../css/landing-agent-lab.css?v=20260717" />
+</head>
+<body class="font-body antialiased">
+  <div class="lab-bg-wrap" aria-hidden="true">
+    <div class="lab-bg-radial lab-bg-radial--1"></div>
+    <div class="lab-bg-radial lab-bg-radial--2"></div>
+    <div class="lab-bg-radial lab-bg-radial--3"></div>
+    <div class="lab-bg-grid"></div>
+  </div>
+
+  <div class="lab-content">
+    <nav class="lab-nav sticky top-0 z-50 w-full" aria-label="Navegación principal">
+      <div class="lab-shell flex justify-between items-center gap-4 py-4">
+        <a href="./" class="lab-logo-link flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-lab-cyan" aria-label="Telvoice Lab, ir al inicio">
+          <img src="../assets/telvoice-isotipo.png" alt="Telvoice" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" />
+          <span class="font-h3 font-bold tracking-tight lowercase">
+            <span class="lab-logo-word text-white">telvoice</span>
+          </span>
+        </a>
+        <ul class="hidden lg:flex gap-1 items-center">
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="./#como-funciona">Cómo funciona</a></li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="./#agente-telvoice">Agente</a></li>
+          <li class="lab-nav-dropdown">
+            <button type="button" class="lab-nav-link lab-nav-dropdown-toggle font-body text-sm rounded-full px-4 py-2" id="nav-casos-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-casos-menu">Casos de uso</button>
+            <ul class="lab-nav-dropdown-menu" id="nav-casos-menu" role="menu" aria-labelledby="nav-casos-toggle" hidden>
+              <li role="none"><a class="lab-nav-dropdown-link" href="./#casos-uso" role="menuitem">Ver todos</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="casos-de-uso/uso-individual-validaciones/" role="menuitem">Uso individual &amp; validaciones</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="casos-de-uso/ia-automatizacion/" role="menuitem">IA &amp; automatización</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="casos-de-uso/empresas-fintech-growth/" role="menuitem">Empresas, fintech &amp; growth</a></li>
+            </ul>
+          </li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2 is-active" href="panel-api.html" aria-current="page">Panel + API</a></li>
+          <li class="lab-nav-dropdown">
+            <button type="button" class="lab-nav-link lab-nav-dropdown-toggle font-body text-sm rounded-full px-4 py-2" id="nav-precios-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-precios-menu">Precios</button>
+            <ul class="lab-nav-dropdown-menu" id="nav-precios-menu" role="menu" aria-labelledby="nav-precios-toggle" hidden>
+              <li role="none"><a class="lab-nav-dropdown-link" href="./#calculadora" role="menuitem">Armar tu bolsa</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="numeracion-sim.html" role="menuitem">Números SIM reales</a></li>
+              <li role="none"><a class="lab-nav-dropdown-link" href="planes-agente.html" role="menuitem">Planes Agente</a></li>
+            </ul>
+          </li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="./#faq">FAQ</a></li>
+          <li><a class="lab-nav-link font-body text-sm rounded-full px-4 py-2" href="../ayuda/">Ayuda</a></li>
+        </ul>
+        <div class="flex items-center gap-2 shrink-0">
+          <a href="https://agent.telvoice.cl/login" class="lab-btn-primary lab-btn-nav hidden sm:inline-flex">Probar el agente</a>
+          <button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-white/15 text-white" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
+            <span class="material-symbols-outlined" id="menu-icon-open">menu</span>
+            <span class="material-symbols-outlined hidden" id="menu-icon-close">close</span>
+          </button>
+        </div>
+      </div>
+      <div id="mobile-panel" class="hidden lg:hidden border-t border-white/10 py-4 lab-shell">
+        <ul class="flex flex-col gap-1">
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="./#como-funciona">Cómo funciona</a></li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="./#agente-telvoice">Agente Telvoice</a></li>
+          <li class="lab-nav-dropdown lab-nav-dropdown--mobile">
+            <button type="button" class="lab-nav-dropdown-toggle block lab-nav-link w-full text-left py-3 rounded-xl" id="nav-casos-toggle-mobile" aria-expanded="false" aria-controls="nav-casos-menu-mobile">Casos de uso</button>
+            <ul class="lab-nav-dropdown-menu lab-nav-dropdown-menu--mobile" id="nav-casos-menu-mobile" hidden>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="./#casos-uso">Ver todos</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="casos-de-uso/uso-individual-validaciones/">Uso individual &amp; validaciones</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="casos-de-uso/ia-automatizacion/">IA &amp; automatización</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="casos-de-uso/empresas-fintech-growth/">Empresas, fintech &amp; growth</a></li>
+            </ul>
+          </li>
+          <li><a class="block lab-nav-link py-3 rounded-xl is-active" href="panel-api.html" aria-current="page">Panel + API</a></li>
+          <li class="lab-nav-dropdown lab-nav-dropdown--mobile">
+            <button type="button" class="lab-nav-dropdown-toggle block lab-nav-link w-full text-left py-3 rounded-xl" id="nav-precios-toggle-mobile" aria-expanded="false" aria-controls="nav-precios-menu-mobile">Precios</button>
+            <ul class="lab-nav-dropdown-menu lab-nav-dropdown-menu--mobile" id="nav-precios-menu-mobile" hidden>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="./#calculadora">Armar tu bolsa</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="numeracion-sim.html">Números SIM reales</a></li>
+              <li><a class="block lab-nav-link py-2.5 pl-4 rounded-xl text-sm" href="planes-agente.html">Planes Agente</a></li>
+            </ul>
+          </li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="./#faq">FAQ</a></li>
+          <li><a class="block lab-nav-link py-3 rounded-xl" href="../ayuda/">Centro de ayuda</a></li>
+        </ul>
+        <a href="https://agent.telvoice.cl/login" class="lab-btn-primary w-full mt-3 text-center">Probar el agente</a>
+      </div>
+    </nav>
+
+    <main class="lab-conn-page" id="panel-api" tabindex="-1">
+      <!-- Hero -->
+      <section class="lab-section lab-section--tight-top conn-hero" aria-labelledby="conn-hero-title">
+        <div class="lab-section-inner lab-section-inner--agent-plans">
+          <div class="conn-hero-grid">
+            <div class="conn-hero-copy">
+              <span class="lab-eyebrow">Panel + conexiones</span>
+              <h1 id="conn-hero-title" class="lab-section-title mt-4 text-[clamp(1.35rem,3.2vw,2.25rem)]">Conecta Telvoice a tu operación por panel, Telegram, Webhook o API</h1>
+              <p class="lab-section-intro mt-4">Elige la forma más simple o más avanzada para operar tus SMS. Gestiona campañas desde el panel, recibe mensajes en Telegram, activa automatizaciones con Webhooks o integra tu sistema vía API REST.</p>
+              <ul class="agent-plans-pills conn-hero-pills" role="list" aria-label="Tipos de conexión">
+                <li class="agent-plans-pill">Panel web</li>
+                <li class="agent-plans-pill">Bot de Telegram</li>
+                <li class="agent-plans-pill">Webhooks</li>
+                <li class="agent-plans-pill">API REST</li>
+                <li class="agent-plans-pill">Integraciones asistidas</li>
+              </ul>
+              <div class="agent-plans-hero__actions mt-6">
+                <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_probar_agente_conn_hero">Probar el agente</a>
+                <a href="https://agent.telvoice.cl/login" class="lab-btn-secondary" data-track="click_especialista_conn_hero">Hablar con un especialista</a>
+              </div>
+              <p class="agent-plans-hero__tagline">Desde una operación manual asistida hasta automatizaciones conectadas, Telvoice se adapta al nivel técnico de tu empresa.</p>
+            </div>
+            <div class="conn-hub-diagram lab-glass-card" aria-hidden="true">
+              <div class="conn-hub-diagram__core">
+                <img src="../assets/telvoice-isotipo.png" alt="" width="40" height="40" class="conn-hub-diagram__logo" />
+                <span class="conn-hub-diagram__core-label">Telvoice</span>
+              </div>
+              <div class="conn-hub-diagram__node conn-hub-diagram__node--panel">
+                <span class="material-symbols-outlined">dashboard</span>
+                <span>Panel web</span>
+              </div>
+              <div class="conn-hub-diagram__node conn-hub-diagram__node--telegram">
+                <span class="material-symbols-outlined">send</span>
+                <span>Telegram</span>
+              </div>
+              <div class="conn-hub-diagram__node conn-hub-diagram__node--webhook">
+                <span class="material-symbols-outlined">hub</span>
+                <span>Webhook</span>
+              </div>
+              <div class="conn-hub-diagram__node conn-hub-diagram__node--api">
+                <span class="material-symbols-outlined">api</span>
+                <span>API</span>
+              </div>
+              <svg class="conn-hub-diagram__lines" viewBox="0 0 320 320" preserveAspectRatio="none">
+                <line x1="160" y1="160" x2="160" y2="48" />
+                <line x1="160" y1="160" x2="272" y2="160" />
+                <line x1="160" y1="160" x2="160" y2="272" />
+                <line x1="160" y1="160" x2="48" y2="160" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Resumen 4 conexiones -->
+      <section class="lab-section lab-section--compact" aria-labelledby="conn-types-title">
+        <div class="lab-section-inner lab-section-inner--agent-plans">
+          <header class="lab-header-center">
+            <h2 id="conn-types-title" class="lab-section-title text-xl md:text-2xl">Cuatro formas principales de operar con Telvoice</h2>
+            <p class="lab-section-intro mt-4">No todos los clientes necesitan lo mismo. Algunos quieren una plataforma lista para usar; otros necesitan integrar flujos y sistemas internos.</p>
+          </header>
+          <div class="conn-types-grid">
+            <article class="conn-type-card lab-glass-card">
+              <span class="conn-type-card__icon material-symbols-outlined" aria-hidden="true">dashboard</span>
+              <h3 class="conn-type-card__title">Panel web</h3>
+              <p class="conn-type-card__text">Gestiona saldo, contactos, campañas y resultados desde una interfaz simple.</p>
+            </article>
+            <article class="conn-type-card lab-glass-card">
+              <span class="conn-type-card__icon material-symbols-outlined" aria-hidden="true">send</span>
+              <h3 class="conn-type-card__title">Telegram Bot</h3>
+              <p class="conn-type-card__text">Recibe SMS y eventos directamente en Telegram sin necesidad de desarrollar una integración compleja.</p>
+            </article>
+            <article class="conn-type-card lab-glass-card">
+              <span class="conn-type-card__icon material-symbols-outlined" aria-hidden="true">hub</span>
+              <h3 class="conn-type-card__title">Webhooks</h3>
+              <p class="conn-type-card__text">Envía eventos automáticos a tus sistemas cuando ocurre una acción o llega un mensaje.</p>
+            </article>
+            <article class="conn-type-card lab-glass-card">
+              <span class="conn-type-card__icon material-symbols-outlined" aria-hidden="true">api</span>
+              <h3 class="conn-type-card__title">API REST</h3>
+              <p class="conn-type-card__text">Integra Telvoice con CRM, ecommerce, software interno o procesos automatizados.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Cards detalladas -->
+      <section class="lab-section lab-section--compact" aria-labelledby="conn-detail-title">
+        <div class="lab-section-inner lab-section-inner--agent-plans">
+          <h2 id="conn-detail-title" class="sr-only">Detalle de cada conexión</h2>
+          <div class="conn-detail-grid">
+            <article class="conn-detail-card lab-glass-card" id="conn-panel">
+              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">dashboard</span></div>
+              <h3 class="conn-detail-card__title">Panel de operación SMS</h3>
+              <p class="conn-detail-card__text">La forma más simple de operar con Telvoice. Compra saldo, carga contactos, prepara campañas, revisa resultados y administra tu operación desde un panel centralizado.</p>
+              <ul class="conn-detail-card__features" role="list">
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Compra y control de saldo</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Carga de contactos y listas</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Campañas CSV con validación previa</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Resumen antes de enviar</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Reportes y estado de campañas</li>
+              </ul>
+              <p class="conn-detail-card__micro">Ideal para empresas que quieren empezar rápido sin integración técnica.</p>
+              <a href="./#como-funciona" class="lab-btn-secondary conn-detail-card__cta w-full" data-track="click_ver_como_funciona_conn">Ver cómo funciona</a>
+            </article>
+
+            <article class="conn-detail-card lab-glass-card conn-detail-card--telegram" id="conn-telegram">
+              <div class="conn-detail-card__body">
+                <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">send</span></div>
+                <h3 class="conn-detail-card__title">Bot de Telegram</h3>
+                <p class="conn-detail-card__text">Recibe SMS, alertas o eventos operativos directamente en Telegram. Es una opción práctica para equipos que quieren notificaciones instantáneas y operación simple sin depender de una integración compleja.</p>
+                <ul class="conn-detail-card__features" role="list">
+                  <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Recepción instantánea de SMS en Telegram</li>
+                  <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Alertas operativas y notificaciones</li>
+                  <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Reenvío simple a usuarios o equipos</li>
+                  <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Útil para validaciones autorizadas</li>
+                  <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Configuración asistida</li>
+                </ul>
+                <p class="conn-detail-card__micro">Ideal para equipos pequeños, pruebas rápidas y automatizaciones ligeras.</p>
+                <a href="https://agent.telvoice.cl/login" class="lab-btn-secondary conn-detail-card__cta w-full" data-track="click_conocer_telegram_conn">Conocer Telegram Bot</a>
+              </div>
+              <div class="conn-telegram-mock" aria-hidden="true">
+                <div class="conn-telegram-mock__header">
+                  <span class="conn-telegram-mock__avatar">T</span>
+                  <span>Telvoice Bot</span>
+                </div>
+                <div class="conn-telegram-mock__bubble conn-telegram-mock__bubble--in">SMS recibido · +56 9 •••• 4821</div>
+                <div class="conn-telegram-mock__bubble conn-telegram-mock__bubble--in">Código validación autorizada · 14:32</div>
+                <div class="conn-telegram-mock__bubble conn-telegram-mock__bubble--sys">Alerta operativa enviada al equipo</div>
+              </div>
+            </article>
+
+            <article class="conn-detail-card lab-glass-card" id="conn-webhooks">
+              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">hub</span></div>
+              <h3 class="conn-detail-card__title">Webhooks y eventos automáticos</h3>
+              <p class="conn-detail-card__text">Conecta Telvoice con tus flujos para disparar acciones en tiempo real. Cuando ocurre un evento, Telvoice puede notificar a tu sistema mediante Webhook para que reacciones automáticamente.</p>
+              <ul class="conn-detail-card__features" role="list">
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Eventos en tiempo real</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Integración con Make, n8n o flujos propios</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Recepción de mensajes y callbacks</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Automatización de alertas y validaciones</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Conexión con procesos internos</li>
+              </ul>
+              <p class="conn-detail-card__micro">Ideal para automatizaciones, bots y procesos conectados.</p>
+              <a href="casos-de-uso/ia-automatizacion/" class="lab-btn-secondary conn-detail-card__cta w-full" data-track="click_casos_uso_webhook_conn">Ver casos de uso</a>
+            </article>
+
+            <article class="conn-detail-card lab-glass-card" id="conn-api">
+              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">api</span></div>
+              <h3 class="conn-detail-card__title">API REST bajo solicitud</h3>
+              <p class="conn-detail-card__text">Integra Telvoice con tu CRM, ecommerce, software interno o plataforma propia. La API permite conectar envíos, eventos y operación SMS según tu caso de uso y volumen.</p>
+              <ul class="conn-detail-card__features" role="list">
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Integración con sistemas propios</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Envío programado y automatizado</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Conexión con CRM y ecommerce</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Escalable según operación</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Orientación técnica asistida</li>
+              </ul>
+              <p class="conn-detail-card__micro">Ideal para empresas con equipo técnico o desarrolladores.</p>
+              <a href="https://agent.telvoice.cl/login" class="lab-btn-secondary conn-detail-card__cta w-full" data-track="click_solicitar_api_conn">Solicitar API</a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Integración asistida -->
+      <section class="lab-section lab-section--compact" aria-labelledby="conn-guided-title">
+        <div class="lab-section-inner lab-section-inner--agent-plans">
+          <article class="conn-guided-card lab-glass-card">
+            <h2 id="conn-guided-title" class="conn-guided-card__title">¿No sabes qué conexión necesitas?</h2>
+            <p class="conn-guided-card__text">Telvoice puede ayudarte a definir la mejor forma de integración según tu operación. Puedes comenzar con panel o Telegram y luego escalar a Webhooks o API cuando tu operación lo requiera.</p>
+            <ul class="conn-guided-list" role="list">
+              <li><span class="material-symbols-outlined" aria-hidden="true">rocket_launch</span>Empieza simple</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">trending_up</span>Escala a automatización</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">support_agent</span>Integración guiada</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">fact_check</span>Evaluación según caso de uso</li>
+            </ul>
+            <a href="https://agent.telvoice.cl/login" class="lab-btn-primary conn-guided-card__cta" data-track="click_especialista_guided_conn">Hablar con un especialista</a>
+          </article>
+        </div>
+      </section>
+
+      <!-- Flujos -->
+      <section class="lab-section lab-section--compact" aria-labelledby="conn-flows-title">
+        <div class="lab-section-inner lab-section-inner--agent-plans">
+          <header class="lab-header-center">
+            <h2 id="conn-flows-title" class="lab-section-title text-xl md:text-2xl">Así se integra Telvoice a tu flujo de trabajo</h2>
+          </header>
+          <div class="conn-flows-grid">
+            <article class="conn-flow-card lab-glass-card">
+              <span class="conn-flow-card__step">Opción 1</span>
+              <p class="conn-flow-card__path"><span>Tu equipo</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span><span>Panel Telvoice</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span><span>Campaña SMS</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span><span>Reportes</span></p>
+            </article>
+            <article class="conn-flow-card lab-glass-card">
+              <span class="conn-flow-card__step">Opción 2</span>
+              <p class="conn-flow-card__path"><span>SMS recibido</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span><span>Telvoice</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span><span>Telegram Bot</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span><span>Usuario / equipo</span></p>
+            </article>
+            <article class="conn-flow-card lab-glass-card">
+              <span class="conn-flow-card__step">Opción 3</span>
+              <p class="conn-flow-card__path"><span>Evento SMS</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span><span>Telvoice</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span><span>Webhook</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span><span>Sistema / Make / n8n</span></p>
+            </article>
+            <article class="conn-flow-card lab-glass-card">
+              <span class="conn-flow-card__step">Opción 4</span>
+              <p class="conn-flow-card__path"><span>Sistema del cliente</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span><span>API REST</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span><span>Telvoice</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span><span>Envío SMS / respuesta</span></p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Comparativa -->
+      <section class="lab-section lab-section--compact" aria-labelledby="conn-compare-title">
+        <div class="lab-section-inner lab-section-inner--agent-plans">
+          <header class="lab-header-center">
+            <h2 id="conn-compare-title" class="lab-section-title text-xl md:text-2xl">¿Qué opción te conviene?</h2>
+          </header>
+          <div class="conn-compare-cards md:hidden" role="list">
+            <article class="conn-compare-card lab-glass-card" role="listitem">
+              <h3 class="conn-compare-card__name">Panel web</h3>
+              <dl class="conn-compare-card__dl">
+                <div><dt>Para qué sirve</dt><dd>Operar campañas y revisar resultados</dd></div>
+                <div><dt>Nivel técnico</dt><dd>Bajo</dd></div>
+                <div><dt>Ideal para</dt><dd>Empresas que quieren usar Telvoice de inmediato</dd></div>
+              </dl>
+            </article>
+            <article class="conn-compare-card lab-glass-card" role="listitem">
+              <h3 class="conn-compare-card__name">Telegram Bot</h3>
+              <dl class="conn-compare-card__dl">
+                <div><dt>Para qué sirve</dt><dd>Recibir SMS y alertas en Telegram</dd></div>
+                <div><dt>Nivel técnico</dt><dd>Bajo</dd></div>
+                <div><dt>Ideal para</dt><dd>Equipos pequeños, pruebas, monitoreo rápido</dd></div>
+              </dl>
+            </article>
+            <article class="conn-compare-card lab-glass-card" role="listitem">
+              <h3 class="conn-compare-card__name">Webhooks</h3>
+              <dl class="conn-compare-card__dl">
+                <div><dt>Para qué sirve</dt><dd>Disparar automatizaciones y eventos</dd></div>
+                <div><dt>Nivel técnico</dt><dd>Medio</dd></div>
+                <div><dt>Ideal para</dt><dd>Make, n8n, flujos conectados, automatización</dd></div>
+              </dl>
+            </article>
+            <article class="conn-compare-card lab-glass-card" role="listitem">
+              <h3 class="conn-compare-card__name">API REST</h3>
+              <dl class="conn-compare-card__dl">
+                <div><dt>Para qué sirve</dt><dd>Integración profunda con sistemas propios</dd></div>
+                <div><dt>Nivel técnico</dt><dd>Alto</dd></div>
+                <div><dt>Ideal para</dt><dd>CRM, ecommerce, software interno, desarrolladores</dd></div>
+              </dl>
+            </article>
+          </div>
+          <div class="agent-plans-table-wrap hidden md:block" tabindex="0" role="region" aria-label="Comparación de tipos de conexión">
+            <table class="agent-plans-table agent-plans-table--compact conn-compare-table">
+              <thead>
+                <tr>
+                  <th scope="col">Conexión</th>
+                  <th scope="col">Para qué sirve</th>
+                  <th scope="col">Nivel técnico</th>
+                  <th scope="col">Ideal para</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Panel web</th>
+                  <td>Operar campañas y revisar resultados</td>
+                  <td>Bajo</td>
+                  <td>Empresas que quieren usar Telvoice de inmediato</td>
+                </tr>
+                <tr>
+                  <th scope="row">Telegram Bot</th>
+                  <td>Recibir SMS y alertas en Telegram</td>
+                  <td>Bajo</td>
+                  <td>Equipos pequeños, pruebas, monitoreo rápido</td>
+                </tr>
+                <tr>
+                  <th scope="row">Webhooks</th>
+                  <td>Disparar automatizaciones y eventos</td>
+                  <td>Medio</td>
+                  <td>Make, n8n, flujos conectados, automatización</td>
+                </tr>
+                <tr>
+                  <th scope="row">API REST</th>
+                  <td>Integración profunda con sistemas propios</td>
+                  <td>Alto</td>
+                  <td>CRM, ecommerce, software interno, desarrolladores</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Nota seguridad -->
+      <section class="lab-section lab-section--compact" aria-label="Nota sobre uso de integraciones">
+        <div class="lab-section-inner lab-section-inner--agent-plans">
+          <p class="conn-security-note" role="note">Las integraciones y eventos de Telvoice están pensados para comunicaciones empresariales, automatizaciones legítimas y validaciones autorizadas. Algunas funcionalidades se habilitan según caso de uso, validación comercial y configuración técnica.</p>
+        </div>
+      </section>
+
+      <!-- CTA final -->
+      <section class="lab-cta-final lab-section lab-section--compact" aria-labelledby="conn-cta-title">
+        <div class="lab-section-inner lab-section-inner--cta text-center">
+          <h2 id="conn-cta-title" class="lab-section-title">Elige cómo quieres conectar tu operación SMS</h2>
+          <p class="lab-section-intro mt-4 mx-auto">Comienza con un panel simple o escala hacia Telegram, Webhooks y API según el nivel de automatización que necesite tu empresa.</p>
+          <div class="lab-cta-final__actions mt-8 flex flex-wrap justify-center gap-4">
+            <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_especialista_conn_final">Hablar con un especialista</a>
+            <a href="https://agent.telvoice.cl/login" class="lab-btn-secondary" data-track="click_probar_agente_conn_final">Probar el agente</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="lab-footer" role="contentinfo">
+      <div class="lab-shell pt-14 pb-6">
+        <div class="grid grid-cols-1 gap-12 border-b border-white/10 pb-12 md:grid-cols-2 lg:grid-cols-12 lg:gap-10">
+          <div class="lg:col-span-4">
+            <a href="./" class="inline-flex items-center gap-2" aria-label="Telvoice Lab, ir al inicio">
+              <img src="../assets/telvoice-isotipo.png" alt="" width="40" height="40" class="h-10 w-10 object-contain" aria-hidden="true" />
+              <span class="font-bold lowercase text-white lab-logo-word">telvoice</span>
+            </a>
+            <p class="mt-4 max-w-sm text-sm leading-relaxed text-slate-400">
+              Operación SMS empresarial con agente telco y panel web. Numeración propia Telvoice, campañas asistidas y canal SMS dedicado para tu operación.
+            </p>
+          </div>
+          <div class="grid grid-cols-2 gap-10 sm:grid-cols-3 md:col-span-2 lg:col-span-8 lg:grid-cols-3">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Producto</p>
+              <ul class="mt-4 space-y-3 text-sm">
+                <li><a href="./#agente-telvoice">Agente Telvoice</a></li>
+                <li><a href="planes-agente.html">Planes del agente</a></li>
+                <li><a href="numeracion-sim.html">Números SIM reales</a></li>
+                <li><a href="./#calculadora">Bolsas SMS</a></li>
+                <li><a href="panel-api.html" aria-current="page">Panel + API</a></li>
+              </ul>
+            </div>
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Recursos</p>
+              <ul class="mt-4 space-y-3 text-sm">
+                <li><a href="./#casos-uso">Casos de uso</a></li>
+                <li><a href="./#faq">FAQ</a></li>
+                <li><a href="../ayuda/">Centro de ayuda</a></li>
+              </ul>
+            </div>
+            <div class="col-span-2 sm:col-span-1">
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Legal</p>
+              <ul class="mt-4 space-y-3 text-sm">
+                <li><a href="../terminos-y-condiciones/">Términos y condiciones</a></li>
+                <li><a href="../politica-de-privacidad/">Política de privacidad</a></li>
+                <li><a href="../uso-responsable/">Uso responsable</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="pt-8 text-sm text-slate-500">
+          <p>© 2026 Telvoice.cl. Todos los derechos reservados.</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var toggle = document.getElementById("menu-toggle");
+      var panel = document.getElementById("mobile-panel");
+      if (toggle && panel) {
+        toggle.addEventListener("click", function () {
+          var open = panel.classList.toggle("hidden");
+          toggle.setAttribute("aria-expanded", open ? "false" : "true");
+          document.getElementById("menu-icon-open").classList.toggle("hidden", !open);
+          document.getElementById("menu-icon-close").classList.toggle("hidden", open);
+        });
+      }
+
+      function setDropdownOpen(toggleEl, menu, open) {
+        if (!toggleEl || !menu) return;
+        toggleEl.setAttribute("aria-expanded", open ? "true" : "false");
+        menu.hidden = !open;
+        toggleEl.closest(".lab-nav-dropdown").classList.toggle("is-open", open);
+      }
+
+      document.querySelectorAll(".lab-nav-dropdown").forEach(function (wrap) {
+        var t = wrap.querySelector(".lab-nav-dropdown-toggle");
+        var menu = wrap.querySelector(".lab-nav-dropdown-menu");
+        if (!t || !menu) return;
+        t.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var open = t.getAttribute("aria-expanded") !== "true";
+          document.querySelectorAll(".lab-nav-dropdown.is-open").forEach(function (other) {
+            if (other !== wrap) {
+              setDropdownOpen(other.querySelector(".lab-nav-dropdown-toggle"), other.querySelector(".lab-nav-dropdown-menu"), false);
+            }
+          });
+          setDropdownOpen(t, menu, open);
+        });
+        menu.querySelectorAll("a").forEach(function (link) {
+          link.addEventListener("click", function () { setDropdownOpen(t, menu, false); });
+        });
+      });
+    })();
+  </script>
+  <script src="../js/telvoice-web-agent-loader.js?v=20260626" data-root="../"></script>
+</body>
+</html>
