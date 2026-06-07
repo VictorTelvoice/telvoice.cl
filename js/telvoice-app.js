@@ -1256,6 +1256,89 @@
     });
   }
 
+  function initPreciosTabs() {
+    var tabButtons = document.querySelectorAll("[data-precios-tab]");
+    var panelBolsas = qs("calculadora");
+    var panelSim = qs("numeracion-sim");
+    if (!tabButtons.length || !panelBolsas || !panelSim) return;
+
+    function activate(tabId, options) {
+      options = options || {};
+      tabButtons.forEach(function (btn) {
+        var isActive = btn.getAttribute("data-precios-tab") === tabId;
+        btn.setAttribute("aria-selected", isActive ? "true" : "false");
+      });
+      if (tabId === "sim") {
+        panelBolsas.setAttribute("hidden", "");
+        panelSim.removeAttribute("hidden");
+      } else {
+        panelSim.setAttribute("hidden", "");
+        panelBolsas.removeAttribute("hidden");
+      }
+      if (options.updateHash && tabId === "sim") {
+        if (window.location.hash !== "#numeracion-sim") {
+          history.replaceState(null, "", "#numeracion-sim");
+        }
+      } else if (options.updateHash && tabId === "bolsas") {
+        if (window.location.hash === "#numeracion-sim") {
+          history.replaceState(null, "", "#precios");
+        }
+      }
+    }
+
+    function tabFromHash() {
+      var hash = (window.location.hash || "").replace(/^#/, "");
+      if (hash === "numeracion-sim" || hash === "sim") return "sim";
+      return "bolsas";
+    }
+
+    tabButtons.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        activate(btn.getAttribute("data-precios-tab"), { updateHash: true });
+      });
+    });
+
+    document.querySelectorAll("[data-precios-switch]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        activate(btn.getAttribute("data-precios-switch"), { updateHash: true });
+        var precios = qs("precios");
+        if (precios) precios.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    activate(tabFromHash());
+
+    window.addEventListener("hashchange", function () {
+      activate(tabFromHash());
+    });
+
+    document.querySelectorAll(".sim-plan-cta-link").forEach(function (link) {
+      link.addEventListener("click", function () {
+        var plan = link.getAttribute("data-sim-plan") || "SIM";
+        var nota = qs("lead-nota");
+        var uso = qs("uso-principal");
+        if (nota) {
+          nota.value = "Interés en numeración SIM real Telvoice — plan " + plan + ".";
+        }
+        if (uso && !uso.value) {
+          uso.value = "integracion-api";
+        }
+      });
+    });
+
+    var specialistCta = document.querySelector("[data-track=\"click_sim_especialista\"]");
+    if (specialistCta) {
+      specialistCta.addEventListener("click", function () {
+        var nota = qs("lead-nota");
+        if (nota && !nota.value) {
+          nota.value = "Consulta sobre numeración SIM real en Chile (Telvoice).";
+        }
+      });
+    }
+  }
+
+  initPreciosTabs();
+
   function initFaq() {
     var more = qs("faq-more");
     var btn = qs("faq-show-more");

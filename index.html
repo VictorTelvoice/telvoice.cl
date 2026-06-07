@@ -933,6 +933,428 @@
       }
     }
 
+    /* ── Precios: tabs Bolsas / SIM ── */
+    .precios-section-intro {
+      max-width: 42rem;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .precios-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 0.35rem;
+      margin: 2rem auto 2.5rem;
+      padding: 0.35rem;
+      max-width: 30rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(0, 82, 204, 0.14);
+      background: linear-gradient(180deg, #f8fafd 0%, #edf3fa 100%);
+    }
+    .precios-tab {
+      flex: 1;
+      padding: 0.7rem 1rem;
+      border-radius: 9999px;
+      font-family: Montserrat, sans-serif;
+      font-weight: 700;
+      font-size: 0.8125rem;
+      letter-spacing: -0.01em;
+      color: #5c6478;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .precios-tab[aria-selected="true"] {
+      background: #0052cc;
+      color: #ffffff;
+      box-shadow: 0 8px 24px -8px rgba(0, 82, 204, 0.45);
+    }
+    .precios-tab:focus-visible {
+      outline: 2px solid #0052cc;
+      outline-offset: 2px;
+    }
+    .precios-tab-panel[hidden] {
+      display: none !important;
+    }
+
+    /* ── Numeración SIM real ── */
+    .sim-intro-pills {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+    .sim-intro-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.4rem 0.85rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(0, 82, 204, 0.14);
+      background: rgba(255, 255, 255, 0.85);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #43474e;
+    }
+    .sim-intro-pill .material-symbols-outlined {
+      font-size: 1rem;
+      color: #0052cc;
+    }
+    .sim-support-text {
+      margin-top: 1.25rem;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      color: #5c6478;
+      text-align: center;
+      max-width: 38rem;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .sim-plans-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+      margin-top: 2.5rem;
+      align-items: stretch;
+    }
+    @media (min-width: 900px) {
+      .sim-plans-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+      }
+      .sim-plan-card--featured {
+        transform: translateY(-0.35rem);
+      }
+    }
+    .sim-plan-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1.75rem 1.5rem;
+      border-radius: 1.25rem;
+      border: 1px solid rgba(195, 198, 214, 0.75);
+      background: #ffffff;
+      box-shadow: 0 4px 24px -8px rgba(15, 23, 42, 0.08);
+      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+      text-align: left;
+    }
+    .sim-plan-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 48px -14px rgba(0, 82, 204, 0.18);
+      border-color: rgba(0, 82, 204, 0.28);
+    }
+    .sim-plan-card--featured {
+      border: 2px solid #0052cc;
+      background: linear-gradient(160deg, #eff6ff 0%, #ffffff 52%);
+      box-shadow: 0 12px 40px -12px rgba(0, 82, 204, 0.22);
+      padding-top: 2.25rem;
+    }
+    .sim-plan-card--power {
+      padding-top: 2.25rem;
+    }
+    .sim-plan-card--featured:hover {
+      border-color: #0052cc;
+    }
+    .sim-plan-card--power {
+      border: 2px solid transparent;
+      background:
+        linear-gradient(#fff, #fff) padding-box,
+        linear-gradient(135deg, #f5a623, #d4a017) border-box;
+    }
+    .sim-plan-card--power:hover {
+      box-shadow: 0 20px 48px -14px rgba(245, 166, 35, 0.28);
+    }
+    .sim-plan-ribbon {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 0.35rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.625rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .sim-plan-ribbon--popular {
+      background: #0052cc;
+      color: #ffffff;
+    }
+    .sim-plan-ribbon--power {
+      background: linear-gradient(90deg, #f5a623, #d4a017);
+      color: #ffffff;
+    }
+    .sim-plan-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.6875rem;
+      font-weight: 800;
+      width: fit-content;
+    }
+    .sim-plan-card--starter .sim-plan-badge {
+      background: #f1f5f9;
+      color: #475569;
+    }
+    .sim-plan-card--featured .sim-plan-badge {
+      background: #dbeafe;
+      color: #0052cc;
+    }
+    .sim-plan-card--power .sim-plan-badge {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      color: #92400e;
+    }
+    .sim-plan-name {
+      margin: 0;
+      font-family: Montserrat, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #5c6478;
+    }
+    .sim-plan-card--featured .sim-plan-name { color: #0052cc; }
+    .sim-plan-card--power .sim-plan-name {
+      background: linear-gradient(90deg, #f5a623, #d4a017);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .sim-plan-price {
+      margin: 0;
+      font-family: Montserrat, sans-serif;
+      font-size: clamp(1.75rem, 4vw, 2.125rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: #131b2e;
+    }
+    .sim-plan-price-sub {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #5c6478;
+    }
+    .sim-plan-desc {
+      font-size: 0.875rem;
+      line-height: 1.55;
+      color: #5c6478;
+    }
+    .sim-plan-features {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      flex: 1;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .sim-plan-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      line-height: 1.4;
+      color: #43474e;
+    }
+    .sim-plan-features .material-symbols-outlined {
+      font-size: 1rem;
+      color: #10b981;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .sim-plan-learn {
+      padding: 0.85rem 1rem;
+      border-radius: 0.85rem;
+      background: #f8fafc;
+      border: 1px solid rgba(0, 82, 204, 0.08);
+    }
+    .sim-plan-card--featured .sim-plan-learn {
+      background: #eff6ff;
+      border-color: rgba(0, 82, 204, 0.12);
+    }
+    .sim-plan-card--power .sim-plan-learn {
+      background: linear-gradient(135deg, #fffbeb, #fef3c7);
+      border-color: rgba(245, 166, 35, 0.2);
+    }
+    .sim-plan-learn-label {
+      font-size: 0.625rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 0.25rem;
+    }
+    .sim-plan-learn-text {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #43474e;
+    }
+    .sim-plan-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      width: 100%;
+      padding: 0.85rem 1.25rem;
+      border-radius: 9999px;
+      font-family: Montserrat, sans-serif;
+      font-size: 0.875rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .sim-plan-cta--primary {
+      background: #0052cc;
+      color: #ffffff;
+    }
+    .sim-plan-cta--primary:hover {
+      background: #0047b3;
+    }
+    .sim-plan-card--power .sim-plan-cta--primary {
+      background: linear-gradient(90deg, #f5a623, #d4a017);
+      color: #ffffff;
+    }
+    .sim-explainer-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    @media (min-width: 640px) {
+      .sim-explainer-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 1024px) {
+      .sim-explainer-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .sim-explainer-card {
+      padding: 1.25rem;
+      border-radius: 1rem;
+      border: 1px solid rgba(0, 82, 204, 0.1);
+      background: #ffffff;
+    }
+    .sim-explainer-card .material-symbols-outlined {
+      font-size: 1.35rem;
+      color: #0052cc;
+    }
+    .sim-explainer-card h4 {
+      margin: 0.75rem 0 0.35rem;
+      font-family: Montserrat, sans-serif;
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #131b2e;
+    }
+    .sim-explainer-card p {
+      margin: 0;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      color: #5c6478;
+    }
+    .sim-agent-block {
+      margin-top: 3rem;
+      padding: 2rem 1.5rem;
+      border-radius: 1.25rem;
+      border: 1px solid rgba(0, 82, 204, 0.12);
+      background: linear-gradient(135deg, #f8fafd 0%, #edf3fa 100%);
+    }
+    @media (min-width: 768px) {
+      .sim-agent-block { padding: 2.5rem; }
+    }
+    .sim-compare-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    @media (min-width: 768px) {
+      .sim-compare-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .sim-compare-col {
+      padding: 1.25rem;
+      border-radius: 1rem;
+      background: #ffffff;
+      border: 1px solid rgba(0, 82, 204, 0.1);
+    }
+    .sim-compare-col h4 {
+      margin: 0 0 0.75rem;
+      font-family: Montserrat, sans-serif;
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #0052cc;
+    }
+    .sim-compare-col ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .sim-compare-col li {
+      font-size: 0.8125rem;
+      color: #43474e;
+      padding-left: 1.1rem;
+      position: relative;
+    }
+    .sim-compare-col li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: #0052cc;
+      font-weight: 700;
+    }
+    .sim-responsible-block {
+      margin-top: 2.5rem;
+      padding: 1.75rem 1.5rem;
+      border-radius: 1.25rem;
+      border: 1px solid rgba(195, 198, 214, 0.65);
+      background: #ffffff;
+    }
+    .sim-responsible-block ul {
+      margin: 1rem 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 0.5rem;
+    }
+    @media (min-width: 768px) {
+      .sim-responsible-block ul { grid-template-columns: repeat(2, 1fr); gap: 0.65rem 1.25rem; }
+    }
+    .sim-responsible-block li {
+      display: flex;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      color: #5c6478;
+      line-height: 1.45;
+    }
+    .sim-responsible-block li .material-symbols-outlined {
+      font-size: 1rem;
+      color: #94a3b8;
+      flex-shrink: 0;
+    }
+    .sim-final-cta {
+      margin-top: 2.5rem;
+      padding: 2rem 1.5rem;
+      border-radius: 1.25rem;
+      text-align: center;
+      border: 1px solid rgba(0, 82, 204, 0.12);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafd 100%);
+    }
+    .sim-final-cta-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+    @media (min-width: 640px) {
+      .sim-final-cta-actions { flex-direction: row; justify-content: center; }
+    }
+
     .faq-details summary {
       list-style: none;
     }
@@ -2362,7 +2784,7 @@
         </span>
       </a>
       <ul class="hidden lg:flex gap-1 items-center">
-        <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="#calculadora">Arma tu bolsa</a></li>
+        <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="#precios">Precios</a></li>
         <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="#casos-uso">Casos de uso</a></li>
         <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="#api">API</a></li>
         <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="#empresas">Empresas</a></li>
@@ -2379,7 +2801,7 @@
     </div>
     <div id="mobile-panel" class="hidden lg:hidden border-t border-outline-variant/30 bg-surface/95 backdrop-blur-md py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 max-w-container-max mx-auto">
       <ul class="flex flex-col gap-1">
-        <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#calculadora">Arma tu bolsa</a></li>
+        <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#precios">Precios</a></li>
         <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#casos-uso">Casos de uso</a></li>
         <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#api">API</a></li>
         <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#empresas">Empresas</a></li>
@@ -2781,59 +3203,246 @@
       </div>
     </section>
 
-    <!-- Arma tu bolsa -->
-    <section id="calculadora" class="section-calc section-block-lg section-bg-white" aria-labelledby="calc-titulo" tabindex="-1">
-      <div class="section-inner mx-auto max-w-[920px]">
-        <header class="section-header">
-          <span class="section-eyebrow">Arma tu bolsa</span>
-          <h2 id="calc-titulo" class="calc-hero-title mt-3 font-h2 text-h2">Bolsas SMS para cada etapa de tu empresa.</h2>
-          <p class="calc-hero-intro section-intro mt-4 text-on-surface-variant leading-relaxed">Selecciona la cantidad de SMS que necesitas y conoce el valor estimado según el tramo.</p>
+    <!-- Precios: Bolsas SMS + Numeración SIM real -->
+    <section id="precios" class="section-calc section-block-lg section-bg-white" aria-labelledby="precios-titulo" tabindex="-1">
+      <div class="section-inner mx-auto max-w-[1100px]">
+        <header class="section-header precios-section-intro">
+          <span class="section-eyebrow">Precios</span>
+          <h2 id="precios-titulo" class="calc-hero-title mt-3 font-h2 text-h2">Elige cómo operar SMS en Chile</h2>
+          <p class="calc-hero-intro section-intro mt-4 text-on-surface-variant leading-relaxed">Bolsas prepago para envíos masivos o numeración SIM real para recibir SMS, operar validaciones autorizadas y automatizaciones desde números móviles chilenos.</p>
         </header>
-        <div class="calc-panel">
-          <div class="calc-slider-block">
-            <div class="calc-slider-head">
-              <span class="calc-slider-label">Cantidad de SMS</span>
-              <span id="calcVol" class="calc-vol-display" aria-live="polite">1.000 SMS</span>
+
+        <div class="precios-tabs" role="tablist" aria-label="Categorías de precios">
+          <button type="button" class="precios-tab" role="tab" id="precios-tab-bolsas" aria-controls="calculadora" aria-selected="true" data-precios-tab="bolsas">Bolsas SMS</button>
+          <button type="button" class="precios-tab" role="tab" id="precios-tab-sim" aria-controls="numeracion-sim" aria-selected="false" data-precios-tab="sim">Números SIM reales</button>
+        </div>
+
+        <!-- Panel: Bolsas SMS (calculadora existente) -->
+        <div id="calculadora" class="precios-tab-panel precios-tab-panel--bolsas" role="tabpanel" aria-labelledby="precios-tab-bolsas" tabindex="-1">
+          <header class="section-header mx-auto max-w-[920px]">
+            <span class="section-eyebrow">Arma tu bolsa</span>
+            <h3 class="calc-hero-title mt-3 font-h2 text-h2 text-[clamp(1.35rem,3.5vw,2rem)]">Bolsas SMS para cada etapa de tu empresa.</h3>
+            <p class="calc-hero-intro section-intro mt-4 text-on-surface-variant leading-relaxed">Selecciona la cantidad de SMS que necesitas y conoce el valor estimado según el tramo.</p>
+          </header>
+          <div class="calc-panel mx-auto max-w-[920px]">
+            <div class="calc-slider-block">
+              <div class="calc-slider-head">
+                <span class="calc-slider-label">Cantidad de SMS</span>
+                <span id="calcVol" class="calc-vol-display" aria-live="polite">1.000 SMS</span>
+              </div>
+              <label for="calcSlider" class="sr-only">Cantidad de SMS</label>
+              <input id="calcSlider" class="calc-range-input w-full" type="range" min="0" max="109" step="1" value="0" aria-valuemin="1000" aria-valuemax="120000" aria-valuenow="1000" />
+              <div id="calcSliderSuggestions" class="calc-tier-chips" role="group" aria-label="Cantidades sugeridas por tramo de precio"></div>
             </div>
-            <label for="calcSlider" class="sr-only">Cantidad de SMS</label>
-            <input id="calcSlider" class="calc-range-input w-full" type="range" min="0" max="109" step="1" value="0" aria-valuemin="1000" aria-valuemax="120000" aria-valuenow="1000" />
-            <div id="calcSliderSuggestions" class="calc-tier-chips" role="group" aria-label="Cantidades sugeridas por tramo de precio"></div>
-          </div>
-          <div class="calc-result-panel" aria-live="polite">
-            <div class="calc-result-grid">
-              <div class="calc-result-dl">
-                <div class="calc-result-row">
-                  <span class="calc-result-row-label">Cantidad seleccionada</span>
-                  <span id="calcQty" class="calc-result-row-value">1.000 SMS</span>
+            <div class="calc-result-panel" aria-live="polite">
+              <div class="calc-result-grid">
+                <div class="calc-result-dl">
+                  <div class="calc-result-row">
+                    <span class="calc-result-row-label">Cantidad seleccionada</span>
+                    <span id="calcQty" class="calc-result-row-value">1.000 SMS</span>
+                  </div>
+                  <div class="calc-result-row">
+                    <span class="calc-result-row-label">Valor unitario</span>
+                    <span id="calcPxSMS" class="calc-result-row-value">$10 + IVA por SMS</span>
+                  </div>
                 </div>
-                <div class="calc-result-row">
-                  <span class="calc-result-row-label">Valor unitario</span>
-                  <span id="calcPxSMS" class="calc-result-row-value">$10 + IVA por SMS</span>
+                <div class="calc-result-total-wrap">
+                  <span class="calc-result-total-label">Total estimado (IVA incl.)</span>
+                  <strong id="calcTotal" class="calc-result-total-value">$11.900</strong>
                 </div>
               </div>
-              <div class="calc-result-total-wrap">
-                <span class="calc-result-total-label">Total estimado (IVA incl.)</span>
-                <strong id="calcTotal" class="calc-result-total-value">$11.900</strong>
+              <p class="calc-result-note">Monto total en CLP con IVA incluido, según cantidad y tramo de precio unitario.</p>
+            </div>
+            <p class="calc-footnote">El cálculo es referencial según los tramos vigentes. Hasta 120.000 SMS puedes comprar online desde aquí.</p>
+            <div class="pack-includes-block mx-auto max-w-4xl mt-8">
+              <p class="pack-includes-title">Todas las bolsas incluyen</p>
+              <div class="pack-includes">
+                <ul class="pack-includes-list">
+                  <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Plataforma web para gestión de envíos</li>
+                  <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Reportería de campañas</li>
+                  <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Acceso API sujeto a solicitud</li>
+                </ul>
               </div>
             </div>
-            <p class="calc-result-note">Monto total en CLP con IVA incluido, según cantidad y tramo de precio unitario.</p>
+            <div class="calc-cta-wrap">
+              <button type="button" id="calc-buy-btn" class="calc-cta-btn calc-cta-btn--buy inline-flex w-full items-center justify-center rounded-full bg-primary px-10 py-4 font-body-md font-semibold text-on-primary shadow-lg transition hover:bg-surface-tint" data-track="click_comprar_online_calc">Comprar online</button>
+              <p class="mt-3">
+                <button type="button" id="calc-quote-link" class="calc-cta-link border-0 bg-transparent p-0 font-inherit cursor-pointer" data-track="click_cotiza_alto_volumen">¿Necesitas más de 120.000 SMS? Cotiza con el agente</button>
+              </p>
+            </div>
           </div>
-          <p class="calc-footnote">El cálculo es referencial según los tramos vigentes. Hasta 120.000 SMS puedes comprar online desde aquí.</p>
-          <div class="pack-includes-block mx-auto max-w-4xl mt-8">
-            <p class="pack-includes-title">Todas las bolsas incluyen</p>
-            <div class="pack-includes">
-              <ul class="pack-includes-list">
-                <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Plataforma web para gestión de envíos</li>
-                <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Reportería de campañas</li>
-                <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Acceso API sujeto a solicitud</li>
+        </div>
+
+        <!-- Panel: Numeración SIM real -->
+        <div id="numeracion-sim" class="precios-tab-panel precios-tab-panel--sim" role="tabpanel" aria-labelledby="precios-tab-sim" hidden tabindex="-1">
+          <header class="section-header">
+            <span class="section-eyebrow">Numeración SIM real</span>
+            <h3 class="calc-hero-title mt-3 font-h2 text-h2 text-[clamp(1.35rem,3.5vw,2rem)]">Números SIM reales en Chile para recibir y enviar SMS</h3>
+            <p class="section-intro mt-4 text-on-surface-variant leading-relaxed">Activa una numeración móvil real en Chile para recibir SMS, operar validaciones autorizadas, conectar automatizaciones y enviar mensajes salientes desde una plataforma empresarial.</p>
+            <div class="sim-intro-pills" aria-label="Características principales">
+              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">sim_card</span> SIM real en Chile</span>
+              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">sms</span> Recepción SMS</span>
+              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">send</span> SMS salientes incluidos</span>
+              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">verified_user</span> Validaciones autorizadas</span>
+              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">hub</span> API y Webhooks</span>
+            </div>
+            <p class="sim-support-text">Una solución Telvoice basada en infraestructura Telsim para empresas que necesitan números reales, trazabilidad y control operativo.</p>
+          </header>
+
+          <div class="sim-plans-grid">
+            <!-- Starter -->
+            <article class="sim-plan-card sim-plan-card--starter">
+              <p class="sim-plan-name">Starter</p>
+              <span class="sim-plan-badge"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:0.9rem">send</span> 1.000 SMS salientes incluidos</span>
+              <p class="sim-plan-price">Desde $19.990 <span class="sim-plan-price-sub">/ mes</span></p>
+              <p class="sim-plan-price-sub">por número SIM real</p>
+              <p class="sim-plan-desc">Para usuarios, emprendedores y equipos pequeños que necesitan un número móvil real en Chile para recibir SMS y operar procesos autorizados sin usar un teléfono personal.</p>
+              <ul class="sim-plan-features">
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Número SIM real en Chile</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Recepción de SMS entrantes</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> 1.000 SMS salientes mensuales</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Visualización de mensajes en plataforma</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Notificaciones en tiempo real</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Uso en cuentas propias y procesos autorizados</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Soporte técnico vía ticket</li>
               </ul>
+              <div class="sim-plan-learn">
+                <p class="sim-plan-learn-label">Saber más</p>
+                <p class="sim-plan-learn-text">Usuarios individuales, validaciones autorizadas y operación básica.</p>
+              </div>
+              <a href="#contacto" class="sim-plan-cta sim-plan-cta--primary sim-plan-cta-link" data-sim-plan="Starter" data-track="click_sim_plan_starter">Activar Starter</a>
+            </article>
+
+            <!-- Pro -->
+            <article class="sim-plan-card sim-plan-card--featured sim-plan-card--pro">
+              <span class="sim-plan-ribbon sim-plan-ribbon--popular">Más popular</span>
+              <p class="sim-plan-name">Pro</p>
+              <span class="sim-plan-badge"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:0.9rem">send</span> 2.000 SMS salientes incluidos</span>
+              <p class="sim-plan-price">Desde $39.990 <span class="sim-plan-price-sub">/ mes</span></p>
+              <p class="sim-plan-price-sub">por número SIM real</p>
+              <p class="sim-plan-desc">Para equipos de IA, automatizadores, DevOps y empresas que necesitan recibir SMS, conectar eventos y enviar mensajes desde un número real.</p>
+              <ul class="sim-plan-features">
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Todo lo incluido en Starter</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> 2.000 SMS salientes mensuales</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Acceso a API y Webhooks</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Integración con TelegramBot</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Automatizaciones SMS autorizadas</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Alertas y eventos en tiempo real</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Historial de mensajes</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Soporte técnico vía ticket y chat</li>
+              </ul>
+              <div class="sim-plan-learn">
+                <p class="sim-plan-learn-label">Saber más</p>
+                <p class="sim-plan-learn-text">Equipos IA, DevOps, automatizadores y operaciones digitales.</p>
+              </div>
+              <a href="#contacto" class="sim-plan-cta sim-plan-cta--primary sim-plan-cta-link" data-sim-plan="Pro" data-track="click_sim_plan_pro">Activar Pro</a>
+            </article>
+
+            <!-- Power -->
+            <article class="sim-plan-card sim-plan-card--power">
+              <span class="sim-plan-ribbon sim-plan-ribbon--power">Potencia total</span>
+              <p class="sim-plan-name">Power</p>
+              <span class="sim-plan-badge"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:0.9rem">send</span> 4.000 SMS salientes incluidos</span>
+              <p class="sim-plan-price">Desde $99.990 <span class="sim-plan-price-sub">/ mes</span></p>
+              <p class="sim-plan-price-sub">por número SIM real</p>
+              <p class="sim-plan-desc">Para empresas, fintech, plataformas, growth y operaciones críticas que necesitan mayor capacidad, control y soporte prioritario.</p>
+              <ul class="sim-plan-features">
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Todo lo incluido en Pro</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> 4.000 SMS salientes mensuales</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Seguridad y control empresarial</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Integraciones personalizadas</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Webhooks avanzados</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Priorización operativa</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Soporte prioritario</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Revisión de caso de uso antes de activación</li>
+              </ul>
+              <div class="sim-plan-learn">
+                <p class="sim-plan-learn-label">Saber más</p>
+                <p class="sim-plan-learn-text">Fintech, corporativos, plataformas y operación crítica.</p>
+              </div>
+              <a href="#contacto" class="sim-plan-cta sim-plan-cta--primary sim-plan-cta-link" data-sim-plan="Power" data-track="click_sim_plan_power">Activar Power</a>
+            </article>
+          </div>
+
+          <!-- ¿Qué estás contratando? -->
+          <div class="mt-12 md:mt-16">
+            <h3 class="font-h3 text-h3 text-on-background text-center">¿Qué estás contratando?</h3>
+            <p class="section-intro mt-4 text-on-surface-variant leading-relaxed text-center max-w-3xl mx-auto">Cada plan incluye una numeración SIM real en Chile, recepción de SMS entrantes y una cantidad mensual de SMS salientes. Esta solución está pensada para empresas, equipos técnicos y automatizadores que necesitan operar comunicaciones móviles reales sin depender de un teléfono personal.</p>
+            <div class="sim-explainer-grid">
+              <div class="sim-explainer-card">
+                <span class="material-symbols-outlined" aria-hidden="true">sim_card</span>
+                <h4>Número SIM real</h4>
+                <p>Operación sobre infraestructura SIM real, no numeración VoIP genérica.</p>
+              </div>
+              <div class="sim-explainer-card">
+                <span class="material-symbols-outlined" aria-hidden="true">sms</span>
+                <h4>Recepción SMS</h4>
+                <p>Recibe mensajes, respuestas y códigos de validación en procesos autorizados.</p>
+              </div>
+              <div class="sim-explainer-card">
+                <span class="material-symbols-outlined" aria-hidden="true">send</span>
+                <h4>SMS salientes incluidos</h4>
+                <p>Cada plan incluye una cantidad mensual de mensajes salientes para pruebas, alertas, respuestas o automatizaciones.</p>
+              </div>
+              <div class="sim-explainer-card">
+                <span class="material-symbols-outlined" aria-hidden="true">hub</span>
+                <h4>Automatización</h4>
+                <p>Desde el plan Pro puedes conectar eventos mediante API, Webhooks o TelegramBot.</p>
+              </div>
             </div>
           </div>
-          <div class="calc-cta-wrap">
-            <button type="button" id="calc-buy-btn" class="calc-cta-btn calc-cta-btn--buy inline-flex w-full items-center justify-center rounded-full bg-primary px-10 py-4 font-body-md font-semibold text-on-primary shadow-lg transition hover:bg-surface-tint" data-track="click_comprar_online_calc">Comprar online</button>
-            <p class="mt-3">
-              <button type="button" id="calc-quote-link" class="calc-cta-link border-0 bg-transparent p-0 font-inherit cursor-pointer" data-track="click_cotiza_alto_volumen">¿Necesitas más de 120.000 SMS? Cotiza con el agente</button>
-            </p>
+
+          <!-- Agente Telvoice -->
+          <div class="sim-agent-block">
+            <h3 class="font-h3 text-h3 text-on-background">Potencia tu número SIM real con un Agente Telvoice</h3>
+            <p class="mt-3 text-on-surface-variant leading-relaxed max-w-3xl">La numeración SIM real te entrega el canal. El Agente Telvoice agrega inteligencia conversacional para interpretar mensajes, recibir órdenes, consultar saldos, enviar alertas y conectar tus SMS con procesos internos.</p>
+            <div class="sim-compare-grid">
+              <div class="sim-compare-col">
+                <h4>Numeración SIM real</h4>
+                <ul>
+                  <li>Recibe SMS</li>
+                  <li>Envía SMS salientes</li>
+                  <li>Entrega acceso a plataforma</li>
+                  <li>Permite webhooks en planes avanzados</li>
+                </ul>
+              </div>
+              <div class="sim-compare-col">
+                <h4>Agente Telvoice</h4>
+                <ul>
+                  <li>Interpreta mensajes</li>
+                  <li>Responde consultas</li>
+                  <li>Ejecuta comandos autorizados</li>
+                  <li>Automatiza flujos</li>
+                  <li>Genera reportes y alertas</li>
+                </ul>
+              </div>
+            </div>
+            <div class="mt-6 text-center md:text-left">
+              <a href="landing-agent-lab/planes-agente.html" class="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3.5 font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_ver_planes_agente_sim">Ver planes del Agente Telvoice</a>
+            </div>
+          </div>
+
+          <!-- Uso responsable -->
+          <div class="sim-responsible-block">
+            <h3 class="font-h3 text-h3 text-on-background">Uso autorizado y operación empresarial</h3>
+            <p class="mt-3 text-on-surface-variant leading-relaxed">La numeración SIM real de Telvoice está diseñada para cuentas propias, procesos autorizados, comunicaciones empresariales, validaciones permitidas y automatizaciones legítimas. No está destinada a suplantación, abuso, spam, evasión de controles ni recepción de códigos de cuentas de terceros.</p>
+            <ul>
+              <li><span class="material-symbols-outlined" aria-hidden="true">info</span> Activación sujeta a validación comercial.</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">info</span> Disponibilidad de numeración según stock operativo.</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">info</span> Uso permitido solo en cuentas propias o procesos autorizados.</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">info</span> Consumo adicional de SMS se cotiza por separado.</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">info</span> Integraciones avanzadas pueden requerir setup inicial.</li>
+            </ul>
+          </div>
+
+          <!-- CTA final SIM -->
+          <div class="sim-final-cta">
+            <h3 class="font-h3 text-h3 text-on-background">Activa tu número SIM real en Chile con Telvoice</h3>
+            <p class="section-intro mt-3 text-on-surface-variant leading-relaxed max-w-2xl mx-auto">Elige un plan, recibe tu numeración y comienza a operar SMS entrantes, SMS salientes y automatizaciones desde una plataforma diseñada para empresas.</p>
+            <div class="sim-final-cta-actions">
+              <a href="#contacto" class="inline-flex items-center justify-center rounded-full bg-primary px-10 py-4 font-body-md font-semibold text-on-primary shadow-lg transition hover:bg-surface-tint" data-track="click_sim_especialista">Hablar con un especialista</a>
+              <button type="button" class="inline-flex items-center justify-center rounded-full border-2 border-primary/25 bg-transparent px-10 py-4 font-body-md font-semibold text-primary transition hover:border-primary/40 hover:bg-primary/5" data-precios-tab="bolsas" data-precios-switch="bolsas" data-track="click_ver_bolsas_desde_sim">Ver bolsas SMS</button>
+            </div>
           </div>
         </div>
       </div>
@@ -3111,7 +3720,8 @@
             <p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Telvoice.cl</p>
             <ul class="mt-4 space-y-3">
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#inicio">SMS masivos Chile</a></li>
-              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#calculadora">Arma tu bolsa</a></li>
+              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#precios">Precios</a></li>
+              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#numeracion-sim">Números SIM reales</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#api">API SMS</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#empresas">Empresas</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#contacto">Contacto</a></li>
@@ -3120,7 +3730,7 @@
           <div>
             <p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Recursos</p>
             <ul class="mt-4 space-y-3">
-              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#calculadora">Arma tu bolsa</a></li>
+              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#precios">Precios y bolsas SMS</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#casos-uso">Casos de uso</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="ayuda/">Centro de ayuda</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="https://portal.telvoice.net/" target="_blank" rel="noopener noreferrer">Portal cliente</a></li>
