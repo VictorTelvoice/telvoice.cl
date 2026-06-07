@@ -55,6 +55,14 @@ export function getAppPanelStyles(): string {
     .tv-app-client .tv-btn-buy-sms__icon {
       font-size: 1.15rem;
     }
+    .tv-app-client .tv-btn-buy-sms__icon,
+    .tv-app-client .tv-btn-buy-sms__label {
+      color: #fff;
+    }
+    .tv-inbox-mode,
+    .tv-inbox-mode .badge {
+      white-space: nowrap;
+    }
     .tv-app-client .tv-btn-buy-sms:hover { filter: brightness(1.05); text-decoration: none; }
     @media (max-width: 900px) {
       .tv-app-client .tv-topbar__pills .tv-pill--account-status {
@@ -1754,10 +1762,84 @@ export function getAppPanelStyles(): string {
       font-size: 0.82rem;
     }
     .tv-invoice-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.25rem;
       white-space: nowrap;
+    }
+    .tv-invoice-actions__group {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-wrap: nowrap;
+    }
+    .tv-invoice-action {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.1rem;
+      height: 2.1rem;
+      padding: 0;
+      border-radius: 0.55rem;
+      border: 1px solid var(--tv-border);
+      background: var(--tv-surface);
+      color: var(--tv-muted);
+      text-decoration: none;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .tv-invoice-action .material-symbols-outlined {
+      font-size: 1.15rem;
+      line-height: 1;
+    }
+    .tv-invoice-action--primary {
+      color: var(--tv-primary);
+      border-color: rgba(0, 82, 204, 0.22);
+      background: rgba(0, 82, 204, 0.06);
+    }
+    .tv-invoice-action:hover:not(.tv-invoice-action--disabled):not(:disabled) {
+      border-color: rgba(0, 82, 204, 0.32);
+      background: rgba(0, 82, 204, 0.08);
+      color: var(--tv-primary);
+      text-decoration: none;
+    }
+    .tv-invoice-action--disabled,
+    .tv-invoice-action:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+    }
+    .tv-invoice-action__tip {
+      position: absolute;
+      bottom: calc(100% + 0.45rem);
+      left: 50%;
+      transform: translateX(-50%) translateY(4px);
+      padding: 0.35rem 0.55rem;
+      border-radius: 0.45rem;
+      background: #0f172a;
+      color: #f8fafc;
+      font-size: 0.72rem;
+      font-weight: 600;
+      line-height: 1.25;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+      z-index: 4;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.22);
+    }
+    .tv-invoice-action__tip::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: #0f172a;
+    }
+    .tv-invoice-action:hover .tv-invoice-action__tip,
+    .tv-invoice-action:focus-visible .tv-invoice-action__tip {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) translateY(0);
     }
     .tv-invoice-detail-grid {
       display: grid;

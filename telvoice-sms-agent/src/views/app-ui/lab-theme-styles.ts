@@ -301,6 +301,15 @@ export function getLabPanelThemeStyles(): string {
       border-radius: 9999px;
       background: linear-gradient(135deg, #0052cc 0%, #1d4ed8 50%, #0369a1 100%);
       box-shadow: 0 4px 16px rgba(0, 82, 204, 0.28);
+      color: #fff !important;
+    }
+    .tv-lab-theme.tv-app-client .tv-btn-buy-sms__icon,
+    .tv-lab-theme.tv-app-client .tv-btn-buy-sms__label {
+      color: #fff !important;
+    }
+    .tv-lab-theme .tv-inbox-mode,
+    .tv-lab-theme .tv-inbox-mode .badge {
+      white-space: nowrap;
     }
     .tv-lab-theme.tv-app-client .tv-user__avatar {
       background: linear-gradient(135deg, var(--tv-lab-cyan), var(--tv-lab-purple));
@@ -544,16 +553,13 @@ export function getLabPanelThemeStyles(): string {
       background: transparent;
     }
 
-    /* —— Calculadora Comprar SMS —— */
-    .tv-lab-theme .tv-buy-sms-calc .calc-hero-title,
-    .tv-lab-theme .tv-buy-sms-calc .pack-includes {
-      background: transparent !important;
-      border-color: var(--tv-lab-border) !important;
-    }
-    .tv-lab-theme .tv-buy-sms-calc .pack-includes-title {
+    /* —— Calculadora Comprar SMS (landing lab) —— */
+    .tv-lab-theme .tv-buy-sms-calc .calc-hero-title {
       color: var(--tv-lab-text);
       font-family: Montserrat, Inter, sans-serif;
+      font-size: clamp(1.5rem, 3.5vw, 2rem);
     }
+    .tv-lab-theme .tv-buy-sms-calc .pack-includes-title,
     .tv-lab-theme .tv-buy-sms-calc .section-eyebrow {
       color: var(--tv-lab-cyan);
     }
@@ -564,57 +570,187 @@ export function getLabPanelThemeStyles(): string {
       color: var(--tv-lab-muted);
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-panel {
-      background: var(--tv-lab-surface) !important;
-      border: 1px solid var(--tv-lab-border) !important;
-      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03) inset, 0 16px 48px -24px rgba(0, 0, 0, 0.55) !important;
-      backdrop-filter: blur(16px);
+      background: rgba(14, 22, 48, 0.82) !important;
+      border: 1px solid rgba(0, 82, 204, 0.14) !important;
+      box-shadow: 0 16px 48px -24px rgba(0, 0, 0, 0.55) !important;
+      backdrop-filter: blur(12px);
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-slider-block {
-      border-bottom-color: var(--tv-lab-border);
+      border-bottom-color: rgba(120, 160, 255, 0.14);
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-slider-label {
       color: var(--tv-lab-text);
+      font-weight: 600;
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-vol-display,
     .tv-lab-theme .tv-buy-sms-calc .calc-result-total-value {
       color: var(--tv-lab-cyan);
     }
+    .tv-lab-theme .tv-buy-sms-calc .calc-range-input {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 8px;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.15);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-range-input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0052cc, #22d3ee);
+      cursor: grab;
+      box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.2);
+      border: 2px solid #0a1024;
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-tier-chips {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.4rem 0.35rem;
+      margin-top: 1rem;
+    }
+    @media (min-width: 768px) {
+      .tv-lab-theme .tv-buy-sms-calc .calc-tier-chips {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        gap: 0.3rem;
+      }
+      .tv-lab-theme .tv-buy-sms-calc .calc-tier-chip {
+        flex: 1 1 0;
+        min-width: 0;
+        flex-direction: row;
+        border-radius: 9999px;
+        min-height: 1.75rem;
+        padding: 0.28rem 0.45rem;
+        font-size: 0.6875rem;
+      }
+    }
     .tv-lab-theme .tv-buy-sms-calc .calc-tier-chip {
-      background: rgba(8, 14, 36, 0.65) !important;
-      border-color: var(--tv-lab-border) !important;
+      background: rgba(6, 12, 32, 0.65) !important;
+      border-color: rgba(0, 82, 204, 0.2) !important;
       color: var(--tv-lab-muted) !important;
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-tier-chip:hover {
-      border-color: var(--tv-lab-border-bright) !important;
-      background: rgba(56, 189, 248, 0.08) !important;
+      border-color: rgba(0, 82, 204, 0.4) !important;
+      color: var(--tv-lab-cyan) !important;
+      background: rgba(0, 82, 204, 0.15) !important;
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-tier-chip.is-active {
-      background: rgba(0, 82, 204, 0.35) !important;
-      border-color: var(--tv-lab-cyan) !important;
+      border-color: #0052cc !important;
+      background: linear-gradient(135deg, rgba(0, 82, 204, 0.85), rgba(3, 105, 161, 0.75)) !important;
       color: #fff !important;
-      box-shadow: 0 0 20px rgba(56, 189, 248, 0.15);
-    }
-    .tv-lab-theme .tv-buy-sms-calc .calc-tier-chip.is-active .calc-tier-chip-sub {
-      color: rgba(238, 242, 255, 0.85) !important;
+      box-shadow: 0 4px 14px -4px rgba(0, 82, 204, 0.45);
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-result-panel {
-      background: rgba(8, 14, 36, 0.55) !important;
-      border: 1px solid var(--tv-lab-border) !important;
+      margin-top: 1.25rem;
+      padding: 1rem 1rem 0.875rem;
+      border-radius: 0.875rem;
+      background: linear-gradient(180deg, rgba(16, 24, 52, 0.55) 0%, rgba(10, 16, 38, 0.42) 100%) !important;
+      border: 1px solid rgba(120, 160, 255, 0.12) !important;
     }
-    .tv-lab-theme .tv-buy-sms-calc .calc-result-row-label,
-    .tv-lab-theme .tv-buy-sms-calc .calc-result-total-label {
+    .tv-lab-theme .tv-buy-sms-calc .calc-result-heading {
+      margin: 0;
+      font-family: Montserrat, Inter, sans-serif;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--tv-lab-muted);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-result-qty {
+      margin: 0.2rem 0 0.625rem;
+      font-family: Montserrat, Inter, sans-serif;
+      font-size: clamp(1.25rem, 3vw, 1.625rem);
+      font-weight: 700;
+      color: var(--tv-lab-text);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-result-breakdown {
+      display: grid;
+      gap: 0.35rem;
+      padding-bottom: 0.625rem;
+      border-bottom: 1px solid rgba(120, 160, 255, 0.1);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-result-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-result-row-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
       color: var(--tv-lab-muted);
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-result-row-value {
+      font-size: 0.9375rem;
+      font-weight: 600;
       color: var(--tv-lab-text);
+      white-space: nowrap;
     }
-    .tv-lab-theme .tv-buy-sms-calc .calc-result-note {
-      color: var(--tv-lab-muted);
+    .tv-lab-theme .tv-buy-sms-calc .calc-result-total-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      margin: 0.625rem 0 0.5rem;
+      padding: 0.5rem 0;
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-result-total-label {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--tv-lab-cyan);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-result-total-value {
+      font-family: Montserrat, Inter, sans-serif;
+      font-size: clamp(1.5rem, 3.5vw, 2rem);
+      font-weight: 700;
+      color: var(--tv-lab-cyan);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-cta-wrap {
+      margin-top: 0;
+      text-align: center;
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-cta-btn--primary {
+      min-height: 2.875rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #0052cc, #0369a1) !important;
+      box-shadow: 0 4px 20px rgba(0, 82, 204, 0.35);
+      width: 100%;
+    }
+    .tv-lab-theme .tv-buy-sms-calc .lab-pack-includes {
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(120, 160, 255, 0.1);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .pack-includes-title {
+      text-align: center;
+      font-weight: 600;
+      color: var(--tv-lab-text);
+      margin-bottom: 0.75rem;
+    }
+    .tv-lab-theme .tv-buy-sms-calc .pack-includes-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.75rem 1.5rem;
+      list-style: none;
+      padding: 0;
+      margin: 0;
     }
     .tv-lab-theme .tv-buy-sms-calc .pack-includes-item {
-      background: rgba(8, 14, 36, 0.55) !important;
-      border: 1px solid var(--tv-lab-border) !important;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.875rem;
       color: var(--tv-lab-muted) !important;
+      background: transparent !important;
+      border: none !important;
+      padding: 0;
     }
     .tv-lab-theme .tv-buy-sms-calc .pack-includes-item .material-symbols-outlined {
       color: var(--tv-lab-cyan);
@@ -623,9 +759,12 @@ export function getLabPanelThemeStyles(): string {
       background: rgba(12, 20, 48, 0.65) !important;
       border: 1px solid var(--tv-lab-border-bright) !important;
       color: var(--tv-lab-text) !important;
+      width: 100%;
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-cta-link {
       color: var(--tv-lab-cyan);
+      text-decoration: underline;
+      text-underline-offset: 3px;
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-cta-link:hover {
       color: #7dd3fc;
@@ -706,6 +845,29 @@ export function getLabPanelThemeStyles(): string {
     .tv-lab-theme .btn-ghost:hover:not(:disabled),
     .tv-lab-theme .btn-secondary:hover:not(:disabled) {
       background: rgba(56, 189, 248, 0.08) !important;
+    }
+    .tv-lab-theme .tv-invoice-action {
+      background: rgba(8, 14, 36, 0.55) !important;
+      border-color: var(--tv-lab-border) !important;
+      color: var(--tv-lab-muted) !important;
+    }
+    .tv-lab-theme .tv-invoice-action--primary {
+      color: var(--tv-lab-cyan) !important;
+      border-color: rgba(56, 189, 248, 0.28) !important;
+      background: rgba(56, 189, 248, 0.1) !important;
+    }
+    .tv-lab-theme .tv-invoice-action:hover:not(.tv-invoice-action--disabled):not(:disabled) {
+      border-color: var(--tv-lab-border-bright) !important;
+      background: rgba(56, 189, 248, 0.12) !important;
+      color: var(--tv-lab-cyan) !important;
+    }
+    .tv-lab-theme .tv-invoice-action__tip {
+      background: rgba(6, 10, 26, 0.96);
+      color: var(--tv-lab-text);
+      border: 1px solid var(--tv-lab-border);
+    }
+    .tv-lab-theme .tv-invoice-action__tip::after {
+      border-top-color: rgba(6, 10, 26, 0.96);
     }
   `;
 }

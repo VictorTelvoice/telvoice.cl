@@ -1240,7 +1240,7 @@ export function renderAppInboxPage(
               <table class="tv-table tv-table--dash">
                 <thead><tr>
                   <th>Fecha</th><th>Destinatario</th><th>Remitente</th><th>Mensaje</th>
-                  <th>Seg.</th><th>Costo SMS</th><th>Estado</th><th>Modo</th><th>Referencia</th><th>Error</th>
+                  <th>Seg.</th><th>Estado</th><th>Modo</th><th>Referencia</th><th>Error</th>
                 </tr></thead>
                 <tbody>${renderInboxTableRows(messages)}</tbody>
               </table>

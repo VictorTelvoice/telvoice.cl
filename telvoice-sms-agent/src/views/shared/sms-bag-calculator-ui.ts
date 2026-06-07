@@ -569,9 +569,9 @@ export function renderSmsBagCalculatorPanel(
 
   return `<section class="tv-buy-sms-calc" aria-labelledby="tv-buy-calc-title">
       <header class="section-header">
-        <span class="section-eyebrow">Arma tu bolsa</span>
-        <h2 id="tv-buy-calc-title" class="calc-hero-title">Bolsas SMS para cada etapa de tu empresa.</h2>
-        <p class="calc-hero-intro">Selecciona la cantidad de SMS que necesitas y conoce el valor estimado según el tramo.</p>
+        <span class="section-eyebrow">Bolsas SMS</span>
+        <h2 id="tv-buy-calc-title" class="calc-hero-title">Calcula tu bolsa SMS</h2>
+        <p class="calc-hero-intro">Selecciona la cantidad de SMS y revisa el total antes de comprar.</p>
       </header>
       <div class="calc-panel">
         <div class="calc-slider-block">
@@ -584,42 +584,43 @@ export function renderSmsBagCalculatorPanel(
           <div id="tvCalcSliderSuggestions" class="calc-tier-chips" role="group" aria-label="Cantidades sugeridas por tramo de precio"></div>
         </div>
         <div class="calc-result-panel" aria-live="polite">
-          <div class="calc-result-grid">
-            <div class="calc-result-dl">
-              <div class="calc-result-row">
-                <span class="calc-result-row-label">Cantidad seleccionada</span>
-                <span id="tvCalcQty" class="calc-result-row-value">1.000 SMS</span>
-              </div>
-              <div class="calc-result-row">
-                <span class="calc-result-row-label">Valor unitario</span>
-                <span id="tvCalcPxSMS" class="calc-result-row-value">$10 + IVA por SMS</span>
-              </div>
+          <h3 class="calc-result-heading">Detalle de bolsa</h3>
+          <p id="tvCalcQty" class="calc-result-qty">1.000 SMS</p>
+          <div class="calc-result-breakdown">
+            <div class="calc-result-row">
+              <span class="calc-result-row-label">Precio unitario</span>
+              <span id="tvCalcPxSMS" class="calc-result-row-value">$10 + IVA por SMS</span>
             </div>
-            <div class="calc-result-total-wrap">
-              <span class="calc-result-total-label">Total estimado (IVA incl.)</span>
-              <strong id="tvCalcTotal" class="calc-result-total-value">$11.900</strong>
+            <div class="calc-result-row">
+              <span class="calc-result-row-label">Subtotal</span>
+              <span id="tvCalcSubtotal" class="calc-result-row-value">$10.000</span>
+            </div>
+            <div class="calc-result-row">
+              <span class="calc-result-row-label">IVA 19%</span>
+              <span id="tvCalcIva" class="calc-result-row-value">$1.900</span>
             </div>
           </div>
-          <p class="calc-result-note">Monto total en CLP con IVA incluido, según cantidad y tramo de precio unitario.</p>
+          <div class="calc-result-total-row">
+            <span class="calc-result-total-label">Total</span>
+            <strong id="tvCalcTotal" class="calc-result-total-value">$11.900</strong>
+          </div>
+          <div class="calc-cta-wrap">
+            <div class="calc-cta-actions">${mpButton}${manualButton}</div>
+            ${mpNote}
+            <p class="calc-result-links" style="margin:0.75rem 0 0">
+              <a href="/app/support" class="calc-cta-link">¿Necesitas más de ${maxLabel} SMS? Cotiza con soporte</a>
+            </p>
+          </div>
+        </div>
+        <div class="lab-pack-includes pack-includes-block">
+          <p class="pack-includes-title">Todas las bolsas incluyen</p>
+          <ul class="pack-includes-list">
+            <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Plataforma web para gestión de envíos</li>
+            <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Reportería de campañas</li>
+            <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Acceso API sujeto a solicitud</li>
+          </ul>
         </div>
         <p class="calc-footnote">El cálculo es referencial según los tramos vigentes. Hasta ${maxLabel} SMS puedes comprar online desde aquí.</p>
-        <div class="pack-includes-block">
-          <p class="pack-includes-title">Todas las bolsas incluyen</p>
-          <div class="pack-includes">
-            <ul class="pack-includes-list">
-              <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Plataforma web para gestión de envíos</li>
-              <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Reportería de campañas</li>
-              <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Acceso API sujeto a solicitud</li>
-            </ul>
-          </div>
-        </div>
-        <div class="calc-cta-wrap">
-          <div class="calc-cta-actions">${mpButton}${manualButton}</div>
-          ${mpNote}
-          <p class="mt-3" style="margin:0.75rem 0 0">
-            <a href="/app/support" class="calc-cta-link">¿Necesitas más de ${maxLabel} SMS? Cotiza con soporte</a>
-          </p>
-        </div>
       </div>
   </section>
   <script>
@@ -664,7 +665,8 @@ export function renderSmsBagCalculatorPanel(
       }
       return null;
     }
-    function formatTotalWithIva(net) { return "$" + fmt(Math.round(net * (1 + ivaRate))); }
+    function formatMoney(n) { return "$" + fmt(Math.round(n)); }
+    function formatTotalWithIva(net) { return formatMoney(net * (1 + ivaRate)); }
     function tierSuggestions() {
       var out = [];
       tiers.forEach(function (tier, i) {
@@ -677,6 +679,8 @@ export function renderSmsBagCalculatorPanel(
     var calcVol = document.getElementById("tvCalcVol");
     var calcQty = document.getElementById("tvCalcQty");
     var calcPxSMS = document.getElementById("tvCalcPxSMS");
+    var calcSubtotal = document.getElementById("tvCalcSubtotal");
+    var calcIva = document.getElementById("tvCalcIva");
     var calcTotal = document.getElementById("tvCalcTotal");
     var suggestionsEl = document.getElementById("tvCalcSliderSuggestions");
     var mpQty = document.getElementById("tv-buy-calc-mp-qty");
@@ -686,7 +690,7 @@ export function renderSmsBagCalculatorPanel(
     function setSliderProgress() {
       var idx = +slider.value;
       var pct = sliderMax > 0 ? (idx / sliderMax) * 100 : 0;
-      slider.style.background = "linear-gradient(to right, #0052cc " + pct + "%, #c3c6d6 " + pct + "%)";
+      slider.style.background = "linear-gradient(to right, #0052cc " + pct + "%, rgba(56, 189, 248, 0.15) " + pct + "%)";
     }
     function syncHiddenQty(vol) {
       if (mpQty) mpQty.value = String(vol);
@@ -702,9 +706,12 @@ export function renderSmsBagCalculatorPanel(
       var tier = findCalcTier(vol);
       if (!tier) return;
       var net = vol * tier.pxSMS;
+      var iva = Math.round(net * ivaRate);
       if (calcQty) calcQty.textContent = fmt(vol) + " SMS";
       if (calcPxSMS) calcPxSMS.textContent = "$" + tier.pxSMS + " + IVA por SMS";
-      if (calcTotal) calcTotal.textContent = formatTotalWithIva(net);
+      if (calcSubtotal) calcSubtotal.textContent = formatMoney(net);
+      if (calcIva) calcIva.textContent = formatMoney(iva);
+      if (calcTotal) calcTotal.textContent = formatMoney(net + iva);
       if (mpBtn) mpBtn.textContent = "Pagar " + fmt(vol) + " SMS con Mercado Pago";
       syncHiddenQty(vol);
       if (suggestionsEl) {

@@ -19,6 +19,11 @@ export function telvoiceAgentWidgetStylesheetHref(): string {
   }
 }
 export const TELVOICE_AGENT_ISOTIPO = "/assets/telvoice-agent-isotipo.png";
+export const TELVOICE_AGENT_FLOATING_PNG = "/assets/telvoice-agent-floating-clean.png";
+export const TELVOICE_AGENT_FLOATING_WEBP = "/assets/telvoice-agent-floating-clean.webp";
+export const TELVOICE_AGENT_PROFILE_PNG = "/assets/telvoice-agent-profile.png";
+export const TELVOICE_AGENT_PROFILE_WEBP = "/assets/telvoice-agent-profile.webp";
+export const TELVOICE_AGENT_WIDGET_LAB_CSS_HREF = "/css/telvoice-agent-widget-lab.css";
 
 export type TelvoiceAgentWidgetVariant = "app" | "admin";
 
@@ -44,8 +49,21 @@ export const TELVOICE_AGENT_LABELS: Record<TelvoiceAgentWidgetVariant, TelvoiceA
   },
 };
 
-export function renderTelvoiceAgentStylesheetLink(): string {
-  return `<link rel="stylesheet" href="${telvoiceAgentWidgetStylesheetHref()}" />`;
+export function renderTelvoiceAgentStylesheetLink(options?: { lab?: boolean }): string {
+  const base = `<link rel="stylesheet" href="${telvoiceAgentWidgetStylesheetHref()}" />`;
+  if (!options?.lab) return base;
+  try {
+    const ver = readFileSync(
+      `${getPublicDir()}/telvoice-agent-widget.ver`,
+      "utf8",
+    ).trim();
+    const href = ver
+      ? `${TELVOICE_AGENT_WIDGET_LAB_CSS_HREF}?v=${encodeURIComponent(ver)}`
+      : TELVOICE_AGENT_WIDGET_LAB_CSS_HREF;
+    return `${base}\n<link rel="stylesheet" href="${href}" />`;
+  } catch {
+    return `${base}\n<link rel="stylesheet" href="${TELVOICE_AGENT_WIDGET_LAB_CSS_HREF}" />`;
+  }
 }
 
 /** Banner de identidad en páginas hub de entrenamiento (superadmin). */
@@ -75,10 +93,11 @@ export type TelvoiceAgentWidgetShellOptions = {
 
 export function renderTelvoiceAgentWidgetShell(options: TelvoiceAgentWidgetShellOptions): string {
   const labels = TELVOICE_AGENT_LABELS[options.variant];
+  const useLab = options.variant === "app";
   const rootClass = [
     "tva-root",
     "tva-root--embedded",
-    "tva-root--quick-visible",
+    useLab ? "tva-root--lab" : "tva-root--quick-visible",
     options.rootExtraClass ?? "",
   ]
     .filter(Boolean)
@@ -86,22 +105,40 @@ export function renderTelvoiceAgentWidgetShell(options: TelvoiceAgentWidgetShell
   const showInput = options.showInput !== false;
   const placeholder = options.inputPlaceholder ?? "Escribe tu consulta…";
 
-  return `<div class="${rootClass}" id="${options.rootId}" aria-live="polite">
-  <div class="tva-launcher-wrap">
-    <button type="button" class="tva-launcher" id="${options.fabId}" aria-expanded="false" aria-controls="${options.panelId}" aria-label="${labels.fabAriaLabel}">
-      <img src="${TELVOICE_AGENT_ISOTIPO}" alt="" width="48" height="48" decoding="async" data-tva-iso="1" />
-      <span class="tva-launcher-online" aria-hidden="true" title="En línea"></span>
-    </button>
-  </div>
-  <div id="${options.panelId}" class="tva-panel" role="dialog" aria-labelledby="${options.rootId}-title" aria-modal="true">
-    <div class="tva-header">
+  const launcherInner = useLab
+    ? `<span class="tva-launcher-iso" data-tva-launcher-iso="1" aria-hidden="true"></span>`
+    : `<img src="${TELVOICE_AGENT_ISOTIPO}" alt="" width="48" height="48" decoding="async" data-tva-iso="1" />`;
+
+  const headerBlock = useLab
+    ? `<div class="tva-header tva-header--lab">
+      <div class="tva-header-brand">
+        <span class="tva-header-iso" data-tva-header-iso="1" aria-hidden="true"></span>
+        <div class="tva-header-text">
+          <h2 id="${options.rootId}-title">${labels.title}</h2>
+          <p class="tva-header-role">${labels.subtitle}</p>
+        </div>
+      </div>
+      <span class="tva-header-status">En línea</span>
+      <button type="button" class="tva-close" id="${options.rootId}-close" aria-label="Cerrar chat"><span aria-hidden="true">×</span></button>
+    </div>`
+    : `<div class="tva-header">
       <img src="${TELVOICE_AGENT_ISOTIPO}" alt="" width="40" height="40" decoding="async" data-tva-iso="1" />
       <div class="tva-header-text">
         <h2 id="${options.rootId}-title">${labels.title}</h2>
         <p>${labels.subtitle}</p>
       </div>
       <button type="button" class="tva-close" id="${options.rootId}-close" aria-label="Cerrar chat"><span aria-hidden="true">×</span></button>
-    </div>
+    </div>`;
+
+  return `<div class="${rootClass}" id="${options.rootId}" aria-live="polite">
+  <div class="tva-launcher-wrap">
+    <button type="button" class="tva-launcher" id="${options.fabId}" aria-expanded="false" aria-controls="${options.panelId}" aria-label="${labels.fabAriaLabel}">
+      ${launcherInner}
+      <span class="tva-launcher-online" aria-hidden="true" title="En línea"></span>
+    </button>
+  </div>
+  <div id="${options.panelId}" class="tva-panel" role="dialog" aria-labelledby="${options.rootId}-title" aria-modal="true">
+    ${headerBlock}
     <div class="tva-suggestions" id="${options.rootId}-suggestions">
       <div class="tva-suggestions-panel" id="${options.rootId}-suggestions-panel">
         <div class="tva-quick" id="${options.rootId}-quick"></div>

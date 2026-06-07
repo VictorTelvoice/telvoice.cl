@@ -154,7 +154,7 @@ export function renderCampaignClientStatusBadge(campaign: SmsCampaignRow): strin
 
 export function renderInboxTableRows(messages: PanelSmsMessageRow[]): string {
   if (!messages.length) {
-    return `<tr><td colspan="10">Aún no hay mensajes enviados.</td></tr>`;
+    return `<tr><td colspan="9">Aún no hay mensajes enviados.</td></tr>`;
   }
   return messages
     .map(
@@ -164,9 +164,8 @@ export function renderInboxTableRows(messages: PanelSmsMessageRow[]): string {
       <td>${escapeHtml(m.sender_id ?? "—")}</td>
       <td class="tv-cell-truncate" title="${escapeHtml(m.message)}">${escapeHtml(m.message.slice(0, 50))}${m.message.length > 50 ? "…" : ""}</td>
       <td>${m.segments}</td>
-      <td>${m.cost_sms}</td>
       <td>${renderPanelMessageStatusBadge(m.status, m.mode)}</td>
-      <td>${renderClientLiveModeBadge(m.mode)}</td>
+      <td class="tv-inbox-mode">${renderClientLiveModeBadge(m.mode)}</td>
       <td><code class="tv-code-sm" title="${escapeHtml(m.provider_message_id ?? "")}">${escapeHtml((m.provider_message_id ?? "—").slice(0, 12))}</code></td>
       <td class="tv-cell-truncate" title="${escapeHtml(m.error_message ?? "")}">${escapeHtml(m.error_message ?? "—")}</td>
     </tr>`,

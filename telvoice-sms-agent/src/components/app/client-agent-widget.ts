@@ -4,10 +4,13 @@
 
 import {
   renderTelvoiceAgentWidgetShell,
-  TELVOICE_AGENT_ISOTIPO,
+  TELVOICE_AGENT_FLOATING_PNG,
+  TELVOICE_AGENT_FLOATING_WEBP,
+  TELVOICE_AGENT_PROFILE_PNG,
+  TELVOICE_AGENT_PROFILE_WEBP,
 } from "../agent/telvoice-agent-widget-ui.js";
 
-export { TELVOICE_AGENT_ISOTIPO as PANEL_AGENT_ISOTIPO };
+export { TELVOICE_AGENT_FLOATING_PNG as PANEL_AGENT_ISOTIPO };
 
 const ROOT_ID = "tv-panel-agent";
 const FAB_ID = "tv-panel-agent-fab";
@@ -33,6 +36,27 @@ export function getPanelAgentWidgetScript(): string {
   return `(function () {
   var root = document.getElementById("${ROOT_ID}");
   if (!root) return;
+
+  var AGENT_FLOAT_PNG = "${TELVOICE_AGENT_FLOATING_PNG}";
+  var AGENT_FLOAT_WEBP = "${TELVOICE_AGENT_FLOATING_WEBP}";
+  var AGENT_PROFILE_PNG = "${TELVOICE_AGENT_PROFILE_PNG}";
+  var AGENT_PROFILE_WEBP = "${TELVOICE_AGENT_PROFILE_WEBP}";
+
+  function mountAgentImage(slot, context) {
+    if (!slot) return;
+    var png = context === "launcher" ? AGENT_FLOAT_PNG : AGENT_PROFILE_PNG;
+    var webp = context === "launcher" ? AGENT_FLOAT_WEBP : AGENT_PROFILE_WEBP;
+    var life = context === "launcher" ? '<span class="telvoice-agent-antenna-glow" aria-hidden="true"></span>' : "";
+    slot.innerHTML =
+      '<span class="telvoice-agent-avatar agent-live-motion telvoice-agent-avatar--' + context + '">' +
+      '<picture><source type="image/webp" srcset="' + webp + '" />' +
+      '<img class="telvoice-agent-avatar__img" src="' + png + '" alt="" decoding="async" draggable="false" /></picture>' +
+      life + "</span>";
+    slot.classList.add("tva-agent-iso-slot");
+  }
+
+  mountAgentImage(document.querySelector("#${ROOT_ID} .tva-launcher-iso"), "launcher");
+  mountAgentImage(document.querySelector("#${ROOT_ID} .tva-header-iso"), "header");
 
   var fab = document.getElementById("${FAB_ID}");
   var panel = document.getElementById("${PANEL_ID}");
@@ -111,9 +135,18 @@ export function getPanelAgentWidgetScript(): string {
     var wrap = document.createElement("div");
     wrap.className = "tva-msg-wrap tva-msg-wrap--bot";
     typingEl = document.createElement("div");
-    typingEl.className = "tva-msg tva-msg--bot tva-msg--typing";
+    typingEl.className = "tva-msg tva-msg--bot tva-msg--typing tva-msg--with-avatar";
     typingEl.setAttribute("aria-busy", "true");
-    typingEl.textContent = "Escribiendo…";
+    var avatar = document.createElement("picture");
+    avatar.className = "tva-msg-avatar-wrap";
+    avatar.innerHTML =
+      '<source type="image/webp" srcset="' + AGENT_PROFILE_WEBP + '" />' +
+      '<img class="tva-msg-avatar" src="' + AGENT_PROFILE_PNG + '" alt="" width="40" height="40" decoding="async" draggable="false" />';
+    var bubble = document.createElement("div");
+    bubble.className = "tva-msg-bubble";
+    bubble.textContent = "Escribiendo…";
+    typingEl.appendChild(avatar);
+    typingEl.appendChild(bubble);
     wrap.appendChild(typingEl);
     log.appendChild(wrap);
     log.scrollTop = log.scrollHeight;
@@ -124,8 +157,23 @@ export function getPanelAgentWidgetScript(): string {
     var wrap = document.createElement("div");
     wrap.className = "tva-msg-wrap tva-msg-wrap--" + (role === "user" ? "user" : "bot");
     var el = document.createElement("div");
-    el.className = "tva-msg tva-msg--" + (role === "user" ? "user" : "bot");
-    el.textContent = String(text || "").replace(/\\*\\*/g, "");
+    el.className = "tva-msg tva-msg--" + (role === "user" ? "user" : "bot") + " tva-msg--enter";
+    var cleanText = String(text || "").replace(/\\*\\*/g, "");
+    if (role === "user") {
+      el.textContent = cleanText;
+    } else {
+      el.classList.add("tva-msg--with-avatar");
+      var avatar = document.createElement("picture");
+      avatar.className = "tva-msg-avatar-wrap";
+      avatar.innerHTML =
+        '<source type="image/webp" srcset="' + AGENT_PROFILE_WEBP + '" />' +
+        '<img class="tva-msg-avatar" src="' + AGENT_PROFILE_PNG + '" alt="" width="40" height="40" decoding="async" draggable="false" />';
+      var bubble = document.createElement("div");
+      bubble.className = "tva-msg-bubble";
+      bubble.textContent = cleanText;
+      el.appendChild(avatar);
+      el.appendChild(bubble);
+    }
     wrap.appendChild(el);
     if (role !== "user" && sessionId) {
       var ctx = turnCtx || {

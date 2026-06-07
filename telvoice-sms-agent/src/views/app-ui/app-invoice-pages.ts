@@ -313,6 +313,37 @@ function renderSentToCell(
   return `<span class="field-hint">—</span>`;
 }
 
+function renderInvoiceAction(
+  opts: {
+    href?: string;
+    icon: string;
+    label: string;
+    disabled?: boolean;
+    primary?: boolean;
+    external?: boolean;
+  },
+): string {
+  const tip = escapeHtml(opts.label);
+  const icon = escapeHtml(opts.icon);
+  if (opts.disabled) {
+    return `<button type="button" class="tv-invoice-action tv-invoice-action--disabled" disabled title="${tip}" aria-label="${tip}">
+      <span class="material-symbols-outlined" aria-hidden="true">${icon}</span>
+      <span class="tv-invoice-action__tip">${tip}</span>
+    </button>`;
+  }
+  const cls = [
+    "tv-invoice-action",
+    opts.primary ? "tv-invoice-action--primary" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const target = opts.external ? ` target="_blank" rel="noopener"` : "";
+  return `<a class="${cls}" href="${opts.href ?? "#"}"${target} title="${tip}" aria-label="${tip}">
+    <span class="material-symbols-outlined" aria-hidden="true">${icon}</span>
+    <span class="tv-invoice-action__tip">${tip}</span>
+  </a>`;
+}
+
 function renderInvoiceTable(invoices: BillingInvoice[]): string {
   if (!invoices.length) {
     return `<section class="tv-panel">
@@ -338,11 +369,13 @@ function renderInvoiceTable(invoices: BillingInvoice[]): string {
         <td>${invoiceStatusBadge(inv.status)}</td>
         <td>${renderSentToCell(inv, undefined)}</td>
         <td class="tv-invoice-actions">
-          <a class="btn btn-ghost btn-sm" href="${detailHref}">Ver detalle</a>
-          <a class="btn btn-secondary btn-sm" href="${detailHref}/preview" target="_blank" rel="noopener">Ver comprobante</a>
-          <a class="btn btn-ghost btn-sm" href="${orderHref}">Orden</a>
-          <button type="button" class="btn btn-ghost btn-sm" disabled title="Próximamente">PDF</button>
-          <button type="button" class="btn btn-ghost btn-sm" disabled title="Próximamente">Reenviar</button>
+          <div class="tv-invoice-actions__group" role="group" aria-label="Acciones del documento">
+            ${renderInvoiceAction({ href: detailHref, icon: "visibility", label: "Ver detalle del documento" })}
+            ${renderInvoiceAction({ href: `${detailHref}/preview`, icon: "receipt_long", label: "Ver comprobante en pantalla", primary: true, external: true })}
+            ${renderInvoiceAction({ href: orderHref, icon: "shopping_bag", label: "Ir a la orden de compra" })}
+            ${renderInvoiceAction({ icon: "picture_as_pdf", label: "Descargar PDF (próximamente)", disabled: true })}
+            ${renderInvoiceAction({ icon: "forward_to_inbox", label: "Reenviar por correo (próximamente)", disabled: true })}
+          </div>
         </td>
       </tr>`;
     })
