@@ -1325,7 +1325,7 @@ export function getAppPanelStyles(): string {
       border-bottom: none;
     }
     .tv-client-dash-table-panel .tv-table--dash tbody tr:hover td {
-      background: #f8fbff;
+      background: rgba(0, 82, 204, 0.04);
     }
     .tv-client-dash-table-panel .tv-table-empty {
       padding: 1.5rem 1rem !important;
@@ -1823,7 +1823,7 @@ export function getAppPanelStyles(): string {
       padding: 0.85rem 0.9rem;
       border-radius: 12px;
       border: 1px solid var(--tv-border);
-      background: #fff;
+      background: var(--tv-surface);
       color: inherit;
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
@@ -1867,7 +1867,7 @@ export function getAppPanelStyles(): string {
     .tv-contacts-agenda__campaign { align-self: flex-start; }
     .tv-contacts-agenda--active {
       border-color: rgba(0, 82, 204, 0.32);
-      background: #f8fbff;
+      background: rgba(0, 82, 204, 0.06);
     }
     .tv-contacts-agenda__head {
       display: flex;

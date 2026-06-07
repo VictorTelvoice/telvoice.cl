@@ -234,6 +234,11 @@ export function getLabPanelThemeStyles(): string {
     .tv-lab-theme.tv-app-client .tv-sidebar__brand {
       border-bottom-color: var(--tv-lab-border);
     }
+    .tv-lab-theme.tv-app-client .tv-brand-lockup,
+    .tv-lab-theme.tv-app-client .tv-brand-lockup:hover,
+    .tv-lab-theme.tv-app-client .tv-brand-wordmark {
+      color: #fff !important;
+    }
     .tv-lab-theme.tv-app-client .tv-brand-lockup__sub {
       color: var(--tv-lab-cyan);
     }
@@ -392,9 +397,6 @@ export function getLabPanelThemeStyles(): string {
       color: var(--tv-lab-text);
       border-bottom-color: rgba(120, 160, 255, 0.08);
     }
-    .tv-lab-theme .tv-table tbody tr:hover {
-      background: rgba(56, 189, 248, 0.04);
-    }
     .tv-lab-theme .tv-table-empty {
       color: var(--tv-lab-muted);
     }
@@ -412,7 +414,7 @@ export function getLabPanelThemeStyles(): string {
     .tv-lab-theme .tv-overlay {
       background: rgba(5, 8, 20, 0.72);
     }
-    .tv-lab-theme a:not(.btn):not(.tv-nav-link):not(.tv-dash-block__link) {
+    .tv-lab-theme a:not(.btn):not(.tv-nav-link):not(.tv-dash-block__link):not(.tv-brand-lockup) {
       color: var(--tv-lab-cyan);
     }
 
@@ -451,6 +453,14 @@ export function getLabPanelThemeStyles(): string {
     .tv-lab-theme .tv-table tbody tr:hover,
     .tv-lab-theme tbody tr:hover {
       background: rgba(56, 189, 248, 0.05) !important;
+    }
+    .tv-lab-theme .tv-table tbody tr:hover td,
+    .tv-lab-theme tbody tr:hover td,
+    .tv-lab-theme .tv-client-dash-table-panel .tv-table--dash tbody tr:hover td {
+      background: rgba(56, 189, 248, 0.06) !important;
+    }
+    .tv-lab-theme .tv-inbox-row--active td {
+      background: rgba(56, 189, 248, 0.1) !important;
     }
     .tv-lab-theme .tv-dlr-report__pager {
       background: rgba(8, 14, 36, 0.75) !important;
@@ -536,6 +546,10 @@ export function getLabPanelThemeStyles(): string {
 
     /* —— Calculadora Comprar SMS —— */
     .tv-lab-theme .tv-buy-sms-calc .calc-hero-title,
+    .tv-lab-theme .tv-buy-sms-calc .pack-includes {
+      background: transparent !important;
+      border-color: var(--tv-lab-border) !important;
+    }
     .tv-lab-theme .tv-buy-sms-calc .pack-includes-title {
       color: var(--tv-lab-text);
       font-family: Montserrat, Inter, sans-serif;
@@ -637,6 +651,61 @@ export function getLabPanelThemeStyles(): string {
     }
     .tv-lab-theme .tv-send-confirm-modal__backdrop {
       background: rgba(5, 8, 20, 0.78) !important;
+    }
+
+    /* —— Pantallas restantes: sin blancos en hover ni tarjetas —— */
+    .tv-lab-theme .tv-contacts-agenda {
+      background: var(--tv-lab-surface) !important;
+      border-color: var(--tv-lab-border) !important;
+    }
+    .tv-lab-theme .tv-contacts-agenda:hover,
+    .tv-lab-theme .tv-contacts-agenda--active {
+      background: rgba(56, 189, 248, 0.08) !important;
+      border-color: var(--tv-lab-border-bright) !important;
+      box-shadow: none;
+    }
+    .tv-lab-theme .tv-contacts-bulk {
+      background: rgba(8, 14, 36, 0.55) !important;
+      border-color: var(--tv-lab-border) !important;
+    }
+    .tv-lab-theme .tv-contacts-wizard-choice:hover {
+      background: rgba(56, 189, 248, 0.06) !important;
+      border-color: var(--tv-lab-border-bright) !important;
+    }
+    .tv-lab-theme .tv-contacts-import-drop:hover,
+    .tv-lab-theme .tv-contacts-import-drop--drag {
+      background: rgba(56, 189, 248, 0.06) !important;
+      border-color: var(--tv-lab-border-bright) !important;
+    }
+    .tv-lab-theme .tv-panel--hint,
+    .tv-lab-theme .tv-invoice-event,
+    .tv-lab-theme .tv-send-confirm-stat,
+    .tv-lab-theme .tv-send-confirm-modal__meta,
+    .tv-lab-theme .tv-send-confirm-modal__footer {
+      background: rgba(8, 14, 36, 0.55) !important;
+      border-color: var(--tv-lab-border) !important;
+    }
+    .tv-lab-theme .tv-send-confirm-stat__value {
+      color: var(--tv-lab-text);
+    }
+    .tv-lab-theme .tv-send-confirm-stat__label {
+      color: var(--tv-lab-muted);
+    }
+    .tv-lab-theme .tv-send-confirm-modal__close:hover {
+      background: rgba(56, 189, 248, 0.1) !important;
+    }
+    .tv-lab-theme .tv-input-readonly-locked {
+      background: rgba(5, 8, 20, 0.45) !important;
+    }
+    .tv-lab-theme .tv-client-dash-table-panel .tv-table--dash tbody td {
+      border-bottom-color: rgba(120, 160, 255, 0.08) !important;
+    }
+    .tv-lab-theme .tv-dash-block__link:hover {
+      color: #7dd3fc;
+    }
+    .tv-lab-theme .btn-ghost:hover:not(:disabled),
+    .tv-lab-theme .btn-secondary:hover:not(:disabled) {
+      background: rgba(56, 189, 248, 0.08) !important;
     }
   `;
 }
