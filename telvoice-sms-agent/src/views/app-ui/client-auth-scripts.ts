@@ -130,6 +130,8 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
       setStatus("Creando cuenta en Telvoice…");
     }
 
+    let smsJustCredited = false;
+
     if (claimToken) {
       const claim = await fetch("/api/public/claim", {
         method: "POST",
@@ -141,6 +143,7 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
       });
       if (claim.ok) {
         localStorage.removeItem("telvoice_claim_token");
+        smsJustCredited = true;
       } else {
         try {
           const j = await claim.json();
@@ -152,7 +155,9 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
       }
     }
 
-    window.location.href = "/app/dashboard?welcome=1";
+    window.location.href = smsJustCredited
+      ? "/app/dashboard?welcome=1"
+      : "/app/dashboard";
   }
   async function tvCompleteAuthCallback() {
     if (window.__tvAuthCallbackRunning) {
