@@ -17,6 +17,7 @@ import { getCompanyBalance } from "../services/smsWalletService.js";
 import { listTransactionsByCompany } from "../services/walletTransactionService.js";
 import { env, isMercadoPagoConfigured } from "../config/env.js";
 import { getPricingTiersForQuote } from "../services/smsPricingTierService.js";
+import { getCompanySmsMpSubscription } from "../services/smsMpSubscriptionService.js";
 import { getCompanyPaymentCard, saveCompanyPaymentCardPreferences } from "../services/companyPaymentCardService.js";
 import { startPaymentCardSetupCheckout } from "../services/mercadoPagoClientPanelService.js";
 import type { PaymentBillingMode } from "../types/company-payment-card.js";
@@ -483,6 +484,7 @@ export async function getAppBuySms(
     const error =
       typeof req.query.error === "string" ? req.query.error.trim() : undefined;
     const pageCtx = error ? { ...ctx, error } : ctx;
+    const smsSubscription = await getCompanySmsMpSubscription(ctx.company.id);
     return renderAppBuySmsPage(
       pageCtx,
       {
@@ -494,6 +496,7 @@ export async function getAppBuySms(
         mercadoPagoAvailable: isMercadoPagoConfigured(),
         // Pago manual deshabilitado hasta habilitar operación (ignora env en prod).
         manualCheckoutEnabled: false,
+        smsSubscription,
       },
     );
   });

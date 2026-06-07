@@ -6405,3 +6405,102 @@
       color: var(--tv-lab-cyan, #38bdf8);
     }
   
+    .tv-sms-sub-banner {
+      margin-bottom: 1.25rem;
+      padding: 1.1rem 1.25rem;
+      border-radius: 1rem;
+      border: 1px solid var(--tv-border, rgba(203, 213, 225, 0.9));
+      background: var(--tv-surface, #fff);
+      box-shadow: 0 4px 20px -10px rgba(15, 23, 42, 0.12);
+    }
+    .tv-sms-sub-banner__head {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .tv-sms-sub-banner__icon {
+      font-size: 1.75rem;
+      color: #0052cc;
+      flex-shrink: 0;
+    }
+    .tv-sms-sub-banner__titles {
+      flex: 1;
+      min-width: 12rem;
+    }
+    .tv-sms-sub-banner__title {
+      margin: 0;
+      font-family: Montserrat, Inter, sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--tv-text, #0f172a);
+    }
+    .tv-sms-sub-banner__sub {
+      margin: 0.2rem 0 0;
+      font-size: 0.82rem;
+      color: var(--tv-muted, #64748b);
+    }
+    .tv-sms-sub-banner__badge {
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .tv-sms-sub-banner__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+      gap: 0.85rem 1.25rem;
+      margin: 1rem 0 0;
+      padding: 0;
+    }
+    .tv-sms-sub-banner__cell {
+      margin: 0;
+    }
+    .tv-sms-sub-banner__label {
+      margin: 0;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--tv-muted, #64748b);
+    }
+    .tv-sms-sub-banner__value {
+      margin: 0.2rem 0 0;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--tv-text, #0f172a);
+    }
+    .tv-sms-sub-banner__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    .tv-sms-sub-banner__hint {
+      margin: 0.85rem 0 0;
+      font-size: 0.82rem;
+      line-height: 1.45;
+      color: var(--tv-muted, #64748b);
+    }
+    .tv-sms-sub-banner--authorized {
+      border-color: rgba(0, 82, 204, 0.18);
+      background: linear-gradient(145deg, #ffffff 0%, #f0f7ff 100%);
+    }
+    .tv-sms-sub-banner--pending {
+      border-color: rgba(217, 119, 6, 0.25);
+      background: linear-gradient(145deg, #fffbeb 0%, #fff 100%);
+    }
+    .tv-sms-sub-banner--paused {
+      border-color: rgba(100, 116, 139, 0.25);
+      background: #f8fafc;
+    }
+    .tv-lab-theme .tv-sms-sub-banner--authorized {
+      background: linear-gradient(145deg, rgba(12, 20, 48, 0.92) 0%, rgba(0, 82, 204, 0.12) 100%);
+      border-color: rgba(56, 189, 248, 0.22);
+    }
+    .tv-lab-theme .tv-sms-sub-banner--pending {
+      background: rgba(12, 20, 48, 0.88);
+      border-color: rgba(251, 191, 36, 0.28);
+    }
+    .tv-lab-theme .tv-sms-sub-banner--paused {
+      background: rgba(12, 20, 48, 0.78);
+    }
+  

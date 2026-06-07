@@ -523,6 +523,7 @@ function serializeCalcConfig(config: SmsBagCalculatorPanelConfig): string {
 export type SmsBagCalculatorPanelOptions = {
   mercadoPagoAvailable: boolean;
   manualCheckoutEnabled: boolean;
+  smsSubscription?: import("../../types/sms-mp-subscription.js").CompanySmsMpSubscription | null;
 };
 
 export function renderSmsBagCalculatorPanel(
@@ -533,8 +534,25 @@ export function renderSmsBagCalculatorPanel(
   const canBuy = canOperateClientPanel(ctx.profile.role);
   const mpAvailable = options.mercadoPagoAvailable;
   const manualEnabled = options.manualCheckoutEnabled;
+  const sub = options.smsSubscription;
+  const blockNewSubscription =
+    sub?.status === "authorized" || sub?.status === "pending";
   const configJson = serializeCalcConfig(config);
   const maxLabel = new Intl.NumberFormat("es-CL").format(config.calcMaxVolume);
+
+  const subscribeButton =
+    canBuy && mpAvailable && !blockNewSubscription
+      ? `<form method="post" action="/app/buy-sms/mercadopago/subscribe" id="tv-buy-calc-sub-form">
+        <input type="hidden" name="sms_quantity" id="tv-buy-calc-sub-qty" value="1000" />
+        <button type="submit" class="calc-cta-btn calc-cta-btn--secondary" id="tv-buy-calc-sub-btn" title="Cargo automático cada mes por el mismo monto">
+          Suscripción mensual
+        </button>
+      </form>`
+      : canBuy && mpAvailable && blockNewSubscription
+        ? `<button type="button" class="calc-cta-btn calc-cta-btn--secondary" disabled title="Ya tienes una suscripción mensual activa o pendiente">
+          Suscripción mensual
+        </button>`
+        : "";
 
   const mpButton =
     canBuy && mpAvailable
@@ -544,12 +562,7 @@ export function renderSmsBagCalculatorPanel(
           Pagar con Mercado Pago
         </button>
       </form>
-      <form method="post" action="/app/buy-sms/mercadopago/subscribe" id="tv-buy-calc-sub-form">
-        <input type="hidden" name="sms_quantity" id="tv-buy-calc-sub-qty" value="1000" />
-        <button type="submit" class="calc-cta-btn calc-cta-btn--secondary" id="tv-buy-calc-sub-btn" title="Cargo automático cada mes por el mismo monto">
-          Suscripción mensual
-        </button>
-      </form>`
+      ${subscribeButton}`
       : canBuy
         ? `<button type="button" class="calc-cta-btn calc-cta-btn--primary" disabled title="Mercado Pago no disponible">
           Pagar con Mercado Pago

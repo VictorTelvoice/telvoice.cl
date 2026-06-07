@@ -23,6 +23,8 @@ import {
   renderSmsBagCalculatorPanel,
   type SmsBagCalculatorPanelConfig,
 } from "../shared/sms-bag-calculator-ui.js";
+import { renderSmsMpSubscriptionBanner } from "./app-sms-subscription-ui.js";
+import type { CompanySmsMpSubscription } from "../../types/sms-mp-subscription.js";
 
 function supportOrderHref(orderId: string): string {
   return `/app/support?order=${encodeURIComponent(orderId)}`;
@@ -35,11 +37,18 @@ export function renderAppBuySmsPage(
   checkoutOptions: {
     mercadoPagoAvailable: boolean;
     manualCheckoutEnabled: boolean;
+    smsSubscription?: CompanySmsMpSubscription | null;
   },
 ): string {
+  const subscription = checkoutOptions.smsSubscription ?? null;
   const body = `
     <div class="tv-buy-sms-page">
-      ${renderSmsBagCalculatorPanel(ctx, calcConfig, checkoutOptions)}
+      ${renderSmsMpSubscriptionBanner(subscription)}
+      ${renderSmsBagCalculatorPanel(ctx, calcConfig, {
+        mercadoPagoAvailable: checkoutOptions.mercadoPagoAvailable,
+        manualCheckoutEnabled: checkoutOptions.manualCheckoutEnabled,
+        smsSubscription: subscription,
+      })}
     </div>`;
   return wrapAppPage(ctx, "buy-sms", "Comprar SMS", body, {
     bodyClass: "tv-app-client--buy-sms",
