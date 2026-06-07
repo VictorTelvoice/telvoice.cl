@@ -5247,6 +5247,21 @@ html.lab-theme body {
   background: rgba(8, 14, 36, 0.55);
 }
 
+.agent-plans-notice--after-grid {
+  margin-top: 1.75rem;
+  margin-bottom: 0;
+}
+
+.agent-plans-grid--after-intro {
+  margin-top: 2rem;
+}
+
+@media (min-width: 768px) {
+  .agent-plans-grid--after-intro {
+    margin-top: 2.5rem;
+  }
+}
+
 .agent-plans-notice__icon {
   flex-shrink: 0;
   font-size: 1.25rem;

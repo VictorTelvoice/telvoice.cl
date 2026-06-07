@@ -114,44 +114,20 @@
     </nav>
 
     <main class="agent-plans-page agent-plans-page--v2">
-      <!-- Hero -->
-      <section class="lab-section lab-section--tight-top agent-plans-hero" id="planes-agente" aria-labelledby="agent-plans-hero-title" tabindex="-1">
-        <div class="lab-section-inner">
+      <!-- Hero + Planes -->
+      <section class="lab-section lab-section--tight-top agent-plans-hero agent-plans-pricing" id="planes-agente" aria-labelledby="agent-plans-hero-title" tabindex="-1">
+        <div class="lab-section-inner lab-section-inner--agent-plans">
           <header class="lab-header-center agent-plans-hero__header">
             <span class="lab-eyebrow">Planes del agente</span>
             <h1 id="agent-plans-hero-title" class="lab-section-title mt-4">Planes del Agente Telvoice</h1>
             <p class="lab-section-intro mt-4">
-              Un agente conversacional con línea incluida para operar campañas, recibir SMS, gestionar validaciones autorizadas y centralizar comunicaciones empresariales sin depender de teléfonos personales.
+              Un agente conversacional con línea incluida para operar campañas, recibir SMS, gestionar validaciones autorizadas y centralizar comunicaciones.
             </p>
-            <ul class="agent-plans-pills" role="list" aria-label="Capacidades incluidas">
-              <li class="agent-plans-pill">Línea incluida</li>
-              <li class="agent-plans-pill">Recepción SMS</li>
-              <li class="agent-plans-pill">Agente conversacional</li>
-              <li class="agent-plans-pill">Campañas asistidas</li>
-              <li class="agent-plans-pill">Validaciones autorizadas</li>
-            </ul>
-            <div class="agent-plans-hero__actions mt-8">
-              <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_contratar_agente_planes_hero">Contratar agente</a>
-              <a href="./#calculadora" class="lab-btn-secondary" data-track="click_ver_bolsas_planes_hero">Ver bolsas SMS</a>
-            </div>
-            <p class="agent-plans-hero__tagline">No es solo un chatbot. Es un agente operativo conectado a una línea SMS empresarial.</p>
           </header>
-        </div>
-      </section>
-
-      <!-- Planes -->
-      <section class="lab-section lab-section--compact agent-plans-pricing" id="planes" aria-labelledby="agent-plans-grid-title">
-        <div class="lab-section-inner lab-section-inner--agent-plans">
-          <div class="agent-plans-notice lab-glass-card" role="note">
-            <span class="agent-plans-notice__icon material-symbols-outlined" aria-hidden="true">info</span>
-            <p class="agent-plans-notice__text">
-              Todos los planes incluyen una <strong>línea Telvoice base</strong>. La línea puede ser SIM real única o número de red fija, según disponibilidad, país, caso de uso y validación comercial. El consumo SMS masivo, líneas adicionales e integraciones avanzadas pueden cotizarse aparte.
-            </p>
-          </div>
 
           <h2 id="agent-plans-grid-title" class="sr-only">Planes Start, Pro y Business</h2>
 
-          <div class="agent-plans-grid agent-plans-grid--three">
+          <div class="agent-plans-grid agent-plans-grid--three agent-plans-grid--after-intro">
             <!-- Start -->
             <article class="agent-plans-card agent-plans-card--compact lab-glass-card">
               <div class="agent-plans-card__head">
@@ -218,6 +194,13 @@
               <p class="agent-plans-card__micro">Para empresas que necesitan trazabilidad, automatización y control en comunicaciones sensibles.</p>
               <a href="https://agent.telvoice.cl/login" class="lab-btn-secondary agent-plans-card__cta w-full" data-track="click_contratar_business">Contratar Business</a>
             </article>
+          </div>
+
+          <div class="agent-plans-notice agent-plans-notice--after-grid lab-glass-card" role="note">
+            <span class="agent-plans-notice__icon material-symbols-outlined" aria-hidden="true">info</span>
+            <p class="agent-plans-notice__text">
+              Todos los planes incluyen una <strong>línea Telvoice base</strong>. La línea puede ser SIM real única o número de red fija, según disponibilidad, país, caso de uso y validación comercial. El consumo SMS masivo, líneas adicionales e integraciones avanzadas pueden cotizarse aparte.
+            </p>
           </div>
         </div>
       </section>
@@ -336,34 +319,12 @@
         </div>
       </section>
 
-      <!-- Uso responsable -->
-      <section class="lab-section lab-section--compact agent-plans-responsible" aria-labelledby="agent-plans-responsible-title">
-        <div class="lab-section-inner lab-section-inner--agent-plans">
-          <article class="agent-plans-responsible-card lab-glass-card">
-            <h2 id="agent-plans-responsible-title" class="agent-plans-responsible-card__title">Uso autorizado y operación empresarial</h2>
-            <p class="agent-plans-responsible-card__text">
-              El Agente Telvoice está diseñado para cuentas propias, procesos autorizados, comunicaciones empresariales y validaciones permitidas. No está destinado a suplantación, abuso, spam, evasión de controles ni recepción de códigos de cuentas de terceros.
-            </p>
-            <ul class="agent-plans-responsible-list" role="list">
-              <li><span class="material-symbols-outlined" aria-hidden="true">info</span>Activación sujeta a validación comercial.</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">info</span>Disponibilidad de línea según país y stock operativo.</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">info</span>Consumo SMS y líneas adicionales se cotizan aparte.</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">info</span>Integraciones avanzadas pueden requerir setup inicial.</li>
-            </ul>
-          </article>
-        </div>
-      </section>
-
       <!-- CTA final -->
       <section class="lab-cta-final lab-section lab-section--compact" aria-labelledby="agent-plans-cta-title">
         <div class="lab-section-inner lab-section-inner--cta text-center">
           <h2 id="agent-plans-cta-title" class="lab-section-title">Activa tu agente SMS con línea incluida</h2>
-          <p class="lab-section-intro mt-4 mx-auto">
-            Empieza con un plan simple para recibir SMS y escalar hacia campañas asistidas, automatización, webhooks y operación crítica.
-          </p>
           <div class="lab-cta-final__actions mt-8 flex flex-wrap justify-center gap-4">
             <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_contratar_agente_planes_final">Contratar agente</a>
-            <a href="./#calculadora" class="lab-btn-secondary" data-track="click_ver_bolsas_planes_final">Ver bolsas SMS</a>
           </div>
         </div>
       </section>
