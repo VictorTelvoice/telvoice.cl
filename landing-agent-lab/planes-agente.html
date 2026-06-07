@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Planes del Agente Telvoice: Start, Pro y Business con línea incluida para operación SMS empresarial." />
+  <meta name="description" content="Planes del Agente Conversacional Telvoice: Lite incluido con bolsas SMS, Operativo, Validación y Enterprise para operación SMS empresarial con trazabilidad." />
   <meta name="robots" content="noindex, nofollow" />
   <title>Planes del Agente | Telvoice Lab</title>
   <link rel="icon" href="../assets/telvoice-isotipo.png" type="image/png" sizes="any" />
@@ -33,7 +33,7 @@
       },
     };
   </script>
-  <link rel="stylesheet" href="../css/landing-agent-lab.css?v=20260629" />
+  <link rel="stylesheet" href="../css/landing-agent-lab.css?v=20260715" />
 </head>
 <body class="font-body antialiased">
   <div class="lab-bg-wrap" aria-hidden="true">
@@ -111,93 +111,394 @@
       </div>
     </nav>
 
-    <main>
-      <section class="lab-section lab-section--tight-top" id="planes-agente" aria-labelledby="planes-agente-titulo" tabindex="-1">
+    <main class="agent-plans-page">
+      <!-- Hero -->
+      <section class="lab-section lab-section--tight-top agent-plans-hero" id="planes-agente" aria-labelledby="agent-plans-hero-title" tabindex="-1">
         <div class="lab-section-inner">
-          <header class="lab-header-center">
-            <span class="lab-eyebrow">Planes del agente</span>
-            <h1 id="planes-agente-titulo" class="lab-section-title mt-4">Planes del Agente Telvoice</h1>
+          <header class="lab-header-center agent-plans-hero__header">
+            <span class="lab-eyebrow">Planes del Agente Telvoice</span>
+            <h1 id="agent-plans-hero-title" class="lab-section-title mt-4">Elige el nivel de autonomía que necesita tu empresa</h1>
             <p class="lab-section-intro mt-4">
-              Contrata un agente con una línea incluida para operar campañas, recibir SMS, gestionar validaciones autorizadas y centralizar comunicaciones empresariales sin depender del teléfono personal de un gerente.
+              Desde un agente básico incluido en tu bolsa SMS, hasta un agente conversacional con número real capaz de recibir órdenes, gestionar campañas, recibir respuestas y procesar SMS de validación bajo uso autorizado.
             </p>
-            <p class="lab-plans-note mt-4">
-              Cada plan incluye una línea Telvoice, que puede ser una SIM real única o un número de red fija, según disponibilidad, país, caso de uso y validación comercial.
+            <ul class="agent-plans-pills" role="list" aria-label="Capacidades del agente">
+              <li class="agent-plans-pill">Gratis con bolsas SMS</li>
+              <li class="agent-plans-pill">Órdenes por SMS</li>
+              <li class="agent-plans-pill">Recepción SMS</li>
+              <li class="agent-plans-pill">Validaciones autorizadas</li>
+              <li class="agent-plans-pill">Automatizaciones IA</li>
+            </ul>
+            <div class="agent-plans-hero__actions mt-8">
+              <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_hablar_especialista_planes_hero">Hablar con un especialista</a>
+              <a href="./#calculadora" class="lab-btn-secondary" data-track="click_ver_bolsas_planes_hero">Ver bolsas SMS</a>
+            </div>
+            <p class="agent-plans-hero__tagline">No es solo un chatbot. Es un agente operativo conectado a la red SMS.</p>
+          </header>
+        </div>
+      </section>
+
+      <!-- Bloque explicativo -->
+      <section class="lab-section agent-plans-explainer" aria-labelledby="agent-plans-explainer-title">
+        <div class="lab-section-inner">
+          <div class="agent-plans-explainer-grid">
+            <article class="lab-glass-card agent-plans-explainer-card">
+              <div class="agent-plans-explainer-card__icon" aria-hidden="true"><span class="material-symbols-outlined">support_agent</span></div>
+              <h3 class="agent-plans-explainer-card__title">Guía operativa</h3>
+              <p class="agent-plans-explainer-card__text">El agente ayuda al cliente a enviar campañas, revisar saldo, entender reportes, usar plantillas y comprar nuevos paquetes SMS.</p>
+            </article>
+            <article class="lab-glass-card agent-plans-explainer-card">
+              <div class="agent-plans-explainer-card__icon" aria-hidden="true"><span class="material-symbols-outlined">sms</span></div>
+              <h3 class="agent-plans-explainer-card__title">Órdenes por SMS</h3>
+              <p class="agent-plans-explainer-card__text">Usuarios autorizados pueden enviar instrucciones simples por SMS para consultar saldo, revisar campañas, aprobar acciones o recibir alertas operativas.</p>
+            </article>
+            <article class="lab-glass-card agent-plans-explainer-card">
+              <div class="agent-plans-explainer-card__icon" aria-hidden="true"><span class="material-symbols-outlined">inbox</span></div>
+              <h3 class="agent-plans-explainer-card__title">Recepción y validación</h3>
+              <p class="agent-plans-explainer-card__text">En planes avanzados, el agente puede operar con un número real para recibir mensajes, respuestas de clientes y SMS de validación en procesos autorizados.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Planes -->
+      <section class="lab-section" id="planes" aria-labelledby="agent-plans-grid-title">
+        <div class="lab-section-inner lab-section-inner--agent-plans">
+          <header class="lab-header-center">
+            <h2 id="agent-plans-grid-title" class="lab-section-title">Planes diseñados para crecer junto a tu operación</h2>
+            <p class="lab-section-intro mt-4">
+              Empieza con un agente básico incluido en tu bolsa SMS y escala hacia automatización, recepción de mensajes, validaciones autorizadas e integraciones.
             </p>
           </header>
-          <div class="lab-plans-grid">
-            <article class="lab-plan-card">
-              <div class="lab-plan-card__head">
-                <h2 class="lab-plan-card__name">Agente Start</h2>
-                <span class="lab-plan-card__tag">Para validar y operar simple</span>
+
+          <div class="agent-plans-grid">
+            <!-- Lite -->
+            <article class="agent-plans-card agent-plans-card--lite lab-glass-card">
+              <span class="agent-plans-badge agent-plans-badge--included">Incluido con cualquier bolsa SMS</span>
+              <div class="agent-plans-card__head">
+                <h3 class="agent-plans-card__name">Agente Telvoice Lite</h3>
               </div>
-              <p class="lab-plan-card__price"><span class="lab-plan-card__amount">$39.990</span> <span class="lab-plan-card__period">/ mes</span></p>
-              <ul class="lab-plan-card__features" role="list">
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>1 línea Telvoice incluida</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>SIM real única o número de red fija según disponibilidad</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Agente comercial básico</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Recepción de SMS y OTP autorizados</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Notificaciones por panel</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Historial de mensajes</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Uso individual o equipo pequeño</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Soporte inicial de configuración</li>
+              <p class="agent-plans-card__price"><span class="agent-plans-card__amount agent-plans-card__amount--free">Gratis</span></p>
+              <p class="agent-plans-card__sub">Al comprar cualquier bolsa SMS</p>
+              <p class="agent-plans-card__desc">Un agente básico que guía al cliente dentro de Telvoice para enviar campañas, revisar reportes, controlar saldo y comprar nuevos paquetes.</p>
+              <ul class="agent-plans-card__features" role="list">
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Guía para crear campañas SMS</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Ayuda para subir contactos o CSV</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Consulta de saldo disponible</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Explicación de reportes y estados</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Guía para comprar más saldo</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Ayuda con plantillas SMS</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Soporte básico dentro del panel</li>
               </ul>
-              <p class="lab-plan-card__limits">1 usuario administrador · 1 línea activa · Validaciones, pruebas y recepción SMS. Bolsas SMS se cotizan aparte.</p>
-              <a href="https://agent.telvoice.cl/login" class="lab-btn-secondary lab-plan-card__cta w-full">Contratar Agente Start</a>
-              <p class="lab-plan-card__micro">Ideal para separar validaciones y comunicaciones sensibles del teléfono personal.</p>
+              <ul class="agent-plans-card__limits" role="list" aria-label="Limitaciones">
+                <li><span class="material-symbols-outlined" aria-hidden="true">remove_circle_outline</span>No recibe órdenes por SMS</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">remove_circle_outline</span>No incluye número exclusivo</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">remove_circle_outline</span>No recibe SMS de validación</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">remove_circle_outline</span>No incluye automatizaciones externas</li>
+              </ul>
+              <a href="./#calculadora" class="lab-btn-secondary agent-plans-card__cta w-full" data-track="click_comprar_bolsa_lite">Comprar bolsa SMS</a>
+              <p class="agent-plans-card__micro">Ideal para clientes que quieren usar Telvoice de forma simple y asistida.</p>
             </article>
-            <article class="lab-plan-card lab-plan-card--featured">
-              <span class="lab-plan-card__ribbon">Recomendado</span>
-              <div class="lab-plan-card__head">
-                <h2 class="lab-plan-card__name">Agente Pro</h2>
-                <span class="lab-plan-card__tag">Operación comercial asistida</span>
+
+            <!-- Operativo -->
+            <article class="agent-plans-card lab-glass-card">
+              <span class="agent-plans-badge">Control por SMS</span>
+              <div class="agent-plans-card__head">
+                <h3 class="agent-plans-card__name">Agente Operativo SMS</h3>
               </div>
-              <p class="lab-plan-card__price"><span class="lab-plan-card__amount">$59.900</span> <span class="lab-plan-card__period">/ mes</span></p>
-              <ul class="lab-plan-card__features" role="list">
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>1 línea Telvoice incluida</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>SIM real única o número de red fija según disponibilidad</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Agente Telvoice para campañas y validaciones</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Envío y recepción SMS</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Gestión de campañas SMS asistidas</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Validación de contactos y segmentos</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Notificaciones por panel y Telegram</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Historial de SMS y reglas básicas de operación</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Soporte de configuración prioritaria</li>
+              <p class="agent-plans-card__price"><span class="agent-plans-card__amount">Desde $49.000</span> <span class="agent-plans-card__period">CLP / mes</span></p>
+              <ul class="agent-plans-card__sublist" role="list">
+                <li>consumo SMS según bolsa</li>
               </ul>
-              <p class="lab-plan-card__limits">Hasta 3 usuarios · 1 línea activa · Campañas y validaciones autorizadas. Bolsas SMS aparte.</p>
-              <a href="https://agent.telvoice.cl/login" class="lab-btn-primary lab-plan-card__cta w-full">Contratar Agente Pro</a>
-              <p class="lab-plan-card__micro">El plan recomendado para empresas que quieren operar con agente y número propio.</p>
+              <p class="agent-plans-card__desc">Para empresas que quieren controlar campañas, consultar saldo y recibir alertas operativas sin depender siempre del panel web.</p>
+              <ul class="agent-plans-card__features" role="list">
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Todo lo del Agente Lite</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Comandos por SMS desde números autorizados</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Consulta de saldo por SMS</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Consulta de estado de campañas</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Envío de SMS de prueba</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Alertas de saldo bajo</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Revisión básica de reportes</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Hasta 2 usuarios autorizados</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Canal asignado Telvoice o número compartido según disponibilidad</li>
+              </ul>
+              <div class="agent-plans-cmd-block" aria-label="Ejemplos de comandos SMS">
+                <p class="agent-plans-cmd-block__label">Ejemplos de comandos</p>
+                <code>SALDO</code>
+                <code>REPORTE CAMPAÑA 1024</code>
+                <code>ENVIAR TEST +569XXXXXXXX</code>
+                <code>ESTADO ORDEN</code>
+              </div>
+              <a href="https://agent.telvoice.cl/login" class="lab-btn-secondary agent-plans-card__cta w-full" data-track="click_activar_operativo">Activar agente operativo</a>
+              <p class="agent-plans-card__micro">Ideal para pymes, ecommerce, restaurantes, clínicas pequeñas y equipos comerciales.</p>
             </article>
-            <article class="lab-plan-card">
-              <div class="lab-plan-card__head">
-                <h2 class="lab-plan-card__name">Agente Business</h2>
-                <span class="lab-plan-card__tag">Para operación avanzada</span>
+
+            <!-- Validación (recomendado) -->
+            <article class="agent-plans-card agent-plans-card--featured lab-glass-card">
+              <span class="agent-plans-ribbon">Recomendado</span>
+              <div class="agent-plans-card__head">
+                <h3 class="agent-plans-card__name">Agente Validación SMS</h3>
               </div>
-              <p class="lab-plan-card__price"><span class="lab-plan-card__amount">$99.990</span> <span class="lab-plan-card__period">/ mes</span></p>
-              <ul class="lab-plan-card__features" role="list">
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>1 línea Telvoice incluida</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>SIM real única o número de red fija según disponibilidad</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Agente Telvoice avanzado</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Envío y recepción SMS y campañas asistidas</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Validaciones OTP autorizadas</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Integración API/webhooks</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Notificaciones por Telegram</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Dashboard con historial y descarga de mensajes</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Multiusuario, reglas operativas y soporte prioritario</li>
+              <p class="agent-plans-card__price"><span class="agent-plans-card__amount">Desde $149.000</span> <span class="agent-plans-card__period">CLP / mes</span></p>
+              <ul class="agent-plans-card__sublist" role="list">
+                <li>consumo SMS + numeración/SIM si aplica</li>
               </ul>
-              <p class="lab-plan-card__limits">Hasta 5 usuarios · 1 línea activa · Fintech, growth, agentes IA y operación crítica. Líneas extra aparte.</p>
-              <a href="https://agent.telvoice.cl/login" class="lab-btn-secondary lab-plan-card__cta w-full">Contratar Agente Business</a>
-              <p class="lab-plan-card__micro">Para empresas que necesitan trazabilidad, automatización y control en comunicaciones sensibles.</p>
+              <p class="agent-plans-card__desc">Para empresas, equipos de IA y automatizaciones que necesitan recibir SMS, respuestas de clientes y códigos de validación bajo uso autorizado.</p>
+              <ul class="agent-plans-card__features" role="list">
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Todo lo del Agente Operativo</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Número real o numeración dedicada según disponibilidad</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Recepción de SMS entrantes</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Lectura de SMS de validación autorizados</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Bandeja de SMS recibidos</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Webhook para SMS entrantes</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Integración con Make, n8n o Zapier</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Comandos personalizados</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Reglas automáticas básicas</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Hasta 5 usuarios autorizados</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Registro de eventos</li>
+              </ul>
+              <p class="agent-plans-setup-note">Setup inicial desde $99.000 CLP cuando requiere configuración de número, webhooks o integraciones.</p>
+              <a href="https://agent.telvoice.cl/login" class="lab-btn-primary agent-plans-card__cta w-full" data-track="click_solicitar_validacion">Solicitar número dedicado</a>
+              <p class="agent-plans-card__micro">Ideal para agentes IA, validaciones autorizadas, automatizaciones y procesos internos sensibles.</p>
+            </article>
+
+            <!-- Enterprise -->
+            <article class="agent-plans-card lab-glass-card">
+              <span class="agent-plans-badge">Empresas, fintech &amp; growth</span>
+              <div class="agent-plans-card__head">
+                <h3 class="agent-plans-card__name">Agente Enterprise SMS</h3>
+              </div>
+              <p class="agent-plans-card__price"><span class="agent-plans-card__amount">Desde $399.000</span> <span class="agent-plans-card__period">CLP / mes</span></p>
+              <p class="agent-plans-card__sub">Planes a medida para operación crítica</p>
+              <p class="agent-plans-card__desc">Para empresas que necesitan múltiples números, usuarios, trazabilidad, flujos de aprobación, integraciones avanzadas y soporte prioritario.</p>
+              <ul class="agent-plans-card__features" role="list">
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Todo lo del Agente Validación</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Múltiples números o SIM reales</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Múltiples áreas o departamentos</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Roles y permisos</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Auditoría avanzada</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Flujos de aprobación</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Integraciones API avanzadas</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Webhooks personalizados</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Alertas críticas</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Monitoreo operativo</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Soporte prioritario</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Onboarding asistido</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Reportes ejecutivos</li>
+                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>SLA / NOC opcional</li>
+              </ul>
+              <p class="agent-plans-setup-note">Setup desde $350.000 CLP o cotización personalizada según alcance.</p>
+              <a href="https://agent.telvoice.cl/login" class="lab-btn-secondary agent-plans-card__cta w-full" data-track="click_hablar_enterprise">Hablar con un especialista</a>
+              <p class="agent-plans-card__micro">Ideal para fintech, SaaS, equipos de growth, operaciones críticas y empresas que usan agentes de IA.</p>
             </article>
           </div>
-          <div class="lab-plans-disclaimer">
-            <p>Los planes incluyen una línea Telvoice base. La línea puede ser SIM real única o número de red fija, según disponibilidad y validación comercial. El consumo SMS, campañas masivas, líneas adicionales e integraciones avanzadas pueden cotizarse aparte.</p>
-            <p>Todos los usos deben corresponder a cuentas propias, procesos autorizados o comunicaciones empresariales permitidas.</p>
+        </div>
+      </section>
+
+      <!-- Tabla comparativa -->
+      <section class="lab-section agent-plans-compare" aria-labelledby="agent-plans-compare-title">
+        <div class="lab-section-inner">
+          <header class="lab-header-center">
+            <h2 id="agent-plans-compare-title" class="lab-section-title text-xl md:text-2xl">Comparación de planes</h2>
+          </header>
+          <div class="agent-plans-table-wrap" tabindex="0" role="region" aria-label="Tabla comparativa de planes del agente">
+            <table class="agent-plans-table">
+              <thead>
+                <tr>
+                  <th scope="col">Función</th>
+                  <th scope="col">Lite</th>
+                  <th scope="col">Operativo</th>
+                  <th scope="col">Validación</th>
+                  <th scope="col">Enterprise</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Incluido con bolsa SMS</th>
+                  <td><span class="agent-plans-table__yes" aria-label="Sí"><span class="material-symbols-outlined" aria-hidden="true">check</span></span></td>
+                  <td><span class="agent-plans-table__no" aria-label="No"><span class="material-symbols-outlined" aria-hidden="true">remove</span></span></td>
+                  <td><span class="agent-plans-table__no" aria-label="No"><span class="material-symbols-outlined" aria-hidden="true">remove</span></span></td>
+                  <td><span class="agent-plans-table__no" aria-label="No"><span class="material-symbols-outlined" aria-hidden="true">remove</span></span></td>
+                </tr>
+                <tr>
+                  <th scope="row">Guía para campañas</th>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                </tr>
+                <tr>
+                  <th scope="row">Consulta de saldo</th>
+                  <td>Panel</td>
+                  <td>SMS</td>
+                  <td>SMS</td>
+                  <td>SMS</td>
+                </tr>
+                <tr>
+                  <th scope="row">Reportes asistidos</th>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                </tr>
+                <tr>
+                  <th scope="row">Órdenes por SMS</th>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                </tr>
+                <tr>
+                  <th scope="row">Usuarios autorizados</th>
+                  <td>1</td>
+                  <td>2</td>
+                  <td>5</td>
+                  <td>A medida</td>
+                </tr>
+                <tr>
+                  <th scope="row">Recepción SMS</th>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                </tr>
+                <tr>
+                  <th scope="row">Número real o dedicado</th>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td>Compartido</td>
+                  <td>Dedicado</td>
+                  <td>Múltiple</td>
+                </tr>
+                <tr>
+                  <th scope="row">Validaciones autorizadas</th>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                </tr>
+                <tr>
+                  <th scope="row">Webhooks</th>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                </tr>
+                <tr>
+                  <th scope="row">Integración Make/n8n/Zapier</th>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                </tr>
+                <tr>
+                  <th scope="row">Comandos personalizados</th>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td>Básicos</td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                </tr>
+                <tr>
+                  <th scope="row">Flujos de aprobación</th>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td>Básicos</td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                </tr>
+                <tr>
+                  <th scope="row">Roles y permisos</th>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                </tr>
+                <tr>
+                  <th scope="row">Auditoría avanzada</th>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td>Eventos</td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                </tr>
+                <tr>
+                  <th scope="row">Soporte prioritario</th>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__yes" aria-hidden="true"><span class="material-symbols-outlined">check</span></span></td>
+                </tr>
+                <tr>
+                  <th scope="row">SLA / NOC opcional</th>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td><span class="agent-plans-table__no" aria-hidden="true"><span class="material-symbols-outlined">remove</span></span></td>
+                  <td>Opcional</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <p class="lab-plans-crosslink text-center mt-8">
-            <a href="./#calculadora" class="text-lab-cyan hover:underline font-semibold">Ver bolsas SMS</a>
-            <span class="text-slate-600 mx-2" aria-hidden="true">·</span>
-            <a href="./" class="text-lab-cyan hover:underline font-semibold">Volver al landing lab</a>
+        </div>
+      </section>
+
+      <!-- Cómo se usa -->
+      <section class="lab-section agent-plans-usage" aria-labelledby="agent-plans-usage-title">
+        <div class="lab-section-inner">
+          <header class="lab-header-center">
+            <h2 id="agent-plans-usage-title" class="lab-section-title">Cómo funciona el agente en la operación real</h2>
+          </header>
+          <div class="agent-plans-sms-grid">
+            <article class="lab-glass-card agent-plans-sms-demo">
+              <h3 class="agent-plans-sms-demo__title">Campañas</h3>
+              <div class="agent-plans-sms-demo__thread">
+                <p class="agent-plans-sms-line agent-plans-sms-line--out"><span class="agent-plans-sms-line__label">Usuario autorizado</span>SALDO</p>
+                <p class="agent-plans-sms-line agent-plans-sms-line--in"><span class="agent-plans-sms-line__label">Agente Telvoice</span>Tienes 18.450 SMS disponibles. Tu última campaña tuvo 94,2% de entrega reportada.</p>
+              </div>
+            </article>
+            <article class="lab-glass-card agent-plans-sms-demo">
+              <h3 class="agent-plans-sms-demo__title">Validación autorizada</h3>
+              <div class="agent-plans-sms-demo__thread">
+                <p class="agent-plans-sms-line agent-plans-sms-line--sys"><span class="agent-plans-sms-line__label">Sistema</span>Nuevo SMS recibido en tu número Telvoice.</p>
+                <p class="agent-plans-sms-line agent-plans-sms-line--in"><span class="agent-plans-sms-line__label">Agente Telvoice</span>Código recibido desde servicio autorizado. Evento enviado por webhook a tu flujo de automatización.</p>
+              </div>
+            </article>
+            <article class="lab-glass-card agent-plans-sms-demo">
+              <h3 class="agent-plans-sms-demo__title">Aprobación interna</h3>
+              <div class="agent-plans-sms-demo__thread">
+                <p class="agent-plans-sms-line agent-plans-sms-line--out"><span class="agent-plans-sms-line__label">Gerente</span>APRUEBO CAMPAÑA CLIENTES JUNIO</p>
+                <p class="agent-plans-sms-line agent-plans-sms-line--in"><span class="agent-plans-sms-line__label">Agente Telvoice</span>Campaña aprobada. Se enviará a 4.500 contactos. Saldo estimado: 4.500 SMS.</p>
+              </div>
+            </article>
+          </div>
+          <p class="agent-plans-security-note">Todas las acciones críticas deben ejecutarse solo desde usuarios, números, cuentas y procesos previamente autorizados por la empresa.</p>
+        </div>
+      </section>
+
+      <!-- Qué no es -->
+      <section class="lab-section agent-plans-guardrails" aria-labelledby="agent-plans-guardrails-title">
+        <div class="lab-section-inner">
+          <article class="lab-glass-card agent-plans-guardrails-card">
+            <h2 id="agent-plans-guardrails-title" class="lab-section-title text-xl md:text-2xl">Comunicación SMS empresarial, no automatización informal</h2>
+            <p class="agent-plans-guardrails-card__text mt-4">
+              El Agente Telvoice está diseñado para empresas que necesitan operar comunicaciones, campañas, respuestas, validaciones autorizadas y procesos críticos con trazabilidad. No está pensado para uso abusivo, suplantación, spam, evasión de controles ni recepción de códigos de cuentas de terceros.
+            </p>
+            <ul class="agent-plans-guardrails-list" role="list">
+              <li><span class="material-symbols-outlined" aria-hidden="true">verified</span>Uso permitido en cuentas propias o procesos autorizados.</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">verified</span>Validación comercial para numeraciones dedicadas.</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">verified</span>Registro de eventos y trazabilidad operativa.</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">verified</span>Consumo SMS y líneas adicionales se cotizan aparte.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- CTA final -->
+      <section class="lab-cta-final lab-section" aria-labelledby="agent-plans-cta-title">
+        <div class="lab-section-inner lab-section-inner--cta text-center">
+          <h2 id="agent-plans-cta-title" class="lab-section-title">Convierte el SMS en un canal operativo para tu empresa</h2>
+          <p class="lab-section-intro mt-4 mx-auto">
+            Empieza con una bolsa SMS y activa tu agente básico gratis. Cuando tu operación necesite recibir órdenes, validar procesos o conectar automatizaciones, escala a un agente dedicado.
           </p>
+          <div class="lab-cta-final__actions mt-10 flex flex-wrap justify-center gap-4">
+            <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_hablar_especialista_planes_final">Hablar con un especialista</a>
+            <a href="./#calculadora" class="lab-btn-secondary" data-track="click_comprar_bolsa_planes_final">Comprar bolsa SMS</a>
+          </div>
         </div>
       </section>
     </main>
