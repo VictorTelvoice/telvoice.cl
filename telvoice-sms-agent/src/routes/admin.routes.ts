@@ -86,6 +86,13 @@ import {
   postAdminSupportTicketUpdate,
 } from "../controllers/admin-support.controller.js";
 import {
+  getAdminNumeracionesPage,
+  postAdminNumeracionesCreate,
+  postAdminNumeracionesStatus,
+  postAdminSimActivationNotes,
+  postAdminSimActivationReview,
+} from "../controllers/admin-numeraciones.controller.js";
+import {
   getAdminApiUsagePage,
   postAdminApiUsageKeyActivate,
   postAdminApiUsageKeyPause,
@@ -492,6 +499,23 @@ adminRouter.post(
   "/support/tickets/:id/quick-action",
   requireAdminPage,
   postAdminSupportTicketQuickAction,
+);
+adminRouter.get("/numeraciones", requireAdminPage, getAdminNumeracionesPage);
+adminRouter.post("/numeraciones", requireAdminPage, postAdminNumeracionesCreate);
+adminRouter.post(
+  "/numeraciones/:id/status",
+  requireAdminPage,
+  postAdminNumeracionesStatus,
+);
+adminRouter.post(
+  "/numeraciones/sim-activations/:id/review",
+  requireAdminPage,
+  postAdminSimActivationReview,
+);
+adminRouter.post(
+  "/numeraciones/sim-activations/:id/notes",
+  requireAdminPage,
+  postAdminSimActivationNotes,
 );
 adminRouter.get("/api-usage", requireAdminPage, getAdminApiUsagePage);
 adminRouter.post(

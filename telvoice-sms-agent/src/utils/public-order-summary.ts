@@ -51,7 +51,9 @@ export function toPublicOrderSummary(
   return {
     orderId: order.id,
     orderRef: orderRefLabel(order.id, order.public_checkout_reference),
-    packageName: order.package_name ?? null,
+    packageName:
+      order.package_name ??
+      (typeof meta.plan_name === "string" ? meta.plan_name : null),
     smsQuantity: order.sms_quantity,
     paymentStatus: order.payment_status,
     creditStatus: order.credit_status,

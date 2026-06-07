@@ -20,6 +20,8 @@ import {
   buildPaymentClaimUrlFromToken,
   orderRefLabel,
   renderPaymentReceivedPendingClaim,
+  renderSimOpsPendingActivation,
+  renderSimPaymentReceivedPendingActivation,
   renderWelcomeSmsCredited,
 } from "./transactionalEmailTemplates.js";
 import {
@@ -392,6 +394,111 @@ export async function sendPaymentReceivedClaimEmail(
     },
     skipIdempotency: options?.skipIdempotency,
   });
+}
+
+function opsNotifyEmails(): string[] {
+  const raw =
+    process.env.ORDER_NOTIFY_EMAIL?.trim() ||
+    process.env.BILLING_NOTIFY_EMAIL?.trim() ||
+    "billing@telvoice.net";
+  return raw
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+}
+
+export async function sendSimPaymentReceivedEmails(
+  orderId: string,
+  options?: { skipIdempotency?: boolean },
+): Promise<{ ok: boolean; customer?: { ok: boolean }; ops?: { ok: boolean }; error?: string }> {
+  const order = await getOrderWithDetails(orderId);
+  if (!order) {
+    return { ok: false, error: "order_not_found" };
+  }
+  if (order.payment_status !== "paid") {
+    return { ok: false, error: "order_not_paid" };
+  }
+
+  const meta = order.metadata ?? {};
+  const planName =
+    typeof meta.plan_name === "string"
+      ? meta.plan_name
+      : "Numeración SIM real";
+  const planId = typeof meta.plan_id === "string" ? meta.plan_id : "sim_unknown";
+
+  const recipient = recipientFromOrder(order);
+  let customerResult: { ok: boolean; skipped?: boolean; error?: string } = {
+    ok: false,
+    error: "missing_recipient",
+  };
+
+  if (recipient) {
+    let claimToken = await resolveClaimTokenForOrder(order);
+    if (!claimToken) {
+      claimToken = await rotateClaimTokenForOrder(orderId);
+    }
+    const claimUrl = buildPaymentClaimUrlFromToken(claimToken);
+    const rendered = renderSimPaymentReceivedPendingActivation({
+      recipientName: recipient.split("@")[0] ?? "Cliente",
+      planName,
+      includedSmsMonthly: order.sms_quantity,
+      amount: Number(order.amount),
+      currency: order.currency,
+      orderRef: orderRefLabel(order.id, order.public_checkout_reference),
+      claimUrl,
+    });
+
+    customerResult = await sendTransactionalEmail({
+      templateKey: "sim_payment_received_pending_activation",
+      subject: rendered.subject,
+      recipientEmail: recipient,
+      html: rendered.html,
+      text: rendered.text,
+      orderId,
+      metadata: { claim_url: claimUrl, plan_id: planId },
+      skipIdempotency: options?.skipIdempotency,
+    });
+  }
+
+  const adminUrl = `${env.publicAppUrl.replace(/\/$/, "")}/admin/numeraciones?sim_pending=1`;
+  const opsRendered = renderSimOpsPendingActivation({
+    planName,
+    planId,
+    includedSmsMonthly: order.sms_quantity,
+    amount: Number(order.amount),
+    currency: order.currency,
+    orderId: order.id,
+    orderRef: orderRefLabel(order.id, order.public_checkout_reference),
+    checkoutEmail: recipient ?? order.checkout_email ?? "—",
+    payerName:
+      typeof meta.payer_name === "string" ? meta.payer_name : null,
+    companyName:
+      typeof meta.company_name === "string" ? meta.company_name : null,
+    phone: typeof meta.phone === "string" ? meta.phone : null,
+    taxId: typeof meta.tax_id === "string" ? meta.tax_id : null,
+    adminUrl,
+  });
+
+  let anyOpsOk = false;
+  for (const to of opsNotifyEmails()) {
+    const r = await sendTransactionalEmail({
+      templateKey: "sim_ops_pending_activation",
+      subject: opsRendered.subject,
+      recipientEmail: to,
+      html: opsRendered.html,
+      text: opsRendered.text,
+      orderId,
+      metadata: { plan_id: planId, admin_url: adminUrl },
+      skipIdempotency: options?.skipIdempotency,
+    });
+    if (r.ok) anyOpsOk = true;
+  }
+
+  return {
+    ok: customerResult.ok || anyOpsOk,
+    customer: customerResult,
+    ops: { ok: anyOpsOk },
+  };
 }
 
 export async function sendWelcomeAndSmsCreditedEmail(

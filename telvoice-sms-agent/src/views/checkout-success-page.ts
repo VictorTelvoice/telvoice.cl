@@ -15,14 +15,24 @@ function renderOrderSummary(data: CheckoutSuccessPageData): string {
     return "";
   }
 
+  const smsLabel = data.isSimSubscription
+    ? "SMS salientes incluidos"
+    : "SMS incluidos";
+  const smsValue = data.isSimSubscription
+    ? `${s.formatted.sms} / mes`
+    : `${s.formatted.sms} mensajes`;
+
   const rows = [
     summaryRow("Producto", s.packageName),
-    summaryRow("SMS incluidos", `${s.formatted.sms} mensajes`),
+    summaryRow(smsLabel, smsValue),
     summaryRow("Neto", s.formatted.net),
     summaryRow("IVA (19%)", s.formatted.tax),
     summaryRow("Total pagado", s.formatted.total, true),
     summaryRow("Correo de compra", s.customerEmail),
     summaryRow("Orden", s.orderRef),
+    data.isSimSubscription
+      ? summaryRow("Estado", "Pendiente de activación")
+      : "",
     summaryRow(
       "Pago MP",
       data.mpPaymentId || s.mpPaymentId,
@@ -45,6 +55,32 @@ function renderActivationBox(data: CheckoutSuccessPageData): string {
   const emailText = email
     ? escapeHtml(email)
     : "el correo que ingresaste al comprar";
+
+  if (data.isSimSubscription) {
+    const planLabel = escapeHtml(data.planName ?? data.summary?.packageName ?? "Numeración SIM real");
+    const claimButton =
+      data.activationHint === "claim_button" && data.claimUrl
+        ? `<a class="payment-btn payment-btn--primary" href="${escapeHtml(data.claimUrl)}">Ingresar al panel Telvoice</a>`
+        : `<a class="payment-btn payment-btn--primary" href="${escapeHtml(data.appUrl)}/login">Ingresar al panel Telvoice</a>`;
+
+    return `
+    <div class="payment-account-box">
+      <h2 class="payment-account-box__title">Activación de numeración en proceso</h2>
+      <p class="payment-account-box__text">
+        Recibimos tu pago para el plan <strong>${planLabel}</strong>.
+        Inicia sesión o crea tu cuenta para asociar la compra a tu panel Telvoice.
+        Nuestro equipo revisará la disponibilidad de numeración y activará tu línea.
+      </p>
+      <p class="payment-sub" style="margin:0 0 1rem;text-align:left">
+        La numeración SIM real requiere validación comercial y asignación manual.
+        <strong>No se activa automáticamente al pagar.</strong>
+      </p>
+      <p class="payment-sub" style="margin:0 0 1rem;text-align:left">
+        Usa el correo de la compra (<strong>${emailText}</strong>) al ingresar con Google.
+      </p>
+      ${claimButton}
+    </div>`;
+  }
 
   if (data.activationHint === "panel") {
     return `
@@ -95,9 +131,14 @@ function resolveHeadline(data: CheckoutSuccessPageData): {
   confirmLayout: boolean;
 } {
   if (data.confirmingPayment) {
+    const simNote = data.isSimSubscription
+      ? " Recibirás un correo con instrucciones para activar tu cuenta."
+      : " En unos minutos recibirás el correo de activación con Google en el email de la compra.";
     return {
-      title: "Estamos confirmando tu pago",
-      text: "Mercado Pago aprobó tu pago. En unos minutos recibirás el correo de activación con Google en el email de la compra.",
+      title: data.isSimSubscription
+        ? "Estamos confirmando tu pago"
+        : "Estamos confirmando tu pago",
+      text: `Mercado Pago aprobó tu pago.${simNote}`,
       iconClass: "payment-icon--pending",
       confirmLayout: true,
     };
@@ -106,6 +147,16 @@ function resolveHeadline(data: CheckoutSuccessPageData): {
   const approved =
     data.mpStatus === "approved" ||
     data.summary?.paymentStatus === "paid";
+
+  if (approved && data.isSimSubscription) {
+    const planLabel = data.planName ?? data.summary?.packageName ?? "tu plan SIM";
+    return {
+      title: "Pago recibido. Activación de numeración en proceso.",
+      text: `Recibimos tu pago para el plan ${planLabel}. Debes iniciar sesión o crear tu cuenta para asociar la compra a tu panel Telvoice. Nuestro equipo revisará la disponibilidad de numeración y activará tu línea.`,
+      iconClass: "payment-icon--ok",
+      confirmLayout: true,
+    };
+  }
 
   if (approved) {
     return {

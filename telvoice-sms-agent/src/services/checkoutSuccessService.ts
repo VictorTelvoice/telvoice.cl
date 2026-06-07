@@ -2,7 +2,7 @@ import { env } from "../config/env.js";
 import type { SmsOrderRow, SmsOrderWithDetails } from "../types/wallet.js";
 import { decryptClaimTokenFromMetadata } from "../utils/claim-token.js";
 import { buildClaimActivationUrl } from "../utils/claim-token.js";
-import { isPublicCheckoutOrder } from "../utils/order-display.js";
+import { isPublicCheckoutOrder, isSimSubscriptionOrder } from "../utils/order-display.js";
 import {
   getOrderById,
   getOrderByMercadoPagoPaymentId,
@@ -25,6 +25,9 @@ export type CheckoutSuccessPageData = {
   confirmingPayment: boolean;
   publicSiteUrl: string;
   appUrl: string;
+  isSimSubscription: boolean;
+  planName: string | null;
+  activationStatus: string | null;
 };
 
 function pickQueryString(value: unknown): string {
@@ -134,6 +137,16 @@ export async function buildCheckoutSuccessPageData(
     parsed.mpStatus === "approved" || parsed.mpStatus === "accredited";
   const confirmingPayment = !order && mpApproved;
 
+  const isSimSubscription = order ? isSimSubscriptionOrder(order) : false;
+  const planName =
+    order && typeof order.metadata?.plan_name === "string"
+      ? order.metadata.plan_name
+      : null;
+  const activationStatus =
+    order && typeof order.metadata?.activation_status === "string"
+      ? order.metadata.activation_status
+      : null;
+
   return {
     summary,
     mpStatus: parsed.mpStatus,
@@ -144,5 +157,8 @@ export async function buildCheckoutSuccessPageData(
     confirmingPayment,
     publicSiteUrl: env.publicSiteUrl,
     appUrl: env.publicAppUrl,
+    isSimSubscription,
+    planName,
+    activationStatus,
   };
 }

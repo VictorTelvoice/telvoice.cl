@@ -20,13 +20,31 @@ export const PUBLIC_LANDING_ORDER_METADATA = {
   claim_required: true,
 } as const;
 
+/** Compra rápida landing — numeración SIM real */
+export const PUBLIC_SIM_CHECKOUT_METADATA = {
+  source: "landing_sim_checkout",
+  checkout_mode: "mercadopago",
+  claim_required: true,
+  product_type: "sim_subscription",
+  requires_manual_activation: true,
+} as const;
+
+export function isSimSubscriptionOrder(
+  order: Pick<SmsOrderRow, "metadata">,
+): boolean {
+  const meta = order.metadata ?? {};
+  return meta.product_type === "sim_subscription";
+}
+
 export function isPublicCheckoutOrder(
   order: Pick<SmsOrderRow, "metadata" | "company_id">,
 ): boolean {
   const meta = order.metadata ?? {};
   return (
     meta.source === "landing" ||
+    meta.source === "landing_sim_checkout" ||
     meta.claim_required === true ||
+    isSimSubscriptionOrder(order) ||
     (!order.company_id && meta.checkout_mode === "mercadopago")
   );
 }

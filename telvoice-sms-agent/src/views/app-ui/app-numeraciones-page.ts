@@ -2,7 +2,12 @@ import {
   clientNumberStatusLabel,
   clientNumberTypeLabel,
 } from "../../services/clientNumberService.js";
-import type { ClientNumberListItem, ClientNumbersModuleState } from "../../types/client-numbers.js";
+import type {
+  ClientNumberListItem,
+  ClientNumbersModuleState,
+} from "../../types/client-numbers.js";
+import type { SimActivationRequestRow } from "../../types/sim-activation.js";
+import { simActivationStatusLabel } from "../../services/simActivationService.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
@@ -29,6 +34,35 @@ function renderCapabilities(caps: ClientNumberListItem["capabilities"]): string 
   if (caps.otp_authorized) items.push("OTP autorizado");
   if (caps.api_webhook) items.push("API/webhook");
   return items.length ? items.map((i) => escapeHtml(i)).join(" · ") : "—";
+}
+
+function renderPendingSimActivations(
+  activations: SimActivationRequestRow[],
+): string {
+  if (!activations.length) return "";
+
+  const cards = activations
+    .map((a) => {
+      const statusCls =
+        a.activation_status === "paid_pending_activation" ? "warn" : "muted";
+      return `<article class="tv-sim-pending-card tv-panel">
+        <h3 class="tv-sim-pending-card__title">Numeración SIM real en activación</h3>
+        <p class="tv-sim-pending-card__text">
+          Tu pago fue recibido. Estamos revisando disponibilidad y configurando tu numeración.
+          Te notificaremos cuando esté activa.
+        </p>
+        <dl class="tv-sim-pending-card__meta">
+          <div><dt>Plan</dt><dd>${escapeHtml(a.plan_name)}</dd></div>
+          <div><dt>SMS salientes incluidos</dt><dd>${escapeHtml(new Intl.NumberFormat("es-CL").format(a.included_sms_monthly))} / mes</dd></div>
+          <div><dt>Estado</dt><dd><span class="badge badge-${statusCls}">${escapeHtml(simActivationStatusLabel(a.activation_status))}</span></dd></div>
+          <div><dt>Fecha de compra</dt><dd>${formatDate(a.created_at)}</dd></div>
+          <div><dt>Referencia</dt><dd>${escapeHtml(a.id.slice(0, 8).toUpperCase())}</dd></div>
+        </dl>
+      </article>`;
+    })
+    .join("");
+
+  return `<section class="tv-sim-pending-list">${cards}</section>`;
 }
 
 function renderEmptyState(): string {
@@ -99,6 +133,7 @@ function renderNumbersTable(numbers: ClientNumberListItem[]): string {
 export type AppNumeracionesPageData = {
   module: ClientNumbersModuleState;
   numbers: ClientNumberListItem[];
+  pendingSimActivations: SimActivationRequestRow[];
 };
 
 export function renderAppNumeracionesPage(
@@ -108,6 +143,13 @@ export function renderAppNumeracionesPage(
   const migrationNotice = data.module.migrationPending
     ? `<div class="alert alert-warn tv-notice-block">El módulo de numeraciones requiere aplicar la migración 054 en Supabase.</div>`
     : "";
+
+  const simModuleNotice =
+    data.pendingSimActivations.length && data.module.migrationPending
+      ? ""
+      : data.pendingSimActivations.length
+        ? ""
+        : "";
 
   const body = `
     ${renderPageHeader({
@@ -119,10 +161,18 @@ export function renderAppNumeracionesPage(
       `,
     })}
     ${migrationNotice}
+    ${renderPendingSimActivations(data.pendingSimActivations)}
+    ${simModuleNotice}
     <section class="tv-panel">
       ${renderNumbersTable(data.numbers)}
     </section>
     <style>
+      .tv-sim-pending-list { display: grid; gap: 1rem; margin-bottom: 1rem; }
+      .tv-sim-pending-card__title { margin: 0 0 0.5rem; font-size: 1.1rem; }
+      .tv-sim-pending-card__text { margin: 0 0 1rem; opacity: 0.9; }
+      .tv-sim-pending-card__meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin: 0; }
+      .tv-sim-pending-card__meta dt { font-size: 0.75rem; opacity: 0.7; margin: 0; }
+      .tv-sim-pending-card__meta dd { margin: 0.15rem 0 0; font-weight: 600; }
       .tv-numeraciones-empty { text-align: center; padding: 3rem 2rem; }
       .tv-numeraciones-empty__icon .material-symbols-outlined { font-size: 3rem; opacity: 0.5; }
       .tv-numeraciones-empty__title { margin: 1rem 0 0.5rem; font-size: 1.25rem; }

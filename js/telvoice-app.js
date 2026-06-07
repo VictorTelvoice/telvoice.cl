@@ -335,6 +335,36 @@
   var BAG_TO_PLAN = { "1k": "inicial", "15k": "empresa", "100k": "volumen", "200": "bolsa200" };
   var ONLINE_PLAN_IDS = { inicial: true, empresa: true, volumen: true, calc: true, bolsa200: true };
 
+  var SIM_PLANS = {
+    sim_starter: {
+      plan_id: "sim_starter",
+      name: "Numeración SIM Starter",
+      sms: 1000,
+      net: 16798,
+      tax: 3192,
+      total: 19990,
+    },
+    sim_pro: {
+      plan_id: "sim_pro",
+      name: "Numeración SIM Pro",
+      sms: 2000,
+      net: 33605,
+      tax: 6385,
+      total: 39990,
+    },
+    sim_power: {
+      plan_id: "sim_power",
+      name: "Numeración SIM Power",
+      sms: 4000,
+      net: 84025,
+      tax: 15965,
+      total: 99990,
+    },
+  };
+
+  var SIM_CHECKOUT_ERROR =
+    "No pudimos iniciar el pago en este momento. Escríbenos para activar tu numeración SIM real.";
+
   var compraState = {
     planId: null,
     calcSms: null,
@@ -472,6 +502,7 @@
       tax: payload.tax_amount || 0,
       total: payload.total_amount || 0,
       source: payload.source || "web",
+      productType: payload.productType || "sms_bundle",
     };
 
     renderCheckoutSummary({
@@ -516,6 +547,22 @@
     document.body.classList.remove("modal-open");
   }
 
+  function startSimCheckout(planId) {
+    var key = String(planId || "").trim().toLowerCase();
+    var plan = SIM_PLANS[key];
+    if (!plan) return;
+    openCompraModal({
+      planId: plan.plan_id,
+      planName: plan.name,
+      sms: plan.sms,
+      net_amount: plan.net,
+      tax_amount: plan.tax,
+      total_amount: plan.total,
+      source: "landing_sim",
+      productType: "sim_subscription",
+    });
+  }
+
   function startMercadoPagoCheckout() {
     if (compraSubmitting) return;
 
@@ -548,15 +595,21 @@
       setCompraError("Ingrese un email válido.");
       return;
     }
-    if (whatsapp.length < 8) {
+    var isSimCheckout = compraState.productType === "sim_subscription";
+    if (!isSimCheckout && whatsapp.length < 8) {
       setCompraError("Ingrese un WhatsApp de contacto.");
       return;
     }
-    if (rut.length < 8) {
+    if (!isSimCheckout && rut.length < 8) {
       setCompraError("Ingrese un RUT válido.");
       return;
     }
-    if (compraState.calcSms) {
+    if (isSimCheckout) {
+      if (!planId || !SIM_PLANS[planId]) {
+        setCompraError("Plan SIM no disponible para pago online.");
+        return;
+      }
+    } else if (compraState.calcSms) {
       if (!planId || planId !== "calc") {
         setCompraError("Plan no disponible para pago online.");
         return;
@@ -654,6 +707,39 @@
       return candidates[0];
     }
 
+    function startSimAgentCheckout() {
+      return fetch(agentCheckoutEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        signal: abortController ? abortController.signal : undefined,
+        body: JSON.stringify({
+          product_type: "sim_subscription",
+          plan_id: planId,
+          checkout_email: email,
+          payer_email: email,
+          payer_name: nombre,
+          company_name: razonSocial || undefined,
+          phone: whatsapp || undefined,
+          tax_id: rut || undefined,
+        }),
+      })
+        .then(parseJsonSafe)
+        .then(function (r) {
+          var data = r.data || {};
+          var checkoutUrl = data.checkout_url;
+          if (!r.httpOk || data.success !== true) {
+            throw new Error((data && (data.error || data.message)) || SIM_CHECKOUT_ERROR);
+          }
+          if (!checkoutUrl) {
+            throw new Error(SIM_CHECKOUT_ERROR);
+          }
+          return checkoutUrl;
+        });
+    }
+
     function startAgentCheckout() {
       // El agent checkout requiere package_id (uuid).
       // Para no hardcodear IDs acá, usamos /api/public/products y tomamos package_id que matchea el total/sms.
@@ -729,25 +815,26 @@
       return false;
     }
 
-    // Nuevo flujo: intentamos primero el checkout público del agent.
-    // Fallback legacy: SOLO si está explícitamente habilitado.
-    startAgentCheckout()
-      .catch(function (err) {
-        if (allowLegacyFallback()) {
-          console.warn("[checkout] agent checkout fallback (legacy enabled)", err && (err.message || err));
-          return startLegacyCheckout();
-        }
-        var code = err && err.message ? String(err.message) : "";
-        if (code === "agent_package_not_found") {
-          throw new Error(
-            "Este plan no está disponible para pago online en este momento. Por favor intenta con otra bolsa o contacta a soporte."
-          );
-        }
-        if (code === "agent_products_unavailable") {
+    var checkoutPromise = isSimCheckout
+      ? startSimAgentCheckout()
+      : startAgentCheckout().catch(function (err) {
+          if (allowLegacyFallback()) {
+            console.warn("[checkout] agent checkout fallback (legacy enabled)", err && (err.message || err));
+            return startLegacyCheckout();
+          }
+          var code = err && err.message ? String(err.message) : "";
+          if (code === "agent_package_not_found") {
+            throw new Error(
+              "Este plan no está disponible para pago online en este momento. Por favor intenta con otra bolsa o contacta a soporte."
+            );
+          }
+          if (code === "agent_products_unavailable") {
+            throw new Error(COMPRA_PAY_ERROR);
+          }
           throw new Error(COMPRA_PAY_ERROR);
-        }
-        throw new Error(COMPRA_PAY_ERROR);
-      })
+        });
+
+    checkoutPromise
       .then(function (checkoutUrl) {
         trackEvent("click_comprar_online", { planId: planId, source: compraState.source });
         window.location.href = checkoutUrl;
@@ -766,8 +853,8 @@
           },
           err,
         );
-        var msg = COMPRA_PAY_ERROR;
-        if (err && err.message === "agent_package_not_found") {
+        var msg = isSimCheckout ? SIM_CHECKOUT_ERROR : COMPRA_PAY_ERROR;
+        if (!isSimCheckout && err && err.message === "agent_package_not_found") {
           msg =
             "Este plan no está disponible para pago online en este momento. Por favor intenta con otra bolsa o contacta a soporte.";
         }
@@ -1391,7 +1478,15 @@
       activate(tabFromHash());
     });
 
-    document.querySelectorAll(".sim-plan-cta-link").forEach(function (link) {
+    document.querySelectorAll("[data-plan-id]").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        var planId = btn.getAttribute("data-plan-id");
+        if (planId) startSimCheckout(planId);
+      });
+    });
+
+    document.querySelectorAll(".sim-plan-cta-link[data-sim-plan]").forEach(function (link) {
       link.addEventListener("click", function () {
         var plan = link.getAttribute("data-sim-plan") || "SIM";
         var nota = qs("lead-nota");

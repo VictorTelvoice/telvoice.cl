@@ -10,6 +10,7 @@ import {
   getClientNumbersModuleState,
   listClientNumbersByCompany,
 } from "../services/clientNumberService.js";
+import { listPendingSimActivationsForCompany } from "../services/simActivationService.js";
 import {
   getInboundSmsById,
   listInboundSmsByCompany,
@@ -66,11 +67,12 @@ export async function getAppNumeraciones(
   next: NextFunction,
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
-    const [module, numbers] = await Promise.all([
+    const [module, numbers, pendingSimActivations] = await Promise.all([
       getClientNumbersModuleState(),
       listClientNumbersByCompany(ctx.company.id),
+      listPendingSimActivationsForCompany(ctx.company.id),
     ]);
-    return renderAppNumeracionesPage(ctx, { module, numbers });
+    return renderAppNumeracionesPage(ctx, { module, numbers, pendingSimActivations });
   });
 }
 

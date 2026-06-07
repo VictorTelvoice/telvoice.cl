@@ -8,6 +8,7 @@ import { isMissingTableError } from "../utils/db-table.js";
 import {
   CLIENT_PANEL_ORDER_METADATA,
   PUBLIC_LANDING_ORDER_METADATA,
+  PUBLIC_SIM_CHECKOUT_METADATA,
 } from "../utils/order-display.js";
 import {
   encryptClaimTokenForMetadata,
@@ -15,8 +16,10 @@ import {
   generatePublicCheckoutReference,
   hashClaimToken,
 } from "../utils/claim-token.js";
-import { AppError } from "../utils/errors.js";
+import type { SimPlanDefinition } from "../utils/simPlans.js";
+import { createSimActivationRequest } from "./simActivationService.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
+import { AppError } from "../utils/errors.js";
 
 export async function getOrderById(id: string): Promise<SmsOrderRow | null> {
   const { data, error } = await getSupabase()
@@ -325,6 +328,83 @@ export async function createPublicLandingOrder(input: {
   }
 
   return { order: data as SmsOrderRow, claimToken };
+}
+
+export async function createPublicSimOrder(input: {
+  plan: SimPlanDefinition;
+  checkoutEmail: string;
+  payerEmail?: string;
+  payerName?: string;
+  companyName?: string;
+  phone?: string;
+  taxId?: string;
+}): Promise<{ order: SmsOrderRow; claimToken: string }> {
+  const checkoutEmail = input.checkoutEmail.trim().toLowerCase();
+  const payerEmail = (input.payerEmail ?? checkoutEmail).trim().toLowerCase();
+  if (!checkoutEmail.includes("@")) {
+    throw new AppError("checkout_email inválido.", 400);
+  }
+
+  const claimToken = generateClaimToken();
+  const claimExpires = new Date();
+  claimExpires.setDate(claimExpires.getDate() + CLAIM_TTL_DAYS);
+  const publicRef = generatePublicCheckoutReference();
+
+  const orderMetadata = {
+    ...PUBLIC_SIM_CHECKOUT_METADATA,
+    plan_id: input.plan.plan_id,
+    plan_name: input.plan.name,
+    included_sms_monthly: input.plan.sms_quantity,
+    billing_period: input.plan.billing_period,
+    activation_status: "pending_payment",
+    payer_name: input.payerName?.trim() || null,
+    company_name: input.companyName?.trim() || null,
+    phone: input.phone?.trim() || null,
+    tax_id: input.taxId?.trim() || null,
+    claim_token_enc: encryptClaimTokenForMetadata(claimToken),
+  };
+
+  const { data, error } = await getSupabase()
+    .from("sms_orders")
+    .insert({
+      company_id: null,
+      package_id: null,
+      sms_quantity: input.plan.sms_quantity,
+      amount: input.plan.total_amount,
+      currency: input.plan.currency,
+      payment_provider: "mercadopago",
+      payment_reference: publicRef,
+      payment_status: "pending",
+      credit_status: "pending_claim",
+      claim_token_hash: hashClaimToken(claimToken),
+      claim_status: "unclaimed",
+      claim_expires_at: claimExpires.toISOString(),
+      checkout_email: checkoutEmail,
+      payer_email: payerEmail,
+      public_checkout_reference: publicRef,
+      metadata: orderMetadata,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    wrapSupabaseError(error, "createPublicSimOrder");
+  }
+
+  const order = data as SmsOrderRow;
+
+  await createSimActivationRequest({
+    orderId: order.id,
+    plan: input.plan,
+    checkoutEmail,
+    payerName: input.payerName,
+    companyName: input.companyName,
+    phone: input.phone,
+    taxId: input.taxId,
+    activationStatus: "pending_payment",
+  });
+
+  return { order, claimToken };
 }
 
 export async function createOrder(input: {
