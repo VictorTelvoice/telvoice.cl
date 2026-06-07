@@ -1256,6 +1256,62 @@
     });
   }
 
+  function setSiteNavDropdownOpen(toggleEl, menuEl, open) {
+    if (!toggleEl || !menuEl) return;
+    toggleEl.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) menuEl.removeAttribute("hidden");
+    else menuEl.setAttribute("hidden", "");
+    var wrap = toggleEl.closest(".site-nav-dropdown");
+    if (wrap) wrap.classList.toggle("is-open", open);
+  }
+
+  function initSiteNavDropdowns() {
+    document.querySelectorAll(".site-nav-dropdown").forEach(function (wrap) {
+      var toggle = wrap.querySelector(".site-nav-dropdown-toggle");
+      var menu = wrap.querySelector(".site-nav-dropdown-menu");
+      if (!toggle || !menu) return;
+
+      toggle.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var willOpen = toggle.getAttribute("aria-expanded") !== "true";
+        document.querySelectorAll(".site-nav-dropdown.is-open").forEach(function (other) {
+          if (other !== wrap) {
+            setSiteNavDropdownOpen(
+              other.querySelector(".site-nav-dropdown-toggle"),
+              other.querySelector(".site-nav-dropdown-menu"),
+              false
+            );
+          }
+        });
+        setSiteNavDropdownOpen(toggle, menu, willOpen);
+      });
+    });
+
+    document.addEventListener("click", function (e) {
+      if (e.target.closest(".site-nav-dropdown")) return;
+      document.querySelectorAll(".site-nav-dropdown.is-open").forEach(function (wrap) {
+        setSiteNavDropdownOpen(
+          wrap.querySelector(".site-nav-dropdown-toggle"),
+          wrap.querySelector(".site-nav-dropdown-menu"),
+          false
+        );
+      });
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      document.querySelectorAll(".site-nav-dropdown.is-open").forEach(function (wrap) {
+        setSiteNavDropdownOpen(
+          wrap.querySelector(".site-nav-dropdown-toggle"),
+          wrap.querySelector(".site-nav-dropdown-menu"),
+          false
+        );
+      });
+    });
+  }
+
+  initSiteNavDropdowns();
+
   function initPreciosTabs() {
     var tabButtons = document.querySelectorAll("[data-precios-tab]");
     var panelBolsas = qs("calculadora");
@@ -1280,8 +1336,8 @@
           history.replaceState(null, "", "#numeracion-sim");
         }
       } else if (options.updateHash && tabId === "bolsas") {
-        if (window.location.hash === "#numeracion-sim") {
-          history.replaceState(null, "", "#precios");
+        if (window.location.hash !== "#calculadora" && window.location.hash !== "#precios") {
+          history.replaceState(null, "", "#calculadora");
         }
       }
     }
@@ -1289,8 +1345,22 @@
     function tabFromHash() {
       var hash = (window.location.hash || "").replace(/^#/, "");
       if (hash === "numeracion-sim" || hash === "sim") return "sim";
+      if (hash === "calculadora" || hash === "precios") return "bolsas";
       return "bolsas";
     }
+
+    document.querySelectorAll("[data-precios-nav]").forEach(function (link) {
+      link.addEventListener("click", function () {
+        var tabId = link.getAttribute("data-precios-nav") || "bolsas";
+        activate(tabId, { updateHash: true });
+        closeMobileMenu();
+        document.querySelectorAll(".site-nav-dropdown.is-open").forEach(function (wrap) {
+          var t = wrap.querySelector(".site-nav-dropdown-toggle");
+          var menu = wrap.querySelector(".site-nav-dropdown-menu");
+          if (t && menu) setSiteNavDropdownOpen(t, menu, false);
+        });
+      });
+    });
 
     tabButtons.forEach(function (btn) {
       btn.addEventListener("click", function () {
