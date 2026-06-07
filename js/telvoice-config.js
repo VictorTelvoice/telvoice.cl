@@ -90,3 +90,18 @@ window.TELVOICE_CONFIG = {
   ],
   calcMaxVolume: 120000,
 };
+
+(function () {
+  var cfg = window.TELVOICE_CONFIG || {};
+  var pub = window.__TELVOICE_PUBLIC_ENV__ || {};
+  var fromEnv = pub.NEXT_PUBLIC_AGENT_API_ORIGIN;
+  if (typeof fromEnv === "string" && fromEnv.trim()) {
+    cfg.agentApiOrigin = fromEnv.trim().replace(/\/$/, "");
+  } else if (!cfg.agentApiOrigin) {
+    var hostname = window.location && window.location.hostname ? window.location.hostname : "";
+    cfg.agentApiOrigin = hostname.indexOf("vercel.app") !== -1
+      ? "https://agent-qa.telvoice.cl"
+      : "https://agent.telvoice.cl";
+  }
+  window.TELVOICE_CONFIG = cfg;
+})();

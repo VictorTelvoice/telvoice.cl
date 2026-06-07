@@ -628,7 +628,9 @@
     compraSubmitting = true;
     setCompraLoading(true);
 
-    var agentOrigin = "https://agent.telvoice.cl";
+    var agentOrigin =
+      (window.TELVOICE_CONFIG && window.TELVOICE_CONFIG.agentApiOrigin) ||
+      "https://agent.telvoice.cl";
     var agentProductsEndpoint = agentOrigin + "/api/public/products";
     var agentCheckoutEndpoint = agentOrigin + "/api/public/checkout";
     var legacyCheckoutEndpoint = apiUrl("/api/mercadopago/create-preference");
