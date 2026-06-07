@@ -1468,7 +1468,8 @@ export function getAppPanelStyles(): string {
       border: 1px solid var(--tv-border, #cbd5e1);
       border-radius: 8px;
       font-size: 0.85rem;
-      background: #fff;
+      background: var(--tv-surface);
+      color: var(--tv-text);
       box-sizing: border-box;
     }
     .tv-app-client .tv-dlr-report__filter-actions {
@@ -1513,7 +1514,8 @@ export function getAppPanelStyles(): string {
       gap: 0.5rem;
       padding: 0.85rem 1.25rem;
       border-top: 1px solid var(--tv-border, #e2e8f0);
-      background: #fafbfc;
+      background: var(--tv-surface);
+      color: var(--tv-text);
     }
     .tv-dlr-report__pager-actions {
       display: flex;

@@ -415,5 +415,228 @@ export function getLabPanelThemeStyles(): string {
     .tv-lab-theme a:not(.btn):not(.tv-nav-link):not(.tv-dash-block__link) {
       color: var(--tv-lab-cyan);
     }
+
+    /* —— Sin fondos blancos: formularios, tablas, badges —— */
+    .tv-lab-theme .input,
+    .tv-lab-theme select,
+    .tv-lab-theme textarea,
+    .tv-lab-theme .form-group input,
+    .tv-lab-theme .form-group select,
+    .tv-lab-theme .form-group textarea,
+    .tv-lab-theme .tv-app-client .tv-dlr-report__filters-grid .tv-filter-input,
+    .tv-lab-theme .tv-filter-input {
+      background: rgba(5, 8, 20, 0.55) !important;
+      border: 1px solid var(--tv-lab-border) !important;
+      color: var(--tv-lab-text) !important;
+      border-radius: 0.65rem;
+    }
+    .tv-lab-theme select option {
+      background: #0a1024;
+      color: var(--tv-lab-text);
+    }
+    .tv-lab-theme .input:focus,
+    .tv-lab-theme select:focus,
+    .tv-lab-theme textarea:focus,
+    .tv-lab-theme .tv-filter-input:focus {
+      outline: none;
+      border-color: var(--tv-lab-border-bright) !important;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+    }
+    .tv-lab-theme .tv-table th,
+    .tv-lab-theme th {
+      background: rgba(8, 14, 36, 0.92) !important;
+      color: var(--tv-lab-muted) !important;
+      border-bottom-color: var(--tv-lab-border) !important;
+    }
+    .tv-lab-theme .tv-table tbody tr:hover,
+    .tv-lab-theme tbody tr:hover {
+      background: rgba(56, 189, 248, 0.05) !important;
+    }
+    .tv-lab-theme .tv-dlr-report__pager {
+      background: rgba(8, 14, 36, 0.75) !important;
+      border-top-color: var(--tv-lab-border) !important;
+      color: var(--tv-lab-muted);
+    }
+    .tv-lab-theme .tv-dlr-report__pager-page {
+      color: var(--tv-lab-text);
+    }
+    .tv-lab-theme .btn-secondary {
+      background: rgba(12, 20, 48, 0.65) !important;
+      color: var(--tv-lab-text) !important;
+      border: 1px solid var(--tv-lab-border-bright) !important;
+    }
+    .tv-lab-theme .btn-secondary:hover:not(:disabled) {
+      border-color: var(--tv-lab-cyan) !important;
+      background: rgba(34, 211, 238, 0.08) !important;
+    }
+    .tv-lab-theme .tv-kpi--primary,
+    .tv-lab-theme .tv-kpi--default {
+      background: var(--tv-lab-surface) !important;
+    }
+    .tv-lab-theme .tv-kpi--success {
+      background: rgba(16, 185, 129, 0.08) !important;
+      border-color: rgba(52, 211, 153, 0.22) !important;
+    }
+    .tv-lab-theme .tv-section-head__title,
+    .tv-lab-theme .tv-dlr-report__filters-head .tv-section-head__title {
+      color: var(--tv-lab-text);
+    }
+    .tv-lab-theme .field-hint,
+    .tv-lab-theme .tv-filter-field__label,
+    .tv-lab-theme .tv-dlr-report__error-desc {
+      color: var(--tv-lab-muted);
+    }
+    .tv-lab-theme .field-label {
+      color: var(--tv-lab-muted);
+    }
+    .tv-lab-theme .alert-success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.28);
+      color: #6ee7b7;
+    }
+    .tv-lab-theme .alert-error {
+      background: rgba(220, 38, 38, 0.12);
+      border: 1px solid rgba(248, 113, 113, 0.35);
+      color: #fecaca;
+    }
+    .tv-lab-theme .alert-warn {
+      background: rgba(217, 119, 6, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.28);
+      color: #fcd34d;
+    }
+    .tv-lab-theme .badge,
+    .tv-lab-theme .tv-badge {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      color: var(--tv-lab-cyan);
+    }
+    .tv-lab-theme .badge-ok,
+    .tv-lab-theme .badge-success {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(52, 211, 153, 0.28);
+      color: #6ee7b7;
+    }
+    .tv-lab-theme .badge-warn {
+      background: rgba(217, 119, 6, 0.12);
+      border-color: rgba(251, 191, 36, 0.28);
+      color: #fcd34d;
+    }
+    .tv-lab-theme .badge-err,
+    .tv-lab-theme .badge-danger {
+      background: rgba(220, 38, 38, 0.12);
+      border-color: rgba(248, 113, 113, 0.28);
+      color: #fca5a5;
+    }
+    .tv-lab-theme .tv-panel__body {
+      background: transparent;
+    }
+    .tv-lab-theme .table-wrap {
+      background: transparent;
+    }
+
+    /* —— Calculadora Comprar SMS —— */
+    .tv-lab-theme .tv-buy-sms-calc .calc-hero-title,
+    .tv-lab-theme .tv-buy-sms-calc .pack-includes-title {
+      color: var(--tv-lab-text);
+      font-family: Montserrat, Inter, sans-serif;
+    }
+    .tv-lab-theme .tv-buy-sms-calc .section-eyebrow {
+      color: var(--tv-lab-cyan);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-hero-intro,
+    .tv-lab-theme .tv-buy-sms-calc .calc-footnote,
+    .tv-lab-theme .tv-buy-sms-calc .calc-cta-note,
+    .tv-lab-theme .tv-buy-sms-calc .calc-readonly-note {
+      color: var(--tv-lab-muted);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-panel {
+      background: var(--tv-lab-surface) !important;
+      border: 1px solid var(--tv-lab-border) !important;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03) inset, 0 16px 48px -24px rgba(0, 0, 0, 0.55) !important;
+      backdrop-filter: blur(16px);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-slider-block {
+      border-bottom-color: var(--tv-lab-border);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-slider-label {
+      color: var(--tv-lab-text);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-vol-display,
+    .tv-lab-theme .tv-buy-sms-calc .calc-result-total-value {
+      color: var(--tv-lab-cyan);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-tier-chip {
+      background: rgba(8, 14, 36, 0.65) !important;
+      border-color: var(--tv-lab-border) !important;
+      color: var(--tv-lab-muted) !important;
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-tier-chip:hover {
+      border-color: var(--tv-lab-border-bright) !important;
+      background: rgba(56, 189, 248, 0.08) !important;
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-tier-chip.is-active {
+      background: rgba(0, 82, 204, 0.35) !important;
+      border-color: var(--tv-lab-cyan) !important;
+      color: #fff !important;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.15);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-tier-chip.is-active .calc-tier-chip-sub {
+      color: rgba(238, 242, 255, 0.85) !important;
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-result-panel {
+      background: rgba(8, 14, 36, 0.55) !important;
+      border: 1px solid var(--tv-lab-border) !important;
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-result-row-label,
+    .tv-lab-theme .tv-buy-sms-calc .calc-result-total-label {
+      color: var(--tv-lab-muted);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-result-row-value {
+      color: var(--tv-lab-text);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-result-note {
+      color: var(--tv-lab-muted);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .pack-includes-item {
+      background: rgba(8, 14, 36, 0.55) !important;
+      border: 1px solid var(--tv-lab-border) !important;
+      color: var(--tv-lab-muted) !important;
+    }
+    .tv-lab-theme .tv-buy-sms-calc .pack-includes-item .material-symbols-outlined {
+      color: var(--tv-lab-cyan);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-cta-btn--secondary {
+      background: rgba(12, 20, 48, 0.65) !important;
+      border: 1px solid var(--tv-lab-border-bright) !important;
+      color: var(--tv-lab-text) !important;
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-cta-link {
+      color: var(--tv-lab-cyan);
+    }
+    .tv-lab-theme .tv-buy-sms-calc .calc-cta-link:hover {
+      color: #7dd3fc;
+    }
+    .tv-lab-theme .tv-dash-pie__center {
+      background: rgba(8, 14, 36, 0.9) !important;
+      box-shadow: inset 0 0 0 1px var(--tv-lab-border);
+    }
+    .tv-lab-theme .tv-dash-quick-card {
+      background: var(--tv-lab-surface) !important;
+      border-color: var(--tv-lab-border) !important;
+    }
+    .tv-lab-theme .tv-dash-quick-card:hover,
+    .tv-lab-theme .tv-dash-quick-card--featured {
+      background: rgba(56, 189, 248, 0.08) !important;
+      border-color: var(--tv-lab-border-bright) !important;
+    }
+    .tv-lab-theme .tv-send-confirm-modal__panel {
+      background: var(--tv-lab-surface) !important;
+      border: 1px solid var(--tv-lab-border);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5) !important;
+      color: var(--tv-lab-text);
+    }
+    .tv-lab-theme .tv-send-confirm-modal__backdrop {
+      background: rgba(5, 8, 20, 0.78) !important;
+    }
   `;
 }
