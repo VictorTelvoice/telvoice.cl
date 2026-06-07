@@ -4,7 +4,7 @@ import { getSmsBagCalculatorStyles } from "../shared/sms-bag-calculator-ui.js";
 /** Estilos adicionales del panel cliente /app */
 export function getAppPanelStyles(): string {
   return `
-    /* Sidebar/topbar Lab: ver lab-theme-styles.ts (.tv-lab-theme) */
+    /* Sidebar/topbar modo claro: ver light-theme-styles.ts (.tv-light-theme) */
     .tv-app-client .tv-sidebar__nav {
       display: flex;
       flex-direction: column;

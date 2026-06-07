@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 import { getAdminStyles } from "../src/views/admin-ui/styles.js";
 import { getAppPanelStyles } from "../src/views/app-ui/app-styles.js";
 import { getLabPanelThemeStyles } from "../src/views/app-ui/lab-theme-styles.js";
+import { getLightPanelThemeStyles } from "../src/views/app-ui/light-theme-styles.js";
+import { getPanelThemeToggleStyles } from "../src/views/app-ui/panel-theme.js";
 
 const MATERIAL_SYMBOLS_FIX = `
 .material-symbols-outlined {
@@ -18,7 +20,7 @@ const MATERIAL_SYMBOLS_FIX = `
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outPath = path.join(root, "public", "app-panel.css");
-const css = `${MATERIAL_SYMBOLS_FIX}${getAdminStyles()}${getAppPanelStyles()}${getLabPanelThemeStyles()}`;
+const css = `${MATERIAL_SYMBOLS_FIX}${getAdminStyles()}${getAppPanelStyles()}${getLabPanelThemeStyles()}${getLightPanelThemeStyles()}${getPanelThemeToggleStyles()}`;
 
 writeFileSync(outPath, css, "utf8");
 const ver = String(Date.now());

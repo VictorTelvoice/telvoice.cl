@@ -10,7 +10,13 @@ import {
   renderPanelAgentWidget,
 } from "../../components/app/client-agent-widget.js";
 import { renderPanelStylesheetLink } from "../shared/panel-stylesheet.js";
+import { renderLightBackgroundHtml } from "./light-theme-styles.js";
 import { renderLabBackgroundHtml } from "./lab-theme-styles.js";
+import {
+  renderPanelThemeBootScript,
+  renderPanelThemeToggleButton,
+  renderPanelThemeToggleScript,
+} from "./panel-theme.js";
 import {
   APP_NAV_PRIMARY,
   APP_NAV_REST,
@@ -94,6 +100,7 @@ function renderTopbar(tb: AppLayoutTopbar): string {
         <span class="material-symbols-outlined tv-btn-buy-sms__icon" aria-hidden="true">shopping_cart</span>
         <span class="tv-btn-buy-sms__label">Comprar SMS</span>
       </a>
+      ${renderPanelThemeToggleButton()}
       <button type="button" class="tv-topbar__icon-btn" aria-label="Notificaciones" title="Notificaciones">
         <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
       </button>
@@ -142,7 +149,7 @@ export function renderAppLayout(options: AppLayoutOptions): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#050814" />
+  <meta name="theme-color" content="#eef2f8" />
   <title>${escapeHtml(brandPageTitle(options.title))}</title>
   ${renderFaviconLink()}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -152,7 +159,9 @@ export function renderAppLayout(options: AppLayoutOptions): string {
   ${renderPanelStylesheetLink()}
   ${renderTelvoiceAgentStylesheetLink({ lab: true })}
 </head>
-<body class="tv-admin tv-lab-theme${bodyClass}">
+<body class="tv-admin${bodyClass}">
+  ${renderPanelThemeBootScript()}
+  ${renderLightBackgroundHtml()}
   ${renderLabBackgroundHtml()}
   <div class="tv-app">
     <div class="tv-overlay" id="tv-sidebar-overlay" aria-hidden="true"></div>
@@ -164,6 +173,7 @@ export function renderAppLayout(options: AppLayoutOptions): string {
   </div>
   ${renderPanelAgentWidget()}
   ${SIDEBAR_SCRIPT}
+  ${renderPanelThemeToggleScript()}
   <script>${getPanelAgentWidgetScript()}</script>
 </body>
 </html>`;
