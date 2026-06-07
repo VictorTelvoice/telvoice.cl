@@ -1,11 +1,36 @@
-import { agentPlanStatusLabel } from "../../services/clientAgentPlanService.js";
+import {
+  agentPlanRequestStatusMessage,
+  agentPlanStatusLabel,
+  preferredNumberTypeLabel,
+} from "../../services/clientAgentPlanService.js";
 import type { AgentDashboardData } from "../../services/clientAgentPlanService.js";
-import type { ClientNumberListItem } from "../../types/client-numbers.js";
+import type { AgentPlanRequestRow, ClientNumberListItem } from "../../types/client-numbers.js";
+import { agentPlanDisplayName } from "../../utils/agent-plan-intent.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
-import { fmtMoney } from "./app-page-wrap.js";
 import { renderBtn, renderPageHeader, renderPanel } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
-import { wrapAppPage } from "./app-page-wrap.js";
+import { fmtMoney, wrapAppPage } from "./app-page-wrap.js";
+
+function renderLatestRequestPanel(request: AgentPlanRequestRow): string {
+  const statusCls =
+    request.status === "activated" || request.status === "approved"
+      ? "ok"
+      : request.status === "rejected"
+        ? "err"
+        : "warn";
+  return `<section class="tv-panel" style="margin-bottom:1rem">
+    <header class="tv-section-head">
+      <h2 class="tv-section-head__title">Solicitud de plan</h2>
+      <span class="badge badge-${statusCls}">${escapeHtml(agentPlanStatusLabel(request.status))}</span>
+    </header>
+    <div class="tv-panel__body">
+      <p><strong>${escapeHtml(agentPlanDisplayName(request.plan_code))}</strong> · ${escapeHtml(preferredNumberTypeLabel(request.preferred_number_type))}</p>
+      <p class="field-hint">Solicitado el ${formatDate(request.created_at)}</p>
+      <p>${escapeHtml(agentPlanRequestStatusMessage(request.status))}</p>
+      ${renderBtn("Ver planes", { href: "/app/planes-agente", variant: "secondary", size: "sm" })}
+    </div>
+  </section>`;
+}
 
 function renderAgentStatus(subscription: AgentDashboardData["subscription"]): string {
   if (!subscription) {
@@ -33,6 +58,7 @@ export function renderAppAgentePage(
   const sub = agent.subscription;
   const planName = agent.planDefinition?.name ?? "Sin plan";
   const planPrice = sub ? fmtMoney(sub.monthly_price_clp) : "—";
+  const latestRequest = agent.pendingRequests[0] ?? null;
   const linkedNumber = numbers.find((n) => n.id === sub?.included_number_id);
 
   const pendingNotice =
@@ -72,6 +98,7 @@ export function renderAppAgentePage(
       `,
     })}
     ${pendingNotice}
+    ${!sub && latestRequest ? renderLatestRequestPanel(latestRequest) : ""}
     <div class="tv-agente-grid">
       <section class="tv-panel">
         <header class="tv-section-head"><h2 class="tv-section-head__title">Estado del agente</h2></header>

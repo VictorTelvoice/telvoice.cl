@@ -10,13 +10,24 @@ import { landingPublicCors } from "./middleware/landing-public-cors.js";
 import { hostRoutingMiddleware } from "./middleware/host-routing.js";
 import {
   loadAdminSession,
+  loadClientSession,
   redirectIfAuthenticated,
 } from "./middleware/admin-auth.js";
 import {
   getLoginPage,
   postLogin,
 } from "./controllers/admin.controller.js";
-import { canAccessAdmin, subjectFromAdmin } from "./auth/authorization.js";
+import {
+  canAccessAdmin,
+  canAccessClient,
+  subjectFromAdmin,
+} from "./auth/authorization.js";
+import {
+  buildAgentPlanDashboardPath,
+  isAgentPlanIntentQuery,
+  parseAgentPlanCode,
+  parseSafeAppNextPath,
+} from "./utils/agent-plan-intent.js";
 import { env } from "./config/env.js";
 import { isAdminPanelHost } from "./utils/panel-host.js";
 import type { RequestWithRawBody } from "./types/express-request.js";
@@ -79,13 +90,35 @@ export function createApp() {
     res.redirect("/login");
   });
 
-  app.get("/login", loadAdminSession, (req: Request, res: Response, next) => {
+  app.get("/login", loadClientSession, (req: Request, res: Response, next) => {
     if (isAdminPanelHost(req)) {
-      redirectIfAuthenticated(req, res, () => {
-        void getLoginPage(req, res, next);
+      loadAdminSession(req, res, () => {
+        redirectIfAuthenticated(req, res, () => {
+          void getLoginPage(req, res, next);
+        });
       });
       return;
     }
+
+    const subject = req.adminUser
+      ? subjectFromAdmin(req.adminUser, req.userProfile)
+      : null;
+    if (subject && canAccessClient(subject)) {
+      const query = req.query as Record<string, string | string[] | undefined>;
+      const selectedPlan = parseAgentPlanCode(query.plan);
+      if (isAgentPlanIntentQuery(query) && selectedPlan) {
+        res.redirect(buildAgentPlanDashboardPath(selectedPlan));
+        return;
+      }
+      const nextPath = parseSafeAppNextPath(query.next);
+      if (nextPath) {
+        res.redirect(nextPath);
+        return;
+      }
+      res.redirect("/app/dashboard");
+      return;
+    }
+
     getClientLoginPage(req, res);
   });
 

@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { canOperateClientPanel } from "../types/roles.js";
 import {
   createAgentPlanRequest,
-  getActiveAgentPlanSubscription,
+  getAgentPlanStatusPayload,
 } from "../services/clientAgentPlanService.js";
 import {
   getClientNumberById,
@@ -197,8 +197,13 @@ export async function getApiAgentPlanStatus(
     const ctx = await requireApiContext(req, res);
     if (!ctx) return;
 
-    const subscription = await getActiveAgentPlanSubscription(ctx.company.id);
-    res.json({ ok: true, subscription });
+    const status = await getAgentPlanStatusPayload(ctx.company.id);
+    res.json({
+      ok: true,
+      subscription: status.subscription,
+      requests: status.requests,
+      pending_requests: status.pendingRequests,
+    });
   } catch (error) {
     res.status(500).json({ ok: false, error: "Error al obtener plan." });
   }

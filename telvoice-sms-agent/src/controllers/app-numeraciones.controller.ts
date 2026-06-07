@@ -3,7 +3,7 @@ import { canOperateClientPanel } from "../types/roles.js";
 import {
   createAgentPlanRequest,
   getAgentDashboardData,
-  listAgentPlanRequests,
+  getAgentPlanStatusPayload,
 } from "../services/clientAgentPlanService.js";
 import {
   getClientNumberById,
@@ -17,6 +17,10 @@ import {
 } from "../services/inboundSmsService.js";
 import { getSupabase } from "../database/supabaseClient.js";
 import type { AgentPlanCode } from "../types/client-numbers.js";
+import {
+  isAgentPlanIntentQuery,
+  parseAgentPlanCode,
+} from "../utils/agent-plan-intent.js";
 import type { NumberIntegrationType } from "../types/client-numbers.js";
 import { AppError } from "../utils/errors.js";
 import { isMissingTableError } from "../utils/db-table.js";
@@ -201,13 +205,25 @@ export async function getAppAgentPlans(
   next: NextFunction,
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
-    const pendingRequests = await listAgentPlanRequests(ctx.company.id);
-    const showRequestSuccess = req.query.requested === "1";
+    const query = req.query as Record<string, string | string[] | undefined>;
+    const selectedPlan = parseAgentPlanCode(query.plan);
+    const statusPayload = await getAgentPlanStatusPayload(ctx.company.id);
+    const showRequestSuccess = query.requested === "1";
+    const highlightRequest = selectedPlan
+      ? statusPayload.pendingRequests.find((r) => r.plan_code === selectedPlan) ??
+        statusPayload.requests.find((r) => r.plan_code === selectedPlan) ??
+        null
+      : statusPayload.pendingRequests[0] ?? null;
+
     return renderAppAgentPlansPage(ctx, {
-      pendingRequests: pendingRequests.filter((r) =>
+      pendingRequests: statusPayload.pendingRequests.filter((r) =>
         ["pending", "reviewing", "approved"].includes(r.status),
       ),
+      activeSubscription: statusPayload.subscription,
+      selectedPlan,
+      showIntentBanner: isAgentPlanIntentQuery(query),
       showRequestSuccess,
+      highlightRequest,
     });
   });
 }
@@ -230,8 +246,16 @@ export async function postAppAgentPlanRequest(
       return;
     }
 
-    await createAgentPlanRequest(ctx.company.id, planCode);
-    res.redirect("/app/planes-agente?requested=1&ok=Solicitud+recibida");
+    const preferredRaw = String(req.body?.preferred_number_type ?? "either").trim();
+    const preferredNumberType =
+      preferredRaw === "sim_real" || preferredRaw === "fixed_line"
+        ? preferredRaw
+        : "either";
+
+    await createAgentPlanRequest(ctx.company.id, planCode, preferredNumberType);
+    res.redirect(
+      `/app/planes-agente?requested=1&plan=${encodeURIComponent(planCode)}&intent=agent_plan&ok=Solicitud+recibida`,
+    );
   } catch (error) {
     if (error instanceof AppError) {
       res.redirect(

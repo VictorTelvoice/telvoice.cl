@@ -70,6 +70,46 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
     window.history.replaceState({}, document.title, "/auth/callback");
     return data.session ?? null;
   }
+  function tvStoreAgentPlanIntentFromUrl() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const intent = params.get("intent");
+      const plan = (params.get("plan") || "").trim().toLowerCase();
+      if (
+        intent === "agent_plan" &&
+        (plan === "start" || plan === "pro" || plan === "business")
+      ) {
+        localStorage.setItem(
+          "telvoice_agent_plan_intent",
+          JSON.stringify({ intent: "agent_plan", plan }),
+        );
+      }
+      const nextPath = params.get("next");
+      if (nextPath && nextPath.startsWith("/app/") && !nextPath.includes("://")) {
+        localStorage.setItem("telvoice_login_next", nextPath);
+      }
+    } catch {}
+  }
+  function tvResolvePostLoginRedirect(smsJustCredited) {
+    if (smsJustCredited) return "/app/dashboard?welcome=1";
+    try {
+      const raw = localStorage.getItem("telvoice_agent_plan_intent");
+      if (raw) {
+        const data = JSON.parse(raw);
+        localStorage.removeItem("telvoice_agent_plan_intent");
+        const plan = String(data?.plan || "").toLowerCase();
+        if (data?.intent === "agent_plan" && (plan === "start" || plan === "pro" || plan === "business")) {
+          return "/app/planes-agente?plan=" + encodeURIComponent(plan) + "&intent=agent_plan";
+        }
+      }
+      const nextStored = localStorage.getItem("telvoice_login_next");
+      if (nextStored && nextStored.startsWith("/app/")) {
+        localStorage.removeItem("telvoice_login_next");
+        return nextStored;
+      }
+    } catch {}
+    return "/app/dashboard";
+  }
   async function tvRunPostAuth(session) {
     const user = session?.user;
     const accessToken = session?.access_token;
@@ -155,9 +195,7 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
       }
     }
 
-    window.location.href = smsJustCredited
-      ? "/app/dashboard?welcome=1"
-      : "/app/dashboard";
+    window.location.href = tvResolvePostLoginRedirect(smsJustCredited);
   }
   async function tvCompleteAuthCallback() {
     if (window.__tvAuthCallbackRunning) {
@@ -246,6 +284,7 @@ ${renderSupabaseBrowserClientInit(url, key)}
       }
     } catch {}
   })();
+  tvStoreAgentPlanIntentFromUrl();
   const googleBtn = document.getElementById("tv-google-login");
   if (googleBtn) {
     googleBtn.addEventListener("click", async () => {

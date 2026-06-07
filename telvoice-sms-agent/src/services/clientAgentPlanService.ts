@@ -82,6 +82,32 @@ export async function listAgentPlanRequests(
   return (data ?? []).map((r) => mapRequest(r as Record<string, unknown>));
 }
 
+export function agentPlanRequestStatusMessage(
+  status: AgentPlanRequestRow["status"],
+): string {
+  const map: Record<AgentPlanRequestRow["status"], string> = {
+    pending:
+      "Solicitud recibida. Estamos revisando disponibilidad de línea.",
+    reviewing: "Solicitud en revisión comercial.",
+    approved: "Solicitud aprobada. Falta activación de numeración.",
+    activated: "Plan activo.",
+    rejected:
+      "No fue posible activar esta solicitud. Contacta a Telvoice.",
+  };
+  return map[status] ?? agentPlanStatusLabel(status);
+}
+
+export function preferredNumberTypeLabel(
+  type: AgentPlanRequestRow["preferred_number_type"],
+): string {
+  const map: Record<AgentPlanRequestRow["preferred_number_type"], string> = {
+    sim_real: "SIM real",
+    fixed_line: "Red fija",
+    either: "Cualquiera según disponibilidad",
+  };
+  return map[type] ?? type;
+}
+
 export async function createAgentPlanRequest(
   companyId: string,
   planCode: AgentPlanCode,
@@ -94,6 +120,11 @@ export async function createAgentPlanRequest(
 
   const sb = getSupabase();
 
+  const activeSubscription = await getActiveAgentPlanSubscription(companyId);
+  if (activeSubscription?.status === "active") {
+    throw new AppError("Ya tienes un plan agente activo.", 409);
+  }
+
   const { data: existing } = await sb
     .from("agent_plan_requests")
     .select("id, status")
@@ -104,7 +135,7 @@ export async function createAgentPlanRequest(
 
   if (existing) {
     throw new AppError(
-      "Ya existe una solicitud pendiente para este plan. Telvoice la revisará pronto.",
+      "Ya tienes una solicitud pendiente para este plan.",
       409,
     );
   }
@@ -131,6 +162,27 @@ export async function createAgentPlanRequest(
   }
 
   return mapRequest(data as Record<string, unknown>);
+}
+
+export type AgentPlanStatusPayload = {
+  subscription: AgentPlanSubscriptionRow | null;
+  requests: AgentPlanRequestRow[];
+  pendingRequests: AgentPlanRequestRow[];
+};
+
+export async function getAgentPlanStatusPayload(
+  companyId: string,
+): Promise<AgentPlanStatusPayload> {
+  const [subscription, requests] = await Promise.all([
+    getActiveAgentPlanSubscription(companyId),
+    listAgentPlanRequests(companyId),
+  ]);
+  const pendingRequests = requests.filter((r) =>
+    ["pending", "reviewing", "approved", "rejected", "activated"].includes(
+      r.status,
+    ),
+  );
+  return { subscription, requests, pendingRequests };
 }
 
 export type AgentDashboardData = {
