@@ -1,6 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
 import {
+  adminPanelBaseUrl,
   adminPanelUrl,
+  agentPanelBaseUrl,
   agentPanelUrl,
   isAdminPanelHost,
   isAgentPanelHost,
@@ -28,8 +30,11 @@ export function hostRoutingMiddleware(
   next: NextFunction,
 ): void {
   if (isAgentPanelHost(req) && (req.path === "/admin" || req.path.startsWith("/admin/"))) {
-    res.redirect(302, adminPanelUrl(mapAgentAdminPathToAdminHost(req)));
-    return;
+    // Dev local: admin y agente comparten origen → servir /admin sin redirigir (evita bucle).
+    if (adminPanelBaseUrl() !== agentPanelBaseUrl()) {
+      res.redirect(302, adminPanelUrl(mapAgentAdminPathToAdminHost(req)));
+      return;
+    }
   }
 
   if (isAdminPanelHost(req)) {

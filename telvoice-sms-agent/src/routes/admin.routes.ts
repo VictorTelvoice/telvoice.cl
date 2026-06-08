@@ -86,12 +86,20 @@ import {
   postAdminSupportTicketUpdate,
 } from "../controllers/admin-support.controller.js";
 import {
+  getAdminAgentPlansPage,
+  postAdminAgentPlanActivate,
+  postAdminAgentPlanApprove,
+  postAdminAgentPlanReject,
+  postAdminAgentPlanReviewing,
+} from "../controllers/admin-agent-plans.controller.js";
+import {
   getAdminNumeracionesPage,
   postAdminNumeracionesCreate,
   postAdminNumeracionesStatus,
   postAdminSimActivationNotes,
   postAdminSimActivationReview,
 } from "../controllers/admin-numeraciones.controller.js";
+import { getAdminSmsInboxPage } from "../controllers/admin-sms-inbox.controller.js";
 import {
   getAdminApiUsagePage,
   postAdminApiUsageKeyActivate,
@@ -500,6 +508,27 @@ adminRouter.post(
   requireAdminPage,
   postAdminSupportTicketQuickAction,
 );
+adminRouter.get("/agent-plans", requireAdminPage, getAdminAgentPlansPage);
+adminRouter.post(
+  "/agent-plans/requests/:id/reviewing",
+  requireAdminPage,
+  postAdminAgentPlanReviewing,
+);
+adminRouter.post(
+  "/agent-plans/requests/:id/approve",
+  requireAdminPage,
+  postAdminAgentPlanApprove,
+);
+adminRouter.post(
+  "/agent-plans/requests/:id/reject",
+  requireAdminPage,
+  postAdminAgentPlanReject,
+);
+adminRouter.post(
+  "/agent-plans/requests/:id/activate",
+  requireAdminPage,
+  postAdminAgentPlanActivate,
+);
 adminRouter.get("/numeraciones", requireAdminPage, getAdminNumeracionesPage);
 adminRouter.post("/numeraciones", requireAdminPage, postAdminNumeracionesCreate);
 adminRouter.post(
@@ -517,6 +546,7 @@ adminRouter.post(
   requireAdminPage,
   postAdminSimActivationNotes,
 );
+adminRouter.get("/sms-inbox", requireAdminPage, getAdminSmsInboxPage);
 adminRouter.get("/api-usage", requireAdminPage, getAdminApiUsagePage);
 adminRouter.post(
   "/api-usage/keys/:id/pause",
