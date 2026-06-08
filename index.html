@@ -1221,6 +1221,151 @@
       background: linear-gradient(90deg, #f5a623, #d4a017);
       color: #ffffff;
     }
+    .sim-builder {
+      margin-top: 2rem;
+      display: grid;
+      gap: 2rem;
+    }
+    .sim-builder-step__title {
+      margin: 0 0 0.35rem;
+      font-family: Montserrat, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #0052cc;
+    }
+    .sim-builder-step__heading {
+      margin: 0 0 1rem;
+      font-family: Montserrat, sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #131b2e;
+    }
+    .sim-builder-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    @media (min-width: 768px) {
+      .sim-builder-grid--sim { grid-template-columns: repeat(3, 1fr); }
+      .sim-builder-grid--agent { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 1024px) {
+      .sim-builder-grid--agent { grid-template-columns: repeat(4, 1fr); }
+    }
+    .sim-select-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 1.25rem;
+      border-radius: 1rem;
+      border: 2px solid rgba(195, 198, 214, 0.75);
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .sim-select-card:hover {
+      border-color: rgba(0, 82, 204, 0.35);
+    }
+    .sim-select-card--selected {
+      border-color: #0052cc;
+      box-shadow: 0 8px 28px -10px rgba(0, 82, 204, 0.25);
+    }
+    .sim-select-card--recommended .sim-select-card__ribbon {
+      position: absolute;
+      top: 0.65rem;
+      right: 0.65rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      background: #0052cc;
+      color: #fff;
+      font-size: 0.625rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .sim-select-card__name {
+      margin: 0;
+      font-family: Montserrat, sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #131b2e;
+    }
+    .sim-select-card__meta {
+      margin: 0;
+      font-size: 0.8125rem;
+      color: #5c6478;
+      line-height: 1.45;
+    }
+    .sim-select-card__price {
+      margin: 0.35rem 0 0;
+      font-family: Montserrat, sans-serif;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #0052cc;
+    }
+    .sim-builder-form {
+      display: grid;
+      gap: 1rem;
+    }
+    @media (min-width: 768px) {
+      .sim-builder-form { grid-template-columns: repeat(2, 1fr); }
+      .sim-builder-form .sim-builder-field--full { grid-column: 1 / -1; }
+    }
+    .sim-builder-field label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #43474e;
+    }
+    .sim-builder-field input,
+    .sim-builder-field textarea {
+      width: 100%;
+      padding: 0.75rem 0.9rem;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(195, 198, 214, 0.9);
+      font: inherit;
+    }
+    .sim-builder-summary {
+      padding: 1.25rem 1.35rem;
+      border-radius: 1rem;
+      border: 1px solid rgba(0, 82, 204, 0.12);
+      background: linear-gradient(160deg, #eff6ff 0%, #ffffff 70%);
+    }
+    .sim-builder-summary__row {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.35rem 0;
+      font-size: 0.875rem;
+      color: #43474e;
+    }
+    .sim-builder-summary__row--total {
+      margin-top: 0.5rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid rgba(0, 82, 204, 0.12);
+      font-size: 1rem;
+      font-weight: 800;
+      color: #131b2e;
+    }
+    .sim-builder-error {
+      margin: 0;
+      color: #b42318;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    .sim-builder-error[hidden] { display: none; }
+    .sim-builder-microcopy {
+      margin: 0.75rem 0 0;
+      font-size: 0.8125rem;
+      line-height: 1.55;
+      color: #5c6478;
+      text-align: center;
+    }
     .sim-explainer-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -3380,91 +3525,104 @@
         <div id="numeracion-sim" class="precios-tab-panel precios-tab-panel--sim" role="tabpanel" aria-labelledby="precios-tab-sim" hidden tabindex="-1">
           <header class="section-header">
             <span class="section-eyebrow">Numeración SIM real</span>
-            <h3 class="calc-hero-title mt-3 font-h2 text-h2 text-[clamp(1.35rem,3.5vw,2rem)]">Números SIM reales en Chile para recibir y enviar SMS</h3>
-            <p class="section-intro mt-4 text-on-surface-variant leading-relaxed">Activa una numeración móvil real en Chile para recibir SMS, operar validaciones autorizadas, conectar automatizaciones y enviar mensajes salientes desde una plataforma empresarial.</p>
-            <div class="sim-intro-pills" aria-label="Características principales">
-              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">sim_card</span> SIM real en Chile</span>
-              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">sms</span> Recepción SMS</span>
-              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">send</span> SMS salientes incluidos</span>
-              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">verified_user</span> Validaciones autorizadas</span>
-              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">hub</span> API y Webhooks</span>
-            </div>
-            <p class="sim-support-text">Una solución Telvoice basada en infraestructura Telsim para empresas que necesitan números reales, trazabilidad y control operativo.</p>
+            <h3 class="calc-hero-title mt-3 font-h2 text-h2 text-[clamp(1.35rem,3.5vw,2rem)]">Arma tu agente SMS con numeración real</h3>
+            <p class="section-intro mt-4 text-on-surface-variant leading-relaxed max-w-3xl mx-auto">Elige una numeración SIM real en Chile, agrega el nivel de agente que necesita tu empresa y paga en minutos desde el landing. Tu cuenta Telvoice se crea automáticamente después del pago.</p>
           </header>
 
-          <div class="sim-plans-grid">
-            <!-- Starter -->
-            <article class="sim-plan-card sim-plan-card--starter">
-              <p class="sim-plan-name">Starter</p>
-              <span class="sim-plan-badge"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:0.9rem">send</span> 1.000 SMS salientes incluidos</span>
-              <p class="sim-plan-price">Desde $19.990 <span class="sim-plan-price-sub">/ mes</span></p>
-              <p class="sim-plan-price-sub">por número SIM real</p>
-              <p class="sim-plan-desc">Para usuarios, emprendedores y equipos pequeños que necesitan un número móvil real en Chile para recibir SMS y operar procesos autorizados sin usar un teléfono personal.</p>
-              <ul class="sim-plan-features">
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Número SIM real en Chile</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Recepción de SMS entrantes</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> 1.000 SMS salientes mensuales</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Visualización de mensajes en plataforma</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Notificaciones en tiempo real</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Uso en cuentas propias y procesos autorizados</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Soporte técnico vía ticket</li>
-              </ul>
-              <div class="sim-plan-learn">
-                <p class="sim-plan-learn-label">Saber más</p>
-                <p class="sim-plan-learn-text">Usuarios individuales, validaciones autorizadas y operación básica.</p>
+          <div class="sim-builder" id="sim-agent-builder">
+            <section class="sim-builder-step" aria-labelledby="sim-builder-step-1">
+              <p class="sim-builder-step__title">Paso 1</p>
+              <h4 class="sim-builder-step__heading" id="sim-builder-step-1">Elige tu numeración SIM real</h4>
+              <div class="sim-builder-grid sim-builder-grid--sim" role="radiogroup" aria-label="Plan de numeración SIM">
+                <button type="button" class="sim-select-card sim-select-card--starter" data-sim-plan="sim_starter" aria-pressed="false">
+                  <p class="sim-select-card__name">Starter</p>
+                  <p class="sim-select-card__meta">1.000 SMS salientes incluidos / mes</p>
+                  <p class="sim-select-card__price">$19.990</p>
+                </button>
+                <button type="button" class="sim-select-card sim-select-card--pro sim-select-card--recommended" data-sim-plan="sim_pro" aria-pressed="true">
+                  <span class="sim-select-card__ribbon">Popular</span>
+                  <p class="sim-select-card__name">Pro</p>
+                  <p class="sim-select-card__meta">2.000 SMS salientes incluidos / mes</p>
+                  <p class="sim-select-card__price">$39.990</p>
+                </button>
+                <button type="button" class="sim-select-card sim-select-card--power" data-sim-plan="sim_power" aria-pressed="false">
+                  <p class="sim-select-card__name">Power</p>
+                  <p class="sim-select-card__meta">4.000 SMS salientes incluidos / mes</p>
+                  <p class="sim-select-card__price">$99.990</p>
+                </button>
               </div>
-              <button type="button" class="sim-plan-cta sim-plan-cta--primary sim-plan-cta-link" data-plan-id="sim_starter" data-track="click_sim_plan_starter">Activar Starter</button>
-            </article>
+            </section>
 
-            <!-- Pro -->
-            <article class="sim-plan-card sim-plan-card--featured sim-plan-card--pro">
-              <span class="sim-plan-ribbon sim-plan-ribbon--popular">Más popular</span>
-              <p class="sim-plan-name">Pro</p>
-              <span class="sim-plan-badge"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:0.9rem">send</span> 2.000 SMS salientes incluidos</span>
-              <p class="sim-plan-price">Desde $39.990 <span class="sim-plan-price-sub">/ mes</span></p>
-              <p class="sim-plan-price-sub">por número SIM real</p>
-              <p class="sim-plan-desc">Para equipos de IA, automatizadores, DevOps y empresas que necesitan recibir SMS, conectar eventos y enviar mensajes desde un número real.</p>
-              <ul class="sim-plan-features">
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Todo lo incluido en Starter</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> 2.000 SMS salientes mensuales</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Acceso a API y Webhooks</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Integración con TelegramBot</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Automatizaciones SMS autorizadas</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Alertas y eventos en tiempo real</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Historial de mensajes</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Soporte técnico vía ticket y chat</li>
-              </ul>
-              <div class="sim-plan-learn">
-                <p class="sim-plan-learn-label">Saber más</p>
-                <p class="sim-plan-learn-text">Equipos IA, DevOps, automatizadores y operaciones digitales.</p>
+            <section class="sim-builder-step" aria-labelledby="sim-builder-step-2">
+              <p class="sim-builder-step__title">Paso 2</p>
+              <h4 class="sim-builder-step__heading" id="sim-builder-step-2">Agrega tu Agente Telvoice</h4>
+              <div class="sim-builder-grid sim-builder-grid--agent" role="radiogroup" aria-label="Plan de agente">
+                <button type="button" class="sim-select-card" data-agent-addon="none" aria-pressed="false">
+                  <p class="sim-select-card__name">Solo numeración</p>
+                  <p class="sim-select-card__meta">Contratar solo la numeración SIM real sin agente adicional.</p>
+                  <p class="sim-select-card__price">$0</p>
+                </button>
+                <button type="button" class="sim-select-card" data-agent-addon="agent_start" aria-pressed="false">
+                  <p class="sim-select-card__name">Agente Start</p>
+                  <p class="sim-select-card__meta">Recepción SMS, consultas básicas y gestión inicial.</p>
+                  <p class="sim-select-card__price">$39.990</p>
+                </button>
+                <button type="button" class="sim-select-card sim-select-card--recommended" data-agent-addon="agent_pro" aria-pressed="true">
+                  <span class="sim-select-card__ribbon">Recomendado</span>
+                  <p class="sim-select-card__name">Agente Pro</p>
+                  <p class="sim-select-card__meta">Campañas asistidas, Telegram, notificaciones y operación comercial.</p>
+                  <p class="sim-select-card__price">$59.900</p>
+                </button>
+                <button type="button" class="sim-select-card" data-agent-addon="agent_business" aria-pressed="false">
+                  <p class="sim-select-card__name">Agente Business</p>
+                  <p class="sim-select-card__meta">API, webhooks, reglas operativas y automatización avanzada.</p>
+                  <p class="sim-select-card__price">$99.990</p>
+                </button>
               </div>
-              <button type="button" class="sim-plan-cta sim-plan-cta--primary sim-plan-cta-link" data-plan-id="sim_pro" data-track="click_sim_plan_pro">Activar Pro</button>
-            </article>
+            </section>
 
-            <!-- Power -->
-            <article class="sim-plan-card sim-plan-card--power">
-              <span class="sim-plan-ribbon sim-plan-ribbon--power">Potencia total</span>
-              <p class="sim-plan-name">Power</p>
-              <span class="sim-plan-badge"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:0.9rem">send</span> 4.000 SMS salientes incluidos</span>
-              <p class="sim-plan-price">Desde $99.990 <span class="sim-plan-price-sub">/ mes</span></p>
-              <p class="sim-plan-price-sub">por número SIM real</p>
-              <p class="sim-plan-desc">Para empresas, fintech, plataformas, growth y operaciones críticas que necesitan mayor capacidad, control y soporte prioritario.</p>
-              <ul class="sim-plan-features">
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Todo lo incluido en Pro</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> 4.000 SMS salientes mensuales</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Seguridad y control empresarial</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Integraciones personalizadas</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Webhooks avanzados</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Priorización operativa</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Soporte prioritario</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Revisión de caso de uso antes de activación</li>
-              </ul>
-              <div class="sim-plan-learn">
-                <p class="sim-plan-learn-label">Saber más</p>
-                <p class="sim-plan-learn-text">Fintech, corporativos, plataformas y operación crítica.</p>
+            <section class="sim-builder-step" aria-labelledby="sim-builder-step-3">
+              <p class="sim-builder-step__title">Paso 3</p>
+              <h4 class="sim-builder-step__heading" id="sim-builder-step-3">Datos de activación</h4>
+              <form class="sim-builder-form" id="sim-builder-form" novalidate>
+                <div class="sim-builder-field">
+                  <label for="sim-builder-nombre">Nombre *</label>
+                  <input id="sim-builder-nombre" name="payer_name" type="text" autocomplete="name" required />
+                </div>
+                <div class="sim-builder-field">
+                  <label for="sim-builder-email">Email *</label>
+                  <input id="sim-builder-email" name="checkout_email" type="email" autocomplete="email" required />
+                </div>
+                <div class="sim-builder-field">
+                  <label for="sim-builder-empresa">Empresa</label>
+                  <input id="sim-builder-empresa" name="company_name" type="text" autocomplete="organization" />
+                </div>
+                <div class="sim-builder-field">
+                  <label for="sim-builder-telefono">Teléfono</label>
+                  <input id="sim-builder-telefono" name="phone" type="tel" autocomplete="tel" placeholder="+569..." />
+                </div>
+                <div class="sim-builder-field">
+                  <label for="sim-builder-rut">RUT o identificación tributaria</label>
+                  <input id="sim-builder-rut" name="tax_id" type="text" autocomplete="off" />
+                </div>
+                <div class="sim-builder-field sim-builder-field--full">
+                  <label for="sim-builder-use-case">Caso de uso breve</label>
+                  <textarea id="sim-builder-use-case" name="use_case" rows="3" placeholder="Ej: recibir SMS y operar campañas con agente."></textarea>
+                </div>
+              </form>
+            </section>
+
+            <section class="sim-builder-step" aria-labelledby="sim-builder-summary-title">
+              <h4 class="sim-builder-step__heading" id="sim-builder-summary-title">Resumen</h4>
+              <div class="sim-builder-summary" aria-live="polite">
+                <div class="sim-builder-summary__row"><span id="sim-summary-sim-label">Numeración SIM Pro</span><span id="sim-summary-sim-price">$39.990</span></div>
+                <div class="sim-builder-summary__row"><span id="sim-summary-agent-label">Agente Pro</span><span id="sim-summary-agent-price">$59.900</span></div>
+                <div class="sim-builder-summary__row sim-builder-summary__row--total"><span>Total primer mes</span><span id="sim-summary-total">$99.890</span></div>
               </div>
-              <button type="button" class="sim-plan-cta sim-plan-cta--primary sim-plan-cta-link" data-plan-id="sim_power" data-track="click_sim_plan_power">Activar Power</button>
-            </article>
+              <p class="sim-builder-error" id="sim-builder-error" hidden></p>
+              <button type="button" class="sim-plan-cta sim-plan-cta--primary mt-4" id="sim-builder-submit" data-track="click_sim_agent_bundle_checkout">Pagar y activar mi cuenta</button>
+              <p class="sim-builder-microcopy">Tu cuenta Telvoice se crea automáticamente después del pago. La numeración y el agente quedan sujetos a validación comercial y activación operativa.</p>
+            </section>
           </div>
 
           <!-- ¿Qué estás contratando? -->

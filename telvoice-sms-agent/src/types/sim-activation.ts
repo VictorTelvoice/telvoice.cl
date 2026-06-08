@@ -25,6 +25,7 @@ export type SimActivationRequestRow = {
   activation_status: SimActivationStatus;
   client_number_id: string | null;
   admin_notes: string | null;
+  use_case: string | null;
   created_at: string;
   updated_at: string;
   activated_at: string | null;
@@ -36,4 +37,7 @@ export type SimActivationRequestListItem = SimActivationRequestRow & {
   order_amount: number | null;
   order_currency: string | null;
   company_display_name: string | null;
+  agent_plan_name: string | null;
+  agent_plan_status: string | null;
+  agent_use_case: string | null;
 };

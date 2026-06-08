@@ -20,10 +20,14 @@ import {
   buildPaymentClaimUrlFromToken,
   orderRefLabel,
   renderPaymentReceivedPendingClaim,
+  renderSimAgentBundleOpsPendingActivation,
+  renderSimAgentBundlePaymentReceived,
   renderSimOpsPendingActivation,
   renderSimPaymentReceivedPendingActivation,
   renderWelcomeSmsCredited,
 } from "./transactionalEmailTemplates.js";
+import { resolvePanelAccessLink } from "./checkoutAccessEmailService.js";
+import { isSimAgentBundleOrder } from "../utils/order-display.js";
 import {
   buildInvoiceEmailSubject,
   sendInvoiceEmailIfNeeded,
@@ -483,6 +487,115 @@ export async function sendSimPaymentReceivedEmails(
   for (const to of opsNotifyEmails()) {
     const r = await sendTransactionalEmail({
       templateKey: "sim_ops_pending_activation",
+      subject: opsRendered.subject,
+      recipientEmail: to,
+      html: opsRendered.html,
+      text: opsRendered.text,
+      orderId,
+      metadata: { plan_id: planId, admin_url: adminUrl },
+      skipIdempotency: options?.skipIdempotency,
+    });
+    if (r.ok) anyOpsOk = true;
+  }
+
+  return {
+    ok: customerResult.ok || anyOpsOk,
+    customer: customerResult,
+    ops: { ok: anyOpsOk },
+  };
+}
+
+export async function sendSimAgentBundlePaymentEmails(
+  orderId: string,
+  options?: { skipIdempotency?: boolean },
+): Promise<{ ok: boolean; customer?: { ok: boolean }; ops?: { ok: boolean }; error?: string }> {
+  const order = await getOrderWithDetails(orderId);
+  if (!order) {
+    return { ok: false, error: "order_not_found" };
+  }
+  if (order.payment_status !== "paid") {
+    return { ok: false, error: "order_not_paid" };
+  }
+  if (!isSimAgentBundleOrder(order)) {
+    return { ok: false, error: "not_sim_agent_bundle" };
+  }
+
+  const meta = order.metadata ?? {};
+  const simPlanName =
+    typeof meta.sim_plan_name === "string"
+      ? meta.sim_plan_name
+      : typeof meta.plan_name === "string"
+        ? meta.plan_name
+        : "Numeración SIM real";
+  const agentPlanName =
+    typeof meta.agent_addon_name === "string" && meta.agent_addon_id !== "none"
+      ? meta.agent_addon_name
+      : null;
+  const planId = typeof meta.sim_plan_id === "string" ? meta.sim_plan_id : "sim_unknown";
+  const agentAddonId =
+    typeof meta.agent_addon_id === "string" ? meta.agent_addon_id : "none";
+
+  const recipient = recipientFromOrder(order);
+  let customerResult: { ok: boolean; skipped?: boolean; error?: string } = {
+    ok: false,
+    error: "missing_recipient",
+  };
+
+  if (recipient) {
+    const access = await resolvePanelAccessLink(recipient);
+    const rendered = renderSimAgentBundlePaymentReceived({
+      recipientName: recipient.split("@")[0] ?? "Cliente",
+      simPlanName,
+      agentPlanName,
+      includedSmsMonthly: order.sms_quantity,
+      amount: Number(order.amount),
+      currency: order.currency,
+      orderRef: orderRefLabel(order.id, order.public_checkout_reference),
+      panelUrl: access.panelUrl,
+    });
+
+    customerResult = await sendTransactionalEmail({
+      templateKey: "sim_agent_bundle_payment_received",
+      subject: rendered.subject,
+      recipientEmail: recipient,
+      html: rendered.html,
+      text: rendered.text,
+      orderId,
+      metadata: {
+        panel_url: access.panelUrl,
+        magic_link_sent: access.magicLinkSent,
+        sim_plan_id: planId,
+        agent_addon_id: agentAddonId,
+      },
+      skipIdempotency: options?.skipIdempotency,
+    });
+  }
+
+  const adminUrl = `${env.publicAppUrl.replace(/\/$/, "")}/admin/numeraciones?sim_pending=1`;
+  const opsRendered = renderSimAgentBundleOpsPendingActivation({
+    planName: simPlanName,
+    planId,
+    includedSmsMonthly: order.sms_quantity,
+    amount: Number(order.amount),
+    currency: order.currency,
+    orderId: order.id,
+    orderRef: orderRefLabel(order.id, order.public_checkout_reference),
+    checkoutEmail: recipient ?? order.checkout_email ?? "—",
+    payerName: typeof meta.payer_name === "string" ? meta.payer_name : null,
+    companyName: typeof meta.company_name === "string" ? meta.company_name : null,
+    phone: typeof meta.phone === "string" ? meta.phone : null,
+    taxId: typeof meta.tax_id === "string" ? meta.tax_id : null,
+    adminUrl,
+    agentPlanName,
+    agentAddonId,
+    useCase: typeof meta.use_case === "string" ? meta.use_case : null,
+    identityReviewRequired: meta.identity_review_required === true,
+  });
+
+  let anyOpsOk = false;
+  for (const to of opsNotifyEmails()) {
+    const r = await sendTransactionalEmail({
+      templateKey: "sim_agent_bundle_ops_pending",
       subject: opsRendered.subject,
       recipientEmail: to,
       html: opsRendered.html,

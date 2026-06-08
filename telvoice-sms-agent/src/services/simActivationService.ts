@@ -8,6 +8,7 @@ import type { SimPlanDefinition } from "../utils/simPlans.js";
 import { isMissingTableError } from "../utils/db-table.js";
 import { AppError } from "../utils/errors.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
+import { listAgentPlanRequestsByOrderIds, getAgentPlanDefinition } from "./clientAgentPlanService.js";
 
 export type SimActivationModuleState = {
   available: boolean;
@@ -38,6 +39,7 @@ function mapRow(row: Record<string, unknown>): SimActivationRequestRow {
     client_number_id:
       row.client_number_id != null ? String(row.client_number_id) : null,
     admin_notes: row.admin_notes != null ? String(row.admin_notes) : null,
+    use_case: row.use_case != null ? String(row.use_case) : null,
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
     activated_at: row.activated_at != null ? String(row.activated_at) : null,
@@ -97,6 +99,7 @@ export async function createSimActivationRequest(input: {
   companyName?: string;
   phone?: string;
   taxId?: string;
+  useCase?: string;
   activationStatus?: SimActivationStatus;
 }): Promise<SimActivationRequestRow> {
   const existing = await getSimActivationByOrderId(input.orderId);
@@ -114,6 +117,7 @@ export async function createSimActivationRequest(input: {
       company_name: input.companyName?.trim() || null,
       phone: input.phone?.trim() || null,
       tax_id: input.taxId?.trim() || null,
+      use_case: input.useCase?.trim() || null,
       plan_id: input.plan.plan_id,
       plan_name: input.plan.name,
       included_sms_monthly: input.plan.sms_quantity,
@@ -217,10 +221,15 @@ export async function listAdminPendingSimActivations(
     throw wrapSupabaseError(error, "listAdminPendingSimActivations");
   }
 
+  const orderIds = (data ?? []).map((row) => String((row as { order_id?: string }).order_id));
+  const agentByOrder = await listAgentPlanRequestsByOrderIds(orderIds);
+
   return (data ?? []).map((row) => {
     const mapped = mapRow(row as Record<string, unknown>);
     const order = (row as { sms_orders?: Record<string, unknown> }).sms_orders;
     const company = (row as { companies?: { name?: string } }).companies;
+    const agentReq = agentByOrder.get(mapped.order_id);
+    const agentDef = agentReq ? getAgentPlanDefinition(agentReq.plan_code) : null;
     return {
       ...mapped,
       public_checkout_reference:
@@ -230,6 +239,9 @@ export async function listAdminPendingSimActivations(
       order_amount: order?.amount != null ? Number(order.amount) : null,
       order_currency: order?.currency != null ? String(order.currency) : null,
       company_display_name: company?.name ?? mapped.company_name,
+      agent_plan_name: agentDef?.name ?? null,
+      agent_plan_status: agentReq?.status ?? null,
+      agent_use_case: agentReq?.use_case ?? mapped.use_case,
     };
   });
 }

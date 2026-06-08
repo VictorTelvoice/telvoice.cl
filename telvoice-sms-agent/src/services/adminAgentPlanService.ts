@@ -43,6 +43,10 @@ function mapRequest(row: Record<string, unknown>): AgentPlanRequestRow {
     preferred_number_type: row.preferred_number_type as AgentPlanRequestRow["preferred_number_type"],
     status: row.status as AgentPlanRequestRow["status"],
     notes: row.notes != null ? String(row.notes) : null,
+    order_id: row.order_id != null ? String(row.order_id) : null,
+    checkout_email: row.checkout_email != null ? String(row.checkout_email) : null,
+    use_case: row.use_case != null ? String(row.use_case) : null,
+    source: row.source != null ? String(row.source) : null,
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
   };

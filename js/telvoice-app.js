@@ -365,6 +365,191 @@
   var SIM_CHECKOUT_ERROR =
     "No pudimos iniciar el pago en este momento. Escríbenos para activar tu numeración SIM real.";
 
+  var AGENT_ADDONS = {
+    none: { id: "none", name: "Solo numeración", total: 0 },
+    agent_start: { id: "agent_start", name: "Agente Start", total: 39990 },
+    agent_pro: { id: "agent_pro", name: "Agente Pro", total: 59900 },
+    agent_business: { id: "agent_business", name: "Agente Business", total: 99990 },
+  };
+
+  var simBuilderState = {
+    simPlanId: "sim_pro",
+    agentAddonId: "agent_pro",
+    submitting: false,
+  };
+
+  function formatClpAmount(amount) {
+    return "$" + fmt(Math.round(Number(amount) || 0));
+  }
+
+  function updateSimBuilderSummary() {
+    var sim = SIM_PLANS[simBuilderState.simPlanId];
+    var agent = AGENT_ADDONS[simBuilderState.agentAddonId] || AGENT_ADDONS.none;
+    if (!sim) return;
+
+    var simLabel = qs("sim-summary-sim-label");
+    var simPrice = qs("sim-summary-sim-price");
+    var agentLabel = qs("sim-summary-agent-label");
+    var agentPrice = qs("sim-summary-agent-price");
+    var totalEl = qs("sim-summary-total");
+    var agentRow = agentPrice && agentPrice.parentElement;
+
+    if (simLabel) simLabel.textContent = sim.name;
+    if (simPrice) simPrice.textContent = formatClpAmount(sim.total);
+    if (agentLabel) agentLabel.textContent = agent.name;
+    if (agentPrice) agentPrice.textContent = formatClpAmount(agent.total);
+    if (totalEl) totalEl.textContent = formatClpAmount(sim.total + agent.total);
+    if (agentRow) {
+      agentRow.hidden = simBuilderState.agentAddonId === "none";
+    }
+  }
+
+  function setSimBuilderError(message) {
+    var err = qs("sim-builder-error");
+    if (!err) return;
+    if (message) {
+      err.textContent = message;
+      err.hidden = false;
+    } else {
+      err.textContent = "";
+      err.hidden = true;
+    }
+  }
+
+  function setSimBuilderLoading(loading) {
+    var btn = qs("sim-builder-submit");
+    if (!btn) return;
+    btn.disabled = !!loading;
+    btn.setAttribute("aria-busy", loading ? "true" : "false");
+    btn.textContent = loading ? "Redirigiendo a Mercado Pago…" : "Pagar y activar mi cuenta";
+  }
+
+  function selectSimBuilderSim(planId) {
+    if (!SIM_PLANS[planId]) return;
+    simBuilderState.simPlanId = planId;
+    document.querySelectorAll("[data-sim-plan]").forEach(function (btn) {
+      var selected = btn.getAttribute("data-sim-plan") === planId;
+      btn.classList.toggle("sim-select-card--selected", selected);
+      btn.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
+    updateSimBuilderSummary();
+  }
+
+  function selectSimBuilderAgent(addonId) {
+    if (!AGENT_ADDONS[addonId]) return;
+    simBuilderState.agentAddonId = addonId;
+    document.querySelectorAll("[data-agent-addon]").forEach(function (btn) {
+      var selected = btn.getAttribute("data-agent-addon") === addonId;
+      btn.classList.toggle("sim-select-card--selected", selected);
+      btn.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
+    updateSimBuilderSummary();
+  }
+
+  function submitSimAgentBundleCheckout() {
+    if (simBuilderState.submitting) return;
+
+    var nombre = (qs("sim-builder-nombre") && qs("sim-builder-nombre").value || "").trim();
+    var email = (qs("sim-builder-email") && qs("sim-builder-email").value || "").trim();
+    var empresa = (qs("sim-builder-empresa") && qs("sim-builder-empresa").value || "").trim();
+    var telefono = (qs("sim-builder-telefono") && qs("sim-builder-telefono").value || "").trim();
+    var rut = (qs("sim-builder-rut") && qs("sim-builder-rut").value || "").trim();
+    var useCase = (qs("sim-builder-use-case") && qs("sim-builder-use-case").value || "").trim();
+
+    if (nombre.length < 2) {
+      setSimBuilderError("Ingresa tu nombre.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setSimBuilderError("Ingresa un email válido.");
+      return;
+    }
+
+    setSimBuilderError("");
+    simBuilderState.submitting = true;
+    setSimBuilderLoading(true);
+
+    var agentOrigin =
+      (window.TELVOICE_CONFIG && window.TELVOICE_CONFIG.agentApiOrigin) ||
+      "https://agent.telvoice.cl";
+    var endpoint = agentOrigin + "/api/public/checkout";
+
+    fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        product_type: "sim_agent_bundle",
+        sim_plan_id: simBuilderState.simPlanId,
+        agent_addon_id: simBuilderState.agentAddonId,
+        checkout_email: email,
+        payer_name: nombre,
+        company_name: empresa || undefined,
+        phone: telefono || undefined,
+        tax_id: rut || undefined,
+        use_case: useCase || undefined,
+      }),
+    })
+      .then(function (res) {
+        return parseApiJson(res).then(function (data) {
+          return { httpOk: res.ok, status: res.status, data: data };
+        });
+      })
+      .then(function (result) {
+        var data = result.data || {};
+        var checkoutUrl = data.checkout_url;
+        if (!result.httpOk || data.success !== true || !checkoutUrl) {
+          throw new Error((data && (data.error || data.message)) || SIM_CHECKOUT_ERROR);
+        }
+        trackEvent("click_sim_agent_bundle_checkout", {
+          sim_plan_id: simBuilderState.simPlanId,
+          agent_addon_id: simBuilderState.agentAddonId,
+        });
+        window.location.href = checkoutUrl;
+      })
+      .catch(function () {
+        simBuilderState.submitting = false;
+        setSimBuilderLoading(false);
+        setSimBuilderError(SIM_CHECKOUT_ERROR);
+      });
+  }
+
+  function initSimAgentBuilder() {
+    var builder = qs("sim-agent-builder");
+    if (!builder) return;
+
+    selectSimBuilderSim(simBuilderState.simPlanId);
+    selectSimBuilderAgent(simBuilderState.agentAddonId);
+    updateSimBuilderSummary();
+
+    builder.querySelectorAll("[data-sim-plan]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        selectSimBuilderSim(btn.getAttribute("data-sim-plan") || "sim_pro");
+      });
+    });
+
+    builder.querySelectorAll("[data-agent-addon]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        selectSimBuilderAgent(btn.getAttribute("data-agent-addon") || "none");
+      });
+    });
+
+    var submitBtn = qs("sim-builder-submit");
+    if (submitBtn) {
+      submitBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        submitSimAgentBundleCheckout();
+      });
+    }
+
+    var form = qs("sim-builder-form");
+    if (form) {
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        submitSimAgentBundleCheckout();
+      });
+    }
+  }
+
   var compraState = {
     planId: null,
     calcSms: null,
@@ -1480,13 +1665,7 @@
       activate(tabFromHash());
     });
 
-    document.querySelectorAll("[data-plan-id]").forEach(function (btn) {
-      btn.addEventListener("click", function (e) {
-        e.preventDefault();
-        var planId = btn.getAttribute("data-plan-id");
-        if (planId) startSimCheckout(planId);
-      });
-    });
+    initSimAgentBuilder();
 
     document.querySelectorAll(".sim-plan-cta-link[data-sim-plan]").forEach(function (link) {
       link.addEventListener("click", function () {

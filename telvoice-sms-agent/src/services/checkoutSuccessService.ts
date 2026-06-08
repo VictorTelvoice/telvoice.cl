@@ -1,8 +1,9 @@
 import { env } from "../config/env.js";
+import { buildPanelLoginUrl } from "./checkoutAccessEmailService.js";
 import type { SmsOrderRow, SmsOrderWithDetails } from "../types/wallet.js";
 import { decryptClaimTokenFromMetadata } from "../utils/claim-token.js";
 import { buildClaimActivationUrl } from "../utils/claim-token.js";
-import { isPublicCheckoutOrder, isSimSubscriptionOrder } from "../utils/order-display.js";
+import { isPublicCheckoutOrder, isSimAgentBundleOrder, isSimSubscriptionOrder } from "../utils/order-display.js";
 import {
   getOrderById,
   getOrderByMercadoPagoPaymentId,
@@ -26,8 +27,12 @@ export type CheckoutSuccessPageData = {
   publicSiteUrl: string;
   appUrl: string;
   isSimSubscription: boolean;
+  isSimAgentBundle: boolean;
   planName: string | null;
+  agentPlanName: string | null;
+  bundleSummary: string | null;
   activationStatus: string | null;
+  panelLoginUrl: string;
 };
 
 function pickQueryString(value: unknown): string {
@@ -120,8 +125,10 @@ export async function buildCheckoutSuccessPageData(
 
   if (order && isPublicCheckoutOrder(order)) {
     summary = toPublicOrderSummary(order);
-    claimUrl = resolveClaimUrl(order);
-    if (order.claim_status === "claimed" || order.credit_status === "credited") {
+    claimUrl = isSimAgentBundleOrder(order) ? null : resolveClaimUrl(order);
+    if (isSimAgentBundleOrder(order)) {
+      activationHint = "panel";
+    } else if (order.claim_status === "claimed" || order.credit_status === "credited") {
       activationHint = "panel";
     } else if (claimUrl) {
       activationHint = "claim_button";
@@ -138,14 +145,27 @@ export async function buildCheckoutSuccessPageData(
   const confirmingPayment = !order && mpApproved;
 
   const isSimSubscription = order ? isSimSubscriptionOrder(order) : false;
+  const isSimAgentBundle = order ? isSimAgentBundleOrder(order) : false;
   const planName =
-    order && typeof order.metadata?.plan_name === "string"
-      ? order.metadata.plan_name
+    order && typeof order.metadata?.sim_plan_name === "string"
+      ? order.metadata.sim_plan_name
+      : order && typeof order.metadata?.plan_name === "string"
+        ? order.metadata.plan_name
+        : null;
+  const agentPlanName =
+    order && typeof order.metadata?.agent_addon_name === "string" &&
+    order.metadata?.agent_addon_id !== "none"
+      ? order.metadata.agent_addon_name
       : null;
+  const bundleSummary =
+    planName && agentPlanName
+      ? `${planName} + ${agentPlanName}`
+      : planName;
   const activationStatus =
     order && typeof order.metadata?.activation_status === "string"
       ? order.metadata.activation_status
       : null;
+  const panelLoginUrl = buildPanelLoginUrl(summary?.customerEmail ?? order?.checkout_email ?? undefined);
 
   return {
     summary,
@@ -158,7 +178,11 @@ export async function buildCheckoutSuccessPageData(
     publicSiteUrl: env.publicSiteUrl,
     appUrl: env.publicAppUrl,
     isSimSubscription,
+    isSimAgentBundle,
     planName,
+    agentPlanName,
+    bundleSummary,
     activationStatus,
+    panelLoginUrl,
   };
 }

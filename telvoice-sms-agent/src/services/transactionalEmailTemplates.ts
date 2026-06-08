@@ -337,3 +337,112 @@ export function renderSimOpsPendingActivation(
 
   return { subject, html: emailShell("Activación SIM pendiente", body), text };
 }
+
+export type SimAgentBundleCustomerTemplateData = {
+  recipientName: string;
+  simPlanName: string;
+  agentPlanName: string | null;
+  includedSmsMonthly: number;
+  amount: number;
+  currency: string;
+  orderRef: string;
+  panelUrl: string;
+};
+
+export function renderSimAgentBundlePaymentReceived(
+  data: SimAgentBundleCustomerTemplateData,
+): { subject: string; html: string; text: string } {
+  const subject = "Pago recibido — estamos activando tu cuenta Telvoice";
+  const sms = fmtSms(data.includedSmsMonthly);
+  const total = fmtMoney(data.amount, data.currency);
+  const bundleLabel = data.agentPlanName
+    ? `${data.simPlanName} + ${data.agentPlanName}`
+    : data.simPlanName;
+
+  const summaryRows = `
+    <div><strong>Plan SIM:</strong> ${escapeHtml(data.simPlanName)}</div>
+    ${data.agentPlanName ? `<div><strong>Agente:</strong> ${escapeHtml(data.agentPlanName)}</div>` : ""}
+    <div><strong>SMS salientes incluidos:</strong> ${escapeHtml(sms)} / mes</div>
+    <div><strong>Total pagado:</strong> ${escapeHtml(total)}</div>
+    <div><strong>Orden:</strong> ${escapeHtml(data.orderRef)}</div>
+  `;
+
+  const body = `
+    <p style="margin:0 0 12px;font-family:Segoe UI,system-ui,sans-serif;font-size:20px;font-weight:700;line-height:1.35;color:#0f172a;text-align:center">
+      Hola ${escapeHtml(data.recipientName)}, tu cuenta Telvoice está lista.
+    </p>
+    <p style="margin:0 0 24px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55;color:#334155;text-align:center;max-width:520px;margin-left:auto;margin-right:auto">
+      Confirmamos tu pago para ${escapeHtml(bundleLabel)}.
+      Creamos tu cuenta y recibimos tu solicitud de activación.
+      Nuestro equipo revisará la numeración y configurará tu agente si corresponde.
+    </p>
+    ${summaryCard(summaryRows)}
+    <p style="margin:0 0 16px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55;color:#334155;text-align:center">
+      Entra al panel para revisar el estado de activación.
+    </p>
+    ${ctaButton(data.panelUrl, "Entrar a mi panel")}`;
+
+  const text = [
+    `Hola ${data.recipientName}, tu cuenta Telvoice está lista.`,
+    "",
+    `Plan: ${bundleLabel}`,
+    `SMS incluidos: ${sms} / mes`,
+    `Total: ${total}`,
+    `Orden: ${data.orderRef}`,
+    "",
+    "Entra al panel para revisar el estado de activación.",
+    data.panelUrl,
+  ].join("\n");
+
+  return { subject, html: emailShell("Cuenta Telvoice lista", body), text };
+}
+
+export type SimAgentBundleOpsTemplateData = SimOpsNotifyTemplateData & {
+  agentPlanName: string | null;
+  agentAddonId: string | null;
+  useCase: string | null;
+  identityReviewRequired: boolean;
+};
+
+export function renderSimAgentBundleOpsPendingActivation(
+  data: SimAgentBundleOpsTemplateData,
+): { subject: string; html: string; text: string } {
+  const subject = "Nueva compra SIM + Agente pendiente de activación";
+  const sms = fmtSms(data.includedSmsMonthly);
+  const total = fmtMoney(data.amount, data.currency);
+
+  const rowPairs: [string, string][] = [
+    ["Plan SIM", data.planName],
+    ["Plan SIM ID", data.planId],
+    ["Agente", data.agentPlanName ?? "Solo numeración"],
+    ["Agente ID", data.agentAddonId ?? "none"],
+    ["SMS incluidos", `${sms} / mes`],
+    ["Monto", total],
+    ["Email", data.checkoutEmail],
+    ["Nombre", data.payerName ?? "—"],
+    ["Empresa", data.companyName ?? "—"],
+    ["Teléfono", data.phone ?? "—"],
+    ["RUT", data.taxId ?? "—"],
+    ["Caso de uso", data.useCase ?? "—"],
+    ["Revisión identidad", data.identityReviewRequired ? "Sí" : "No"],
+    ["Orden", data.orderRef],
+    ["Order ID", data.orderId],
+  ];
+  const rowsHtml = rowPairs
+    .map(
+      ([label, value]) =>
+        `<div><strong>${escapeHtml(label)}:</strong> ${escapeHtml(String(value))}</div>`,
+    )
+    .join("");
+
+  const body = `
+    <p style="margin:0 0 16px;font-family:Segoe UI,system-ui,sans-serif;font-size:15px;line-height:1.55;color:#334155">
+      Nueva compra SIM + Agente desde el landing. Requiere activación manual.
+    </p>
+    ${summaryCard(rowsHtml)}
+    ${ctaButton(data.adminUrl, "Ver activaciones pendientes")}`;
+
+  const text = [subject, "", ...rowPairs.map(([label, value]) => `${label}: ${value}`), "", data.adminUrl].join("\n");
+
+  return { subject, html: emailShell("SIM + Agente pendiente", body), text };
+}

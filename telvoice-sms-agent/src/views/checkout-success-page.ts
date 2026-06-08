@@ -15,23 +15,30 @@ function renderOrderSummary(data: CheckoutSuccessPageData): string {
     return "";
   }
 
-  const smsLabel = data.isSimSubscription
+  const smsLabel = data.isSimAgentBundle || data.isSimSubscription
     ? "SMS salientes incluidos"
     : "SMS incluidos";
-  const smsValue = data.isSimSubscription
+  const smsValue = data.isSimAgentBundle || data.isSimSubscription
     ? `${s.formatted.sms} / mes`
     : `${s.formatted.sms} mensajes`;
 
+  const productLabel = data.isSimAgentBundle
+    ? data.bundleSummary ?? s.packageName
+    : s.packageName;
+
   const rows = [
-    summaryRow("Producto", s.packageName),
+    summaryRow("Producto", productLabel),
+    data.isSimAgentBundle && data.agentPlanName
+      ? summaryRow("Agente", data.agentPlanName)
+      : "",
     summaryRow(smsLabel, smsValue),
     summaryRow("Neto", s.formatted.net),
     summaryRow("IVA (19%)", s.formatted.tax),
     summaryRow("Total pagado", s.formatted.total, true),
     summaryRow("Correo de compra", s.customerEmail),
     summaryRow("Orden", s.orderRef),
-    data.isSimSubscription
-      ? summaryRow("Estado", "Pendiente de activación")
+    data.isSimAgentBundle || data.isSimSubscription
+      ? summaryRow("Estado", "Activación en revisión")
       : "",
     summaryRow(
       "Pago MP",
@@ -55,6 +62,25 @@ function renderActivationBox(data: CheckoutSuccessPageData): string {
   const emailText = email
     ? escapeHtml(email)
     : "el correo que ingresaste al comprar";
+
+  if (data.isSimAgentBundle) {
+    const bundleLabel = escapeHtml(data.bundleSummary ?? data.planName ?? "tu plan");
+    return `
+    <div class="payment-account-box">
+      <h2 class="payment-account-box__title">Tu cuenta Telvoice está lista</h2>
+      <p class="payment-account-box__text">
+        Creamos tu cuenta y recibimos tu solicitud de activación para <strong>${bundleLabel}</strong>.
+        Nuestro equipo revisará la disponibilidad de numeración y configurará tu agente si corresponde.
+      </p>
+      <p class="payment-sub" style="margin:0 0 1rem;text-align:left">
+        <strong>Estado:</strong> Activación en revisión
+      </p>
+      <p class="payment-sub" style="margin:0 0 1rem;text-align:left">
+        Revisa tu correo (<strong>${emailText}</strong>) para el enlace de acceso al panel.
+      </p>
+      <a class="payment-btn payment-btn--primary" href="${escapeHtml(data.panelLoginUrl)}">Entrar a mi panel</a>
+    </div>`;
+  }
 
   if (data.isSimSubscription) {
     const planLabel = escapeHtml(data.planName ?? data.summary?.packageName ?? "Numeración SIM real");
@@ -147,6 +173,16 @@ function resolveHeadline(data: CheckoutSuccessPageData): {
   const approved =
     data.mpStatus === "approved" ||
     data.summary?.paymentStatus === "paid";
+
+  if (approved && data.isSimAgentBundle) {
+    const bundleLabel = data.bundleSummary ?? data.planName ?? "tu plan SIM + Agente";
+    return {
+      title: "Pago recibido. Tu cuenta Telvoice está lista.",
+      text: `Creamos tu cuenta y recibimos tu solicitud de activación para ${bundleLabel}. Nuestro equipo revisará la disponibilidad de numeración y configurará tu agente si corresponde.`,
+      iconClass: "payment-icon--ok",
+      confirmLayout: true,
+    };
+  }
 
   if (approved && data.isSimSubscription) {
     const planLabel = data.planName ?? data.summary?.packageName ?? "tu plan SIM";

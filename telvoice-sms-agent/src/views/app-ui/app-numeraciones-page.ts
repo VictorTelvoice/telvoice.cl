@@ -5,7 +5,9 @@ import {
 import type {
   ClientNumberListItem,
   ClientNumbersModuleState,
+  AgentPlanRequestRow,
 } from "../../types/client-numbers.js";
+import { agentPlanStatusLabel, getAgentPlanDefinition } from "../../services/clientAgentPlanService.js";
 import type { SimActivationRequestRow } from "../../types/sim-activation.js";
 import { simActivationStatusLabel } from "../../services/simActivationService.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
@@ -70,7 +72,47 @@ function renderPendingSimActivations(
     })
     .join("");
 
-  return `<section class="tv-sim-pending-list">${cards}</section>`;
+  return cards;
+}
+
+function renderPendingAgentSetup(requests: AgentPlanRequestRow[]): string {
+  const checkoutRequests = requests.filter((r) =>
+    ["paid_pending_setup", "pending", "reviewing", "approved"].includes(r.status),
+  );
+  if (!checkoutRequests.length) return "";
+
+  return checkoutRequests
+    .map((r) => {
+      const def = getAgentPlanDefinition(r.plan_code);
+      const statusCls = r.status === "paid_pending_setup" ? "warn" : "muted";
+      return `<article class="tv-sim-pending-card tv-panel">
+        <h3 class="tv-sim-pending-card__title">Agente Telvoice en configuración</h3>
+        <p class="tv-sim-pending-card__text">
+          Tu pago fue recibido. Estamos configurando tu agente según el plan contratado.
+        </p>
+        <dl class="tv-sim-pending-card__meta">
+          <div><dt>Plan agente</dt><dd>${escapeHtml(def?.name ?? r.plan_code)}</dd></div>
+          <div><dt>Estado</dt><dd><span class="badge badge-${statusCls}">${escapeHtml(agentPlanStatusLabel(r.status))}</span></dd></div>
+          <div><dt>Fecha</dt><dd>${formatDate(r.created_at)}</dd></div>
+          <div><dt>Referencia</dt><dd>${escapeHtml(r.id.slice(0, 8).toUpperCase())}</dd></div>
+        </dl>
+      </article>`;
+    })
+    .join("");
+}
+
+function renderActivationSection(
+  simActivations: SimActivationRequestRow[],
+  agentRequests: AgentPlanRequestRow[],
+): string {
+  const simCards = renderPendingSimActivations(simActivations);
+  const agentCards = renderPendingAgentSetup(agentRequests);
+  if (!simCards && !agentCards) return "";
+
+  return `<section class="tv-activation-section">
+    <h2 class="tv-activation-section__title">Tu activación</h2>
+    <div class="tv-sim-pending-list">${simCards}${agentCards}</div>
+  </section>`;
 }
 
 function renderEmptyState(): string {
@@ -136,6 +178,7 @@ export type AppNumeracionesPageData = {
   module: ClientNumbersModuleState;
   numbers: ClientNumberListItem[];
   pendingSimActivations: SimActivationRequestRow[];
+  pendingAgentRequests: AgentPlanRequestRow[];
 };
 
 export function renderAppNumeracionesPage(
@@ -156,7 +199,7 @@ export function renderAppNumeracionesPage(
       `,
     })}
     ${migrationNotice}
-    ${renderPendingSimActivations(data.pendingSimActivations)}
+    ${renderActivationSection(data.pendingSimActivations, data.pendingAgentRequests)}
     <section class="tv-panel">
       ${renderNumbersTable(data.numbers)}
     </section>
@@ -167,6 +210,7 @@ export function renderAppNumeracionesPage(
       .tv-sim-pending-card__meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin: 0; }
       .tv-sim-pending-card__meta dt { font-size: 0.75rem; opacity: 0.7; margin: 0; }
       .tv-sim-pending-card__meta dd { margin: 0.15rem 0 0; font-weight: 600; }
+      .tv-activation-section__title { margin: 0 0 1rem; font-size: 1.15rem; }
     </style>
     ${renderAgentModuleStyles()}`;
 

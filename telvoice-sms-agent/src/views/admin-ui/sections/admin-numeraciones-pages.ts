@@ -1,6 +1,7 @@
 import type { AdminSessionUser } from "../../../types/admin.js";
 import type { SimActivationRequestListItem } from "../../../types/sim-activation.js";
 import { simActivationStatusLabel } from "../../../services/simActivationService.js";
+import { agentPlanStatusLabel } from "../../../services/clientAgentPlanService.js";
 import { formatClp } from "../../../utils/clp-format.js";
 import type { AdminClientNumberItem } from "../../../services/adminClientNumberService.js";
 import type { AdminNumeracionesFilters } from "../../../services/adminClientNumberService.js";
@@ -187,6 +188,7 @@ function renderSimActivationsTable(items: SimActivationRequestListItem[]): strin
         <td>${escapeHtml(a.payer_name ?? "—")}<br><small>${escapeHtml(a.checkout_email)}</small></td>
         <td>${escapeHtml(a.company_display_name ?? a.company_name ?? "—")}</td>
         <td>${escapeHtml(a.plan_name)}</td>
+        <td>${escapeHtml(a.agent_plan_name ?? "—")}<br><small>${escapeHtml(a.agent_plan_status ? agentPlanStatusLabel(a.agent_plan_status as "paid_pending_setup") : "—")}</small></td>
         <td>${escapeHtml(new Intl.NumberFormat("es-CL").format(a.included_sms_monthly))}</td>
         <td><span class="badge badge-${statusCls}">${escapeHtml(simActivationStatusLabel(a.activation_status))}</span></td>
         <td><code>${escapeHtml(ref)}</code></td>
@@ -196,6 +198,7 @@ function renderSimActivationsTable(items: SimActivationRequestListItem[]): strin
             <div style="margin-top:0.5rem;font-size:0.85rem">
               <div>Tel: ${escapeHtml(a.phone ?? "—")}</div>
               <div>RUT: ${escapeHtml(a.tax_id ?? "—")}</div>
+              <div>Caso de uso: ${escapeHtml(a.agent_use_case ?? a.use_case ?? "—")}</div>
               <div>Monto: ${escapeHtml(a.order_amount != null ? formatClp(a.order_amount) : "—")}</div>
               ${a.admin_notes ? `<div>Notas: ${escapeHtml(a.admin_notes)}</div>` : ""}
             </div>
@@ -213,7 +216,7 @@ function renderSimActivationsTable(items: SimActivationRequestListItem[]): strin
     .join("");
 
   return `<div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-    <th>Fecha</th><th>Cliente</th><th>Empresa</th><th>Plan</th><th>SMS</th><th>Estado</th><th>Ref.</th><th>Acciones</th>
+    <th>Fecha</th><th>Cliente</th><th>Empresa</th><th>Plan SIM</th><th>Agente</th><th>SMS</th><th>Estado SIM</th><th>Ref.</th><th>Acciones</th>
   </tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 

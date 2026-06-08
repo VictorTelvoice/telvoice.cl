@@ -2,15 +2,22 @@ import { isMercadoPagoConfigured } from "../config/env.js";
 import { AppError } from "../utils/errors.js";
 import {
   createPublicLandingCheckoutPreference,
+  createPublicSimAgentBundlePreference,
   createPublicSimCheckoutPreference,
 } from "./mercadoPagoService.js";
 import {
   createPublicLandingOrder,
+  createPublicSimAgentBundleOrder,
   createPublicSimOrder,
   patchOrderFields,
 } from "./smsOrderService.js";
 import { getSmsPackageById } from "./smsPackageService.js";
 import { getSimPlan, isSimPlanId, simCheckoutItemDescription, simCheckoutItemTitle } from "../utils/simPlans.js";
+import {
+  type AgentAddonId,
+  getAgentAddon,
+  isAgentAddonId,
+} from "../utils/agentAddons.js";
 
 export type PublicCheckoutStartResult = {
   orderId: string;
@@ -18,7 +25,7 @@ export type PublicCheckoutStartResult = {
   checkoutUrl: string;
   publicCheckoutReference: string;
   preferenceId: string | null;
-  productType: "sms_bundle" | "sim_subscription";
+  productType: "sms_bundle" | "sim_subscription" | "sim_agent_bundle";
 };
 
 export async function startPublicLandingCheckout(input: {
@@ -145,5 +152,83 @@ export async function startPublicSimCheckout(input: {
     publicCheckoutReference: order.public_checkout_reference ?? order.id,
     preferenceId: preference.preference_id,
     productType: "sim_subscription",
+  };
+}
+
+export async function startPublicSimAgentBundleCheckout(input: {
+  simPlanId: string;
+  agentAddonId: AgentAddonId;
+  checkoutEmail: string;
+  payerEmail?: string;
+  payerName: string;
+  companyName?: string;
+  phone?: string;
+  taxId?: string;
+  useCase?: string;
+}): Promise<PublicCheckoutStartResult> {
+  if (!isMercadoPagoConfigured()) {
+    throw new AppError(
+      "MercadoPago no está configurado en este servidor.",
+      503,
+      "MP_NOT_CONFIGURED",
+    );
+  }
+
+  if (!isSimPlanId(input.simPlanId)) {
+    throw new AppError("Plan SIM no válido.", 400, "INVALID_SIM_PLAN");
+  }
+  if (!isAgentAddonId(input.agentAddonId)) {
+    throw new AppError("Plan agente no válido.", 400, "INVALID_AGENT_ADDON");
+  }
+
+  const plan = getSimPlan(input.simPlanId);
+  if (!plan) {
+    throw new AppError("Plan SIM no encontrado.", 404);
+  }
+
+  const addon =
+    input.agentAddonId === "none" ? null : getAgentAddon(input.agentAddonId);
+
+  const { order, claimToken } = await createPublicSimAgentBundleOrder({
+    plan,
+    agentAddonId: input.agentAddonId,
+    checkoutEmail: input.checkoutEmail,
+    payerEmail: input.payerEmail,
+    payerName: input.payerName,
+    companyName: input.companyName,
+    phone: input.phone,
+    taxId: input.taxId,
+    useCase: input.useCase,
+  });
+
+  const preference = await createPublicSimAgentBundlePreference({
+    orderId: order.id,
+    plan,
+    agentAddonId: input.agentAddonId,
+    agentAddon: addon,
+    totalAmount: Math.round(Number(order.amount)),
+    payer: {
+      email: input.checkoutEmail,
+      name: input.payerName.trim() || "Cliente Telvoice",
+    },
+    publicCheckoutReference: order.public_checkout_reference ?? order.id,
+  });
+
+  await patchOrderFields(order.id, {
+    payment_reference: preference.preference_id ?? order.payment_reference,
+    metadata: {
+      ...(order.metadata ?? {}),
+      mercadopago_preference_id: preference.preference_id,
+      mercadopago_init_point: preference.checkout_url,
+    },
+  });
+
+  return {
+    orderId: order.id,
+    claimToken,
+    checkoutUrl: preference.checkout_url,
+    publicCheckoutReference: order.public_checkout_reference ?? order.id,
+    preferenceId: preference.preference_id,
+    productType: "sim_agent_bundle",
   };
 }

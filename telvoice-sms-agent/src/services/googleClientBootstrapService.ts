@@ -63,6 +63,18 @@ export async function bootstrapClientFromGoogle(input: {
 
   let companyId: string | null = existingProfile?.company_id ?? null;
   if (!companyId) {
+    const { data: companyByEmail, error: compLookupErr } = await getSupabase()
+      .from("companies")
+      .select("id")
+      .ilike("billing_email", email)
+      .maybeSingle();
+    if (compLookupErr) {
+      wrapSupabaseError(compLookupErr, "bootstrapClient.company.lookup");
+    }
+    companyId = companyByEmail?.id ?? null;
+  }
+
+  if (!companyId) {
     const companyName = input.name.trim() || email.split("@")[0] || "Cliente Telvoice";
     const { data: company, error: compErr } = await getSupabase()
       .from("companies")

@@ -34,6 +34,10 @@ function mapRequest(row: Record<string, unknown>): AgentPlanRequestRow {
     preferred_number_type: row.preferred_number_type as AgentPlanRequestRow["preferred_number_type"],
     status: row.status as AgentPlanRequestRow["status"],
     notes: row.notes != null ? String(row.notes) : null,
+    order_id: row.order_id != null ? String(row.order_id) : null,
+    checkout_email: row.checkout_email != null ? String(row.checkout_email) : null,
+    use_case: row.use_case != null ? String(row.use_case) : null,
+    source: row.source != null ? String(row.source) : null,
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
   };
@@ -91,6 +95,8 @@ export function agentPlanRequestStatusMessage(
     reviewing: "Solicitud en revisión comercial.",
     approved: "Solicitud aprobada. Falta activación de numeración.",
     activated: "Plan activo.",
+    paid_pending_setup:
+      "Pago recibido. Estamos configurando tu agente Telvoice.",
     rejected:
       "No fue posible activar esta solicitud. Contacta a Telvoice.",
   };
@@ -164,6 +170,129 @@ export async function createAgentPlanRequest(
   return mapRequest(data as Record<string, unknown>);
 }
 
+export async function createAgentPlanRequestFromCheckout(input: {
+  companyId: string;
+  orderId: string;
+  planCode: AgentPlanCode;
+  checkoutEmail: string;
+  useCase?: string;
+}): Promise<AgentPlanRequestRow> {
+  const plan = getAgentPlanDefinition(input.planCode);
+  if (!plan) {
+    throw new AppError("Plan agente no válido.", 400);
+  }
+
+  const sb = getSupabase();
+
+  const { data: existingByOrder } = await sb
+    .from("agent_plan_requests")
+    .select("*")
+    .eq("order_id", input.orderId)
+    .maybeSingle();
+
+  if (existingByOrder) {
+    return mapRequest(existingByOrder as Record<string, unknown>);
+  }
+
+  const { data, error } = await sb
+    .from("agent_plan_requests")
+    .insert({
+      company_id: input.companyId,
+      order_id: input.orderId,
+      plan_code: input.planCode,
+      preferred_number_type: "sim_real",
+      status: "paid_pending_setup",
+      checkout_email: input.checkoutEmail.trim().toLowerCase(),
+      use_case: input.useCase?.trim() || null,
+      source: "landing_sim_agent_bundle",
+      notes: `Checkout bundle ${input.orderId.slice(0, 8)}`,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      throw new AppError(
+        "Módulo de planes del agente no disponible. Aplica la migración 056.",
+        503,
+      );
+    }
+    if (error.code === "23505") {
+      const { data: again } = await sb
+        .from("agent_plan_requests")
+        .select("*")
+        .eq("order_id", input.orderId)
+        .maybeSingle();
+      if (again) return mapRequest(again as Record<string, unknown>);
+    }
+    throw wrapSupabaseError(error, "agent_plan_requests.checkout");
+  }
+
+  return mapRequest(data as Record<string, unknown>);
+}
+
+export async function getAgentPlanRequestByOrderId(
+  orderId: string,
+): Promise<AgentPlanRequestRow | null> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from("agent_plan_requests")
+    .select("*")
+    .eq("order_id", orderId)
+    .maybeSingle();
+  if (error) {
+    if (isMissingTableError(error)) return null;
+    throw wrapSupabaseError(error, "agent_plan_requests.byOrder");
+  }
+  return data ? mapRequest(data as Record<string, unknown>) : null;
+}
+
+export async function listPendingCheckoutAgentRequestsForCompany(
+  companyId: string,
+): Promise<AgentPlanRequestRow[]> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from("agent_plan_requests")
+    .select("*")
+    .eq("company_id", companyId)
+    .in("status", ["paid_pending_setup", "pending", "reviewing", "approved"])
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (error) {
+    if (isMissingTableError(error)) return [];
+    throw wrapSupabaseError(error, "agent_plan_requests.pendingCheckout");
+  }
+
+  return (data ?? []).map((row) => mapRequest(row as Record<string, unknown>));
+}
+
+export async function listAgentPlanRequestsByOrderIds(
+  orderIds: string[],
+): Promise<Map<string, AgentPlanRequestRow>> {
+  const map = new Map<string, AgentPlanRequestRow>();
+  if (!orderIds.length) return map;
+
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from("agent_plan_requests")
+    .select("*")
+    .in("order_id", orderIds);
+
+  if (error) {
+    if (isMissingTableError(error)) return map;
+    throw wrapSupabaseError(error, "agent_plan_requests.byOrderIds");
+  }
+
+  for (const row of data ?? []) {
+    const mapped = mapRequest(row as Record<string, unknown>);
+    if (mapped.order_id) {
+      map.set(mapped.order_id, mapped);
+    }
+  }
+  return map;
+}
+
 export type AgentPlanStatusPayload = {
   subscription: AgentPlanSubscriptionRow | null;
   requests: AgentPlanRequestRow[];
@@ -223,6 +352,7 @@ export function agentPlanStatusLabel(
     approved: "Aprobado",
     rejected: "Rechazado",
     activated: "Activado",
+    paid_pending_setup: "Pagado — pendiente configuración",
     active: "Activo",
     suspended: "Suspendido",
     cancelled: "Cancelado",
