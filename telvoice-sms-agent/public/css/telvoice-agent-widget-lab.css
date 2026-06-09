@@ -39,6 +39,20 @@
   height: 10.13rem;
 }
 
+.tva-root--lab .tva-launcher-iso .telvoice-agent-avatar__img {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  animation: none;
+}
+
+/* Panel /app: agente flotante 20% más compacto que landing */
+#tv-panel-agent.tva-root--lab .tva-launcher,
+#tv-panel-agent.tva-root--lab .tva-launcher-iso {
+  width: 8.104rem;
+  height: 8.104rem;
+}
+
 .tva-root--lab .tva-launcher img,
 .tva-root--lab .tva-launcher-iso,
 .tva-root--lab .tva-launcher-iso .telvoice-agent-avatar__img {
@@ -312,6 +326,11 @@
   .tva-root--lab .tva-launcher-iso {
     width: 8.75rem;
     height: 8.75rem;
+  }
+  #tv-panel-agent.tva-root--lab .tva-launcher,
+  #tv-panel-agent.tva-root--lab .tva-launcher-iso {
+    width: 7rem;
+    height: 7rem;
   }
 }
 

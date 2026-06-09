@@ -114,15 +114,8 @@ function renderTopbar(tb: AppLayoutTopbar): string {
       <button type="button" class="tv-topbar__icon-btn" aria-label="Notificaciones" title="Notificaciones">
         <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
       </button>
-      <div class="tv-user">
-        <span class="tv-user__avatar" aria-hidden="true">${escapeHtml(userInitials(tb.userName))}</span>
-        <span class="tv-user__meta">
-          <span class="tv-user__name">${escapeHtml(tb.userName)}</span>
-          <span class="tv-user__company">Cuenta cliente</span>
-        </span>
-        <form method="post" action="/app/logout" class="logout-form">
-          <button type="submit" class="btn btn-ghost btn-sm" title="Cerrar sesión">Salir</button>
-        </form>
+      <div class="tv-user tv-user--avatar-only">
+        <span class="tv-user__avatar" title="${escapeHtml(tb.userName)}" aria-label="Cuenta de ${escapeHtml(tb.userName)}">${escapeHtml(userInitials(tb.userName))}</span>
       </div>
     </div>
   </header>`;

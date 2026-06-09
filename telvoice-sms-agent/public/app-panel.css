@@ -2042,9 +2042,13 @@
       .tv-app-client .tv-topbar__actions .tv-btn-buy-sms__icon {
         font-size: 1.25rem;
       }
-      .tv-topbar__actions .logout-form .btn {
-        padding: 0.35rem 0.5rem;
-        font-size: 0.78rem;
+      .tv-app-client .tv-topbar__actions {
+        flex-shrink: 0;
+        gap: 0.35rem;
+      }
+      .tv-app-client .tv-user--avatar-only {
+        gap: 0;
+        padding: 0;
       }
       .tv-stat-chips {
         flex-direction: column;
@@ -2078,6 +2082,22 @@
         flex-wrap: wrap;
         padding-top: 0.35rem;
         padding-bottom: 0.35rem;
+      }
+      .tv-app-client .tv-topbar {
+        flex-wrap: nowrap;
+        height: var(--tv-topbar-h);
+        min-height: var(--tv-topbar-h);
+        padding-top: 0;
+        padding-bottom: 0;
+        gap: 0.4rem;
+      }
+      .tv-app-client .tv-topbar__actions {
+        flex-shrink: 0;
+      }
+      .tv-app-client .tv-topbar__pills {
+        flex: 1;
+        min-width: 0;
+        justify-content: flex-end;
       }
       .tv-topbar__menu {
         margin-right: 0.25rem;
