@@ -2,7 +2,21 @@
 
 export const PANEL_THEME_STORAGE_KEY = "telvoice-panel-theme";
 
+/** Hora local (inclusive) en la que empieza el modo claro. */
+export const PANEL_THEME_LIGHT_START_HOUR = 7;
+
+/** Hora local (exclusive) en la que termina el modo claro. */
+export const PANEL_THEME_LIGHT_END_HOUR = 20;
+
 export type PanelTheme = "light" | "dark";
+
+export function panelThemeFromHour(
+  hour: number,
+  lightStart = PANEL_THEME_LIGHT_START_HOUR,
+  lightEnd = PANEL_THEME_LIGHT_END_HOUR,
+): PanelTheme {
+  return hour >= lightStart && hour < lightEnd ? "light" : "dark";
+}
 
 export function panelThemeBodyClass(theme: PanelTheme): string {
   return theme === "dark" ? "tv-lab-theme" : "tv-light-theme";
@@ -12,20 +26,39 @@ export function panelThemeColor(theme: PanelTheme): string {
   return theme === "dark" ? "#050814" : "#eef2f8";
 }
 
-/** Script síncrono al inicio del body: aplica tema guardado antes de pintar el shell. */
+/** Script síncrono al inicio del body: tema guardado o automático por hora local. */
 export function renderPanelThemeBootScript(): string {
   return `<script>
 (function () {
   var KEY = ${JSON.stringify(PANEL_THEME_STORAGE_KEY)};
-  var theme = "light";
-  try {
-    var stored = localStorage.getItem(KEY);
-    if (stored === "dark" || stored === "light") theme = stored;
-  } catch (e) {}
-  var cls = theme === "dark" ? "tv-lab-theme" : "tv-light-theme";
-  document.body.classList.add(cls);
-  var meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute("content", theme === "dark" ? "#050814" : "#eef2f8");
+  var LIGHT_START = ${PANEL_THEME_LIGHT_START_HOUR};
+  var LIGHT_END = ${PANEL_THEME_LIGHT_END_HOUR};
+
+  function hourTheme() {
+    var h = new Date().getHours();
+    return (h >= LIGHT_START && h < LIGHT_END) ? "light" : "dark";
+  }
+
+  function resolveTheme() {
+    try {
+      var stored = localStorage.getItem(KEY);
+      if (stored === "dark" || stored === "light") return stored;
+    } catch (e) {}
+    return hourTheme();
+  }
+
+  function applyThemeClass(theme) {
+    var isDark = theme === "dark";
+    document.body.classList.toggle("tv-lab-theme", isDark);
+    document.body.classList.toggle("tv-light-theme", !isDark);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", isDark ? "#050814" : "#eef2f8");
+    return theme;
+  }
+
+  window.__tvResolvePanelTheme = resolveTheme;
+  window.__tvApplyPanelThemeClass = applyThemeClass;
+  applyThemeClass(resolveTheme());
 })();
 </script>`;
 }
@@ -41,14 +74,29 @@ export function renderPanelThemeToggleScript(): string {
   return `<script>
 (function () {
   var KEY = ${JSON.stringify(PANEL_THEME_STORAGE_KEY)};
+  var LIGHT_START = ${PANEL_THEME_LIGHT_START_HOUR};
+  var LIGHT_END = ${PANEL_THEME_LIGHT_END_HOUR};
   var btn = document.getElementById("tv-panel-theme-toggle");
   if (!btn) return;
+
+  function hourTheme() {
+    var h = new Date().getHours();
+    return (h >= LIGHT_START && h < LIGHT_END) ? "light" : "dark";
+  }
+
+  function resolveTheme() {
+    try {
+      var stored = localStorage.getItem(KEY);
+      if (stored === "dark" || stored === "light") return stored;
+    } catch (e) {}
+    return hourTheme();
+  }
 
   function currentTheme() {
     return document.body.classList.contains("tv-lab-theme") ? "dark" : "light";
   }
 
-  function applyTheme(theme) {
+  function applyTheme(theme, persist) {
     var isDark = theme === "dark";
     document.body.classList.toggle("tv-lab-theme", isDark);
     document.body.classList.toggle("tv-light-theme", !isDark);
@@ -57,14 +105,28 @@ export function renderPanelThemeToggleScript(): string {
     btn.setAttribute("title", isDark ? "Modo claro" : "Modo oscuro");
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute("content", isDark ? "#050814" : "#eef2f8");
-    try { localStorage.setItem(KEY, theme); } catch (e) {}
+    if (persist) {
+      try { localStorage.setItem(KEY, theme); } catch (e) {}
+    }
   }
 
-  applyTheme(currentTheme());
+  function syncToggleUi() {
+    applyTheme(currentTheme(), false);
+  }
+
+  syncToggleUi();
 
   btn.addEventListener("click", function () {
-    applyTheme(currentTheme() === "dark" ? "light" : "dark");
+    applyTheme(currentTheme() === "dark" ? "light" : "dark", true);
   });
+
+  window.setInterval(function () {
+    try {
+      var stored = localStorage.getItem(KEY);
+      if (stored === "dark" || stored === "light") return;
+    } catch (e) {}
+    applyTheme(resolveTheme(), false);
+  }, 60000);
 })();
 </script>`;
 }
