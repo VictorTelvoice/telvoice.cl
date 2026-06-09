@@ -56,8 +56,27 @@
   font-weight: 800;
   line-height: 1.12;
   letter-spacing: -0.025em;
-  max-width: 20ch;
+  max-width: 22ch;
   text-wrap: balance;
+}
+
+.tv-type-lab .tv-hero-word--violet {
+  color: #7c3aed;
+}
+
+.tv-type-lab .tv-hero-word--indigo {
+  color: #4338ca;
+}
+
+.tv-type-lab .tv-hero-word--blue {
+  background: linear-gradient(120deg, #0066ff 0%, #0052cc 45%, #0ea5e9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.tv-type-lab .tv-hero-word--purple {
+  color: #6d28d9;
 }
 
 .tv-type-lab .tv-hero-subtitle {

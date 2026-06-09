@@ -2642,9 +2642,18 @@
       font-weight: 800;
       line-height: 1.12;
       letter-spacing: -0.025em;
-      max-width: 20ch;
+      max-width: 22ch;
       text-wrap: balance;
     }
+    .tv-type-lab .tv-hero-word--violet { color: #7c3aed; }
+    .tv-type-lab .tv-hero-word--indigo { color: #4338ca; }
+    .tv-type-lab .tv-hero-word--blue {
+      background: linear-gradient(120deg, #0066ff 0%, #0052cc 45%, #0ea5e9 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .tv-type-lab .tv-hero-word--purple { color: #6d28d9; }
     .tv-type-lab .tv-hero-subtitle {
       font-size: clamp(0.9375rem, 1.65vw, 1.0625rem);
       line-height: 1.62;
@@ -2698,7 +2707,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="css/telvoice-type-lab.css?v=20260609c" />
+  <link rel="stylesheet" href="css/telvoice-type-lab.css?v=20260609d" />
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -3015,7 +3024,7 @@
                 <span>SMS masivos · Chile</span>
               </div>
               <h1 class="tv-hero-title font-h1 text-h1 text-on-background">
-                SMS masivos en Chile, con rutas directas y sin contratos
+                <span class="tv-hero-word tv-hero-word--violet">SMS masivos</span><span class="tv-hero-word tv-hero-word--indigo"> en Chile,</span><span class="tv-hero-word tv-hero-word--blue"> con rutas directas</span><span class="tv-hero-word tv-hero-word--purple"> y sin contratos</span>
               </h1>
               <p class="tv-hero-subtitle hero-intro">
                 Bolsas prepago para campañas, notificaciones y validaciones. Elige volumen, paga online y opera desde un panel claro — sin contratos ni fricción.
@@ -3052,27 +3061,6 @@
                   </article>
                 </div>
               </div>
-          </div>
-          <div class="hero-price-card mt-stack-md w-full border border-outline-variant/50 bg-gradient-to-br from-surface-container-lowest via-surface/95 to-primary/[0.035] ring-1 ring-primary/[0.07]">
-            <div class="hero-price-card__row">
-              <div class="hero-price-card__left">
-                <div class="hero-price-card__icon" aria-hidden="true">
-                  <span class="material-symbols-outlined">savings</span>
-                </div>
-                <div class="min-w-0">
-                  <p id="hero-bags-label" class="font-semibold text-on-background">Bolsas desde 1.000 SMS</p>
-                  <p id="hero-price-detail" class="hero-price-detail text-on-surface-variant">Para campañas pequeñas hasta envíos de alto volumen</p>
-                </div>
-              </div>
-              <a href="#calculadora" id="hero-price-cta" class="hero-price-card__price hero-price-card__price--link" data-calc-volume="100000" data-track="click_hero_precio_volumen" aria-label="Ver bolsa de 100.000 SMS en la calculadora">
-                <span class="hero-price-card__price-label">Desde</span>
-                <div class="hero-price-card__price-row">
-                  <span id="hero-from-price">$5</span>
-                  <span class="hero-price-card__price-suffix">+ IVA / SMS</span>
-                </div>
-                <span id="hero-price-note">Plan Volumen · 100.000 SMS</span>
-              </a>
-            </div>
           </div>
           <div class="hero-cta-row pt-stack-sm">
             <a href="#calculadora" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_compra_bolsa">Comprar bolsa SMS</a>
