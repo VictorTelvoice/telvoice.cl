@@ -32,7 +32,7 @@
     document.head.appendChild(link);
   }
 
-  var AGENT_JS_VERSION = "20260702";
+  var AGENT_JS_VERSION = "20260709";
 
   function loadJs(src) {
     var versionedSrc =

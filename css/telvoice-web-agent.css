@@ -1,2 +1,4 @@
 /* Landing: importa estilos compartidos del agente flotante Telvoice */
 @import url("telvoice-agent-widget-shared.css");
+@import url("telvoice-agent-widget-light.css");
+@import url("telvoice-hero-agent-embed.css");
