@@ -124,7 +124,26 @@ export function getAdminStyles(): string {
       text-transform: lowercase;
       letter-spacing: 0.04em;
     }
-    .tv-sidebar__nav { flex: 1; padding: 0.75rem 0.65rem 1.5rem; }
+    .tv-sidebar__nav { flex: 1; padding: 0.75rem 0.65rem 1rem; }
+    .tv-sidebar__footer {
+      margin-top: auto;
+      flex-shrink: 0;
+      padding: 0.65rem 0.65rem 1.25rem;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .tv-sidebar__logout {
+      display: block;
+      width: 100%;
+      margin: 0;
+    }
+    .tv-nav-link--logout {
+      width: 100%;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-family: inherit;
+      text-align: left;
+    }
     .tv-sidebar__section {
       font-size: 0.65rem;
       text-transform: uppercase;

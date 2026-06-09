@@ -53,8 +53,10 @@ export function renderClientLoginPage(options?: {
   const body = `
     <div class="tv-lab-glass-card">
       ${renderAuthBrand("telvoice")}
-      <h2 class="tv-page-title" style="margin:0 0 0.35rem;font-size:1.35rem">Panel cliente · SMS masivos</h2>
-      <p class="tv-page-sub" style="margin:0 0 1.15rem">Accede o crea tu cuenta para comenzar a enviar SMS.</p>
+      <div class="tv-auth-heading">
+        <h2 class="tv-page-title tv-auth-heading__title">Panel cliente · SMS masivos</h2>
+        <p class="tv-page-sub tv-auth-heading__sub">Accede o crea tu cuenta para comenzar a enviar SMS.</p>
+      </div>
       ${errorBlock}
       <button type="button" class="btn btn-primary tv-auth-submit tv-lab-btn-primary" id="tv-google-login" ${"errorHtml" in cfg ? "disabled" : ""}>
         <span class="material-symbols-outlined" aria-hidden="true" style="font-size:1.1rem">login</span>

@@ -83,6 +83,14 @@ function renderSidebar(active: string): string {
     <nav class="tv-sidebar__nav">
       ${renderNavLinks(active)}
     </nav>
+    <div class="tv-sidebar__footer">
+      <form method="post" action="/app/logout" class="logout-form tv-sidebar__logout">
+        <button type="submit" class="tv-nav-link tv-nav-link--logout">
+          <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+          Cerrar sesión
+        </button>
+      </form>
+    </div>
   </aside>`;
 }
 

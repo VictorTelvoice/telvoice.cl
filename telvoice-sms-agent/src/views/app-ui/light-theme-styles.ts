@@ -672,8 +672,26 @@ export function getLightPanelThemeStyles(): string {
       box-shadow: var(--tv-shadow-lg);
       padding: 1.85rem 1.95rem 1.65rem;
     }
+    .tv-light-auth .tv-auth-brand {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.65rem;
+      margin-bottom: 1rem;
+    }
     .tv-light-auth .tv-auth-brand .tv-brand-wordmark {
       color: var(--tv-light-text);
+    }
+    .tv-light-auth .tv-auth-heading {
+      text-align: center;
+      margin-bottom: 1.15rem;
+    }
+    .tv-light-auth .tv-auth-heading__title {
+      margin: 0 0 0.35rem;
+      font-size: 1.35rem;
+    }
+    .tv-light-auth .tv-auth-heading__sub {
+      margin: 0;
     }
     .tv-light-auth .tv-auth-sub,
     .tv-light-auth .field-hint {
