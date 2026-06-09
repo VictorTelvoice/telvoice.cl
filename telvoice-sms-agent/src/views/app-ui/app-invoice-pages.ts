@@ -417,12 +417,7 @@ export function renderAppInvoicesPage(
     ${renderPageHeader({
       title: "Facturación",
       subtitle: "Consulta tus comprobantes, documentos de compra y estados de facturación.",
-      actions: `
-        <a href="/app/invoices${invoiceFiltersQueryString(listCtx.filters)}" class="btn btn-secondary btn-sm">Actualizar documentos</a>
-        ${renderBtn("Ir a compras", { href: "/app/buy-sms", variant: "ghost" })}
-      `,
     })}
-    ${renderInfoNotice()}
     ${renderFiltersPanel(listCtx.filters)}
     ${
       listCtx.invoices.length === 0
