@@ -356,6 +356,36 @@
   border: none;
 }
 
+@media (max-width: 767px) {
+  /* Anula text-align:center global de main p/h* en móvil */
+  .hero-phone-slot--agent,
+  .hero-phone-slot--agent .hero-phone-screen,
+  .hero-phone-slot--agent .hero-phone-header,
+  .hero-phone-slot--agent .hero-phone-header p,
+  .hero-phone-slot--agent .hero-phone-agent-embed,
+  .hero-phone-slot--agent .hero-phone-agent-embed .tva-panel--inline,
+  .hero-phone-slot--agent .hero-phone-agent-embed .tva-messages,
+  .hero-phone-slot--agent .hero-phone-agent-embed .tva-msg-bubble,
+  .hero-phone-slot--agent .hero-phone-agent-embed .tva-suggestions-toggle,
+  .hero-phone-slot--agent .hero-phone-agent-embed .tva-form,
+  .hero-phone-slot--agent .hero-phone-agent-embed .tva-quick button {
+    text-align: left;
+  }
+
+  .hero-phone-slot--agent .hero-phone-agent-embed .tva-messages {
+    align-items: stretch;
+  }
+
+  .hero-phone-slot--agent .hero-phone-agent-embed .tva-msg--bot,
+  .hero-phone-slot--agent .hero-phone-agent-embed .tva-msg--bot.tva-msg--with-avatar {
+    align-self: flex-start;
+  }
+
+  .hero-phone-slot--agent .hero-phone-agent-embed .tva-msg--user {
+    align-self: flex-end;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-phone-agent-embed .tva-msg--enter,
   .hero-phone-agent-embed .tva-suggestions-panel--accordion {
