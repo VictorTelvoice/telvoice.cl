@@ -138,6 +138,13 @@
   }
 }
 
+@media (max-width: 767px) {
+  .tv-type-lab .hero-copy .tv-hero-title {
+    font-size: clamp(1.85rem, 4.2vw, 2.75rem);
+    line-height: 1.12;
+  }
+}
+
 /* CTA final */
 .tv-type-lab .section-cta-final .font-h2.text-h2 {
   font-size: clamp(1.5rem, 3vw, 1.875rem);

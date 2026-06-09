@@ -39,7 +39,6 @@
   <link href="https://fonts.googleapis.com" rel="preconnect" />
   <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;family=Montserrat:wght@600;700;800&amp;display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/telvoice-type-lab.css?v=20260609" />
   <script id="tailwind-config">
     tailwind.config = {
       darkMode: "class",
@@ -124,14 +123,14 @@
             h1: ["Montserrat", "sans-serif"],
           },
           fontSize: {
-            h2: ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "600" }],
+            h2: ["clamp(1.5rem, 3.2vw, 2rem)", { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "700" }],
             "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
             "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
             h3: ["24px", { lineHeight: "32px", fontWeight: "600" }],
             "data-mono": ["13px", { lineHeight: "16px", fontWeight: "500" }],
             "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
             "label-caps": ["12px", { lineHeight: "16px", fontWeight: "700" }],
-            h1: ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" }],
+            h1: ["clamp(1.85rem, 4.2vw, 2.75rem)", { lineHeight: "1.12", letterSpacing: "-0.025em", fontWeight: "800" }],
           },
         },
       },
@@ -1560,9 +1559,10 @@
     .calc-hero-intro,
     .api-body-text {
       font-family: Inter, sans-serif;
-      font-size: 1.125rem;
-      line-height: 1.75rem;
+      font-size: 1.0625rem;
+      line-height: 1.65;
       font-weight: 400;
+      color: #525f7a;
     }
     .section-intro {
       margin-top: 0.75rem;
@@ -1712,16 +1712,9 @@
         gap: 0.75rem;
       }
       .hero-copy .hero-intro {
-        font-size: 1.125rem;
-        line-height: 1.75rem;
+        font-size: 1.0625rem;
+        line-height: 1.7;
         max-width: none;
-      }
-      .hero-copy h1 {
-        font-size: 2.803125rem !important;
-        line-height: 1.2 !important;
-      }
-      .hero-copy .hero-grad-text {
-        font-size: clamp(2.5875rem, 11.2125vw, 3.01875rem) !important;
       }
       .hero-price-card {
         margin-top: 0.75rem;
@@ -2641,7 +2634,69 @@
       white-space: nowrap;
       border: 0;
     }
+
+    /* Tipografía Lab — overrides finales (después de Tailwind e inline) */
+    .tv-type-lab .tv-hero-title {
+      font-family: Montserrat, sans-serif;
+      font-size: clamp(1.85rem, 4.2vw, 2.75rem);
+      font-weight: 800;
+      line-height: 1.12;
+      letter-spacing: -0.025em;
+      max-width: 18ch;
+    }
+    .tv-type-lab .tv-hero-accent {
+      color: #0052cc;
+    }
+    .tv-type-lab .hero-intro {
+      font-size: 1.0625rem;
+      line-height: 1.7;
+      color: #525f7a;
+      max-width: 34rem;
+    }
+    .tv-type-lab .font-h2.text-h2,
+    .tv-type-lab h2.font-h2.text-h2,
+    .tv-type-lab .calc-hero-title.font-h2 {
+      font-family: Montserrat, sans-serif;
+      font-size: clamp(1.5rem, 3.2vw, 2rem);
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+    .tv-type-lab .section-intro {
+      max-width: 34rem;
+    }
+    .tv-type-lab .ui-card-benefit .font-h3.text-h3,
+    .tv-type-lab .ui-card-feature .font-h3.text-h3,
+    .tv-type-lab #camino-comercial .font-h3.text-h3 {
+      font-family: Montserrat, sans-serif;
+      font-size: 1.0625rem;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    .tv-type-lab .ui-card-benefit .text-subtitle,
+    .tv-type-lab .ui-card-benefit p.text-on-surface-variant {
+      font-size: 0.875rem;
+      line-height: 1.55;
+    }
+    .tv-type-lab #casos-uso .caso-tagline {
+      font-family: Montserrat, sans-serif;
+      font-weight: 700;
+      font-size: 1.0625rem;
+      line-height: 1.3;
+    }
+    .tv-type-lab #casos-uso .caso-desc {
+      font-size: 0.875rem;
+      line-height: 1.55;
+      color: #525f7a;
+    }
+    @media (max-width: 767px) {
+      .tv-type-lab .hero-copy .tv-hero-title {
+        font-size: clamp(1.85rem, 4.2vw, 2.75rem);
+        line-height: 1.12;
+      }
+    }
   </style>
+  <link rel="stylesheet" href="css/telvoice-type-lab.css?v=20260609b" />
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -2954,7 +3009,7 @@
         <div class="hero-copy flex flex-1 flex-col px-4 md:px-0 md:pl-20 lg:pl-28 xl:pl-36">
           <div class="flex w-full flex-col items-center gap-stack-md md:items-start">
               <span class="section-eyebrow">SMS masivos Chile</span>
-              <h1 class="tv-hero-title font-h1 text-on-background">
+              <h1 class="tv-hero-title font-h1 text-h1 text-on-background">
                 SMS masivos en Chile, <span class="tv-hero-accent">con rutas directas</span> y sin contratos
               </h1>
               <p class="hero-intro text-on-surface-variant leading-relaxed">
