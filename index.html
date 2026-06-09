@@ -1738,10 +1738,10 @@
       }
       .hero-tags-mobile .hero-tags-row {
         display: grid;
-        grid-template-columns: repeat(6, 1fr);
-        gap: 0.35rem 0.2rem;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.25rem;
         width: 100%;
-        max-width: 20.5rem;
+        max-width: 100%;
         margin-inline: auto;
         overflow: visible;
         flex-wrap: unset;
@@ -1750,28 +1750,25 @@
       }
       .hero-tags-mobile .hero-tags-row li {
         display: flex;
-        justify-content: center;
-        grid-column: span 2;
-      }
-      .hero-tags-mobile .hero-tags-row li:nth-child(4) {
-        grid-column: 2 / span 2;
-      }
-      .hero-tags-mobile .hero-tags-row li:nth-child(5) {
-        grid-column: 4 / span 2;
+        justify-content: stretch;
+        min-width: 0;
       }
       .hero-tags-mobile .hero-use-tag {
         width: 100%;
-        max-width: 6.25rem;
-        padding: 0.28rem 0.35rem;
-        font-size: 0.625rem;
-        line-height: 1.15;
-        gap: 0.15rem;
+        max-width: none;
+        padding: 0.22rem 0.3rem;
+        font-size: 0.5625rem;
+        line-height: 1.1;
+        gap: 0.2rem;
         white-space: normal;
-        text-align: center;
-        justify-content: center;
+        text-align: left;
+        justify-content: flex-start;
+        align-items: center;
+        flex-direction: row;
       }
       .hero-tags-mobile .material-symbols-outlined {
-        font-size: 0.875rem !important;
+        font-size: 0.6875rem !important;
+        flex-shrink: 0;
       }
       .hero-phone-mobile {
         display: flex;
@@ -3076,11 +3073,11 @@
           </div>
           <div class="hero-tags-below hero-tags-mobile relative z-10 flex w-full flex-col items-center md:hidden">
             <ul class="hero-use-tags hero-tags-row" role="list" aria-label="Usos del servicio SMS">
-              <li><a href="#caso-notificaciones" class="hero-use-tag inline-flex flex-col items-center rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 font-body-sm text-on-background shadow-sm" data-track="click_hero_caso_notificaciones"><span class="material-symbols-outlined text-primary" aria-hidden="true">notifications_active</span> Notificaciones</a></li>
-              <li><a href="#caso-recordatorios" class="hero-use-tag inline-flex flex-col items-center rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 font-body-sm text-on-background shadow-sm" data-track="click_hero_caso_recordatorios"><span class="material-symbols-outlined text-primary" aria-hidden="true">event_available</span> Recordatorios</a></li>
-              <li><a href="#caso-promociones" class="hero-use-tag inline-flex flex-col items-center rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 font-body-sm text-on-background shadow-sm" data-track="click_hero_caso_promociones"><span class="material-symbols-outlined text-primary" aria-hidden="true">campaign</span> Promociones</a></li>
-              <li><a href="#caso-autenticacion" class="hero-use-tag inline-flex flex-col items-center rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 font-body-sm text-on-background shadow-sm" data-track="click_hero_caso_autenticacion"><span class="material-symbols-outlined text-primary" aria-hidden="true">verified_user</span> Autenticación</a></li>
-              <li><a href="#caso-alertas-transaccionales" class="hero-use-tag inline-flex flex-col items-center rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 font-body-sm text-on-background shadow-sm" data-track="click_hero_caso_alertas"><span class="material-symbols-outlined text-primary" aria-hidden="true">receipt_long</span> Alertas transaccionales</a></li>
+              <li><a href="#caso-notificaciones" class="hero-use-tag inline-flex items-center gap-1 rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 font-body-sm text-on-background shadow-sm" data-track="click_hero_caso_notificaciones"><span class="material-symbols-outlined text-primary" aria-hidden="true">notifications_active</span> Notificaciones</a></li>
+              <li><a href="#caso-recordatorios" class="hero-use-tag inline-flex items-center gap-1 rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 font-body-sm text-on-background shadow-sm" data-track="click_hero_caso_recordatorios"><span class="material-symbols-outlined text-primary" aria-hidden="true">event_available</span> Recordatorios</a></li>
+              <li><a href="#caso-promociones" class="hero-use-tag inline-flex items-center gap-1 rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 font-body-sm text-on-background shadow-sm" data-track="click_hero_caso_promociones"><span class="material-symbols-outlined text-primary" aria-hidden="true">campaign</span> Promociones</a></li>
+              <li><a href="#caso-autenticacion" class="hero-use-tag inline-flex items-center gap-1 rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 font-body-sm text-on-background shadow-sm" data-track="click_hero_caso_autenticacion"><span class="material-symbols-outlined text-primary" aria-hidden="true">verified_user</span> Autenticación</a></li>
+              <li><a href="#caso-alertas-transaccionales" class="hero-use-tag inline-flex items-center gap-1 rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 font-body-sm text-on-background shadow-sm" data-track="click_hero_caso_alertas"><span class="material-symbols-outlined text-primary" aria-hidden="true">receipt_long</span> Alertas transaccionales</a></li>
             </ul>
           </div>
 

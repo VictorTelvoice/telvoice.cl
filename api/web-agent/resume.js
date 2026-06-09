@@ -38,7 +38,7 @@ export default async function handler(req, res) {
       messages,
       quote,
       quick_actions: QUICK_ACTIONS,
-      ctas: buildCtas(quote, false),
+      ctas: buildCtas(quote),
       has_history: messages.length > 0,
     });
   } catch (err) {

@@ -1272,10 +1272,16 @@
     }
   }
 
+  function filterRegisterAdvisorCtas(ctas) {
+    return (ctas || []).filter(function (cta) {
+      return cta && cta.type !== "register" && cta.type !== "advisor";
+    });
+  }
+
   function syncHeroEmbedDrawer(quickActions, ctas) {
     heroEmbedState.drawerQuick =
       quickActions && quickActions.length ? quickActions : getHeroEmbedQuickDefaults();
-    heroEmbedState.drawerCtas = ctas || [];
+    heroEmbedState.drawerCtas = filterRegisterAdvisorCtas(ctas);
     if (!elsEmbed.quick) {
       return;
     }
