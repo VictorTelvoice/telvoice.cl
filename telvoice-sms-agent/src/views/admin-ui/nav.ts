@@ -29,6 +29,7 @@ export const MAIN_NAV: NavItem[] = [
   { id: "bot", href: "/admin/bot", label: "Bot", icon: "smart_toy" },
   { id: "chat", href: "/admin/chat", label: "Chat soporte", icon: "support_agent" },
   { id: "reports", href: "/admin/reports", label: "Reportes", icon: "analytics" },
+  { id: "data-cleanup", href: "/admin/data-cleanup", label: "Limpieza de datos", icon: "cleaning_services" },
   { id: "settings", href: "/admin/settings", label: "Configuración", icon: "settings" },
 ];
 

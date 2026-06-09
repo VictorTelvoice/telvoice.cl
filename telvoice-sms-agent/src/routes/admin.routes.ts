@@ -118,6 +118,14 @@ import {
   postRecoveryOrderUnmarkReviewed,
 } from "../controllers/admin-billing-recovery.controller.js";
 import {
+  getAdminClientAuditPage,
+  getAdminDataAuditReportJson,
+  getAdminDataCleanupPage,
+  postAdminDataCleanupApply,
+  postAdminDataCleanupDryRun,
+  postAdminDataCleanupGenerate,
+} from "../controllers/admin-data-audit.controller.js";
+import {
   getSaApiKeysPage,
   getSaCampaignsPage,
   getSaDlrPage,
@@ -536,6 +544,12 @@ adminRouter.post(
 );
 adminRouter.get("/invoices", requireAdminPage, getInvoicesPage);
 adminRouter.get("/invoices/recovery", requireAdminPage, getAdminBillingRecoveryPage);
+adminRouter.get("/data-cleanup", requireAdminPage, getAdminDataCleanupPage);
+adminRouter.get("/data-cleanup/client-audit", requireAdminPage, getAdminClientAuditPage);
+adminRouter.get("/data-cleanup/report.json", requireAdminPage, getAdminDataAuditReportJson);
+adminRouter.post("/data-cleanup/generate", requireAdminPage, postAdminDataCleanupGenerate);
+adminRouter.post("/data-cleanup/dry-run", requireAdminPage, postAdminDataCleanupDryRun);
+adminRouter.post("/data-cleanup/apply", requireAdminPage, postAdminDataCleanupApply);
 adminRouter.post(
   "/billing/recovery/orders/:orderId/sync",
   requireAdminPage,
