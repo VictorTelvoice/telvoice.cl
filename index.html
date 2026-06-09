@@ -2877,7 +2877,6 @@
           <button type="button" class="site-nav-dropdown-toggle font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" id="nav-precios-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-precios-menu">Precios</button>
           <ul class="site-nav-dropdown-menu" id="nav-precios-menu" role="menu" aria-labelledby="nav-precios-toggle" hidden>
             <li role="none"><a class="site-nav-dropdown-link" href="#calculadora" role="menuitem" data-precios-nav="bolsas" data-track="click_nav_bolsas_sms">Bolsas SMS</a></li>
-            <li role="none"><a class="site-nav-dropdown-link" href="#numeracion-sim" role="menuitem" data-precios-nav="sim" data-track="click_nav_numeros_sim">Números SIM reales</a></li>
           </ul>
         </li>
         <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="#casos-uso">Casos de uso</a></li>
@@ -2900,7 +2899,6 @@
           <button type="button" class="site-nav-dropdown-toggle block font-body-md w-full text-left py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" id="nav-precios-toggle-mobile" aria-expanded="false" aria-controls="nav-precios-menu-mobile">Precios</button>
           <ul class="site-nav-dropdown-menu site-nav-dropdown-menu--mobile" id="nav-precios-menu-mobile" hidden>
             <li><a class="site-nav-dropdown-link" href="#calculadora" data-precios-nav="bolsas" data-track="click_nav_bolsas_sms_mobile">Bolsas SMS</a></li>
-            <li><a class="site-nav-dropdown-link" href="#numeracion-sim" data-precios-nav="sim" data-track="click_nav_numeros_sim_mobile">Números SIM reales</a></li>
           </ul>
         </li>
         <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#casos-uso">Casos de uso</a></li>
@@ -3304,22 +3302,17 @@
       </div>
     </section>
 
-    <!-- Precios: Bolsas SMS + Numeración SIM real -->
+    <!-- Precios: Bolsas SMS -->
     <section id="precios" class="section-calc section-block-lg section-bg-white" aria-labelledby="precios-titulo" tabindex="-1">
       <div class="section-inner mx-auto max-w-[1100px]">
         <header class="section-header precios-section-intro">
           <span class="section-eyebrow">Precios</span>
-          <h2 id="precios-titulo" class="calc-hero-title mt-3 font-h2 text-h2">Elige cómo operar SMS en Chile</h2>
-          <p class="calc-hero-intro section-intro mt-4 text-on-surface-variant leading-relaxed">Bolsas prepago para envíos masivos o numeración SIM real para recibir SMS, operar validaciones autorizadas y automatizaciones desde números móviles chilenos.</p>
+          <h2 id="precios-titulo" class="calc-hero-title mt-3 font-h2 text-h2">Bolsas SMS para operar en Chile</h2>
+          <p class="calc-hero-intro section-intro mt-4 text-on-surface-variant leading-relaxed">Compra saldo prepago para campañas, notificaciones y envíos masivos desde el portal Telvoice.</p>
         </header>
 
-        <div class="precios-tabs" role="tablist" aria-label="Categorías de precios">
-          <button type="button" class="precios-tab" role="tab" id="precios-tab-bolsas" aria-controls="calculadora" aria-selected="true" data-precios-tab="bolsas">Bolsas SMS</button>
-          <button type="button" class="precios-tab" role="tab" id="precios-tab-sim" aria-controls="numeracion-sim" aria-selected="false" data-precios-tab="sim">Números SIM reales</button>
-        </div>
-
-        <!-- Panel: Bolsas SMS (calculadora existente) -->
-        <div id="calculadora" class="precios-tab-panel precios-tab-panel--bolsas" role="tabpanel" aria-labelledby="precios-tab-bolsas" tabindex="-1">
+        <!-- Calculadora bolsas SMS -->
+        <div id="calculadora" tabindex="-1">
           <header class="section-header mx-auto max-w-[920px]">
             <span class="section-eyebrow">Arma tu bolsa</span>
             <h3 class="calc-hero-title mt-3 font-h2 text-h2 text-[clamp(1.35rem,3.5vw,2rem)]">Bolsas SMS para cada etapa de tu empresa.</h3>
@@ -3374,178 +3367,6 @@
           </div>
         </div>
 
-        <!-- Panel: Numeración SIM real -->
-        <div id="numeracion-sim" class="precios-tab-panel precios-tab-panel--sim" role="tabpanel" aria-labelledby="precios-tab-sim" hidden tabindex="-1">
-          <header class="section-header">
-            <span class="section-eyebrow">Numeración SIM real</span>
-            <h3 class="calc-hero-title mt-3 font-h2 text-h2 text-[clamp(1.35rem,3.5vw,2rem)]">Números SIM reales en Chile para recibir y enviar SMS</h3>
-            <p class="section-intro mt-4 text-on-surface-variant leading-relaxed">Activa una numeración móvil real en Chile para recibir SMS, operar validaciones autorizadas, conectar automatizaciones y enviar mensajes salientes desde una plataforma empresarial.</p>
-            <div class="sim-intro-pills" aria-label="Características principales">
-              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">sim_card</span> SIM real en Chile</span>
-              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">sms</span> Recepción SMS</span>
-              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">send</span> SMS salientes incluidos</span>
-              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">verified_user</span> Validaciones autorizadas</span>
-              <span class="sim-intro-pill"><span class="material-symbols-outlined" aria-hidden="true">hub</span> API y Webhooks</span>
-            </div>
-            <p class="sim-support-text">Una solución Telvoice basada en infraestructura Telsim para empresas que necesitan números reales, trazabilidad y control operativo.</p>
-          </header>
-
-          <div class="sim-plans-grid">
-            <!-- Starter -->
-            <article class="sim-plan-card sim-plan-card--starter">
-              <p class="sim-plan-name">Starter</p>
-              <span class="sim-plan-badge"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:0.9rem">send</span> 1.000 SMS salientes incluidos</span>
-              <p class="sim-plan-price">Desde $19.990 <span class="sim-plan-price-sub">/ mes</span></p>
-              <p class="sim-plan-price-sub">por número SIM real</p>
-              <p class="sim-plan-desc">Para usuarios, emprendedores y equipos pequeños que necesitan un número móvil real en Chile para recibir SMS y operar procesos autorizados sin usar un teléfono personal.</p>
-              <ul class="sim-plan-features">
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Número SIM real en Chile</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Recepción de SMS entrantes</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> 1.000 SMS salientes mensuales</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Visualización de mensajes en plataforma</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Notificaciones en tiempo real</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Uso en cuentas propias y procesos autorizados</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Soporte técnico vía ticket</li>
-              </ul>
-              <div class="sim-plan-learn">
-                <p class="sim-plan-learn-label">Saber más</p>
-                <p class="sim-plan-learn-text">Usuarios individuales, validaciones autorizadas y operación básica.</p>
-              </div>
-              <a href="#contacto" class="sim-plan-cta sim-plan-cta--primary sim-plan-cta-link" data-sim-plan="Starter" data-track="click_sim_plan_starter">Activar Starter</a>
-            </article>
-
-            <!-- Pro -->
-            <article class="sim-plan-card sim-plan-card--featured sim-plan-card--pro">
-              <span class="sim-plan-ribbon sim-plan-ribbon--popular">Más popular</span>
-              <p class="sim-plan-name">Pro</p>
-              <span class="sim-plan-badge"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:0.9rem">send</span> 2.000 SMS salientes incluidos</span>
-              <p class="sim-plan-price">Desde $39.990 <span class="sim-plan-price-sub">/ mes</span></p>
-              <p class="sim-plan-price-sub">por número SIM real</p>
-              <p class="sim-plan-desc">Para equipos de IA, automatizadores, DevOps y empresas que necesitan recibir SMS, conectar eventos y enviar mensajes desde un número real.</p>
-              <ul class="sim-plan-features">
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Todo lo incluido en Starter</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> 2.000 SMS salientes mensuales</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Acceso a API y Webhooks</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Integración con TelegramBot</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Automatizaciones SMS autorizadas</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Alertas y eventos en tiempo real</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Historial de mensajes</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Soporte técnico vía ticket y chat</li>
-              </ul>
-              <div class="sim-plan-learn">
-                <p class="sim-plan-learn-label">Saber más</p>
-                <p class="sim-plan-learn-text">Equipos IA, DevOps, automatizadores y operaciones digitales.</p>
-              </div>
-              <a href="#contacto" class="sim-plan-cta sim-plan-cta--primary sim-plan-cta-link" data-sim-plan="Pro" data-track="click_sim_plan_pro">Activar Pro</a>
-            </article>
-
-            <!-- Power -->
-            <article class="sim-plan-card sim-plan-card--power">
-              <span class="sim-plan-ribbon sim-plan-ribbon--power">Potencia total</span>
-              <p class="sim-plan-name">Power</p>
-              <span class="sim-plan-badge"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:0.9rem">send</span> 4.000 SMS salientes incluidos</span>
-              <p class="sim-plan-price">Desde $99.990 <span class="sim-plan-price-sub">/ mes</span></p>
-              <p class="sim-plan-price-sub">por número SIM real</p>
-              <p class="sim-plan-desc">Para empresas, fintech, plataformas, growth y operaciones críticas que necesitan mayor capacidad, control y soporte prioritario.</p>
-              <ul class="sim-plan-features">
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Todo lo incluido en Pro</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> 4.000 SMS salientes mensuales</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Seguridad y control empresarial</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Integraciones personalizadas</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Webhooks avanzados</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Priorización operativa</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Soporte prioritario</li>
-                <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Revisión de caso de uso antes de activación</li>
-              </ul>
-              <div class="sim-plan-learn">
-                <p class="sim-plan-learn-label">Saber más</p>
-                <p class="sim-plan-learn-text">Fintech, corporativos, plataformas y operación crítica.</p>
-              </div>
-              <a href="#contacto" class="sim-plan-cta sim-plan-cta--primary sim-plan-cta-link" data-sim-plan="Power" data-track="click_sim_plan_power">Activar Power</a>
-            </article>
-          </div>
-
-          <!-- ¿Qué estás contratando? -->
-          <div class="mt-12 md:mt-16">
-            <h3 class="font-h3 text-h3 text-on-background text-center">¿Qué estás contratando?</h3>
-            <p class="section-intro mt-4 text-on-surface-variant leading-relaxed text-center max-w-3xl mx-auto">Cada plan incluye una numeración SIM real en Chile, recepción de SMS entrantes y una cantidad mensual de SMS salientes. Esta solución está pensada para empresas, equipos técnicos y automatizadores que necesitan operar comunicaciones móviles reales sin depender de un teléfono personal.</p>
-            <div class="sim-explainer-grid">
-              <div class="sim-explainer-card">
-                <span class="material-symbols-outlined" aria-hidden="true">sim_card</span>
-                <h4>Número SIM real</h4>
-                <p>Operación sobre infraestructura SIM real, no numeración VoIP genérica.</p>
-              </div>
-              <div class="sim-explainer-card">
-                <span class="material-symbols-outlined" aria-hidden="true">sms</span>
-                <h4>Recepción SMS</h4>
-                <p>Recibe mensajes, respuestas y códigos de validación en procesos autorizados.</p>
-              </div>
-              <div class="sim-explainer-card">
-                <span class="material-symbols-outlined" aria-hidden="true">send</span>
-                <h4>SMS salientes incluidos</h4>
-                <p>Cada plan incluye una cantidad mensual de mensajes salientes para pruebas, alertas, respuestas o automatizaciones.</p>
-              </div>
-              <div class="sim-explainer-card">
-                <span class="material-symbols-outlined" aria-hidden="true">hub</span>
-                <h4>Automatización</h4>
-                <p>Desde el plan Pro puedes conectar eventos mediante API, Webhooks o TelegramBot.</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Agente Telvoice -->
-          <div class="sim-agent-block">
-            <h3 class="font-h3 text-h3 text-on-background">Potencia tu número SIM real con un Agente Telvoice</h3>
-            <p class="mt-3 text-on-surface-variant leading-relaxed max-w-3xl">La numeración SIM real te entrega el canal. El Agente Telvoice agrega inteligencia conversacional para interpretar mensajes, recibir órdenes, consultar saldos, enviar alertas y conectar tus SMS con procesos internos.</p>
-            <div class="sim-compare-grid">
-              <div class="sim-compare-col">
-                <h4>Numeración SIM real</h4>
-                <ul>
-                  <li>Recibe SMS</li>
-                  <li>Envía SMS salientes</li>
-                  <li>Entrega acceso a plataforma</li>
-                  <li>Permite webhooks en planes avanzados</li>
-                </ul>
-              </div>
-              <div class="sim-compare-col">
-                <h4>Agente Telvoice</h4>
-                <ul>
-                  <li>Interpreta mensajes</li>
-                  <li>Responde consultas</li>
-                  <li>Ejecuta comandos autorizados</li>
-                  <li>Automatiza flujos</li>
-                  <li>Genera reportes y alertas</li>
-                </ul>
-              </div>
-            </div>
-            <div class="mt-6 text-center md:text-left">
-              <a href="landing-agent-lab/planes-agente.html" class="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3.5 font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_ver_planes_agente_sim">Ver planes del Agente Telvoice</a>
-            </div>
-          </div>
-
-          <!-- Uso responsable -->
-          <div class="sim-responsible-block">
-            <h3 class="font-h3 text-h3 text-on-background">Uso autorizado y operación empresarial</h3>
-            <p class="mt-3 text-on-surface-variant leading-relaxed">La numeración SIM real de Telvoice está diseñada para cuentas propias, procesos autorizados, comunicaciones empresariales, validaciones permitidas y automatizaciones legítimas. No está destinada a suplantación, abuso, spam, evasión de controles ni recepción de códigos de cuentas de terceros.</p>
-            <ul>
-              <li><span class="material-symbols-outlined" aria-hidden="true">info</span> Activación sujeta a validación comercial.</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">info</span> Disponibilidad de numeración según stock operativo.</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">info</span> Uso permitido solo en cuentas propias o procesos autorizados.</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">info</span> Consumo adicional de SMS se cotiza por separado.</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">info</span> Integraciones avanzadas pueden requerir setup inicial.</li>
-            </ul>
-          </div>
-
-          <!-- CTA final SIM -->
-          <div class="sim-final-cta">
-            <h3 class="font-h3 text-h3 text-on-background">Activa tu número SIM real en Chile con Telvoice</h3>
-            <p class="section-intro mt-3 text-on-surface-variant leading-relaxed max-w-2xl mx-auto">Elige un plan, recibe tu numeración y comienza a operar SMS entrantes, SMS salientes y automatizaciones desde una plataforma diseñada para empresas.</p>
-            <div class="sim-final-cta-actions">
-              <a href="#contacto" class="inline-flex items-center justify-center rounded-full bg-primary px-10 py-4 font-body-md font-semibold text-on-primary shadow-lg transition hover:bg-surface-tint" data-track="click_sim_especialista">Hablar con un especialista</a>
-              <button type="button" class="inline-flex items-center justify-center rounded-full border-2 border-primary/25 bg-transparent px-10 py-4 font-body-md font-semibold text-primary transition hover:border-primary/40 hover:bg-primary/5" data-precios-tab="bolsas" data-precios-switch="bolsas" data-track="click_ver_bolsas_desde_sim">Ver bolsas SMS</button>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -3822,7 +3643,7 @@
             <ul class="mt-4 space-y-3">
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#inicio">SMS masivos Chile</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#precios">Precios</a></li>
-              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#numeracion-sim">Números SIM reales</a></li>
+              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#calculadora">Bolsas SMS</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#api">API SMS</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#empresas">Empresas</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#contacto">Contacto</a></li>
