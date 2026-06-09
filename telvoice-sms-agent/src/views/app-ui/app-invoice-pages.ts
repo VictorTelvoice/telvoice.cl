@@ -94,30 +94,6 @@ export function parseAppInvoiceFilters(
   };
 }
 
-function invoiceFiltersQueryString(filters: AppInvoicePageFilters): string {
-  const p = new URLSearchParams();
-  if (filters.search) {
-    p.set("q", filters.search);
-  }
-  if (filters.status) {
-    p.set("status", filters.status);
-  }
-  if (filters.documentType) {
-    p.set("document_type", filters.documentType);
-  }
-  if (filters.fromDate) {
-    p.set("from_date", filters.fromDate.slice(0, 10));
-  }
-  if (filters.toDate) {
-    p.set("to_date", filters.toDate.slice(0, 10));
-  }
-  if (filters.paymentProvider) {
-    p.set("payment_provider", filters.paymentProvider);
-  }
-  const s = p.toString();
-  return s ? `?${s}` : "";
-}
-
 function shortDocId(id: string): string {
   return id.replaceAll("-", "").slice(0, 8).toUpperCase();
 }
