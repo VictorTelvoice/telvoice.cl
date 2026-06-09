@@ -2,9 +2,20 @@ import {
   clientNumberStatusLabel,
   clientNumberTypeLabel,
 } from "../../services/clientNumberService.js";
-import type { ClientNumberListItem, ClientNumbersModuleState } from "../../types/client-numbers.js";
+import type {
+  ClientNumberListItem,
+  ClientNumbersModuleState,
+  AgentPlanRequestRow,
+} from "../../types/client-numbers.js";
+import { agentPlanStatusLabel, getAgentPlanDefinition } from "../../services/clientAgentPlanService.js";
+import type { SimActivationRequestRow } from "../../types/sim-activation.js";
+import { simActivationStatusLabel } from "../../services/simActivationService.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
+import {
+  renderAgentModuleStyles,
+  renderQaLabBadge,
+} from "../shared/agent-module-styles.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
 
@@ -17,8 +28,12 @@ function renderStatusBadge(status: string): string {
     suspended: "err",
     cancelled: "muted",
   };
+  const labelMap: Record<string, string> = {
+    pending_activation: "Requiere validación",
+  };
   const cls = clsMap[status] ?? "muted";
-  const label = clientNumberStatusLabel(status as ClientNumberListItem["status"]);
+  const label =
+    labelMap[status] ?? clientNumberStatusLabel(status as ClientNumberListItem["status"]);
   return `<span class="badge badge-${cls}">${escapeHtml(label)}</span>`;
 }
 
@@ -31,15 +46,84 @@ function renderCapabilities(caps: ClientNumberListItem["capabilities"]): string 
   return items.length ? items.map((i) => escapeHtml(i)).join(" · ") : "—";
 }
 
+function renderPendingSimActivations(
+  activations: SimActivationRequestRow[],
+): string {
+  if (!activations.length) return "";
+
+  const cards = activations
+    .map((a) => {
+      const statusCls =
+        a.activation_status === "paid_pending_activation" ? "warn" : "muted";
+      return `<article class="tv-sim-pending-card tv-panel">
+        <h3 class="tv-sim-pending-card__title">Numeración SIM real en activación</h3>
+        <p class="tv-sim-pending-card__text">
+          Tu pago fue recibido. Estamos revisando disponibilidad y configurando tu numeración.
+          Te notificaremos cuando esté activa.
+        </p>
+        <dl class="tv-sim-pending-card__meta">
+          <div><dt>Plan</dt><dd>${escapeHtml(a.plan_name)}</dd></div>
+          <div><dt>SMS salientes incluidos</dt><dd>${escapeHtml(new Intl.NumberFormat("es-CL").format(a.included_sms_monthly))} / mes</dd></div>
+          <div><dt>Estado</dt><dd><span class="badge badge-${statusCls}">${escapeHtml(simActivationStatusLabel(a.activation_status))}</span></dd></div>
+          <div><dt>Fecha de compra</dt><dd>${formatDate(a.created_at)}</dd></div>
+          <div><dt>Referencia</dt><dd>${escapeHtml(a.id.slice(0, 8).toUpperCase())}</dd></div>
+        </dl>
+      </article>`;
+    })
+    .join("");
+
+  return cards;
+}
+
+function renderPendingAgentSetup(requests: AgentPlanRequestRow[]): string {
+  const checkoutRequests = requests.filter((r) =>
+    ["paid_pending_setup", "pending", "reviewing", "approved"].includes(r.status),
+  );
+  if (!checkoutRequests.length) return "";
+
+  return checkoutRequests
+    .map((r) => {
+      const def = getAgentPlanDefinition(r.plan_code);
+      const statusCls = r.status === "paid_pending_setup" ? "warn" : "muted";
+      return `<article class="tv-sim-pending-card tv-panel">
+        <h3 class="tv-sim-pending-card__title">Agente Telvoice en configuración</h3>
+        <p class="tv-sim-pending-card__text">
+          Tu pago fue recibido. Estamos configurando tu agente según el plan contratado.
+        </p>
+        <dl class="tv-sim-pending-card__meta">
+          <div><dt>Plan agente</dt><dd>${escapeHtml(def?.name ?? r.plan_code)}</dd></div>
+          <div><dt>Estado</dt><dd><span class="badge badge-${statusCls}">${escapeHtml(agentPlanStatusLabel(r.status))}</span></dd></div>
+          <div><dt>Fecha</dt><dd>${formatDate(r.created_at)}</dd></div>
+          <div><dt>Referencia</dt><dd>${escapeHtml(r.id.slice(0, 8).toUpperCase())}</dd></div>
+        </dl>
+      </article>`;
+    })
+    .join("");
+}
+
+function renderActivationSection(
+  simActivations: SimActivationRequestRow[],
+  agentRequests: AgentPlanRequestRow[],
+): string {
+  const simCards = renderPendingSimActivations(simActivations);
+  const agentCards = renderPendingAgentSetup(agentRequests);
+  if (!simCards && !agentCards) return "";
+
+  return `<section class="tv-activation-section">
+    <h2 class="tv-activation-section__title">Tu activación</h2>
+    <div class="tv-sim-pending-list">${simCards}${agentCards}</div>
+  </section>`;
+}
+
 function renderEmptyState(): string {
-  return `<section class="tv-panel tv-numeraciones-empty">
+  return `<section class="tv-numeraciones-empty tv-panel">
     <div class="tv-numeraciones-empty__icon" aria-hidden="true">
       <span class="material-symbols-outlined">sim_card</span>
     </div>
     <h2 class="tv-numeraciones-empty__title">Aún no tienes numeraciones Telvoice</h2>
     <p class="tv-numeraciones-empty__text">
-      Contrata un número real o de red fija para recibir SMS, validar cuentas autorizadas
-      y operar comunicaciones empresariales sin depender de un teléfono físico.
+      Solicita una línea para recibir SMS, operar validaciones autorizadas y separar
+      comunicaciones sensibles de teléfonos personales.
     </p>
     <div class="tv-numeraciones-empty__actions">
       ${renderBtn("Ver planes del agente", { href: "/app/planes-agente", variant: "primary", icon: "smart_toy" })}
@@ -53,22 +137,20 @@ function renderNumbersTable(numbers: ClientNumberListItem[]): string {
 
   const rows = numbers
     .map((n) => {
+      const detailHref = `/app/numeraciones/${encodeURIComponent(n.id)}/integraciones`;
       const actions = `
-        ${renderBtn("Bandeja", { href: `/app/sms-inbox?number=${encodeURIComponent(n.id)}`, size: "sm", variant: "ghost" })}
-        ${renderBtn("Configurar", { href: `/app/numeraciones/${encodeURIComponent(n.id)}/integraciones`, size: "sm", variant: "ghost" })}
-        ${renderBtn("Integraciones", { href: `/app/numeraciones/${encodeURIComponent(n.id)}/integraciones`, size: "sm", variant: "ghost" })}
+        ${renderBtn("Bandeja", { href: `/app/sms-inbox?number=${encodeURIComponent(n.id)}`, size: "sm", variant: "secondary", icon: "inbox" })}
+        ${renderBtn("Configurar", { href: detailHref, size: "sm", variant: "ghost" })}
+        ${renderBtn("Integraciones", { href: detailHref, size: "sm", variant: "ghost", icon: "hub" })}
+        ${renderBtn("Detalle", { href: detailHref, size: "sm", variant: "ghost", icon: "visibility" })}
       `;
       return `<tr>
-        <td><strong>${escapeHtml(n.number)}</strong></td>
+        <td><strong>${escapeHtml(n.number)}</strong>${renderQaLabBadge(n.provider)}</td>
         <td>${escapeHtml(clientNumberTypeLabel(n.type))}</td>
-        <td>${escapeHtml(n.country_code ?? "CL")}</td>
         <td>${renderStatusBadge(n.status)}</td>
         <td>${escapeHtml(n.plan_label)}</td>
-        <td>${n.has_agent ? "Sí" : "No"}</td>
         <td class="tv-numeraciones-caps">${renderCapabilities(n.capabilities)}</td>
         <td>${n.last_sms_at ? `${formatDate(n.last_sms_at)}${n.last_sms_from ? `<br><small>${escapeHtml(n.last_sms_from)}</small>` : ""}` : "—"}</td>
-        <td>${n.activated_at ? formatDate(n.activated_at) : "—"}</td>
-        <td>${n.expires_at ? formatDate(n.expires_at) : "—"}</td>
         <td class="tv-table-actions">${actions}</td>
       </tr>`;
     })
@@ -80,14 +162,10 @@ function renderNumbersTable(numbers: ClientNumberListItem[]): string {
         <tr>
           <th>Número</th>
           <th>Tipo</th>
-          <th>País</th>
           <th>Estado</th>
           <th>Plan</th>
-          <th>Agente</th>
-          <th>Capacidad</th>
+          <th>Capacidades</th>
           <th>Último SMS</th>
-          <th>Activación</th>
-          <th>Renovación</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -99,6 +177,8 @@ function renderNumbersTable(numbers: ClientNumberListItem[]): string {
 export type AppNumeracionesPageData = {
   module: ClientNumbersModuleState;
   numbers: ClientNumberListItem[];
+  pendingSimActivations: SimActivationRequestRow[];
+  pendingAgentRequests: AgentPlanRequestRow[];
 };
 
 export function renderAppNumeracionesPage(
@@ -112,25 +192,27 @@ export function renderAppNumeracionesPage(
   const body = `
     ${renderPageHeader({
       title: "Mis números",
-      subtitle: "Numeraciones Telvoice contratadas por tu empresa.",
+      subtitle: "Numeraciones Telvoice de tu empresa: estado, capacidades y bandeja SMS.",
       actions: `
-        ${renderBtn("Solicitar nueva numeración", { href: "/app/planes-agente?action=request", variant: "primary", icon: "add_call" })}
-        ${renderBtn("Ver planes del agente", { href: "/app/planes-agente", variant: "secondary", icon: "smart_toy" })}
+        ${renderBtn("Bandeja SMS", { href: "/app/sms-inbox", variant: "secondary", icon: "inbox" })}
+        ${renderBtn("Solicitar numeración", { href: "/app/planes-agente?action=request", variant: "primary", icon: "add_call" })}
       `,
     })}
     ${migrationNotice}
+    ${renderActivationSection(data.pendingSimActivations, data.pendingAgentRequests)}
     <section class="tv-panel">
       ${renderNumbersTable(data.numbers)}
     </section>
     <style>
-      .tv-numeraciones-empty { text-align: center; padding: 3rem 2rem; }
-      .tv-numeraciones-empty__icon .material-symbols-outlined { font-size: 3rem; opacity: 0.5; }
-      .tv-numeraciones-empty__title { margin: 1rem 0 0.5rem; font-size: 1.25rem; }
-      .tv-numeraciones-empty__text { max-width: 36rem; margin: 0 auto 1.5rem; opacity: 0.85; }
-      .tv-numeraciones-empty__actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
-      .tv-numeraciones-caps { font-size: 0.85rem; }
-      .tv-table-actions { white-space: nowrap; }
-    </style>`;
+      .tv-sim-pending-list { display: grid; gap: 1rem; margin-bottom: 1rem; }
+      .tv-sim-pending-card__title { margin: 0 0 0.5rem; font-size: 1.1rem; }
+      .tv-sim-pending-card__text { margin: 0 0 1rem; opacity: 0.9; line-height: 1.5; }
+      .tv-sim-pending-card__meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin: 0; }
+      .tv-sim-pending-card__meta dt { font-size: 0.75rem; opacity: 0.7; margin: 0; }
+      .tv-sim-pending-card__meta dd { margin: 0.15rem 0 0; font-weight: 600; }
+      .tv-activation-section__title { margin: 0 0 1rem; font-size: 1.15rem; }
+    </style>
+    ${renderAgentModuleStyles()}`;
 
   return wrapAppPage(ctx, "numeraciones", "Mis números", body);
 }

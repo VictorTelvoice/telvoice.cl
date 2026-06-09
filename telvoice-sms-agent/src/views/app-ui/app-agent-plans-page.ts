@@ -12,6 +12,7 @@ import { AGENT_PLAN_DEFINITIONS } from "../../types/client-numbers.js";
 import { agentPlanDisplayName } from "../../utils/agent-plan-intent.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 import { renderBtn, renderPageHeader, renderNotice } from "../admin-ui/page-kit.js";
+import { renderAgentModuleStyles } from "../shared/agent-module-styles.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtMoney, wrapAppPage } from "./app-page-wrap.js";
 
@@ -36,24 +37,40 @@ function renderPlanCard(
 ): string {
   const isSelected = options.selectedPlan === plan.code;
   const hasActivePlan = options.activeSubscription?.status === "active";
+  const isActivePlan = hasActivePlan && options.activeSubscription?.plan_code === plan.code;
   const pendingRequest = options.requestForPlan;
   const hasPending =
     !!pendingRequest &&
     ["pending", "reviewing", "approved"].includes(pendingRequest.status);
 
-  const ctaLabel = isSelected
-    ? "Confirmar solicitud"
-    : plan.code === "start"
-      ? "Contratar Start"
-      : plan.code === "pro"
-        ? "Contratar Pro"
-        : "Contratar Business";
+  const ctaLabel = isActivePlan
+    ? "Plan activo"
+    : isSelected
+      ? "Confirmar solicitud"
+      : plan.code === "start"
+        ? "Contratar Start"
+        : plan.code === "pro"
+          ? "Contratar Pro"
+          : "Contratar Business";
 
   const disabled = hasActivePlan || hasPending;
-  const featuredClass = isSelected ? " tv-agent-plan-card--selected" : "";
+  const featuredClass = isActivePlan
+    ? " tv-agent-plan-card--active-plan"
+    : isSelected
+      ? " tv-agent-plan-card--selected"
+      : "";
+
+  const notice = hasPending
+    ? `<p class="tv-agent-plan-card__notice">Solicitud pendiente. Telvoice revisará disponibilidad de línea antes de activar.</p>`
+    : hasActivePlan && !isActivePlan
+      ? `<p class="tv-agent-plan-card__notice">Ya tienes un plan Agente Telvoice activo.</p>`
+      : isActivePlan
+        ? `<p class="tv-agent-plan-card__notice">Este es tu plan actual. Las bolsas SMS para campañas masivas se compran aparte.</p>`
+        : "";
 
   return `<article class="tv-agent-plan-card${featuredClass}">
-    ${isSelected ? '<span class="tv-agent-plan-card__badge">Seleccionado</span>' : ""}
+    ${isActivePlan ? '<span class="tv-agent-plan-card__active-badge">Plan activo</span>' : ""}
+    ${isSelected && !isActivePlan ? '<span class="tv-agent-plan-card__badge">Seleccionado</span>' : ""}
     <header class="tv-agent-plan-card__head">
       <h3>${escapeHtml(plan.name)}</h3>
       <div class="tv-agent-plan-card__price">${escapeHtml(fmtMoney(plan.priceClp))}<span>/ mes</span></div>
@@ -61,21 +78,15 @@ function renderPlanCard(
     <ul class="tv-agent-plan-card__features">
       ${plan.features.map((f) => `<li>${escapeHtml(f)}</li>`).join("")}
     </ul>
-    ${
-      hasPending
-        ? `<p class="tv-agent-plan-card__pending">Ya tienes una solicitud pendiente para este plan.</p>`
-        : hasActivePlan
-          ? `<p class="tv-agent-plan-card__pending">Ya tienes un plan agente activo.</p>`
-          : ""
-    }
+    ${notice}
     <form method="post" action="/app/planes-agente/request" class="tv-agent-plan-card__cta">
       <input type="hidden" name="plan_code" value="${escapeHtml(plan.code)}" />
-      ${isSelected ? renderNumberTypeSelect() : ""}
+      ${isSelected && !disabled ? renderNumberTypeSelect() : ""}
       ${renderBtn(ctaLabel, {
         type: "submit",
-        variant: isSelected ? "primary" : "secondary",
+        variant: isActivePlan ? "secondary" : isSelected ? "primary" : "secondary",
         disabled,
-        icon: isSelected ? "check_circle" : "shopping_cart",
+        icon: isActivePlan ? "check_circle" : isSelected ? "check_circle" : "shopping_cart",
       })}
     </form>
   </article>`;
@@ -110,14 +121,16 @@ function renderActiveSubscriptionPanel(
   subscription: AgentPlanSubscriptionRow,
 ): string {
   const plan = AGENT_PLAN_DEFINITIONS.find((p) => p.code === subscription.plan_code);
-  return `<section class="tv-panel tv-agent-plan-status" style="margin-bottom:1rem">
-    <header class="tv-section-head">
-      <h2 class="tv-section-head__title">Plan agente activo</h2>
-      <span class="badge badge-ok">${escapeHtml(agentPlanStatusLabel(subscription.status))}</span>
-    </header>
-    <div class="tv-panel__body">
-      <p><strong>${escapeHtml(plan?.name ?? subscription.plan_code)}</strong> · ${escapeHtml(fmtMoney(subscription.monthly_price_clp))} / mes</p>
-      ${subscription.renews_at ? `<p class="field-hint">Próxima renovación: ${formatDate(subscription.renews_at)}</p>` : ""}
+  return `<section class="tv-panel tv-agent-plan-status tv-agent-hero tv-agent-hero--active" style="margin-bottom:1rem">
+    <div class="tv-agent-hero__icon"><span class="material-symbols-outlined" aria-hidden="true">workspace_premium</span></div>
+    <div>
+      <h2 class="tv-agent-hero__title">Plan agente activo</h2>
+      <p class="tv-agent-hero__text">
+        <strong>${escapeHtml(plan?.name ?? subscription.plan_code)}</strong> · ${escapeHtml(fmtMoney(subscription.monthly_price_clp))} / mes
+        ${subscription.renews_at ? ` · Próxima renovación: ${formatDate(subscription.renews_at)}` : ""}
+      </p>
+      <p class="field-hint" style="margin:0.5rem 0 0">Ya tienes un plan Agente Telvoice activo. No puedes contratar otro plan hasta cambiar o cancelar el actual.</p>
+      ${renderBtn("Ir al agente", { href: "/app/agente", size: "sm", variant: "secondary", icon: "smart_toy" })}
     </div>
   </section>`;
 }
@@ -183,26 +196,21 @@ export function renderAppAgentPlansPage(
       ).join("")}
     </div>
     <p class="tv-agent-plans-note">
-      Las bolsas SMS para campañas masivas se compran aparte. Líneas adicionales, tráfico adicional
-      e integraciones avanzadas pueden cotizarse según operación.
+      Los planes incluyen una línea Telvoice base. Las bolsas SMS para campañas masivas se compran aparte.
+      Líneas adicionales, tráfico adicional e integraciones avanzadas pueden cotizarse según operación.
     </p>
     <style>
-      .tv-agent-plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
-      .tv-agent-plan-card { position: relative; background: var(--tv-panel-bg, rgba(255,255,255,0.04)); border-radius: 10px; padding: 1.25rem; display: flex; flex-direction: column; border: 1px solid transparent; }
-      .tv-agent-plan-card--selected { border-color: rgba(59,130,246,0.45); box-shadow: 0 0 0 1px rgba(59,130,246,0.15); }
-      .tv-agent-plan-card__badge { position: absolute; top: 0.75rem; right: 0.75rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.2rem 0.5rem; border-radius: 999px; background: rgba(59,130,246,0.15); }
-      .tv-agent-plan-card__head h3 { margin: 0 0 0.5rem; }
-      .tv-agent-plan-card__price { font-size: 1.5rem; font-weight: 700; }
-      .tv-agent-plan-card__price span { font-size: 0.85rem; font-weight: 400; opacity: 0.7; }
-      .tv-agent-plan-card__features { flex: 1; margin: 1rem 0; padding-left: 1.25rem; font-size: 0.9rem; line-height: 1.6; }
-      .tv-agent-plan-card__pending { font-size: 0.85rem; opacity: 0.8; margin: 0 0 0.75rem; }
-      .tv-agent-plan-card__cta { margin-top: auto; display: flex; flex-direction: column; gap: 0.75rem; }
+      .tv-agent-plan-card__badge {
+        position: absolute; top: 0.75rem; right: 0.75rem;
+        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;
+        padding: 0.2rem 0.5rem; border-radius: 999px; background: rgba(59,130,246,0.15);
+      }
       .tv-agent-plan-number-type { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.85rem; }
-      .tv-agent-plans-note { margin-top: 1.5rem; font-size: 0.85rem; opacity: 0.7; max-width: 48rem; }
       .tv-agent-plan-status__meta { display: grid; grid-template-columns: auto 1fr; gap: 0.35rem 1rem; font-size: 0.9rem; margin-bottom: 0.75rem; }
       .tv-agent-plan-status__meta dt { opacity: 0.65; }
       .tv-agent-plan-status__message { margin: 0; line-height: 1.5; }
-    </style>`;
+    </style>
+    ${renderAgentModuleStyles()}`;
 
   return wrapAppPage(ctx, "agent-plans", "Planes del agente", body);
 }

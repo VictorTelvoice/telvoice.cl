@@ -6,11 +6,19 @@ import { ValidationError } from "../utils/errors.js";
 import { createHash } from "node:crypto";
 import { getSupabase } from "../database/supabaseClient.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
-import { confirmOrderCredit } from "../services/smsOrderService.js";
-import { startPublicLandingCheckout } from "../services/publicCheckoutService.js";
+import { confirmOrderCredit, getOrderById } from "../services/smsOrderService.js";
+import {
+  startPublicLandingCheckout,
+  startPublicSimAgentBundleCheckout,
+  startPublicSimCheckout,
+} from "../services/publicCheckoutService.js";
 import { runBillingSyncBestEffort } from "../services/billingSyncService.js";
 import { sendPostClaimEmailsBestEffort } from "../services/transactionalEmailService.js";
 import { listCustomerVisiblePackages } from "../services/smsPackageService.js";
+import { isSimAgentBundleOrder, isSimSubscriptionOrder } from "../utils/order-display.js";
+import { isSimPlanId } from "../utils/simPlans.js";
+import { isAgentAddonId } from "../utils/agentAddons.js";
+import { linkSimActivationToCompany } from "../services/simActivationService.js";
 import {
   getBearerTokenFromRequestHeader,
   verifySupabaseAccessToken,
@@ -192,17 +200,109 @@ export async function postPublicCheckout(
 ): Promise<void> {
   try {
     const body = req.body as Record<string, unknown>;
-    const packageIdRaw = String(body.package_id ?? "").trim();
-    const packageId = validateUuidParam(packageIdRaw, "package_id");
     const checkoutEmail = String(body.checkout_email ?? body.email ?? "").trim();
     const payerEmail =
       typeof body.payer_email === "string" ? body.payer_email.trim() : undefined;
     const payerName =
       typeof body.payer_name === "string" ? body.payer_name.trim() : undefined;
+    const productType = String(body.product_type ?? "").trim().toLowerCase();
+    const planIdRaw = String(body.plan_id ?? body.planId ?? "").trim().toLowerCase();
 
     if (!checkoutEmail.includes("@")) {
       throw new ValidationError("checkout_email inválido.");
     }
+
+    if (productType === "sim_agent_bundle") {
+      const simPlanId = String(body.sim_plan_id ?? body.plan_id ?? "")
+        .trim()
+        .toLowerCase();
+      const agentAddonId = String(body.agent_addon_id ?? "none")
+        .trim()
+        .toLowerCase();
+
+      if (!isSimPlanId(simPlanId)) {
+        throw new ValidationError("sim_plan_id no válido.");
+      }
+      if (!isAgentAddonId(agentAddonId)) {
+        throw new ValidationError("agent_addon_id no válido.");
+      }
+      if (!payerName || payerName.length < 2) {
+        throw new ValidationError("payer_name es obligatorio.");
+      }
+
+      const result = await startPublicSimAgentBundleCheckout({
+        simPlanId,
+        agentAddonId,
+        checkoutEmail,
+        payerEmail,
+        payerName,
+        companyName:
+          typeof body.company_name === "string"
+            ? body.company_name.trim()
+            : undefined,
+        phone: typeof body.phone === "string" ? body.phone.trim() : undefined,
+        taxId:
+          typeof body.tax_id === "string"
+            ? body.tax_id.trim()
+            : typeof body.rut === "string"
+              ? body.rut.trim()
+              : undefined,
+        useCase:
+          typeof body.use_case === "string" ? body.use_case.trim() : undefined,
+      });
+
+      res.status(201).json({
+        success: true,
+        product_type: "sim_agent_bundle",
+        order_id: result.orderId,
+        claim_token: result.claimToken,
+        checkout_url: result.checkoutUrl,
+        public_checkout_reference: result.publicCheckoutReference,
+        preference_id: result.preferenceId,
+      });
+      return;
+    }
+
+    const isSimCheckout =
+      productType === "sim_subscription" || isSimPlanId(planIdRaw);
+
+    if (isSimCheckout) {
+      if (!isSimPlanId(planIdRaw)) {
+        throw new ValidationError("plan_id SIM no válido.");
+      }
+
+      const result = await startPublicSimCheckout({
+        planId: planIdRaw,
+        checkoutEmail,
+        payerEmail,
+        payerName,
+        companyName:
+          typeof body.company_name === "string"
+            ? body.company_name.trim()
+            : undefined,
+        phone: typeof body.phone === "string" ? body.phone.trim() : undefined,
+        taxId:
+          typeof body.tax_id === "string"
+            ? body.tax_id.trim()
+            : typeof body.rut === "string"
+              ? body.rut.trim()
+              : undefined,
+      });
+
+      res.status(201).json({
+        success: true,
+        product_type: "sim_subscription",
+        order_id: result.orderId,
+        claim_token: result.claimToken,
+        checkout_url: result.checkoutUrl,
+        public_checkout_reference: result.publicCheckoutReference,
+        preference_id: result.preferenceId,
+      });
+      return;
+    }
+
+    const packageIdRaw = String(body.package_id ?? "").trim();
+    const packageId = validateUuidParam(packageIdRaw, "package_id");
 
     const result = await startPublicLandingCheckout({
       packageId,
@@ -213,6 +313,7 @@ export async function postPublicCheckout(
 
     res.status(201).json({
       success: true,
+      product_type: "sms_bundle",
       order_id: result.orderId,
       claim_token: result.claimToken,
       checkout_url: result.checkoutUrl,
@@ -282,6 +383,24 @@ export async function postPublicClaim(
       res.status(404).json({ ok: false, error: "claim_not_found" });
       return;
     }
+
+    const fullOrderEarly = await getOrderById(order.id);
+    if (
+      fullOrderEarly &&
+      isSimAgentBundleOrder(fullOrderEarly) &&
+      fullOrderEarly.claim_status === "claimed" &&
+      fullOrderEarly.company_id
+    ) {
+      res.json({
+        ok: true,
+        order_id: order.id,
+        status: "bundle_account_ready",
+        message:
+          "Tu cuenta Telvoice está lista. Revisa el estado de activación en el panel.",
+      });
+      return;
+    }
+
     if (order.claim_expires_at && order.claim_expires_at < nowIso) {
       res.status(410).json({ ok: false, error: "claim_expired" });
       return;
@@ -348,6 +467,22 @@ export async function postPublicClaim(
     if (!patched) {
       // Otro proceso ya lo tomó.
       res.status(409).json({ ok: false, error: "claim_raced" });
+      return;
+    }
+
+    const fullOrder = await getOrderById(order.id);
+    if (fullOrder && (isSimSubscriptionOrder(fullOrder) || isSimAgentBundleOrder(fullOrder))) {
+      await linkSimActivationToCompany(order.id, companyId);
+
+      res.json({
+        ok: true,
+        order_id: order.id,
+        status: isSimAgentBundleOrder(fullOrder)
+          ? "bundle_sim_pending_activation"
+          : "claimed_sim_pending_activation",
+        message:
+          "Pago recibido. Tu solicitud de numeración SIM real está en revisión y activación.",
+      });
       return;
     }
 

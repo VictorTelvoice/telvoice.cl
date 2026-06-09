@@ -335,6 +335,221 @@
   var BAG_TO_PLAN = { "1k": "inicial", "15k": "empresa", "100k": "volumen", "200": "bolsa200" };
   var ONLINE_PLAN_IDS = { inicial: true, empresa: true, volumen: true, calc: true, bolsa200: true };
 
+  var SIM_PLANS = {
+    sim_starter: {
+      plan_id: "sim_starter",
+      name: "Numeración SIM Starter",
+      sms: 1000,
+      net: 16798,
+      tax: 3192,
+      total: 19990,
+    },
+    sim_pro: {
+      plan_id: "sim_pro",
+      name: "Numeración SIM Pro",
+      sms: 2000,
+      net: 33605,
+      tax: 6385,
+      total: 39990,
+    },
+    sim_power: {
+      plan_id: "sim_power",
+      name: "Numeración SIM Power",
+      sms: 4000,
+      net: 84025,
+      tax: 15965,
+      total: 99990,
+    },
+  };
+
+  var SIM_CHECKOUT_ERROR =
+    "No pudimos iniciar el pago en este momento. Escríbenos para activar tu numeración SIM real.";
+
+  var AGENT_ADDONS = {
+    none: { id: "none", name: "Solo numeración", total: 0 },
+    agent_start: { id: "agent_start", name: "Agente Start", total: 39990 },
+    agent_pro: { id: "agent_pro", name: "Agente Pro", total: 59900 },
+    agent_business: { id: "agent_business", name: "Agente Business", total: 99990 },
+  };
+
+  var simBuilderState = {
+    simPlanId: "sim_pro",
+    agentAddonId: "agent_pro",
+    submitting: false,
+  };
+
+  function formatClpAmount(amount) {
+    return "$" + fmt(Math.round(Number(amount) || 0));
+  }
+
+  function updateSimBuilderSummary() {
+    var sim = SIM_PLANS[simBuilderState.simPlanId];
+    var agent = AGENT_ADDONS[simBuilderState.agentAddonId] || AGENT_ADDONS.none;
+    if (!sim) return;
+
+    var simLabel = qs("sim-summary-sim-label");
+    var simPrice = qs("sim-summary-sim-price");
+    var agentLabel = qs("sim-summary-agent-label");
+    var agentPrice = qs("sim-summary-agent-price");
+    var totalEl = qs("sim-summary-total");
+    var agentRow = agentPrice && agentPrice.parentElement;
+
+    if (simLabel) simLabel.textContent = sim.name;
+    if (simPrice) simPrice.textContent = formatClpAmount(sim.total);
+    if (agentLabel) agentLabel.textContent = agent.name;
+    if (agentPrice) agentPrice.textContent = formatClpAmount(agent.total);
+    if (totalEl) totalEl.textContent = formatClpAmount(sim.total + agent.total);
+    if (agentRow) {
+      agentRow.hidden = simBuilderState.agentAddonId === "none";
+    }
+  }
+
+  function setSimBuilderError(message) {
+    var err = qs("sim-builder-error");
+    if (!err) return;
+    if (message) {
+      err.textContent = message;
+      err.hidden = false;
+    } else {
+      err.textContent = "";
+      err.hidden = true;
+    }
+  }
+
+  function setSimBuilderLoading(loading) {
+    var btn = qs("sim-builder-submit");
+    if (!btn) return;
+    btn.disabled = !!loading;
+    btn.setAttribute("aria-busy", loading ? "true" : "false");
+    btn.textContent = loading ? "Redirigiendo a Mercado Pago…" : "Pagar y activar mi cuenta";
+  }
+
+  function selectSimBuilderSim(planId) {
+    if (!SIM_PLANS[planId]) return;
+    simBuilderState.simPlanId = planId;
+    document.querySelectorAll("[data-sim-plan]").forEach(function (btn) {
+      var selected = btn.getAttribute("data-sim-plan") === planId;
+      btn.classList.toggle("sim-select-card--selected", selected);
+      btn.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
+    updateSimBuilderSummary();
+  }
+
+  function selectSimBuilderAgent(addonId) {
+    if (!AGENT_ADDONS[addonId]) return;
+    simBuilderState.agentAddonId = addonId;
+    document.querySelectorAll("[data-agent-addon]").forEach(function (btn) {
+      var selected = btn.getAttribute("data-agent-addon") === addonId;
+      btn.classList.toggle("sim-select-card--selected", selected);
+      btn.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
+    updateSimBuilderSummary();
+  }
+
+  function submitSimAgentBundleCheckout() {
+    if (simBuilderState.submitting) return;
+
+    var nombre = (qs("sim-builder-nombre") && qs("sim-builder-nombre").value || "").trim();
+    var email = (qs("sim-builder-email") && qs("sim-builder-email").value || "").trim();
+    var empresa = (qs("sim-builder-empresa") && qs("sim-builder-empresa").value || "").trim();
+    var telefono = (qs("sim-builder-telefono") && qs("sim-builder-telefono").value || "").trim();
+    var rut = (qs("sim-builder-rut") && qs("sim-builder-rut").value || "").trim();
+    var useCase = (qs("sim-builder-use-case") && qs("sim-builder-use-case").value || "").trim();
+
+    if (nombre.length < 2) {
+      setSimBuilderError("Ingresa tu nombre.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setSimBuilderError("Ingresa un email válido.");
+      return;
+    }
+
+    setSimBuilderError("");
+    simBuilderState.submitting = true;
+    setSimBuilderLoading(true);
+
+    var agentOrigin =
+      (window.TELVOICE_CONFIG && window.TELVOICE_CONFIG.agentApiOrigin) ||
+      "https://agent.telvoice.cl";
+    var endpoint = agentOrigin + "/api/public/checkout";
+
+    fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        product_type: "sim_agent_bundle",
+        sim_plan_id: simBuilderState.simPlanId,
+        agent_addon_id: simBuilderState.agentAddonId,
+        checkout_email: email,
+        payer_name: nombre,
+        company_name: empresa || undefined,
+        phone: telefono || undefined,
+        tax_id: rut || undefined,
+        use_case: useCase || undefined,
+      }),
+    })
+      .then(function (res) {
+        return parseApiJson(res).then(function (data) {
+          return { httpOk: res.ok, status: res.status, data: data };
+        });
+      })
+      .then(function (result) {
+        var data = result.data || {};
+        var checkoutUrl = data.checkout_url;
+        if (!result.httpOk || data.success !== true || !checkoutUrl) {
+          throw new Error((data && (data.error || data.message)) || SIM_CHECKOUT_ERROR);
+        }
+        trackEvent("click_sim_agent_bundle_checkout", {
+          sim_plan_id: simBuilderState.simPlanId,
+          agent_addon_id: simBuilderState.agentAddonId,
+        });
+        window.location.href = checkoutUrl;
+      })
+      .catch(function () {
+        simBuilderState.submitting = false;
+        setSimBuilderLoading(false);
+        setSimBuilderError(SIM_CHECKOUT_ERROR);
+      });
+  }
+
+  function initSimAgentBuilder() {
+    var builder = qs("sim-agent-builder");
+    if (!builder) return;
+
+    selectSimBuilderSim(simBuilderState.simPlanId);
+    selectSimBuilderAgent(simBuilderState.agentAddonId);
+    updateSimBuilderSummary();
+
+    builder.querySelectorAll("[data-sim-plan]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        selectSimBuilderSim(btn.getAttribute("data-sim-plan") || "sim_pro");
+      });
+    });
+
+    builder.querySelectorAll("[data-agent-addon]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        selectSimBuilderAgent(btn.getAttribute("data-agent-addon") || "none");
+      });
+    });
+
+    var submitBtn = qs("sim-builder-submit");
+    if (submitBtn) {
+      submitBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        submitSimAgentBundleCheckout();
+      });
+    }
+
+    var form = qs("sim-builder-form");
+    if (form) {
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        submitSimAgentBundleCheckout();
+      });
+    }
+  }
+
   var compraState = {
     planId: null,
     calcSms: null,
@@ -472,6 +687,7 @@
       tax: payload.tax_amount || 0,
       total: payload.total_amount || 0,
       source: payload.source || "web",
+      productType: payload.productType || "sms_bundle",
     };
 
     renderCheckoutSummary({
@@ -516,6 +732,22 @@
     document.body.classList.remove("modal-open");
   }
 
+  function startSimCheckout(planId) {
+    var key = String(planId || "").trim().toLowerCase();
+    var plan = SIM_PLANS[key];
+    if (!plan) return;
+    openCompraModal({
+      planId: plan.plan_id,
+      planName: plan.name,
+      sms: plan.sms,
+      net_amount: plan.net,
+      tax_amount: plan.tax,
+      total_amount: plan.total,
+      source: "landing_sim",
+      productType: "sim_subscription",
+    });
+  }
+
   function startMercadoPagoCheckout() {
     if (compraSubmitting) return;
 
@@ -548,15 +780,21 @@
       setCompraError("Ingrese un email válido.");
       return;
     }
-    if (whatsapp.length < 8) {
+    var isSimCheckout = compraState.productType === "sim_subscription";
+    if (!isSimCheckout && whatsapp.length < 8) {
       setCompraError("Ingrese un WhatsApp de contacto.");
       return;
     }
-    if (rut.length < 8) {
+    if (!isSimCheckout && rut.length < 8) {
       setCompraError("Ingrese un RUT válido.");
       return;
     }
-    if (compraState.calcSms) {
+    if (isSimCheckout) {
+      if (!planId || !SIM_PLANS[planId]) {
+        setCompraError("Plan SIM no disponible para pago online.");
+        return;
+      }
+    } else if (compraState.calcSms) {
       if (!planId || planId !== "calc") {
         setCompraError("Plan no disponible para pago online.");
         return;
@@ -575,7 +813,9 @@
     compraSubmitting = true;
     setCompraLoading(true);
 
-    var agentOrigin = "https://agent.telvoice.cl";
+    var agentOrigin =
+      (window.TELVOICE_CONFIG && window.TELVOICE_CONFIG.agentApiOrigin) ||
+      "https://agent.telvoice.cl";
     var agentProductsEndpoint = agentOrigin + "/api/public/products";
     var agentCheckoutEndpoint = agentOrigin + "/api/public/checkout";
     var legacyCheckoutEndpoint = apiUrl("/api/mercadopago/create-preference");
@@ -654,6 +894,39 @@
       return candidates[0];
     }
 
+    function startSimAgentCheckout() {
+      return fetch(agentCheckoutEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        signal: abortController ? abortController.signal : undefined,
+        body: JSON.stringify({
+          product_type: "sim_subscription",
+          plan_id: planId,
+          checkout_email: email,
+          payer_email: email,
+          payer_name: nombre,
+          company_name: razonSocial || undefined,
+          phone: whatsapp || undefined,
+          tax_id: rut || undefined,
+        }),
+      })
+        .then(parseJsonSafe)
+        .then(function (r) {
+          var data = r.data || {};
+          var checkoutUrl = data.checkout_url;
+          if (!r.httpOk || data.success !== true) {
+            throw new Error((data && (data.error || data.message)) || SIM_CHECKOUT_ERROR);
+          }
+          if (!checkoutUrl) {
+            throw new Error(SIM_CHECKOUT_ERROR);
+          }
+          return checkoutUrl;
+        });
+    }
+
     function startAgentCheckout() {
       // El agent checkout requiere package_id (uuid).
       // Para no hardcodear IDs acá, usamos /api/public/products y tomamos package_id que matchea el total/sms.
@@ -729,25 +1002,26 @@
       return false;
     }
 
-    // Nuevo flujo: intentamos primero el checkout público del agent.
-    // Fallback legacy: SOLO si está explícitamente habilitado.
-    startAgentCheckout()
-      .catch(function (err) {
-        if (allowLegacyFallback()) {
-          console.warn("[checkout] agent checkout fallback (legacy enabled)", err && (err.message || err));
-          return startLegacyCheckout();
-        }
-        var code = err && err.message ? String(err.message) : "";
-        if (code === "agent_package_not_found") {
-          throw new Error(
-            "Este plan no está disponible para pago online en este momento. Por favor intenta con otra bolsa o contacta a soporte."
-          );
-        }
-        if (code === "agent_products_unavailable") {
+    var checkoutPromise = isSimCheckout
+      ? startSimAgentCheckout()
+      : startAgentCheckout().catch(function (err) {
+          if (allowLegacyFallback()) {
+            console.warn("[checkout] agent checkout fallback (legacy enabled)", err && (err.message || err));
+            return startLegacyCheckout();
+          }
+          var code = err && err.message ? String(err.message) : "";
+          if (code === "agent_package_not_found") {
+            throw new Error(
+              "Este plan no está disponible para pago online en este momento. Por favor intenta con otra bolsa o contacta a soporte."
+            );
+          }
+          if (code === "agent_products_unavailable") {
+            throw new Error(COMPRA_PAY_ERROR);
+          }
           throw new Error(COMPRA_PAY_ERROR);
-        }
-        throw new Error(COMPRA_PAY_ERROR);
-      })
+        });
+
+    checkoutPromise
       .then(function (checkoutUrl) {
         trackEvent("click_comprar_online", { planId: planId, source: compraState.source });
         window.location.href = checkoutUrl;
@@ -766,8 +1040,8 @@
           },
           err,
         );
-        var msg = COMPRA_PAY_ERROR;
-        if (err && err.message === "agent_package_not_found") {
+        var msg = isSimCheckout ? SIM_CHECKOUT_ERROR : COMPRA_PAY_ERROR;
+        if (!isSimCheckout && err && err.message === "agent_package_not_found") {
           msg =
             "Este plan no está disponible para pago online en este momento. Por favor intenta con otra bolsa o contacta a soporte.";
         }
@@ -1391,7 +1665,9 @@
       activate(tabFromHash());
     });
 
-    document.querySelectorAll(".sim-plan-cta-link").forEach(function (link) {
+    initSimAgentBuilder();
+
+    document.querySelectorAll(".sim-plan-cta-link[data-sim-plan]").forEach(function (link) {
       link.addEventListener("click", function () {
         var plan = link.getAttribute("data-sim-plan") || "SIM";
         var nota = qs("lead-nota");

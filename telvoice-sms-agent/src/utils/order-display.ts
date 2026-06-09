@@ -20,13 +20,54 @@ export const PUBLIC_LANDING_ORDER_METADATA = {
   claim_required: true,
 } as const;
 
+/** Compra rápida landing — numeración SIM real (legacy Fase 1) */
+export const PUBLIC_SIM_CHECKOUT_METADATA = {
+  source: "landing_sim_checkout",
+  checkout_mode: "mercadopago",
+  claim_required: true,
+  product_type: "sim_subscription",
+  requires_manual_activation: true,
+} as const;
+
+/** Configurador landing — SIM + Agente (post-pago auto-provision) */
+export const PUBLIC_SIM_AGENT_BUNDLE_METADATA = {
+  source: "landing_sim_agent_builder",
+  checkout_mode: "mercadopago",
+  product_type: "sim_agent_bundle",
+  requires_manual_activation: true,
+  account_creation_mode: "post_payment_auto",
+} as const;
+
+export function isSimSubscriptionOrder(
+  order: Pick<SmsOrderRow, "metadata">,
+): boolean {
+  const meta = order.metadata ?? {};
+  return meta.product_type === "sim_subscription";
+}
+
+export function isSimAgentBundleOrder(
+  order: Pick<SmsOrderRow, "metadata">,
+): boolean {
+  const meta = order.metadata ?? {};
+  return meta.product_type === "sim_agent_bundle";
+}
+
+export function isSimCheckoutOrder(
+  order: Pick<SmsOrderRow, "metadata">,
+): boolean {
+  return isSimSubscriptionOrder(order) || isSimAgentBundleOrder(order);
+}
+
 export function isPublicCheckoutOrder(
   order: Pick<SmsOrderRow, "metadata" | "company_id">,
 ): boolean {
   const meta = order.metadata ?? {};
   return (
     meta.source === "landing" ||
+    meta.source === "landing_sim_checkout" ||
+    meta.source === "landing_sim_agent_builder" ||
     meta.claim_required === true ||
+    isSimCheckoutOrder(order) ||
     (!order.company_id && meta.checkout_mode === "mercadopago")
   );
 }

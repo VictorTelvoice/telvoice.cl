@@ -1,0 +1,84 @@
+/**
+ * Planes de numeración SIM real — fuente de verdad en el agente (mirror de lib/sim-plans.js).
+ */
+
+const IVA = 0.19;
+
+function clpFromGrossTotal(totalGross: number) {
+  const net = Math.round(totalGross / (1 + IVA));
+  const tax = totalGross - net;
+  return { net_amount: net, tax_amount: tax, total_amount: totalGross };
+}
+
+export type SimPlanDefinition = {
+  plan_id: SimPlanId;
+  name: string;
+  sim_label: string;
+  product_type: "sim_subscription";
+  billing_period: "monthly";
+  sms_quantity: number;
+  currency: "CLP";
+  net_amount: number;
+  tax_amount: number;
+  total_amount: number;
+};
+
+export type SimPlanId = "sim_starter" | "sim_pro" | "sim_power";
+
+export const SIM_PLANS: Record<SimPlanId, SimPlanDefinition> = {
+  sim_starter: {
+    plan_id: "sim_starter",
+    name: "Numeración SIM Starter",
+    sim_label: "Starter",
+    product_type: "sim_subscription",
+    billing_period: "monthly",
+    sms_quantity: 1000,
+    currency: "CLP",
+    ...clpFromGrossTotal(19990),
+  },
+  sim_pro: {
+    plan_id: "sim_pro",
+    name: "Numeración SIM Pro",
+    sim_label: "Pro",
+    product_type: "sim_subscription",
+    billing_period: "monthly",
+    sms_quantity: 2000,
+    currency: "CLP",
+    ...clpFromGrossTotal(39990),
+  },
+  sim_power: {
+    plan_id: "sim_power",
+    name: "Numeración SIM Power",
+    sim_label: "Power",
+    product_type: "sim_subscription",
+    billing_period: "monthly",
+    sms_quantity: 4000,
+    currency: "CLP",
+    ...clpFromGrossTotal(99990),
+  },
+};
+
+export const SIM_PLAN_IDS = Object.keys(SIM_PLANS) as SimPlanId[];
+
+export function isSimPlanId(planId: string | null | undefined): planId is SimPlanId {
+  if (!planId || typeof planId !== "string") return false;
+  return SIM_PLAN_IDS.includes(planId.trim().toLowerCase() as SimPlanId);
+}
+
+export function getSimPlan(planId: string): SimPlanDefinition | null {
+  if (!isSimPlanId(planId)) return null;
+  return SIM_PLANS[planId.trim().toLowerCase() as SimPlanId];
+}
+
+export function simCheckoutItemTitle(plan: SimPlanDefinition): string {
+  const qty = new Intl.NumberFormat("es-CL").format(plan.sms_quantity);
+  return `Telvoice.cl — ${plan.name} (${qty} SMS/mes)`;
+}
+
+export function simCheckoutItemDescription(plan: SimPlanDefinition): string {
+  const qty = new Intl.NumberFormat("es-CL").format(plan.sms_quantity);
+  return (
+    `Suscripción mensual: número SIM real en Chile con ${qty} SMS salientes incluidos por mes. ` +
+    "IVA incluido en el total. Activación manual tras confirmar el pago."
+  );
+}
