@@ -1,8 +1,26 @@
 /** Scripts inline del navegador para login Supabase (Google + Magic Link) y /auth/callback. */
 
+export type ClientAuthScriptOptions = {
+  agentLineEnabled?: boolean;
+};
+
 /** Cliente Supabase compartido (misma URL, key y storage en /login y /auth/callback). */
-export function renderSupabaseBrowserClientInit(url: string, key: string): string {
+export function renderSupabaseBrowserClientInit(
+  url: string,
+  key: string,
+  options?: ClientAuthScriptOptions,
+): string {
+  const agentLineEnabled = options?.agentLineEnabled === true;
   return `
+  const TV_AGENT_LINE_ENABLED = ${agentLineEnabled ? "true" : "false"};
+  const TV_AGENT_LINE_PREFIXES = ["/app/numeraciones", "/app/sms-inbox", "/app/agente", "/app/planes-agente"];
+  function tvIsAgentLinePath(path) {
+    const base = String(path || "").split("?")[0];
+    if (!base.startsWith("/app/")) return false;
+    return TV_AGENT_LINE_PREFIXES.some(function (prefix) {
+      return base === prefix || base.indexOf(prefix + "/") === 0;
+    });
+  }
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
   const supabase = createClient(${JSON.stringify(url)}, ${JSON.stringify(key)}, {
     auth: {
@@ -76,6 +94,7 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
       const intent = params.get("intent");
       const plan = (params.get("plan") || "").trim().toLowerCase();
       if (
+        TV_AGENT_LINE_ENABLED &&
         intent === "agent_plan" &&
         (plan === "start" || plan === "pro" || plan === "business")
       ) {
@@ -85,7 +104,12 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
         );
       }
       const nextPath = params.get("next");
-      if (nextPath && nextPath.startsWith("/app/") && !nextPath.includes("://")) {
+      if (
+        nextPath &&
+        nextPath.startsWith("/app/") &&
+        !nextPath.includes("://") &&
+        (!tvIsAgentLinePath(nextPath) || TV_AGENT_LINE_ENABLED)
+      ) {
         localStorage.setItem("telvoice_login_next", nextPath);
       }
     } catch {}
@@ -98,12 +122,20 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
         const data = JSON.parse(raw);
         localStorage.removeItem("telvoice_agent_plan_intent");
         const plan = String(data?.plan || "").toLowerCase();
-        if (data?.intent === "agent_plan" && (plan === "start" || plan === "pro" || plan === "business")) {
+        if (
+          TV_AGENT_LINE_ENABLED &&
+          data?.intent === "agent_plan" &&
+          (plan === "start" || plan === "pro" || plan === "business")
+        ) {
           return "/app/planes-agente?plan=" + encodeURIComponent(plan) + "&intent=agent_plan";
         }
       }
       const nextStored = localStorage.getItem("telvoice_login_next");
-      if (nextStored && nextStored.startsWith("/app/")) {
+      if (
+        nextStored &&
+        nextStored.startsWith("/app/") &&
+        (!tvIsAgentLinePath(nextStored) || TV_AGENT_LINE_ENABLED)
+      ) {
         localStorage.removeItem("telvoice_login_next");
         return nextStored;
       }
@@ -268,9 +300,13 @@ export function renderSupabaseBrowserClientInit(url: string, key: string): strin
 `;
 }
 
-export function renderLoginBrowserScript(url: string, key: string): string {
+export function renderLoginBrowserScript(
+  url: string,
+  key: string,
+  options?: ClientAuthScriptOptions,
+): string {
   return `<script type="module">
-${renderSupabaseBrowserClientInit(url, key)}
+${renderSupabaseBrowserClientInit(url, key, options)}
   (function tvStoreClaimTokenFromUrl() {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -370,9 +406,13 @@ ${renderSupabaseBrowserClientInit(url, key)}
 </script>`;
 }
 
-export function renderAuthCallbackBrowserScript(url: string, key: string): string {
+export function renderAuthCallbackBrowserScript(
+  url: string,
+  key: string,
+  options?: ClientAuthScriptOptions,
+): string {
   return `<script type="module">
-${renderSupabaseBrowserClientInit(url, key)}
+${renderSupabaseBrowserClientInit(url, key, options)}
   tvCompleteAuthCallback().catch((e) => {
     tvAuthFail("callback_exception", String(e?.message || e));
   });

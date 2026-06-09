@@ -317,6 +317,9 @@ export const env = {
     /** POST /app/buy-sms (pago manual). Desactivado por defecto hasta habilitar operación. */
     manualCheckoutEnabled:
       optionalEnv("CLIENT_PANEL_MANUAL_CHECKOUT_ENABLED", "false") === "true",
+    /** Mis números, SMS entrantes, Agente Telvoice y Planes del agente en /app. */
+    agentLineEnabled:
+      optionalEnv("CLIENT_PANEL_AGENT_LINE_ENABLED", "false") === "true",
   },
   defaultRetailRatePlan: {
     ratePlanId: optionalEnv(
@@ -418,4 +421,8 @@ export function getGoogleAuthEnvIssues(): GoogleAuthEnvIssue[] {
 
 export function isGoogleAuthConfigured(): boolean {
   return getGoogleAuthEnvIssues().length === 0;
+}
+
+export function isClientPanelAgentLineEnabled(): boolean {
+  return env.clientPanel.agentLineEnabled;
 }
