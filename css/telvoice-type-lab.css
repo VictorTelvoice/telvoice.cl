@@ -1,0 +1,144 @@
+/* Tipografía inspirada en Telvoice Lab — tema claro telvoice.cl */
+
+.tv-type-lab {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Eyebrows */
+.tv-type-lab .section-eyebrow {
+  font-size: 0.75rem;
+  color: #0c56d0;
+}
+
+.tv-type-lab .section-empresas .section-eyebrow,
+.tv-type-lab .section-contact .section-eyebrow {
+  color: #9cf0ff;
+}
+
+/* Hero */
+.tv-type-lab .hero-copy .section-eyebrow {
+  margin-bottom: 0.25rem;
+}
+
+.tv-type-lab .tv-hero-title {
+  font-family: Montserrat, sans-serif;
+  font-size: clamp(1.85rem, 4.2vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  max-width: 18ch;
+}
+
+.tv-type-lab .tv-hero-accent {
+  color: #0052cc;
+}
+
+.tv-type-lab .hero-intro {
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: #525f7a;
+  max-width: 34rem;
+}
+
+/* Títulos de sección */
+.tv-type-lab .font-h2.text-h2,
+.tv-type-lab h2.font-h2.text-h2,
+.tv-type-lab .calc-hero-title.font-h2 {
+  font-family: Montserrat, sans-serif;
+  font-size: clamp(1.5rem, 3.2vw, 2rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.tv-type-lab .font-h1.text-h1:not(.tv-hero-title) {
+  letter-spacing: -0.02em;
+}
+
+/* Intros y cuerpo */
+.tv-type-lab .section-intro,
+.tv-type-lab .calc-hero-intro,
+.tv-type-lab .text-subtitle,
+.tv-type-lab .api-body-text {
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: #525f7a;
+}
+
+.tv-type-lab .section-intro {
+  max-width: 34rem;
+}
+
+.tv-type-lab .section-header .section-intro {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Cards beneficio / camino comercial */
+.tv-type-lab .ui-card-benefit .font-h3.text-h3,
+.tv-type-lab .ui-card-feature .font-h3.text-h3,
+.tv-type-lab #camino-comercial .font-h3.text-h3 {
+  font-family: Montserrat, sans-serif;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.tv-type-lab .ui-card-benefit .text-subtitle,
+.tv-type-lab .ui-card-benefit p.text-on-surface-variant {
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+/* Casos de uso */
+.tv-type-lab #casos-uso .caso-tagline {
+  font-family: Montserrat, sans-serif;
+  font-weight: 700;
+  font-size: 1.0625rem;
+  line-height: 1.3;
+}
+
+.tv-type-lab #casos-uso .caso-desc {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: #525f7a;
+}
+
+/* CTA hero secundario */
+.tv-type-lab .hero-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.75rem 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 82, 204, 0.28);
+  background: transparent;
+  font-family: Inter, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #0052cc;
+  text-decoration: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.tv-type-lab .hero-cta-secondary:hover {
+  border-color: rgba(0, 82, 204, 0.45);
+  background: rgba(0, 82, 204, 0.04);
+}
+
+@media (min-width: 640px) {
+  .tv-type-lab .hero-cta-secondary {
+    flex: 0 0 auto;
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+  }
+}
+
+/* CTA final */
+.tv-type-lab .section-cta-final .font-h2.text-h2 {
+  font-size: clamp(1.5rem, 3vw, 1.875rem);
+}

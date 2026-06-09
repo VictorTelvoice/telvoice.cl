@@ -38,7 +38,8 @@
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com" rel="preconnect" />
   <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=JetBrains+Mono:wght@500&amp;family=Montserrat:wght@600;700&amp;display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;family=Montserrat:wght@600;700;800&amp;display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/telvoice-type-lab.css?v=20260609" />
   <script id="tailwind-config">
     tailwind.config = {
       darkMode: "class",
@@ -2859,7 +2860,7 @@
     }
   </script>
 </head>
-<body class="bg-background text-on-background font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container">
+<body class="tv-type-lab bg-background text-on-background font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container">
   <p class="seo-visually-hidden">
     Telvoice.cl es la plataforma chilena de TelefoníaChile LTDA para comprar bolsas de SMS masivos con pago online (Mercado Pago), precios por volumen, panel web, API REST y soporte en español. Cubre Entel, Movistar, Claro y WOM. Planes publicados: Starter 1.000 SMS, Business 15.000 SMS y Corporativo 100.000 SMS.
   </p>
@@ -2952,16 +2953,12 @@
       <div class="hero-main-row flex flex-col md:flex-row items-start justify-between gap-8 md:gap-16">
         <div class="hero-copy flex flex-1 flex-col px-4 md:px-0 md:pl-20 lg:pl-28 xl:pl-36">
           <div class="flex w-full flex-col items-center gap-stack-md md:items-start">
-              <div class="inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-outline-variant/55 bg-surface-container-low/90 px-4 py-1.5 backdrop-blur-sm">
-                <span class="h-2 w-2 shrink-0 rounded-full bg-gradient-to-r from-[#5b21b6] to-[#0052cc] animate-pulse" aria-hidden="true"></span>
-                <span class="font-body-sm text-body-sm font-medium text-on-surface-variant tracking-tight">Compra bolsas SMS · Chile</span>
-              </div>
-              <h1 class="font-h1 text-h1 text-on-background">
-                <span class="hero-grad-text block text-[clamp(1.75rem,5.5vw,3.25rem)] font-extrabold leading-[1.12] tracking-tight">SMS masivos en Chile,</span>
-                <span class="mt-1 block font-semibold tracking-tight text-on-background">con rutas directas y sin contratos</span>
+              <span class="section-eyebrow">SMS masivos Chile</span>
+              <h1 class="tv-hero-title font-h1 text-on-background">
+                SMS masivos en Chile, <span class="tv-hero-accent">con rutas directas</span> y sin contratos
               </h1>
               <p class="hero-intro text-on-surface-variant leading-relaxed">
-                Adquiere bolsas prepago de SMS para campañas, notificaciones, recordatorios y validaciones. Elige tu volumen, paga online y gestiona tus envíos desde una plataforma simple e intuitiva.
+                Bolsas prepago para campañas, notificaciones y validaciones. Elige volumen, paga online y opera desde un panel claro — sin contratos ni fricción.
               </p>
           </div>
           <div class="hero-price-card mt-stack-md w-full border border-outline-variant/50 bg-gradient-to-br from-surface-container-lowest via-surface/95 to-primary/[0.035] ring-1 ring-primary/[0.07]">
@@ -2986,7 +2983,8 @@
             </div>
           </div>
           <div class="hero-cta-row pt-stack-sm">
-            <a href="#calculadora" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_compra_bolsa">Compra Tu bolsa</a>
+            <a href="#calculadora" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_compra_bolsa">Comprar bolsa SMS</a>
+            <a href="#calculadora" class="hero-cta-secondary" data-track="click_calcular_precio_hero">Calcular precio</a>
           </div>
           <div class="hero-tags-below hero-tags-mobile relative z-10 flex w-full flex-col items-center md:hidden">
             <ul class="hero-use-tags hero-tags-row" role="list" aria-label="Usos del servicio SMS">
@@ -3089,9 +3087,9 @@
     <section id="por-que-telvoice" class="section-block section-bg-white" aria-labelledby="por-que-titulo" tabindex="-1">
       <div class="section-inner">
       <header class="section-header por-que-header mx-auto max-w-3xl">
-        <span class="section-eyebrow">Por qué elegir Telvoice.cl</span>
-        <h2 id="por-que-titulo" class="mt-4 font-h2 text-h2 text-on-background leading-tight">Bolsas SMS para empresas que necesitan precio, control y operación confiable</h2>
-        <p class="section-intro mt-4 text-on-surface-variant leading-relaxed">En Telvoice.cl puedes adquirir bolsas de SMS online, administrar tu saldo y enviar campañas en Chile desde una plataforma simple, clara y orientada a empresas que necesitan comunicar de forma directa con sus clientes.</p>
+        <span class="section-eyebrow">Por qué Telvoice</span>
+        <h2 id="por-que-titulo" class="mt-4 font-h2 text-h2 text-on-background leading-tight">Precio, control y operación SMS confiable</h2>
+        <p class="section-intro mt-4 text-on-surface-variant leading-relaxed">Saldo prepago, campañas asistidas y reportes en un solo lugar. Diseñado para empresas que necesitan escalar comunicaciones sin depender de teléfonos personales.</p>
       </header>
       <div class="por-que-grid grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-4 lg:gap-8">
         <article class="ui-card ui-card-benefit flex h-full flex-col gap-4">
