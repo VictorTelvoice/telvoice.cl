@@ -1730,11 +1730,20 @@ export function getAppPanelStyles(): string {
       padding: 1rem 1.25rem;
     }
     .tv-app-client .tv-invoice__filters-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
     }
     @media (max-width: 640px) {
-      .tv-app-client .tv-invoice__filters-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      .tv-app-client .tv-invoice-page .tv-invoice__filters-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 0.65rem;
+        align-items: end;
+      }
+      .tv-app-client .tv-invoice-page .tv-invoice__filters-grid > .tv-filter-field {
+        min-width: 0;
+      }
+      .tv-app-client .tv-invoice-page .tv-invoice__filters-grid .tv-dlr-report__filter-actions {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
       }
     }
     .tv-app-client .tv-inbox__filters-grid {
