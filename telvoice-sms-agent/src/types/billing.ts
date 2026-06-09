@@ -18,7 +18,12 @@ export type BillingDocumentType =
   | "credit_note"
   | "manual_receipt";
 
-export type BillingEmailStatus = "pending" | "sent" | "failed" | "retrying";
+export type BillingEmailStatus =
+  | "pending"
+  | "sending"
+  | "sent"
+  | "failed"
+  | "retrying";
 
 export type BillingEventType =
   | "invoice.created"
@@ -33,6 +38,7 @@ export type BillingEventType =
   | "invoice.email_pending"
   | "invoice.email_sent"
   | "invoice.email_failed"
+  | "invoice.email_skipped_duplicate"
   | "invoice.previewed"
   | "billing.sync.started"
   | "billing.sync.completed"
@@ -122,6 +128,8 @@ export interface BillingEmailLog {
   invoice_id: string;
   company_id: string | null;
   to_email: string;
+  to_email_normalized?: string | null;
+  email_type?: string;
   cc_email: string | null;
   subject: string | null;
   status: BillingEmailStatus;

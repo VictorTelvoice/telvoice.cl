@@ -39,7 +39,8 @@ export function isDuplicateKeyError(
         : String(error ?? "");
   return (
     message.includes("duplicate key") ||
-    message.includes("idx_wallet_transactions_order_purchase_unique")
+    message.includes("idx_wallet_transactions_order_purchase_unique") ||
+    message.includes("idx_billing_email_logs_invoice_recipient_type_active")
   );
 }
 

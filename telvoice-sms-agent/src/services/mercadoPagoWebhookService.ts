@@ -26,6 +26,8 @@ import {
   updateSmsMpSubscriptionStatus,
 } from "./smsMpSubscriptionService.js";
 import { runBillingSyncBestEffort } from "./billingSyncService.js";
+import { getInvoiceByOrderId } from "./billingInvoiceService.js";
+import { hasActiveOrSentBillingEmail } from "./billingEmailClaimService.js";
 import type { MercadoPagoPaymentRecord } from "./mercadoPagoService.js";
 import type { SmsOrderRow } from "../types/wallet.js";
 
@@ -78,6 +80,15 @@ async function syncCreditedOrderState(
   return latest ?? order;
 }
 
+async function maybeRunBillingSyncForCreditedOrder(orderId: string): Promise<void> {
+  const invoice = await getInvoiceByOrderId(orderId);
+  if (invoice && (await hasActiveOrSentBillingEmail(invoice.id))) {
+    console.log("[mp-webhook] billing sync omitido (comprobante ya enviado o en envío)", orderId);
+    return;
+  }
+  await runBillingSyncBestEffort(orderId, { source: "mercadopago_webhook" });
+}
+
 async function resolveAlreadyCredited(
   orderId: string,
   order: SmsOrderRow,
@@ -86,7 +97,7 @@ async function resolveAlreadyCredited(
   if (order.credit_status === "credited") {
     await patchOrderFields(orderId, { metadata: metaPatch });
     console.log("[mp-webhook] already_credited (orden acreditada)", orderId);
-    await runBillingSyncBestEffort(orderId, { source: "mercadopago_webhook" });
+    await maybeRunBillingSyncForCreditedOrder(orderId);
     return { handled: true, orderId, result: "already_credited" };
   }
 
@@ -94,7 +105,7 @@ async function resolveAlreadyCredited(
   if (hasTx) {
     await syncCreditedOrderState(orderId, order, metaPatch);
     console.log("[mp-webhook] already_credited (purchase_credit existente)", orderId);
-    await runBillingSyncBestEffort(orderId, { source: "mercadopago_webhook" });
+    await maybeRunBillingSyncForCreditedOrder(orderId);
     return { handled: true, orderId, result: "already_credited" };
   }
 
