@@ -21,12 +21,16 @@
   display: flex;
   flex-direction: column;
   width: min(320px, 90vw);
-  height: min(640px, 85vh);
+  height: min(640px, 85svh, 85vh);
   border-radius: 48px;
   border: 12px solid #dae2fd;
   background: #131b2e;
   box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.18);
   overflow: hidden;
+}
+
+.hero-phone-float--agent:focus-within {
+  animation: none;
 }
 
 .hero-phone-notch {
@@ -402,6 +406,23 @@
 }
 
 @media (max-width: 767px) {
+  /* Altura fija en svh: no encoge el teléfono cuando aparece el teclado */
+  .hero-phone-float--agent {
+    width: min(300px, 100%);
+    height: min(580px, 85svh);
+    max-height: 580px;
+  }
+
+  /* iOS hace zoom de página si el input es < 16px */
+  .hero-phone-agent-embed .tva-form input {
+    font-size: 1rem;
+    line-height: 1.25;
+  }
+
+  .hero-phone-agent-embed .tva-form input::placeholder {
+    font-size: 0.875rem;
+  }
+
   /* Anula text-align:center global de main p/h* en móvil */
   .hero-phone-slot--agent,
   .hero-phone-slot--agent .hero-phone-screen,
