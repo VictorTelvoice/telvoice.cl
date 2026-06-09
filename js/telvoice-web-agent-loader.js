@@ -21,18 +21,18 @@
     window.TELVOICE_WEB_AGENT_EMBED = embedTarget;
   }
 
+  var AGENT_JS_VERSION = "20260710";
+
   function loadCss(href) {
     if (document.querySelector('link[data-tva-css="1"]')) {
       return;
     }
     var link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = href;
+    link.href = href + (href.indexOf("?") >= 0 ? "&" : "?") + "v=" + AGENT_JS_VERSION;
     link.setAttribute("data-tva-css", "1");
     document.head.appendChild(link);
   }
-
-  var AGENT_JS_VERSION = "20260709";
 
   function loadJs(src) {
     var versionedSrc =
