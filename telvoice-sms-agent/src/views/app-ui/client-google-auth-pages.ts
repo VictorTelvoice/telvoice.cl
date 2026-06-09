@@ -1,3 +1,4 @@
+import { isClientPanelAgentLineEnabled } from "../../config/env.js";
 import { escapeHtml } from "../../utils/html.js";
 import { renderAuthBrand } from "../brand.js";
 import { renderClientAuthPage } from "./app-shell.js";
@@ -41,10 +42,13 @@ export function renderClientLoginPage(options?: {
       ? `<div class="alert alert-error">${escapeHtml(userError)}</div>`
       : "");
 
+  const authScriptOptions = {
+    agentLineEnabled: isClientPanelAgentLineEnabled(),
+  };
   const authScript =
     "errorHtml" in cfg
       ? ""
-      : renderLoginBrowserScript(cfg.url, cfg.key);
+      : renderLoginBrowserScript(cfg.url, cfg.key, authScriptOptions);
 
   const body = `
     <div class="tv-lab-glass-card">
@@ -87,6 +91,9 @@ export function renderClientLoginPage(options?: {
 
 export function renderAuthCallbackPage(): string {
   const cfg = googleAuthConfigOrError();
+  const authScriptOptions = {
+    agentLineEnabled: isClientPanelAgentLineEnabled(),
+  };
   const body = `
     <div class="tv-lab-glass-card">
       ${renderAuthBrand("telvoice", "Conectando…")}
@@ -96,7 +103,7 @@ export function renderAuthCallbackPage(): string {
     ${
       "errorHtml" in cfg
         ? `<script>window.location.replace("/login");</script>`
-        : renderAuthCallbackBrowserScript(cfg.url, cfg.key)
+        : renderAuthCallbackBrowserScript(cfg.url, cfg.key, authScriptOptions)
     }`;
 
   return renderClientAuthPage("Auth callback", body);

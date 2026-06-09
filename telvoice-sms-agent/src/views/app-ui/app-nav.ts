@@ -1,3 +1,5 @@
+import { isClientPanelAgentLineEnabled } from "../../config/env.js";
+
 export type AppNavItem = {
   id: string;
   label: string;
@@ -23,12 +25,16 @@ export const APP_NAV_PRIMARY: AppNavItem[] = [
 ];
 
 /** Línea Telvoice y Agente (numeraciones, SMS entrantes, planes). */
-export const APP_NAV_AGENT_LINE: AppNavItem[] = [
+const APP_NAV_AGENT_LINE_ITEMS: AppNavItem[] = [
   { id: "numeraciones", label: "Mis números", href: "/app/numeraciones", icon: "sim_card" },
   { id: "sms-inbox", label: "SMS entrantes", href: "/app/sms-inbox", icon: "sms" },
   { id: "agente", label: "Agente Telvoice", href: "/app/agente", icon: "smart_toy" },
   { id: "agent-plans", label: "Planes del agente", href: "/app/planes-agente", icon: "workspace_premium" },
 ];
+
+export function getAppNavAgentLine(): AppNavItem[] {
+  return isClientPanelAgentLineEnabled() ? APP_NAV_AGENT_LINE_ITEMS : [];
+}
 
 export const APP_ORDERS_NAV: AppNavItem = {
   id: "orders",
@@ -53,6 +59,6 @@ export const APP_NAV_REST: AppNavItem[] = [
 export const APP_NAV: AppNavItem[] = [
   APP_NAV_SEND_SMS,
   ...APP_NAV_PRIMARY,
-  ...APP_NAV_AGENT_LINE,
+  ...getAppNavAgentLine(),
   ...APP_NAV_REST,
 ];

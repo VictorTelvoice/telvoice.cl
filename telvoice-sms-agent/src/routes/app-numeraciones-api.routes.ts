@@ -10,11 +10,13 @@ import {
 } from "../controllers/app-numeraciones-api.controller.js";
 import { loadClientSession } from "../middleware/admin-auth.js";
 import { requireClientPanelApi } from "../middleware/client-panel-api-auth.js";
+import { requireClientPanelAgentLineApi } from "../middleware/client-panel-agent-line.js";
 
 export const appNumeracionesApiRouter = Router();
 
 appNumeracionesApiRouter.use(loadClientSession);
 appNumeracionesApiRouter.use(requireClientPanelApi);
+appNumeracionesApiRouter.use(requireClientPanelAgentLineApi);
 
 appNumeracionesApiRouter.get("/numeraciones", getApiNumeraciones);
 appNumeracionesApiRouter.get("/numeraciones/:id", getApiNumeracionById);

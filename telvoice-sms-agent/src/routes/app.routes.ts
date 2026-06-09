@@ -94,6 +94,7 @@ import {
 import { postClientLogout } from "../controllers/admin.controller.js";
 import { loadClientSession } from "../middleware/admin-auth.js";
 import { requireClientPanelPage } from "../middleware/client-panel-auth.js";
+import { requireClientPanelAgentLinePage } from "../middleware/client-panel-agent-line.js";
 
 export const appRouter = Router();
 
@@ -263,29 +264,63 @@ appRouter.post(
 appRouter.get("/settings", requireClientPanelPage, getAppSettings);
 appRouter.post("/settings", requireClientPanelPage, postAppSettings);
 
-appRouter.get("/numeraciones", requireClientPanelPage, getAppNumeraciones);
+appRouter.get(
+  "/numeraciones",
+  requireClientPanelPage,
+  requireClientPanelAgentLinePage,
+  getAppNumeraciones,
+);
 appRouter.get(
   "/numeraciones/:id/integraciones",
   requireClientPanelPage,
+  requireClientPanelAgentLinePage,
   getAppNumberIntegrations,
 );
 appRouter.post(
   "/numeraciones/:id/integraciones",
   requireClientPanelPage,
+  requireClientPanelAgentLinePage,
   postAppNumberIntegrations,
 );
 appRouter.post(
   "/numeraciones/:id/webhook/test",
   requireClientPanelPage,
+  requireClientPanelAgentLinePage,
   postAppNumberWebhookTest,
 );
-appRouter.get("/sms-inbox", requireClientPanelPage, getAppSmsInbox);
-appRouter.get("/sms-inbox/export.csv", requireClientPanelPage, getAppSmsInboxExportCsv);
+appRouter.get(
+  "/sms-inbox",
+  requireClientPanelPage,
+  requireClientPanelAgentLinePage,
+  getAppSmsInbox,
+);
+appRouter.get(
+  "/sms-inbox/export.csv",
+  requireClientPanelPage,
+  requireClientPanelAgentLinePage,
+  getAppSmsInboxExportCsv,
+);
 appRouter.post(
   "/sms-inbox/:id/read",
   requireClientPanelPage,
+  requireClientPanelAgentLinePage,
   postAppSmsInboxMarkRead,
 );
-appRouter.get("/agente", requireClientPanelPage, getAppAgente);
-appRouter.get("/planes-agente", requireClientPanelPage, getAppAgentPlans);
-appRouter.post("/planes-agente/request", requireClientPanelPage, postAppAgentPlanRequest);
+appRouter.get(
+  "/agente",
+  requireClientPanelPage,
+  requireClientPanelAgentLinePage,
+  getAppAgente,
+);
+appRouter.get(
+  "/planes-agente",
+  requireClientPanelPage,
+  requireClientPanelAgentLinePage,
+  getAppAgentPlans,
+);
+appRouter.post(
+  "/planes-agente/request",
+  requireClientPanelPage,
+  requireClientPanelAgentLinePage,
+  postAppAgentPlanRequest,
+);
