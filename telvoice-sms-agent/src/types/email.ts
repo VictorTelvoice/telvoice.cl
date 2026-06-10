@@ -3,7 +3,8 @@ export type EmailLogStatus = "pending" | "sent" | "failed" | "skipped";
 export type TransactionalTemplateKey =
   | "payment_received_pending_claim"
   | "welcome_sms_credited"
-  | "invoice_receipt";
+  | "invoice_receipt"
+  | "purchase_activation_notice";
 
 export interface EmailLogRow {
   id: string;
