@@ -142,9 +142,6 @@
       '#api">API SMS</a></li>' +
       '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       r +
-      '#empresas">Empresas</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
       '#contacto">Contacto</a></li></ul></div>' +
       '<div><p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Recursos</p><ul class="mt-4 space-y-3">' +
       '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
