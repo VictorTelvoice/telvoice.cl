@@ -68,7 +68,7 @@ const { summary, results } = await reconcileReviewRequiredPaidPurchases({
   resolveManualReview,
   companyId,
   includeQa,
-  actorEmail: "reconcile_script",
+  actorEmail: null,
 });
 
 console.log(JSON.stringify({ summary, count: results.length, results }, null, 2));

@@ -828,7 +828,7 @@ async function applyProdActivationForOrder(
 
   const reconcile = await reconcilePaidPurchase(orderId, {
     dryRun: false,
-    actorUserId: options.actorEmail ?? null,
+    actorUserId: null,
     source: "review_required_paid_purchase",
     forceManualReview: options.forceManualReview,
     includeQa: options.includeQa,
@@ -846,7 +846,7 @@ async function applyProdActivationForOrder(
     const assignment = await ensureDefaultRetailRatePlanForCompany(companyId, {
       source: "review_required_paid_purchase",
       orderId,
-      actorUserId: options.actorEmail ?? null,
+      actorUserId: null,
     });
     ratePlanAssigned = assignment?.status === "assigned";
   }
