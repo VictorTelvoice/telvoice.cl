@@ -9,6 +9,15 @@ import {
   syncInvoiceStatusAfterEmailSent,
 } from "./billingInvoiceService.js";
 import { recordBillingEvent } from "./billingEventService.js";
+import {
+  claimBillingEmailSend,
+  completeBillingEmailSend,
+  failBillingEmailSend,
+  hasActiveOrSentBillingEmail,
+  INVOICE_RECEIPT_EMAIL_TYPE,
+  normalizeBillingRecipientEmail,
+  recordBillingEmailSkippedDuplicate,
+} from "./billingEmailClaimService.js";
 
 export type BillingEmailMode = typeof env.billingEmail.mode;
 
@@ -18,6 +27,7 @@ export type SendInvoiceEmailResult = {
   emailLogId?: string;
   message: string;
   toEmail?: string;
+  skipped?: boolean;
 };
 
 export type SendInvoiceEmailOptions = {
@@ -216,23 +226,14 @@ Ver comprobante: ${previewUrl}
 Este documento corresponde a un comprobante interno de compra.`;
 }
 
-/** True si ya hay al menos un envío exitoso (mock o real) para la invoice. */
+/** True si ya hay envío automático en curso o completado para la invoice. */
 export async function hasSuccessfulBillingEmail(
   invoiceId: string,
 ): Promise<boolean> {
-  const { data, error } = await getSupabase()
-    .from("billing_email_logs")
-    .select("id")
-    .eq("invoice_id", invoiceId)
-    .eq("status", "sent")
-    .limit(1);
-
-  if (error) {
-    console.warn("[billing-email] hasSuccessfulBillingEmail failed", error);
-    return false;
-  }
-  return (data?.length ?? 0) > 0;
+  return hasActiveOrSentBillingEmail(invoiceId);
 }
+
+export { hasActiveOrSentBillingEmail, INVOICE_RECEIPT_EMAIL_TYPE };
 
 export async function getLatestEmailStatus(
   invoiceId: string,
@@ -262,21 +263,33 @@ async function insertEmailLog(input: {
   providerMessageId?: string | null;
   errorMessage?: string | null;
   sentAt?: string | null;
+  emailType?: string;
   metadata?: Record<string, unknown>;
 }): Promise<BillingEmailLog | null> {
+  const emailType = input.emailType ?? INVOICE_RECEIPT_EMAIL_TYPE;
+  const normalized =
+    input.toEmail && input.toEmail !== "—"
+      ? normalizeBillingRecipientEmail(input.toEmail)
+      : null;
+
   const { data, error } = await getSupabase()
     .from("billing_email_logs")
     .insert({
       invoice_id: input.invoiceId,
       company_id: input.companyId,
       to_email: input.toEmail,
+      to_email_normalized: normalized,
+      email_type: emailType,
       subject: input.subject,
       status: input.status,
       provider: input.provider,
       provider_message_id: input.providerMessageId ?? null,
       error_message: input.errorMessage ?? null,
       sent_at: input.sentAt ?? null,
-      metadata: input.metadata ?? {},
+      metadata: {
+        email_type: emailType,
+        ...input.metadata,
+      },
     })
     .select("*")
     .single();
@@ -286,6 +299,57 @@ async function insertEmailLog(input: {
     return null;
   }
   return data as BillingEmailLog;
+}
+
+type ClaimedSend = { claimed: true; logId: string } | { claimed: false };
+
+async function reserveAutomaticInvoiceEmailSend(
+  detail: AdminInvoiceDetail,
+  options: SendInvoiceEmailOptions,
+  provider: string,
+): Promise<ClaimedSend> {
+  const toEmail = resolveRecipientEmail(detail);
+  const subject = buildInvoiceEmailSubject(detail);
+  const source = options.source ?? "admin_invoice_send_email";
+  const isResend = options.isResend === true;
+
+  if (isResend) {
+    return { claimed: true, logId: "" };
+  }
+
+  if (!toEmail) {
+    return { claimed: true, logId: "" };
+  }
+
+  const claim = await claimBillingEmailSend({
+    invoiceId: detail.id,
+    companyId: detail.company_id,
+    toEmail,
+    subject,
+    provider,
+    source,
+    metadata: {
+      mode: getBillingEmailMode(),
+      provider,
+      invoice_number: documentNumber(detail),
+      order_id: detail.order_id,
+    },
+  });
+
+  if (!claim.claimed) {
+    await recordBillingEmailSkippedDuplicate({
+      invoiceId: detail.id,
+      companyId: detail.company_id,
+      toEmail,
+      source,
+      reason: claim.reason,
+      actorType: options.actorType ?? "system",
+      actorId: options.actorId ?? null,
+    });
+    return { claimed: false };
+  }
+
+  return { claimed: true, logId: claim.logId };
 }
 
 async function deliverMockEmail(
@@ -350,32 +414,52 @@ async function deliverMockEmail(
     };
   }
 
+  const reservation = await reserveAutomaticInvoiceEmailSend(detail, options, "mock");
+  if (!reservation.claimed) {
+    return {
+      success: true,
+      skipped: true,
+      mode: getBillingEmailMode(),
+      toEmail,
+      message: "Comprobante ya enviado o en envío; omitido por idempotencia.",
+    };
+  }
+
   const html = buildInvoiceEmailHtml(detail);
   const text = buildInvoiceEmailText(detail);
   const now = new Date().toISOString();
+  let log: BillingEmailLog | null = null;
 
-  const log = await insertEmailLog({
-    invoiceId: detail.id,
-    companyId: detail.company_id,
-    toEmail,
-    subject,
-    status: "sent",
-    provider: "mock",
-    providerMessageId: null,
-    sentAt: now,
-    metadata: {
-      mock: true,
-      mode: "mock",
-      source,
-      is_resend: isResend,
-      invoice_number: documentNumber(detail),
-      order_id: detail.order_id,
-      body_html_length: html.length,
-      body_text_length: text.length,
-      from: env.billingEmail.from,
-      reply_to: env.billingEmail.replyTo,
-    },
-  });
+  if (isResend) {
+    log = await insertEmailLog({
+      invoiceId: detail.id,
+      companyId: detail.company_id,
+      toEmail,
+      subject,
+      status: "sent",
+      provider: "mock",
+      providerMessageId: null,
+      sentAt: now,
+      metadata: {
+        mock: true,
+        mode: "mock",
+        source,
+        is_resend: true,
+        invoice_number: documentNumber(detail),
+        order_id: detail.order_id,
+        body_html_length: html.length,
+        body_text_length: text.length,
+        from: env.billingEmail.from,
+        reply_to: env.billingEmail.replyTo,
+      },
+    });
+  } else {
+    await completeBillingEmailSend({
+      logId: reservation.logId,
+      sentAt: now,
+    });
+    log = { id: reservation.logId } as BillingEmailLog;
+  }
 
   await syncInvoiceStatusAfterEmailSent(detail.id, detail.status);
 
@@ -423,7 +507,7 @@ export async function sendInvoiceEmailIfNeeded(
   options: SendInvoiceEmailOptions = {},
 ): Promise<SendInvoiceEmailIfNeededResult> {
   const skipIfAlreadySent = options.skipIfAlreadySent !== false;
-  if (skipIfAlreadySent && (await hasSuccessfulBillingEmail(invoiceId))) {
+  if (skipIfAlreadySent && (await hasActiveOrSentBillingEmail(invoiceId))) {
     return {
       success: true,
       skipped: true,
@@ -435,6 +519,12 @@ export async function sendInvoiceEmailIfNeeded(
     ...options,
     actorType: options.actorType ?? "system",
   });
+  if (result.skipped) {
+    return {
+      ...result,
+      skipped: true,
+    };
+  }
   return result;
 }
 
@@ -566,8 +656,20 @@ async function deliverResendEmail(
   }
 
   const from = `${fromName} <${fromAddress}>`;
-
   const now = new Date().toISOString();
+
+  const reservation = await reserveAutomaticInvoiceEmailSend(detail, options, "resend");
+  if (!reservation.claimed) {
+    return {
+      success: true,
+      skipped: true,
+      mode: getBillingEmailMode(),
+      toEmail,
+      message: "Comprobante ya enviado o en envío; omitido por idempotencia.",
+    };
+  }
+
+  const claimedLogId = isResend ? null : reservation.logId;
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -598,22 +700,26 @@ async function deliverResendEmail(
         data?.message ||
         `Resend error HTTP ${res.status}`;
 
-      const log = await insertEmailLog({
-        invoiceId: detail.id,
-        companyId: detail.company_id,
-        toEmail,
-        subject,
-        status: "failed",
-        provider: "resend",
-        providerMessageId: null,
-        errorMessage: msg,
-        metadata: {
-          mode: "provider",
+      if (claimedLogId) {
+        await failBillingEmailSend({ logId: claimedLogId, errorMessage: msg });
+      } else {
+        await insertEmailLog({
+          invoiceId: detail.id,
+          companyId: detail.company_id,
+          toEmail,
+          subject,
+          status: "failed",
           provider: "resend",
-          source,
-          is_resend: isResend,
-        },
-      });
+          providerMessageId: null,
+          errorMessage: msg,
+          metadata: {
+            mode: "provider",
+            provider: "resend",
+            source,
+            is_resend: true,
+          },
+        });
+      }
 
       await recordBillingEvent({
         invoiceId: detail.id,
@@ -627,7 +733,7 @@ async function deliverResendEmail(
           provider: "resend",
           to_email: toEmail,
           source,
-          email_log_id: log?.id,
+          email_log_id: claimedLogId,
           is_resend: isResend,
         },
       });
@@ -635,31 +741,41 @@ async function deliverResendEmail(
       return {
         success: false,
         mode: getBillingEmailMode(),
-        emailLogId: log?.id,
+        emailLogId: claimedLogId ?? undefined,
         toEmail,
         message: msg,
       };
     }
 
     const providerMessageId = data?.id ?? null;
+    let logId = claimedLogId;
 
-    const log = await insertEmailLog({
-      invoiceId: detail.id,
-      companyId: detail.company_id,
-      toEmail,
-      subject,
-      status: "sent",
-      provider: "resend",
-      providerMessageId,
-      sentAt: now,
-      metadata: {
-        mode: "provider",
+    if (claimedLogId) {
+      await completeBillingEmailSend({
+        logId: claimedLogId,
+        providerMessageId,
+        sentAt: now,
+      });
+    } else {
+      const log = await insertEmailLog({
+        invoiceId: detail.id,
+        companyId: detail.company_id,
+        toEmail,
+        subject,
+        status: "sent",
         provider: "resend",
-        source,
-        is_resend: isResend,
-        invoice_number: documentNumber(detail),
-      },
-    });
+        providerMessageId,
+        sentAt: now,
+        metadata: {
+          mode: "provider",
+          provider: "resend",
+          source,
+          is_resend: true,
+          invoice_number: documentNumber(detail),
+        },
+      });
+      logId = log?.id ?? null;
+    }
 
     await syncInvoiceStatusAfterEmailSent(detail.id, detail.status);
 
@@ -677,7 +793,7 @@ async function deliverResendEmail(
         provider: "resend",
         to_email: toEmail,
         source,
-        email_log_id: log?.id,
+        email_log_id: logId,
         is_resend: isResend,
         provider_message_id: providerMessageId,
       },
@@ -686,7 +802,7 @@ async function deliverResendEmail(
     return {
       success: true,
       mode: getBillingEmailMode(),
-      emailLogId: log?.id,
+      emailLogId: logId ?? undefined,
       toEmail,
       message: isResend
         ? "Reenvío registrado correctamente."
@@ -695,22 +811,26 @@ async function deliverResendEmail(
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
 
-    const log = await insertEmailLog({
-      invoiceId: detail.id,
-      companyId: detail.company_id,
-      toEmail,
-      subject,
-      status: "failed",
-      provider: "resend",
-      providerMessageId: null,
-      errorMessage: msg,
-      metadata: {
-        mode: "provider",
+    if (claimedLogId) {
+      await failBillingEmailSend({ logId: claimedLogId, errorMessage: msg });
+    } else {
+      await insertEmailLog({
+        invoiceId: detail.id,
+        companyId: detail.company_id,
+        toEmail,
+        subject,
+        status: "failed",
         provider: "resend",
-        source,
-        is_resend: isResend,
-      },
-    });
+        providerMessageId: null,
+        errorMessage: msg,
+        metadata: {
+          mode: "provider",
+          provider: "resend",
+          source,
+          is_resend: true,
+        },
+      });
+    }
 
     await recordBillingEvent({
       invoiceId: detail.id,
@@ -724,14 +844,14 @@ async function deliverResendEmail(
         provider: "resend",
         to_email: toEmail,
         source,
-        email_log_id: log?.id,
+        email_log_id: claimedLogId,
       },
     });
 
     return {
       success: false,
       mode: getBillingEmailMode(),
-      emailLogId: log?.id,
+      emailLogId: claimedLogId ?? undefined,
       toEmail,
       message: msg,
     };
