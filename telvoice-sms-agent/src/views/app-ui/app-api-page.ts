@@ -220,6 +220,32 @@ function apiPageStyles(): string {
       font-family: ui-monospace, monospace;
       font-size: 0.82rem;
     }
+    @media (max-width: 768px) {
+      .tv-app-client.tv-app-client--api .tv-page-head--row .tv-page-actions {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        width: 100%;
+        gap: 0.3rem;
+        justify-content: stretch;
+      }
+      .tv-app-client.tv-app-client--api .tv-page-head--row .tv-page-actions .btn {
+        flex: 1 1 0;
+        min-width: 0;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.15rem;
+        padding: 0.45rem 0.2rem;
+        font-size: 0.625rem;
+        line-height: 1.15;
+        text-align: center;
+        white-space: normal;
+      }
+      .tv-app-client.tv-app-client--api .tv-page-head--row .tv-page-actions .btn .material-symbols-outlined {
+        font-size: 1rem !important;
+      }
+    }
   </style>`;
 }
 
