@@ -263,19 +263,29 @@ export async function processPublicCheckoutMercadoPagoWebhook(
       await markOrderPaid(orderId, null);
     }
 
-    const { error: claimErr } = await getSupabase()
-      .from("sms_orders")
-      .update({
-        credit_status: "pending_claim",
-        claim_status: latestBefore?.claim_status ?? "unclaimed",
-      })
-      .eq("id", orderId)
-      .neq("credit_status", "credited");
-    if (claimErr) {
-      wrapSupabaseError(claimErr, "publicCheckoutWebhook.pending_claim");
-    }
-
     await patchOrderFields(orderId, { metadata: metaPatch });
+
+    const { reconcilePaidPurchase } = await import(
+      "./billingPurchaseReconciliationService.js"
+    );
+    const reconcile = await reconcilePaidPurchase(orderId, {
+      dryRun: false,
+      source: "mp_webhook_public",
+    });
+
+    if (reconcile.action === "failed" || reconcile.action === "skipped") {
+      const { error: claimErr } = await getSupabase()
+        .from("sms_orders")
+        .update({
+          credit_status: "pending_claim",
+          claim_status: latestBefore?.claim_status ?? "unclaimed",
+        })
+        .eq("id", orderId)
+        .neq("credit_status", "credited");
+      if (claimErr) {
+        wrapSupabaseError(claimErr, "publicCheckoutWebhook.pending_claim");
+      }
+    }
 
     try {
       await sendPaymentReceivedClaimEmail(orderId);
@@ -283,7 +293,11 @@ export async function processPublicCheckoutMercadoPagoWebhook(
       console.error("[mp-webhook] payment claim email failed", orderId, err);
     }
 
-    return { handled: true, orderId, result: "paid_pending_claim" };
+    const result =
+      reconcile.action === "reconciled" || reconcile.action === "already_credited"
+        ? "paid_credited"
+        : "paid_pending_claim";
+    return { handled: true, orderId, result };
   }
 
   if (payment.status === "rejected") {
