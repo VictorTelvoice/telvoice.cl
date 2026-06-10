@@ -5,10 +5,12 @@ import {
   isQaOrder,
   isQaTransaction,
   paymentStatusLabel,
+  type AppOrdersPageFilters,
   type OrderListFilter,
   type TimelineStep,
 } from "../../utils/order-display.js";
 import { escapeHtml } from "../../utils/html.js";
+import { renderFilterField } from "../admin-ui/page-kit.js";
 import type { SmsOrderWithDetails } from "../../types/wallet.js";
 import type { WalletTransactionRow } from "../../types/wallet.js";
 
@@ -56,8 +58,8 @@ export function renderTxQaBadgeIfNeeded(
   return isQaTransaction(tx) ? ` ${renderQaBadge()}` : "";
 }
 
-export function renderOrderFilterTabs(
-  active: OrderListFilter,
+export function renderOrdersFiltersPanel(
+  filters: AppOrdersPageFilters,
   basePath = "/app/orders",
 ): string {
   const tabs: { id: OrderListFilter; label: string }[] = [
@@ -68,17 +70,31 @@ export function renderOrderFilterTabs(
     { id: "rejected", label: "Rechazadas" },
     { id: "cancelled", label: "Canceladas" },
   ];
-  const links = tabs
+  const statusOpts = tabs
     .map((t) => {
-      const href = t.id === "all" ? basePath : `${basePath}?filter=${t.id}`;
-      const cls =
-        active === t.id
-          ? "tv-filter-tab tv-filter-tab--active"
-          : "tv-filter-tab";
-      return `<a href="${href}" class="${cls}">${escapeHtml(t.label)}</a>`;
+      const on = filters.status === t.id;
+      return `<option value="${escapeHtml(t.id)}"${on ? " selected" : ""}>${escapeHtml(t.label)}</option>`;
     })
     .join("");
-  return `<nav class="tv-filter-tabs" aria-label="Filtrar órdenes">${links}</nav>`;
+
+  return `<section class="tv-panel tv-dlr-report__filters-panel tv-orders__filters-panel">
+    <header class="tv-section-head tv-dlr-report__filters-head">
+      <h2 class="tv-section-head__title">Filtros</h2>
+      <p class="tv-section-head__sub">Busca por referencia o bolsa y filtra por estado</p>
+    </header>
+    <div class="tv-panel__body tv-dlr-report__filters-body">
+      <form method="get" action="${escapeHtml(basePath)}" class="tv-dlr-report__filters-form">
+        <div class="tv-dlr-report__filters-grid tv-orders__filters-grid">
+          ${renderFilterField("Buscar", `<input type="search" name="q" class="tv-filter-input" placeholder="Referencia, bolsa o ID" value="${escapeHtml(filters.search ?? "")}" autocomplete="off" />`)}
+          ${renderFilterField("Estado", `<select name="filter" class="tv-filter-input">${statusOpts}</select>`)}
+          <div class="tv-dlr-report__filter-actions">
+            <button type="submit" class="btn btn-primary btn-sm">Aplicar</button>
+            <a class="btn btn-ghost btn-sm" href="${escapeHtml(basePath)}">Limpiar</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>`;
 }
 
 export function renderOrderTimeline(steps: TimelineStep[]): string {

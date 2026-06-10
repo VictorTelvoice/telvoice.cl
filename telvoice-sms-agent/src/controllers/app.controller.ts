@@ -21,7 +21,7 @@ import { getCompanySmsMpSubscription } from "../services/smsMpSubscriptionServic
 import { getCompanyPaymentCard, saveCompanyPaymentCardPreferences } from "../services/companyPaymentCardService.js";
 import { startPaymentCardSetupCheckout } from "../services/mercadoPagoClientPanelService.js";
 import type { PaymentBillingMode } from "../types/company-payment-card.js";
-import { filterClientAccountOrders, isClientAccountOrder, isQaTransaction, parseOrderListFilter } from "../utils/order-display.js";
+import { filterClientAccountOrders, isClientAccountOrder, isQaTransaction, parseAppOrdersPageFilters } from "../utils/order-display.js";
 import { validateUuidParam } from "../utils/validation.js";
 import { resolveBuySmsPackageId } from "../utils/buy-sms-body.js";
 import { IVA_RATE } from "../utils/clp-format.js";
@@ -687,10 +687,10 @@ export async function getAppOrders(
     const orders = filterClientAccountOrders(
       await listSmsOrdersByCompany(ctx.company.id, 100),
     );
-    const filter = parseOrderListFilter(
-      typeof req.query.filter === "string" ? req.query.filter : undefined,
+    const filters = parseAppOrdersPageFilters(
+      req.query as Record<string, string | string[] | undefined>,
     );
-    return renderAppOrdersPage(ctx, orders, filter);
+    return renderAppOrdersPage(ctx, orders, filters);
   });
 }
 
