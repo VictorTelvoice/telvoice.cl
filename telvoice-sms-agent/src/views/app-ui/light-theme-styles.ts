@@ -587,20 +587,8 @@ export function getLightPanelThemeStyles(): string {
       color: #fff !important;
     }
     .tv-light-theme .tv-buy-sms-calc .calc-result-panel {
-      background: linear-gradient(180deg, #f8fbff 0%, #f4f7fc 100%) !important;
-      border: 1px solid rgba(0, 82, 204, 0.1) !important;
-    }
-    .tv-light-theme .tv-buy-sms-calc .calc-result-heading {
-      color: var(--tv-light-muted);
-      font-family: Montserrat, Inter, sans-serif;
-      font-size: 0.8125rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-    .tv-light-theme .tv-buy-sms-calc .calc-result-qty {
-      color: var(--tv-light-text);
-      font-family: Montserrat, Inter, sans-serif;
+      background: linear-gradient(180deg, #f8f9ff 0%, #ffffff 100%) !important;
+      border: 1px solid #e2e7ff !important;
     }
     .tv-light-theme .tv-buy-sms-calc .calc-result-row-label {
       color: var(--tv-light-muted);
@@ -609,13 +597,15 @@ export function getLightPanelThemeStyles(): string {
       color: var(--tv-light-text);
     }
     .tv-light-theme .tv-buy-sms-calc .calc-result-total-label {
-      color: var(--tv-light-primary);
+      color: var(--tv-light-muted);
     }
-    .tv-light-theme .tv-buy-sms-calc .calc-result-breakdown {
-      border-bottom-color: rgba(0, 82, 204, 0.1);
-    }
-    .tv-light-theme .tv-buy-sms-calc .lab-pack-includes {
+    .tv-light-theme .tv-buy-sms-calc .calc-result-note {
+      color: var(--tv-light-muted);
       border-top-color: #e8ebf4;
+    }
+    .tv-light-theme .tv-buy-sms-calc .pack-includes {
+      border-color: rgba(0, 82, 204, 0.12);
+      background: linear-gradient(180deg, #faf8ff 0%, #f5f7fc 100%);
     }
     .tv-light-theme .tv-buy-sms-calc .pack-includes-title {
       color: var(--tv-light-text);

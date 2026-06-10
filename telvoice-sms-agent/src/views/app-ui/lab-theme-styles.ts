@@ -610,16 +610,20 @@ export function getLabPanelThemeStyles(): string {
         display: flex;
         flex-wrap: nowrap;
         justify-content: space-between;
-        gap: 0.3rem;
+        gap: 0.18rem;
       }
       .tv-lab-theme .tv-buy-sms-calc .calc-tier-chip {
         flex: 1 1 0;
         min-width: 0;
         flex-direction: row;
+        align-items: center;
+        justify-content: center;
         border-radius: 9999px;
-        min-height: 1.75rem;
-        padding: 0.28rem 0.45rem;
-        font-size: 0.6875rem;
+        min-height: 1.5rem;
+        padding: 0.2rem 0.22rem;
+        font-size: 0.625rem;
+        white-space: nowrap;
+        letter-spacing: -0.02em;
       }
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-tier-chip {
@@ -639,76 +643,48 @@ export function getLabPanelThemeStyles(): string {
       box-shadow: 0 4px 14px -4px rgba(0, 82, 204, 0.45);
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-result-panel {
-      margin-top: 1.25rem;
-      padding: 1rem 1rem 0.875rem;
-      border-radius: 0.875rem;
+      margin-top: 1.75rem;
+      padding: 1.25rem 1.25rem 1rem;
+      border-radius: 1rem;
       background: linear-gradient(180deg, rgba(16, 24, 52, 0.55) 0%, rgba(10, 16, 38, 0.42) 100%) !important;
       border: 1px solid rgba(120, 160, 255, 0.12) !important;
     }
-    .tv-lab-theme .tv-buy-sms-calc .calc-result-heading {
-      margin: 0;
-      font-family: Montserrat, Inter, sans-serif;
-      font-size: 0.8125rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--tv-lab-muted);
-    }
-    .tv-lab-theme .tv-buy-sms-calc .calc-result-qty {
-      margin: 0.2rem 0 0.625rem;
-      font-family: Montserrat, Inter, sans-serif;
-      font-size: clamp(1.25rem, 3vw, 1.625rem);
-      font-weight: 700;
-      color: var(--tv-lab-text);
-    }
-    .tv-lab-theme .tv-buy-sms-calc .calc-result-breakdown {
-      display: grid;
-      gap: 0.35rem;
-      padding-bottom: 0.625rem;
-      border-bottom: 1px solid rgba(120, 160, 255, 0.1);
-    }
-    .tv-lab-theme .tv-buy-sms-calc .calc-result-row {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 1rem;
+    @media (min-width: 768px) {
+      .tv-lab-theme .tv-buy-sms-calc .calc-result-panel {
+        padding: 1.5rem 1.75rem 1.25rem;
+      }
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-result-row-label {
       font-size: 0.75rem;
       font-weight: 600;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
       color: var(--tv-lab-muted);
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-result-row-value {
-      font-size: 0.9375rem;
+      font-size: 1rem;
       font-weight: 600;
       color: var(--tv-lab-text);
-      white-space: nowrap;
-    }
-    .tv-lab-theme .tv-buy-sms-calc .calc-result-total-row {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 1rem;
-      margin: 0.625rem 0 0.5rem;
-      padding: 0.5rem 0;
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-result-total-label {
-      font-size: 0.8125rem;
-      font-weight: 700;
+      font-size: 0.75rem;
+      font-weight: 600;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: var(--tv-lab-cyan);
+      color: var(--tv-lab-muted);
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-result-total-value {
       font-family: Montserrat, Inter, sans-serif;
-      font-size: clamp(1.5rem, 3.5vw, 2rem);
+      font-size: clamp(1.75rem, 4vw, 2.25rem);
       font-weight: 700;
       color: var(--tv-lab-cyan);
     }
+    .tv-lab-theme .tv-buy-sms-calc .calc-result-note {
+      color: var(--tv-lab-muted);
+      border-top-color: rgba(120, 160, 255, 0.1);
+    }
     .tv-lab-theme .tv-buy-sms-calc .calc-cta-wrap {
-      margin-top: 0;
+      margin-top: 1.75rem;
       text-align: center;
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-cta-btn--primary {
@@ -718,10 +694,14 @@ export function getLabPanelThemeStyles(): string {
       box-shadow: 0 4px 20px rgba(0, 82, 204, 0.35);
       width: 100%;
     }
-    .tv-lab-theme .tv-buy-sms-calc .lab-pack-includes {
-      margin-top: 1.25rem;
-      padding-top: 1rem;
-      border-top: 1px solid rgba(120, 160, 255, 0.1);
+    .tv-lab-theme .tv-buy-sms-calc .pack-includes-block {
+      margin-top: 2rem;
+    }
+    .tv-lab-theme .tv-buy-sms-calc .pack-includes {
+      border: 1px solid rgba(120, 160, 255, 0.12);
+      background: linear-gradient(180deg, rgba(16, 24, 52, 0.45) 0%, rgba(10, 16, 38, 0.35) 100%);
+      border-radius: 1.25rem;
+      padding: 1.25rem 1.5rem;
     }
     .tv-lab-theme .tv-buy-sms-calc .pack-includes-title {
       text-align: center;

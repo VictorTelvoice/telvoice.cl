@@ -2,8 +2,8 @@ import { IVA_RATE } from "./clp-format.js";
 
 export const SMS_BAG_CALC_MAX_VOLUME = 120_000;
 
-/** Ancho máximo del bloque calculadora en panel (≈ contenido útil del landing en 920px). */
-export const SMS_BAG_CALC_PANEL_MAX_WIDTH_PX = 840;
+/** Ancho máximo del bloque calculadora en panel (igual que landing #calculadora). */
+export const SMS_BAG_CALC_PANEL_MAX_WIDTH_PX = 736;
 
 export type VolumeTierRange = {
   min: number;
