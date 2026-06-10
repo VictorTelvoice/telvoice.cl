@@ -449,6 +449,61 @@ export async function generateAuditFlags(actorEmail?: string): Promise<{
   return { inserted, byClassification };
 }
 
+async function fetchFlagAggregateCounts(): Promise<{
+  flagCounts: Record<AuditClassification, number>;
+  totalProtected: number;
+  totalArchived: number;
+  totalFlags: number;
+  lastAuditAt: string | null;
+}> {
+  const flagCounts: Record<AuditClassification, number> = {
+    PROD_REAL: 0,
+    PROD_INTERNAL: 0,
+    QA_TEST: 0,
+    DEMO_SEED: 0,
+    ORPHAN: 0,
+    REVIEW_REQUIRED: 0,
+  };
+
+  const client = createPgClient();
+  await client.connect();
+  try {
+    const { rows: classRows } = await client.query(`
+      SELECT classification, COUNT(*)::int AS n
+      FROM admin_data_audit_flags
+      GROUP BY classification
+    `);
+    for (const row of classRows) {
+      const classification = String(row.classification ?? "") as AuditClassification;
+      if (classification in flagCounts) {
+        flagCounts[classification] = Number(row.n ?? 0);
+      }
+    }
+
+    const { rows: protRows } = await client.query(
+      `SELECT COUNT(*)::int AS n FROM admin_data_audit_flags WHERE protected = true`,
+    );
+    const { rows: archRows } = await client.query(
+      `SELECT COUNT(*)::int AS n FROM admin_data_audit_flags WHERE archived_at IS NOT NULL`,
+    );
+    const { rows: lastRows } = await client.query(
+      `SELECT MAX(created_at) AS last_at FROM admin_data_audit_flags`,
+    );
+
+    const totalFlags = Object.values(flagCounts).reduce((sum, n) => sum + n, 0);
+
+    return {
+      flagCounts,
+      totalProtected: Number(protRows[0]?.n ?? 0),
+      totalArchived: Number(archRows[0]?.n ?? 0),
+      totalFlags,
+      lastAuditAt: lastRows[0]?.last_at ? String(lastRows[0].last_at) : null,
+    };
+  } finally {
+    await client.end();
+  }
+}
+
 export async function getAuditSummary(): Promise<AuditSummary> {
   const sb = getSupabase();
   const [
@@ -459,8 +514,7 @@ export async function getAuditSummary(): Promise<AuditSummary> {
     realWallets,
     realMessages,
     qaMessages,
-    flags,
-    lastFlag,
+    aggregates,
   ] = await Promise.all([
     countTable(sb, "companies"),
     sb
@@ -493,27 +547,10 @@ export async function getAuditSummary(): Promise<AuditSummary> {
       .select("*", { count: "exact", head: true })
       .eq("entity_type", "panel_sms_message")
       .eq("classification", "QA_TEST"),
-    sb.from("admin_data_audit_flags").select("classification"),
-    sb
-      .from("admin_data_audit_flags")
-      .select("created_at")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+    fetchFlagAggregateCounts(),
   ]);
 
-  const flagCounts: Record<AuditClassification, number> = {
-    PROD_REAL: 0,
-    PROD_INTERNAL: 0,
-    QA_TEST: 0,
-    DEMO_SEED: 0,
-    ORPHAN: 0,
-    REVIEW_REQUIRED: 0,
-  };
-  for (const row of flags.data ?? []) {
-    const k = row.classification as AuditClassification;
-    if (k in flagCounts) flagCounts[k] += 1;
-  }
+  const { flagCounts, totalProtected, totalArchived, totalFlags, lastAuditAt } = aggregates;
 
   return {
     totalCompanies: companies,
@@ -525,7 +562,10 @@ export async function getAuditSummary(): Promise<AuditSummary> {
     totalQaMessages: qaMessages.count ?? 0,
     totalOrphans: flagCounts.ORPHAN,
     totalReviewRequired: flagCounts.REVIEW_REQUIRED,
-    lastAuditAt: lastFlag.data?.created_at ?? null,
+    totalFlags,
+    totalProtected,
+    totalArchived,
+    lastAuditAt,
     flagCounts,
   };
 }

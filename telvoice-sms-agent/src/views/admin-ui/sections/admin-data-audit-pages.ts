@@ -1,6 +1,7 @@
 import type { AdminSessionUser } from "../../../types/admin.js";
 import type {
   AuditSummary,
+  AuditGenerateJobStatus,
   CleanupDryRunResult,
   ClientPurchaseAuditReport,
   ProtectedClientBundle,
@@ -30,6 +31,7 @@ function alertHtml(flash?: string, error?: string): string {
 }
 
 function renderSummaryKpis(summary: AuditSummary): string {
+  const fc = summary.flagCounts;
   return `<div class="tv-kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(10rem,1fr));gap:0.75rem;margin-bottom:1rem">
     ${renderKpiCard({ label: "Empresas", value: String(summary.totalCompanies), icon: "business" })}
     ${renderKpiCard({ label: "Clientes reales", value: String(summary.totalRealClients), icon: "verified_user", variant: "success" })}
@@ -40,8 +42,24 @@ function renderSummaryKpis(summary: AuditSummary): string {
     ${renderKpiCard({ label: "SMS QA", value: String(summary.totalQaMessages), icon: "bug_report", variant: "warn" })}
     ${renderKpiCard({ label: "Huérfanos", value: String(summary.totalOrphans), icon: "link_off", variant: "danger" })}
     ${renderKpiCard({ label: "Revisión pendiente", value: String(summary.totalReviewRequired), icon: "pending", variant: "warn" })}
+    ${renderKpiCard({ label: "Flags total", value: String(summary.totalFlags), icon: "flag" })}
+    ${renderKpiCard({ label: "Protegidos", value: String(summary.totalProtected), icon: "shield", variant: "success" })}
   </div>
+  <p class="field-hint">Clasificación flags: PROD_REAL ${fc.PROD_REAL} · PROD_INTERNAL ${fc.PROD_INTERNAL} · QA_TEST ${fc.QA_TEST} · DEMO_SEED ${fc.DEMO_SEED} · ORPHAN ${fc.ORPHAN} · REVIEW_REQUIRED ${fc.REVIEW_REQUIRED}${summary.totalArchived ? ` · archivados ${summary.totalArchived}` : ""}</p>
   <p class="field-hint">Última auditoría: ${summary.lastAuditAt ? escapeHtml(formatDate(summary.lastAuditAt)) : "— (ejecuta «Generar auditoría»)"}</p>`;
+}
+
+function renderGenerationStatusPanel(status: AuditGenerateJobStatus): string {
+  if (status.running) {
+    return `<div class="alert alert-info" style="margin-bottom:1rem">Generación de auditoría <strong>en curso</strong>${status.startedAt ? ` desde ${escapeHtml(formatDate(status.startedAt))}` : ""}. Refresca la página para ver el avance.</div>`;
+  }
+  if (status.lastError) {
+    return `<div class="alert alert-danger" style="margin-bottom:1rem">Última generación falló: ${escapeHtml(status.lastError)}${status.finishedAt ? ` (${escapeHtml(formatDate(status.finishedAt))})` : ""}</div>`;
+  }
+  if (status.lastResult) {
+    return `<div class="alert alert-success" style="margin-bottom:1rem">Última generación OK: ${status.lastResult.inserted} flags clasificados${status.finishedAt ? ` · ${escapeHtml(formatDate(status.finishedAt))}` : ""}</div>`;
+  }
+  return "";
 }
 
 function renderProtectedBlock(bundle: ProtectedClientBundle): string {
@@ -140,17 +158,20 @@ export function renderAdminDataCleanupPage(
       confidence: number;
     }>;
     dryRun: CleanupDryRunResult | null;
+    generationStatus: AuditGenerateJobStatus;
   },
 ): string {
+  const generateDisabled = ctx.generationStatus.running;
   const body = `
     ${renderSuperadminBanner()}
     ${alertHtml(opts.flash, opts.error)}
+    ${renderGenerationStatusPanel(ctx.generationStatus)}
     ${renderPageHeader({
       title: "Limpieza de datos",
       subtitle: "Auditoría y archivado seguro · Operación interna Telvoice",
     })}
     <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem">
-      <form method="post" action="/admin/data-cleanup/generate">${renderBtn("Generar auditoría", { type: "submit", variant: "primary", icon: "fact_check" })}</form>
+      <form method="post" action="/admin/data-cleanup/generate">${renderBtn("Generar auditoría", { type: "submit", variant: "primary", icon: "fact_check", disabled: generateDisabled })}</form>
       <form method="post" action="/admin/data-cleanup/dry-run">${renderBtn("Dry-run limpieza", { type: "submit", variant: "secondary", icon: "preview" })}</form>
     </div>
     ${renderSummaryKpis(ctx.summary)}

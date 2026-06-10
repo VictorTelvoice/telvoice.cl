@@ -3,13 +3,16 @@ import { getBalanceByClientId } from "../services/balanceService.js";
 import {
   applyCleanup,
   dryRunCleanup,
-  generateAuditFlags,
   generateReadOnlyAuditReport,
   getAuditSummary,
   getCleanupCandidates,
   getClientPurchaseAuditReport,
   getProtectedClientBundle,
 } from "../services/adminDataAuditService.js";
+import {
+  getAuditGenerateJobStatus,
+  startAuditGenerateJob,
+} from "../services/adminDataAuditGenerateJob.js";
 import { getTestClientBundle } from "../services/clientService.js";
 import {
   renderAdminClientAuditPage,
@@ -48,11 +51,13 @@ export async function getAdminDataCleanupPage(
   try {
     const smsBalance = await loadSmsBalance();
     const showDryRun = req.query.dry_run === "1";
-    const [summary, protectedBundle, candidates, dryRun] = await Promise.all([
+    const [summary, protectedBundle, candidates, dryRun, generationStatus] =
+      await Promise.all([
       getAuditSummary(),
       getProtectedClientBundle("arturo.aguilar@talkchile.cl"),
       getCleanupCandidates(80),
       showDryRun ? dryRunCleanup() : Promise.resolve(null),
+      Promise.resolve(getAuditGenerateJobStatus()),
     ]);
 
     res.type("html").send(
@@ -61,6 +66,7 @@ export async function getAdminDataCleanupPage(
         protectedBundle,
         candidates,
         dryRun,
+        generationStatus,
       }),
     );
   } catch (err) {
@@ -92,10 +98,12 @@ export async function postAdminDataCleanupGenerate(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const result = await generateAuditFlags(req.adminUser?.email);
+    const { started, message } = startAuditGenerateJob(req.adminUser?.email);
     redirectCleanup(res, {
-      ok: true,
-      message: `Auditoría generada: ${result.inserted} registros clasificados.`,
+      ok: started,
+      message: started
+        ? `${message} Refresca la página en unos minutos para ver los conteos actualizados.`
+        : message,
     });
   } catch (err) {
     next(err);
@@ -143,8 +151,11 @@ export async function getAdminDataAuditReportJson(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const report = await generateReadOnlyAuditReport();
-    res.json(report);
+    const [report, generationStatus] = await Promise.all([
+      generateReadOnlyAuditReport(),
+      Promise.resolve(getAuditGenerateJobStatus()),
+    ]);
+    res.json({ ...report, generationStatus });
   } catch (err) {
     next(err);
   }
