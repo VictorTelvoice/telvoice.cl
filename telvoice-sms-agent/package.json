@@ -45,6 +45,8 @@
     "notify:purchase-activation": "tsx scripts/notify-purchase-activation.mjs",
     "audit:wallet-ledger": "tsx scripts/audit-wallet-ledger.mjs",
     "correct:wallet-orphan-balance": "tsx scripts/correct-wallet-orphan-balance.mjs",
+    "audit:post-purchase-flow": "tsx scripts/audit-post-purchase-flow.mjs",
+    "simulate:post-purchase-flow": "tsx scripts/simulate-post-purchase-flow.mjs",
     "audit:agent-sales-prod": "node scripts/audit-agent-sales-prod.mjs",
     "audit:agent-sales-link-prod": "node scripts/run-licantravel-agent-sales-link-prod.mjs",
     "migrate:agent-core": "node scripts/apply-migrations-agent-core.mjs",

@@ -10,9 +10,6 @@ import {
   orderLooksQa,
 } from "./adminDataAuditClassifier.js";
 import { isExplicitTestPurchaseEmail } from "./adminProductionScopeService.js";
-import { hasActiveOrSentBillingEmail } from "./billingEmailClaimService.js";
-import { getInvoiceByOrderId } from "./billingInvoiceService.js";
-import { runBillingSyncBestEffort } from "./billingSyncService.js";
 import {
   confirmOrderCredit,
   getOrderById,
@@ -303,22 +300,6 @@ async function prepareOrderForCredit(
     await patchOrderFields(orderId, patch);
   }
   return { ok: true };
-}
-
-async function maybeRunBillingSyncForReconcile(
-  orderId: string,
-  source: string,
-): Promise<void> {
-  const invoice = await getInvoiceByOrderId(orderId);
-  if (invoice && (await hasActiveOrSentBillingEmail(invoice.id))) {
-    logReconcileEvent("billing_sync_skipped", {
-      orderId,
-      invoiceId: invoice.id,
-      reason: "comprobante_ya_enviado_o_en_envio",
-    });
-    return;
-  }
-  await runBillingSyncBestEffort(orderId, { source });
 }
 
 async function assessReconcileEligibility(
@@ -646,11 +627,6 @@ export async function reconcilePaidPurchase(
     const credit = await confirmOrderCredit(orderId, options.actorUserId ?? null, {
       ratePlanSource: options.source ?? "paid_purchase_reconcile",
     });
-
-    await maybeRunBillingSyncForReconcile(
-      orderId,
-      options.source ?? "paid_purchase_reconcile",
-    );
 
     logReconcileEvent("credit_applied", {
       orderId,
