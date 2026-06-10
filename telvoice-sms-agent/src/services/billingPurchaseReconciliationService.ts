@@ -84,6 +84,9 @@ export type ReconcilePurchaseOptions = {
   source?: string;
   forceManualReview?: boolean;
   includeQa?: boolean;
+  /** Solo tras validación explícita --resolve-manual-review (no usar como escape genérico). */
+  manualReviewResolved?: boolean;
+  resolvedCompanyId?: string;
 };
 
 function purchaseEmail(order: SmsOrderRow): string {
@@ -98,6 +101,7 @@ function logReconcileEvent(
     | "company_conflict"
     | "credit_applied"
     | "billing_sync_skipped"
+    | "manual_review_resolved"
     | "failed",
   payload: Record<string, unknown>,
 ): void {
@@ -166,28 +170,71 @@ async function isQaBlockedOrder(
   return false;
 }
 
-async function findCompanyIdByEmail(email: string): Promise<string | null> {
-  if (!email) return null;
+export type CompanyCandidate = {
+  id: string;
+  name: string | null;
+  billingEmail: string | null;
+  source: "billing_email" | "user_profile";
+};
+
+export async function findCompanyCandidatesByEmail(
+  email: string,
+): Promise<CompanyCandidate[]> {
+  if (!email) return [];
   const sb = getSupabase();
+  const seen = new Set<string>();
+  const candidates: CompanyCandidate[] = [];
 
   const { data: companies, error: cErr } = await sb
     .from("companies")
-    .select("id")
-    .ilike("billing_email", email)
-    .limit(1);
-  if (cErr) wrapSupabaseError(cErr, "reconcile.findCompany");
-  if (companies?.[0]?.id) return String(companies[0].id);
+    .select("id, name, legal_name, billing_email")
+    .ilike("billing_email", email);
+  if (cErr) wrapSupabaseError(cErr, "reconcile.findCompanyCandidates");
+  for (const row of companies ?? []) {
+    const id = String(row.id);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    candidates.push({
+      id,
+      name: String(row.name ?? row.legal_name ?? ""),
+      billingEmail: row.billing_email
+        ? normalizeAuditEmail(row.billing_email)
+        : null,
+      source: "billing_email",
+    });
+  }
 
   const { data: profiles, error: pErr } = await sb
     .from("user_profiles")
-    .select("company_id")
+    .select("company_id, email, full_name")
     .ilike("email", email)
-    .not("company_id", "is", null)
-    .limit(1);
-  if (pErr) wrapSupabaseError(pErr, "reconcile.findProfile");
-  if (profiles?.[0]?.company_id) return String(profiles[0].company_id);
+    .not("company_id", "is", null);
+  if (pErr) wrapSupabaseError(pErr, "reconcile.findProfileCandidates");
+  for (const row of profiles ?? []) {
+    const id = String(row.company_id);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const { data: company } = await sb
+      .from("companies")
+      .select("name, legal_name, billing_email")
+      .eq("id", id)
+      .maybeSingle();
+    candidates.push({
+      id,
+      name: String(company?.name ?? company?.legal_name ?? row.full_name ?? ""),
+      billingEmail: company?.billing_email
+        ? normalizeAuditEmail(company.billing_email)
+        : normalizeAuditEmail(row.email),
+      source: "user_profile",
+    });
+  }
 
-  return null;
+  return candidates;
+}
+
+async function findCompanyIdByEmail(email: string): Promise<string | null> {
+  const candidates = await findCompanyCandidatesByEmail(email);
+  return candidates[0]?.id ?? null;
 }
 
 async function createCompanyForPaidPurchase(
@@ -320,7 +367,11 @@ async function assessReconcileEligibility(
     };
   }
 
-  if (order.claim_status === "manual_review" && !options.forceManualReview) {
+  if (
+    order.claim_status === "manual_review" &&
+    !options.forceManualReview &&
+    !options.manualReviewResolved
+  ) {
     return {
       status: "manual_review_blocked",
       wouldReconcile: false,
@@ -331,7 +382,10 @@ async function assessReconcileEligibility(
     };
   }
 
-  let resolvedCompanyId = order.company_id;
+  let resolvedCompanyId =
+    options.manualReviewResolved && options.resolvedCompanyId
+      ? options.resolvedCompanyId
+      : order.company_id;
   if (!resolvedCompanyId && email) {
     resolvedCompanyId = await findCompanyIdByEmail(email);
   }
