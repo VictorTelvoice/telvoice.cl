@@ -12,7 +12,8 @@ export type AdminClientStatusFilter =
   | "has_balance"
   | "no_rate_plan"
   | "activity_today"
-  | "no_activity";
+  | "no_activity"
+  | "protected";
 
 export type AdminClientAuditInfo = {
   classification: AuditClassification;
@@ -33,6 +34,7 @@ export type AdminClientOperationalWallet = {
 export type AdminClientOperationalUsage = {
   smsToday: number;
   smsThisMonth: number;
+  failedLast24h: number;
   lastSmsAt: string | null;
   campaignsCount: number;
   transactionalEmailsSent: number;
@@ -41,6 +43,7 @@ export type AdminClientOperationalUsage = {
 export type AdminClientOperationalPurchases = {
   ordersCount: number;
   paidOrdersCount: number;
+  paidPendingCreditCount: number;
   lastPurchaseAt: string | null;
   lastOrderId: string | null;
   lastInvoiceNumber: string | null;
@@ -55,6 +58,8 @@ export type AdminClientOperationalFlags = {
   needsReview: boolean;
   isQa: boolean;
   isProtected: boolean;
+  apiActive: boolean;
+  hasPaidPendingCredit: boolean;
 };
 
 export type AdminClientOperationalItem = {
@@ -67,6 +72,7 @@ export type AdminClientOperationalItem = {
   protected: boolean;
   ratePlanName: string | null;
   ratePlanCode: string | null;
+  ratePlanAssignedAt: string | null;
   wallet: AdminClientOperationalWallet;
   usage: AdminClientOperationalUsage;
   purchases: AdminClientOperationalPurchases;
@@ -79,19 +85,25 @@ export type AdminClientListItem = {
   operational: AdminClientOperationalItem;
 };
 
+/** Contadores para barra de segmentos (no KPIs globales de dashboard). */
+export type AdminClientsSegmentCounts = {
+  productionReal: number;
+  qaTest: number;
+  reviewRequired: number;
+  noBalance: number;
+  hasBalance: number;
+  noRatePlan: number;
+  activityToday: number;
+  noActivity: number;
+  protected: number;
+};
+
 export type AdminClientsScopeSummary = {
   scope: AdminClientScope;
+  /** Resultados tras filtros activos. */
   visible: number;
-  hiddenQa: number;
-  reviewRequired: number;
-  protectedVisible: number;
   totalCompanies: number;
-  /** KPIs operativos sobre el conjunto visible (post-filtros). */
-  totalAvailableSms: number;
-  smsUsedToday: number;
-  smsUsedMonth: number;
-  clientsNoBalance: number;
-  clientsNoRatePlan: number;
+  segments: AdminClientsSegmentCounts;
 };
 
 export type AdminClientsListResult = {
@@ -142,12 +154,32 @@ export type AdminClientDetailRecentEmail = {
   sentAt: string | null;
 };
 
+export type AdminClientDetailWalletTransaction = {
+  id: string;
+  type: string;
+  smsAmount: number;
+  balanceAfter: number;
+  description: string | null;
+  createdAt: string;
+};
+
 export type AdminClientDetailApiKey = {
   id: string;
   label: string;
   environment: string;
   status: string;
   lastUsedAt: string | null;
+};
+
+export type AdminClientDetailWebhook = {
+  url: string | null;
+  status: string | null;
+};
+
+export type AdminClientDetailUsageStats = {
+  deliveredMonth: number;
+  failedMonth: number;
+  deliveryRate: string | null;
 };
 
 export type AdminClientOperationalDetail = {
@@ -158,8 +190,13 @@ export type AdminClientOperationalDetail = {
   ratePlanCampaignsEnabled: boolean | null;
   ratePlanApiEnabled: boolean | null;
   recentOrders: AdminClientDetailRecentOrder[];
+  pendingOrders: AdminClientDetailRecentOrder[];
   recentInvoices: AdminClientDetailRecentInvoice[];
   recentMessages: AdminClientDetailRecentMessage[];
+  recentFailedMessages: AdminClientDetailRecentMessage[];
   recentEmails: AdminClientDetailRecentEmail[];
+  recentWalletTransactions: AdminClientDetailWalletTransaction[];
   apiKeys: AdminClientDetailApiKey[];
+  webhook: AdminClientDetailWebhook | null;
+  usageStats: AdminClientDetailUsageStats;
 };

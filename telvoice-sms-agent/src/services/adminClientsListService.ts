@@ -17,6 +17,8 @@ import type {
   AdminClientDetailRecentInvoice,
   AdminClientDetailRecentMessage,
   AdminClientDetailRecentOrder,
+  AdminClientDetailWalletTransaction,
+  AdminClientDetailWebhook,
   AdminClientListItem,
   AdminClientOperationalDetail,
   AdminClientOperationalFlags,
@@ -62,6 +64,7 @@ type WalletAgg = {
 type UsageAgg = {
   sms_today: number;
   sms_month: number;
+  failed_last_24h: number;
   last_sms_at: string | null;
   campaigns_count: number;
   transactional_emails_sent: number;
@@ -70,6 +73,7 @@ type UsageAgg = {
 type PurchaseAgg = {
   orders_count: number;
   paid_orders_count: number;
+  paid_pending_credit_count: number;
   last_purchase_at: string | null;
   last_order_id: string | null;
   last_invoice_number: string | null;
@@ -82,6 +86,7 @@ type RatePlanAgg = {
   live_enabled: boolean | null;
   campaigns_enabled: boolean | null;
   api_enabled: boolean | null;
+  created_at: string | null;
 };
 
 type OperationalMaps = {
@@ -151,6 +156,10 @@ async function loadOperationalMaps(client: {
         COUNT(*) FILTER (
           WHERE created_at >= date_trunc('month', now() AT TIME ZONE $2)
         )::int AS sms_month,
+        COUNT(*) FILTER (
+          WHERE status IN ('failed', 'rejected')
+            AND created_at >= now() - interval '24 hours'
+        )::int AS failed_last_24h,
         MAX(created_at)::text AS last_sms_at
       FROM panel_sms_messages
       WHERE mode IN ('live', 'live_test')
@@ -165,6 +174,9 @@ async function loadOperationalMaps(client: {
           company_id::text AS company_id,
           COUNT(*)::int AS orders_count,
           COUNT(*) FILTER (WHERE payment_status = 'paid')::int AS paid_orders_count,
+          COUNT(*) FILTER (
+            WHERE payment_status = 'paid' AND credit_status IS DISTINCT FROM 'credited'
+          )::int AS paid_pending_credit_count,
           MAX(created_at) FILTER (WHERE payment_status = 'paid') AS last_purchase_at,
           (array_agg(id ORDER BY created_at DESC) FILTER (WHERE payment_status = 'paid'))[1]::text AS last_order_id
         FROM sms_orders
@@ -183,6 +195,7 @@ async function loadOperationalMaps(client: {
         COALESCE(o.company_id, i.company_id) AS company_id,
         COALESCE(o.orders_count, 0)::int AS orders_count,
         COALESCE(o.paid_orders_count, 0)::int AS paid_orders_count,
+        COALESCE(o.paid_pending_credit_count, 0)::int AS paid_pending_credit_count,
         o.last_purchase_at::text,
         o.last_order_id,
         i.invoice_number AS last_invoice_number,
@@ -197,7 +210,8 @@ async function loadOperationalMaps(client: {
         srp.code AS rate_plan_code,
         crp.live_enabled,
         crp.campaigns_enabled,
-        crp.api_enabled
+        crp.api_enabled,
+        crp.created_at::text AS created_at
       FROM company_rate_plans crp
       JOIN sms_rate_plans srp ON srp.id = crp.rate_plan_id
       WHERE crp.status = 'active'
@@ -241,6 +255,7 @@ async function loadOperationalMaps(client: {
     usage.set(String(row.company_id), {
       sms_today: Number(row.sms_today ?? 0),
       sms_month: Number(row.sms_month ?? 0),
+      failed_last_24h: Number(row.failed_last_24h ?? 0),
       last_sms_at: row.last_sms_at != null ? String(row.last_sms_at) : null,
       campaigns_count: 0,
       transactional_emails_sent: 0,
@@ -251,6 +266,7 @@ async function loadOperationalMaps(client: {
     const existing = usage.get(id) ?? {
       sms_today: 0,
       sms_month: 0,
+      failed_last_24h: 0,
       last_sms_at: null,
       campaigns_count: 0,
       transactional_emails_sent: 0,
@@ -263,6 +279,7 @@ async function loadOperationalMaps(client: {
     const existing = usage.get(id) ?? {
       sms_today: 0,
       sms_month: 0,
+      failed_last_24h: 0,
       last_sms_at: null,
       campaigns_count: 0,
       transactional_emails_sent: 0,
@@ -277,6 +294,7 @@ async function loadOperationalMaps(client: {
     purchases.set(String(row.company_id), {
       orders_count: Number(row.orders_count ?? 0),
       paid_orders_count: Number(row.paid_orders_count ?? 0),
+      paid_pending_credit_count: Number(row.paid_pending_credit_count ?? 0),
       last_purchase_at:
         row.last_purchase_at != null ? String(row.last_purchase_at) : null,
       last_order_id: row.last_order_id != null ? String(row.last_order_id) : null,
@@ -296,6 +314,7 @@ async function loadOperationalMaps(client: {
       campaigns_enabled:
         row.campaigns_enabled != null ? Boolean(row.campaigns_enabled) : null,
       api_enabled: row.api_enabled != null ? Boolean(row.api_enabled) : null,
+      created_at: row.created_at != null ? String(row.created_at) : null,
     });
   }
 
@@ -317,6 +336,7 @@ function emptyUsage(): AdminClientOperationalUsage {
   return {
     smsToday: 0,
     smsThisMonth: 0,
+    failedLast24h: 0,
     lastSmsAt: null,
     campaignsCount: 0,
     transactionalEmailsSent: 0,
@@ -327,6 +347,7 @@ function emptyPurchases(): AdminClientOperationalPurchases {
   return {
     ordersCount: 0,
     paidOrdersCount: 0,
+    paidPendingCreditCount: 0,
     lastPurchaseAt: null,
     lastOrderId: null,
     lastInvoiceNumber: null,
@@ -359,6 +380,7 @@ function buildOperationalItem(
     ? {
         smsToday: u.sms_today,
         smsThisMonth: u.sms_month,
+        failedLast24h: u.failed_last_24h,
         lastSmsAt: u.last_sms_at,
         campaignsCount: u.campaigns_count,
         transactionalEmailsSent: u.transactional_emails_sent,
@@ -369,6 +391,7 @@ function buildOperationalItem(
     ? {
         ordersCount: p.orders_count,
         paidOrdersCount: p.paid_orders_count,
+        paidPendingCreditCount: p.paid_pending_credit_count,
         lastPurchaseAt: p.last_purchase_at,
         lastOrderId: p.last_order_id,
         lastInvoiceNumber: p.last_invoice_number,
@@ -383,6 +406,7 @@ function buildOperationalItem(
     usage.smsThisMonth === 0 &&
     usage.lastSmsAt == null &&
     purchases.paidOrdersCount === 0;
+  const apiActive = Boolean(rp?.api_enabled);
 
   const operationalFlags: AdminClientOperationalFlags = {
     hasRatePlan,
@@ -393,6 +417,8 @@ function buildOperationalItem(
       audit.classification === "REVIEW_REQUIRED" || audit.classification === "ORPHAN",
     isQa: audit.classification === "QA_TEST" || audit.classification === "DEMO_SEED",
     isProtected: audit.protected,
+    apiActive,
+    hasPaidPendingCredit: purchases.paidPendingCreditCount > 0,
   };
 
   return {
@@ -405,6 +431,7 @@ function buildOperationalItem(
     protected: audit.protected,
     ratePlanName: rp?.rate_plan_name ?? null,
     ratePlanCode: rp?.rate_plan_code ?? null,
+    ratePlanAssignedAt: rp?.created_at ?? null,
     wallet,
     usage,
     purchases,
@@ -455,6 +482,7 @@ export function parseAdminClientStatusFilter(value: unknown): AdminClientStatusF
     "no_rate_plan",
     "activity_today",
     "no_activity",
+    "protected",
   ];
   return allowed.includes(v as AdminClientStatusFilter)
     ? (v as AdminClientStatusFilter)
@@ -622,9 +650,51 @@ function matchesStatusFilter(
       return operational.usage.smsToday > 0;
     case "no_activity":
       return flags.noActivity;
+    case "protected":
+      return flags.isProtected;
     default:
       return true;
   }
+}
+
+function computeSegmentCounts(
+  all: AdminClientListItem[],
+  signals: CompanyRealSignals,
+): AdminClientsScopeSummary["segments"] {
+  let productionReal = 0;
+  let qaTest = 0;
+  let reviewRequired = 0;
+  let noBalance = 0;
+  let hasBalance = 0;
+  let noRatePlan = 0;
+  let activityToday = 0;
+  let noActivity = 0;
+  let protectedCount = 0;
+
+  for (const item of all) {
+    const flags = item.operational.operationalFlags;
+    if (matchesScope(item.company, item.audit, "real", signals)) productionReal += 1;
+    if (matchesScope(item.company, item.audit, "qa", signals)) qaTest += 1;
+    if (matchesScope(item.company, item.audit, "review", signals)) reviewRequired += 1;
+    if (!flags.hasBalance) noBalance += 1;
+    if (flags.hasBalance) hasBalance += 1;
+    if (!flags.hasRatePlan) noRatePlan += 1;
+    if (item.operational.usage.smsToday > 0) activityToday += 1;
+    if (flags.noActivity) noActivity += 1;
+    if (flags.isProtected) protectedCount += 1;
+  }
+
+  return {
+    productionReal,
+    qaTest,
+    reviewRequired,
+    noBalance,
+    hasBalance,
+    noRatePlan,
+    activityToday,
+    noActivity,
+    protected: protectedCount,
+  };
 }
 
 function computeSummary(
@@ -633,38 +703,11 @@ function computeSummary(
   scope: AdminClientScope,
   signals: CompanyRealSignals,
 ): AdminClientsScopeSummary {
-  const hiddenQa = all.filter((i) => matchesScope(i.company, i.audit, "qa", signals)).length;
-  const reviewRequired = all.filter((i) =>
-    matchesScope(i.company, i.audit, "review", signals),
-  ).length;
-  const protectedTotal = all.filter((i) => i.audit.protected).length;
-
-  let totalAvailableSms = 0;
-  let smsUsedToday = 0;
-  let smsUsedMonth = 0;
-  let clientsNoBalance = 0;
-  let clientsNoRatePlan = 0;
-
-  for (const item of visible) {
-    totalAvailableSms += item.operational.wallet.availableSms;
-    smsUsedToday += item.operational.usage.smsToday;
-    smsUsedMonth += item.operational.usage.smsThisMonth;
-    if (!item.operational.operationalFlags.hasBalance) clientsNoBalance += 1;
-    if (!item.operational.operationalFlags.hasRatePlan) clientsNoRatePlan += 1;
-  }
-
   return {
     scope,
     visible: visible.length,
-    hiddenQa,
-    reviewRequired,
-    protectedVisible: protectedTotal,
     totalCompanies: all.length,
-    totalAvailableSms,
-    smsUsedToday,
-    smsUsedMonth,
-    clientsNoBalance,
-    clientsNoRatePlan,
+    segments: computeSegmentCounts(all, signals),
   };
 }
 
@@ -804,7 +847,8 @@ export async function getAdminClientOperationalDetail(
         : null;
     const audit = buildAuditInfo(company, flag);
 
-    const [signals, opMaps, ordersRes, invoicesRes, messagesRes, emailsRes, apiKeysRes] =
+    const tz = APP_SCHEDULE_TIMEZONE;
+    const [signals, opMaps, ordersRes, pendingOrdersRes, invoicesRes, messagesRes, failedRes, emailsRes, walletTxRes, apiKeysRes, webhookRes, usageStatsRes] =
       await Promise.all([
         loadCompanyRealSignals(client),
         loadOperationalMaps(client),
@@ -813,6 +857,18 @@ export async function getAdminClientOperationalDetail(
           SELECT id, payment_status, credit_status, sms_quantity, amount, created_at
           FROM sms_orders
           WHERE company_id = $1::uuid
+          ORDER BY created_at DESC
+          LIMIT 10
+          `,
+          [companyId],
+        ),
+        client.query(
+          `
+          SELECT id, payment_status, credit_status, sms_quantity, amount, created_at
+          FROM sms_orders
+          WHERE company_id = $1::uuid
+            AND payment_status = 'paid'
+            AND credit_status IS DISTINCT FROM 'credited'
           ORDER BY created_at DESC
           LIMIT 10
           `,
@@ -840,6 +896,17 @@ export async function getAdminClientOperationalDetail(
         ),
         client.query(
           `
+          SELECT id, recipient_number, status, mode, sent_at, created_at
+          FROM panel_sms_messages
+          WHERE company_id = $1::uuid
+            AND status IN ('failed', 'rejected')
+          ORDER BY created_at DESC
+          LIMIT 10
+          `,
+          [companyId],
+        ),
+        client.query(
+          `
           (
             SELECT id, email_type AS kind, to_email, subject, status, sent_at
             FROM billing_email_logs
@@ -858,6 +925,16 @@ export async function getAdminClientOperationalDetail(
         ),
         client.query(
           `
+          SELECT id, type, sms_amount, balance_after, description, created_at
+          FROM wallet_transactions
+          WHERE company_id = $1::uuid
+          ORDER BY created_at DESC
+          LIMIT 10
+          `,
+          [companyId],
+        ),
+        client.query(
+          `
           SELECT id, label, environment, status, last_used_at
           FROM client_api_keys
           WHERE company_id = $1::uuid
@@ -866,6 +943,28 @@ export async function getAdminClientOperationalDetail(
           `,
           [companyId],
         ).catch(() => ({ rows: [] as Record<string, unknown>[] })),
+        client.query(
+          `
+          SELECT webhook_url, webhook_status
+          FROM client_api_settings
+          WHERE company_id = $1::uuid
+          LIMIT 1
+          `,
+          [companyId],
+        ).catch(() => ({ rows: [] as Record<string, unknown>[] })),
+        client.query(
+          `
+          SELECT
+            COUNT(*) FILTER (WHERE status = 'delivered')::int AS delivered,
+            COUNT(*) FILTER (WHERE status IN ('failed', 'rejected'))::int AS failed
+          FROM panel_sms_messages
+          WHERE company_id = $1::uuid
+            AND mode IN ('live', 'live_test')
+            AND status = ANY($2::text[])
+            AND created_at >= date_trunc('month', now() AT TIME ZONE $3)
+          `,
+          [companyId, COUNTABLE_MSG_STATUSES, tz],
+        ),
       ]);
 
     void signals;
@@ -916,6 +1015,59 @@ export async function getAdminClientOperationalDetail(
       lastUsedAt: k.last_used_at != null ? String(k.last_used_at) : null,
     }));
 
+    const pendingOrders: AdminClientDetailRecentOrder[] = pendingOrdersRes.rows.map(
+      (o) => ({
+        id: String(o.id),
+        paymentStatus: String(o.payment_status ?? ""),
+        creditStatus: String(o.credit_status ?? ""),
+        smsQuantity: Number(o.sms_quantity ?? 0),
+        amount: String(o.amount ?? "0"),
+        createdAt: String(o.created_at ?? ""),
+      }),
+    );
+
+    const recentFailedMessages: AdminClientDetailRecentMessage[] = failedRes.rows.map(
+      (m) => ({
+        id: String(m.id),
+        recipientNumber: String(m.recipient_number ?? ""),
+        status: String(m.status ?? ""),
+        mode: String(m.mode ?? ""),
+        sentAt: m.sent_at != null ? String(m.sent_at) : null,
+        createdAt: String(m.created_at ?? ""),
+      }),
+    );
+
+    const recentWalletTransactions: AdminClientDetailWalletTransaction[] =
+      walletTxRes.rows.map((t) => ({
+        id: String(t.id),
+        type: String(t.type ?? ""),
+        smsAmount: Number(t.sms_amount ?? 0),
+        balanceAfter: Number(t.balance_after ?? 0),
+        description: t.description != null ? String(t.description) : null,
+        createdAt: String(t.created_at ?? ""),
+      }));
+
+    const webhookRow = webhookRes.rows[0];
+    const webhook: AdminClientDetailWebhook | null = webhookRow
+      ? {
+          url:
+            webhookRow.webhook_url != null ? String(webhookRow.webhook_url) : null,
+          status:
+            webhookRow.webhook_status != null
+              ? String(webhookRow.webhook_status)
+              : null,
+        }
+      : null;
+
+    const statsRow = usageStatsRes.rows[0];
+    const deliveredMonth = Number(statsRow?.delivered ?? 0);
+    const failedMonth = Number(statsRow?.failed ?? 0);
+    const totalMonth = deliveredMonth + failedMonth;
+    const deliveryRate =
+      totalMonth > 0
+        ? `${((deliveredMonth / totalMonth) * 100).toFixed(1).replace(".", ",")}%`
+        : null;
+
     return {
       company,
       audit,
@@ -924,10 +1076,19 @@ export async function getAdminClientOperationalDetail(
       ratePlanCampaignsEnabled: rp?.campaigns_enabled ?? null,
       ratePlanApiEnabled: rp?.api_enabled ?? null,
       recentOrders,
+      pendingOrders,
       recentInvoices,
       recentMessages,
+      recentFailedMessages,
       recentEmails,
+      recentWalletTransactions,
       apiKeys,
+      webhook,
+      usageStats: {
+        deliveredMonth,
+        failedMonth,
+        deliveryRate,
+      },
     };
   } finally {
     await client.end();
