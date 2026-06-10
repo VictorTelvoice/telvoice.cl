@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { renderAdminEmailLogsPage } from "../views/admin-ui/sections/admin-email-logs-pages.js";
+import { sendPostPurchaseNotifications } from "../services/postPurchaseNotificationService.js";
 import {
   listEmailLogs,
   listEmailLogsForOrder,
@@ -98,6 +99,22 @@ export async function postResendEmailLog(
       await sendWelcomeAndSmsCreditedEmail(log.order_id, { skipIdempotency: true });
     } else if (log.template_key === "invoice_receipt" && log.invoice_id) {
       await sendInvoiceReceiptEmail(log.invoice_id, { skipIdempotency: true });
+    } else if (log.template_key === "purchase_activation_notice" && log.order_id) {
+      const order = await getOrderById(log.order_id);
+      const email = order?.checkout_email ?? order?.payer_email;
+      if (!email?.includes("@")) {
+        redirectWith(res, "/admin/email-logs", {
+          error: "Orden sin email para reenviar aviso de bolsa activa.",
+        });
+        return;
+      }
+      await sendPostPurchaseNotifications(email, {
+        dryRun: false,
+        sendActivationNotice: true,
+        isResend: true,
+        resendReason: "admin_email_log_resend",
+        requestedBy: req.adminUser?.id ?? null,
+      });
     } else {
       redirectWith(res, "/admin/email-logs", {
         error: "Template no soportado para reenvío automático.",
