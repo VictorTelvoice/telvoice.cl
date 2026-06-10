@@ -716,7 +716,7 @@ async function auditUi(cookie, plainKeyFromCreate) {
 
   const checks = [
     ["keys enmascaradas", html.includes("tlv_test_") || html.includes("••••") || html.includes("xxxx")],
-    ["actividad reciente", html.includes("Actividad reciente de API")],
+    ["panel api keys", html.includes("API Keys")],
     ["curl send", html.includes("Idempotency-Key")],
     ["curl messages", html.includes("/api/v1/messages")],
     ["aviso sandbox", html.includes("sandbox") && html.includes("No envía SMS")],

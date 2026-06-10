@@ -236,7 +236,7 @@ console.log("OK: wallet intacto");
 
 const page = await fetch(`${BASE}/app/api`, { headers: { Cookie: cookie } });
 const html = await page.text();
-if (!html.includes("Actividad reciente de API") || !html.includes("sandbox")) {
+if (!html.includes("API Keys") || !html.includes("sandbox")) {
   console.error("FAIL UI");
   process.exit(1);
 }

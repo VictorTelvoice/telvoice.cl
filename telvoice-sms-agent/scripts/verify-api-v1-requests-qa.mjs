@@ -180,8 +180,8 @@ console.log("OK: INSUFFICIENT_SCOPE log");
 
 const page = await fetch(`${BASE}/app/api`, { headers: { Cookie: cookie } });
 const html = await page.text();
-if (!html.includes("Actividad reciente de API")) {
-  console.error("FAIL UI activity section");
+if (!html.includes("API Keys")) {
+  console.error("FAIL UI api keys section");
   process.exit(1);
 }
 if (html.includes(fullKey)) {

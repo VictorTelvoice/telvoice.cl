@@ -15,13 +15,11 @@ import type {
   ClientApiKeyStatus,
 } from "../../types/client-api-keys.js";
 import { CLIENT_API_KEY_SCOPES } from "../../types/client-api-keys.js";
-import type { ClientApiRequest } from "../../types/client-api-requests.js";
 import { canOperateClientPanel } from "../../types/roles.js";
 import { escapeHtml, formatDateShort } from "../../utils/html.js";
-import { renderKpiCard } from "../admin-ui/components.js";
 import { renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
-import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
+import { wrapAppPage } from "./app-page-wrap.js";
 
 export const DEFAULT_MOCK_API_KEY = DEFAULT_DEMO_API_KEY;
 export type { ClientApiCredentials, ClientApiWebhookConfig };
@@ -113,15 +111,6 @@ function apiPageStyles(): string {
       font-size: 0.82rem;
       cursor: pointer;
     }
-    .tv-api-smpp-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 0.65rem 1rem;
-      margin: 0.75rem 0 1rem;
-      font-size: 0.88rem;
-    }
-    .tv-api-smpp-grid dt { color: var(--tv-muted); font-size: 0.75rem; margin: 0; }
-    .tv-api-smpp-grid dd { margin: 0.15rem 0 0; font-weight: 600; }
     .tv-api-toast {
       position: fixed;
       bottom: 1.25rem;
@@ -377,86 +366,6 @@ function renderRealApiKeysPanel(ctx: AppPageContext, data: AppApiPageData): stri
             </tr>
           </thead>
           <tbody id="tv-api-keys-tbody">${rows}</tbody>
-        </table>
-      </div>
-    </div>
-  </section>`;
-}
-
-function requestResultLabel(log: ClientApiRequest): string {
-  return log.success ? "Éxito" : "Error";
-}
-
-function requestResultBadgeClass(log: ClientApiRequest): string {
-  return log.success ? "badge-ok" : "badge-warn";
-}
-
-function requestKeyLabel(log: ClientApiRequest): string {
-  if (log.apiKeyName?.trim()) {
-    return log.apiKeyName.trim();
-  }
-  if (log.apiKeyMasked?.trim()) {
-    return log.apiKeyMasked.trim();
-  }
-  return "—";
-}
-
-function renderRecentApiActivityPanel(data: AppApiPageData): string {
-  const module = data.requestsModule ?? { available: false, migrationPending: false };
-  const logs = data.recentApiRequests ?? [];
-
-  if (!module.available) {
-    return `<section class="tv-panel" id="tv-api-activity-panel">
-      <header class="tv-section-head" style="padding:1rem 1.25rem 0">
-        <h2 class="tv-section-head__title">Actividad reciente de API</h2>
-        <p class="tv-section-head__sub">Últimas solicitudes realizadas con tus API Keys.</p>
-      </header>
-      <div class="tv-panel__body">
-        <div class="alert alert-warn" role="status">Registro de actividad API no disponible${module.migrationPending ? " (migración pendiente)" : ""}.</div>
-      </div>
-    </section>`;
-  }
-
-  const rows =
-    logs.length === 0
-      ? `<tr><td colspan="7" class="tv-api-keys-empty">Aún no hay actividad registrada para tus API Keys.</td></tr>`
-      : logs
-          .map((log) => {
-            const err = log.errorCode
-              ? `<span class="badge badge-muted">${escapeHtml(log.errorCode)}</span>`
-              : "—";
-            return `<tr>
-            <td>${escapeHtml(formatDateShort(log.createdAt))}</td>
-            <td><code>${escapeHtml(log.endpoint)}</code></td>
-            <td>${escapeHtml(log.method)}</td>
-            <td>${log.statusCode}</td>
-            <td><span class="badge ${requestResultBadgeClass(log)}">${escapeHtml(requestResultLabel(log))}</span></td>
-            <td>${escapeHtml(requestKeyLabel(log))}</td>
-            <td>${err}</td>
-          </tr>`;
-          })
-          .join("");
-
-  return `<section class="tv-panel" id="tv-api-activity-panel">
-    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
-      <h2 class="tv-section-head__title">Actividad reciente de API</h2>
-      <p class="tv-section-head__sub">Últimas solicitudes realizadas con tus API Keys.</p>
-    </header>
-    <div class="tv-panel__body">
-      <div class="tv-api-keys-table-wrap">
-        <table class="tv-api-keys-table">
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Endpoint</th>
-              <th>Método</th>
-              <th>HTTP</th>
-              <th>Resultado</th>
-              <th>API Key</th>
-              <th>Error</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
         </table>
       </div>
     </div>
@@ -854,34 +763,6 @@ function renderWebhookPanel(): string {
   </section>`;
 }
 
-function renderSmppPanel(settings: ClientApiSettings): string {
-  const smppBadge = settings.smppRequested
-    ? '<span class="badge badge-ok" id="tv-api-smpp-status">Solicitud registrada</span>'
-    : '<span class="badge badge-warn" id="tv-api-smpp-status">Bajo solicitud</span>';
-  const btnLabel = settings.smppRequested
-    ? "Solicitud enviada"
-    : "Solicitar acceso SMPP";
-  const btnDisabled = settings.smppRequested ? " disabled" : "";
-
-  return `<section class="tv-panel">
-    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
-      <h2 class="tv-section-head__title">Integración SMPP</h2>
-    </header>
-    <div class="tv-panel__body">
-      <p class="tv-page-sub" style="margin:0 0 0.75rem">
-        Para clientes con alto volumen o integraciones telco avanzadas, Telvoice podrá habilitar acceso SMPP bajo evaluación comercial y técnica.
-      </p>
-      <dl class="tv-api-smpp-grid">
-        <div><dt>Host</dt><dd>smpp.telvoice.cl</dd></div>
-        <div><dt>Puerto</dt><dd>2775</dd></div>
-        <div><dt>TLS</dt><dd>Disponible bajo solicitud</dd></div>
-        <div><dt>Estado</dt><dd>${smppBadge}</dd></div>
-      </dl>
-      <button type="button" class="btn btn-secondary btn-sm" id="tv-api-smpp-request"${btnDisabled}>${escapeHtml(btnLabel)}</button>
-    </div>
-  </section>`;
-}
-
 function renderApiScript(ctx: AppPageContext, pageData: AppApiPageData): string {
   const companyId = escapeHtml(ctx.company.id || "default");
   const serverJson = JSON.stringify(pageData.settings).replace(/</g, "\\u003c");
@@ -1089,15 +970,6 @@ function renderApiScript(ctx: AppPageContext, pageData: AppApiPageData): string 
     }
     if (lastUsed) lastUsed.textContent = c.lastUsedLabel || "—";
     applyWebhookUI(settingsToWebhookCfg(s));
-    var smppBtn = document.getElementById("tv-api-smpp-request");
-    var smppStatus = document.getElementById("tv-api-smpp-status");
-    if (s.smppRequested) {
-      if (smppBtn) { smppBtn.disabled = true; smppBtn.textContent = "Solicitud enviada"; }
-      if (smppStatus) {
-        smppStatus.className = "badge badge-ok";
-        smppStatus.textContent = "Solicitud registrada";
-      }
-    }
     updateSyncHint();
   }
 
@@ -1218,7 +1090,6 @@ function renderApiScript(ctx: AppPageContext, pageData: AppApiPageData): string 
   document.querySelectorAll("[data-tv-api-modal-close]").forEach(function (el) {
     el.addEventListener("click", function () {
       document.getElementById("tv-api-regen-modal")?.setAttribute("aria-hidden", "true");
-      document.getElementById("tv-api-smpp-modal")?.setAttribute("aria-hidden", "true");
     });
   });
 
@@ -1306,42 +1177,6 @@ function renderApiScript(ctx: AppPageContext, pageData: AppApiPageData): string 
       showTestOk();
     }
   });
-
-  document.getElementById("tv-api-smpp-request")?.addEventListener("click", function () {
-    if (state && state.smppRequested) return;
-    var modal = document.getElementById("tv-api-smpp-modal");
-    if (modal) modal.setAttribute("aria-hidden", "false");
-  });
-
-  document.getElementById("tv-api-smpp-confirm")?.addEventListener("click", function () {
-    document.getElementById("tv-api-smpp-modal")?.setAttribute("aria-hidden", "true");
-    function doneLocal() {
-      if (state) state.smppRequested = true;
-      saveLocal(state || SERVER_SETTINGS);
-      applySettingsUI(state || SERVER_SETTINGS);
-      syncSource = "local";
-      updateSyncHint();
-      showToast("Solicitud guardada localmente. Se sincronizará cuando la conexión esté disponible.");
-    }
-    if (DB_AVAILABLE) {
-      postJson("/app/api/smpp/request", {}).then(function (r) {
-        if (r.ok && r.body && r.body.ok) {
-          state = r.body.settings;
-          saveLocal(state);
-          applySettingsUI(state);
-          syncSource = "supabase";
-          updateSyncHint();
-          showToast(r.body.message || "Tu solicitud SMPP fue registrada.");
-        } else {
-          doneLocal();
-        }
-      }).catch(doneLocal);
-    } else {
-      if (state) state.smppRequested = true;
-      applySettingsUI(state || SERVER_SETTINGS);
-      showToast("Tu solicitud SMPP fue registrada. El equipo Telvoice revisará factibilidad técnica y comercial.");
-    }
-  });
 })();
 </script>`;
 }
@@ -1361,14 +1196,6 @@ function renderModals(): string {
         </div>
       </div>
     </div>
-    <div class="tv-api-modal" id="tv-api-smpp-modal" role="dialog" aria-modal="true" aria-labelledby="tv-api-smpp-title" aria-hidden="true">
-      <div class="tv-api-modal__backdrop" data-tv-api-modal-close tabindex="-1"></div>
-      <div class="tv-api-modal__panel">
-        <h2 class="tv-section-head__title" id="tv-api-smpp-title" style="margin:0 0 0.5rem">Solicitud SMPP</h2>
-        <p class="tv-page-sub" style="margin:0 0 1.25rem">Tu solicitud será revisada por el equipo Telvoice.</p>
-        <button type="button" class="btn btn-primary" id="tv-api-smpp-confirm">Entendido</button>
-      </div>
-    </div>
     <div class="tv-api-toast" id="tv-api-toast" role="status" aria-live="polite" aria-hidden="true"></div>`;
 }
 
@@ -1376,7 +1203,6 @@ export function renderAppApiPage(
   ctx: AppPageContext,
   pageData?: AppApiPageData,
 ): string {
-  const balanceSms = fmtSms(ctx.balance?.availableSms ?? 0);
   const data: AppApiPageData = pageData ?? {
     module: { available: false, migrationPending: false },
     settings: buildDefaultClientApiSettings(),
@@ -1386,38 +1212,6 @@ export function renderAppApiPage(
     recentApiRequests: [],
   };
   const settings = data.settings;
-  const apiStatusKpi = settings.apiStatus;
-
-  const kpis = `<div class="tv-kpi-grid tv-kpi-grid--client tv-kpi-grid--report">
-    ${renderKpiCard({
-      label: "Estado API",
-      value: apiStatusKpi,
-      hint: "Integración REST disponible",
-      icon: "cloud_done",
-      variant: "success",
-    })}
-    ${renderKpiCard({
-      label: "Balance SMS disponible",
-      value: balanceSms,
-      hint: "Saldo actual de tu cuenta",
-      icon: "account_balance_wallet",
-      variant: "primary",
-    })}
-    ${renderKpiCard({
-      label: "Solicitudes del mes",
-      value: "342",
-      hint: "Dato de referencia (mock)",
-      icon: "monitoring",
-      variant: "default",
-    })}
-    ${renderKpiCard({
-      label: "Último envío API",
-      value: "Hace 12 min",
-      hint: "Dato de referencia (mock)",
-      icon: "schedule",
-      variant: "default",
-    })}
-  </div>`;
 
   const body = `
     ${apiPageStyles()}
@@ -1443,14 +1237,11 @@ export function renderAppApiPage(
         </a>
       `,
     })}
-    ${kpis}
     <div class="tv-api-layout">
       <div class="tv-api-main">
         ${renderCredentialsPanel(ctx, settings)}
         ${renderRealApiKeysPanel(ctx, data)}
-        ${renderRecentApiActivityPanel(data)}
         ${renderWebhookPanel()}
-        ${renderSmppPanel(settings)}
       </div>
     </div>
     </div>
