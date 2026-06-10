@@ -12,11 +12,86 @@ import {
   companyNameLooksQa,
   emailLooksQa,
   normalizeAuditEmail,
+  orderHasRealPayment,
+  orderLooksQa,
   PROTECTED_CLIENT_EMAILS,
 } from "./adminDataAuditClassifier.js";
 
 const QA_EMAIL_DOMAIN_RE = /@(telvoice\.test|example\.invalid)$/i;
 const QA_NAME_PREFIX_RE = /^qa\s/i;
+
+type CompanyRealSignals = {
+  realPaidOrders: Set<string>;
+  walletCredit: Set<string>;
+  liveSms: Set<string>;
+};
+
+async function loadCompanyRealSignals(client: {
+  query: (sql: string) => Promise<{ rows: Record<string, unknown>[] }>;
+}): Promise<CompanyRealSignals> {
+  const [ordersRes, walletRes, liveRes] = await Promise.all([
+    client.query(`
+      SELECT company_id, payment_status, credit_status, metadata,
+             payer_email, checkout_email, id
+      FROM sms_orders
+      WHERE payment_status = 'paid' OR credit_status = 'credited'
+    `),
+    client.query(`
+      SELECT DISTINCT company_id::text AS company_id
+      FROM wallet_transactions
+      WHERE type IN ('purchase_credit', 'manual_credit') AND sms_amount > 0
+    `),
+    client.query(`
+      SELECT DISTINCT company_id::text AS company_id
+      FROM panel_sms_messages
+      WHERE mode = 'live' AND status IN ('sent', 'delivered', 'submitted')
+    `),
+  ]);
+
+  const realPaidOrders = new Set<string>();
+  for (const row of ordersRes.rows) {
+    if (!row.company_id) continue;
+    if (orderHasRealPayment(row) && !orderLooksQa(row)) {
+      realPaidOrders.add(String(row.company_id));
+    }
+  }
+
+  return {
+    realPaidOrders,
+    walletCredit: new Set(walletRes.rows.map((r) => String(r.company_id))),
+    liveSms: new Set(liveRes.rows.map((r) => String(r.company_id))),
+  };
+}
+
+function companyHasObviousQaHeuristics(company: CompanyRow): boolean {
+  const email = normalizeAuditEmail(company.billing_email);
+  if (PROTECTED_CLIENT_EMAILS.has(email)) return false;
+  if (QA_EMAIL_DOMAIN_RE.test(email)) return true;
+  if (QA_NAME_PREFIX_RE.test(String(company.name ?? ""))) return true;
+  if (companyNameLooksQa(company.name) || companyNameLooksQa(company.legal_name)) return true;
+  if (emailLooksQa(email)) return true;
+  return false;
+}
+
+function companyHasStrongRealSignals(
+  company: CompanyRow,
+  audit: AdminClientAuditInfo,
+  signals: CompanyRealSignals,
+): boolean {
+  const email = normalizeAuditEmail(company.billing_email);
+  if (PROTECTED_CLIENT_EMAILS.has(email)) return true;
+
+  // Nombre/email QA de prueba no se promueve por wallet/SMS/órdenes de test internas.
+  if (companyHasObviousQaHeuristics(company)) return false;
+
+  if (signals.realPaidOrders.has(company.id)) return true;
+  if (signals.liveSms.has(company.id)) return true;
+  if (signals.walletCredit.has(company.id)) return true;
+  if (audit.classification === "PROD_REAL") return true;
+  if (audit.protected && audit.classification === "PROD_INTERNAL") return true;
+
+  return false;
+}
 
 export function parseAdminClientScope(value: unknown): AdminClientScope {
   const v = typeof value === "string" ? value.trim().toLowerCase() : "";
@@ -86,24 +161,28 @@ function buildAuditInfo(
   };
 }
 
-function companyHasObviousQaSignals(company: CompanyRow): boolean {
-  const email = normalizeAuditEmail(company.billing_email);
-  if (PROTECTED_CLIENT_EMAILS.has(email)) return false;
-  if (QA_EMAIL_DOMAIN_RE.test(email)) return true;
-  if (QA_NAME_PREFIX_RE.test(String(company.name ?? ""))) return true;
-  if (companyNameLooksQa(company.name) || companyNameLooksQa(company.legal_name)) return true;
-  if (emailLooksQa(email)) return true;
-  return false;
-}
-
 function companyLooksExcludedFromReal(
   company: CompanyRow,
   audit: AdminClientAuditInfo,
+  signals: CompanyRealSignals,
 ): boolean {
-  if (companyHasObviousQaSignals(company)) return true;
-
   const email = normalizeAuditEmail(company.billing_email);
-  if (PROTECTED_CLIENT_EMAILS.has(email) || audit.protected) return false;
+  if (PROTECTED_CLIENT_EMAILS.has(email)) return false;
+
+  if (QA_EMAIL_DOMAIN_RE.test(email)) return true;
+
+  if (companyHasStrongRealSignals(company, audit, signals)) return false;
+
+  if (companyHasObviousQaHeuristics(company)) return true;
+
+  if (
+    audit.protected &&
+    (audit.classification === "QA_TEST" || audit.classification === "DEMO_SEED")
+  ) {
+    return true;
+  }
+
+  if (audit.protected) return false;
 
   return classificationIsNonReal(audit.classification);
 }
@@ -121,18 +200,23 @@ function matchesScope(
   company: CompanyRow,
   audit: AdminClientAuditInfo,
   scope: AdminClientScope,
+  signals: CompanyRealSignals,
 ): boolean {
   const { classification, protected: protectedFlag } = audit;
 
   switch (scope) {
     case "real":
-      if (companyLooksExcludedFromReal(company, audit)) return false;
-      return protectedFlag || classification === "PROD_REAL";
+      if (companyLooksExcludedFromReal(company, audit, signals)) return false;
+      return (
+        companyHasStrongRealSignals(company, audit, signals) ||
+        protectedFlag ||
+        classification === "PROD_REAL"
+      );
     case "internal":
       return classification === "PROD_INTERNAL";
     case "qa":
       if (classification === "QA_TEST" || classification === "DEMO_SEED") return true;
-      return companyHasObviousQaSignals(company);
+      return companyHasObviousQaHeuristics(company);
     case "review":
       return classification === "REVIEW_REQUIRED" || classification === "ORPHAN";
     case "all":
@@ -163,10 +247,11 @@ function computeSummary(
   all: AdminClientListItem[],
   visible: AdminClientListItem[],
   scope: AdminClientScope,
+  signals: CompanyRealSignals,
 ): AdminClientsScopeSummary {
-  const hiddenQa = all.filter((i) => matchesScope(i.company, i.audit, "qa")).length;
+  const hiddenQa = all.filter((i) => matchesScope(i.company, i.audit, "qa", signals)).length;
   const reviewRequired = all.filter((i) =>
-    matchesScope(i.company, i.audit, "review"),
+    matchesScope(i.company, i.audit, "review", signals),
   ).length;
 
   const protectedTotal = all.filter((i) => i.audit.protected).length;
@@ -195,6 +280,7 @@ export async function listAdminClientsForScope(input: {
   const client = createPgClient();
   await client.connect();
   let rows: Record<string, unknown>[];
+  let signals: CompanyRealSignals;
   try {
     const result = await client.query(`
       SELECT
@@ -209,6 +295,7 @@ export async function listAdminClientsForScope(input: {
       ORDER BY c.created_at DESC
     `);
     rows = result.rows;
+    signals = await loadCompanyRealSignals(client);
   } finally {
     await client.end();
   }
@@ -226,14 +313,16 @@ export async function listAdminClientsForScope(input: {
     return { company, audit: buildAuditInfo(company, flag) };
   });
 
-  const scoped = all.filter((item) => matchesScope(item.company, item.audit, scope));
+  const scoped = all.filter((item) =>
+    matchesScope(item.company, item.audit, scope, signals),
+  );
   const items = scoped.filter((item) => matchesSearch(item.company, search));
 
   let searchHint: string | null = null;
   if (search && items.length === 0 && scope === "real" && searchLooksQa(search)) {
     const qaHits = all.filter(
       (item) =>
-        matchesScope(item.company, item.audit, "qa") &&
+        matchesScope(item.company, item.audit, "qa", signals) &&
         matchesSearch(item.company, search),
     ).length;
     if (qaHits > 0) {
@@ -243,7 +332,7 @@ export async function listAdminClientsForScope(input: {
 
   return {
     items,
-    summary: computeSummary(all, items, scope),
+    summary: computeSummary(all, items, scope, signals),
     search,
     searchHint,
   };
