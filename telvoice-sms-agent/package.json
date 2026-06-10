@@ -40,6 +40,8 @@
     "audit:admin-data:arturo": "node scripts/admin-data-audit-report.mjs --client=arturo.aguilar@talkchile.cl",
     "audit:paid-unclaimed-purchases": "tsx scripts/audit-paid-unclaimed-purchases.mjs",
     "reconcile:paid-unclaimed-purchases": "tsx scripts/reconcile-paid-unclaimed-purchases.mjs",
+    "audit:review-required-paid-purchases": "tsx scripts/audit-review-required-paid-purchases.mjs",
+    "reconcile:review-required-paid-purchases": "tsx scripts/reconcile-review-required-paid-purchases.mjs",
     "audit:agent-sales-prod": "node scripts/audit-agent-sales-prod.mjs",
     "audit:agent-sales-link-prod": "node scripts/run-licantravel-agent-sales-link-prod.mjs",
     "migrate:agent-core": "node scripts/apply-migrations-agent-core.mjs",

@@ -393,6 +393,7 @@ async function upsertAuditFlag(input: {
   reason: string;
   confidence: number;
   protected: boolean;
+  metadata?: Record<string, unknown>;
 }): Promise<void> {
   const sb = getSupabase();
   const { error } = await sb.from("admin_data_audit_flags").upsert(
@@ -403,11 +404,39 @@ async function upsertAuditFlag(input: {
       reason: input.reason,
       confidence: input.confidence,
       protected: input.protected,
-      metadata: { source: "auto_classifier", generated_at: new Date().toISOString() },
+      metadata: {
+        source: "auto_classifier",
+        generated_at: new Date().toISOString(),
+        ...input.metadata,
+      },
     },
     { onConflict: "entity_type,entity_id" },
   );
   if (error) throw error;
+}
+
+/** Marca entidad como cliente productivo real tras reconciliación MP aprobada. */
+export async function markEntityAsProdReal(input: {
+  entityType: AuditEntityType;
+  entityId: string;
+  reason?: string;
+  actorEmail?: string | null;
+}): Promise<void> {
+  await upsertAuditFlag({
+    entityType: input.entityType,
+    entityId: input.entityId,
+    classification: "PROD_REAL",
+    reason:
+      input.reason ??
+      "MercadoPago approved payment reconciled by email",
+    confidence: 0.98,
+    protected: true,
+    metadata: {
+      source: "paid_purchase_reconcile",
+      actor_email: input.actorEmail ?? null,
+      reconciled_at: new Date().toISOString(),
+    },
+  });
 }
 
 export async function generateAuditFlags(actorEmail?: string): Promise<{
