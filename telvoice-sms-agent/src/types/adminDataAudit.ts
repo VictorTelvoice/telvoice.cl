@@ -78,8 +78,23 @@ export type AuditSummary = {
   totalQaMessages: number;
   totalOrphans: number;
   totalReviewRequired: number;
+  totalFlags: number;
+  totalProtected: number;
+  totalArchived: number;
   lastAuditAt: string | null;
   flagCounts: Record<AuditClassification, number>;
+};
+
+export type AuditGenerateJobStatus = {
+  running: boolean;
+  startedAt: string | null;
+  finishedAt: string | null;
+  actorEmail: string | null;
+  lastError: string | null;
+  lastResult: {
+    inserted: number;
+    byClassification: Record<AuditClassification, number>;
+  } | null;
 };
 
 export type ProtectedClientBundle = {
