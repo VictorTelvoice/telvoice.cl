@@ -58,7 +58,11 @@ export async function claimBillingEmailSend(input: {
   const emailType = input.emailType ?? INVOICE_RECEIPT_EMAIL_TYPE;
   const normalized = normalizeBillingRecipientEmail(input.toEmail);
 
-  if (await hasActiveOrSentBillingEmail(input.invoiceId, input.toEmail, emailType)) {
+  const isResend = input.metadata?.is_resend === true;
+  if (
+    !isResend &&
+    (await hasActiveOrSentBillingEmail(input.invoiceId, input.toEmail, emailType))
+  ) {
     return { claimed: false, reason: "already_active" };
   }
 
@@ -75,7 +79,7 @@ export async function claimBillingEmailSend(input: {
       provider: input.provider,
       metadata: {
         source: input.source,
-        is_resend: false,
+        is_resend: isResend,
         email_type: emailType,
         ...input.metadata,
       },

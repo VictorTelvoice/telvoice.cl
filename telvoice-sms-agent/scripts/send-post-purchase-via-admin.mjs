@@ -45,7 +45,7 @@ if (!adminEmail || !adminPassword) {
   process.exit(1);
 }
 
-const base = "https://agent.telvoice.cl";
+const base = "https://admin.telvoice.cl";
 const dir = mkdtempSync(join(tmpdir(), "tv-admin-cookies-"));
 const jar = join(dir, "cookies.txt");
 
@@ -54,55 +54,55 @@ function curl(args, label) {
   const r = spawnSync("curl", full, { encoding: "utf8" });
   console.log(`\n=== ${label} ===`);
   console.log("exit", r.status);
-  if (r.stdout) console.log(r.stdout.slice(0, 500));
+  if (r.stdout) console.log(r.stdout.slice(0, 800));
   if (r.stderr) console.log(r.stderr.slice(0, 300));
   return r.status === 0;
+}
+
+function postAdmin(path, label) {
+  return curl(
+    [
+      "-X",
+      "POST",
+      `${base}${path}`,
+      "-D",
+      "-",
+      "-o",
+      "/dev/null",
+      "-w",
+      "http=%{http_code} redirect=%{redirect_url}\n",
+      "--max-redirs",
+      "5",
+    ],
+    label,
+  );
 }
 
 curl(
   [
     "-X",
     "POST",
-    `${base}/admin/login`,
-    "-d",
-    `email=${encodeURIComponent(adminEmail)}&password=${encodeURIComponent(adminPassword)}`,
-    "-L",
+    `${base}/login`,
+    "--data-urlencode",
+    `email=${adminEmail}`,
+    "--data-urlencode",
+    `password=${adminPassword}`,
+    "-D",
+    "-",
     "-o",
     "/dev/null",
     "-w",
-    "login_http=%{http_code}\n",
+    "login_http=%{http_code} redirect=%{redirect_url}\n",
+    "--max-redirs",
+    "0",
   ],
   "admin login",
 );
 
-curl(
-  [
-    "-X",
-    "POST",
-    `${base}/admin/invoices/${target.invoiceId}/resend-email`,
-    "-L",
-    "-o",
-    "/dev/null",
-    "-w",
-    "receipt_http=%{http_code}\n",
-  ],
-  "resend purchase_receipt",
-);
+postAdmin(`/admin/invoices/${target.invoiceId}/resend-email`, "resend purchase_receipt");
 
 if (target.welcomeLogId) {
-  curl(
-    [
-      "-X",
-      "POST",
-      `${base}/admin/email-logs/${target.welcomeLogId}/resend`,
-      "-L",
-      "-o",
-      "/dev/null",
-      "-w",
-      "welcome_http=%{http_code}\n",
-    ],
-    "resend welcome_sms_credited",
-  );
+  postAdmin(`/admin/email-logs/${target.welcomeLogId}/resend`, "resend welcome_sms_credited");
 } else {
   const { getSupabase } = await import("../src/database/supabaseClient.ts");
   const { data } = await getSupabase()
@@ -114,34 +114,13 @@ if (target.welcomeLogId) {
     .limit(1);
   const id = data?.[0]?.id;
   if (id) {
-    curl(
-      [
-        "-X",
-        "POST",
-        `${base}/admin/email-logs/${id}/resend`,
-        "-L",
-        "-o",
-        "/dev/null",
-        "-w",
-        "welcome_http=%{http_code}\n",
-      ],
-      "resend welcome_sms_credited (lookup)",
-    );
+    postAdmin(`/admin/email-logs/${id}/resend`, "resend welcome_sms_credited (lookup)");
   }
 }
 
 if (target.activationLogId) {
-  curl(
-    [
-      "-X",
-      "POST",
-      `${base}/admin/email-logs/${target.activationLogId}/resend`,
-      "-L",
-      "-o",
-      "/dev/null",
-      "-w",
-      "activation_http=%{http_code}\n",
-    ],
+  postAdmin(
+    `/admin/email-logs/${target.activationLogId}/resend`,
     "resend purchase_activation_notice",
   );
 } else {
@@ -155,19 +134,7 @@ if (target.activationLogId) {
     .limit(1);
   const id = data?.[0]?.id;
   if (id) {
-    curl(
-      [
-        "-X",
-        "POST",
-        `${base}/admin/email-logs/${id}/resend`,
-        "-L",
-        "-o",
-        "/dev/null",
-        "-w",
-        "activation_http=%{http_code}\n",
-      ],
-      "resend purchase_activation_notice (lookup)",
-    );
+    postAdmin(`/admin/email-logs/${id}/resend`, "resend purchase_activation_notice (lookup)");
   } else {
     console.log("\n=== activation_notice: sin log previo; requiere hotfix admin o notify en VPS ===");
   }
