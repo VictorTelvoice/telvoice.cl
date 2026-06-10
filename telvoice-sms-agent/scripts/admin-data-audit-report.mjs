@@ -65,7 +65,11 @@ const TABLE_SPECS = [
     table: "panel_sms_delivery_events",
     select: "id, message_id, status, created_at",
   },
-  { table: "sms_dlr_events", select: "id, sms_message_id, dlr_status, created_at" },
+  {
+    table: "sms_dlr_events",
+    select: "id, sms_message_id, dlr_status, received_at",
+    orderBy: "received_at",
+  },
   {
     table: "sms_send_queue",
     select: "id, company_id, campaign_id, status, created_at",
@@ -126,8 +130,9 @@ await db.connect();
 const tables = [];
 for (const spec of TABLE_SPECS) {
   const countR = await db.query(`SELECT count(*)::int AS c FROM ${spec.table}`);
+  const orderCol = spec.orderBy ?? "created_at";
   const sampleR = await db.query(
-    `SELECT ${spec.select} FROM ${spec.table} ORDER BY created_at DESC NULLS LAST LIMIT 5`,
+    `SELECT ${spec.select} FROM ${spec.table} ORDER BY ${orderCol} DESC NULLS LAST LIMIT 5`,
   );
   tables.push({
     table: spec.table,

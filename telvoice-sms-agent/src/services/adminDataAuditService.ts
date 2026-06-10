@@ -95,7 +95,7 @@ const TABLE_SPECS: Array<{
   {
     table: "sms_dlr_events",
     entityType: "sms_dlr_event",
-    select: "id, sms_message_id, dlr_status, created_at",
+    select: "id, sms_message_id, dlr_status, received_at",
   },
   {
     table: "sms_send_queue",
@@ -180,11 +180,12 @@ async function sampleTable(
   sb: SupabaseClient,
   table: string,
   select: string,
+  orderBy = "created_at",
 ): Promise<Record<string, unknown>[]> {
   const { data, error } = await sb
     .from(table)
     .select(select)
-    .order("created_at", { ascending: false })
+    .order(orderBy, { ascending: false })
     .limit(SAMPLE_LIMIT);
   if (error || !data) return [];
   return (data ?? []) as unknown as Record<string, unknown>[];
@@ -349,7 +350,8 @@ export async function generateReadOnlyAuditReport(): Promise<AuditReadOnlyReport
 
   for (const spec of TABLE_SPECS) {
     const total = await countTable(sb, spec.table);
-    const samples = await sampleTable(sb, spec.table, spec.select);
+    const orderBy = spec.table === "sms_dlr_events" ? "received_at" : "created_at";
+    const samples = await sampleTable(sb, spec.table, spec.select, orderBy);
     tables.push({ table: spec.table, entityType: spec.entityType, total, samples });
 
     const { data } = await sb.from(spec.table).select("*").limit(500);
