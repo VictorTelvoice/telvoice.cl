@@ -2215,7 +2215,7 @@
         display: flex;
         flex-wrap: nowrap;
         justify-content: space-between;
-        gap: 0.3rem;
+        gap: 0.18rem;
       }
       .calc-tier-chip {
         display: inline-flex;
@@ -2224,17 +2224,24 @@
         min-width: 0;
         max-width: none;
         flex-direction: row;
-        gap: 0;
-        min-height: 1.75rem;
-        padding: 0.25rem 0.35rem;
+        align-items: center;
+        justify-content: center;
+        gap: 0.08rem;
+        min-height: 1.5rem;
+        padding: 0.2rem 0.22rem;
         border-radius: 9999px;
-        font-size: 0.6875rem;
+        font-size: 0.625rem;
+        white-space: nowrap;
+        letter-spacing: -0.02em;
       }
     }
     @media (min-width: 1024px) {
+      .calc-tier-chips {
+        gap: 0.22rem;
+      }
       .calc-tier-chip {
-        font-size: 0.7rem;
-        padding: 0.28rem 0.5rem;
+        font-size: 0.65rem;
+        padding: 0.22rem 0.28rem;
       }
     }
     .calc-tier-chip:hover {
@@ -2257,8 +2264,9 @@
     }
     @media (min-width: 768px) {
       .calc-tier-chip-sub {
-        margin-left: 0.25rem;
-        font-size: 0.6rem;
+        margin-left: 0.1rem;
+        font-size: 0.5625rem;
+        opacity: 0.9;
       }
     }
     .calc-tier-chip:not(.is-active) .calc-tier-chip-sub {
