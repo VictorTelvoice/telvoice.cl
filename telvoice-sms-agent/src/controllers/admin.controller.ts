@@ -44,7 +44,7 @@ import {
   renderSettingsPage,
   renderTestClientPage,
 } from "../views/admin-pages.js";
-import { getWalletGlobalStats } from "../services/walletDashboardService.js";
+import { getAdminDashboardSnapshot } from "../services/adminDashboardService.js";
 import { getConfiguredDlrWebhookUrl } from "../utils/dlr-callback.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
@@ -316,7 +316,15 @@ export async function getDashboard(
       successMessage = `Crédito aplicado: +${units} unidades (${country}). Disponible: ${available || "ver balance abajo"}.`;
     }
 
-    const walletStats = await getWalletGlobalStats();
+    let dashboardSnapshot = null;
+    if (env.supabase.url && env.supabase.serviceRoleKey && !bootstrap.pgrestSchemaCacheIssue) {
+      try {
+        dashboardSnapshot = await getAdminDashboardSnapshot();
+      } catch (dashErr) {
+        console.error("[admin] dashboard snapshot failed:", dashErr);
+        dbLoadError = dbLoadError ?? (dashErr instanceof Error ? dashErr.message : "Error métricas dashboard");
+      }
+    }
 
     res.type("html").send(
       renderDashboardPage({
@@ -327,7 +335,7 @@ export async function getDashboard(
         messages,
         stats,
         asmscBalance,
-        walletStats,
+        dashboardSnapshot,
         supabaseConfigured: Boolean(
           env.supabase.url && env.supabase.serviceRoleKey,
         ),

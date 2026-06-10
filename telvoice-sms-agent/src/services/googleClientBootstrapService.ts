@@ -110,6 +110,18 @@ export async function bootstrapClientFromGoogle(input: {
 
   if (companyId) {
     await getOrCreateCompanyWallet(companyId, "CL");
+    try {
+      const { reconcilePaidPurchasesForEmail } = await import(
+        "./billingPurchaseReconciliationService.js"
+      );
+      await reconcilePaidPurchasesForEmail(email, {
+        dryRun: false,
+        actorUserId: admin.id,
+        source: "google_bootstrap",
+      });
+    } catch (reconcileErr) {
+      console.error("[bootstrap] paid purchase reconcile failed", email, reconcileErr);
+    }
   }
 
   return { user: sessionUser, jwt: signAdminToken(sessionUser), isNewAccount };

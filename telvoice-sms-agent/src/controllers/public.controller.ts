@@ -290,12 +290,31 @@ export async function postPublicClaim(
       res.status(409).json({ ok: false, error: "claim_already_used" });
       return;
     }
-    if (order.credit_status !== "pending_claim") {
-      res.status(409).json({ ok: false, error: "order_not_pending_claim" });
-      return;
-    }
     if (order.payment_status !== "paid") {
       res.status(409).json({ ok: false, error: "order_not_paid" });
+      return;
+    }
+
+    if (order.credit_status === "credited") {
+      const { error: linkErr } = await getSupabase()
+        .from("sms_orders")
+        .update({
+          company_id: companyId,
+          claim_status: "claimed",
+          claimed_at: nowIso,
+          claimed_by_user_id: verified.userId,
+        })
+        .eq("id", order.id)
+        .eq("payment_status", "paid");
+      if (linkErr) {
+        wrapSupabaseError(linkErr, "publicClaim.already_credited");
+      }
+      res.json({ ok: true, order_id: order.id, status: "already_credited" });
+      return;
+    }
+
+    if (order.credit_status !== "pending_claim") {
+      res.status(409).json({ ok: false, error: "order_not_pending_claim" });
       return;
     }
 

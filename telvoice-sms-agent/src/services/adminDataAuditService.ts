@@ -238,13 +238,31 @@ export async function buildProtectionContext(): Promise<AuditProtectionContext> 
 
   const { data: paidOrders } = await sb
     .from("sms_orders")
-    .select("id, company_id, payment_status, credit_status")
+    .select(
+      "id, company_id, payment_status, credit_status, checkout_email, payer_email, metadata",
+    )
     .or("payment_status.eq.paid,credit_status.eq.credited");
   for (const row of paidOrders ?? []) {
+    const orderRow = row as Record<string, unknown>;
     if (row.company_id) companiesWithPaidOrders.add(String(row.company_id));
-    if (row.company_id && !orderLooksQa(row as Record<string, unknown>)) {
+    if (row.company_id && !orderLooksQa(orderRow)) {
       protectedCompanyIds.add(String(row.company_id));
       if (row.id) protectedOrderIds.add(String(row.id));
+    }
+    if (!orderLooksQa(orderRow)) {
+      for (const email of [
+        normalizeAuditEmail(row.checkout_email),
+        normalizeAuditEmail(row.payer_email),
+      ]) {
+        if (!email) continue;
+        const { data: emailCompanies } = await sb
+          .from("companies")
+          .select("id")
+          .ilike("billing_email", email);
+        for (const co of emailCompanies ?? []) {
+          if (co.id) protectedCompanyIds.add(String(co.id));
+        }
+      }
     }
   }
 
