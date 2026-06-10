@@ -130,6 +130,9 @@ function templatesPageStyles(): string {
       line-height: 1.4;
       font-size: 0.8rem;
     }
+    .tv-templates-table-panel .tv-section-head {
+      border-bottom: 1px solid var(--tv-border);
+    }
     .tv-templates-table-wrap {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
@@ -865,15 +868,15 @@ export function renderAppTemplatesPage(
       </p>
       <button type="button" class="btn btn-primary" id="tv-tpl-empty-create">Crear plantilla</button>
     </div>
-    <div class="tv-dash-block tv-dlr-report__table-block" id="tv-templates-table-block"${showTableInitially ? "" : " hidden"}>
-      <div class="tv-dash-block__head">
+    <section class="tv-panel tv-templates-table-panel" id="tv-templates-table-block"${showTableInitially ? "" : " hidden"}>
+      <header class="tv-section-head">
         <h2 class="tv-section-head__title">Tus plantillas</h2>
         <p class="tv-section-head__sub" id="tv-templates-list-sub">${
           dbAvailable
             ? "Plantillas sincronizadas con tu empresa."
             : "Los cambios se guardan en este navegador hasta conectar Supabase."
         }</p>
-      </div>
+      </header>
       <div class="tv-templates-table-wrap">
         <table class="tv-table tv-table--dense tv-templates-table">
           <thead>
@@ -891,7 +894,7 @@ export function renderAppTemplatesPage(
           <tbody id="tv-templates-tbody">${renderInitialTableRows(seedTemplates)}</tbody>
         </table>
       </div>
-    </div>
+    </section>
     </div>
     ${renderModalShell()}
     ${renderTemplatesScript(companyId, data)}`;
