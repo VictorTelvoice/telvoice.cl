@@ -371,6 +371,7 @@ export async function createOrder(input: {
 export async function patchOrderFields(
   orderId: string,
   patch: {
+    company_id?: string | null;
     payment_reference?: string | null;
     payment_status?: SmsOrderRow["payment_status"];
     credit_status?: SmsOrderRow["credit_status"];
@@ -384,6 +385,9 @@ export async function patchOrderFields(
   }
 
   const update: Record<string, unknown> = {};
+  if (patch.company_id !== undefined) {
+    update.company_id = patch.company_id;
+  }
   if (patch.payment_reference !== undefined) {
     update.payment_reference = patch.payment_reference;
   }
