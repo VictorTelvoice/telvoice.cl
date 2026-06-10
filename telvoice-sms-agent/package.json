@@ -42,6 +42,7 @@
     "reconcile:paid-unclaimed-purchases": "tsx scripts/reconcile-paid-unclaimed-purchases.mjs",
     "audit:review-required-paid-purchases": "tsx scripts/audit-review-required-paid-purchases.mjs",
     "reconcile:review-required-paid-purchases": "tsx scripts/reconcile-review-required-paid-purchases.mjs",
+    "notify:purchase-activation": "tsx scripts/notify-purchase-activation.mjs",
     "audit:agent-sales-prod": "node scripts/audit-agent-sales-prod.mjs",
     "audit:agent-sales-link-prod": "node scripts/run-licantravel-agent-sales-link-prod.mjs",
     "migrate:agent-core": "node scripts/apply-migrations-agent-core.mjs",
