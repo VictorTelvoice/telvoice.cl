@@ -171,8 +171,33 @@ export async function loadWalletLedgerAudit(sb, input = {}) {
     ]),
   );
 
+  const orphanReversalTxs = transactions.filter(
+    (t) =>
+      t.type === "adjustment" &&
+      t.metadata?.correction_type === "orphan_balance_reversal",
+  );
+  const sumOrphanReversal = orphanReversalTxs.reduce(
+    (s, t) => s + Math.abs(Number(t.sms_amount ?? 0)),
+    0,
+  );
+  const uncorrectedOrphanSms =
+    availableSms == null
+      ? null
+      : Math.max(0, availableSms - sumPurchaseCredit - sumManualCredit);
   const orphanBalanceDetected =
-    walletVsLedgerDiff != null && walletVsLedgerDiff > 0;
+    uncorrectedOrphanSms != null && uncorrectedOrphanSms > 0;
+  const balanceConsistent =
+    availableSms != null &&
+    uncorrectedOrphanSms === 0 &&
+    (sumOrphanReversal > 0 || walletVsLedgerDiff === 0);
+  const phantomOrphanEvidence = purchaseCredits
+    .filter((t) => Number(t.balance_before) > 0)
+    .map((t) => ({
+      purchase_credit_id: t.id,
+      order_id: t.reference_id,
+      balance_before: t.balance_before,
+      implied_phantom_orphan_sms: Number(t.balance_before),
+    }));
 
   return {
     email: norm,
@@ -203,11 +228,26 @@ export async function loadWalletLedgerAudit(sb, input = {}) {
         (t) => t.reference_type !== "sms_order" || !t.reference_id,
       ),
       orphan_balance_detected: orphanBalanceDetected,
-      recommended_correction_sms: orphanBalanceDetected ? walletVsLedgerDiff : 0,
+      uncorrected_orphan_sms: uncorrectedOrphanSms,
+      real_purchase_sms: sumPurchaseCredit,
+      orphan_reversal_documented_sms: sumOrphanReversal,
+      orphan_reversal_transactions: orphanReversalTxs.length,
+      balance_consistent: balanceConsistent,
+      phantom_orphan_evidence: phantomOrphanEvidence,
+      recommended_correction_sms: orphanBalanceDetected ? uncorrectedOrphanSms : 0,
       recommended_final_available_sms:
         orphanBalanceDetected && availableSms != null
-          ? availableSms - walletVsLedgerDiff
+          ? sumPurchaseCredit + sumManualCredit
           : availableSms,
+      ledger_breakdown: {
+        purchase_credit: sumPurchaseCredit,
+        manual_credit: sumManualCredit,
+        debits_and_adjustments: sumDebits,
+        orphan_reversal_documented: sumOrphanReversal,
+        ledger_net_sms: ledgerNet,
+        note:
+          "Tras corrección huérfana: ledger_net puede ser 0 mientras available_sms refleja la compra real (+purchase_credit) menos la reversa documentada del huérfano.",
+      },
     },
   };
 }
@@ -216,11 +256,16 @@ export function buildAuditReport(audit, options = {}) {
   const { metrics, company, wallet, transactions, orders, invoices, billingEmailLogs, emailLogs } =
     audit;
 
-  let recommendation = "Sin acción: wallet y ledger coinciden.";
+  let recommendation = "Sin acción: saldo consistente con compras documentadas.";
   if (metrics.orphan_balance_detected) {
-    recommendation = `Saldo huérfano detectado (+${metrics.wallet_vs_ledger_diff} SMS sin respaldo ledger). Corrección sugerida: debitar ${metrics.recommended_correction_sms} SMS para dejar available_sms en ${metrics.recommended_final_available_sms}.`;
+    const phantom = metrics.phantom_orphan_evidence?.[0]?.implied_phantom_orphan_sms;
+    recommendation = `Saldo huérfano sin corregir (+${metrics.uncorrected_orphan_sms} SMS sobre compra real ${metrics.real_purchase_sms}).${
+      phantom ? ` Evidencia: purchase_credit con balance_before=${phantom}.` : ""
+    } Corrección sugerida: debitar ${metrics.recommended_correction_sms} SMS → available_sms ${metrics.recommended_final_available_sms}.`;
+  } else if (metrics.orphan_reversal_documented_sms > 0 && metrics.balance_consistent) {
+    recommendation = `Saldo corregido: compra real ${metrics.real_purchase_sms} SMS, reversa huérfana documentada ${metrics.orphan_reversal_documented_sms} SMS, available_sms ${metrics.available_sms}.`;
   } else if (metrics.wallet_vs_ledger_diff < 0) {
-    recommendation = `Wallet menor que ledger (${metrics.wallet_vs_ledger_diff} SMS). Revisión manual requerida; no aplicar script de corrección huérfana.`;
+    recommendation = `Wallet menor que ledger (${metrics.wallet_vs_ledger_diff} SMS). Revisión manual requerida.`;
   }
 
   return {
@@ -243,6 +288,13 @@ export function buildAuditReport(audit, options = {}) {
       paid_real_orders_count: metrics.paid_real_orders_count,
       purchase_credit_by_order_id: metrics.purchase_credit_by_order_id,
       transactions_without_order_ref: metrics.purchase_credits_without_order_ref.length,
+      uncorrected_orphan_sms: metrics.uncorrected_orphan_sms,
+      real_purchase_sms: metrics.real_purchase_sms,
+      orphan_reversal_documented_sms: metrics.orphan_reversal_documented_sms,
+      orphan_reversal_transactions: metrics.orphan_reversal_transactions,
+      balance_consistent: metrics.balance_consistent,
+      phantom_orphan_evidence: metrics.phantom_orphan_evidence,
+      ledger_breakdown: metrics.ledger_breakdown,
       orphan_balance_detected: metrics.orphan_balance_detected,
       recommended_correction_sms: metrics.recommended_correction_sms,
       recommended_final_available_sms: metrics.recommended_final_available_sms,

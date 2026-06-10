@@ -166,12 +166,13 @@ async function validateJaoyarzuCorrection(audit) {
 
   if (!audit.metrics.orphan_balance_detected) {
     fail("orphan_balance_not_detected", {
+      uncorrected_orphan_sms: audit.metrics.uncorrected_orphan_sms,
       wallet_vs_ledger_diff: audit.metrics.wallet_vs_ledger_diff,
     });
   }
-  if (audit.metrics.wallet_vs_ledger_diff !== smsAmount) {
+  if (audit.metrics.uncorrected_orphan_sms !== smsAmount) {
     fail("orphan_amount_mismatch", {
-      diff: audit.metrics.wallet_vs_ledger_diff,
+      uncorrected_orphan_sms: audit.metrics.uncorrected_orphan_sms,
       smsAmount,
     });
   }
