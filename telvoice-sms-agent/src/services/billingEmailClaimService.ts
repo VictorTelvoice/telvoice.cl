@@ -4,6 +4,7 @@ import { recordBillingEvent } from "./billingEventService.js";
 import { isDuplicateKeyError } from "../utils/supabase-errors.js";
 
 export const INVOICE_RECEIPT_EMAIL_TYPE = "purchase_receipt";
+export const PURCHASE_ACTIVATION_NOTICE_EMAIL_TYPE = "purchase_activation_notice";
 
 export function normalizeBillingRecipientEmail(email: string): string {
   return email.trim().toLowerCase();
