@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { listCompanies } from "../services/companyService.js";
+import { listAdminClientsForScope } from "../services/adminClientsListService.js";
 import {
   getLiveTestControlPanel,
   getSmsProviderStatusView,
@@ -548,18 +548,24 @@ export async function getSaClientsPageTelco(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const companies = await listCompanies(100);
+    const listResult = await listAdminClientsForScope({
+      scope: req.query.scope,
+      search: req.query.q,
+    });
     const withPlans = await Promise.all(
-      companies.map(async (c) => {
-        const rp = await getCompanyRatePlan(c.id);
-        return { company: c, ratePlan: rp };
+      listResult.items.map(async (item) => {
+        const rp = await getCompanyRatePlan(item.company.id);
+        return { company: item.company, ratePlan: rp, audit: item.audit };
       }),
     );
     res.type("html").send(
       renderSaClientsPage({
         admin: req.adminUser!,
         clients: withPlans,
-        useReal: true,
+        summary: listResult.summary,
+        scope: listResult.summary.scope,
+        search: listResult.search,
+        searchHint: listResult.searchHint,
         ...flash(req),
       }),
     );
