@@ -31,6 +31,15 @@ import {
   formatScheduleInTimeZone,
 } from "../../utils/scheduleTime.js";
 
+function renderSendMessageValidationChips(): string {
+  return `<div class="tv-stat-chips tv-stat-chips--send-aside tv-validation-chips">
+    ${renderStatChip("Caracteres", "0", "default")}
+    ${renderStatChip("Segmentos", "0", "primary")}
+    ${renderStatChip("Costo est.", "0 SMS", "primary")}
+    ${renderStatChip("Codificación", "GSM-7", "default")}
+  </div>`;
+}
+
 export type SendSmsPageOptions = {
   error?: string;
   flash?: string;
@@ -515,6 +524,9 @@ export function renderAppSendSmsPage(
             <div class="form-group" data-tv-message-group>
               <label for="tv-sms-message">Mensaje SMS <span class="field-hint" id="tv-mass-msg-hint" style="font-weight:400"></span></label>
               <textarea id="tv-sms-message" class="tv-input-full" name="message" rows="5"${activeMode === "mass" || activeMode === "scheduled" ? "" : " required"} placeholder="Escribe tu mensaje…" ${disabledAttr}></textarea>
+              <div class="tv-send-validation tv-send-validation--inline" aria-live="polite">
+                ${renderSendMessageValidationChips()}
+              </div>
               <div class="tv-var-row">
                 <button type="button" class="tv-var-chip tv-template-btn" data-template="qa">QA pre-campaña</button>
                 <button type="button" class="tv-var-chip tv-template-btn" data-template="dlr">Test DLR</button>
@@ -538,13 +550,8 @@ export function renderAppSendSmsPage(
             bubbleId: "tv-send-preview-bubble",
           })}
         </div>
-        <div class="tv-send-validation">
-          <div class="tv-stat-chips tv-stat-chips--send-aside tv-validation-chips">
-            ${renderStatChip("Caracteres", "0", "default")}
-            ${renderStatChip("Segmentos", "0", "primary")}
-            ${renderStatChip("Costo est.", "0 SMS", "primary")}
-            ${renderStatChip("Codificación", "GSM-7", "default")}
-          </div>
+        <div class="tv-send-validation tv-send-validation--aside">
+          ${renderSendMessageValidationChips()}
         </div>
       </aside>
     </form>`;

@@ -377,20 +377,37 @@ export function getAppPanelStyles(): string {
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    .tv-send-validation--inline {
+      display: none;
+    }
     @media (max-width: 960px) {
       .tv-app-send-page .tv-send-layout {
         grid-template-columns: 1fr;
       }
       .tv-app-send-page .tv-send-aside {
-        position: static;
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: center;
-        max-width: none;
+        display: none;
       }
-      .tv-send-validation {
-        max-width: min(320px, 100%);
-        flex: 1 1 200px;
+      .tv-send-validation--inline {
+        display: block;
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        margin-top: 0.65rem;
+        padding: 0.55rem 0.65rem;
+        background: var(--tv-surface, #fff);
+        border: 1px solid var(--tv-border, #e2e8f0);
+        border-radius: 10px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      }
+      .tv-send-validation--inline .tv-stat-chips--send-aside {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.45rem;
+      }
+      .tv-send-validation--inline .tv-stat-chip__value {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
       }
     }
     .tv-hero-phone {
