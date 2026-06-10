@@ -1,4 +1,10 @@
 import type { AdminSessionUser } from "../../../types/admin.js";
+import type { AuditClassification } from "../../../types/adminDataAudit.js";
+import type {
+  AdminClientAuditInfo,
+  AdminClientScope,
+  AdminClientsScopeSummary,
+} from "../../../types/adminClientsList.js";
 import type { CompanyRow } from "../../../types/tenant.js";
 import type { PanelSmsMessageRow } from "../../../types/sms-panel.js";
 import type {
@@ -18,7 +24,8 @@ import {
 } from "../../../services/smsRouteSelectionService.js";
 import { escapeHtml, formatDate } from "../../../utils/html.js";
 import { wrapAdminPage } from "../admin-page-wrap.js";
-import { renderPageHeader } from "../page-kit.js";
+import { renderKpiCard } from "../components.js";
+import { renderFilterBar, renderFilterField, renderPageHeader } from "../page-kit.js";
 import { renderSuperadminBanner, statusBadgeSa } from "../superadmin-kit.js";
 
 type BaseOpts = {
@@ -531,23 +538,114 @@ export function renderSaRatePlanDetailPage(opts: BaseOpts & {
   return wrap(opts, "rate-plans", "Detalle rate plan", body);
 }
 
+const CLIENT_SCOPE_LABELS: Record<AdminClientScope, string> = {
+  real: "Producción real",
+  internal: "Interno Telvoice",
+  qa: "QA/Test",
+  review: "Revisión requerida",
+  all: "Todos",
+};
+
+function auditClassificationBadge(audit: AdminClientAuditInfo): string {
+  const variantMap: Record<AuditClassification, string> = {
+    PROD_REAL: "success",
+    PROD_INTERNAL: "ok",
+    QA_TEST: "warn",
+    DEMO_SEED: "warn",
+    ORPHAN: "err",
+    REVIEW_REQUIRED: "warn",
+  };
+  const variant = variantMap[audit.classification] ?? "muted";
+  const parts = [
+    `<span class="badge badge-${variant}">${escapeHtml(audit.classification)}</span>`,
+  ];
+  if (audit.protected) {
+    parts.push(`<span class="badge badge-success">protected</span>`);
+  }
+  if (audit.reason) {
+    parts.push(
+      `<span class="field-hint" title="${escapeHtml(audit.reason)}">${escapeHtml(audit.reason.slice(0, 48))}${audit.reason.length > 48 ? "…" : ""}</span>`,
+    );
+  }
+  return parts.join(" ");
+}
+
+function renderClientsScopeOptions(scope: AdminClientScope): string {
+  return (Object.keys(CLIENT_SCOPE_LABELS) as AdminClientScope[])
+    .map(
+      (key) =>
+        `<option value="${key}"${key === scope ? " selected" : ""}>${escapeHtml(CLIENT_SCOPE_LABELS[key])}</option>`,
+    )
+    .join("");
+}
+
+function renderClientsSummaryKpis(
+  summary: AdminClientsScopeSummary,
+  scope: AdminClientScope,
+): string {
+  const qaHint =
+    scope === "real"
+      ? "Ocultos en este listado operativo"
+      : "Total en base de datos";
+  return `<div class="tv-kpi-grid tv-kpi-grid--dense" style="margin-bottom:1rem">
+    ${renderKpiCard({
+      label: scope === "real" ? "Clientes reales visibles" : "Resultados visibles",
+      value: String(summary.visible),
+      icon: "groups",
+      variant: "primary",
+      hint: `De ${summary.totalCompanies} empresas registradas`,
+    })}
+    ${renderKpiCard({
+      label: "QA/Test",
+      value: String(summary.hiddenQa),
+      icon: "science",
+      variant: "warn",
+      hint: qaHint,
+    })}
+    ${renderKpiCard({
+      label: "Revisión requerida",
+      value: String(summary.reviewRequired),
+      icon: "rule",
+      variant: "warn",
+      hint: "ORPHAN + REVIEW_REQUIRED",
+    })}
+    ${renderKpiCard({
+      label: "Protegidos",
+      value: String(summary.protectedVisible),
+      icon: "shield",
+      variant: "success",
+      hint: "Nunca ocultos en Producción real",
+    })}
+  </div>`;
+}
+
 export function renderSaClientsPage(opts: BaseOpts & {
-  clients: { company: CompanyRow; ratePlan: CompanyRatePlanView | null }[];
-  useReal: boolean;
+  clients: {
+    company: CompanyRow;
+    ratePlan: CompanyRatePlanView | null;
+    audit: AdminClientAuditInfo;
+  }[];
+  summary: AdminClientsScopeSummary;
+  scope: AdminClientScope;
+  search: string;
+  searchHint?: string | null;
 }): string {
+  const showAuditColumn = opts.scope === "all" || opts.scope === "qa" || opts.scope === "review";
   const rows = opts.clients
-    .map(({ company: c, ratePlan: rp }) => {
+    .map(({ company: c, ratePlan: rp, audit }) => {
       const planCell = rp?.rate_plan_name
         ? `<span>${escapeHtml(rp.rate_plan_name)}</span><br><code class="tv-code-sm">${escapeHtml(rp.rate_plan_code ?? "")}</code>`
         : `<span class="badge badge-warn">Sin rate plan</span>`;
       const warn = !rp
         ? `<div class="field-hint" style="color:var(--warn)">Cliente sin rate plan para envío real.</div>`
         : "";
+      const auditCell = showAuditColumn ? `<td>${auditClassificationBadge(audit)}</td>` : "";
       return `<tr>
       <td><strong>${escapeHtml(c.name)}</strong>${warn}</td>
       <td>${escapeHtml(c.billing_email ?? c.name)}</td>
       <td>${escapeHtml(c.country ?? "CL")}</td>
       <td>${statusBadgeSa(c.status)}</td>
+      ${auditCell}
       <td>${planCell}</td>
       <td>
         <a href="/admin/wallets/${escapeHtml(c.id)}" class="row-link">Saldo / Rate plan</a>
@@ -556,14 +654,41 @@ export function renderSaClientsPage(opts: BaseOpts & {
     })
     .join("");
 
+  const colSpan = showAuditColumn ? 7 : 6;
+  const scopeNote =
+    opts.scope === "real"
+      ? `<p class="field-hint" style="margin:0 0 1rem">Vista operativa: solo clientes <strong>PROD_REAL</strong> o <strong>protected</strong>. Las cuentas QA/demo siguen en la base — cambia el ambiente para verlas.</p>`
+      : "";
+
+  const searchHintBlock = opts.searchHint
+    ? `<div class="alert alert-info" style="margin-bottom:1rem">${escapeHtml(opts.searchHint)} <a href="/admin/clients?scope=qa&amp;q=${encodeURIComponent(opts.search)}">Ver en QA/Test →</a></div>`
+    : "";
+
+  const filters = renderFilterBar(`<form method="get" action="/admin/clients" class="tv-filters__form">
+      ${renderFilterField(
+        "Ambiente",
+        `<select name="scope" class="tv-input">${renderClientsScopeOptions(opts.scope)}</select>`,
+      )}
+      ${renderFilterField(
+        "Buscar",
+        `<input type="search" name="q" class="tv-input" placeholder="Empresa, email, RUT…" value="${escapeHtml(opts.search)}" />`,
+      )}
+      <button type="submit" class="btn btn-secondary">Filtrar</button>
+      ${opts.search || opts.scope !== "real" ? `<a href="/admin/clients" class="btn btn-ghost">Restablecer</a>` : ""}
+    </form>`);
+
   const body = `${renderSuperadminBanner()}
     ${renderPageHeader({
       title: "Clientes empresariales",
-      subtitle: "Asigne un rate plan antes de habilitar envío real (live_test).",
+      subtitle: `Ambiente: ${CLIENT_SCOPE_LABELS[opts.scope]}. Asigne un rate plan antes de habilitar envío real (live_test).`,
     })}
+    ${renderClientsSummaryKpis(opts.summary, opts.scope)}
+    ${scopeNote}
+    ${filters}
+    ${searchHintBlock}
     <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Empresa</th><th>Email</th><th>País</th><th>Estado</th><th>Rate Plan</th><th></th>
-    </tr></thead><tbody>${rows || '<tr><td colspan="6">Sin empresas</td></tr>'}</tbody></table></div>`;
+      <th>Empresa</th><th>Email</th><th>País</th><th>Estado</th>${showAuditColumn ? "<th>Auditoría</th>" : ""}<th>Rate Plan</th><th></th>
+    </tr></thead><tbody>${rows || `<tr><td colspan="${colSpan}">Sin empresas en este ambiente</td></tr>`}</tbody></table></div>`;
   return wrap(opts, "clients", "Clientes", body);
 }
 
