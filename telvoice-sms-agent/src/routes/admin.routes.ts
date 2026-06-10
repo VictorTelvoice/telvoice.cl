@@ -148,6 +148,7 @@ import {
   postUpdateQueueSchedulerSettings,
 } from "../controllers/admin-traffic-control.controller.js";
 import {
+  getSaClientDetailPageTelco,
   getSaClientsPageTelco,
   getSaProviderDetailPage,
   getSaProviderTestPage,
@@ -763,3 +764,4 @@ adminRouter.post(
 );
 adminRouter.get("/messages/:id", requireAdminPage, getMessageDetail);
 adminRouter.get("/clients/test", requireAdminPage, getTestClientPage);
+adminRouter.get("/clients/:companyId", requireAdminPage, getSaClientDetailPageTelco);
