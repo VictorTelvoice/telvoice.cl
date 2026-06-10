@@ -4933,7 +4933,7 @@
     }
     .tv-buy-sms-calc .calc-cta-actions form {
       width: 100%;
-      max-width: 22rem;
+      max-width: 100%;
       margin: 0;
     }
     .tv-buy-sms-calc .calc-cta-btn {
@@ -4947,6 +4947,13 @@
       line-height: 1.25;
       cursor: pointer;
       transition: filter 0.2s ease, background-color 0.2s ease;
+    }
+    .tv-buy-sms-calc .calc-cta-btn--mp {
+      width: 100%;
+      max-width: 100%;
+      white-space: nowrap;
+      font-size: clamp(0.8125rem, 2.4vw, 1rem);
+      padding: 1rem 1.5rem;
     }
     @media (min-width: 640px) {
       .tv-buy-sms-calc .calc-cta-btn {
