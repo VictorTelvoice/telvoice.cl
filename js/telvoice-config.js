@@ -29,10 +29,10 @@ window.TELVOICE_CONFIG = {
   /** Chip «Bolsa prueba» en calculadora — solo QA interno; false en producción controlada. */
   showTestPurchaseChip: false,
   /**
-   * Bolsa Chile 200 SMS / $1.000 IVA incl. — QA compra real temporal (no usar «prueba» en UI).
-   * Revertir a false tras el go-live del cliente.
+   * Bolsa Chile 200 SMS / $1.000 IVA incl. — oculta en landing; solo vía agente.
+   * Cambiar a true para mostrar el chip en la calculadora de telvoice.cl.
    */
-  showRetail200PurchaseChip: true,
+  showRetail200PurchaseChip: false,
   retail200Bag: {
     id: "200",
     planName: "Bolsa Chile 200 SMS",
