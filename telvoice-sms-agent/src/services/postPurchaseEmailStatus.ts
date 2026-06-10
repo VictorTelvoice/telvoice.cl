@@ -170,10 +170,13 @@ function assessBillingStep(
     kind === "purchase_receipt"
       ? isBillingReceiptDeliveryConfirmed
       : (l: EmailLogSnapshot) => isDeliveryConfirmed(l, requiresReal);
-  const confirmed = nonResend.find((l) => confirmFn(l));
-  const inconsistencyLog = nonResend.find(
-    (l) => describeDeliveryInconsistency(l, requiresReal, kind) !== null,
-  );
+  // Reenvíos admin con Resend real deben bloquear duplicados (incl. is_resend=true).
+  const confirmed = logs.find((l) => confirmFn(l));
+  const inconsistencyLog = confirmed
+    ? undefined
+    : nonResend.find(
+        (l) => describeDeliveryInconsistency(l, requiresReal, kind) !== null,
+      );
   const inconsistency = inconsistencyLog
     ? describeDeliveryInconsistency(inconsistencyLog, requiresReal, kind)
     : null;

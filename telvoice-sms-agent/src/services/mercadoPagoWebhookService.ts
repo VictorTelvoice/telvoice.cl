@@ -25,9 +25,11 @@ import {
   recordSubscriptionPayment,
   updateSmsMpSubscriptionStatus,
 } from "./smsMpSubscriptionService.js";
-import { runBillingSyncBestEffort } from "./billingSyncService.js";
-import { getInvoiceByOrderId } from "./billingInvoiceService.js";
-import { hasActiveOrSentBillingEmail } from "./billingEmailClaimService.js";
+import {
+  handlePaidPurchasePostProcessing,
+  runPostCreditPurchaseFlow,
+  shouldSendPaymentClaimEmail,
+} from "./paidPurchasePostProcessingService.js";
 import type { MercadoPagoPaymentRecord } from "./mercadoPagoService.js";
 import type { SmsOrderRow } from "../types/wallet.js";
 
@@ -80,13 +82,16 @@ async function syncCreditedOrderState(
   return latest ?? order;
 }
 
-async function maybeRunBillingSyncForCreditedOrder(orderId: string): Promise<void> {
-  const invoice = await getInvoiceByOrderId(orderId);
-  if (invoice && (await hasActiveOrSentBillingEmail(invoice.id))) {
-    console.log("[mp-webhook] billing sync omitido (comprobante ya enviado o en envío)", orderId);
-    return;
-  }
-  await runBillingSyncBestEffort(orderId, { source: "mercadopago_webhook" });
+async function runPostPurchaseAfterCredit(orderId: string): Promise<void> {
+  const result = await runPostCreditPurchaseFlow(orderId, {
+    dryRun: false,
+    source: "mercadopago_webhook",
+    skipReconcile: true,
+  });
+  console.log("[mp-webhook] post_purchase_flow", orderId, result.action, {
+    wouldSendEmails: result.wouldSendEmails,
+    missingSteps: result.missingSteps,
+  });
 }
 
 async function resolveAlreadyCredited(
@@ -97,7 +102,7 @@ async function resolveAlreadyCredited(
   if (order.credit_status === "credited") {
     await patchOrderFields(orderId, { metadata: metaPatch });
     console.log("[mp-webhook] already_credited (orden acreditada)", orderId);
-    await maybeRunBillingSyncForCreditedOrder(orderId);
+    await runPostPurchaseAfterCredit(orderId);
     return { handled: true, orderId, result: "already_credited" };
   }
 
@@ -105,7 +110,7 @@ async function resolveAlreadyCredited(
   if (hasTx) {
     await syncCreditedOrderState(orderId, order, metaPatch);
     console.log("[mp-webhook] already_credited (purchase_credit existente)", orderId);
-    await maybeRunBillingSyncForCreditedOrder(orderId);
+    await runPostPurchaseAfterCredit(orderId);
     return { handled: true, orderId, result: "already_credited" };
   }
 
@@ -139,7 +144,7 @@ async function creditApprovedOrder(
     console.log("[mp-webhook] credited", orderId);
   }
 
-  await runBillingSyncBestEffort(orderId, { source: "mercadopago_webhook" });
+  await runPostPurchaseAfterCredit(orderId);
 
   return { handled: true, orderId, result };
 }
@@ -254,26 +259,22 @@ export async function processPublicCheckoutMercadoPagoWebhook(
     }
 
     const latestBefore = await getOrderById(orderId);
-    if (latestBefore?.credit_status === "credited") {
-      await patchOrderFields(orderId, { metadata: metaPatch });
-      return { handled: true, orderId, result: "already_credited" };
-    }
-
     if (latestBefore?.payment_status !== "paid") {
       await markOrderPaid(orderId, null);
     }
 
     await patchOrderFields(orderId, { metadata: metaPatch });
 
-    const { reconcilePaidPurchase } = await import(
-      "./billingPurchaseReconciliationService.js"
-    );
-    const reconcile = await reconcilePaidPurchase(orderId, {
+    const postResult = await handlePaidPurchasePostProcessing(orderId, {
       dryRun: false,
       source: "mp_webhook_public",
     });
 
-    if (reconcile.action === "failed" || reconcile.action === "skipped") {
+    const refreshed = await getOrderById(orderId);
+    if (
+      refreshed?.credit_status !== "credited" &&
+      (postResult.action === "reconcile_failed" || postResult.action === "not_credited")
+    ) {
       const { error: claimErr } = await getSupabase()
         .from("sms_orders")
         .update({
@@ -285,16 +286,20 @@ export async function processPublicCheckoutMercadoPagoWebhook(
       if (claimErr) {
         wrapSupabaseError(claimErr, "publicCheckoutWebhook.pending_claim");
       }
-    }
 
-    try {
-      await sendPaymentReceivedClaimEmail(orderId);
-    } catch (err) {
-      console.error("[mp-webhook] payment claim email failed", orderId, err);
+      if (await shouldSendPaymentClaimEmail(orderId)) {
+        try {
+          await sendPaymentReceivedClaimEmail(orderId);
+        } catch (err) {
+          console.error("[mp-webhook] payment claim email failed", orderId, err);
+        }
+      }
     }
 
     const result =
-      reconcile.action === "reconciled" || reconcile.action === "already_credited"
+      refreshed?.credit_status === "credited" ||
+      postResult.action === "processed" ||
+      postResult.action === "already_processed"
         ? "paid_credited"
         : "paid_pending_claim";
     return { handled: true, orderId, result };
