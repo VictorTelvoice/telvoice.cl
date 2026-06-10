@@ -8,7 +8,11 @@
  *   --apply                 Ejecutar (requiere --email)
  *   --email=user@domain.com Alcance por email
  *   --all --confirm="ACTIVAR COMPRAS MP REALES"  Apply masivo (no usar sin aprobación)
- *   --force-manual-review   Permite manual_review
+ *   --force-manual-review   Permite manual_review (escape genérico; evitar)
+ *   --resolve-manual-review Resuelve manual_review con validación MP+email
+ *   --company-id=UUID       Company exacta si hay múltiples candidatas
+ *   --confirm="..."         Requerido con --resolve-manual-review:
+ *                           RESOLVER MANUAL REVIEW MP
  *   --include-qa            Permite QA/test
  */
 import "dotenv/config";
@@ -28,6 +32,8 @@ const email = arg("email")?.trim().toLowerCase() ?? undefined;
 const all = hasFlag("--all");
 const confirm = arg("confirm") ?? undefined;
 const forceManualReview = hasFlag("--force-manual-review");
+const resolveManualReview = hasFlag("--resolve-manual-review");
+const companyId = arg("company-id")?.trim() ?? undefined;
 const includeQa = hasFlag("--include-qa");
 
 const { reconcileReviewRequiredPaidPurchases } = await import(
@@ -41,6 +47,8 @@ console.log(
       email: email ?? null,
       all,
       forceManualReview,
+      resolveManualReview,
+      companyId: companyId ?? null,
       includeQa,
       warning: apply
         ? "APLICANDO: acreditará wallet, asignará rate plan y actualizará flags PROD_REAL."
@@ -57,6 +65,8 @@ const { summary, results } = await reconcileReviewRequiredPaidPurchases({
   all,
   confirm,
   forceManualReview,
+  resolveManualReview,
+  companyId,
   includeQa,
   actorEmail: "reconcile_script",
 });
