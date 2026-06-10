@@ -52,13 +52,23 @@ function settingsToWebhook(s: ClientApiSettings): ClientApiWebhookConfig {
 
 function apiPageStyles(): string {
   return `<style>
-    .tv-api-page .tv-api-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
-      gap: 1.25rem;
-      align-items: start;
+    .tv-app-client.tv-app-client--api .tv-content {
+      width: 100%;
+      max-width: 100%;
     }
-    .tv-api-page .tv-api-main { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
+    .tv-app-client .tv-api-page {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .tv-api-page .tv-api-layout {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      width: 100%;
+      max-width: 100%;
+    }
+    .tv-api-page .tv-api-main { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; width: 100%; }
     .tv-api-key-row {
       display: flex;
       flex-wrap: wrap;
@@ -103,14 +113,6 @@ function apiPageStyles(): string {
       font-size: 0.82rem;
       cursor: pointer;
     }
-    .tv-api-security-list {
-      margin: 0;
-      padding-left: 1.15rem;
-      color: var(--tv-muted);
-      font-size: 0.88rem;
-      line-height: 1.55;
-    }
-    .tv-api-security-list li { margin-bottom: 0.5rem; }
     .tv-api-smpp-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -160,9 +162,6 @@ function apiPageStyles(): string {
       border-radius: var(--tv-radius);
       box-shadow: var(--tv-shadow-lg);
       padding: 1.25rem;
-    }
-    @media (max-width: 900px) {
-      .tv-api-page .tv-api-layout { grid-template-columns: 1fr; }
     }
     .tv-api-keys-table-wrap {
       overflow-x: auto;
@@ -883,25 +882,6 @@ function renderSmppPanel(settings: ClientApiSettings): string {
   </section>`;
 }
 
-function renderSecurityAside(): string {
-  return `<aside class="tv-panel">
-    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
-      <h2 class="tv-section-head__title">Buenas prácticas</h2>
-    </header>
-    <div class="tv-panel__body">
-      <ul class="tv-api-security-list">
-        <li>No compartas tu API Key en frontend público.</li>
-        <li>Usa variables de entorno en tu backend.</li>
-        <li>Regenera tu API Key si sospechas exposición.</li>
-        <li>Configura webhooks solo en dominios de confianza.</li>
-      </ul>
-      <p class="field-hint" style="margin:1rem 0 0">
-        Guía técnica completa en <a href="/app/api/docs">Documentación API</a>.
-      </p>
-    </div>
-  </aside>`;
-}
-
 function renderApiScript(ctx: AppPageContext, pageData: AppApiPageData): string {
   const companyId = escapeHtml(ctx.company.id || "default");
   const serverJson = JSON.stringify(pageData.settings).replace(/</g, "\\u003c");
@@ -1472,7 +1452,6 @@ export function renderAppApiPage(
         ${renderWebhookPanel()}
         ${renderSmppPanel(settings)}
       </div>
-      ${renderSecurityAside()}
     </div>
     </div>
     ${renderModals()}
@@ -1480,5 +1459,5 @@ export function renderAppApiPage(
     ${renderApiScript(ctx, data)}
     ${renderRealApiKeysScript(data)}`;
 
-  return wrapAppPage(ctx, "api", "API", body);
+  return wrapAppPage(ctx, "api", "API", body, { bodyClass: "tv-app-client--api" });
 }
