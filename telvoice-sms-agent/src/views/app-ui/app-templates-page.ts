@@ -133,6 +133,13 @@ function templatesPageStyles(): string {
     .tv-templates-table-panel .tv-section-head {
       border-bottom: 1px solid var(--tv-border);
     }
+    .tv-app-client .tv-templates-table-panel {
+      background: var(--tv-surface);
+      border: 1px solid var(--tv-border);
+      border-radius: var(--tv-radius);
+      box-shadow: var(--tv-shadow);
+      overflow: hidden;
+    }
     .tv-templates-table-wrap {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;

@@ -2146,6 +2146,25 @@ export function getAppPanelStyles(): string {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
+    .tv-app-client .tv-templates-table-panel {
+      background: var(--tv-surface);
+      border: 1px solid var(--tv-border);
+      border-radius: var(--tv-radius);
+      box-shadow: var(--tv-shadow);
+      overflow: hidden;
+    }
+    .tv-app-client .tv-templates-table-panel .tv-section-head {
+      border-bottom: 1px solid var(--tv-border);
+    }
+    .tv-app-client .tv-templates-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tv-light-theme .tv-templates-table-panel {
+      background: var(--tv-light-surface);
+      border-color: var(--tv-light-border);
+      box-shadow: var(--tv-shadow);
+    }
     .tv-app-client .tv-orders__filters-grid {
       grid-template-columns: minmax(0, 1fr) minmax(140px, 200px) !important;
     }
