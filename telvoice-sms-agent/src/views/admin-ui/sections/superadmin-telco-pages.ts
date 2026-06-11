@@ -731,6 +731,7 @@ function renderClientSafeActionsPanel(
         <label class="field-label">Teléfono</label>
         <input class="input" name="contact_phone" value="${escapeHtml(c.contact_phone ?? "")}" style="width:100%;margin-bottom:0.5rem" />
         ${detail.audit.protected ? `<p class="field-hint">Protected: solo contacto y país editables.</p>` : ""}
+        <label class="tv-checkbox" style="display:block;margin:0.35rem 0"><input type="checkbox" name="confirm_edit" value="1" required /> Confirmo editar datos de esta cuenta</label>
         ${renderDryRunCheckbox()}
         ${renderBtn("Guardar datos", { type: "submit", variant: "secondary", size: "sm" })}
       </form>`
@@ -781,13 +782,16 @@ function renderClientSafeActionsPanel(
   const receiptForm = perms.resendReceipt.allowed
     ? `<form method="post" action="/admin/clients/${escapeHtml(companyId)}/actions/resend-receipt" class="tv-panel" style="padding:0.75rem;margin-bottom:0.75rem">
         <h3 class="tv-panel__title" style="font-size:1rem">Reenviar comprobante</h3>
-        <p class="field-hint">Selecciona factura existente. No genera comprobante nuevo.</p>
+        <p class="field-hint">Selecciona factura existente. Reenvío (<code>is_resend=true</code>). No genera comprobante nuevo. Modo email: mock o Resend según <code>BILLING_EMAIL_MODE</code>.</p>
         <label class="field-label">Comprobante / factura</label>
         <select name="invoice_id" class="input" required style="width:100%;margin-bottom:0.5rem">
           <option value="">— Seleccionar —</option>
           ${invoiceOptions}
         </select>
         ${detail.recentInvoices.length === 0 ? `<p class="field-hint">Sin facturas en esta cuenta.</p>` : ""}
+        <label class="field-label">Confirmación literal</label>
+        <input class="input" name="confirmation" placeholder="REENVIAR COMPROBANTE &lt;número factura&gt;" required autocomplete="off" style="width:100%;margin-bottom:0.5rem" />
+        <p class="field-hint">Usa el número de la factura seleccionada (columna «Número» abajo).</p>
         ${renderDryRunCheckbox()}
         ${renderBtn("Reenviar comprobante", { type: "submit", variant: "secondary", size: "sm", disabled: detail.recentInvoices.length === 0 })}
       </form>`

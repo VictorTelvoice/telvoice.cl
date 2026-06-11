@@ -1,7 +1,6 @@
-import type { CompanyRow } from "../types/tenant.js";
 import type { MockSmsSendResult, PanelSmsMessageStatus } from "../types/sms-panel.js";
 import { AppError } from "../utils/errors.js";
-import { findCompanyById } from "./companyService.js";
+import { assertCompanyCanSendSms } from "./companySendGuardService.js";
 import {
   createPanelSmsMessage,
   getPanelSmsMessageById,
@@ -48,20 +47,6 @@ export type SendPanelSmsInput = SendMockSmsInput & {
   skipInterSendCooldown?: boolean;
 };
 
-async function assertCompanyCanSend(companyId: string): Promise<CompanyRow> {
-  const company = await findCompanyById(companyId);
-  if (!company) {
-    throw new AppError("Empresa no encontrada.", 404);
-  }
-  if (company.status !== "active") {
-    throw new AppError(
-      `La cuenta empresa está en estado «${company.status}»; no permite envíos.`,
-      403,
-    );
-  }
-  return company;
-}
-
 async function validateSendBasics(input: SendMockSmsInput): Promise<{
   messageText: string;
   senderId: string;
@@ -80,7 +65,7 @@ async function validateSendBasics(input: SendMockSmsInput): Promise<{
     throw new AppError("El remitente (Sender ID) es obligatorio.", 400);
   }
 
-  await assertCompanyCanSend(input.companyId);
+  await assertCompanyCanSendSms(input.companyId);
 
   const phone = validateRecipientNumber(input.to);
   if (!phone.ok || !phone.normalized) {

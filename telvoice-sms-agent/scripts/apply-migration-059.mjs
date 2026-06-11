@@ -37,8 +37,18 @@ try {
       AND table_name = 'admin_action_logs'
     ORDER BY ordinal_position
   `);
+  const archived = await client.query(`
+    SELECT column_name FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'admin_data_audit_flags'
+      AND column_name = 'archived_at'
+  `);
   console.log("OK: migración 059 aplicada (admin_action_logs).");
-  console.log(rows.map((r) => r.column_name).join(", "));
+  console.log("admin_action_logs:", rows.map((r) => r.column_name).join(", "));
+  console.log(
+    "admin_data_audit_flags.archived_at:",
+    archived.rows.length ? "presente" : "ausente",
+  );
 } finally {
   await client.end();
 }

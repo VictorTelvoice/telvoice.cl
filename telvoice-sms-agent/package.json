@@ -34,6 +34,7 @@
     "test:agent-sales": "tsx scripts/test-agent-sales-metrics.ts",
     "test:agent-greeting-reset": "tsx scripts/test-agent-greeting-reset.ts",
     "test:billing-email-idempotency": "tsx scripts/test-billing-email-idempotency.ts",
+    "test:admin-client-actions": "tsx scripts/test-admin-client-actions.ts",
     "migrate:057": "node scripts/apply-migration-057.mjs",
     "migrate:058": "node scripts/apply-migration-058.mjs",
     "audit:admin-data": "node scripts/admin-data-audit-report.mjs",

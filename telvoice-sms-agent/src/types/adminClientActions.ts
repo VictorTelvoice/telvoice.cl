@@ -14,6 +14,7 @@ export type AdminActionLogRow = {
   actor_user_id: string | null;
   actor_email: string | null;
   company_id: string;
+  company_snapshot?: Record<string, unknown>;
   action_type: AdminClientActionType | string;
   previous_state: Record<string, unknown>;
   new_state: Record<string, unknown>;

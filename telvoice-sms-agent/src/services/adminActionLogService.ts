@@ -11,6 +11,7 @@ export type InsertAdminActionLogInput = {
   actorUserId?: string | null;
   actorEmail?: string | null;
   companyId: string;
+  companySnapshot?: Record<string, unknown>;
   actionType: AdminClientActionType | string;
   previousState?: Record<string, unknown>;
   newState?: Record<string, unknown>;
@@ -26,6 +27,7 @@ export async function insertAdminActionLog(
     actor_user_id: input.actorUserId ?? null,
     actor_email: input.actorEmail ?? null,
     company_id: input.companyId,
+    company_snapshot: input.companySnapshot ?? {},
     action_type: input.actionType,
     previous_state: input.previousState ?? {},
     new_state: input.newState ?? {},
@@ -59,15 +61,16 @@ async function insertAdminActionLogPg(
     const res = await client.query(
       `
       INSERT INTO admin_action_logs (
-        actor_user_id, actor_email, company_id, action_type,
+        actor_user_id, actor_email, company_id, company_snapshot, action_type,
         previous_state, new_state, metadata, ip_address, user_agent
-      ) VALUES ($1::uuid, $2, $3::uuid, $4, $5::jsonb, $6::jsonb, $7::jsonb, $8, $9)
+      ) VALUES ($1::uuid, $2, $3::uuid, $4::jsonb, $5, $6::jsonb, $7::jsonb, $8::jsonb, $9, $10)
       RETURNING *
       `,
       [
         input.actorUserId ?? null,
         input.actorEmail ?? null,
         input.companyId,
+        JSON.stringify(input.companySnapshot ?? {}),
         input.actionType,
         JSON.stringify(input.previousState ?? {}),
         JSON.stringify(input.newState ?? {}),

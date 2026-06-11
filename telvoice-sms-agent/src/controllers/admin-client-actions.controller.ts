@@ -1,4 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
+import { requireSuperadmin, subjectFromAdmin } from "../auth/authorization.js";
+import { getCurrentUserProfile } from "../services/userProfileService.js";
 import {
   adminArchiveQaClient,
   adminReactivateClientSending,
@@ -56,6 +58,18 @@ function parseTestMode(body: Record<string, unknown>): boolean {
   return body.test_mode === "1" || body.testMode === "true" || body.test_mode === "on";
 }
 
+async function assertSuperAdminActor(req: Request): Promise<void> {
+  const admin = req.adminUser;
+  if (!admin) {
+    throw new AppError("Sesión admin requerida.", 401);
+  }
+  const profile = req.userProfile ?? (await getCurrentUserProfile(admin));
+  const subject = subjectFromAdmin(admin, profile);
+  if (!requireSuperadmin(subject)) {
+    throw new AppError("Solo superadmin puede ejecutar esta acción.", 403);
+  }
+}
+
 async function withClientContext(
   req: Request,
   next: NextFunction,
@@ -65,6 +79,7 @@ async function withClientContext(
   ) => Promise<void>,
 ): Promise<void> {
   try {
+    await assertSuperAdminActor(req);
     const companyId = validateUuidParam(String(req.params.companyId), "companyId");
     const ctx = await loadClientActionContext(companyId);
     if (!ctx) {
@@ -179,6 +194,7 @@ export async function postAdminClientResendReceipt(
       ctx,
       actorFromRequest(req),
       invoiceId,
+      String(body.confirmation ?? ""),
       actionMeta(req),
       { dryRun: parseDryRun(body) },
     );

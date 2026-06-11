@@ -1,5 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
-import { canAccessAdmin, subjectFromAdmin } from "../auth/authorization.js";
+import {
+  canAccessAdmin,
+  requireSuperadmin,
+  subjectFromAdmin,
+} from "../auth/authorization.js";
 import {
   getAdminJwtCookieName,
   getClientJwtCookieName,
@@ -141,6 +145,42 @@ export function requireAdminPage(
   next: NextFunction,
 ): void {
   void enforceAdminPanelAccess(req, res, next);
+}
+
+/** Solo superadmin (acciones sensibles sobre clientes, config crítica). */
+export async function requireSuperAdminPage(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  if (!req.adminUser) {
+    res.redirect(adminLoginRedirect(req, req.originalUrl || "/admin"));
+    return;
+  }
+
+  const profile =
+    req.userProfile ?? (await getCurrentUserProfile(req.adminUser));
+  const subject = subjectFromAdmin(req.adminUser, profile);
+
+  if (!canAccessAdmin(subject)) {
+    clearInvalidAdminCookie(req, res);
+    res.redirect(adminLoginRedirect(req, req.originalUrl || "/admin"));
+    return;
+  }
+
+  if (!requireSuperadmin(subject)) {
+    res
+      .status(403)
+      .type("html")
+      .send(
+        renderAdminForbiddenPage({
+          adminName: req.adminUser.name,
+        }),
+      );
+    return;
+  }
+
+  next();
 }
 
 async function enforceAdminPanelAccess(

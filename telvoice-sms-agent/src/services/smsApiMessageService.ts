@@ -18,6 +18,7 @@ import type {
 import { SMS_API_MESSAGE_STATUSES } from "../types/sms-api-messages.js";
 import { isMissingTableError } from "../utils/db-table.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
+import { assertCompanyCanSendSms } from "./companySendGuardService.js";
 
 const MAX_MESSAGE_LENGTH = 918;
 const MAX_SENDER_LENGTH = 11;
@@ -359,6 +360,8 @@ export async function resolveSandboxSmsSend(
   input: CreateSandboxSmsApiMessageInput,
   payload: SmsApiSendPayload,
 ): Promise<SandboxSmsSendResolution> {
+  await assertCompanyCanSendSms(input.companyId);
+
   const environment = input.environment ?? "sandbox";
   const payloadHash = input.payloadHash ?? hashSmsApiSendPayload(payload);
 

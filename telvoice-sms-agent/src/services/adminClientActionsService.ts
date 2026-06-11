@@ -56,6 +56,10 @@ function rowToCompany(row: Record<string, unknown>): CompanyRow {
   };
 }
 
+/**
+ * Clasificación para acciones admin: QA/heurística tiene precedencia sobre email protegido.
+ * PROTECTED_CLIENT_EMAILS solo aplica sin flag QA ni señales QA en nombre/email.
+ */
 function buildAuditInfo(
   company: CompanyRow,
   flag: {
@@ -66,23 +70,57 @@ function buildAuditInfo(
   } | null,
 ): AdminClientAuditInfo {
   const archivedAt = flag?.archivedAt ?? null;
-  if (flag?.classification) {
-    const billingEmail = normalizeAuditEmail(company.billing_email);
-    const protectedFlag =
-      Boolean(flag.protected) || PROTECTED_CLIENT_EMAILS.has(billingEmail);
+  const billingEmail = normalizeAuditEmail(company.billing_email);
+  const emailProtected = PROTECTED_CLIENT_EMAILS.has(billingEmail);
+  const heuristicQa = isHeuristicQa(company);
+
+  if (heuristicQa) {
+    const flagIsQa =
+      Boolean(flag?.classification) &&
+      QA_CLASSIFICATIONS.has(flag!.classification);
+    const classification = flagIsQa
+      ? (flag!.classification as AdminClientAuditInfo["classification"])
+      : "QA_TEST";
+    // Flag PROD_REAL erróneo en cuentas QA: no heredar protected del email ni del flag.
+    const protectedFlag = flagIsQa ? Boolean(flag!.protected) : false;
     return {
-      classification: flag.classification as AdminClientAuditInfo["classification"],
+      classification,
+      protected: protectedFlag,
+      reason: flag?.reason ?? null,
+      hasFlag: Boolean(flag?.classification),
+      archivedAt,
+    };
+  }
+
+  if (flag?.classification) {
+    const classification =
+      flag.classification as AdminClientAuditInfo["classification"];
+    const isQaClass = QA_CLASSIFICATIONS.has(classification);
+    const protectedFlag = isQaClass
+      ? Boolean(flag.protected)
+      : Boolean(flag.protected) || emailProtected;
+    return {
+      classification,
       protected: protectedFlag,
       reason: flag.reason,
       hasFlag: true,
       archivedAt,
     };
   }
-  const email = normalizeAuditEmail(company.billing_email ?? company.name);
-  const protectedClient = PROTECTED_CLIENT_EMAILS.has(email);
+
+  if (emailProtected) {
+    return {
+      classification: "PROD_REAL",
+      protected: true,
+      reason: null,
+      hasFlag: false,
+      archivedAt,
+    };
+  }
+
   return {
-    classification: protectedClient ? "PROD_REAL" : "REVIEW_REQUIRED",
-    protected: protectedClient,
+    classification: "REVIEW_REQUIRED",
+    protected: false,
     reason: null,
     hasFlag: false,
     archivedAt,
@@ -147,10 +185,11 @@ export async function loadClientActionContext(
           : null;
     const audit = buildAuditInfo(company, flag);
     const classification = audit.classification;
-    const isProdReal =
-      audit.protected || PROD_REAL_CLASSIFICATIONS.has(classification);
     const isQa =
       QA_CLASSIFICATIONS.has(classification) || isHeuristicQa(company);
+    const isProdReal =
+      !isQa &&
+      (audit.protected || PROD_REAL_CLASSIFICATIONS.has(classification));
 
     const orderRes = await client.query(
       `
@@ -271,6 +310,15 @@ export function getClientActionPermissions(
   };
 }
 
+function companyAuditSnapshot(ctx: ClientActionContext): Record<string, unknown> {
+  return {
+    name: ctx.company.name,
+    billing_email: ctx.company.billing_email,
+    classification: ctx.audit.classification,
+    protected: ctx.audit.protected,
+  };
+}
+
 async function recordAction(
   actor: ClientActionActor,
   ctx: ClientActionContext,
@@ -286,6 +334,7 @@ async function recordAction(
     actorUserId: actor.userId,
     actorEmail: actor.email,
     companyId: ctx.company.id,
+    companySnapshot: companyAuditSnapshot(ctx),
     actionType,
     previousState,
     newState,
@@ -588,6 +637,13 @@ export async function adminResendWelcomeEmail(
 
   const result = await sendWelcomeAndSmsCreditedEmail(orderId, {
     skipIdempotency: true,
+    skipOrderMetadataPatch: true,
+    emailMetadata: {
+      source: "admin_client_resend_welcome",
+      is_resend: true,
+      actor_email: actor.email,
+      admin_action: true,
+    },
   });
 
   if (!result.ok) {
@@ -624,6 +680,7 @@ export async function adminResendReceiptEmail(
   ctx: ClientActionContext,
   actor: ClientActionActor,
   invoiceId: string,
+  confirmation: string,
   meta: ClientActionRequestMeta,
   options?: { dryRun?: boolean },
 ): Promise<ClientActionResult> {
@@ -657,9 +714,12 @@ export async function adminResendReceiptEmail(
     throw new AppError("Comprobante no encontrado para este cliente.", 404);
   }
 
+  const invoiceNumber = String(invoiceRow.invoice_number ?? invoiceId);
+  assertLiteralConfirmation(confirmation, `REENVIAR COMPROBANTE ${invoiceNumber}`);
+
   const previousState = {
     invoiceId,
-    invoiceNumber: invoiceRow.invoice_number,
+    invoiceNumber,
     status: invoiceRow.status,
   };
 
@@ -733,9 +793,10 @@ export async function adminArchiveQaClient(
     companyStatus: ctx.company.status,
     archivedAt: ctx.archivedAt,
   };
+  const now = new Date().toISOString();
   const newState = {
-    companyStatus: "blocked",
-    archivedAt: new Date().toISOString(),
+    companyStatus: ctx.company.status,
+    archivedAt: now,
   };
 
   if (options?.dryRun) {
@@ -748,15 +809,6 @@ export async function adminArchiveQaClient(
       newState,
     };
   }
-
-  const now = new Date().toISOString();
-
-  const { error: companyError } = await getSupabase()
-    .from("companies")
-    .update({ status: "blocked" })
-    .eq("id", ctx.company.id);
-
-  if (companyError) wrapSupabaseError(companyError, "adminArchiveQaClient.status");
 
   const { error: flagError } = await getSupabase()
     .from("admin_data_audit_flags")

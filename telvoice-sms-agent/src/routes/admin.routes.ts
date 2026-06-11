@@ -218,6 +218,7 @@ import {
   loadAdminSession,
   redirectIfAuthenticated,
   requireAdminPage,
+  requireSuperAdminPage,
 } from "../middleware/admin-auth.js";
 import {
   getWholesaleHub,
@@ -272,34 +273,36 @@ adminRouter.post("/logout", postLogout);
 
 adminRouter.get("/", requireAdminPage, getDashboard);
 adminRouter.get("/clients", requireAdminPage, getSaClientsPageTelco);
+// Acciones mutables sobre clientes: solo superadmin. Sin CSRF token global en admin;
+// confirmación literal + sesión cookie en acciones sensibles (TODO: CSRF admin).
 adminRouter.post(
   "/clients/:companyId/actions/update-profile",
-  requireAdminPage,
+  requireSuperAdminPage,
   postAdminClientUpdateProfile,
 );
 adminRouter.post(
   "/clients/:companyId/actions/suspend-sending",
-  requireAdminPage,
+  requireSuperAdminPage,
   postAdminClientSuspendSending,
 );
 adminRouter.post(
   "/clients/:companyId/actions/reactivate-sending",
-  requireAdminPage,
+  requireSuperAdminPage,
   postAdminClientReactivateSending,
 );
 adminRouter.post(
   "/clients/:companyId/actions/resend-welcome",
-  requireAdminPage,
+  requireSuperAdminPage,
   postAdminClientResendWelcome,
 );
 adminRouter.post(
   "/clients/:companyId/actions/resend-receipt",
-  requireAdminPage,
+  requireSuperAdminPage,
   postAdminClientResendReceipt,
 );
 adminRouter.post(
   "/clients/:companyId/actions/archive-qa",
-  requireAdminPage,
+  requireSuperAdminPage,
   postAdminClientArchiveQa,
 );
 adminRouter.get("/pricing", requireAdminPage, getSaPricingPage);
