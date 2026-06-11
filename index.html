@@ -410,21 +410,8 @@
         opacity: 0.75;
       }
     }
-    @keyframes heroPhoneFloat {
-      0%,
-      100% {
-        transform: translateY(0) rotate(0deg);
-      }
-      33% {
-        transform: translateY(-5px) rotate(0.35deg);
-      }
-      66% {
-        transform: translateY(-2px) rotate(-0.28deg);
-      }
-    }
     .hero-phone-float {
       transform-origin: 50% 88%;
-      animation: heroPhoneFloat 5.5s ease-in-out infinite;
     }
 
     #api .api-content {
@@ -1671,15 +1658,15 @@
     }
 
     .section-hero-wrap {
-      --hero-top-gap: 3.25rem;
-      --hero-tags-gap: 1rem;
+      --hero-top-gap: 2.9rem;
+      --hero-tags-gap: 0.9rem;
       padding-top: var(--hero-top-gap);
-      padding-bottom: 1rem;
+      padding-bottom: 0.9rem;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      min-height: calc(100svh - 4.25rem);
-      min-height: calc(100dvh - 4.25rem);
+      min-height: calc(90svh - 3.85rem);
+      min-height: calc(90dvh - 3.85rem);
       box-sizing: border-box;
     }
     .section-hero-wrap > .relative.z-10 {
@@ -1687,9 +1674,9 @@
     }
     @media (min-width: 768px) {
       .section-hero-wrap {
-        --hero-top-gap: 4.25rem;
-        --hero-tags-gap: 1.25rem;
-        padding-bottom: 1.25rem;
+        --hero-top-gap: 3.8rem;
+        --hero-tags-gap: 1.125rem;
+        padding-bottom: 1.125rem;
       }
     }
     @media (max-width: 767px) {
@@ -1703,18 +1690,14 @@
         scroll-margin-top: 4.75rem;
       }
       .section-hero-wrap {
-        --hero-top-gap: 2rem;
-        --hero-tags-gap: 0.65rem;
-        padding-top: calc(2rem + env(safe-area-inset-top, 0px));
-        padding-bottom: 0.35rem;
-        min-height: calc(100svh - 4rem);
-        min-height: calc(100dvh - 4rem);
+        --hero-top-gap: 1.8rem;
+        --hero-tags-gap: 0.6rem;
+        padding-top: calc(1.8rem + env(safe-area-inset-top, 0px));
+        padding-bottom: 0.3rem;
+        min-height: calc(90svh - 3.6rem);
+        min-height: calc(90dvh - 3.6rem);
       }
-      /* Sin desplazamiento flotante del teléfono ni nubes en móvil */
-      .hero-phone-mobile .hero-phone-float {
-        animation: none !important;
-        transform: none !important;
-      }
+      /* Sin nubes animadas en móvil */
       .section-hero-wrap .hero-cloud-soft {
         animation: none !important;
       }
