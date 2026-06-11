@@ -24,6 +24,7 @@ export type SimActivationRequestRow = {
   included_sms_monthly: number;
   activation_status: SimActivationStatus;
   client_number_id: string | null;
+  inventory_number_id: string | null;
   admin_notes: string | null;
   use_case: string | null;
   created_at: string;

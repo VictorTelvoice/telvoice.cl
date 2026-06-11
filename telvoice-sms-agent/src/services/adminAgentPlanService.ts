@@ -210,7 +210,7 @@ export async function activateAdminAgentPlanRequest(
   if (!request) {
     throw new AppError("Solicitud no encontrada.", 404);
   }
-  if (!["pending", "reviewing", "approved"].includes(request.status)) {
+  if (!["pending", "reviewing", "approved", "paid_pending_setup"].includes(request.status)) {
     throw new AppError(
       `No se puede activar una solicitud en estado ${agentPlanStatusLabel(request.status)}.`,
       400,

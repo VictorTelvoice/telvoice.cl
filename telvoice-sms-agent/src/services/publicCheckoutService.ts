@@ -12,12 +12,20 @@ import {
   patchOrderFields,
 } from "./smsOrderService.js";
 import { getSmsPackageById } from "./smsPackageService.js";
-import { getSimPlan, isSimPlanId, simCheckoutItemDescription, simCheckoutItemTitle } from "../utils/simPlans.js";
 import {
-  type AgentAddonId,
-  getAgentAddon,
-  isAgentAddonId,
-} from "../utils/agentAddons.js";
+  getSimPlan,
+  getBundledAgentAddonForSimPlan,
+  isSimPlanId,
+  simCheckoutItemDescription,
+  simCheckoutItemTitle,
+} from "../utils/simPlans.js";
+import { type AgentAddonId, getAgentAddon } from "../utils/agentAddons.js";
+import { linkSimActivationInventory } from "./simActivationService.js";
+import {
+  getPublicAvailability,
+  releaseReservationForOrder,
+  reserveAvailableNumberForCheckout,
+} from "./realNumberInventoryService.js";
 
 export type PublicCheckoutStartResult = {
   orderId: string;
@@ -157,7 +165,7 @@ export async function startPublicSimCheckout(input: {
 
 export async function startPublicSimAgentBundleCheckout(input: {
   simPlanId: string;
-  agentAddonId: AgentAddonId;
+  agentAddonId?: AgentAddonId;
   checkoutEmail: string;
   payerEmail?: string;
   payerName: string;
@@ -177,21 +185,39 @@ export async function startPublicSimAgentBundleCheckout(input: {
   if (!isSimPlanId(input.simPlanId)) {
     throw new AppError("Plan SIM no válido.", 400, "INVALID_SIM_PLAN");
   }
-  if (!isAgentAddonId(input.agentAddonId)) {
-    throw new AppError("Plan agente no válido.", 400, "INVALID_AGENT_ADDON");
-  }
 
   const plan = getSimPlan(input.simPlanId);
   if (!plan) {
     throw new AppError("Plan SIM no encontrado.", 404);
   }
 
-  const addon =
-    input.agentAddonId === "none" ? null : getAgentAddon(input.agentAddonId);
+  const bundledAgentId = getBundledAgentAddonForSimPlan(plan.plan_id);
+  const agentAddonId = input.agentAddonId ?? bundledAgentId;
+  if (agentAddonId !== bundledAgentId && input.agentAddonId) {
+    throw new AppError(
+      "El plan de agente no coincide con el plan de numeración seleccionado.",
+      400,
+      "INVALID_AGENT_BUNDLE",
+    );
+  }
+
+  const addon = getAgentAddon(bundledAgentId);
+  if (!addon) {
+    throw new AppError("Plan agente no válido.", 400, "INVALID_AGENT_ADDON");
+  }
+
+  const availability = await getPublicAvailability();
+  if (!availability.in_stock) {
+    throw new AppError(
+      "No hay números reales disponibles en este momento.",
+      409,
+      "NO_STOCK",
+    );
+  }
 
   const { order, claimToken } = await createPublicSimAgentBundleOrder({
     plan,
-    agentAddonId: input.agentAddonId,
+    agentAddonId: bundledAgentId,
     checkoutEmail: input.checkoutEmail,
     payerEmail: input.payerEmail,
     payerName: input.payerName,
@@ -201,23 +227,57 @@ export async function startPublicSimAgentBundleCheckout(input: {
     useCase: input.useCase,
   });
 
-  const preference = await createPublicSimAgentBundlePreference({
-    orderId: order.id,
-    plan,
-    agentAddonId: input.agentAddonId,
-    agentAddon: addon,
-    totalAmount: Math.round(Number(order.amount)),
-    payer: {
-      email: input.checkoutEmail,
-      name: input.payerName.trim() || "Cliente Telvoice",
+  let inventoryNumberId: string;
+  try {
+    const reserved = await reserveAvailableNumberForCheckout({
+      orderId: order.id,
+    });
+    inventoryNumberId = reserved.id;
+    await linkSimActivationInventory(order.id, inventoryNumberId);
+  } catch (err) {
+    await patchOrderFields(order.id, {
+      payment_status: "cancelled",
+      metadata: {
+        ...(order.metadata ?? {}),
+        checkout_cancel_reason: "no_stock",
+      },
+    });
+    throw err;
+  }
+
+  await patchOrderFields(order.id, {
+    metadata: {
+      ...(order.metadata ?? {}),
+      inventory_number_id: inventoryNumberId,
+      agent_addon_id: bundledAgentId,
     },
-    publicCheckoutReference: order.public_checkout_reference ?? order.id,
   });
+
+  let preference;
+  try {
+    preference = await createPublicSimAgentBundlePreference({
+      orderId: order.id,
+      plan,
+      agentAddonId: bundledAgentId,
+      agentAddon: addon,
+      totalAmount: Math.round(Number(order.amount)),
+      payer: {
+        email: input.checkoutEmail,
+        name: input.payerName.trim() || "Cliente Telvoice",
+      },
+      publicCheckoutReference: order.public_checkout_reference ?? order.id,
+    });
+  } catch (err) {
+    await releaseReservationForOrder(order.id);
+    throw err;
+  }
 
   await patchOrderFields(order.id, {
     payment_reference: preference.preference_id ?? order.payment_reference,
     metadata: {
       ...(order.metadata ?? {}),
+      inventory_number_id: inventoryNumberId,
+      agent_addon_id: bundledAgentId,
       mercadopago_preference_id: preference.preference_id,
       mercadopago_init_point: preference.checkout_url,
     },

@@ -1,6 +1,8 @@
 /**
- * Planes de numeración SIM real — fuente de verdad en el agente (mirror de lib/sim-plans.js).
+ * Planes de numeración real Telvoice — fuente de verdad en el agente (mirror de lib/sim-plans.js).
  */
+
+import type { AgentAddonId } from "./agentAddons.js";
 
 const IVA = 0.19;
 
@@ -25,10 +27,26 @@ export type SimPlanDefinition = {
 
 export type SimPlanId = "sim_starter" | "sim_pro" | "sim_power";
 
+/** Plan SIM público → agente interno incluido en el bundle (sin cargo adicional). */
+export const SIM_PLAN_AGENT_MAP: Record<
+  SimPlanId,
+  Exclude<AgentAddonId, "none">
+> = {
+  sim_starter: "agent_start",
+  sim_pro: "agent_pro",
+  sim_power: "agent_business",
+};
+
+export function getBundledAgentAddonForSimPlan(
+  planId: SimPlanId,
+): Exclude<AgentAddonId, "none"> {
+  return SIM_PLAN_AGENT_MAP[planId];
+}
+
 export const SIM_PLANS: Record<SimPlanId, SimPlanDefinition> = {
   sim_starter: {
     plan_id: "sim_starter",
-    name: "Numeración SIM Starter",
+    name: "Número Real Starter",
     sim_label: "Starter",
     product_type: "sim_subscription",
     billing_period: "monthly",
@@ -38,7 +56,7 @@ export const SIM_PLANS: Record<SimPlanId, SimPlanDefinition> = {
   },
   sim_pro: {
     plan_id: "sim_pro",
-    name: "Numeración SIM Pro",
+    name: "Número Real Pro",
     sim_label: "Pro",
     product_type: "sim_subscription",
     billing_period: "monthly",
@@ -48,7 +66,7 @@ export const SIM_PLANS: Record<SimPlanId, SimPlanDefinition> = {
   },
   sim_power: {
     plan_id: "sim_power",
-    name: "Numeración SIM Power",
+    name: "Número Real Power",
     sim_label: "Power",
     product_type: "sim_subscription",
     billing_period: "monthly",
@@ -77,8 +95,9 @@ export function simCheckoutItemTitle(plan: SimPlanDefinition): string {
 
 export function simCheckoutItemDescription(plan: SimPlanDefinition): string {
   const qty = new Intl.NumberFormat("es-CL").format(plan.sms_quantity);
+  const agent = getBundledAgentAddonForSimPlan(plan.plan_id);
   return (
-    `Suscripción mensual: número SIM real en Chile con ${qty} SMS salientes incluidos por mes. ` +
-    "IVA incluido en el total. Activación manual tras confirmar el pago."
+    `Suscripción mensual: ${plan.name} con agente Telvoice ${agent.replace("agent_", "")} ` +
+    `y ${qty} SMS salientes incluidos por mes. IVA incluido. Activación tras confirmar el pago.`
   );
 }

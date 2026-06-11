@@ -2,13 +2,12 @@ import { randomUUID } from "node:crypto";
 import { env } from "../config/env.js";
 import { AppError } from "../utils/errors.js";
 import {
-  agentAddonCheckoutItemDescription,
-  agentAddonCheckoutItemTitle,
   type AgentAddonDefinition,
   type AgentAddonId,
 } from "../utils/agentAddons.js";
 import {
   simCheckoutItemDescription,
+  simCheckoutItemTitle,
   type SimPlanDefinition,
 } from "../utils/simPlans.js";
 
@@ -543,26 +542,16 @@ export async function createPublicSimAgentBundlePreference(input: {
     payer.identification = { type: "Otro", number: "123456789" };
   }
 
-  const simTitle = `Numeración SIM ${input.plan.sim_label}`;
+  const simTitle = simCheckoutItemTitle(input.plan);
   const items: Array<Record<string, unknown>> = [
     {
       title: simTitle.slice(0, 256),
       description: simCheckoutItemDescription(input.plan).slice(0, 256),
       quantity: 1,
       currency_id: "CLP",
-      unit_price: input.plan.total_amount,
+      unit_price: input.totalAmount,
     },
   ];
-
-  if (input.agentAddon) {
-    items.push({
-      title: agentAddonCheckoutItemTitle(input.agentAddon).slice(0, 256),
-      description: agentAddonCheckoutItemDescription(input.agentAddon).slice(0, 256),
-      quantity: 1,
-      currency_id: "CLP",
-      unit_price: input.agentAddon.priceClp,
-    });
-  }
 
   const successUrl = `${env.publicAppUrl}/checkout/success?ref=${encodeURIComponent(input.publicCheckoutReference)}`;
   const failureUrl = `${env.publicSiteUrl}/pago-error`;

@@ -27,10 +27,15 @@ import {
 } from "../utils/order-display.js";
 import {
   createSimActivationRequest,
+  linkSimActivationInventory,
   markSimActivationPaidPending,
 } from "./simActivationService.js";
-import { getSimPlan } from "../utils/simPlans.js";
+import { getSimPlan, getBundledAgentAddonForSimPlan } from "../utils/simPlans.js";
 import { getAgentAddon } from "../utils/agentAddons.js";
+import {
+  markNumberPaymentApproved,
+  releaseReservationForOrder,
+} from "./realNumberInventoryService.js";
 import { provisionCompanyFromCheckout } from "./checkoutAccountProvisionService.js";
 import { createAgentPlanRequestFromCheckout } from "./clientAgentPlanService.js";
 import { syncPaymentCardFromOrderMetadata } from "./companyPaymentCardService.js";
@@ -293,8 +298,13 @@ export async function processPublicCheckoutMercadoPagoWebhook(
           "",
       );
       const plan = getSimPlan(planId);
+      const inventoryNumberId =
+        refreshed?.metadata?.inventory_number_id != null
+          ? String(refreshed.metadata.inventory_number_id)
+          : null;
+
       if (plan) {
-        await createSimActivationRequest({
+        const activation = await createSimActivationRequest({
           orderId,
           plan,
           checkoutEmail:
@@ -321,7 +331,18 @@ export async function processPublicCheckoutMercadoPagoWebhook(
               ? refreshed.metadata.use_case
               : undefined,
           activationStatus: "paid_pending_activation",
+          inventoryNumberId: inventoryNumberId ?? undefined,
         });
+
+        if (inventoryNumberId) {
+          await markNumberPaymentApproved({
+            orderId,
+            simActivationRequestId: activation.id,
+          });
+          await linkSimActivationInventory(orderId, inventoryNumberId);
+        }
+      } else if (inventoryNumberId) {
+        await markNumberPaymentApproved({ orderId });
       }
       await markSimActivationPaidPending(orderId);
 
@@ -329,7 +350,9 @@ export async function processPublicCheckoutMercadoPagoWebhook(
         const checkoutEmail =
           refreshed.checkout_email ??
           String(refreshed.metadata?.checkout_email ?? "");
-        const agentAddonId = String(refreshed.metadata?.agent_addon_id ?? "none");
+        const bundledAgentId = plan
+          ? getBundledAgentAddonForSimPlan(plan.plan_id)
+          : String(refreshed.metadata?.agent_addon_id ?? "agent_pro");
 
         const provision = await provisionCompanyFromCheckout({
           order: refreshed,
@@ -356,7 +379,7 @@ export async function processPublicCheckoutMercadoPagoWebhook(
               : undefined,
         });
 
-        const addon = getAgentAddon(agentAddonId);
+        const addon = getAgentAddon(bundledAgentId);
         if (addon?.planCode) {
           await createAgentPlanRequestFromCheckout({
             companyId: provision.companyId,
@@ -402,6 +425,9 @@ export async function processPublicCheckoutMercadoPagoWebhook(
       payment_status: "rejected",
       metadata: metaPatch,
     });
+    if (isSim || isBundle) {
+      await releaseReservationForOrder(orderId);
+    }
     return { handled: true, orderId, result: "rejected" };
   }
 
@@ -410,6 +436,9 @@ export async function processPublicCheckoutMercadoPagoWebhook(
       payment_status: "cancelled",
       metadata: metaPatch,
     });
+    if (isSim || isBundle) {
+      await releaseReservationForOrder(orderId);
+    }
     return { handled: true, orderId, result: "cancelled" };
   }
 

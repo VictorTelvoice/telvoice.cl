@@ -16,14 +16,29 @@ import { runBillingSyncBestEffort } from "../services/billingSyncService.js";
 import { sendPostClaimEmailsBestEffort } from "../services/transactionalEmailService.js";
 import { listCustomerVisiblePackages } from "../services/smsPackageService.js";
 import { isSimAgentBundleOrder, isSimSubscriptionOrder } from "../utils/order-display.js";
-import { isSimPlanId } from "../utils/simPlans.js";
-import { isAgentAddonId } from "../utils/agentAddons.js";
+import { isSimPlanId, getBundledAgentAddonForSimPlan } from "../utils/simPlans.js";
+import { isAgentAddonId, type AgentAddonId } from "../utils/agentAddons.js";
+import { AppError } from "../utils/errors.js";
+import { getPublicAvailability } from "../services/realNumberInventoryService.js";
 import { linkSimActivationToCompany } from "../services/simActivationService.js";
 import {
   getBearerTokenFromRequestHeader,
   verifySupabaseAccessToken,
 } from "../services/supabaseAuthVerifyService.js";
 import { validateUuidParam } from "../utils/validation.js";
+
+export async function getPublicSimAvailability(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const availability = await getPublicAvailability();
+    res.json({ success: true, ...availability });
+  } catch (error) {
+    next(error);
+  }
+}
 
 export async function getPublicProducts(
   _req: Request,
@@ -216,50 +231,66 @@ export async function postPublicCheckout(
       const simPlanId = String(body.sim_plan_id ?? body.plan_id ?? "")
         .trim()
         .toLowerCase();
-      const agentAddonId = String(body.agent_addon_id ?? "none")
-        .trim()
-        .toLowerCase();
+      const agentAddonRaw =
+        typeof body.agent_addon_id === "string"
+          ? body.agent_addon_id.trim().toLowerCase()
+          : undefined;
 
       if (!isSimPlanId(simPlanId)) {
         throw new ValidationError("sim_plan_id no válido.");
       }
-      if (!isAgentAddonId(agentAddonId)) {
+      if (agentAddonRaw && !isAgentAddonId(agentAddonRaw)) {
         throw new ValidationError("agent_addon_id no válido.");
       }
       if (!payerName || payerName.length < 2) {
         throw new ValidationError("payer_name es obligatorio.");
       }
 
-      const result = await startPublicSimAgentBundleCheckout({
-        simPlanId,
-        agentAddonId,
-        checkoutEmail,
-        payerEmail,
-        payerName,
-        companyName:
-          typeof body.company_name === "string"
-            ? body.company_name.trim()
-            : undefined,
-        phone: typeof body.phone === "string" ? body.phone.trim() : undefined,
-        taxId:
-          typeof body.tax_id === "string"
-            ? body.tax_id.trim()
-            : typeof body.rut === "string"
-              ? body.rut.trim()
-              : undefined,
-        useCase:
-          typeof body.use_case === "string" ? body.use_case.trim() : undefined,
-      });
+      const bundledAgent = getBundledAgentAddonForSimPlan(simPlanId);
+      const agentAddonId = (agentAddonRaw ?? bundledAgent) as AgentAddonId;
 
-      res.status(201).json({
-        success: true,
-        product_type: "sim_agent_bundle",
-        order_id: result.orderId,
-        claim_token: result.claimToken,
-        checkout_url: result.checkoutUrl,
-        public_checkout_reference: result.publicCheckoutReference,
-        preference_id: result.preferenceId,
-      });
+      try {
+        const result = await startPublicSimAgentBundleCheckout({
+          simPlanId,
+          agentAddonId,
+          checkoutEmail,
+          payerEmail,
+          payerName,
+          companyName:
+            typeof body.company_name === "string"
+              ? body.company_name.trim()
+              : undefined,
+          phone: typeof body.phone === "string" ? body.phone.trim() : undefined,
+          taxId:
+            typeof body.tax_id === "string"
+              ? body.tax_id.trim()
+              : typeof body.rut === "string"
+                ? body.rut.trim()
+                : undefined,
+          useCase:
+            typeof body.use_case === "string" ? body.use_case.trim() : undefined,
+        });
+
+        res.status(201).json({
+          success: true,
+          product_type: "sim_agent_bundle",
+          order_id: result.orderId,
+          claim_token: result.claimToken,
+          checkout_url: result.checkoutUrl,
+          public_checkout_reference: result.publicCheckoutReference,
+          preference_id: result.preferenceId,
+        });
+      } catch (err) {
+        if (err instanceof AppError && err.code === "NO_STOCK") {
+          res.status(409).json({
+            success: false,
+            error: err.message,
+            code: "no_stock",
+          });
+          return;
+        }
+        throw err;
+      }
       return;
     }
 

@@ -1,6 +1,11 @@
 import type { AdminSessionUser } from "../../../types/admin.js";
 import type { SimActivationRequestListItem } from "../../../types/sim-activation.js";
+import type { RealNumberInventoryRow, RealNumberInventorySummary } from "../../../types/real-number-inventory.js";
 import { simActivationStatusLabel } from "../../../services/simActivationService.js";
+import {
+  realNumberConnectionStatusLabel,
+  realNumberSalesStatusLabel,
+} from "../../../services/realNumberInventoryService.js";
 import { agentPlanStatusLabel } from "../../../services/clientAgentPlanService.js";
 import { formatClp } from "../../../utils/clp-format.js";
 import type { AdminClientNumberItem } from "../../../services/adminClientNumberService.js";
@@ -40,6 +45,9 @@ export type AdminNumeracionesPageContext = {
   showCreateForm?: boolean;
   simActivations: SimActivationRequestListItem[];
   simModulePending?: boolean;
+  inventory: RealNumberInventoryRow[];
+  inventorySummary: RealNumberInventorySummary | null;
+  inventoryModulePending?: boolean;
 };
 
 function pickQuery(
@@ -206,6 +214,9 @@ function renderSimActivationsTable(items: SimActivationRequestListItem[]): strin
           <form method="post" action="/admin/numeraciones/sim-activations/${escapeHtml(a.id)}/review" style="display:inline">
             <button type="submit" class="btn btn-ghost btn-sm">En revisión</button>
           </form>
+          <form method="post" action="/admin/numeraciones/sim-activations/${escapeHtml(a.id)}/activate" style="display:inline">
+            <button type="submit" class="btn btn-primary btn-sm">Activar</button>
+          </form>
           <form method="post" action="/admin/numeraciones/sim-activations/${escapeHtml(a.id)}/notes" style="display:inline-flex;gap:0.25rem;margin-top:0.35rem">
             <input type="text" name="admin_notes" class="tv-filter-input" placeholder="Nota interna" value="${escapeHtml(a.admin_notes ?? "")}" />
             <button type="submit" class="btn btn-ghost btn-sm">Guardar nota</button>
@@ -217,6 +228,65 @@ function renderSimActivationsTable(items: SimActivationRequestListItem[]): strin
 
   return `<div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
     <th>Fecha</th><th>Cliente</th><th>Empresa</th><th>Plan SIM</th><th>Agente</th><th>SMS</th><th>Estado SIM</th><th>Ref.</th><th>Acciones</th>
+  </tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function renderInventorySummary(summary: RealNumberInventorySummary): string {
+  const cards = [
+    ["Total", summary.total],
+    ["Conectados disponibles", summary.connected_available],
+    ["Pendientes conexión", summary.preconfigured_pending],
+    ["Reservados", summary.reserved],
+    ["Vendidos pendientes", summary.sold_pending_activation],
+    ["Activos asignados", summary.active_assigned],
+  ]
+    .map(
+      ([label, value]) =>
+        `<div class="tv-stat-card"><span class="tv-stat-label">${escapeHtml(String(label))}</span><strong class="tv-stat-value">${escapeHtml(String(value))}</strong></div>`,
+    )
+    .join("");
+
+  return `<div class="tv-stat-grid">${cards}</div>
+    <form method="post" action="/admin/numeraciones/inventory/release-expired" style="margin-top:0.75rem">
+      <button type="submit" class="btn btn-ghost btn-sm">Liberar reservas expiradas</button>
+    </form>`;
+}
+
+function renderInventoryTable(items: RealNumberInventoryRow[]): string {
+  if (!items.length) {
+    return `<p class="field-hint">Sin registros en inventario. Carga números vía script admin (no versionado).</p>`;
+  }
+
+  const rows = items
+    .map((n) => {
+      const salesCls =
+        n.sales_status === "connected_available"
+          ? "ok"
+          : n.sales_status === "reserved_pending_payment"
+            ? "warn"
+            : "muted";
+      return `<tr>
+        <td><strong>${escapeHtml(n.e164_number)}</strong></td>
+        <td>${escapeHtml(n.provider)}</td>
+        <td>${n.webhook_connected ? "Sí" : "No"}</td>
+        <td>${escapeHtml(realNumberConnectionStatusLabel(n.connection_status))}</td>
+        <td><span class="badge badge-${salesCls}">${escapeHtml(realNumberSalesStatusLabel(n.sales_status))}</span></td>
+        <td>${escapeHtml(n.gateway_id ?? "—")}${n.sim_slot ? `<br><small>slot: ${escapeHtml(n.sim_slot)}</small>` : ""}</td>
+        <td>${n.reserved_until ? formatDate(n.reserved_until) : "—"}</td>
+        <td style="white-space:nowrap">
+          <form method="post" action="/admin/numeraciones/inventory/${escapeHtml(n.id)}/mark-connected" style="display:inline">
+            <button type="submit" class="btn btn-ghost btn-sm">Marcar conectado</button>
+          </form>
+          <form method="post" action="/admin/numeraciones/inventory/${escapeHtml(n.id)}/not-for-sale" style="display:inline">
+            <button type="submit" class="btn btn-ghost btn-sm">No vendible</button>
+          </form>
+        </td>
+      </tr>`;
+    })
+    .join("");
+
+  return `<div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
+    <th>Número</th><th>Proveedor</th><th>Webhook</th><th>Conexión</th><th>Venta</th><th>Gateway / SIM</th><th>Reserva hasta</th><th>Acciones</th>
   </tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
@@ -258,6 +328,12 @@ export function renderAdminNumeracionesPage(
       </form>`,
     )}
     ${renderPanel(
+      "Inventario números reales",
+      ctx.inventoryModulePending
+        ? `<p class="field-hint">Requiere migración 057 (real_number_inventory) en Supabase.</p>`
+        : `${ctx.inventorySummary ? renderInventorySummary(ctx.inventorySummary) : ""}${renderInventoryTable(ctx.inventory)}`,
+    )}
+    ${renderPanel(
       "Activaciones SIM pendientes",
       ctx.simModulePending
         ? `<p class="field-hint">Requiere migración 055 (sim_activation_requests) en Supabase.</p>`
@@ -265,7 +341,13 @@ export function renderAdminNumeracionesPage(
     )}
     ${ctx.showCreateForm !== false ? renderCreateForm(ctx.companies, ctx.prefillCompanyId) : ""}
     ${renderPanel("Numeraciones registradas", renderTable(ctx.numbers))}
-    <style>.tv-row-qa { background: rgba(245,158,11,0.04); }</style>
+    <style>
+      .tv-row-qa { background: rgba(245,158,11,0.04); }
+      .tv-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: 0.75rem; }
+      .tv-stat-card { border: 1px solid rgba(0,0,0,0.08); border-radius: 0.75rem; padding: 0.75rem; }
+      .tv-stat-label { display: block; font-size: 0.75rem; color: #64748b; }
+      .tv-stat-value { font-size: 1.25rem; }
+    </style>
     ${renderAgentModuleStyles()}`;
 
   return wrap(opts, body);

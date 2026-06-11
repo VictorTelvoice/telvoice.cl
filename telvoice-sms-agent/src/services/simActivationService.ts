@@ -9,6 +9,12 @@ import { isMissingTableError } from "../utils/db-table.js";
 import { AppError } from "../utils/errors.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 import { listAgentPlanRequestsByOrderIds, getAgentPlanDefinition } from "./clientAgentPlanService.js";
+import {
+  assignInventoryNumberToCompany,
+  getInventoryById,
+} from "./realNumberInventoryService.js";
+import { activateAdminAgentPlanRequest } from "./adminAgentPlanService.js";
+import { createAdminClientNumber } from "./adminClientNumberService.js";
 
 export type SimActivationModuleState = {
   available: boolean;
@@ -38,6 +44,8 @@ function mapRow(row: Record<string, unknown>): SimActivationRequestRow {
     activation_status: row.activation_status as SimActivationStatus,
     client_number_id:
       row.client_number_id != null ? String(row.client_number_id) : null,
+    inventory_number_id:
+      row.inventory_number_id != null ? String(row.inventory_number_id) : null,
     admin_notes: row.admin_notes != null ? String(row.admin_notes) : null,
     use_case: row.use_case != null ? String(row.use_case) : null,
     created_at: String(row.created_at),
@@ -101,6 +109,7 @@ export async function createSimActivationRequest(input: {
   taxId?: string;
   useCase?: string;
   activationStatus?: SimActivationStatus;
+  inventoryNumberId?: string;
 }): Promise<SimActivationRequestRow> {
   const existing = await getSimActivationByOrderId(input.orderId);
   if (existing) {
@@ -122,6 +131,7 @@ export async function createSimActivationRequest(input: {
       plan_name: input.plan.name,
       included_sms_monthly: input.plan.sms_quantity,
       activation_status: input.activationStatus ?? "pending_payment",
+      inventory_number_id: input.inventoryNumberId ?? null,
     })
     .select("*")
     .single();
@@ -287,6 +297,100 @@ export async function updateSimActivationStatus(
     throw wrapSupabaseError(error, "updateSimActivationStatus");
   }
 
+  return mapRow(data as Record<string, unknown>);
+}
+
+export async function linkSimActivationInventory(
+  orderId: string,
+  inventoryNumberId: string,
+): Promise<void> {
+  const sb = getSupabase();
+  const { error } = await sb
+    .from("sim_activation_requests")
+    .update({ inventory_number_id: inventoryNumberId })
+    .eq("order_id", orderId);
+  if (error) {
+    if (isMissingTableError(error)) return;
+    throw wrapSupabaseError(error, "linkSimActivationInventory");
+  }
+}
+
+export async function activatePaidSimActivationRequest(
+  activationId: string,
+): Promise<SimActivationRequestRow> {
+  const activation = await getSimActivationById(activationId);
+  if (!activation) {
+    throw new AppError("Activación SIM no encontrada.", 404);
+  }
+  if (
+    !["paid_pending_activation", "activation_review", "number_reserved", "number_assigned"].includes(
+      activation.activation_status,
+    )
+  ) {
+    throw new AppError(
+      `No se puede activar en estado ${simActivationStatusLabel(activation.activation_status)}.`,
+      400,
+    );
+  }
+  if (!activation.company_id) {
+    throw new AppError(
+      "La activación no tiene empresa vinculada. Espera el aprovisionamiento post-pago.",
+      400,
+    );
+  }
+  if (!activation.inventory_number_id) {
+    throw new AppError("La activación no tiene número de inventario asignado.", 400);
+  }
+
+  const inventory = await getInventoryById(activation.inventory_number_id);
+  if (!inventory) {
+    throw new AppError("Número de inventario no encontrado.", 404);
+  }
+
+  let clientNumberId = activation.client_number_id;
+
+  if (!clientNumberId) {
+    const created = await createAdminClientNumber({
+      company_id: activation.company_id,
+      number: inventory.e164_number,
+      country_code: inventory.country_code,
+      type: "sim_real",
+      status: "active",
+      provider: inventory.provider,
+      sim_slot: inventory.sim_slot ?? undefined,
+      gateway_id: inventory.gateway_id ?? undefined,
+    });
+    clientNumberId = created.id;
+  }
+
+  await assignInventoryNumberToCompany({
+    inventoryId: inventory.id,
+    companyId: activation.company_id,
+    clientNumberId,
+    simActivationRequestId: activation.id,
+  });
+
+  const agentByOrder = await listAgentPlanRequestsByOrderIds([activation.order_id]);
+  const agentReq = agentByOrder.get(activation.order_id);
+  if (agentReq && agentReq.status === "paid_pending_setup") {
+    await activateAdminAgentPlanRequest(agentReq.id, {
+      includedNumberId: clientNumberId,
+    });
+  }
+
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from("sim_activation_requests")
+    .update({
+      activation_status: "active",
+      client_number_id: clientNumberId,
+      activated_at: new Date().toISOString(),
+    })
+    .eq("id", activationId)
+    .select("*")
+    .single();
+
+  if (error) throw wrapSupabaseError(error, "activatePaidSimActivationRequest");
   return mapRow(data as Record<string, unknown>);
 }
 

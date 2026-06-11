@@ -10,7 +10,16 @@ import {
   getSimActivationModuleState,
   listAdminPendingSimActivations,
   updateSimActivationStatus,
+  activatePaidSimActivationRequest,
 } from "../services/simActivationService.js";
+import {
+  getInventorySummary,
+  getRealNumberInventoryModuleState,
+  listInventory,
+  markInventoryNotForSale,
+  markWebhookConnected,
+  releaseExpiredReservation,
+} from "../services/realNumberInventoryService.js";
 import type { ClientNumberStatus, ClientNumberType } from "../types/client-numbers.js";
 import { AppError } from "../utils/errors.js";
 import { validateUuidParam } from "../utils/validation.js";
@@ -48,14 +57,19 @@ export async function getAdminNumeracionesPage(
     const filters = parseAdminNumeracionesFilters(
       req.query as Record<string, string | string[] | undefined>,
     );
-    const [numbers, companies, simModule] = await Promise.all([
+    const [numbers, companies, simModule, inventoryModule] = await Promise.all([
       listAdminClientNumbers(filters),
       listCompanies(200),
       getSimActivationModuleState(),
+      getRealNumberInventoryModuleState(),
     ]);
     const simActivations = simModule.available
       ? await listAdminPendingSimActivations()
       : [];
+    const inventorySummary = inventoryModule.available
+      ? await getInventorySummary()
+      : null;
+    const inventory = inventoryModule.available ? await listInventory() : [];
     const prefillCompanyId =
       typeof req.query.company_id === "string"
         ? req.query.company_id.trim()
@@ -69,6 +83,9 @@ export async function getAdminNumeracionesPage(
         prefillCompanyId,
         simActivations,
         simModulePending: simModule.migrationPending,
+        inventory,
+        inventorySummary,
+        inventoryModulePending: inventoryModule.migrationPending,
       }),
     );
   } catch (error) {
@@ -191,6 +208,86 @@ export async function postAdminSimActivationNotes(
     }
     await updateSimActivationStatus(id, row.activation_status, notes);
     redirectNumeraciones(res, { ok: "Nota guardada." });
+  } catch (error) {
+    if (error instanceof AppError) {
+      redirectNumeraciones(res, { error: error.message });
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function postAdminSimActivationActivate(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = validateUuidParam(String(req.params.id ?? ""), "activación SIM");
+    await activatePaidSimActivationRequest(id);
+    redirectNumeraciones(res, { ok: "Activación completada: numeración y agente asignados." });
+  } catch (error) {
+    if (error instanceof AppError) {
+      redirectNumeraciones(res, { error: error.message });
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function postAdminInventoryMarkConnected(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = validateUuidParam(String(req.params.id ?? ""), "inventario");
+    await markWebhookConnected(id, {
+      webhookUrl: String(req.body?.webhook_url ?? "") || undefined,
+      gatewayId: String(req.body?.gateway_id ?? "") || undefined,
+      simSlot: String(req.body?.sim_slot ?? "") || undefined,
+    });
+    redirectNumeraciones(res, { ok: "Número marcado como conectado y disponible para venta." });
+  } catch (error) {
+    if (error instanceof AppError) {
+      redirectNumeraciones(res, { error: error.message });
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function postAdminInventoryNotForSale(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = validateUuidParam(String(req.params.id ?? ""), "inventario");
+    await markInventoryNotForSale(id);
+    redirectNumeraciones(res, { ok: "Número marcado como no vendible." });
+  } catch (error) {
+    if (error instanceof AppError) {
+      redirectNumeraciones(res, { error: error.message });
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function postAdminInventoryReleaseExpired(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const released = await releaseExpiredReservation();
+    redirectNumeraciones(res, {
+      ok:
+        released > 0
+          ? `${released} reserva(s) expirada(s) liberada(s).`
+          : "No había reservas expiradas.",
+    });
   } catch (error) {
     if (error instanceof AppError) {
       redirectNumeraciones(res, { error: error.message });

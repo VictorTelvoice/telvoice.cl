@@ -3525,38 +3525,39 @@
         <div id="numeracion-sim" class="precios-tab-panel precios-tab-panel--sim" role="tabpanel" aria-labelledby="precios-tab-sim" hidden tabindex="-1">
           <header class="section-header">
             <span class="section-eyebrow">Numeración SIM real</span>
-            <h3 class="calc-hero-title mt-3 font-h2 text-h2 text-[clamp(1.35rem,3.5vw,2rem)]">Arma tu agente SMS con numeración real</h3>
-            <p class="section-intro mt-4 text-on-surface-variant leading-relaxed max-w-3xl mx-auto">Elige una numeración SIM real en Chile, agrega el nivel de agente que necesita tu empresa y paga en minutos desde el landing. Tu cuenta Telvoice se crea automáticamente después del pago.</p>
+            <h3 class="calc-hero-title mt-3 font-h2 text-h2 text-[clamp(1.35rem,3.5vw,2rem)]">Número real + agente Telvoice en un solo plan</h3>
+            <p class="section-intro mt-4 text-on-surface-variant leading-relaxed max-w-3xl mx-auto">Elige tu plan (Starter, Pro o Power). Cada uno incluye numeración SIM real en Chile, agente Telvoice acorde al plan y SMS salientes mensuales. Paga en minutos; tu cuenta se crea automáticamente después del pago.</p>
           </header>
 
           <div class="sim-builder" id="sim-agent-builder">
             <section class="sim-builder-step" aria-labelledby="sim-builder-step-1">
               <p class="sim-builder-step__title">Paso 1</p>
-              <h4 class="sim-builder-step__heading" id="sim-builder-step-1">Elige tu numeración SIM real</h4>
-              <div class="sim-builder-grid sim-builder-grid--sim" role="radiogroup" aria-label="Plan de numeración SIM">
+              <h4 class="sim-builder-step__heading" id="sim-builder-step-1">Elige tu plan</h4>
+              <div class="sim-builder-grid sim-builder-grid--sim" role="radiogroup" aria-label="Plan número real Telvoice">
                 <button type="button" class="sim-select-card sim-select-card--starter" data-sim-plan="sim_starter" aria-pressed="false">
                   <p class="sim-select-card__name">Starter</p>
-                  <p class="sim-select-card__meta">1.000 SMS salientes incluidos / mes</p>
+                  <p class="sim-select-card__meta">1.000 SMS salientes / mes · Agente Start incluido</p>
                   <p class="sim-select-card__price">$19.990</p>
                 </button>
                 <button type="button" class="sim-select-card sim-select-card--pro sim-select-card--recommended" data-sim-plan="sim_pro" aria-pressed="true">
                   <span class="sim-select-card__ribbon">Popular</span>
                   <p class="sim-select-card__name">Pro</p>
-                  <p class="sim-select-card__meta">2.000 SMS salientes incluidos / mes</p>
+                  <p class="sim-select-card__meta">2.000 SMS salientes / mes · Agente Pro incluido</p>
                   <p class="sim-select-card__price">$39.990</p>
                 </button>
                 <button type="button" class="sim-select-card sim-select-card--power" data-sim-plan="sim_power" aria-pressed="false">
                   <p class="sim-select-card__name">Power</p>
-                  <p class="sim-select-card__meta">4.000 SMS salientes incluidos / mes</p>
+                  <p class="sim-select-card__meta">4.000 SMS salientes / mes · Agente Business incluido</p>
                   <p class="sim-select-card__price">$99.990</p>
                 </button>
               </div>
             </section>
 
-            <section class="sim-builder-step" aria-labelledby="sim-builder-step-2">
+            <section class="sim-builder-step sim-builder-step--hidden" aria-labelledby="sim-builder-step-2" hidden>
               <p class="sim-builder-step__title">Paso 2</p>
-              <h4 class="sim-builder-step__heading" id="sim-builder-step-2">Agrega tu Agente Telvoice</h4>
-              <div class="sim-builder-grid sim-builder-grid--agent" role="radiogroup" aria-label="Plan de agente">
+              <h4 class="sim-builder-step__heading" id="sim-builder-step-2">Agente Telvoice incluido</h4>
+              <p class="field-hint">El agente viene incluido según el plan elegido (Start, Pro o Business).</p>
+              <div class="sim-builder-grid sim-builder-grid--agent" role="radiogroup" aria-label="Plan de agente" hidden>
                 <button type="button" class="sim-select-card" data-agent-addon="none" aria-pressed="false">
                   <p class="sim-select-card__name">Solo numeración</p>
                   <p class="sim-select-card__meta">Contratar solo la numeración SIM real sin agente adicional.</p>
@@ -3582,7 +3583,7 @@
             </section>
 
             <section class="sim-builder-step" aria-labelledby="sim-builder-step-3">
-              <p class="sim-builder-step__title">Paso 3</p>
+              <p class="sim-builder-step__title">Paso 2</p>
               <h4 class="sim-builder-step__heading" id="sim-builder-step-3">Datos de activación</h4>
               <form class="sim-builder-form" id="sim-builder-form" novalidate>
                 <div class="sim-builder-field">
@@ -3613,13 +3614,15 @@
             </section>
 
             <section class="sim-builder-step" aria-labelledby="sim-builder-summary-title">
+              <p class="sim-builder-step__title">Paso 3</p>
               <h4 class="sim-builder-step__heading" id="sim-builder-summary-title">Resumen</h4>
               <div class="sim-builder-summary" aria-live="polite">
-                <div class="sim-builder-summary__row"><span id="sim-summary-sim-label">Numeración SIM Pro</span><span id="sim-summary-sim-price">$39.990</span></div>
-                <div class="sim-builder-summary__row"><span id="sim-summary-agent-label">Agente Pro</span><span id="sim-summary-agent-price">$59.900</span></div>
-                <div class="sim-builder-summary__row sim-builder-summary__row--total"><span>Total primer mes</span><span id="sim-summary-total">$99.890</span></div>
+                <div class="sim-builder-summary__row"><span id="sim-summary-sim-label">Número Real Pro</span><span id="sim-summary-sim-price">$39.990</span></div>
+                <div class="sim-builder-summary__row"><span id="sim-summary-agent-label">Agente incluido</span><span id="sim-summary-agent-price">Pro</span></div>
+                <div class="sim-builder-summary__row sim-builder-summary__row--total"><span>Total primer mes</span><span id="sim-summary-total">$39.990</span></div>
               </div>
               <p class="sim-builder-error" id="sim-builder-error" hidden></p>
+              <p class="sim-builder-stock-hint field-hint" id="sim-builder-stock-hint" hidden></p>
               <button type="button" class="sim-plan-cta sim-plan-cta--primary mt-4" id="sim-builder-submit" data-track="click_sim_agent_bundle_checkout">Pagar y activar mi cuenta</button>
               <p class="sim-builder-microcopy">Tu cuenta Telvoice se crea automáticamente después del pago. La numeración y el agente quedan sujetos a validación comercial y activación operativa.</p>
             </section>

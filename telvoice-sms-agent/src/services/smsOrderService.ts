@@ -19,7 +19,7 @@ import {
 } from "../utils/claim-token.js";
 import type { SimPlanDefinition } from "../utils/simPlans.js";
 import type { AgentAddonId } from "../utils/agentAddons.js";
-import { calculateSimAgentBundleTotal, getAgentAddon } from "../utils/agentAddons.js";
+import { getAgentAddon } from "../utils/agentAddons.js";
 import { createSimActivationRequest } from "./simActivationService.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 import { AppError } from "../utils/errors.js";
@@ -432,10 +432,7 @@ export async function createPublicSimAgentBundleOrder(input: {
     throw new AppError("Plan agente no válido.", 400, "INVALID_AGENT_ADDON");
   }
 
-  const totalAmount = calculateSimAgentBundleTotal(
-    input.plan.total_amount,
-    input.agentAddonId,
-  );
+  const totalAmount = input.plan.total_amount;
 
   const claimToken = generateClaimToken();
   const claimExpires = new Date();

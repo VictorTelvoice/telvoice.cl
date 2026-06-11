@@ -338,7 +338,7 @@
   var SIM_PLANS = {
     sim_starter: {
       plan_id: "sim_starter",
-      name: "Numeración SIM Starter",
+      name: "Número Real Starter",
       sms: 1000,
       net: 16798,
       tax: 3192,
@@ -346,7 +346,7 @@
     },
     sim_pro: {
       plan_id: "sim_pro",
-      name: "Numeración SIM Pro",
+      name: "Número Real Pro",
       sms: 2000,
       net: 33605,
       tax: 6385,
@@ -354,7 +354,7 @@
     },
     sim_power: {
       plan_id: "sim_power",
-      name: "Numeración SIM Power",
+      name: "Número Real Power",
       sms: 4000,
       net: 84025,
       tax: 15965,
@@ -362,19 +362,26 @@
     },
   };
 
+  var SIM_PLAN_AGENT_MAP = {
+    sim_starter: "agent_start",
+    sim_pro: "agent_pro",
+    sim_power: "agent_business",
+  };
+
+  var AGENT_ADDON_LABELS = {
+    agent_start: "Agente Start",
+    agent_pro: "Agente Pro",
+    agent_business: "Agente Business",
+  };
+
   var SIM_CHECKOUT_ERROR =
     "No pudimos iniciar el pago en este momento. Escríbenos para activar tu numeración SIM real.";
 
-  var AGENT_ADDONS = {
-    none: { id: "none", name: "Solo numeración", total: 0 },
-    agent_start: { id: "agent_start", name: "Agente Start", total: 39990 },
-    agent_pro: { id: "agent_pro", name: "Agente Pro", total: 59900 },
-    agent_business: { id: "agent_business", name: "Agente Business", total: 99990 },
-  };
+  var SIM_NO_STOCK_ERROR =
+    "No hay números reales disponibles en este momento. Intenta más tarde o contáctanos.";
 
   var simBuilderState = {
     simPlanId: "sim_pro",
-    agentAddonId: "agent_pro",
     submitting: false,
   };
 
@@ -384,24 +391,22 @@
 
   function updateSimBuilderSummary() {
     var sim = SIM_PLANS[simBuilderState.simPlanId];
-    var agent = AGENT_ADDONS[simBuilderState.agentAddonId] || AGENT_ADDONS.none;
     if (!sim) return;
+
+    var agentId = SIM_PLAN_AGENT_MAP[simBuilderState.simPlanId] || "agent_pro";
+    var agentLabel = AGENT_ADDON_LABELS[agentId] || agentId;
 
     var simLabel = qs("sim-summary-sim-label");
     var simPrice = qs("sim-summary-sim-price");
-    var agentLabel = qs("sim-summary-agent-label");
+    var agentLabelEl = qs("sim-summary-agent-label");
     var agentPrice = qs("sim-summary-agent-price");
     var totalEl = qs("sim-summary-total");
-    var agentRow = agentPrice && agentPrice.parentElement;
 
     if (simLabel) simLabel.textContent = sim.name;
     if (simPrice) simPrice.textContent = formatClpAmount(sim.total);
-    if (agentLabel) agentLabel.textContent = agent.name;
-    if (agentPrice) agentPrice.textContent = formatClpAmount(agent.total);
-    if (totalEl) totalEl.textContent = formatClpAmount(sim.total + agent.total);
-    if (agentRow) {
-      agentRow.hidden = simBuilderState.agentAddonId === "none";
-    }
+    if (agentLabelEl) agentLabelEl.textContent = "Agente incluido";
+    if (agentPrice) agentPrice.textContent = agentLabel.replace(/^Agente\s+/i, "");
+    if (totalEl) totalEl.textContent = formatClpAmount(sim.total);
   }
 
   function setSimBuilderError(message) {
@@ -435,15 +440,30 @@
     updateSimBuilderSummary();
   }
 
-  function selectSimBuilderAgent(addonId) {
-    if (!AGENT_ADDONS[addonId]) return;
-    simBuilderState.agentAddonId = addonId;
-    document.querySelectorAll("[data-agent-addon]").forEach(function (btn) {
-      var selected = btn.getAttribute("data-agent-addon") === addonId;
-      btn.classList.toggle("sim-select-card--selected", selected);
-      btn.setAttribute("aria-pressed", selected ? "true" : "false");
-    });
-    updateSimBuilderSummary();
+  function refreshSimStockHint() {
+    var hint = qs("sim-builder-stock-hint");
+    if (!hint) return;
+    var agentOrigin =
+      (window.TELVOICE_CONFIG && window.TELVOICE_CONFIG.agentApiOrigin) ||
+      "https://agent.telvoice.cl";
+    fetch(agentOrigin + "/api/public/sim-availability", {
+      headers: { Accept: "application/json" },
+    })
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (data) {
+        if (data && data.in_stock === false) {
+          hint.textContent = SIM_NO_STOCK_ERROR;
+          hint.hidden = false;
+        } else {
+          hint.textContent = "";
+          hint.hidden = true;
+        }
+      })
+      .catch(function () {
+        hint.hidden = true;
+      });
   }
 
   function submitSimAgentBundleCheckout() {
@@ -474,13 +494,15 @@
       "https://agent.telvoice.cl";
     var endpoint = agentOrigin + "/api/public/checkout";
 
+    var agentAddonId = SIM_PLAN_AGENT_MAP[simBuilderState.simPlanId] || "agent_pro";
+
     fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({
         product_type: "sim_agent_bundle",
         sim_plan_id: simBuilderState.simPlanId,
-        agent_addon_id: simBuilderState.agentAddonId,
+        agent_addon_id: agentAddonId,
         checkout_email: email,
         payer_name: nombre,
         company_name: empresa || undefined,
@@ -498,11 +520,14 @@
         var data = result.data || {};
         var checkoutUrl = data.checkout_url;
         if (!result.httpOk || data.success !== true || !checkoutUrl) {
+          if (result.status === 409 && data.code === "no_stock") {
+            throw new Error(SIM_NO_STOCK_ERROR);
+          }
           throw new Error((data && (data.error || data.message)) || SIM_CHECKOUT_ERROR);
         }
         trackEvent("click_sim_agent_bundle_checkout", {
           sim_plan_id: simBuilderState.simPlanId,
-          agent_addon_id: simBuilderState.agentAddonId,
+          agent_addon_id: agentAddonId,
         });
         window.location.href = checkoutUrl;
       })
@@ -518,18 +543,12 @@
     if (!builder) return;
 
     selectSimBuilderSim(simBuilderState.simPlanId);
-    selectSimBuilderAgent(simBuilderState.agentAddonId);
     updateSimBuilderSummary();
+    refreshSimStockHint();
 
     builder.querySelectorAll("[data-sim-plan]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         selectSimBuilderSim(btn.getAttribute("data-sim-plan") || "sim_pro");
-      });
-    });
-
-    builder.querySelectorAll("[data-agent-addon]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        selectSimBuilderAgent(btn.getAttribute("data-agent-addon") || "none");
       });
     });
 

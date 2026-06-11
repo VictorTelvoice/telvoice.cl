@@ -94,8 +94,12 @@ import {
 } from "../controllers/admin-agent-plans.controller.js";
 import {
   getAdminNumeracionesPage,
+  postAdminInventoryMarkConnected,
+  postAdminInventoryNotForSale,
+  postAdminInventoryReleaseExpired,
   postAdminNumeracionesCreate,
   postAdminNumeracionesStatus,
+  postAdminSimActivationActivate,
   postAdminSimActivationNotes,
   postAdminSimActivationReview,
 } from "../controllers/admin-numeraciones.controller.js";
@@ -545,6 +549,26 @@ adminRouter.post(
   "/numeraciones/sim-activations/:id/notes",
   requireAdminPage,
   postAdminSimActivationNotes,
+);
+adminRouter.post(
+  "/numeraciones/sim-activations/:id/activate",
+  requireAdminPage,
+  postAdminSimActivationActivate,
+);
+adminRouter.post(
+  "/numeraciones/inventory/release-expired",
+  requireAdminPage,
+  postAdminInventoryReleaseExpired,
+);
+adminRouter.post(
+  "/numeraciones/inventory/:id/mark-connected",
+  requireAdminPage,
+  postAdminInventoryMarkConnected,
+);
+adminRouter.post(
+  "/numeraciones/inventory/:id/not-for-sale",
+  requireAdminPage,
+  postAdminInventoryNotForSale,
 );
 adminRouter.get("/sms-inbox", requireAdminPage, getAdminSmsInboxPage);
 adminRouter.get("/api-usage", requireAdminPage, getAdminApiUsagePage);
