@@ -141,6 +141,7 @@ export type AdminClientDetailRecentInvoice = {
 export type AdminClientDetailRecentMessage = {
   id: string;
   recipientNumber: string;
+  messageBody: string;
   status: string;
   mode: string;
   sentAt: string | null;

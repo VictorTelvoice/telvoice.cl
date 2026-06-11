@@ -610,25 +610,103 @@ function renderOperationalStatusBadges(item: AdminClientListItem): string {
   const flags = item.operational.operationalFlags;
   const parts: string[] = [];
   if (item.company.status === "active") {
-    parts.push(`<span class="badge badge-success">activo</span>`);
+    parts.push(`<span class="badge badge-success">ACTIVO</span>`);
+  } else if (item.company.status === "suspended") {
+    parts.push(`<span class="badge badge-warn">SUSPENDIDO</span>`);
   } else {
     parts.push(statusBadgeSa(item.company.status));
   }
-  if (!flags.hasBalance) parts.push(`<span class="badge badge-warn">sin saldo</span>`);
-  if (!flags.hasRatePlan) parts.push(`<span class="badge badge-warn">sin rate plan</span>`);
-  if (flags.needsReview) parts.push(`<span class="badge badge-warn">revisión</span>`);
-  if (flags.isQa) parts.push(`<span class="badge badge-warn">QA/test</span>`);
-  if (flags.isProtected) parts.push(`<span class="badge badge-success">protegido</span>`);
-  if (flags.noActivity) parts.push(`<span class="badge badge-muted">sin actividad</span>`);
+  if (flags.isProtected) {
+    parts.push(`<span class="badge badge-success">PROTEGIDO</span>`);
+  }
   if (flags.apiActive) {
-    parts.push(`<span class="badge badge-ok">API activa</span>`);
+    parts.push(`<span class="badge badge-ok">API ACTIVA</span>`);
   } else if (flags.hasRatePlan) {
-    parts.push(`<span class="badge badge-muted">API inactiva</span>`);
+    parts.push(`<span class="badge badge-muted">API INACTIVA</span>`);
   }
   if (flags.hasPaidPendingCredit) {
-    parts.push(`<span class="badge badge-err">por acreditar</span>`);
+    parts.push(`<span class="badge badge-err">POR ACREDITAR</span>`);
   }
-  return parts.join(" ");
+  if (!flags.hasBalance) parts.push(`<span class="badge badge-warn">SIN SALDO</span>`);
+  if (!flags.hasRatePlan) parts.push(`<span class="badge badge-warn">SIN PLAN</span>`);
+  if (flags.needsReview) parts.push(`<span class="badge badge-warn">REVIEW</span>`);
+  return `<div class="tv-clients-status-badges">${parts.join("")}</div>`;
+}
+
+function renderClientTableCell(item: AdminClientListItem): string {
+  const c = item.company;
+  const email = c.billing_email ?? c.name;
+  return `<div class="tv-clients-cell tv-clients-cell--client">
+    <strong class="tv-clients-name">${escapeHtml(c.name)}</strong>
+    <span class="tv-clients-secondary tv-cell-truncate" title="${escapeHtml(email)}">${escapeHtml(email)}</span>
+    <span class="tv-clients-muted">${escapeHtml(c.country ?? "CL")}</span>
+    <div class="tv-clients-badges">${clientScopeBadges(item.audit)}</div>
+    <code class="tv-code-sm tv-clients-id" title="${escapeHtml(c.id)}">${escapeHtml(abbreviateCompanyId(c.id))}</code>
+  </div>`;
+}
+
+function renderBalanceTableCell(item: AdminClientListItem): string {
+  const w = item.operational.wallet;
+  const walletBadge = w.hasWallet
+    ? `<span class="badge badge-${w.status === "active" ? "success" : "warn"}">${escapeHtml((w.status ?? "—").toUpperCase())}</span>`
+    : `<span class="badge badge-warn">SIN WALLET</span>`;
+  return `<div class="tv-clients-cell tv-clients-cell--balance">
+    <div class="tv-clients-metric">${w.availableSms.toLocaleString("es-CL")} <span class="tv-clients-metric-unit">SMS</span></div>
+    <span class="tv-clients-secondary">Comprado ${w.totalPurchasedSms.toLocaleString("es-CL")} · Usado ${w.consumedSms.toLocaleString("es-CL")} · Res ${w.reservedSms.toLocaleString("es-CL")}</span>
+    <span class="tv-clients-muted">Wallet ${walletBadge}</span>
+  </div>`;
+}
+
+function renderUsageTableCell(item: AdminClientListItem): string {
+  const u = item.operational.usage;
+  const failed =
+    u.failedLast24h > 0
+      ? `<span class="tv-clients-warn">Fallidos 24h: ${u.failedLast24h}</span>`
+      : `<span class="tv-clients-muted">Fallidos 24h: 0</span>`;
+  return `<div class="tv-clients-cell tv-clients-cell--usage">
+    <span class="tv-clients-secondary">Hoy <strong>${u.smsToday.toLocaleString("es-CL")}</strong> · Mes <strong>${u.smsThisMonth.toLocaleString("es-CL")}</strong></span>
+    <span class="tv-clients-muted">Último: ${escapeHtml(formatRelativeTime(u.lastSmsAt))}</span>
+    ${failed}
+  </div>`;
+}
+
+function renderPurchaseTableCell(item: AdminClientListItem): string {
+  const p = item.operational.purchases;
+  if (!p.lastPurchaseAt && p.ordersCount === 0) {
+    return `<div class="tv-clients-cell"><span class="tv-clients-muted">Sin compras</span><br><span class="tv-clients-muted">Sin factura</span></div>`;
+  }
+  const lastPurchase = p.lastPurchaseAt
+    ? formatDateShort(p.lastPurchaseAt)
+    : "Sin datos";
+  const invoice = p.lastInvoiceNumber
+    ? `<code class="tv-code-sm tv-cell-truncate" title="${escapeHtml(p.lastInvoiceNumber)}">${escapeHtml(p.lastInvoiceNumber)}</code>`
+    : `<span class="tv-clients-muted">Sin factura</span>`;
+  const pending =
+    p.paidPendingCreditCount > 0
+      ? `<span class="badge badge-err">${p.paidPendingCreditCount} por acreditar</span>`
+      : "";
+  return `<div class="tv-clients-cell tv-clients-cell--purchase">
+    <span class="tv-clients-secondary">Última: ${escapeHtml(lastPurchase)}</span>
+    <span class="tv-clients-muted">Factura: ${invoice}</span>
+    <span class="tv-clients-muted">Pagadas ${p.paidOrdersCount}/${p.ordersCount}</span>
+    ${pending}
+  </div>`;
+}
+
+function renderRatePlanTableCell(item: AdminClientListItem): string {
+  const op = item.operational;
+  const id = item.company.id;
+  if (op.ratePlanName) {
+    return `<div class="tv-clients-cell tv-clients-cell--plan">
+      <strong class="tv-clients-plan-name">${escapeHtml(op.ratePlanName)}</strong>
+      <code class="tv-code-sm">${escapeHtml(op.ratePlanCode ?? "")}</code>
+      <a href="/admin/wallets/${escapeHtml(id)}" class="row-link tv-clients-link">Cambiar</a>
+    </div>`;
+  }
+  return `<div class="tv-clients-cell tv-clients-cell--plan">
+    <span class="badge badge-warn">Sin rate plan</span>
+    <a href="/admin/wallets/${escapeHtml(id)}" class="row-link tv-clients-link">Asignar</a>
+  </div>`;
 }
 
 function formatRelativeTime(value: string | null | undefined): string {
@@ -844,30 +922,23 @@ function renderClientActionsMenu(
 ): string {
   const id = item.company.id;
   const detailHref = `/admin/clients/${id}#acciones-seguras`;
-  const links = [
-    renderBtn("Ver detalle", { href: `/admin/clients/${id}`, size: "sm", variant: "secondary" }),
-    renderBtn("Acciones", { href: detailHref, size: "sm", variant: "primary" }),
-    renderBtn("Saldo / Rate plan", { href: `/admin/wallets/${id}`, size: "sm", variant: "ghost" }),
-    renderBtn("Órdenes", { href: `/admin/orders?company_id=${id}`, size: "sm", variant: "ghost" }),
-    renderBtn("Facturas", { href: `/admin/invoices?company_id=${id}`, size: "sm", variant: "ghost" }),
-    renderBtn("Envíos", { href: `/admin/messages?company_id=${id}`, size: "sm", variant: "ghost" }),
-  ];
-  const quickActions = [
-    renderBtn("Editar / Suspender", { href: detailHref, size: "sm", variant: "ghost" }),
-    renderBtn("Reenviar correos", { href: detailHref, size: "sm", variant: "ghost" }),
+  const menuItems = [
+    `<a href="/admin/clients/${escapeHtml(id)}" class="tv-client-actions__item">Ver detalle</a>`,
+    `<a href="/admin/wallets/${escapeHtml(id)}" class="tv-client-actions__item">Saldo / Rate plan</a>`,
+    `<a href="/admin/orders?company_id=${escapeHtml(id)}" class="tv-client-actions__item">Órdenes</a>`,
+    `<a href="/admin/invoices?company_id=${escapeHtml(id)}" class="tv-client-actions__item">Facturas</a>`,
+    `<a href="/admin/messages?company_id=${escapeHtml(id)}" class="tv-client-actions__item">Envíos</a>`,
+    `<a href="${detailHref}" class="tv-client-actions__item">Editar / Suspender</a>`,
+    `<a href="${detailHref}" class="tv-client-actions__item">Reenviar correos</a>`,
   ];
   if (isQaScope && !item.audit.protected && item.audit.classification !== "PROD_REAL") {
-    quickActions.push(
-      renderBtn("Archivar QA", { href: detailHref, size: "sm", variant: "ghost" }),
+    menuItems.push(
+      `<a href="${detailHref}" class="tv-client-actions__item">Archivar QA</a>`,
     );
   }
   return `<details class="tv-client-actions">
-    <summary class="btn btn-secondary btn-sm" style="cursor:pointer;list-style:none">Acciones</summary>
-    <div class="tv-actions-inline" style="flex-direction:column;align-items:stretch;gap:0.25rem;margin-top:0.35rem;min-width:12rem">
-      ${links.join("")}
-      <hr style="border:none;border-top:1px solid var(--border);margin:0.25rem 0" />
-      ${quickActions.join("")}
-    </div>
+    <summary class="btn btn-secondary btn-sm tv-client-actions__trigger">Acciones</summary>
+    <div class="tv-client-actions__menu">${menuItems.join("")}</div>
   </details>`;
 }
 
@@ -877,10 +948,12 @@ function segmentChip(
   href: string,
   active: boolean,
 ): string {
-  const cls = active ? "btn btn-secondary btn-sm" : "btn btn-ghost btn-sm";
-  return `<a href="${escapeHtml(href)}" class="${cls}" style="display:inline-flex;align-items:center;gap:0.35rem">
-    ${escapeHtml(label)}
-    <span class="badge badge-muted" style="font-size:0.75rem">${count}</span>
+  const cls = active
+    ? "tv-segment-chip tv-segment-chip--active"
+    : "tv-segment-chip";
+  return `<a href="${escapeHtml(href)}" class="${cls}">
+    <span class="tv-segment-chip__label">${escapeHtml(label)}</span>
+    <span class="tv-segment-chip__count">${count}</span>
   </a>`;
 }
 
@@ -947,9 +1020,9 @@ function renderClientsSegmentBar(
       statusFilter === "protected",
     ),
   ];
-  return `<div style="display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center;margin-bottom:0.75rem">
+  return `<div class="tv-clients-segments">
     ${chips.join("")}
-    <span class="field-hint" style="margin-left:0.5rem">${summary.visible} resultado(s) · ${summary.totalCompanies} empresas en base</span>
+    <span class="tv-clients-segments__meta">${summary.visible} resultado(s) · ${summary.totalCompanies} empresas en base</span>
   </div>`;
 }
 
@@ -965,67 +1038,17 @@ export function renderSaClientsPage(opts: BaseOpts & {
   pageSize: number;
 }): string {
   const rows = opts.clients
-    .map((item) => {
-      const c = item.company;
-      const op = item.operational;
-      const audit = item.audit;
-      const email = c.billing_email ?? c.name;
-      const planCell = op.ratePlanName
-        ? `<span>${escapeHtml(op.ratePlanName)}</span><br><code class="tv-code-sm">${escapeHtml(op.ratePlanCode ?? "")}</code><br>
-        <a href="/admin/wallets/${escapeHtml(c.id)}" class="row-link" style="font-size:0.8rem">Cambiar</a>`
-        : `<span class="badge badge-warn">Sin rate plan</span><br>
-        <a href="/admin/wallets/${escapeHtml(c.id)}" class="row-link" style="font-size:0.8rem">Asignar</a>`;
-      const walletStatus = op.wallet.hasWallet
-        ? escapeHtml(op.wallet.status ?? "—")
-        : `<span class="badge badge-warn">Sin wallet</span>`;
-      const lastPurchase = op.purchases.lastPurchaseAt
-        ? formatDateShort(op.purchases.lastPurchaseAt)
-        : "Sin datos";
-      const lastInvoice = op.purchases.lastInvoiceNumber
-        ? `<code class="tv-code-sm">${escapeHtml(op.purchases.lastInvoiceNumber)}</code>`
-        : "—";
-      const pendingAlert = op.purchases.paidPendingCreditCount > 0
-        ? `<span class="badge badge-err">${op.purchases.paidPendingCreditCount} por acreditar</span>`
-        : "";
-      const noActivityBadge = op.operationalFlags.noActivity
-        ? `<span class="badge badge-muted">sin actividad</span>`
-        : "";
-      const failedLine =
-        op.usage.failedLast24h > 0
-          ? `<span class="field-hint" style="color:var(--warn)">Fallidos 24h: ${op.usage.failedLast24h}</span><br>`
-          : "";
-      return `<tr>
-      <td>
-        <strong>${escapeHtml(c.name)}</strong><br>
-        <span class="field-hint">${escapeHtml(email)}</span><br>
-        <span class="field-hint">${escapeHtml(c.country ?? "CL")}</span><br>
-        <div style="margin-top:0.25rem">${clientScopeBadges(audit)}</div>
-        <code class="tv-code-sm" title="${escapeHtml(c.id)}">${escapeHtml(abbreviateCompanyId(c.id))}</code>
-      </td>
-      <td>
-        <strong style="font-size:1.15rem">${op.wallet.availableSms.toLocaleString("es-CL")}</strong> SMS<br>
-        <span class="field-hint">Comprado: ${op.wallet.totalPurchasedSms.toLocaleString("es-CL")}</span><br>
-        <span class="field-hint">Cons: ${op.wallet.consumedSms.toLocaleString("es-CL")} · Res: ${op.wallet.reservedSms.toLocaleString("es-CL")}</span><br>
-        <span class="field-hint">Wallet: ${walletStatus}</span>
-      </td>
-      <td>
-        Hoy: <strong>${op.usage.smsToday.toLocaleString("es-CL")}</strong><br>
-        Mes: <strong>${op.usage.smsThisMonth.toLocaleString("es-CL")}</strong><br>
-        ${failedLine}
-        <span class="field-hint">Último: ${escapeHtml(formatRelativeTime(op.usage.lastSmsAt))}</span><br>
-        ${noActivityBadge}
-      </td>
-      <td>
-        Compra: ${escapeHtml(lastPurchase)}<br>
-        Factura: ${lastInvoice}<br>
-        <span class="field-hint">Pagadas: ${op.purchases.paidOrdersCount} / ${op.purchases.ordersCount}</span><br>
-        ${pendingAlert}
-      </td>
-      <td>${planCell}</td>
+    .map(
+      (item) => `<tr class="tv-clients-row">
+      <td>${renderClientTableCell(item)}</td>
+      <td>${renderBalanceTableCell(item)}</td>
+      <td>${renderUsageTableCell(item)}</td>
+      <td>${renderPurchaseTableCell(item)}</td>
+      <td>${renderRatePlanTableCell(item)}</td>
       <td>${renderOperationalStatusBadges(item)}</td>
-      <td>${renderClientActionsMenu(item, opts.scope === "qa")}</td>
-    </tr>`;
-    })
+      <td class="tv-clients-actions-cell">${renderClientActionsMenu(item, opts.scope === "qa")}</td>
+    </tr>`,
+    )
     .join("");
 
   const totalPages = Math.max(1, Math.ceil(opts.totalFiltered / opts.pageSize));
@@ -1073,8 +1096,8 @@ export function renderSaClientsPage(opts: BaseOpts & {
     ${scopeNote}
     ${filters}
     ${searchHintBlock}
-    <div class="table-wrap tv-panel"><table class="tv-table tv-table--dense"><thead><tr>
-      <th>Cliente</th><th>Saldo SMS</th><th>Uso</th><th>Compra / Facturación</th><th>Rate plan</th><th>Estado operativo</th><th>Acciones</th>
+    <div class="table-wrap tv-panel tv-clients-table-wrap"><table class="tv-table tv-table--clients"><thead><tr>
+      <th>Cliente</th><th>Saldo</th><th>Uso</th><th>Compra reciente</th><th>Rate plan</th><th>Estado</th><th>Acciones</th>
     </tr></thead><tbody>${rows || `<tr><td colspan="7">Sin empresas en este ambiente</td></tr>`}</tbody></table></div>
     ${pagination}`;
   return wrap(opts, "clients", "Clientes", body);
@@ -1117,12 +1140,18 @@ export function renderSaClientDetailPage(opts: BaseOpts & {
 
   const messageRows = detail.recentMessages
     .map(
-      (m) => `<tr>
+      (m) => {
+        const text = (m.messageBody ?? "").trim();
+        const preview =
+          text.length > 60 ? `${text.slice(0, 60)}…` : text || "Sin contenido";
+        return `<tr>
         <td>${escapeHtml(formatDateShort(m.sentAt ?? m.createdAt))}</td>
         <td>${escapeHtml(m.recipientNumber)}</td>
+        <td class="tv-messages-text" title="${escapeHtml(text)}">${escapeHtml(preview)}</td>
         <td>${escapeHtml(m.status)}</td>
         <td>${escapeHtml(m.mode)}</td>
-      </tr>`,
+      </tr>`;
+      },
     )
     .join("");
 
@@ -1280,8 +1309,8 @@ export function renderSaClientDetailPage(opts: BaseOpts & {
         <tbody>${pendingRows || "<tr><td colspan=\"4\">Sin compras pendientes de acreditar</td></tr>"}</tbody></table>
       </div></section>
       <section class="tv-panel"><h2 class="tv-panel__title">Últimos SMS</h2><div class="tv-panel__body table-wrap">
-        <table class="tv-table"><thead><tr><th>Fecha</th><th>Destino</th><th>Estado</th><th>Modo</th></tr></thead>
-        <tbody>${messageRows || "<tr><td colspan=\"4\">Sin envíos</td></tr>"}</tbody></table>
+        <table class="tv-table"><thead><tr><th>Fecha</th><th>Destino</th><th>Mensaje</th><th>Estado</th><th>Modo</th></tr></thead>
+        <tbody>${messageRows || "<tr><td colspan=\"5\">Sin envíos</td></tr>"}</tbody></table>
       </div></section>
       <section class="tv-panel"><h2 class="tv-panel__title">Correos transaccionales</h2><div class="tv-panel__body table-wrap">
         <table class="tv-table"><thead><tr><th>Tipo</th><th>Destino</th><th>Estado</th><th>Enviado</th></tr></thead>

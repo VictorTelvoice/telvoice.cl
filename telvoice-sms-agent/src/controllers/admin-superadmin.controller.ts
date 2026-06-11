@@ -97,7 +97,17 @@ export async function getSaMessagesPage(
 ): Promise<void> {
   try {
     const smsBalance = await loadGlobalSmsHint();
-    const messages = await listAllPanelMessagesWithCompany(150);
+    const search =
+      typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const companyId =
+      typeof req.query.company_id === "string"
+        ? req.query.company_id.trim()
+        : "";
+    const messages = await listAllPanelMessagesWithCompany({
+      limit: 150,
+      companyId: companyId || undefined,
+      search: search || undefined,
+    });
     res
       .type("html")
       .send(
@@ -105,6 +115,8 @@ export async function getSaMessagesPage(
           admin: req.adminUser!,
           smsBalance,
           messages,
+          search,
+          companyId,
         }),
       );
   } catch (error) {

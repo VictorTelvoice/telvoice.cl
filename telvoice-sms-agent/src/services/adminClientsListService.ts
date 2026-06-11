@@ -916,7 +916,7 @@ export async function getAdminClientOperationalDetail(
         ),
         client.query(
           `
-          SELECT id, recipient_number, status, mode, sent_at, created_at
+          SELECT id, recipient_number, message, status, mode, sent_at, created_at
           FROM panel_sms_messages
           WHERE company_id = $1::uuid
           ORDER BY created_at DESC
@@ -926,7 +926,7 @@ export async function getAdminClientOperationalDetail(
         ),
         client.query(
           `
-          SELECT id, recipient_number, status, mode, sent_at, created_at
+          SELECT id, recipient_number, message, status, mode, sent_at, created_at
           FROM panel_sms_messages
           WHERE company_id = $1::uuid
             AND status IN ('failed', 'rejected')
@@ -1022,6 +1022,7 @@ export async function getAdminClientOperationalDetail(
     const recentMessages: AdminClientDetailRecentMessage[] = messagesRes.rows.map((m) => ({
       id: String(m.id),
       recipientNumber: String(m.recipient_number ?? ""),
+      messageBody: String(m.message ?? ""),
       status: String(m.status ?? ""),
       mode: String(m.mode ?? ""),
       sentAt: m.sent_at != null ? String(m.sent_at) : null,
@@ -1060,6 +1061,7 @@ export async function getAdminClientOperationalDetail(
       (m) => ({
         id: String(m.id),
         recipientNumber: String(m.recipient_number ?? ""),
+        messageBody: String(m.message ?? ""),
         status: String(m.status ?? ""),
         mode: String(m.mode ?? ""),
         sentAt: m.sent_at != null ? String(m.sent_at) : null,
