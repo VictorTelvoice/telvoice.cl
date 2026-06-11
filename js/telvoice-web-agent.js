@@ -2268,6 +2268,21 @@
     }
   }
 
+  function markAgentUiReady() {
+    var floatRoot = document.getElementById("telvoice-web-agent");
+    var embedRoot = document.getElementById("telvoice-web-agent-embed");
+    window.requestAnimationFrame(function () {
+      window.requestAnimationFrame(function () {
+        if (floatRoot) {
+          floatRoot.classList.add("tva-root--ready");
+        }
+        if (embedRoot) {
+          embedRoot.classList.add("tva-root--ready");
+        }
+      });
+    });
+  }
+
   function init() {
     try {
       if (!document.getElementById("telvoice-web-agent")) {
@@ -2297,6 +2312,8 @@
       initPendingCheckoutOnLanding();
     } catch (err) {
       console.warn("[Telvoice agent] init failed:", err);
+    } finally {
+      markAgentUiReady();
     }
   }
 
