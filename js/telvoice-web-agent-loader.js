@@ -21,7 +21,7 @@
     window.TELVOICE_WEB_AGENT_EMBED = embedTarget;
   }
 
-  var AGENT_JS_VERSION = "20260712";
+  var AGENT_JS_VERSION = "20260713";
 
   function loadCss(href) {
     if (document.querySelector('link[data-tva-css="1"]')) {

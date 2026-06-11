@@ -356,6 +356,16 @@
   }
 
   function collapseActionDrawer() {
+    if (usesPanelAgentUi()) {
+      if (els.suggestions) {
+        els.suggestions.hidden = false;
+      }
+      if (els.suggestionsPanel) {
+        els.suggestionsPanel.hidden = false;
+      }
+      updateActionDrawerHint();
+      return;
+    }
     collapseDrawerUi(els);
     updateActionDrawerHint();
   }
@@ -856,7 +866,7 @@
   }
 
   function renderLabAgentAntennaGlowMarkup() {
-    return '<span class="telvoice-agent-antenna-glow" aria-hidden="true"></span>';
+    return '<span class="telvoice-agent-antenna-glow" role="status" aria-label="En línea"></span>';
   }
 
   function renderLabAgentImageMarkup(opts) {
@@ -1684,11 +1694,6 @@
     appendFloatMessage("bot", LAB_FLOAT_WELCOME, true);
     state.drawerQuick = LAB_FLOAT_QUICK;
     syncActionDrawer(LAB_FLOAT_QUICK, []);
-    if (els.suggestions) {
-      els.suggestions.hidden = false;
-      collapseActionDrawer();
-      updateActionDrawerHint();
-    }
     persistChatState();
   }
 
@@ -1866,6 +1871,21 @@
     var inputPlaceholder = lab
       ? "Consulta sobre numeración, campañas o validaciones…"
       : "Escribe tu mensaje…";
+    var suggestionsHtml = lab
+      ? '<div class="tva-suggestions" id="tva-suggestions">' +
+        '<div class="tva-suggestions-panel" id="tva-suggestions-panel">' +
+        '<div class="tva-quick" id="tva-quick"></div>' +
+        '<div class="tva-drawer-ctas" id="tva-drawer-ctas"></div>' +
+        "</div></div>"
+      : '<div class="tva-suggestions" id="tva-suggestions" hidden>' +
+        '<button type="button" class="tva-suggestions-toggle" id="tva-suggestions-toggle" aria-expanded="false" aria-controls="tva-suggestions-panel" aria-label="Ver sugerencias y acciones">' +
+        '<span class="tva-suggestions-chevron" aria-hidden="true"></span>' +
+        '<span class="tva-suggestions-dot" aria-hidden="true"></span>' +
+        "</button>" +
+        '<div class="tva-suggestions-panel" id="tva-suggestions-panel" hidden>' +
+        '<div class="tva-quick" id="tva-quick"></div>' +
+        '<div class="tva-drawer-ctas" id="tva-drawer-ctas"></div>' +
+        "</div></div>";
     root.innerHTML =
       '<div class="tva-launcher-wrap">' +
       '<button type="button" class="tva-launcher" aria-expanded="false" aria-controls="tva-panel" aria-label="Abrir agente comercial Telvoice">' +
@@ -1880,15 +1900,7 @@
       (lab ? " tva-panel--lab" : "") +
       '" role="dialog" aria-labelledby="tva-title" aria-modal="true">' +
       headerHtml +
-      '<div class="tva-suggestions" id="tva-suggestions" hidden>' +
-      '<button type="button" class="tva-suggestions-toggle" id="tva-suggestions-toggle" aria-expanded="false" aria-controls="tva-suggestions-panel" aria-label="Ver sugerencias y acciones">' +
-      '<span class="tva-suggestions-chevron" aria-hidden="true"></span>' +
-      '<span class="tva-suggestions-dot" aria-hidden="true"></span>' +
-      "</button>" +
-      '<div class="tva-suggestions-panel" id="tva-suggestions-panel" hidden>' +
-      '<div class="tva-quick" id="tva-quick"></div>' +
-      '<div class="tva-drawer-ctas" id="tva-drawer-ctas"></div>' +
-      "</div></div>" +
+      suggestionsHtml +
       '<div class="tva-messages" id="tva-messages" aria-live="polite"></div>' +
       '<div class="tva-conversation-actions" id="tva-conversation-actions" hidden></div>' +
       '<form class="tva-form" id="tva-form">' +

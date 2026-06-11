@@ -1,6 +1,7 @@
-/* Agente flotante — overrides modo claro (panel /app con .tv-light-theme) */
+/* Agente flotante — overrides modo claro (panel /app y landing float) */
 
-.tv-light-theme .tva-root--lab {
+.tv-light-theme .tva-root--lab,
+#telvoice-web-agent.tva-root--lab {
   --tva-gradient: linear-gradient(135deg, #0052cc 0%, #0369a1 100%);
   --tva-primary: #0052cc;
   --tva-surface: #ffffff;
@@ -10,7 +11,8 @@
   --tva-shadow: 0 20px 48px -16px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(0, 82, 204, 0.08);
 }
 
-.tv-light-theme .tva-root--lab .tva-panel {
+.tv-light-theme .tva-root--lab .tva-panel,
+#telvoice-web-agent.tva-root--lab .tva-panel {
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -19,129 +21,153 @@
   color: var(--tva-on-surface);
 }
 
-.tv-light-theme .tva-root--lab .tva-header--lab {
+.tv-light-theme .tva-root--lab .tva-header--lab,
+#telvoice-web-agent.tva-root--lab .tva-header--lab {
   background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
   border-bottom: 1px solid rgba(0, 82, 204, 0.1);
   color: #0f172a;
 }
 
-.tv-light-theme .tva-root--lab .tva-header-text h2 {
+.tv-light-theme .tva-root--lab .tva-header-text h2,
+#telvoice-web-agent.tva-root--lab .tva-header-text h2 {
   color: #0f172a;
 }
 
-.tv-light-theme .tva-root--lab .tva-header-role {
+.tv-light-theme .tva-root--lab .tva-header-role,
+#telvoice-web-agent.tva-root--lab .tva-header-role {
   color: var(--tva-muted);
 }
 
-.tv-light-theme .tva-root--lab .tva-header-status {
+.tv-light-theme .tva-root--lab .tva-header-status,
+#telvoice-web-agent.tva-root--lab .tva-header-status {
   color: #047857;
   background: #ecfdf5;
   border-color: #a7f3d0;
 }
 
-.tv-light-theme .tva-root--lab .tva-close {
+.tv-light-theme .tva-root--lab .tva-close,
+#telvoice-web-agent.tva-root--lab .tva-close {
   background: #fff;
   border: 1px solid var(--tva-border);
   color: #64748b;
 }
 
-.tv-light-theme .tva-root--lab .tva-close:hover {
+.tv-light-theme .tva-root--lab .tva-close:hover,
+#telvoice-web-agent.tva-root--lab .tva-close:hover {
   background: #f1f5f9;
   color: #0f172a;
 }
 
-.tv-light-theme .tva-root--lab .tva-suggestions {
+.tv-light-theme .tva-root--lab .tva-suggestions,
+#telvoice-web-agent.tva-root--lab .tva-suggestions {
   background: #f8fafc;
   border-bottom: 1px solid var(--tva-border);
 }
 
-.tv-light-theme .tva-root--lab .tva-quick button {
+.tv-light-theme .tva-root--lab .tva-quick button,
+#telvoice-web-agent.tva-root--lab .tva-quick button {
   background: #fff;
   border: 1px solid rgba(0, 82, 204, 0.14);
   color: #334155;
 }
 
-.tv-light-theme .tva-root--lab .tva-quick button:hover {
+.tv-light-theme .tva-root--lab .tva-quick button:hover,
+#telvoice-web-agent.tva-root--lab .tva-quick button:hover {
   background: #eff6ff;
   border-color: rgba(0, 82, 204, 0.28);
   color: #0052cc;
 }
 
-.tv-light-theme .tva-root--lab .tva-msg--user {
+.tv-light-theme .tva-root--lab .tva-msg--user,
+#telvoice-web-agent.tva-root--lab .tva-msg--user {
   background: linear-gradient(135deg, #0052cc, #0369a1);
   color: #fff;
 }
 
-.tv-light-theme .tva-root--lab .tva-msg-bubble {
+.tv-light-theme .tva-root--lab .tva-msg-bubble,
+#telvoice-web-agent.tva-root--lab .tva-msg-bubble {
   background: #f1f5f9;
   color: #0f172a;
   border: 1px solid rgba(203, 213, 225, 0.9);
 }
 
-.tv-light-theme .tva-root--lab .tva-form {
+.tv-light-theme .tva-root--lab .tva-form,
+#telvoice-web-agent.tva-root--lab .tva-form {
   background: #fff;
   border-top: 1px solid var(--tva-border);
 }
 
-.tv-light-theme .tva-root--lab .tva-form input {
+.tv-light-theme .tva-root--lab .tva-form input,
+#telvoice-web-agent.tva-root--lab .tva-form input {
   background: #fff;
   border: 1px solid var(--tva-border);
   color: #0f172a;
 }
 
-.tv-light-theme .tva-root--lab .tva-form input::placeholder {
+.tv-light-theme .tva-root--lab .tva-form input::placeholder,
+#telvoice-web-agent.tva-root--lab .tva-form input::placeholder {
   color: #94a3b8;
 }
 
-.tv-light-theme .tva-root--lab .tva-form input:focus {
+.tv-light-theme .tva-root--lab .tva-form input:focus,
+#telvoice-web-agent.tva-root--lab .tva-form input:focus {
   border-color: #0052cc;
   box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.12);
 }
 
-.tv-light-theme .tva-root--lab .tva-form button[type="submit"] {
+.tv-light-theme .tva-root--lab .tva-form button[type="submit"],
+#telvoice-web-agent.tva-root--lab .tva-form button[type="submit"] {
   background: linear-gradient(135deg, #0052cc, #0369a1);
   color: #fff;
 }
 
-.tv-light-theme .tva-root--lab .tva-attach {
+.tv-light-theme .tva-root--lab .tva-attach,
+#telvoice-web-agent.tva-root--lab .tva-attach {
   background: #fff;
   border: 1px solid var(--tva-border);
   color: #0052cc;
   box-shadow: none;
 }
 
-.tv-light-theme .tva-root--lab .tva-attach:hover {
+.tv-light-theme .tva-root--lab .tva-attach:hover,
+#telvoice-web-agent.tva-root--lab .tva-attach:hover {
   background: #f0f7ff;
   border-color: rgba(0, 82, 204, 0.22);
   color: #003d99;
 }
 
-.tv-light-theme .tva-root--lab .tva-csv-chip {
+.tv-light-theme .tva-root--lab .tva-csv-chip,
+#telvoice-web-agent.tva-root--lab .tva-csv-chip {
   background: #f0f7ff;
   border: 1px solid rgba(0, 82, 204, 0.14);
   color: #0f172a;
 }
 
-.tv-light-theme .tva-root--lab .tva-csv-chip__action {
+.tv-light-theme .tva-root--lab .tva-csv-chip__action,
+#telvoice-web-agent.tva-root--lab .tva-csv-chip__action {
   color: #0052cc;
 }
 
-.tv-light-theme .tva-root--lab .tva-feedback button {
+.tv-light-theme .tva-root--lab .tva-feedback button,
+#telvoice-web-agent.tva-root--lab .tva-feedback button {
   background: #fff;
   border: 1px solid var(--tva-border);
   color: #64748b;
 }
 
-.tv-light-theme .tva-root--lab .tva-feedback button:hover {
+.tv-light-theme .tva-root--lab .tva-feedback button:hover,
+#telvoice-web-agent.tva-root--lab .tva-feedback button:hover {
   background: #f8fafc;
   color: #0052cc;
 }
 
-.tv-light-theme .tva-root--lab .telvoice-agent-avatar__img {
+.tv-light-theme .tva-root--lab .telvoice-agent-avatar__img,
+#telvoice-web-agent.tva-root--lab .telvoice-agent-avatar__img {
   filter: drop-shadow(0 14px 32px rgba(0, 82, 204, 0.18));
 }
 
-.tv-light-theme .tva-root--lab .telvoice-agent-antenna-glow {
+.tv-light-theme .tva-root--lab .telvoice-agent-antenna-glow,
+#telvoice-web-agent.tva-root--lab .telvoice-agent-antenna-glow {
   background: radial-gradient(
     circle,
     rgba(110, 255, 150, 0.98) 0%,
