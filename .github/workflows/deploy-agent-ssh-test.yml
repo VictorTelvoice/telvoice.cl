@@ -1,0 +1,95 @@
+# Prueba mínima de SSH al VPS (sin modificar archivos ni desplegar).
+# Manual: Actions → Test SSH agent.telvoice.cl → Run workflow
+#
+# Secretos: VPS_HOST, VPS_SSH_KEY; opcional VPS_USER, VPS_SSH_PORT, VPS_APP_PATH
+
+name: Test SSH agent.telvoice.cl
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-agent-ssh-test
+  cancel-in-progress: false
+
+jobs:
+  ssh-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Validar secretos requeridos
+        env:
+          HAS_HOST: ${{ secrets.VPS_HOST != '' }}
+          HAS_KEY: ${{ secrets.VPS_SSH_KEY != '' }}
+        run: |
+          set -e
+          missing=""
+          [ "$HAS_HOST" = "true" ] || missing="${missing}VPS_HOST "
+          [ "$HAS_KEY" = "true" ] || missing="${missing}VPS_SSH_KEY "
+          if [ -n "$missing" ]; then
+            echo "::error::Faltan secretos: ${missing}"
+            exit 1
+          fi
+          echo "Secretos obligatorios presentes."
+
+      - name: Configurar SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if ! ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null 2>&1; then
+            echo "::error::VPS_SSH_KEY no es una clave privada OpenSSH válida."
+            exit 1
+          fi
+          echo "Huella clave deploy (pública derivada):"
+          ssh-keygen -lf ~/.ssh/deploy_key
+          PORT="${{ secrets.VPS_SSH_PORT || 22 }}"
+          if ! ssh-keyscan -p "$PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
+            echo "ADVERTENCIA: ssh-keyscan falló; se usará StrictHostKeyChecking=accept-new."
+            touch ~/.ssh/known_hosts
+          fi
+
+      - name: Probar conexión SSH y ruta (solo lectura)
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_APP_PATH: ${{ secrets.VPS_APP_PATH }}
+        run: |
+          set -euo pipefail
+          PORT="${{ secrets.VPS_SSH_PORT || 22 }}"
+          APP_PATH="${VPS_APP_PATH:-/var/www/telvoice-sms-agent}"
+          STRICT_OPTS="-o StrictHostKeyChecking=yes"
+          if [ ! -s ~/.ssh/known_hosts ]; then
+            STRICT_OPTS="-o StrictHostKeyChecking=accept-new"
+          fi
+          # root primero (producción usa root); luego VPS_USER si difiere.
+          CANDIDATES="root"
+          if [ -n "${VPS_USER:-}" ] && [ "$VPS_USER" != "root" ]; then
+            CANDIDATES="$CANDIDATES $VPS_USER"
+          fi
+          SSH_OK_USER=""
+          for candidate in $CANDIDATES; do
+            echo "Probando SSH con usuario: ${candidate}"
+            if ssh -i ~/.ssh/deploy_key -p "$PORT" -o BatchMode=yes $STRICT_OPTS \
+              -o ConnectTimeout=20 \
+              "${candidate}@${VPS_HOST}" \
+              "pwd && whoami && test -d ${APP_PATH} && test -f ${APP_PATH}/package.json && echo SSH_TEST_OK"; then
+              SSH_OK_USER="$candidate"
+              echo "SSH_OK_USER=${candidate}"
+              break
+            fi
+            echo "Falló usuario ${candidate}."
+          done
+          if [ -z "$SSH_OK_USER" ]; then
+            echo "::error::No se pudo autenticar por SSH. Revisa VPS_HOST, VPS_USER y VPS_SSH_KEY."
+            echo "Huella esperada en servidor: SHA256:THmI/vVwUwpM3zN3Mc5IxYiaMH4PEmLs7Kyo6rq9TMQ (github-actions-telvoice-deploy)"
+            exit 1
+          fi
+          echo "Conexión SSH OK con usuario ${SSH_OK_USER}."

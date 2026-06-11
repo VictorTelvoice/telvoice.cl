@@ -42,6 +42,19 @@ o formato PEM legacy:
 
 La clave pública correspondiente debe estar en `~/.ssh/authorized_keys` del usuario `VPS_USER` en el servidor.
 
+**Producción actual (2026-06):** usuario `root`, host `agent.telvoice.cl`, ruta `/var/www/telvoice-sms-agent`. Huella de la clave de deploy autorizada en el VPS:
+
+`SHA256:THmI/vVwUwpM3zN3Mc5IxYiaMH4PEmLs7Kyo6rq9TMQ github-actions-telvoice-deploy`
+
+Para re-sincronizar secretos desde tu máquina (sin pegar la clave en la UI):
+
+```bash
+gh auth login
+cd telvoice-sms-agent && ./scripts/sync-github-deploy-secrets.sh
+```
+
+Prueba SSH sin desplegar: **Actions → Test SSH agent.telvoice.cl → Run workflow**.
+
 ### Cómo cargar `VPS_APP_PATH`
 
 Ruta donde está `package.json` del agente, por ejemplo:

@@ -77,10 +77,19 @@ jobs:
           set -euo pipefail
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
+          if ! ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null 2>&1; then
+            echo "::error::VPS_SSH_KEY no es una clave privada OpenSSH válida."
+            exit 1
+          fi
+          echo "Huella clave deploy (pública derivada):"
+          ssh-keygen -lf ~/.ssh/deploy_key
           PORT="${{ secrets.VPS_SSH_PORT || 22 }}"
-          ssh-keyscan -p "$PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          if ! ssh-keyscan -p "$PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
+            echo "ADVERTENCIA: ssh-keyscan falló; se usará StrictHostKeyChecking=accept-new en el check."
+            touch ~/.ssh/known_hosts
+          fi
 
       - name: Comprobar conexión SSH y ruta
         env:
@@ -91,20 +100,23 @@ jobs:
           set -euo pipefail
           PORT="${{ secrets.VPS_SSH_PORT || 22 }}"
           APP_PATH="${VPS_APP_PATH:-/var/www/telvoice-sms-agent}"
-          # Resolver usuario SSH: primero VPS_USER (si existe), luego root (fallback).
-          SSH_USER=""
-          if [ -n "${VPS_USER:-}" ]; then
-            SSH_USER="$VPS_USER"
+          STRICT_OPTS="-o StrictHostKeyChecking=yes"
+          if [ ! -s ~/.ssh/known_hosts ]; then
+            STRICT_OPTS="-o StrictHostKeyChecking=accept-new"
+          fi
+          # Producción usa root; probar root primero y luego VPS_USER si difiere.
+          CANDIDATES="root"
+          if [ -n "${VPS_USER:-}" ] && [ "$VPS_USER" != "root" ]; then
+            CANDIDATES="$CANDIDATES $VPS_USER"
           fi
           SSH_OK_USER=""
           for attempt in 1 2 3; do
-          for candidate in "$SSH_USER" root; do
-            [ -n "$candidate" ] || continue
-            echo "Probando SSH con usuario: ${candidate} (intento ${attempt}/3)"
-            if ssh -i ~/.ssh/deploy_key -p "$PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes \
-              -o ConnectTimeout=20 \
-              -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
-              "${candidate}@${VPS_HOST}" env APP_PATH="$APP_PATH" bash -s <<'REMOTE'
+            for candidate in $CANDIDATES; do
+              echo "Probando SSH con usuario: ${candidate} (intento ${attempt}/3)"
+              if ssh -i ~/.ssh/deploy_key -p "$PORT" -o BatchMode=yes $STRICT_OPTS \
+                -o ConnectTimeout=20 \
+                -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
+                "${candidate}@${VPS_HOST}" env APP_PATH="$APP_PATH" bash -s <<'REMOTE'
           set -euo pipefail
           if [ -z "$APP_PATH" ]; then APP_PATH="/var/www/telvoice-sms-agent"; fi
           echo "=== SSH conectado ==="
@@ -119,18 +131,20 @@ jobs:
           npm -v
           pm2 -v 2>/dev/null || echo "ADVERTENCIA: pm2 no encontrado en PATH"
           REMOTE
-            then
-              SSH_OK_USER="$candidate"
-              echo "SSH_OK_USER=${candidate}" >> "$GITHUB_ENV"
-              break 2
-            fi
-          done
-          [ -n "${SSH_OK_USER:-}" ] && break
-          echo "SSH intento ${attempt}/3 falló; reintento en 15s..."
-          sleep 15
+              then
+                SSH_OK_USER="$candidate"
+                echo "SSH_OK_USER=${candidate}" >> "$GITHUB_ENV"
+                break 2
+              fi
+              echo "Falló usuario ${candidate} (auth, ruta o prerequisitos)."
+            done
+            [ -n "${SSH_OK_USER:-}" ] && break
+            echo "SSH intento ${attempt}/3 falló; reintento en 15s..."
+            sleep 15
           done
           if [ -z "$SSH_OK_USER" ]; then
-            echo "::error::No se pudo autenticar por SSH con VPS_USER ni con root."
+            echo "::error::No se pudo autenticar por SSH. Revisa VPS_HOST, VPS_USER y VPS_SSH_KEY."
+            echo "Huella esperada en servidor: SHA256:THmI/vVwUwpM3zN3Mc5IxYiaMH4PEmLs7Kyo6rq9TMQ (github-actions-telvoice-deploy)"
             exit 1
           fi
 
