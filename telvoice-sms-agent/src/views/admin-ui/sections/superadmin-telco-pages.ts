@@ -2,16 +2,18 @@ import type { AdminSessionUser } from "../../../types/admin.js";
 import type { AuditClassification } from "../../../types/adminDataAudit.js";
 import type {
   AdminClientAuditInfo,
+  AdminClientListItem,
+  AdminClientOperationalDetail,
   AdminClientScope,
+  AdminClientStatusFilter,
   AdminClientsScopeSummary,
 } from "../../../types/adminClientsList.js";
-import type { CompanyRow } from "../../../types/tenant.js";
+import type { CompanyRatePlanView } from "../../../services/companyRatePlanService.js";
 import type { PanelSmsMessageRow } from "../../../types/sms-panel.js";
 import type {
   LiveTestControlPanelView,
   SmsProviderStatusView,
 } from "../../../services/smsProviderStatusService.js";
-import type { CompanyRatePlanView } from "../../../services/companyRatePlanService.js";
 import type {
   SmsProviderRow,
   SmsRatePlanDetailEnriched,
@@ -22,10 +24,14 @@ import {
   companyRoutingPolicyFromAssignment,
   routingModeFromPlan,
 } from "../../../services/smsRouteSelectionService.js";
-import { escapeHtml, formatDate } from "../../../utils/html.js";
+import { escapeHtml, formatDate, formatDateShort } from "../../../utils/html.js";
 import { wrapAdminPage } from "../admin-page-wrap.js";
-import { renderKpiCard } from "../components.js";
-import { renderFilterBar, renderFilterField, renderPageHeader } from "../page-kit.js";
+import {
+  renderBtn,
+  renderFilterBar,
+  renderFilterField,
+  renderPageHeader,
+} from "../page-kit.js";
 import { renderSuperadminBanner, statusBadgeSa } from "../superadmin-kit.js";
 
 type BaseOpts = {
@@ -579,82 +585,346 @@ function renderClientsScopeOptions(scope: AdminClientScope): string {
     .join("");
 }
 
-function renderClientsSummaryKpis(
+const CLIENT_STATUS_LABELS: Record<AdminClientStatusFilter, string> = {
+  "": "Todos los estados",
+  active: "Activo",
+  suspended: "Suspendido",
+  no_balance: "Sin saldo",
+  has_balance: "Con saldo",
+  no_rate_plan: "Sin rate plan",
+  activity_today: "Con actividad hoy",
+  no_activity: "Sin actividad",
+  protected: "Protegidos",
+};
+
+function abbreviateCompanyId(id: string): string {
+  if (id.length <= 12) return id;
+  return `${id.slice(0, 8)}…`;
+}
+
+function renderOperationalStatusBadges(item: AdminClientListItem): string {
+  const flags = item.operational.operationalFlags;
+  const parts: string[] = [];
+  if (item.company.status === "active") {
+    parts.push(`<span class="badge badge-success">activo</span>`);
+  } else {
+    parts.push(statusBadgeSa(item.company.status));
+  }
+  if (!flags.hasBalance) parts.push(`<span class="badge badge-warn">sin saldo</span>`);
+  if (!flags.hasRatePlan) parts.push(`<span class="badge badge-warn">sin rate plan</span>`);
+  if (flags.needsReview) parts.push(`<span class="badge badge-warn">revisión</span>`);
+  if (flags.isQa) parts.push(`<span class="badge badge-warn">QA/test</span>`);
+  if (flags.isProtected) parts.push(`<span class="badge badge-success">protegido</span>`);
+  if (flags.noActivity) parts.push(`<span class="badge badge-muted">sin actividad</span>`);
+  if (flags.apiActive) {
+    parts.push(`<span class="badge badge-ok">API activa</span>`);
+  } else if (flags.hasRatePlan) {
+    parts.push(`<span class="badge badge-muted">API inactiva</span>`);
+  }
+  if (flags.hasPaidPendingCredit) {
+    parts.push(`<span class="badge badge-err">por acreditar</span>`);
+  }
+  return parts.join(" ");
+}
+
+function formatRelativeTime(value: string | null | undefined): string {
+  if (!value) return "Sin datos";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  const diffMs = Date.now() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "ahora";
+  if (diffMins < 60) return `hace ${diffMins} min`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `hace ${diffHours} h`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 30) return `hace ${diffDays} d`;
+  return formatDateShort(value);
+}
+
+function clientScopeBadges(audit: AdminClientAuditInfo): string {
+  const parts: string[] = [];
+  const variantMap: Record<AuditClassification, string> = {
+    PROD_REAL: "success",
+    PROD_INTERNAL: "ok",
+    QA_TEST: "warn",
+    DEMO_SEED: "warn",
+    ORPHAN: "err",
+    REVIEW_REQUIRED: "warn",
+  };
+  const variant = variantMap[audit.classification] ?? "muted";
+  parts.push(
+    `<span class="badge badge-${variant}">${escapeHtml(audit.classification)}</span>`,
+  );
+  if (audit.protected) {
+    parts.push(`<span class="badge badge-success">protected</span>`);
+  }
+  return parts.join(" ");
+}
+
+function renderClientsStatusOptions(status: AdminClientStatusFilter): string {
+  return (Object.keys(CLIENT_STATUS_LABELS) as AdminClientStatusFilter[])
+    .map(
+      (key) =>
+        `<option value="${escapeHtml(key)}"${key === status ? " selected" : ""}>${escapeHtml(CLIENT_STATUS_LABELS[key])}</option>`,
+    )
+    .join("");
+}
+
+function buildClientsFilterQuery(
+  scope: AdminClientScope,
+  search: string,
+  status: AdminClientStatusFilter,
+  page?: number,
+): string {
+  const params = new URLSearchParams();
+  if (scope !== "real") params.set("scope", scope);
+  if (search) params.set("q", search);
+  if (status) params.set("status", status);
+  if (page && page > 1) params.set("page", String(page));
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
+
+function renderClientActionsMenu(
+  item: AdminClientListItem,
+  isQaScope: boolean,
+): string {
+  const id = item.company.id;
+  const isProdReal =
+    item.audit.classification === "PROD_REAL" || item.audit.protected;
+  const links = [
+    renderBtn("Ver detalle", { href: `/admin/clients/${id}`, size: "sm", variant: "secondary" }),
+    renderBtn("Saldo / Rate plan", { href: `/admin/wallets/${id}`, size: "sm", variant: "ghost" }),
+    renderBtn("Órdenes", { href: `/admin/orders?company_id=${id}`, size: "sm", variant: "ghost" }),
+    renderBtn("Facturas", { href: `/admin/invoices?company_id=${id}`, size: "sm", variant: "ghost" }),
+    renderBtn("Envíos", { href: `/admin/messages?company_id=${id}`, size: "sm", variant: "ghost" }),
+    renderBtn("Editar", {
+      href: `/admin/wallets/${id}`,
+      size: "sm",
+      variant: "ghost",
+      title: "Editar datos vía saldo/rate plan",
+    }),
+  ];
+  const disabledActions = [
+    renderBtn("Reenviar bienvenida", {
+      size: "sm",
+      variant: "ghost",
+      disabled: true,
+      title: "Pendiente: requiere audit log + confirmación",
+    }),
+    renderBtn("Reenviar comprobante", {
+      size: "sm",
+      variant: "ghost",
+      disabled: true,
+      title: "Pendiente: requiere audit log + confirmación",
+    }),
+    renderBtn("Suspender envío", {
+      size: "sm",
+      variant: "ghost",
+      disabled: true,
+      title: "No implementado en esta fase",
+    }),
+    renderBtn("Reactivar envío", {
+      size: "sm",
+      variant: "ghost",
+      disabled: true,
+      title: "No implementado en esta fase",
+    }),
+    renderBtn("Archivar cuenta", {
+      size: "sm",
+      variant: "ghost",
+      disabled: true,
+      title: "No implementado en esta fase",
+    }),
+  ];
+  if (isQaScope && !isProdReal) {
+    disabledActions.push(
+      renderBtn("Eliminar QA", {
+        size: "sm",
+        variant: "ghost",
+        disabled: true,
+        title: "Futuro: solo QA/test con confirmación",
+      }),
+    );
+  }
+  return `<details class="tv-client-actions">
+    <summary class="btn btn-secondary btn-sm" style="cursor:pointer;list-style:none">Acciones</summary>
+    <div class="tv-actions-inline" style="flex-direction:column;align-items:stretch;gap:0.25rem;margin-top:0.35rem;min-width:12rem">
+      ${links.join("")}
+      <hr style="border:none;border-top:1px solid var(--border);margin:0.25rem 0" />
+      ${disabledActions.join("")}
+    </div>
+  </details>`;
+}
+
+function segmentChip(
+  label: string,
+  count: number,
+  href: string,
+  active: boolean,
+): string {
+  const cls = active ? "btn btn-secondary btn-sm" : "btn btn-ghost btn-sm";
+  return `<a href="${escapeHtml(href)}" class="${cls}" style="display:inline-flex;align-items:center;gap:0.35rem">
+    ${escapeHtml(label)}
+    <span class="badge badge-muted" style="font-size:0.75rem">${count}</span>
+  </a>`;
+}
+
+function renderClientsSegmentBar(
   summary: AdminClientsScopeSummary,
   scope: AdminClientScope,
+  statusFilter: AdminClientStatusFilter,
+  search: string,
 ): string {
-  const qaHint =
-    scope === "real"
-      ? "Ocultos en este listado operativo"
-      : "Total en base de datos";
-  return `<div class="tv-kpi-grid tv-kpi-grid--dense" style="margin-bottom:1rem">
-    ${renderKpiCard({
-      label: scope === "real" ? "Clientes reales visibles" : "Resultados visibles",
-      value: String(summary.visible),
-      icon: "groups",
-      variant: "primary",
-      hint: `De ${summary.totalCompanies} empresas registradas`,
-    })}
-    ${renderKpiCard({
-      label: "QA/Test",
-      value: String(summary.hiddenQa),
-      icon: "science",
-      variant: "warn",
-      hint: qaHint,
-    })}
-    ${renderKpiCard({
-      label: "Revisión requerida",
-      value: String(summary.reviewRequired),
-      icon: "rule",
-      variant: "warn",
-      hint: "ORPHAN + REVIEW_REQUIRED",
-    })}
-    ${renderKpiCard({
-      label: "Protegidos",
-      value: String(summary.protectedVisible),
-      icon: "shield",
-      variant: "success",
-      hint: "Nunca ocultos en Producción real",
-    })}
+  const s = summary.segments;
+  const chips = [
+    segmentChip(
+      "Producción real",
+      s.productionReal,
+      `/admin/clients${buildClientsFilterQuery("real", search, "")}`,
+      scope === "real" && !statusFilter,
+    ),
+    segmentChip(
+      "QA/Test",
+      s.qaTest,
+      `/admin/clients${buildClientsFilterQuery("qa", search, "")}`,
+      scope === "qa" && !statusFilter,
+    ),
+    segmentChip(
+      "Revisión requerida",
+      s.reviewRequired,
+      `/admin/clients${buildClientsFilterQuery("review", search, "")}`,
+      scope === "review" && !statusFilter,
+    ),
+    segmentChip(
+      "Sin saldo",
+      s.noBalance,
+      `/admin/clients${buildClientsFilterQuery(scope, search, "no_balance")}`,
+      statusFilter === "no_balance",
+    ),
+    segmentChip(
+      "Con saldo",
+      s.hasBalance,
+      `/admin/clients${buildClientsFilterQuery(scope, search, "has_balance")}`,
+      statusFilter === "has_balance",
+    ),
+    segmentChip(
+      "Sin rate plan",
+      s.noRatePlan,
+      `/admin/clients${buildClientsFilterQuery(scope, search, "no_rate_plan")}`,
+      statusFilter === "no_rate_plan",
+    ),
+    segmentChip(
+      "Actividad hoy",
+      s.activityToday,
+      `/admin/clients${buildClientsFilterQuery(scope, search, "activity_today")}`,
+      statusFilter === "activity_today",
+    ),
+    segmentChip(
+      "Sin actividad",
+      s.noActivity,
+      `/admin/clients${buildClientsFilterQuery(scope, search, "no_activity")}`,
+      statusFilter === "no_activity",
+    ),
+    segmentChip(
+      "Protegidos",
+      s.protected,
+      `/admin/clients${buildClientsFilterQuery(scope, search, "protected")}`,
+      statusFilter === "protected",
+    ),
+  ];
+  return `<div style="display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center;margin-bottom:0.75rem">
+    ${chips.join("")}
+    <span class="field-hint" style="margin-left:0.5rem">${summary.visible} resultado(s) · ${summary.totalCompanies} empresas en base</span>
   </div>`;
 }
 
 export function renderSaClientsPage(opts: BaseOpts & {
-  clients: {
-    company: CompanyRow;
-    ratePlan: CompanyRatePlanView | null;
-    audit: AdminClientAuditInfo;
-  }[];
+  clients: AdminClientListItem[];
   summary: AdminClientsScopeSummary;
   scope: AdminClientScope;
   search: string;
+  statusFilter: AdminClientStatusFilter;
   searchHint?: string | null;
+  page: number;
+  totalFiltered: number;
+  pageSize: number;
 }): string {
-  const showAuditColumn = opts.scope === "all" || opts.scope === "qa" || opts.scope === "review";
   const rows = opts.clients
-    .map(({ company: c, ratePlan: rp, audit }) => {
-      const planCell = rp?.rate_plan_name
-        ? `<span>${escapeHtml(rp.rate_plan_name)}</span><br><code class="tv-code-sm">${escapeHtml(rp.rate_plan_code ?? "")}</code>`
-        : `<span class="badge badge-warn">Sin rate plan</span>`;
-      const warn = !rp
-        ? `<div class="field-hint" style="color:var(--warn)">Cliente sin rate plan para envío real.</div>`
+    .map((item) => {
+      const c = item.company;
+      const op = item.operational;
+      const audit = item.audit;
+      const email = c.billing_email ?? c.name;
+      const planCell = op.ratePlanName
+        ? `<span>${escapeHtml(op.ratePlanName)}</span><br><code class="tv-code-sm">${escapeHtml(op.ratePlanCode ?? "")}</code><br>
+        <a href="/admin/wallets/${escapeHtml(c.id)}" class="row-link" style="font-size:0.8rem">Cambiar</a>`
+        : `<span class="badge badge-warn">Sin rate plan</span><br>
+        <a href="/admin/wallets/${escapeHtml(c.id)}" class="row-link" style="font-size:0.8rem">Asignar</a>`;
+      const walletStatus = op.wallet.hasWallet
+        ? escapeHtml(op.wallet.status ?? "—")
+        : `<span class="badge badge-warn">Sin wallet</span>`;
+      const lastPurchase = op.purchases.lastPurchaseAt
+        ? formatDateShort(op.purchases.lastPurchaseAt)
+        : "Sin datos";
+      const lastInvoice = op.purchases.lastInvoiceNumber
+        ? `<code class="tv-code-sm">${escapeHtml(op.purchases.lastInvoiceNumber)}</code>`
+        : "—";
+      const pendingAlert = op.purchases.paidPendingCreditCount > 0
+        ? `<span class="badge badge-err">${op.purchases.paidPendingCreditCount} por acreditar</span>`
         : "";
-      const auditCell = showAuditColumn ? `<td>${auditClassificationBadge(audit)}</td>` : "";
+      const noActivityBadge = op.operationalFlags.noActivity
+        ? `<span class="badge badge-muted">sin actividad</span>`
+        : "";
+      const failedLine =
+        op.usage.failedLast24h > 0
+          ? `<span class="field-hint" style="color:var(--warn)">Fallidos 24h: ${op.usage.failedLast24h}</span><br>`
+          : "";
       return `<tr>
-      <td><strong>${escapeHtml(c.name)}</strong>${warn}</td>
-      <td>${escapeHtml(c.billing_email ?? c.name)}</td>
-      <td>${escapeHtml(c.country ?? "CL")}</td>
-      <td>${statusBadgeSa(c.status)}</td>
-      ${auditCell}
-      <td>${planCell}</td>
       <td>
-        <a href="/admin/wallets/${escapeHtml(c.id)}" class="row-link">Saldo / Rate plan</a>
+        <strong>${escapeHtml(c.name)}</strong><br>
+        <span class="field-hint">${escapeHtml(email)}</span><br>
+        <span class="field-hint">${escapeHtml(c.country ?? "CL")}</span><br>
+        <div style="margin-top:0.25rem">${clientScopeBadges(audit)}</div>
+        <code class="tv-code-sm" title="${escapeHtml(c.id)}">${escapeHtml(abbreviateCompanyId(c.id))}</code>
       </td>
+      <td>
+        <strong style="font-size:1.15rem">${op.wallet.availableSms.toLocaleString("es-CL")}</strong> SMS<br>
+        <span class="field-hint">Comprado: ${op.wallet.totalPurchasedSms.toLocaleString("es-CL")}</span><br>
+        <span class="field-hint">Cons: ${op.wallet.consumedSms.toLocaleString("es-CL")} · Res: ${op.wallet.reservedSms.toLocaleString("es-CL")}</span><br>
+        <span class="field-hint">Wallet: ${walletStatus}</span>
+      </td>
+      <td>
+        Hoy: <strong>${op.usage.smsToday.toLocaleString("es-CL")}</strong><br>
+        Mes: <strong>${op.usage.smsThisMonth.toLocaleString("es-CL")}</strong><br>
+        ${failedLine}
+        <span class="field-hint">Último: ${escapeHtml(formatRelativeTime(op.usage.lastSmsAt))}</span><br>
+        ${noActivityBadge}
+      </td>
+      <td>
+        Compra: ${escapeHtml(lastPurchase)}<br>
+        Factura: ${lastInvoice}<br>
+        <span class="field-hint">Pagadas: ${op.purchases.paidOrdersCount} / ${op.purchases.ordersCount}</span><br>
+        ${pendingAlert}
+      </td>
+      <td>${planCell}</td>
+      <td>${renderOperationalStatusBadges(item)}</td>
+      <td>${renderClientActionsMenu(item, opts.scope === "qa")}</td>
     </tr>`;
     })
     .join("");
 
-  const colSpan = showAuditColumn ? 7 : 6;
+  const totalPages = Math.max(1, Math.ceil(opts.totalFiltered / opts.pageSize));
+  const pagination =
+    totalPages > 1
+      ? `<div class="tv-pagination" style="margin-top:1rem;display:flex;gap:0.5rem;align-items:center">
+        <span class="field-hint">Página ${opts.page} de ${totalPages} (${opts.totalFiltered} clientes)</span>
+        ${opts.page > 1 ? `<a href="/admin/clients${buildClientsFilterQuery(opts.scope, opts.search, opts.statusFilter, opts.page - 1)}" class="btn btn-ghost btn-sm">← Anterior</a>` : ""}
+        ${opts.page < totalPages ? `<a href="/admin/clients${buildClientsFilterQuery(opts.scope, opts.search, opts.statusFilter, opts.page + 1)}" class="btn btn-ghost btn-sm">Siguiente →</a>` : ""}
+      </div>`
+      : "";
+
   const scopeNote =
     opts.scope === "real"
       ? `<p class="field-hint" style="margin:0 0 1rem">Vista operativa: solo clientes <strong>PROD_REAL</strong> o <strong>protected</strong>. Las cuentas QA/demo siguen en la base — cambia el ambiente para verlas.</p>`
@@ -670,26 +940,246 @@ export function renderSaClientsPage(opts: BaseOpts & {
         `<select name="scope" class="tv-input">${renderClientsScopeOptions(opts.scope)}</select>`,
       )}
       ${renderFilterField(
+        "Estado",
+        `<select name="status" class="tv-input">${renderClientsStatusOptions(opts.statusFilter)}</select>`,
+      )}
+      ${renderFilterField(
         "Buscar",
-        `<input type="search" name="q" class="tv-input" placeholder="Empresa, email, RUT…" value="${escapeHtml(opts.search)}" />`,
+        `<input type="search" name="q" class="tv-input" placeholder="Empresa, email, RUT, company_id…" value="${escapeHtml(opts.search)}" />`,
       )}
       <button type="submit" class="btn btn-secondary">Filtrar</button>
-      ${opts.search || opts.scope !== "real" ? `<a href="/admin/clients" class="btn btn-ghost">Restablecer</a>` : ""}
+      ${opts.search || opts.scope !== "real" || opts.statusFilter ? `<a href="/admin/clients" class="btn btn-ghost">Restablecer</a>` : ""}
     </form>`);
 
   const body = `${renderSuperadminBanner()}
     ${renderPageHeader({
       title: "Clientes empresariales",
-      subtitle: `Ambiente: ${CLIENT_SCOPE_LABELS[opts.scope]}. Asigne un rate plan antes de habilitar envío real (live_test).`,
+      subtitle: `Vista operativa por cuenta · Ambiente: ${CLIENT_SCOPE_LABELS[opts.scope]}. Métricas globales en el dashboard.`,
     })}
-    ${renderClientsSummaryKpis(opts.summary, opts.scope)}
+    ${renderClientsSegmentBar(opts.summary, opts.scope, opts.statusFilter, opts.search)}
     ${scopeNote}
     ${filters}
     ${searchHintBlock}
-    <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Empresa</th><th>Email</th><th>País</th><th>Estado</th>${showAuditColumn ? "<th>Auditoría</th>" : ""}<th>Rate Plan</th><th></th>
-    </tr></thead><tbody>${rows || `<tr><td colspan="${colSpan}">Sin empresas en este ambiente</td></tr>`}</tbody></table></div>`;
+    <div class="table-wrap tv-panel"><table class="tv-table tv-table--dense"><thead><tr>
+      <th>Cliente</th><th>Saldo SMS</th><th>Uso</th><th>Compra / Facturación</th><th>Rate plan</th><th>Estado operativo</th><th>Acciones</th>
+    </tr></thead><tbody>${rows || `<tr><td colspan="7">Sin empresas en este ambiente</td></tr>`}</tbody></table></div>
+    ${pagination}`;
   return wrap(opts, "clients", "Clientes", body);
+}
+
+export function renderSaClientDetailPage(opts: BaseOpts & {
+  detail: AdminClientOperationalDetail;
+}): string {
+  const { company: c, audit, operational: op, detail } = {
+    company: opts.detail.company,
+    audit: opts.detail.audit,
+    operational: opts.detail.operational,
+    detail: opts.detail,
+  };
+  const email = c.billing_email ?? c.name;
+
+  const ordersRows = detail.recentOrders
+    .map(
+      (o) => `<tr>
+        <td><a href="/admin/orders/${escapeHtml(o.id)}" class="row-link">${escapeHtml(formatDateShort(o.createdAt))}</a></td>
+        <td>${escapeHtml(o.paymentStatus)}</td>
+        <td>${escapeHtml(o.creditStatus)}</td>
+        <td>${o.smsQuantity.toLocaleString("es-CL")}</td>
+        <td>${escapeHtml(o.amount)}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const invoiceRows = detail.recentInvoices
+    .map(
+      (i) => `<tr>
+        <td><code class="tv-code-sm">${escapeHtml(i.invoiceNumber)}</code></td>
+        <td>${escapeHtml(i.status)}</td>
+        <td>${escapeHtml(i.paymentStatus)}</td>
+        <td>${i.totalAmount.toLocaleString("es-CL")}</td>
+        <td>${escapeHtml(formatDateShort(i.issuedAt))}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const messageRows = detail.recentMessages
+    .map(
+      (m) => `<tr>
+        <td>${escapeHtml(formatDateShort(m.sentAt ?? m.createdAt))}</td>
+        <td>${escapeHtml(m.recipientNumber)}</td>
+        <td>${escapeHtml(m.status)}</td>
+        <td>${escapeHtml(m.mode)}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const emailRows = detail.recentEmails
+    .map(
+      (e) => `<tr>
+        <td>${escapeHtml(e.kind)}</td>
+        <td>${escapeHtml(e.toEmail)}</td>
+        <td>${escapeHtml(e.status)}</td>
+        <td>${escapeHtml(formatDateShort(e.sentAt))}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const apiRows = detail.apiKeys
+    .map(
+      (k) => `<tr>
+        <td>${escapeHtml(k.label)}</td>
+        <td>${escapeHtml(k.environment)}</td>
+        <td>${escapeHtml(k.status)}</td>
+        <td>${escapeHtml(formatRelativeTime(k.lastUsedAt))}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const walletTxRows = detail.recentWalletTransactions
+    .map(
+      (t) => `<tr>
+        <td>${escapeHtml(formatDateShort(t.createdAt))}</td>
+        <td>${escapeHtml(t.type)}</td>
+        <td>${t.smsAmount.toLocaleString("es-CL")}</td>
+        <td>${t.balanceAfter.toLocaleString("es-CL")}</td>
+        <td>${escapeHtml(t.description ?? "—")}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const pendingRows = detail.pendingOrders
+    .map(
+      (o) => `<tr>
+        <td><a href="/admin/orders/${escapeHtml(o.id)}" class="row-link">${escapeHtml(formatDateShort(o.createdAt))}</a></td>
+        <td>${escapeHtml(o.paymentStatus)}</td>
+        <td>${escapeHtml(o.creditStatus)}</td>
+        <td>${o.smsQuantity.toLocaleString("es-CL")}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const failedRows = detail.recentFailedMessages
+    .map(
+      (m) => `<tr>
+        <td>${escapeHtml(formatDateShort(m.sentAt ?? m.createdAt))}</td>
+        <td>${escapeHtml(m.recipientNumber)}</td>
+        <td>${escapeHtml(m.status)}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const webhookBlock = detail.webhook
+    ? `<p><strong>Webhook DLR:</strong> ${detail.webhook.url ? escapeHtml(detail.webhook.url) : "Sin URL"}</p>
+       <p><strong>Estado:</strong> ${escapeHtml(detail.webhook.status ?? "—")}</p>`
+    : `<p class="field-hint">Sin configuración webhook en client_api_settings.</p>`;
+
+  const safeActions = `
+    <div class="tv-actions-inline" style="flex-wrap:wrap;gap:0.5rem">
+      ${renderBtn("Editar datos", { href: `/admin/wallets/${c.id}`, variant: "secondary" })}
+      ${renderBtn("Saldo / Rate plan", { href: `/admin/wallets/${c.id}`, variant: "secondary" })}
+      ${renderBtn("Órdenes", { href: `/admin/orders?company_id=${c.id}`, variant: "ghost" })}
+      ${renderBtn("Facturas", { href: `/admin/invoices?company_id=${c.id}`, variant: "ghost" })}
+      ${renderBtn("Mensajes", { href: `/admin/messages?company_id=${c.id}`, variant: "ghost" })}
+      ${renderBtn("API", { href: `/admin/api?company_id=${c.id}`, variant: "ghost" })}
+      ${renderBtn("Reenviar bienvenida", { disabled: true, title: "Pendiente: audit log + confirmación" })}
+      ${renderBtn("Reenviar comprobante", { disabled: true, title: "Pendiente: audit log + confirmación" })}
+      ${renderBtn("Suspender envío", { disabled: true, title: "No implementado" })}
+      ${renderBtn("Reactivar envío", { disabled: true, title: "No implementado" })}
+      ${renderBtn("Archivar cuenta", { disabled: true, title: "No implementado" })}
+    </div>
+    <p class="field-hint" style="margin-top:0.5rem">Acciones destructivas requieren audit log, confirmación literal y bloqueo para clientes protected.</p>`;
+
+  const clientStats = `<div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem">
+    <span class="tv-stat-chip tv-stat-chip--primary"><span class="tv-stat-chip__label">Saldo</span><span class="tv-stat-chip__value">${op.wallet.availableSms.toLocaleString("es-CL")}</span></span>
+    <span class="tv-stat-chip"><span class="tv-stat-chip__label">Hoy</span><span class="tv-stat-chip__value">${op.usage.smsToday.toLocaleString("es-CL")}</span></span>
+    <span class="tv-stat-chip"><span class="tv-stat-chip__label">Mes</span><span class="tv-stat-chip__value">${op.usage.smsThisMonth.toLocaleString("es-CL")}</span></span>
+    <span class="tv-stat-chip"><span class="tv-stat-chip__label">Fallidos mes</span><span class="tv-stat-chip__value">${detail.usageStats.failedMonth}</span></span>
+    <span class="tv-stat-chip"><span class="tv-stat-chip__label">Entrega mes</span><span class="tv-stat-chip__value">${detail.usageStats.deliveryRate ?? "Sin datos"}</span></span>
+  </div>`;
+
+  const body = `${renderSuperadminBanner()}
+    ${renderPageHeader({
+      title: escapeHtml(c.name),
+      subtitleHtml: `${escapeHtml(email)} · ${escapeHtml(c.country ?? "CL")} · ${clientScopeBadges(audit)}`,
+      actions: `${renderBtn("← Clientes", { href: "/admin/clients", variant: "ghost" })} ${renderBtn("Saldo / Rate plan", { href: `/admin/wallets/${c.id}`, variant: "secondary" })}`,
+    })}
+    ${clientStats}
+    <div class="tv-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem">
+      <section class="tv-panel"><h2 class="tv-panel__title">Empresa</h2><div class="tv-panel__body">
+        <p><strong>RUT:</strong> ${escapeHtml(c.rut ?? "—")}</p>
+        <p><strong>Contacto:</strong> ${escapeHtml(c.contact_name ?? "—")}</p>
+        <p><strong>Teléfono:</strong> ${escapeHtml(c.contact_phone ?? "—")}</p>
+        <p><strong>Estado:</strong> ${statusBadgeSa(c.status)}</p>
+        <p><strong>Alta:</strong> ${escapeHtml(formatDate(c.created_at))}</p>
+        <p><strong>ID:</strong> <code class="tv-code-sm">${escapeHtml(c.id)}</code></p>
+      </div></section>
+      <section class="tv-panel"><h2 class="tv-panel__title">Wallet</h2><div class="tv-panel__body">
+        <p><strong>Disponible:</strong> ${op.wallet.availableSms.toLocaleString("es-CL")} SMS</p>
+        <p><strong>Comprado:</strong> ${op.wallet.totalPurchasedSms.toLocaleString("es-CL")}</p>
+        <p><strong>Consumido:</strong> ${op.wallet.consumedSms.toLocaleString("es-CL")}</p>
+        <p><strong>Reservado:</strong> ${op.wallet.reservedSms.toLocaleString("es-CL")}</p>
+        <p><strong>Estado wallet:</strong> ${op.wallet.hasWallet ? escapeHtml(op.wallet.status ?? "—") : "Sin wallet"}</p>
+        ${walletTxRows ? `<div class="table-wrap" style="margin-top:0.75rem"><table class="tv-table"><thead><tr><th>Fecha</th><th>Tipo</th><th>SMS</th><th>Saldo</th><th>Desc.</th></tr></thead><tbody>${walletTxRows}</tbody></table></div>` : "<p class=\"field-hint\">Sin transacciones wallet.</p>"}
+      </div></section>
+      <section class="tv-panel"><h2 class="tv-panel__title">Uso SMS</h2><div class="tv-panel__body">
+        <p><strong>Hoy:</strong> ${op.usage.smsToday.toLocaleString("es-CL")}</p>
+        <p><strong>Mes:</strong> ${op.usage.smsThisMonth.toLocaleString("es-CL")}</p>
+        <p><strong>Fallidos 24h:</strong> ${op.usage.failedLast24h}</p>
+        <p><strong>Último envío:</strong> ${escapeHtml(formatRelativeTime(op.usage.lastSmsAt))}</p>
+        <p><strong>Entregados mes:</strong> ${detail.usageStats.deliveredMonth} · <strong>Fallidos mes:</strong> ${detail.usageStats.failedMonth}</p>
+        ${failedRows ? `<div class="table-wrap" style="margin-top:0.5rem"><table class="tv-table"><thead><tr><th>Fecha</th><th>Destino</th><th>Estado</th></tr></thead><tbody>${failedRows}</tbody></table></div>` : ""}
+      </div></section>
+      <section class="tv-panel"><h2 class="tv-panel__title">Rate plan</h2><div class="tv-panel__body">
+        <p><strong>Plan:</strong> ${op.ratePlanName ? escapeHtml(op.ratePlanName) : "Sin rate plan"}</p>
+        <p><strong>Código:</strong> ${op.ratePlanCode ? `<code class="tv-code-sm">${escapeHtml(op.ratePlanCode)}</code>` : "—"}</p>
+        <p><strong>Asignado:</strong> ${escapeHtml(formatDateShort(op.ratePlanAssignedAt))}</p>
+        <p><strong>Live:</strong> ${detail.ratePlanLiveEnabled == null ? "—" : detail.ratePlanLiveEnabled ? "sí" : "no"}</p>
+        <p><strong>Campañas:</strong> ${detail.ratePlanCampaignsEnabled == null ? "—" : detail.ratePlanCampaignsEnabled ? "sí" : "no"}</p>
+        <p><strong>API:</strong> ${detail.ratePlanApiEnabled == null ? "—" : detail.ratePlanApiEnabled ? "sí" : "no"}</p>
+        <a href="/admin/wallets/${escapeHtml(c.id)}" class="row-link">Cambiar rate plan →</a>
+      </div></section>
+      <section class="tv-panel"><h2 class="tv-panel__title">API / integración</h2><div class="tv-panel__body">
+        ${webhookBlock}
+        <p style="margin-top:0.5rem"><strong>API keys:</strong> ${detail.apiKeys.length}</p>
+      </div></section>
+      <section class="tv-panel"><h2 class="tv-panel__title">Auditoría</h2><div class="tv-panel__body">
+        <p>${auditClassificationBadge(audit)}</p>
+        <p><strong>Clasificación:</strong> ${escapeHtml(audit.classification)}</p>
+        <p><strong>Protected:</strong> ${audit.protected ? "sí" : "no"}</p>
+        <p><strong>Razón:</strong> ${escapeHtml(audit.reason ?? "—")}</p>
+        <p><strong>Correos transaccionales:</strong> ${op.usage.transactionalEmailsSent}</p>
+        <p><strong>Campañas:</strong> ${op.usage.campaignsCount}</p>
+      </div></section>
+    </div>
+    <section class="tv-panel" style="margin-top:1rem"><h2 class="tv-panel__title">Acciones seguras</h2><div class="tv-panel__body">${safeActions}</div></section>
+    <div class="tv-form-grid" style="grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+      <section class="tv-panel"><h2 class="tv-panel__title">Órdenes recientes</h2><div class="tv-panel__body table-wrap">
+        <table class="tv-table"><thead><tr><th>Fecha</th><th>Pago</th><th>Crédito</th><th>SMS</th><th>Monto</th></tr></thead>
+        <tbody>${ordersRows || "<tr><td colspan=\"5\">Sin órdenes</td></tr>"}</tbody></table>
+      </div></section>
+      <section class="tv-panel"><h2 class="tv-panel__title">Facturas / comprobantes</h2><div class="tv-panel__body table-wrap">
+        <table class="tv-table"><thead><tr><th>Número</th><th>Estado</th><th>Pago</th><th>Total</th><th>Emitida</th></tr></thead>
+        <tbody>${invoiceRows || "<tr><td colspan=\"5\">Sin facturas</td></tr>"}</tbody></table>
+      </div></section>
+      <section class="tv-panel"><h2 class="tv-panel__title">Compras por acreditar</h2><div class="tv-panel__body table-wrap">
+        <table class="tv-table"><thead><tr><th>Fecha</th><th>Pago</th><th>Crédito</th><th>SMS</th></tr></thead>
+        <tbody>${pendingRows || "<tr><td colspan=\"4\">Sin compras pendientes de acreditar</td></tr>"}</tbody></table>
+      </div></section>
+      <section class="tv-panel"><h2 class="tv-panel__title">Últimos SMS</h2><div class="tv-panel__body table-wrap">
+        <table class="tv-table"><thead><tr><th>Fecha</th><th>Destino</th><th>Estado</th><th>Modo</th></tr></thead>
+        <tbody>${messageRows || "<tr><td colspan=\"4\">Sin envíos</td></tr>"}</tbody></table>
+      </div></section>
+      <section class="tv-panel"><h2 class="tv-panel__title">Correos transaccionales</h2><div class="tv-panel__body table-wrap">
+        <table class="tv-table"><thead><tr><th>Tipo</th><th>Destino</th><th>Estado</th><th>Enviado</th></tr></thead>
+        <tbody>${emailRows || "<tr><td colspan=\"4\">Sin correos</td></tr>"}</tbody></table>
+      </div></section>
+    </div>
+    <section class="tv-panel" style="margin-top:1rem"><h2 class="tv-panel__title">API keys</h2><div class="tv-panel__body table-wrap">
+      <table class="tv-table"><thead><tr><th>Etiqueta</th><th>Ambiente</th><th>Estado</th><th>Último uso</th></tr></thead>
+      <tbody>${apiRows || "<tr><td colspan=\"4\">Sin API keys</td></tr>"}</tbody></table>
+    </div></section>`;
+
+  return wrap(opts, "clients", c.name, body);
 }
 
 export function renderWalletRatePlanBlock(opts: {

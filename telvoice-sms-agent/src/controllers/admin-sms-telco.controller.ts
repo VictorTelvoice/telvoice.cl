@@ -1,12 +1,14 @@
 import type { NextFunction, Request, Response } from "express";
-import { listAdminClientsForScope } from "../services/adminClientsListService.js";
+import {
+  getAdminClientOperationalDetail,
+  listAdminClientsForScope,
+} from "../services/adminClientsListService.js";
 import {
   getLiveTestControlPanel,
   getSmsProviderStatusView,
 } from "../services/smsProviderStatusService.js";
 import {
   assignCompanyRatePlan,
-  getCompanyRatePlan,
   updateCompanyRatePlanTraffic,
 } from "../services/companyRatePlanService.js";
 import { listPanelMessagesByCompany } from "../services/panelSmsMessageService.js";
@@ -34,6 +36,7 @@ import { CLIENT_TPS_CAP_ERROR } from "../services/smsTrafficPolicyService.js";
 import { sendSuperadminProviderTest } from "../services/superadminProviderTestService.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
+  renderSaClientDetailPage,
   renderSaClientsPage,
   renderSaProviderDetailPage,
   renderSaProviderTestPage,
@@ -551,21 +554,44 @@ export async function getSaClientsPageTelco(
     const listResult = await listAdminClientsForScope({
       scope: req.query.scope,
       search: req.query.q,
+      status: req.query.status,
+      page: req.query.page,
     });
-    const withPlans = await Promise.all(
-      listResult.items.map(async (item) => {
-        const rp = await getCompanyRatePlan(item.company.id);
-        return { company: item.company, ratePlan: rp, audit: item.audit };
-      }),
-    );
     res.type("html").send(
       renderSaClientsPage({
         admin: req.adminUser!,
-        clients: withPlans,
+        clients: listResult.items,
         summary: listResult.summary,
         scope: listResult.summary.scope,
         search: listResult.search,
+        statusFilter: listResult.statusFilter,
         searchHint: listResult.searchHint,
+        page: listResult.page,
+        totalFiltered: listResult.totalFiltered,
+        pageSize: listResult.pageSize,
+        ...flash(req),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function getSaClientDetailPageTelco(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const companyId = validateUuidParam(String(req.params.companyId), "companyId");
+    const detail = await getAdminClientOperationalDetail(companyId);
+    if (!detail) {
+      throw new AppError("Cliente no encontrado.", 404);
+    }
+    res.type("html").send(
+      renderSaClientDetailPage({
+        admin: req.adminUser!,
+        detail,
         ...flash(req),
       }),
     );
