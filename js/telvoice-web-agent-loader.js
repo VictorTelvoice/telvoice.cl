@@ -21,7 +21,7 @@
     window.TELVOICE_WEB_AGENT_EMBED = embedTarget;
   }
 
-  var AGENT_JS_VERSION = "20260714";
+  var AGENT_JS_VERSION = "20260715";
 
   function injectBootStyles() {
     if (document.getElementById("tva-boot-style")) {
@@ -33,7 +33,7 @@
       "#telvoice-web-agent{position:fixed;bottom:1rem;right:1rem;z-index:99990;visibility:hidden;pointer-events:none}" +
       "#telvoice-web-agent.tva-root--ready{visibility:visible;pointer-events:auto}" +
       "#telvoice-web-agent .tva-panel:not(.is-open){display:none!important}" +
-      "#telvoice-web-agent .tva-launcher-iso,#telvoice-web-agent .tva-launcher img{width:4.25rem;height:4.25rem;max-width:4.25rem;max-height:4.25rem}" +
+      "#telvoice-web-agent .tva-launcher-iso,#telvoice-web-agent .tva-launcher img{width:10.13rem;height:10.13rem;max-width:10.13rem;max-height:10.13rem}" +
       ".hero-phone-slot--agent{display:flex;flex:1;align-items:center;justify-content:center;width:100%;min-width:0}" +
       ".hero-phone-float--agent{position:relative;display:flex;flex-direction:column;width:min(320px,90vw);height:min(640px,85svh,85vh);max-width:100%;border-radius:48px;border:12px solid #dae2fd;background:#131b2e;overflow:hidden;box-sizing:border-box}" +
       ".hero-phone-screen{position:relative;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;padding:3.75rem 0 0}" +
