@@ -148,6 +148,14 @@ import {
   postUpdateQueueSchedulerSettings,
 } from "../controllers/admin-traffic-control.controller.js";
 import {
+  postAdminClientArchiveQa,
+  postAdminClientReactivateSending,
+  postAdminClientResendReceipt,
+  postAdminClientResendWelcome,
+  postAdminClientSuspendSending,
+  postAdminClientUpdateProfile,
+} from "../controllers/admin-client-actions.controller.js";
+import {
   getSaClientDetailPageTelco,
   getSaClientsPageTelco,
   getSaProviderDetailPage,
@@ -264,6 +272,36 @@ adminRouter.post("/logout", postLogout);
 
 adminRouter.get("/", requireAdminPage, getDashboard);
 adminRouter.get("/clients", requireAdminPage, getSaClientsPageTelco);
+adminRouter.post(
+  "/clients/:companyId/actions/update-profile",
+  requireAdminPage,
+  postAdminClientUpdateProfile,
+);
+adminRouter.post(
+  "/clients/:companyId/actions/suspend-sending",
+  requireAdminPage,
+  postAdminClientSuspendSending,
+);
+adminRouter.post(
+  "/clients/:companyId/actions/reactivate-sending",
+  requireAdminPage,
+  postAdminClientReactivateSending,
+);
+adminRouter.post(
+  "/clients/:companyId/actions/resend-welcome",
+  requireAdminPage,
+  postAdminClientResendWelcome,
+);
+adminRouter.post(
+  "/clients/:companyId/actions/resend-receipt",
+  requireAdminPage,
+  postAdminClientResendReceipt,
+);
+adminRouter.post(
+  "/clients/:companyId/actions/archive-qa",
+  requireAdminPage,
+  postAdminClientArchiveQa,
+);
 adminRouter.get("/pricing", requireAdminPage, getSaPricingPage);
 adminRouter.post("/pricing", requireAdminPage, postCreateSmsPackage);
 adminRouter.post("/pricing/:id/update", requireAdminPage, postUpdateSmsPackage);

@@ -1,3 +1,4 @@
+import type { AdminActionLogRow, ClientActionPermissions } from "./adminClientActions.js";
 import type { AuditClassification } from "./adminDataAudit.js";
 import type { CompanyRow } from "./tenant.js";
 
@@ -20,6 +21,7 @@ export type AdminClientAuditInfo = {
   protected: boolean;
   reason: string | null;
   hasFlag: boolean;
+  archivedAt: string | null;
 };
 
 export type AdminClientOperationalWallet = {
@@ -186,6 +188,8 @@ export type AdminClientOperationalDetail = {
   company: CompanyRow;
   audit: AdminClientAuditInfo;
   operational: AdminClientOperationalItem;
+  actionPermissions?: ClientActionPermissions;
+  recentAdminActions?: AdminActionLogRow[];
   ratePlanLiveEnabled: boolean | null;
   ratePlanCampaignsEnabled: boolean | null;
   ratePlanApiEnabled: boolean | null;

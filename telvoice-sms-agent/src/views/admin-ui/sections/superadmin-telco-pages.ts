@@ -1,6 +1,10 @@
 import type { AdminSessionUser } from "../../../types/admin.js";
 import type { AuditClassification } from "../../../types/adminDataAudit.js";
 import type {
+  ClientActionPermission,
+  ClientActionPermissions,
+} from "../../../types/adminClientActions.js";
+import type {
   AdminClientAuditInfo,
   AdminClientListItem,
   AdminClientOperationalDetail,
@@ -686,66 +690,171 @@ function buildClientsFilterQuery(
   return qs ? `?${qs}` : "";
 }
 
+function actionBlockedHint(perm: ClientActionPermission): string {
+  if (perm.allowed) return "";
+  return `<span class="field-hint" title="${escapeHtml(perm.reason ?? "")}"> (${escapeHtml(perm.reason ?? "bloqueado")})</span>`;
+}
+
+function renderDryRunCheckbox(): string {
+  return `<label class="tv-checkbox" style="display:block;margin:0.35rem 0"><input type="checkbox" name="dry_run" value="1" /> Dry-run (simular)</label>`;
+}
+
+function renderProtectedOverrideCheckbox(perm: ClientActionPermission): string {
+  if (!perm.needsProtectedOverride) return "";
+  return `<label class="tv-checkbox" style="display:block;margin:0.35rem 0"><input type="checkbox" name="protected_override" value="1" required /> Confirmo override en cliente protected</label>`;
+}
+
+function renderClientSafeActionsPanel(
+  companyId: string,
+  detail: AdminClientOperationalDetail,
+  perms: ClientActionPermissions,
+): string {
+  const c = detail.company;
+  const archived = Boolean(detail.audit.archivedAt);
+  const archivedNote = archived
+    ? `<div class="alert alert-warn">Cuenta archivada el ${escapeHtml(formatDateShort(detail.audit.archivedAt!))}. Acciones limitadas.</div>`
+    : "";
+
+  const profileFields = perms.updateProfile.allowed
+    ? `<form method="post" action="/admin/clients/${escapeHtml(companyId)}/actions/update-profile" class="tv-panel" style="padding:0.75rem;margin-bottom:0.75rem">
+        <h3 class="tv-panel__title" style="font-size:1rem">Editar datos de cuenta</h3>
+        <p class="field-hint">Estado actual: ${statusBadgeSa(c.status)} · ${escapeHtml(c.country)}</p>
+        ${c.status !== "suspended" ? "" : `<p class="field-hint">Envío suspendido — usa Reactivar envío para revertir.</p>`}
+        <label class="field-label">Nombre empresa</label>
+        <input class="input" name="name" value="${escapeHtml(c.name)}" ${detail.audit.protected ? "readonly title=\"Protected: no editable\"" : ""} style="width:100%;margin-bottom:0.5rem" />
+        <label class="field-label">Email facturación</label>
+        <input class="input" name="billing_email" value="${escapeHtml(c.billing_email ?? "")}" ${detail.audit.protected ? "readonly" : ""} style="width:100%;margin-bottom:0.5rem" />
+        <label class="field-label">País</label>
+        <input class="input" name="country" value="${escapeHtml(c.country)}" maxlength="2" style="width:6rem;margin-bottom:0.5rem" />
+        <label class="field-label">Contacto</label>
+        <input class="input" name="contact_name" value="${escapeHtml(c.contact_name ?? "")}" style="width:100%;margin-bottom:0.5rem" />
+        <label class="field-label">Teléfono</label>
+        <input class="input" name="contact_phone" value="${escapeHtml(c.contact_phone ?? "")}" style="width:100%;margin-bottom:0.5rem" />
+        ${detail.audit.protected ? `<p class="field-hint">Protected: solo contacto y país editables.</p>` : ""}
+        ${renderDryRunCheckbox()}
+        ${renderBtn("Guardar datos", { type: "submit", variant: "secondary", size: "sm" })}
+      </form>`
+    : `<p class="field-hint">Editar datos: ${escapeHtml(perms.updateProfile.reason ?? "no permitido")}</p>`;
+
+  const suspendForm = perms.suspendSending.allowed
+    ? `<form method="post" action="/admin/clients/${escapeHtml(companyId)}/actions/suspend-sending" class="tv-panel" style="padding:0.75rem;margin-bottom:0.75rem">
+        <h3 class="tv-panel__title" style="font-size:1rem">Suspender envío SMS</h3>
+        <p class="field-hint">Marca la cuenta como suspendida. No modifica saldo ni órdenes.</p>
+        <label class="field-label">Confirmación literal</label>
+        <input class="input" name="confirmation" placeholder="SUSPENDER ENVIO ${escapeHtml(companyId)}" required autocomplete="off" style="width:100%;margin-bottom:0.5rem" />
+        ${renderProtectedOverrideCheckbox(perms.suspendSending)}
+        ${renderDryRunCheckbox()}
+        ${renderBtn("Suspender envío", { type: "submit", variant: "secondary", size: "sm" })}
+      </form>`
+    : `<p class="field-hint">Suspender envío${actionBlockedHint(perms.suspendSending)}</p>`;
+
+  const reactivateForm = perms.reactivateSending.allowed
+    ? `<form method="post" action="/admin/clients/${escapeHtml(companyId)}/actions/reactivate-sending" class="tv-panel" style="padding:0.75rem;margin-bottom:0.75rem">
+        <h3 class="tv-panel__title" style="font-size:1rem">Reactivar envío SMS</h3>
+        <label class="field-label">Confirmación literal</label>
+        <input class="input" name="confirmation" placeholder="REACTIVAR ENVIO ${escapeHtml(companyId)}" required autocomplete="off" style="width:100%;margin-bottom:0.5rem" />
+        ${renderProtectedOverrideCheckbox(perms.reactivateSending)}
+        ${renderDryRunCheckbox()}
+        ${renderBtn("Reactivar envío", { type: "submit", variant: "primary", size: "sm" })}
+      </form>`
+    : `<p class="field-hint">Reactivar envío${actionBlockedHint(perms.reactivateSending)}</p>`;
+
+  const welcomeForm = perms.resendWelcome.allowed
+    ? `<form method="post" action="/admin/clients/${escapeHtml(companyId)}/actions/resend-welcome" class="tv-panel" style="padding:0.75rem;margin-bottom:0.75rem">
+        <h3 class="tv-panel__title" style="font-size:1rem">Reenviar bienvenida</h3>
+        <p class="field-hint">Orden acreditada requerida. Registra email_log.</p>
+        <label class="field-label">Confirmación literal</label>
+        <input class="input" name="confirmation" placeholder="REENVIAR BIENVENIDA ${escapeHtml(companyId)}" required autocomplete="off" style="width:100%;margin-bottom:0.5rem" />
+        <label class="tv-checkbox" style="display:block;margin:0.35rem 0"><input type="checkbox" name="test_mode" value="1" /> Modo test (QA)</label>
+        ${renderDryRunCheckbox()}
+        ${renderBtn("Reenviar bienvenida", { type: "submit", variant: "secondary", size: "sm" })}
+      </form>`
+    : `<p class="field-hint">Reenviar bienvenida${actionBlockedHint(perms.resendWelcome)}</p>`;
+
+  const invoiceOptions = detail.recentInvoices
+    .map(
+      (inv) =>
+        `<option value="${escapeHtml(inv.id)}">${escapeHtml(inv.invoiceNumber)} — ${escapeHtml(inv.status)} — ${inv.totalAmount.toLocaleString("es-CL")}</option>`,
+    )
+    .join("");
+
+  const receiptForm = perms.resendReceipt.allowed
+    ? `<form method="post" action="/admin/clients/${escapeHtml(companyId)}/actions/resend-receipt" class="tv-panel" style="padding:0.75rem;margin-bottom:0.75rem">
+        <h3 class="tv-panel__title" style="font-size:1rem">Reenviar comprobante</h3>
+        <p class="field-hint">Selecciona factura existente. No genera comprobante nuevo.</p>
+        <label class="field-label">Comprobante / factura</label>
+        <select name="invoice_id" class="input" required style="width:100%;margin-bottom:0.5rem">
+          <option value="">— Seleccionar —</option>
+          ${invoiceOptions}
+        </select>
+        ${detail.recentInvoices.length === 0 ? `<p class="field-hint">Sin facturas en esta cuenta.</p>` : ""}
+        ${renderDryRunCheckbox()}
+        ${renderBtn("Reenviar comprobante", { type: "submit", variant: "secondary", size: "sm", disabled: detail.recentInvoices.length === 0 })}
+      </form>`
+    : `<p class="field-hint">Reenviar comprobante${actionBlockedHint(perms.resendReceipt)}</p>`;
+
+  const archiveForm = perms.archiveQa.allowed
+    ? `<form method="post" action="/admin/clients/${escapeHtml(companyId)}/actions/archive-qa" class="tv-panel" style="padding:0.75rem;margin-bottom:0.75rem">
+        <h3 class="tv-panel__title" style="font-size:1rem">Archivar cuenta QA/Test</h3>
+        <p class="field-hint">No borra datos. Oculta la cuenta de listados operativos.</p>
+        <label class="field-label">Confirmación literal</label>
+        <input class="input" name="confirmation" placeholder="ARCHIVAR QA ${escapeHtml(companyId)}" required autocomplete="off" style="width:100%;margin-bottom:0.5rem" />
+        ${renderDryRunCheckbox()}
+        ${renderBtn("Archivar QA", { type: "submit", variant: "ghost", size: "sm" })}
+      </form>`
+    : `<p class="field-hint">Archivar QA${actionBlockedHint(perms.archiveQa)}</p>`;
+
+  const actionLogRows = (detail.recentAdminActions ?? [])
+    .map(
+      (log) => `<tr>
+        <td>${escapeHtml(formatDateShort(log.created_at))}</td>
+        <td><code class="tv-code-sm">${escapeHtml(log.action_type)}</code></td>
+        <td>${escapeHtml(log.actor_email ?? "—")}</td>
+        <td class="field-hint" style="max-width:14rem;overflow:hidden;text-overflow:ellipsis">${escapeHtml(JSON.stringify(log.metadata ?? {}).slice(0, 80))}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const actionLogPanel = `<section class="tv-panel" style="margin-top:1rem"><h2 class="tv-panel__title">Historial acciones admin</h2>
+    <div class="tv-panel__body table-wrap">
+      <table class="tv-table"><thead><tr><th>Fecha</th><th>Acción</th><th>Actor</th><th>Meta</th></tr></thead>
+      <tbody>${actionLogRows || "<tr><td colspan=\"4\">Sin acciones registradas</td></tr>"}</tbody></table>
+    </div></section>`;
+
+  return `${archivedNote}
+    <div class="tv-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem">
+      ${profileFields}
+      ${suspendForm}
+      ${reactivateForm}
+      ${welcomeForm}
+      ${receiptForm}
+      ${archiveForm}
+    </div>
+    ${actionLogPanel}
+    <p class="field-hint" style="margin-top:0.75rem">Eliminar PROD_REAL, ajustar saldo y crédito manual no están disponibles en esta fase.</p>`;
+}
+
 function renderClientActionsMenu(
   item: AdminClientListItem,
   isQaScope: boolean,
 ): string {
   const id = item.company.id;
-  const isProdReal =
-    item.audit.classification === "PROD_REAL" || item.audit.protected;
+  const detailHref = `/admin/clients/${id}#acciones-seguras`;
   const links = [
     renderBtn("Ver detalle", { href: `/admin/clients/${id}`, size: "sm", variant: "secondary" }),
+    renderBtn("Acciones", { href: detailHref, size: "sm", variant: "primary" }),
     renderBtn("Saldo / Rate plan", { href: `/admin/wallets/${id}`, size: "sm", variant: "ghost" }),
     renderBtn("Órdenes", { href: `/admin/orders?company_id=${id}`, size: "sm", variant: "ghost" }),
     renderBtn("Facturas", { href: `/admin/invoices?company_id=${id}`, size: "sm", variant: "ghost" }),
     renderBtn("Envíos", { href: `/admin/messages?company_id=${id}`, size: "sm", variant: "ghost" }),
-    renderBtn("Editar", {
-      href: `/admin/wallets/${id}`,
-      size: "sm",
-      variant: "ghost",
-      title: "Editar datos vía saldo/rate plan",
-    }),
   ];
-  const disabledActions = [
-    renderBtn("Reenviar bienvenida", {
-      size: "sm",
-      variant: "ghost",
-      disabled: true,
-      title: "Pendiente: requiere audit log + confirmación",
-    }),
-    renderBtn("Reenviar comprobante", {
-      size: "sm",
-      variant: "ghost",
-      disabled: true,
-      title: "Pendiente: requiere audit log + confirmación",
-    }),
-    renderBtn("Suspender envío", {
-      size: "sm",
-      variant: "ghost",
-      disabled: true,
-      title: "No implementado en esta fase",
-    }),
-    renderBtn("Reactivar envío", {
-      size: "sm",
-      variant: "ghost",
-      disabled: true,
-      title: "No implementado en esta fase",
-    }),
-    renderBtn("Archivar cuenta", {
-      size: "sm",
-      variant: "ghost",
-      disabled: true,
-      title: "No implementado en esta fase",
-    }),
+  const quickActions = [
+    renderBtn("Editar / Suspender", { href: detailHref, size: "sm", variant: "ghost" }),
+    renderBtn("Reenviar correos", { href: detailHref, size: "sm", variant: "ghost" }),
   ];
-  if (isQaScope && !isProdReal) {
-    disabledActions.push(
-      renderBtn("Eliminar QA", {
-        size: "sm",
-        variant: "ghost",
-        disabled: true,
-        title: "Futuro: solo QA/test con confirmación",
-      }),
+  if (isQaScope && !item.audit.protected && item.audit.classification !== "PROD_REAL") {
+    quickActions.push(
+      renderBtn("Archivar QA", { href: detailHref, size: "sm", variant: "ghost" }),
     );
   }
   return `<details class="tv-client-actions">
@@ -753,7 +862,7 @@ function renderClientActionsMenu(
     <div class="tv-actions-inline" style="flex-direction:column;align-items:stretch;gap:0.25rem;margin-top:0.35rem;min-width:12rem">
       ${links.join("")}
       <hr style="border:none;border-top:1px solid var(--border);margin:0.25rem 0" />
-      ${disabledActions.join("")}
+      ${quickActions.join("")}
     </div>
   </details>`;
 }
@@ -1073,21 +1182,22 @@ export function renderSaClientDetailPage(opts: BaseOpts & {
        <p><strong>Estado:</strong> ${escapeHtml(detail.webhook.status ?? "—")}</p>`
     : `<p class="field-hint">Sin configuración webhook en client_api_settings.</p>`;
 
-  const safeActions = `
-    <div class="tv-actions-inline" style="flex-wrap:wrap;gap:0.5rem">
-      ${renderBtn("Editar datos", { href: `/admin/wallets/${c.id}`, variant: "secondary" })}
+  const quickLinks = `<div class="tv-actions-inline" style="flex-wrap:wrap;gap:0.5rem;margin-bottom:0.75rem">
       ${renderBtn("Saldo / Rate plan", { href: `/admin/wallets/${c.id}`, variant: "secondary" })}
       ${renderBtn("Órdenes", { href: `/admin/orders?company_id=${c.id}`, variant: "ghost" })}
       ${renderBtn("Facturas", { href: `/admin/invoices?company_id=${c.id}`, variant: "ghost" })}
       ${renderBtn("Mensajes", { href: `/admin/messages?company_id=${c.id}`, variant: "ghost" })}
       ${renderBtn("API", { href: `/admin/api?company_id=${c.id}`, variant: "ghost" })}
-      ${renderBtn("Reenviar bienvenida", { disabled: true, title: "Pendiente: audit log + confirmación" })}
-      ${renderBtn("Reenviar comprobante", { disabled: true, title: "Pendiente: audit log + confirmación" })}
-      ${renderBtn("Suspender envío", { disabled: true, title: "No implementado" })}
-      ${renderBtn("Reactivar envío", { disabled: true, title: "No implementado" })}
-      ${renderBtn("Archivar cuenta", { disabled: true, title: "No implementado" })}
-    </div>
-    <p class="field-hint" style="margin-top:0.5rem">Acciones destructivas requieren audit log, confirmación literal y bloqueo para clientes protected.</p>`;
+    </div>`;
+  const defaultBlocked: ClientActionPermissions = {
+    updateProfile: { allowed: false, reason: "Cargando permisos…" },
+    suspendSending: { allowed: false },
+    reactivateSending: { allowed: false },
+    resendWelcome: { allowed: false },
+    resendReceipt: { allowed: false },
+    archiveQa: { allowed: false },
+  };
+  const safeActions = `${quickLinks}${renderClientSafeActionsPanel(c.id, detail, detail.actionPermissions ?? defaultBlocked)}`;
 
   const clientStats = `<div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem">
     <span class="tv-stat-chip tv-stat-chip--primary"><span class="tv-stat-chip__label">Saldo</span><span class="tv-stat-chip__value">${op.wallet.availableSms.toLocaleString("es-CL")}</span></span>
@@ -1151,7 +1261,7 @@ export function renderSaClientDetailPage(opts: BaseOpts & {
         <p><strong>Campañas:</strong> ${op.usage.campaignsCount}</p>
       </div></section>
     </div>
-    <section class="tv-panel" style="margin-top:1rem"><h2 class="tv-panel__title">Acciones seguras</h2><div class="tv-panel__body">${safeActions}</div></section>
+    <section class="tv-panel" style="margin-top:1rem"><h2 class="tv-panel__title">Acciones seguras</h2><div class="tv-panel__body" id="acciones-seguras">${safeActions}</div></section>
     <div class="tv-form-grid" style="grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
       <section class="tv-panel"><h2 class="tv-panel__title">Órdenes recientes</h2><div class="tv-panel__body table-wrap">
         <table class="tv-table"><thead><tr><th>Fecha</th><th>Pago</th><th>Crédito</th><th>SMS</th><th>Monto</th></tr></thead>

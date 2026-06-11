@@ -1,8 +1,14 @@
 import type { NextFunction, Request, Response } from "express";
+import { listAdminActionLogsForCompany } from "../services/adminActionLogService.js";
+import {
+  getClientActionPermissions,
+  loadClientActionContext,
+} from "../services/adminClientActionsService.js";
 import {
   getAdminClientOperationalDetail,
   listAdminClientsForScope,
 } from "../services/adminClientsListService.js";
+import type { ClientActionPermissions } from "../types/adminClientActions.js";
 import {
   getLiveTestControlPanel,
   getSmsProviderStatusView,
@@ -577,6 +583,15 @@ export async function getSaClientsPageTelco(
   }
 }
 
+const blockedPermissions: ClientActionPermissions = {
+  updateProfile: { allowed: false, reason: "No disponible" },
+  suspendSending: { allowed: false, reason: "No disponible" },
+  reactivateSending: { allowed: false, reason: "No disponible" },
+  resendWelcome: { allowed: false, reason: "No disponible" },
+  resendReceipt: { allowed: false, reason: "No disponible" },
+  archiveQa: { allowed: false, reason: "No disponible" },
+};
+
 export async function getSaClientDetailPageTelco(
   req: Request,
   res: Response,
@@ -584,14 +599,25 @@ export async function getSaClientDetailPageTelco(
 ): Promise<void> {
   try {
     const companyId = validateUuidParam(String(req.params.companyId), "companyId");
-    const detail = await getAdminClientOperationalDetail(companyId);
+    const [detail, actionCtx, recentAdminActions] = await Promise.all([
+      getAdminClientOperationalDetail(companyId),
+      loadClientActionContext(companyId),
+      listAdminActionLogsForCompany(companyId),
+    ]);
     if (!detail) {
       throw new AppError("Cliente no encontrado.", 404);
     }
+    const actionPermissions = actionCtx
+      ? getClientActionPermissions(actionCtx)
+      : blockedPermissions;
     res.type("html").send(
       renderSaClientDetailPage({
         admin: req.adminUser!,
-        detail,
+        detail: {
+          ...detail,
+          actionPermissions,
+          recentAdminActions,
+        },
         ...flash(req),
       }),
     );
