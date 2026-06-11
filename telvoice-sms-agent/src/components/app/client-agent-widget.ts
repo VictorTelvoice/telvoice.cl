@@ -46,7 +46,7 @@ export function getPanelAgentWidgetScript(): string {
     if (!slot) return;
     var png = context === "launcher" ? AGENT_FLOAT_PNG : AGENT_PROFILE_PNG;
     var webp = context === "launcher" ? AGENT_FLOAT_WEBP : AGENT_PROFILE_WEBP;
-    var life = context === "launcher" ? '<span class="telvoice-agent-antenna-glow" aria-hidden="true"></span>' : "";
+    var life = context === "launcher" ? '<span class="telvoice-agent-antenna-glow" role="status" aria-label="En línea"></span>' : "";
     slot.innerHTML =
       '<span class="telvoice-agent-avatar agent-live-motion telvoice-agent-avatar--' + context + '">' +
       '<picture><source type="image/webp" srcset="' + webp + '" />' +

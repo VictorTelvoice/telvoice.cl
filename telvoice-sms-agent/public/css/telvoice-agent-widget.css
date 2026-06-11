@@ -495,9 +495,10 @@
 
 .tva-form .tva-attach__icon {
   display: block;
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   line-height: 1;
-  filter: brightness(0) invert(1);
+  color: inherit;
+  font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24;
 }
 
 .tva-form .tva-attach:hover {

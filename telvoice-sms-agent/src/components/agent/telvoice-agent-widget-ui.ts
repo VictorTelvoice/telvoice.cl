@@ -145,11 +145,15 @@ export function renderTelvoiceAgentWidgetShell(options: TelvoiceAgentWidgetShell
       <button type="button" class="tva-close" id="${options.rootId}-close" aria-label="Cerrar chat"><span aria-hidden="true">×</span></button>
     </div>`;
 
+  const launcherOnlineDot = useLab
+    ? ""
+    : '<span class="tva-launcher-online" aria-hidden="true" title="En línea"></span>';
+
   return `<div class="${rootClass}" id="${options.rootId}" aria-live="polite">
   <div class="tva-launcher-wrap">
     <button type="button" class="tva-launcher" id="${options.fabId}" aria-expanded="false" aria-controls="${options.panelId}" aria-label="${labels.fabAriaLabel}">
       ${launcherInner}
-      <span class="tva-launcher-online" aria-hidden="true" title="En línea"></span>
+      ${launcherOnlineDot}
     </button>
   </div>
   <div id="${options.panelId}" class="tva-panel" role="dialog" aria-labelledby="${options.rootId}-title" aria-modal="true">
@@ -166,7 +170,7 @@ export function renderTelvoiceAgentWidgetShell(options: TelvoiceAgentWidgetShell
       ${
         options.showCsvAttach
           ? `<input type="file" id="${options.rootId}-csv" accept=".csv,text/csv,text/plain" class="tva-csv-input" hidden />
-      <button type="button" class="tva-attach" id="${options.rootId}-attach" aria-label="Adjuntar CSV" title="Adjuntar planilla CSV"><span class="tva-attach__icon" aria-hidden="true">📎</span></button>`
+      <button type="button" class="tva-attach" id="${options.rootId}-attach" aria-label="Adjuntar CSV" title="Adjuntar planilla CSV"><span class="material-symbols-outlined tva-attach__icon" aria-hidden="true">attach_file</span></button>`
           : ""
       }
       <input type="text" id="${options.rootId}-input" placeholder="${placeholder}" autocomplete="off" maxlength="2000" />
