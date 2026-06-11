@@ -1671,13 +1671,25 @@
     }
 
     .section-hero-wrap {
-      --hero-edge-gap: 2.5rem;
-      padding-top: var(--hero-edge-gap);
-      padding-bottom: 3rem;
+      --hero-top-gap: 3.25rem;
+      --hero-tags-gap: 1rem;
+      padding-top: var(--hero-top-gap);
+      padding-bottom: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: calc(100svh - 4.25rem);
+      min-height: calc(100dvh - 4.25rem);
+      box-sizing: border-box;
+    }
+    .section-hero-wrap > .relative.z-10 {
+      width: 100%;
     }
     @media (min-width: 768px) {
       .section-hero-wrap {
-        padding-bottom: 4.5rem;
+        --hero-top-gap: 4.25rem;
+        --hero-tags-gap: 1.25rem;
+        padding-bottom: 1.25rem;
       }
     }
     @media (max-width: 767px) {
@@ -1691,9 +1703,12 @@
         scroll-margin-top: 4.75rem;
       }
       .section-hero-wrap {
-        --hero-edge-gap: 1.25rem;
-        padding-top: calc(1.25rem + env(safe-area-inset-top, 0px));
-        padding-bottom: 1rem;
+        --hero-top-gap: 2rem;
+        --hero-tags-gap: 0.65rem;
+        padding-top: calc(2rem + env(safe-area-inset-top, 0px));
+        padding-bottom: 0.35rem;
+        min-height: calc(100svh - 4rem);
+        min-height: calc(100dvh - 4rem);
       }
       /* Sin desplazamiento flotante del teléfono ni nubes en móvil */
       .hero-phone-mobile .hero-phone-float {
@@ -2102,12 +2117,12 @@
       }
     }
     .hero-tags-below {
-      padding-top: var(--hero-edge-gap, 2.5rem);
-      padding-bottom: 2rem;
+      padding-top: var(--hero-tags-gap, 1rem);
+      padding-bottom: 0.5rem;
     }
     @media (min-width: 768px) {
       .hero-tags-below {
-        padding-bottom: 2.5rem;
+        padding-bottom: 0.75rem;
       }
     }
 
