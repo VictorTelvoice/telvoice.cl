@@ -1,5 +1,6 @@
 import { isPanelLiveMode, isPanelMockMode, PANEL_PRODUCTION_MODE } from "../../constants/panel-sms-mode.js";
 import type { PanelSmsMessageRow, SmsCampaignRow } from "../../types/sms-panel.js";
+import { resolveOperatorFromPanelMessageMetadata } from "../../utils/asmsc-operator.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 
 function badge(cls: string, label: string): string {
@@ -154,21 +155,26 @@ export function renderCampaignClientStatusBadge(campaign: SmsCampaignRow): strin
 
 export function renderInboxTableRows(messages: PanelSmsMessageRow[]): string {
   if (!messages.length) {
-    return `<tr><td colspan="9">Aún no hay mensajes enviados.</td></tr>`;
+    return `<tr><td colspan="10">Aún no hay mensajes enviados.</td></tr>`;
   }
   return messages
     .map(
-      (m) => `<tr>
+      (m) => {
+        const operator =
+          resolveOperatorFromPanelMessageMetadata(m.metadata, m.operator) ?? "—";
+        return `<tr>
       <td>${formatDate(m.created_at)}</td>
       <td><code>${escapeHtml(m.recipient_number)}</code></td>
       <td>${escapeHtml(m.sender_id ?? "—")}</td>
       <td class="tv-cell-truncate" title="${escapeHtml(m.message)}">${escapeHtml(m.message.slice(0, 50))}${m.message.length > 50 ? "…" : ""}</td>
       <td>${m.segments}</td>
       <td>${renderPanelMessageStatusBadge(m.status, m.mode)}</td>
+      <td>${escapeHtml(operator)}</td>
       <td class="tv-inbox-mode">${renderClientLiveModeBadge(m.mode)}</td>
       <td><code class="tv-code-sm" title="${escapeHtml(m.provider_message_id ?? "")}">${escapeHtml((m.provider_message_id ?? "—").slice(0, 12))}</code></td>
       <td class="tv-cell-truncate" title="${escapeHtml(m.error_message ?? "")}">${escapeHtml(m.error_message ?? "—")}</td>
-    </tr>`,
+    </tr>`;
+      },
     )
     .join("");
 }

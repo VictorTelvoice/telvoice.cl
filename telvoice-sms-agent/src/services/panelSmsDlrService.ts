@@ -1,6 +1,7 @@
 import type { AsmscDlrWebhookBody } from "../types/asmsc.js";
 import type { PanelSmsMessageRow, PanelSmsMessageStatus } from "../types/sms-panel.js";
 import { isDeliveredDlr, normalizeDlrToMessageStatus } from "../utils/dlr-status.js";
+import { resolveOperatorFromAsmscPayload, pickAsmscPayloadString } from "../utils/asmsc-operator.js";
 import { extractDlrFields } from "./smsMessageService.js";
 import { sanitizeProviderResponse } from "./sms-providers/sanitize.js";
 import {
@@ -71,6 +72,11 @@ export async function processPanelSmsDlrFromAsmsc(
 
   const dlrAt = new Date().toISOString();
   const sanitizedDlr = sanitizeProviderResponse(body as Record<string, unknown>);
+  const dlrOperator = resolveOperatorFromAsmscPayload(
+    body as Record<string, unknown>,
+  );
+  const dlrMcc = pickAsmscPayloadString(body as Record<string, unknown>, "MCC", "mcc");
+  const dlrMnc = pickAsmscPayloadString(body as Record<string, unknown>, "MNC", "mnc");
 
   const alreadyDelivered =
     message.status === "delivered" && panelStatus === "delivered";
@@ -80,11 +86,15 @@ export async function processPanelSmsDlrFromAsmsc(
     delivered_at: deliveredAt ?? message.delivered_at,
     error_code: fields.error_code ?? message.error_code,
     error_message: fields.error_description ?? message.error_message,
+    operator: dlrOperator ?? message.operator,
     metadata: {
       asmsc_uid: uid ?? undefined,
       last_dlr_status: dlrStatus,
       last_dlr_at: dlrAt,
       last_dlr_payload: sanitizedDlr,
+      dlr_operator: dlrOperator ?? undefined,
+      dlr_mcc: dlrMcc ?? undefined,
+      dlr_mnc: dlrMnc ?? undefined,
     },
   });
 

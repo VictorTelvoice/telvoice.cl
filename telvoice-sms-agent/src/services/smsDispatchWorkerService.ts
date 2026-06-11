@@ -59,6 +59,7 @@ import {
   IP_WHITELIST_FAIL_FAST_PANEL_METADATA,
   responseTextIncludesIpWhitelist,
 } from "../utils/asmsc-hints.js";
+import { canProcessLiveSmsQueue } from "../utils/dlr-callback.js";
 import { resolveProviderRejectionStrategy } from "./providerRejectionPolicy.js";
 
 export type QueueTickResult = {
@@ -130,6 +131,10 @@ async function finalizeQueuedSend(input: {
     provider: input.provider,
     provider_message_id: input.providerMessageId,
     sent_at: sentAt,
+    metadata: {
+      asmsc_uid: input.providerResult.asmsc_uid ?? undefined,
+      raw_response: input.providerResult.raw_response,
+    },
   });
 
   await insertPanelDeliveryEvent({
@@ -351,6 +356,16 @@ async function processOneQueuedItem(
     };
   }
 
+  const queueWebhook = canProcessLiveSmsQueue();
+  if (!queueWebhook.allowed) {
+    return {
+      sent: false,
+      deferred: true,
+      failed: false,
+      detail: `${item.id}: diferido — ${queueWebhook.reason}`,
+    };
+  }
+
   try {
     let processingRow: SmsSendQueueRow;
     try {
@@ -509,6 +524,12 @@ export async function processQueueTick(
     failed: 0,
     details: [],
   };
+
+  const queueWebhook = canProcessLiveSmsQueue();
+  if (!queueWebhook.allowed) {
+    result.details.push(`Cola live omitida: ${queueWebhook.reason}`);
+    return result;
+  }
 
   const released = await releaseStaleProcessingQueueItems();
   if (released > 0) {

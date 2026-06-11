@@ -9,6 +9,9 @@
  *   node scripts/replay-panel-dlr.mjs --message-id=8d3db9e9-d542-4b17-9315-50a3d0c8c6e1
  *   node scripts/replay-panel-dlr.mjs --provider-message-id=22281907
  *   node scripts/replay-panel-dlr.mjs --campaign-id=dc241dd3-3dad-4091-b7ac-769787f7a802
+ *
+ * Requiere tsx (imports TypeScript del servicio panel):
+ *   npx tsx scripts/replay-panel-dlr.mjs ...
  */
 import "dotenv/config";
 import pg from "pg";
@@ -111,6 +114,8 @@ try {
         message_id: row.provider_message_id,
         DLRStatus: "Delivered",
         PhoneNumber: row.recipient_number?.replace(/^\+/, "") ?? "",
+        ErrorCode: "0",
+        ErrorDescription: "ASMSC_OK",
       };
       console.warn(
         `⚠ Sin sms_dlr_events para ${row.provider_message_id}; usando payload sintético Delivered`,

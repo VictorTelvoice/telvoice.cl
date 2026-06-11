@@ -22,6 +22,7 @@ import { assertLiveTestOperationalLimits } from "./smsLiveTestLimiterService.js"
 import { assertLiveTestSendAllowed } from "./smsLiveTestPolicy.js";
 import { dispatchProviderSend } from "./smsProviderDispatchService.js";
 import { assertLiveTestTrafficAllowed } from "./smsDispatchWorkerService.js";
+import { assertDlrWebhookSafeForLiveTraffic } from "../utils/dlr-callback.js";
 import { recordTpsSend } from "./smsTpsLimiterService.js";
 import { resolveRouteForMessage } from "./smsRoutingService.js";
 import { APP_CLIENT_LIVE_SOURCE, PANEL_PRODUCTION_MODE } from "../constants/panel-sms-mode.js";
@@ -206,6 +207,7 @@ export async function sendLiveTestSms(
     ratePlanId: resolved.ratePlan.id,
     segmentCost: segmentInfo.costSms,
   });
+  assertDlrWebhookSafeForLiveTraffic();
 
   const effectiveSender =
     senderId || resolved.provider.default_sender_id || "TELVOICE";

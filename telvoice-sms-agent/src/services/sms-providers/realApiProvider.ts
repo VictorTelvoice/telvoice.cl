@@ -3,6 +3,7 @@ import { buildDlrCallbackUrl, env } from "../../config/env.js";
 import { asmscClient } from "../../providers/asmsc/index.js";
 import type { SendSmsRequest } from "../../types/asmsc.js";
 import { parseSendSmsResponse } from "../../utils/asmsc-response.js";
+import { assertDlrWebhookSafeForLiveTraffic } from "../../utils/dlr-callback.js";
 import { AsmscApiError } from "../../utils/errors.js";
 import { generateSmsUid } from "../../utils/uid.js";
 import type { HttpApiProviderCredentials } from "../providerCredentialsService.js";
@@ -120,6 +121,7 @@ export async function sendMessageRealApi(
   }
 
   const uid = generateSmsUid();
+  assertDlrWebhookSafeForLiveTraffic();
   const callbackUrl = buildDlrCallbackUrl();
   const phonenumber = phoneToAsmscDigits(input.to);
   const senderId =

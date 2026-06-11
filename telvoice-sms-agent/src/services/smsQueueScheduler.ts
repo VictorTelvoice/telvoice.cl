@@ -1,6 +1,7 @@
 import { env } from "../config/env.js";
 import { getEffectiveSchedulerConfigCached } from "./platformRuntimeSettingsService.js";
 import { processQueueTick } from "./smsDispatchWorkerService.js";
+import { canProcessLiveSmsQueue } from "../utils/dlr-callback.js";
 
 let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
 let tickInFlight = false;
@@ -32,6 +33,16 @@ async function startSmsQueueSchedulerAsync(): Promise<void> {
       "[sms-queue] Scheduler no iniciado: SMS_CAMPAIGN_ENABLED=false y SMS_LIVE_TEST_ENABLED=false.",
     );
     return;
+  }
+
+  const queueWebhook = canProcessLiveSmsQueue();
+  if (env.smsCampaign.enabled && !queueWebhook.allowed) {
+    console.warn(
+      `[sms-queue] Scheduler de campañas live no iniciado: ${queueWebhook.reason}`,
+    );
+    if (!env.smsProvider.liveTestEnabled) {
+      return;
+    }
   }
 
   const scheduleNext = (delayMs: number): void => {
