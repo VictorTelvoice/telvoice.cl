@@ -302,7 +302,7 @@ export type PanelInboxListFilters = {
   status?: PanelSmsMessageStatus;
   senderId?: string;
   recipient?: string;
-  q?: string;
+  reference?: string;
 };
 
 export async function listPanelMessagesByCompany(
@@ -332,9 +332,9 @@ export async function listPanelMessagesByCompany(
   if (recipient) {
     q = q.ilike("recipient_number", `%${recipient}%`);
   }
-  const text = filters?.q?.trim();
+  const text = filters?.reference?.trim();
   if (text) {
-    q = q.ilike("message", `%${text}%`);
+    q = q.ilike("provider_message_id", `%${text}%`);
   }
 
   const { data, error } = await q

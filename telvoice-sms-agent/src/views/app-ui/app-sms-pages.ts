@@ -1179,7 +1179,7 @@ export type AppInboxPageFilters = {
   status?: string;
   senderId?: string;
   recipient?: string;
-  q?: string;
+  reference?: string;
 };
 
 export function renderAppInboxPage(
@@ -1209,7 +1209,7 @@ export function renderAppInboxPage(
     <section class="tv-panel tv-dlr-report__filters-panel">
       <header class="tv-section-head tv-dlr-report__filters-head">
         <h2 class="tv-section-head__title">Filtros de búsqueda</h2>
-        <p class="tv-section-head__sub">Filtra mensajes por período, estado, remitente o destinatario</p>
+        <p class="tv-section-head__sub">Filtra mensajes por período, estado, remitente, destinatario o referencia aSMSC</p>
       </header>
       <div class="tv-panel__body tv-dlr-report__filters-body">
         <form method="get" action="/app/inbox" class="tv-dlr-report__filters-form">
@@ -1219,7 +1219,7 @@ export function renderAppInboxPage(
             ${renderFilterField("Estado", `<select name="status" class="tv-filter-input">${statusOpts}</select>`)}
             ${renderFilterField("Remitente", `<input type="text" name="sender_id" class="tv-filter-input" placeholder="Ej. TELVOICE" value="${escapeHtml(f.senderId ?? "")}" />`)}
             ${renderFilterField("Destinatario", `<input type="text" name="recipient" class="tv-filter-input" placeholder="Ej. +569…" value="${escapeHtml(f.recipient ?? "")}" />`)}
-            ${renderFilterField("Mensaje", `<input type="text" name="q" class="tv-filter-input" placeholder="Buscar en texto" value="${escapeHtml(f.q ?? "")}" />`)}
+            ${renderFilterField("Referencia", `<input type="text" name="reference" class="tv-filter-input" placeholder="Ej. 22486311" value="${escapeHtml(f.reference ?? "")}" />`)}
             <div class="tv-dlr-report__filter-actions">
               <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
               <a class="btn btn-ghost btn-sm" href="/app/inbox">Limpiar</a>

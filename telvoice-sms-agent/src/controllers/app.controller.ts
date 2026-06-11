@@ -1230,7 +1230,8 @@ export async function getAppInbox(
   next: NextFunction,
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
-    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const reference =
+      typeof req.query.reference === "string" ? req.query.reference.trim() : "";
     const status =
       typeof req.query.status === "string" ? req.query.status.trim() : "";
     const senderId =
@@ -1256,7 +1257,7 @@ export async function getAppInbox(
       : undefined;
 
     const filterInput = {
-      q: q || undefined,
+      reference: reference || undefined,
       status: safeStatus,
       senderId: senderId || undefined,
       recipient: recipient || undefined,
@@ -1271,7 +1272,7 @@ export async function getAppInbox(
     );
 
     return renderAppInboxPage(ctx, messages, {
-      q: q || undefined,
+      reference: reference || undefined,
       status: status || undefined,
       senderId: senderId || undefined,
       recipient: recipient || undefined,
