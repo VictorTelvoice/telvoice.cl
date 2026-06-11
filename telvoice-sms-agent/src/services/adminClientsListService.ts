@@ -527,11 +527,17 @@ function inferClassificationWithoutFlag(company: CompanyRow): AuditClassificatio
 
 function buildAuditInfo(
   company: CompanyRow,
-  flag: { classification: string; protected: boolean; reason: string | null } | null,
+  flag: {
+    classification: string;
+    protected: boolean;
+    reason: string | null;
+    archivedAt?: string | null;
+  } | null,
 ): AdminClientAuditInfo {
   const billingEmail = normalizeAuditEmail(company.billing_email);
   const protectedFlag =
     Boolean(flag?.protected) || PROTECTED_CLIENT_EMAILS.has(billingEmail);
+  const archivedAt = flag?.archivedAt ?? null;
 
   if (flag?.classification) {
     return {
@@ -539,6 +545,7 @@ function buildAuditInfo(
       protected: protectedFlag,
       reason: flag.reason,
       hasFlag: true,
+      archivedAt,
     };
   }
 
@@ -548,6 +555,7 @@ function buildAuditInfo(
     protected: protectedFlag,
     reason: flag?.reason ?? "Sin flag de auditoría",
     hasFlag: false,
+    archivedAt,
   };
 }
 
@@ -749,7 +757,8 @@ export async function listAdminClientsForScope(input: {
         c.contact_phone, c.country, c.status, c.metadata, c.created_at, c.updated_at,
         f.classification AS audit_classification,
         f.protected AS audit_protected,
-        f.reason AS audit_reason
+        f.reason AS audit_reason,
+        f.archived_at::text AS audit_archived_at
       FROM companies c
       LEFT JOIN admin_data_audit_flags f
         ON f.entity_type = 'company' AND f.entity_id = c.id::text
@@ -772,14 +781,25 @@ export async function listAdminClientsForScope(input: {
             classification: String(row.audit_classification),
             protected: Boolean(row.audit_protected),
             reason: row.audit_reason != null ? String(row.audit_reason) : null,
+            archivedAt:
+              row.audit_archived_at != null ? String(row.audit_archived_at) : null,
           }
-        : null;
+        : row.audit_archived_at != null
+          ? {
+              classification: "QA_TEST",
+              protected: false,
+              reason: null,
+              archivedAt: String(row.audit_archived_at),
+            }
+          : null;
     const audit = buildAuditInfo(company, flag);
     const operational = buildOperationalItem(company, audit, opMaps);
     return { company, audit, operational };
   });
 
-  const scoped = all.filter((item) =>
+  const notArchived = all.filter((item) => !item.audit.archivedAt);
+
+  const scoped = notArchived.filter((item) =>
     matchesScope(item.company, item.audit, scope, signals),
   );
   const searched = scoped.filter((item) => matchesSearch(item.company, search));
@@ -790,7 +810,7 @@ export async function listAdminClientsForScope(input: {
 
   let searchHint: string | null = null;
   if (search && items.length === 0 && scope === "real" && searchLooksQa(search)) {
-    const qaHits = all.filter(
+    const qaHits = notArchived.filter(
       (item) =>
         matchesScope(item.company, item.audit, "qa", signals) &&
         matchesSearch(item.company, search),
@@ -802,7 +822,7 @@ export async function listAdminClientsForScope(input: {
 
   return {
     items,
-    summary: computeSummary(all, filtered, scope, signals),
+    summary: computeSummary(notArchived, filtered, scope, signals),
     search,
     statusFilter,
     searchHint,
@@ -825,7 +845,8 @@ export async function getAdminClientOperationalDetail(
         c.contact_phone, c.country, c.status, c.metadata, c.created_at, c.updated_at,
         f.classification AS audit_classification,
         f.protected AS audit_protected,
-        f.reason AS audit_reason
+        f.reason AS audit_reason,
+        f.archived_at::text AS audit_archived_at
       FROM companies c
       LEFT JOIN admin_data_audit_flags f
         ON f.entity_type = 'company' AND f.entity_id = c.id::text
@@ -843,8 +864,17 @@ export async function getAdminClientOperationalDetail(
             classification: String(row.audit_classification),
             protected: Boolean(row.audit_protected),
             reason: row.audit_reason != null ? String(row.audit_reason) : null,
+            archivedAt:
+              row.audit_archived_at != null ? String(row.audit_archived_at) : null,
           }
-        : null;
+        : row.audit_archived_at != null
+          ? {
+              classification: "QA_TEST",
+              protected: false,
+              reason: null,
+              archivedAt: String(row.audit_archived_at),
+            }
+          : null;
     const audit = buildAuditInfo(company, flag);
 
     const tz = APP_SCHEDULE_TIMEZONE;

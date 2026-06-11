@@ -396,7 +396,12 @@ export async function sendPaymentReceivedClaimEmail(
 
 export async function sendWelcomeAndSmsCreditedEmail(
   orderId: string,
-  options?: { skipIdempotency?: boolean },
+  options?: {
+    skipIdempotency?: boolean;
+    /** No modificar metadata de la orden (p. ej. reenvío admin). */
+    skipOrderMetadataPatch?: boolean;
+    emailMetadata?: Record<string, unknown>;
+  },
 ): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
   const order = await getOrderWithDetails(orderId);
   if (!order?.company_id) {
@@ -438,11 +443,14 @@ export async function sendWelcomeAndSmsCreditedEmail(
     orderId,
     companyId: order.company_id,
     skipIdempotency: options?.skipIdempotency,
+    metadata: options?.emailMetadata,
   });
 
-  const meta = { ...(order.metadata ?? {}) };
-  delete meta.claim_token_enc;
-  await patchOrderFields(orderId, { metadata: meta });
+  if (!options?.skipOrderMetadataPatch) {
+    const meta = { ...(order.metadata ?? {}) };
+    delete meta.claim_token_enc;
+    await patchOrderFields(orderId, { metadata: meta });
+  }
 
   return result;
 }

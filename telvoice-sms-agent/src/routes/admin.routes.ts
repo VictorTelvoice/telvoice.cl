@@ -148,6 +148,14 @@ import {
   postUpdateQueueSchedulerSettings,
 } from "../controllers/admin-traffic-control.controller.js";
 import {
+  postAdminClientArchiveQa,
+  postAdminClientReactivateSending,
+  postAdminClientResendReceipt,
+  postAdminClientResendWelcome,
+  postAdminClientSuspendSending,
+  postAdminClientUpdateProfile,
+} from "../controllers/admin-client-actions.controller.js";
+import {
   getSaClientDetailPageTelco,
   getSaClientsPageTelco,
   getSaProviderDetailPage,
@@ -210,6 +218,7 @@ import {
   loadAdminSession,
   redirectIfAuthenticated,
   requireAdminPage,
+  requireSuperAdminPage,
 } from "../middleware/admin-auth.js";
 import {
   getWholesaleHub,
@@ -264,6 +273,38 @@ adminRouter.post("/logout", postLogout);
 
 adminRouter.get("/", requireAdminPage, getDashboard);
 adminRouter.get("/clients", requireAdminPage, getSaClientsPageTelco);
+// Acciones mutables sobre clientes: solo superadmin. Sin CSRF token global en admin;
+// confirmación literal + sesión cookie en acciones sensibles (TODO: CSRF admin).
+adminRouter.post(
+  "/clients/:companyId/actions/update-profile",
+  requireSuperAdminPage,
+  postAdminClientUpdateProfile,
+);
+adminRouter.post(
+  "/clients/:companyId/actions/suspend-sending",
+  requireSuperAdminPage,
+  postAdminClientSuspendSending,
+);
+adminRouter.post(
+  "/clients/:companyId/actions/reactivate-sending",
+  requireSuperAdminPage,
+  postAdminClientReactivateSending,
+);
+adminRouter.post(
+  "/clients/:companyId/actions/resend-welcome",
+  requireSuperAdminPage,
+  postAdminClientResendWelcome,
+);
+adminRouter.post(
+  "/clients/:companyId/actions/resend-receipt",
+  requireSuperAdminPage,
+  postAdminClientResendReceipt,
+);
+adminRouter.post(
+  "/clients/:companyId/actions/archive-qa",
+  requireSuperAdminPage,
+  postAdminClientArchiveQa,
+);
 adminRouter.get("/pricing", requireAdminPage, getSaPricingPage);
 adminRouter.post("/pricing", requireAdminPage, postCreateSmsPackage);
 adminRouter.post("/pricing/:id/update", requireAdminPage, postUpdateSmsPackage);

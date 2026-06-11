@@ -4,6 +4,7 @@ import type {
 } from "../types/sms-panel.js";
 import { PANEL_PRODUCTION_MODE } from "../constants/panel-sms-mode.js";
 import { AppError } from "../utils/errors.js";
+import { assertCompanyCanSendSms } from "./companySendGuardService.js";
 import { calculateSmsSegments } from "./smsSegmentService.js";
 import { createSmsCampaign, updateSmsCampaign } from "./smsCampaignService.js";
 import {
@@ -35,7 +36,6 @@ import {
 import { env } from "../config/env.js";
 import { recordTpsSend } from "./smsTpsLimiterService.js";
 import { resolveRouteForMessage } from "./smsRoutingService.js";
-import { findCompanyById } from "./companyService.js";
 import {
   buildMassCampaignFingerprint,
   findCampaignByIdempotencyKey,
@@ -138,16 +138,7 @@ async function resolveCampaignItems(input: SendPanelCampaignInput): Promise<{
 }
 
 async function assertCompanyCanSend(companyId: string): Promise<void> {
-  const company = await findCompanyById(companyId);
-  if (!company) {
-    throw new AppError("Empresa no encontrada.", 404);
-  }
-  if (company.status !== "active") {
-    throw new AppError(
-      `La cuenta empresa está en estado «${company.status}»; no permite envíos.`,
-      403,
-    );
-  }
+  await assertCompanyCanSendSms(companyId);
 }
 
 async function sendOneInCampaign(input: {

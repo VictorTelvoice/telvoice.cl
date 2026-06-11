@@ -5,6 +5,12 @@ import { wrapSupabaseError } from "../utils/supabase-errors.js";
 export type AuditAction =
   | "client.create"
   | "client.suspend"
+  | "client.update_profile"
+  | "client.suspend_sending"
+  | "client.reactivate_sending"
+  | "client.resend_welcome"
+  | "client.resend_receipt"
+  | "client.archive_qa"
   | "wallet.credit"
   | "wallet.debit"
   | "api_key.create"

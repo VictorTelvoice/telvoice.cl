@@ -1,7 +1,7 @@
 import type { CampaignAudienceMember } from "../types/campaign-audience.js";
 import type { SmsCampaignRow } from "../types/sms-panel.js";
 import { AppError } from "../utils/errors.js";
-import { findCompanyById } from "./companyService.js";
+import { assertCompanyCanSendSms } from "./companySendGuardService.js";
 import {
   parseAudienceSourceFromCampaignMetadata,
   resolveCampaignAudience,
@@ -34,16 +34,7 @@ export type CampaignMockExecuteResult = {
 };
 
 async function assertCompanyCanMockExecute(companyId: string): Promise<void> {
-  const company = await findCompanyById(companyId);
-  if (!company) {
-    throw new AppError("Empresa no encontrada.", 404);
-  }
-  if (company.status !== "active") {
-    throw new AppError(
-      `La cuenta empresa está en estado «${company.status}»; no permite envíos.`,
-      403,
-    );
-  }
+  await assertCompanyCanSendSms(companyId);
 }
 
 function assertMockDraftCampaign(campaign: SmsCampaignRow): void {
