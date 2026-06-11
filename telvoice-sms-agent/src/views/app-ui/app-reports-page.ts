@@ -74,7 +74,7 @@ function renderStatusSelect(selected: string[]): string {
   return `<select name="status" class="tv-filter-input">${opts}</select>`;
 }
 
-const DLR_TABLE_COL_COUNT = 16;
+const DLR_TABLE_COL_COUNT = 15;
 
 function formatErrorDisplay(code: string, description: string): string {
   const c = (code || "0").trim();
@@ -91,8 +91,7 @@ function formatErrorDisplay(code: string, description: string): string {
 function renderErrorDescCell(code: string, description: string): string {
   const full = formatErrorDisplay(code, description);
   const show = full === "0" ? "—" : full;
-  const short = show.length > 56 ? `${show.slice(0, 56)}…` : show;
-  return `<td class="tv-dlr-report__error-desc" title="${escapeHtml(show)}">${escapeHtml(short)}</td>`;
+  return `<td class="tv-dlr-report__error-desc" title="${escapeHtml(show)}">${escapeHtml(show)}</td>`;
 }
 
 function renderDlrTableRows(result: DlrReportResult): string {
@@ -120,7 +119,6 @@ function renderDlrTableRows(result: DlrReportResult): string {
         <td>${escapeHtml(r.messageType)}</td>
         <td>${escapeHtml(r.smsType)}</td>
         <td class="tv-dlr-report__num">${r.messageParts}</td>
-        <td>${escapeHtml(r.clientCost)}</td>
         <td class="tv-dlr-report__date">${escapeHtml(formatDisplayDate(r.dlrAtIso || r.dlrDateUtc))}</td>
         <td class="tv-dlr-report__mono tv-dlr-report__error-code">${escapeHtml(r.errorCode || "0")}</td>
         ${renderErrorDescCell(r.errorCode, r.errorDescription)}
@@ -284,8 +282,8 @@ export function renderAppReportsPage(
             <table class="tv-table tv-table--dash tv-dlr-report__table">
               <thead><tr>
                 <th>SMS ID</th><th>Sender ID</th><th>DLR Status</th><th>Sent Date</th><th>Message</th><th>Number</th>
-                <th>MCC</th><th>MNC</th><th>País</th><th>Type</th><th>SMS Type</th><th>Parts</th><th>Cost</th><th>DLR Date</th>
-                <th>Error Code</th><th>Error / Motivo</th>
+                <th>MCC</th><th>MNC</th><th>País</th><th>Type</th><th>SMS Type</th><th>Parts</th><th>DLR Date</th>
+                <th class="tv-dlr-report__th-nowrap">Error Code</th><th class="tv-dlr-report__th-nowrap">Error / Motivo</th>
               </tr></thead>
               <tbody>${renderDlrTableRows(result)}</tbody>
             </table>

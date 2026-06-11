@@ -1534,14 +1534,21 @@ export function getAppPanelStyles(): string {
       overflow-x: auto;
       max-height: 58vh;
     }
-    .tv-dlr-report__table { min-width: 1680px; }
+    .tv-dlr-report__table { min-width: 1560px; }
+    .tv-dlr-report__th-nowrap { white-space: nowrap; }
     .tv-dlr-report__error-desc {
-      max-width: 200px;
+      max-width: 14rem;
       font-size: 0.8rem;
       color: var(--tv-muted, #64748b);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .tv-dlr-report__error-code {
       white-space: nowrap;
+      max-width: 8rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .tv-dlr-report__mono { font-family: ui-monospace, monospace; font-size: 0.78rem; }
     .tv-dlr-report__msg {
