@@ -27,6 +27,29 @@ export function formatDate(value: string | null | undefined): string {
   return date.toLocaleString("es-CL", { timeZone: "America/Santiago" });
 }
 
+/** Fecha+hora compacta en una línea (tablas densas, p. ej. mensajería). */
+export function formatDateCompact(value: string | null | undefined): string {
+  if (!value) {
+    return "—";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return escapeHtml(value);
+  }
+  const parts = new Intl.DateTimeFormat("es-CL", {
+    timeZone: "America/Santiago",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const pick = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "";
+  return `${pick("day")}-${pick("month")}-${pick("year")} ${pick("hour")}:${pick("minute")}`;
+}
+
 /** Fecha corta para KPIs y tablas (sin hora). */
 export function formatDateShort(value: string | null | undefined): string {
   if (!value) {

@@ -595,20 +595,28 @@ export function getAdminStyles(): string {
     }
     .tv-client-actions__item:hover { background: #f8fafc; color: var(--tv-primary); text-decoration: none; }
 
-    /* Messages text column */
+    /* Messages table — filas compactas, una línea por celda crítica */
+    .tv-table--messages th,
+    .tv-table--messages td { padding: 0.5rem 0.65rem; vertical-align: middle; }
     .tv-table--messages .tv-messages-text {
-      max-width: 16rem;
-      font-size: 0.8rem;
-      line-height: 1.4;
-      color: #334155;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
+      display: block;
+      max-width: 280px;
+      white-space: nowrap;
       overflow: hidden;
-      word-break: break-word;
+      text-overflow: ellipsis;
+      font-size: 0.8rem;
+      line-height: 1.25;
+      color: #334155;
     }
     .tv-messages-text--empty { color: var(--tv-muted); font-style: italic; }
-    .tv-table--messages td { vertical-align: top; }
+    .tv-message-date {
+      white-space: nowrap;
+      min-width: 140px;
+      font-size: 0.82rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .tv-table--messages .tv-cell-truncate { max-width: 9rem; }
+    .tv-table--messages code.tv-code-sm { max-width: 6.5rem; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 
     /* Legacy components */
     .card {
