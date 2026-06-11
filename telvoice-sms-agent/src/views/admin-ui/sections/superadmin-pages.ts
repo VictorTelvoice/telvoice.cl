@@ -5,7 +5,7 @@ import type {
   SmsCampaignWithCompany,
 } from "../../../types/sms-panel.js";
 import type { CampaignTrafficReadinessResult } from "../../../services/campaignReadinessService.js";
-import { escapeHtml, formatDate } from "../../../utils/html.js";
+import { escapeHtml, formatDate, formatDateCompact } from "../../../utils/html.js";
 import { wrapAdminPage } from "../admin-page-wrap.js";
 import {
   MOCK_SA_API_KEYS,
@@ -197,7 +197,7 @@ export function renderSaMessagesPage(opts: PageOpts): string {
       <td><code class="tv-code-sm" title="${escapeHtml(m.provider_message_id ?? "")}">${escapeHtml((m.provider_message_id ?? "—").slice(0, 14))}</code></td>
       <td>${statusBadgeSa(m.status)}</td>
       <td class="tv-cell-truncate" title="${escapeHtml(m.error_message ?? "")}">${escapeHtml(m.error_message ?? "—")}</td>
-      <td>${formatDate(m.created_at)}</td>
+      <td class="tv-message-date">${formatDateCompact(m.created_at)}</td>
       <td>${m.segments}</td>
     </tr>`;
           },
