@@ -12,7 +12,6 @@ import {
   MOCK_SA_CAMPAIGNS,
   MOCK_SA_CLIENTS,
   MOCK_SA_DLR,
-  MOCK_SA_MESSAGES,
   MOCK_SA_PROVIDERS,
   MOCK_SA_ROUTES,
 } from "../mock-data-superadmin.js";
@@ -29,7 +28,23 @@ type PageOpts = {
   messages?: PanelSmsMessageWithCompany[];
   providerStatus?: SmsProviderStatusView;
   trafficByCompany?: Map<string, CampaignTrafficReadinessResult>;
+  search?: string;
+  companyId?: string;
 };
+
+function formatMessagePreview(
+  text: string | null | undefined,
+  maxLen = 100,
+): { preview: string; full: string; empty: boolean } {
+  const full = (text ?? "").trim();
+  if (!full) {
+    return { preview: "Sin contenido", full: "", empty: true };
+  }
+  if (full.length <= maxLen) {
+    return { preview: full, full, empty: false };
+  }
+  return { preview: `${full.slice(0, maxLen)}…`, full, empty: false };
+}
 
 function wrap(
   opts: PageOpts,
@@ -149,21 +164,33 @@ export function renderSaCampaignsPage(opts: PageOpts): string {
 }
 
 export function renderSaMessagesPage(opts: PageOpts): string {
+  const search = opts.search ?? "";
+  const companyId = opts.companyId ?? "";
   const filters = renderFilterBar(
-    `<input class="tv-filter-input" placeholder="Cliente, campaña, número…" />
-    <span class="tv-quick-actions">
-      <span class="badge badge-muted" title="Filtrar en tabla">MOCK</span>
-      <span class="badge badge-warn" title="Filtrar en tabla">LIVE TEST</span>
-      <span class="badge badge-ok" title="Filtrar en tabla">SUPERADMIN TEST</span>
-    </span>`,
+    `<form method="get" action="/admin/messages" class="tv-filters__form" style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:flex-end;width:100%">
+      <label class="field-label" style="margin:0">Buscar
+        <input class="tv-input" type="search" name="q" placeholder="Cliente, número, texto del mensaje…" value="${escapeHtml(search)}" style="min-width:14rem" />
+      </label>
+      <label class="field-label" style="margin:0">company_id
+        <input class="tv-input" type="text" name="company_id" placeholder="UUID empresa" value="${escapeHtml(companyId)}" style="min-width:12rem;font-family:monospace;font-size:0.8rem" />
+      </label>
+      <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
+      ${search || companyId ? `<a href="/admin/messages" class="btn btn-ghost btn-sm">Restablecer</a>` : ""}
+    </form>`,
   );
   const real = opts.messages ?? [];
   const rows = real.length
     ? real
         .map(
-          (m) => `<tr>
-      <td>${escapeHtml(m.company_name ?? "—")}</td>
-      <td><code>${escapeHtml(m.recipient_number)}</code></td>
+          (m) => {
+            const msg = formatMessagePreview(m.message, 100);
+            const msgClass = msg.empty
+              ? "tv-messages-text tv-messages-text--empty"
+              : "tv-messages-text";
+            return `<tr>
+      <td class="tv-cell-truncate" title="${escapeHtml(m.company_name ?? "")}">${escapeHtml(m.company_name ?? "—")}</td>
+      <td><code class="tv-code-sm">${escapeHtml(m.recipient_number)}</code></td>
+      <td class="${msgClass}" title="${escapeHtml(msg.full)}">${escapeHtml(msg.preview)}</td>
       <td>${escapeHtml(m.provider)}</td>
       <td>${renderAdminPanelModeBadge(m.mode, m.metadata)}</td>
       <td title="${escapeHtml(String((m.metadata as Record<string, unknown>)?.source ?? ""))}">${renderPanelMessageSourceBadge(m.metadata, m.mode)}</td>
@@ -172,25 +199,20 @@ export function renderSaMessagesPage(opts: PageOpts): string {
       <td class="tv-cell-truncate" title="${escapeHtml(m.error_message ?? "")}">${escapeHtml(m.error_message ?? "—")}</td>
       <td>${formatDate(m.created_at)}</td>
       <td>${m.segments}</td>
-    </tr>`,
+    </tr>`;
+          },
         )
         .join("")
-    : MOCK_SA_MESSAGES.map(
-        (m) => `<tr>
-      <td>${escapeHtml(m.client)}</td><td>${escapeHtml(m.campaign)}</td><td>${escapeHtml(m.phone)}</td>
-      <td>${statusBadgeSa(m.status)}</td><td>${escapeHtml(m.provider)}</td><td>${escapeHtml(m.operator)}</td>
-      <td>${escapeHtml(m.date)}</td><td>${escapeHtml(m.country)}</td>
-    </tr>`,
-      ).join("");
+    : `<tr><td colspan="11">Sin mensajes${search || companyId ? " para este filtro" : ""}.</td></tr>`;
   const hint = real.length
-    ? `<p class="field-hint">${real.length} mensaje(s) panel desde Supabase.</p>`
-    : `<p class="field-hint tv-mock-tag">Sin mensajes panel en BD · datos de ejemplo.</p>`;
+    ? `<p class="field-hint">${real.length} mensaje(s) panel desde Supabase (campo <code>message</code>).</p>`
+    : `<p class="field-hint">Sin mensajes panel en BD para los filtros actuales.</p>`;
   const body = `
     ${renderSuperadminBanner("Monitor operacional global — no es la bandeja de un cliente.")}
     ${renderPageHeader({ title: "Mensajería global", subtitle: "Todos los mensajes enviados por todos los clientes (panel_sms_messages).", actions: `<a href="/admin/inbox" class="btn btn-ghost btn-sm">Bandeja operador (legacy)</a>` })}
     ${filters}
-    <div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-      <th>Cliente</th><th>Número</th><th>Proveedor</th><th>Modo</th><th>Origen</th><th>Provider Msg ID</th><th>Estado</th><th>Error</th><th>Fecha</th><th>Seg.</th>
+    <div class="table-wrap tv-panel"><table class="tv-table tv-table--messages"><thead><tr>
+      <th>Cliente</th><th>Número</th><th>Mensaje</th><th>Proveedor</th><th>Modo</th><th>Origen</th><th>Provider Msg ID</th><th>Estado</th><th>Error</th><th>Fecha</th><th>Seg.</th>
     </tr></thead><tbody>${rows}</tbody></table></div>
     ${hint}`;
   return wrap(opts, "messages", "Mensajería", body);

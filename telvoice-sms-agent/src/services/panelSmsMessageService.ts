@@ -416,13 +416,26 @@ export async function countLiveMessagesForCampaign(
 }
 
 export async function listAllPanelMessagesWithCompany(
-  limit = 100,
+  options: {
+    limit?: number;
+    companyId?: string;
+    search?: string;
+  } = {},
 ): Promise<PanelSmsMessageWithCompany[]> {
-  const { data, error } = await getSupabase()
+  const limit = options.limit ?? 100;
+  const fetchLimit = options.search?.trim() ? Math.min(500, limit * 4) : limit;
+
+  let query = getSupabase()
     .from("panel_sms_messages")
     .select("*, companies(name), sms_campaigns(name)")
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .limit(fetchLimit);
+
+  if (options.companyId?.trim()) {
+    query = query.eq("company_id", options.companyId.trim());
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     if (isMissingTableError(error)) {
@@ -431,7 +444,7 @@ export async function listAllPanelMessagesWithCompany(
     wrapSupabaseError(error, "listAllPanelMessagesWithCompany");
   }
 
-  return (data ?? []).map((row) => {
+  let rows = (data ?? []).map((row) => {
     const r = row as PanelSmsMessageRow & {
       companies?: { name: string } | null;
       sms_campaigns?: { name: string } | null;
@@ -442,6 +455,20 @@ export async function listAllPanelMessagesWithCompany(
       campaign_name: r.sms_campaigns?.name ?? "—",
     };
   });
+
+  const search = options.search?.trim().toLowerCase();
+  if (search) {
+    rows = rows.filter(
+      (m) =>
+        (m.message ?? "").toLowerCase().includes(search) ||
+        m.recipient_number.includes(search) ||
+        (m.company_name ?? "").toLowerCase().includes(search) ||
+        (m.campaign_name ?? "").toLowerCase().includes(search) ||
+        (m.provider_message_id ?? "").toLowerCase().includes(search),
+    );
+  }
+
+  return rows.slice(0, limit);
 }
 
 export async function insertPanelDeliveryEvent(input: {
