@@ -1,21 +1,11 @@
-/* Bot flotante telvoice.cl — misma UI que panel /app (agent.telvoice.cl) */
+/* Bot flotante telvoice.cl — overrides de panel/sugerencias (tamaño vía .tva-root--lab) */
 
 #telvoice-web-agent.tva-root--lab {
-  --tva-launcher-size: 8.104rem;
-  --tva-panel-lift: 1.35rem;
   bottom: 1rem;
   right: 1rem;
 }
 
-#telvoice-web-agent.tva-root--lab .tva-launcher,
-#telvoice-web-agent.tva-root--lab .tva-launcher-iso {
-  width: var(--tva-launcher-size);
-  height: var(--tva-launcher-size);
-}
-
 #telvoice-web-agent.tva-root--lab .tva-panel {
-  bottom: calc(var(--tva-launcher-size) + var(--tva-panel-lift));
-  max-height: min(32rem, calc(100dvh - var(--tva-launcher-size) - var(--tva-panel-lift) - 1.5rem));
   width: min(22.5rem, calc(100vw - 2rem));
 }
 
@@ -53,11 +43,4 @@
 #telvoice-web-agent.tva-root--lab .tva-msg--bot.tva-msg--typing {
   opacity: 1;
   font-style: normal;
-}
-
-@media (max-width: 767px) {
-  #telvoice-web-agent.tva-root--lab {
-    --tva-launcher-size: 7rem;
-    --tva-panel-lift: 1.1rem;
-  }
 }

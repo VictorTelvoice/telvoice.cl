@@ -8,13 +8,15 @@
   --tva-muted: #a8b4d0;
   --tva-border: rgba(120, 160, 255, 0.18);
   --tva-shadow: 0 24px 64px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(56, 189, 248, 0.1);
+  --tva-launcher-size: 10.13rem;
+  --tva-panel-lift: 1.35rem;
   bottom: 1rem;
   right: 1rem;
 }
 
 .tva-root--lab .tva-launcher {
-  width: 10.13rem;
-  height: 10.13rem;
+  width: var(--tva-launcher-size);
+  height: var(--tva-launcher-size);
   border-radius: 0;
   background: transparent;
   box-shadow: none;
@@ -35,8 +37,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 10.13rem;
-  height: 10.13rem;
+  width: var(--tva-launcher-size);
+  height: var(--tva-launcher-size);
 }
 
 .tva-root--lab .tva-launcher-iso .telvoice-agent-avatar__img {
@@ -46,19 +48,9 @@
   animation: none;
 }
 
-/* Panel /app: agente flotante 20% más compacto que landing */
-#tv-panel-agent.tva-root--lab {
-  --tva-launcher-size: 8.104rem;
-  --tva-panel-lift: 1.35rem;
-}
-
-#tv-panel-agent.tva-root--lab .tva-launcher,
-#tv-panel-agent.tva-root--lab .tva-launcher-iso {
-  width: var(--tva-launcher-size);
-  height: var(--tva-launcher-size);
-}
-
-#tv-panel-agent.tva-root--lab .tva-panel {
+/* Panel flotante — posición del chat respecto al bot */
+#tv-panel-agent.tva-root--lab .tva-panel,
+#telvoice-web-agent.tva-root--lab .tva-panel {
   bottom: calc(var(--tva-launcher-size) + var(--tva-panel-lift));
   max-height: min(32rem, calc(100dvh - var(--tva-launcher-size) - var(--tva-panel-lift) - 1.5rem));
 }
@@ -282,6 +274,11 @@
   overflow: visible;
 }
 
+.telvoice-agent-avatar--launcher {
+  width: 100%;
+  height: 100%;
+}
+
 .telvoice-agent-avatar.agent-live-motion .telvoice-agent-avatar__img {
   animation: telvoiceAgentBreath 5.4s ease-in-out infinite;
 }
@@ -371,19 +368,9 @@
 }
 
 @media (max-width: 767px) {
-  .tva-root--lab .tva-launcher,
-  .tva-root--lab .tva-launcher-iso {
-    width: 8.75rem;
-    height: 8.75rem;
-  }
-  #tv-panel-agent.tva-root--lab {
-    --tva-launcher-size: 7rem;
+  .tva-root--lab {
+    --tva-launcher-size: 8.75rem;
     --tva-panel-lift: 1.1rem;
-  }
-  #tv-panel-agent.tva-root--lab .tva-launcher,
-  #tv-panel-agent.tva-root--lab .tva-launcher-iso {
-    width: var(--tva-launcher-size);
-    height: var(--tva-launcher-size);
   }
 }
 
