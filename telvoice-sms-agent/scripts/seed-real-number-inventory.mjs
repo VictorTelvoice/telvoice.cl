@@ -12,11 +12,11 @@
  *   gateway_id, sim_slot, webhook_url, metadata
  *
  * Ejemplo connected (vendible online):
- *   { "e164_number": "+56912345678", "webhook_connected": true,
+ *   { "e164_number": "E164_NUMBER_PLACEHOLDER", "webhook_connected": true,
  *     "connection_status": "connected", "sales_status": "connected_available" }
  *
  * Ejemplo preconfigurado (no vendible online aún):
- *   { "e164_number": "+56987654321", "webhook_connected": false,
+ *   { "e164_number": "+56XXXXXXXXX", "webhook_connected": false,
  *     "connection_status": "preconfigured_pending", "sales_status": "preconfigured_pending" }
  */
 import "dotenv/config";
