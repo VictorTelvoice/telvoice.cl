@@ -586,6 +586,9 @@
         animation: none !important;
         transform: none;
       }
+      .tv-step-card:hover {
+        transform: none;
+      }
     }
 
     .hero-price-card {
@@ -1621,22 +1624,77 @@
     }
 
 
-    #por-que-telvoice .por-que-header {
+    /* Tarjetas tipo glass (reutilizables en otras secciones) */
+    .tv-step-card {
+      border-radius: 1.25rem;
+      border: 1px solid rgba(0, 82, 204, 0.12);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafd 100%);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.85) inset,
+        0 16px 48px -24px rgba(15, 23, 42, 0.1);
+      transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+      padding: 1.5rem;
+      height: 100%;
+      list-style: none;
+    }
+    .tv-step-card:hover {
+      border-color: rgba(0, 82, 204, 0.22);
+      box-shadow:
+        0 0 0 1px rgba(0, 82, 204, 0.06) inset,
+        0 0 32px rgba(0, 82, 204, 0.07),
+        0 20px 56px -24px rgba(15, 23, 42, 0.12);
+      transform: translateY(-2px);
+    }
+    .tv-step-card--glow {
+      border-color: rgba(0, 82, 204, 0.22);
+      background: linear-gradient(180deg, #f8fbff 0%, #eef4fc 100%);
+      box-shadow:
+        0 0 0 1px rgba(0, 82, 204, 0.08) inset,
+        0 0 24px rgba(0, 82, 204, 0.08);
+    }
+    .tv-step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.75rem;
+      font-family: Montserrat, sans-serif;
+      font-weight: 700;
+      font-size: 0.9375rem;
+      color: #0052cc;
+      border: 1px solid rgba(0, 82, 204, 0.2);
+      background: rgba(0, 82, 204, 0.06);
+    }
+    .tv-steps-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      margin-inline: auto;
+      padding: 0;
+    }
+    @media (min-width: 640px) {
+      .tv-steps-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.75rem;
+      }
+    }
+    @media (min-width: 1024px) {
+      .tv-steps-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 2rem;
+      }
+      .tv-step-card {
+        padding: 1.625rem;
+      }
+    }
+    #como-funciona .como-funciona-header {
       margin-bottom: 3rem;
     }
     @media (min-width: 768px) {
-      #por-que-telvoice .por-que-header {
+      #como-funciona .como-funciona-header {
         margin-bottom: 4rem;
       }
-    }
-    #por-que-telvoice .por-que-grid {
-      align-items: stretch;
-    }
-    #por-que-telvoice .ui-card-benefit {
-      height: 100%;
-    }
-    #por-que-telvoice .ui-card-benefit p {
-      flex: 1;
     }
 
     #soluciones .soluciones-header {
@@ -1788,6 +1846,7 @@
       main h4,
       main li,
       main .ui-card,
+      main .tv-step-card,
       main .pack-card,
       main .caso-card,
       main .comercial-card,
@@ -1819,6 +1878,7 @@
       }
       main .ui-card-benefit,
       main .ui-card-feature,
+      main .tv-step-card,
       main .comercial-card,
       main .caso-card {
         align-items: center;
@@ -2715,6 +2775,7 @@
     }
     .tv-type-lab .ui-card-benefit .font-h3.text-h3,
     .tv-type-lab .ui-card-feature .font-h3.text-h3,
+    .tv-type-lab .tv-step-card .font-h3.text-h3,
     .tv-type-lab #camino-comercial .font-h3.text-h3 {
       font-family: Montserrat, sans-serif;
       font-size: 1.0625rem;
@@ -2722,7 +2783,9 @@
       line-height: 1.3;
     }
     .tv-type-lab .ui-card-benefit .text-subtitle,
-    .tv-type-lab .ui-card-benefit p.text-on-surface-variant {
+    .tv-type-lab .ui-card-benefit p.text-on-surface-variant,
+    .tv-type-lab .tv-step-card .text-subtitle,
+    .tv-type-lab .tv-step-card p.text-on-surface-variant {
       font-size: 0.875rem;
       line-height: 1.55;
     }
@@ -3164,44 +3227,36 @@
       </div>
     </section>
 
-    <!-- Por qué Telvoice -->
-    <section id="por-que-telvoice" class="section-block section-bg-white" aria-labelledby="por-que-titulo" tabindex="-1">
+    <!-- Cómo funciona -->
+    <section id="como-funciona" class="section-block section-bg-white" aria-labelledby="como-funciona-titulo" tabindex="-1">
       <div class="section-inner">
-      <header class="section-header por-que-header mx-auto max-w-3xl">
-        <span class="section-eyebrow">Por qué Telvoice</span>
-        <h2 id="por-que-titulo" class="mt-4 font-h2 text-h2 text-on-background leading-tight">Precio, control y operación SMS confiable</h2>
-        <p class="section-intro mt-4 text-on-surface-variant leading-relaxed">Saldo prepago, campañas asistidas y reportes en un solo lugar. Diseñado para empresas que necesitan escalar comunicaciones sin depender de teléfonos personales.</p>
+      <header class="section-header como-funciona-header mx-auto max-w-3xl">
+        <span class="section-eyebrow">Cómo funciona</span>
+        <h2 id="como-funciona-titulo" class="mt-4 font-h2 text-h2 text-on-background leading-tight">Operación SMS con asistencia guiada</h2>
+        <p class="section-intro mt-4 text-on-surface-variant leading-relaxed">Prepara tu campaña, valida tu base, revisa el consumo estimado y confirma antes de enviar. El agente te guía paso a paso para reducir errores y mantener control sobre cada envío.</p>
       </header>
-      <div class="por-que-grid grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-4 lg:gap-8">
-        <article class="ui-card ui-card-benefit flex h-full flex-col gap-4">
-          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <span class="material-symbols-outlined fill-icon text-3xl" aria-hidden="true">dashboard</span>
-          </div>
-          <h3 class="font-h3 text-h3 text-on-background">Control de saldo y campañas</h3>
-          <p class="text-subtitle text-on-surface-variant leading-relaxed">Revisa tu saldo disponible, organiza tus envíos y mantén visibilidad sobre tus campañas desde una plataforma simple y enfocada en operación SMS.</p>
-        </article>
-        <article class="ui-card ui-card-benefit flex h-full flex-col gap-4">
-          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <span class="material-symbols-outlined fill-icon text-3xl" aria-hidden="true">savings</span>
-          </div>
-          <h3 class="font-h3 text-h3 text-on-background">Precios claros por volumen</h3>
-          <p class="text-subtitle text-on-surface-variant leading-relaxed">El valor por SMS mejora en bolsas de mayor volumen, permitiendo planificar campañas con costos visibles desde el inicio.</p>
-        </article>
-        <article class="ui-card ui-card-benefit flex h-full flex-col gap-4">
-          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <span class="material-symbols-outlined fill-icon text-3xl" aria-hidden="true">cell_tower</span>
-          </div>
-          <h3 class="font-h3 text-h3 text-on-background">Envíos a todos los operadores</h3>
-          <p class="text-subtitle text-on-surface-variant leading-relaxed">Trabajamos con rutas SMS directas y optimizadas hacia operadores móviles en Chile, preparadas para tráfico A2P, campañas comerciales y mensajes transaccionales.</p>
-        </article>
-        <article class="ui-card ui-card-benefit flex h-full flex-col gap-4">
-          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <span class="material-symbols-outlined fill-icon text-3xl" aria-hidden="true">lan</span>
-          </div>
-          <h3 class="font-h3 text-h3 text-on-background">Respaldo de operación SMS</h3>
-          <p class="text-subtitle text-on-surface-variant leading-relaxed">Telvoice cuenta con experiencia en mensajería SMS mayorista, tráfico A2P e infraestructura especializada.</p>
-        </article>
-      </div>
+      <ol class="tv-steps-grid">
+        <li class="tv-step-card">
+          <span class="tv-step-num" aria-hidden="true">1</span>
+          <h3 class="mt-4 font-h3 text-h3 text-on-background">Define tu mensaje</h3>
+          <p class="mt-2 text-subtitle text-on-surface-variant leading-relaxed">Indica si enviarás una promoción, alerta, recordatorio, cobranza o notificación a tus clientes.</p>
+        </li>
+        <li class="tv-step-card">
+          <span class="tv-step-num" aria-hidden="true">2</span>
+          <h3 class="mt-4 font-h3 text-h3 text-on-background">Prepara destinatarios</h3>
+          <p class="mt-2 text-subtitle text-on-surface-variant leading-relaxed">Carga un CSV o usa una plantilla guardada. El agente revisa formato, duplicados y números válidos.</p>
+        </li>
+        <li class="tv-step-card">
+          <span class="tv-step-num" aria-hidden="true">3</span>
+          <h3 class="mt-4 font-h3 text-h3 text-on-background">Revisa consumo y saldo</h3>
+          <p class="mt-2 text-subtitle text-on-surface-variant leading-relaxed">Visualiza SMS estimados, segmentos, costo y saldo requerido antes de ejecutar.</p>
+        </li>
+        <li class="tv-step-card tv-step-card--glow">
+          <span class="tv-step-num" aria-hidden="true">4</span>
+          <h3 class="mt-4 font-h3 text-h3 text-on-background">Confirma y mide</h3>
+          <p class="mt-2 text-subtitle text-on-surface-variant leading-relaxed">Envía solo con confirmación y revisa estados de entrega, DLR y resultados desde el panel.</p>
+        </li>
+      </ol>
       </div>
     </section>
 
