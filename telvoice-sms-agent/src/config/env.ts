@@ -325,6 +325,10 @@ export const env = {
   simCheckout: {
     productionAllowlist: parseCsvEnv("SIM_CHECKOUT_PRODUCTION_ALLOWLIST"),
   },
+  /** Webhook POST /api/webhooks/numeraciones/inbound (opcional en dev). */
+  numeracionesInbound: {
+    webhookSecret: optionalEnv("NUMERACIONES_INBOUND_WEBHOOK_SECRET"),
+  },
   defaultRetailRatePlan: {
     ratePlanId: optionalEnv(
       "PUBLIC_CHECKOUT_DEFAULT_RATE_PLAN_ID",

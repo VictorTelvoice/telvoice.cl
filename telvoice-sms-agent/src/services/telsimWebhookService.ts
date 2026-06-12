@@ -151,6 +151,21 @@ export async function processTelsimSmsWebhook(input: {
     }),
   );
 
+  if (row) {
+    const line = row.line_phone ?? linePhone;
+    const forwarded = await import("./inboundSmsService.js").then((m) =>
+      m.forwardTelsimInboundToClientInbox({
+        linePhone: line,
+        from: payload.from,
+        body: payload.content,
+        receivedAt: payload.received_at,
+      }),
+    );
+    if (forwarded.ok) {
+      console.info("[telsim] reenviado a bandeja cliente", { stored: true });
+    }
+  }
+
   return {
     stored: row != null,
     inbound_id: row?.id ?? null,

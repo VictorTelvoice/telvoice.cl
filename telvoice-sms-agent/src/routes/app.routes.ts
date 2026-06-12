@@ -287,19 +287,16 @@ appRouter.post(
 appRouter.get(
   "/sms-inbox",
   requireClientPanelPage,
-  requireClientPanelAgentLinePage,
   getAppSmsInbox,
 );
 appRouter.get(
   "/sms-inbox/export.csv",
   requireClientPanelPage,
-  requireClientPanelAgentLinePage,
   getAppSmsInboxExportCsv,
 );
 appRouter.post(
   "/sms-inbox/:id/read",
   requireClientPanelPage,
-  requireClientPanelAgentLinePage,
   postAppSmsInboxMarkRead,
 );
 appRouter.get(
