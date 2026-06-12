@@ -20,6 +20,7 @@ export const MAIN_NAV: NavItem[] = [
   { id: "traffic-control", href: "/admin/traffic-control", label: "Tráfico / TPS", icon: "speed" },
   { id: "test", href: "/admin/test", label: "Test", icon: "science" },
   { id: "orders", href: "/admin/orders", label: "Compras", icon: "shopping_cart" },
+  { id: "numeraciones", href: "/admin/numeraciones", label: "Numeraciones", icon: "sim_card" },
   { id: "email-logs", href: "/admin/email-logs", label: "Emails", icon: "mail" },
   { id: "wallets", href: "/admin/wallets", label: "Saldos", icon: "account_balance_wallet" },
   { id: "invoices", href: "/admin/invoices", label: "Facturas", icon: "receipt_long" },

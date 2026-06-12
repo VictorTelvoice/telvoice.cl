@@ -16,7 +16,6 @@ export const appNumeracionesApiRouter = Router();
 
 appNumeracionesApiRouter.use(loadClientSession);
 appNumeracionesApiRouter.use(requireClientPanelApi);
-appNumeracionesApiRouter.use(requireClientPanelAgentLineApi);
 
 appNumeracionesApiRouter.get("/numeraciones", getApiNumeraciones);
 appNumeracionesApiRouter.get("/numeraciones/:id", getApiNumeracionById);
@@ -26,5 +25,13 @@ appNumeracionesApiRouter.post(
   "/numeraciones/:id/webhook/test",
   postApiNumeracionWebhookTest,
 );
-appNumeracionesApiRouter.post("/agent-plan/request", postApiAgentPlanRequest);
-appNumeracionesApiRouter.get("/agent-plan/status", getApiAgentPlanStatus);
+appNumeracionesApiRouter.post(
+  "/agent-plan/request",
+  requireClientPanelAgentLineApi,
+  postApiAgentPlanRequest,
+);
+appNumeracionesApiRouter.get(
+  "/agent-plan/status",
+  requireClientPanelAgentLineApi,
+  getApiAgentPlanStatus,
+);

@@ -16,6 +16,20 @@ import {
   verifySupabaseAccessToken,
 } from "../services/supabaseAuthVerifyService.js";
 import { validateUuidParam } from "../utils/validation.js";
+import { getPublicAvailability } from "../services/realNumberInventoryService.js";
+
+export async function getPublicSimAvailability(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const availability = await getPublicAvailability();
+    res.json({ success: true, ...availability });
+  } catch (error) {
+    next(error);
+  }
+}
 
 export async function getPublicProducts(
   _req: Request,

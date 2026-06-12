@@ -86,6 +86,22 @@ import {
   postAdminSupportTicketUpdate,
 } from "../controllers/admin-support.controller.js";
 import {
+  getAdminNumeracionesPage,
+  postAdminInventoryAdd,
+  postAdminInventoryAssign,
+  postAdminInventoryMarkConnected,
+  postAdminInventoryNotForSale,
+  postAdminInventoryRelease,
+  postAdminInventoryReleaseExpired,
+  postAdminNumeracionesCreate,
+  postAdminNumeracionesStatus,
+  postAdminSimActivationActivate,
+  postAdminSimActivationNotes,
+  postAdminSimActivationResendAccess,
+  postAdminSimActivationResendActive,
+  postAdminSimActivationReview,
+} from "../controllers/admin-numeraciones.controller.js";
+import {
   getAdminApiUsagePage,
   postAdminApiUsageKeyActivate,
   postAdminApiUsageKeyPause,
@@ -505,6 +521,68 @@ adminRouter.post(
   "/orders/:id/resend-invoice-email",
   requireAdminPage,
   postResendOrderInvoiceEmail,
+);
+adminRouter.get("/numeraciones", requireAdminPage, getAdminNumeracionesPage);
+adminRouter.post("/numeraciones", requireAdminPage, postAdminNumeracionesCreate);
+adminRouter.post(
+  "/numeraciones/:id/status",
+  requireAdminPage,
+  postAdminNumeracionesStatus,
+);
+adminRouter.post(
+  "/numeraciones/sim-activations/:id/review",
+  requireAdminPage,
+  postAdminSimActivationReview,
+);
+adminRouter.post(
+  "/numeraciones/sim-activations/:id/notes",
+  requireAdminPage,
+  postAdminSimActivationNotes,
+);
+adminRouter.post(
+  "/numeraciones/sim-activations/:id/activate",
+  requireAdminPage,
+  postAdminSimActivationActivate,
+);
+adminRouter.post(
+  "/numeraciones/sim-activations/:id/resend-access",
+  requireAdminPage,
+  postAdminSimActivationResendAccess,
+);
+adminRouter.post(
+  "/numeraciones/sim-activations/:id/resend-active",
+  requireAdminPage,
+  postAdminSimActivationResendActive,
+);
+adminRouter.post(
+  "/numeraciones/inventory/release-expired",
+  requireAdminPage,
+  postAdminInventoryReleaseExpired,
+);
+adminRouter.post(
+  "/numeraciones/inventory/add",
+  requireAdminPage,
+  postAdminInventoryAdd,
+);
+adminRouter.post(
+  "/numeraciones/inventory/:id/release",
+  requireAdminPage,
+  postAdminInventoryRelease,
+);
+adminRouter.post(
+  "/numeraciones/inventory/:id/assign",
+  requireAdminPage,
+  postAdminInventoryAssign,
+);
+adminRouter.post(
+  "/numeraciones/inventory/:id/mark-connected",
+  requireAdminPage,
+  postAdminInventoryMarkConnected,
+);
+adminRouter.post(
+  "/numeraciones/inventory/:id/not-for-sale",
+  requireAdminPage,
+  postAdminInventoryNotForSale,
 );
 adminRouter.get("/email-logs", requireAdminPage, getAdminEmailLogsPage);
 adminRouter.post(

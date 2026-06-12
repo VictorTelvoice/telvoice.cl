@@ -24,10 +24,8 @@ export const APP_NAV_PRIMARY: AppNavItem[] = [
   { id: "campaigns", label: "Campañas", href: "/app/campaigns", icon: "campaign" },
 ];
 
-/** Línea Telvoice y Agente (numeraciones, SMS entrantes, planes). */
+/** Agente Telvoice y planes — solo con CLIENT_PANEL_AGENT_LINE_ENABLED. */
 const APP_NAV_AGENT_LINE_ITEMS: AppNavItem[] = [
-  { id: "numeraciones", label: "Mis números", href: "/app/numeraciones", icon: "sim_card" },
-  { id: "sms-inbox", label: "SMS entrantes", href: "/app/sms-inbox", icon: "sms" },
   { id: "agente", label: "Agente Telvoice", href: "/app/agente", icon: "smart_toy" },
   { id: "agent-plans", label: "Planes del agente", href: "/app/planes-agente", icon: "workspace_premium" },
 ];
@@ -43,10 +41,26 @@ export const APP_ORDERS_NAV: AppNavItem = {
   icon: "receipt",
 };
 
+export const APP_NUMERACIONES_NAV: AppNavItem = {
+  id: "numeraciones",
+  label: "Mis numeraciones",
+  href: "/app/numeraciones",
+  icon: "sim_card",
+};
+
+export const APP_SMS_INBOX_NAV: AppNavItem = {
+  id: "sms-inbox",
+  label: "SMS entrantes",
+  href: "/app/sms-inbox",
+  icon: "sms",
+};
+
 /** Resto del menú (orden original, sin ítems ya listados arriba). */
 export const APP_NAV_REST: AppNavItem[] = [
   { id: "buy-sms", label: "Comprar SMS", href: "/app/buy-sms", icon: "shopping_cart" },
   APP_ORDERS_NAV,
+  APP_NUMERACIONES_NAV,
+  APP_SMS_INBOX_NAV,
   { id: "contacts", label: "Contactos", href: "/app/contacts", icon: "contacts" },
   { id: "templates", label: "Plantillas", href: "/app/templates", icon: "description" },
   { id: "invoices", label: "Facturas", href: "/app/invoices", icon: "receipt_long" },

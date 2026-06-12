@@ -15,7 +15,8 @@ export type AgentPlanRequestStatus =
   | "reviewing"
   | "approved"
   | "rejected"
-  | "activated";
+  | "activated"
+  | "paid_pending_setup";
 
 export type AgentPlanSubscriptionStatus =
   | "pending"
@@ -120,6 +121,10 @@ export type AgentPlanRequestRow = {
   preferred_number_type: "sim_real" | "fixed_line" | "either";
   status: AgentPlanRequestStatus;
   notes: string | null;
+  order_id: string | null;
+  checkout_email: string | null;
+  use_case: string | null;
+  source: string | null;
   created_at: string;
   updated_at: string;
 };
