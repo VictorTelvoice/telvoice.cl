@@ -120,57 +120,6 @@
             <button type="button" class="nsim-btn-secondary nsim-plan-cta nsim-plan-cta--custom" data-nsim-plan="custom">Solicitar plan a medida</button>
           </article>
         </div>
-
-        <div id="nsim-checkout-drawer" class="nsim-checkout-drawer" hidden aria-labelledby="nsim-drawer-title">
-          <div class="nsim-checkout-drawer__inner">
-            <button type="button" class="nsim-checkout-drawer__close" id="nsim-drawer-close" aria-label="Cerrar panel de compra">
-              <span class="material-symbols-outlined" aria-hidden="true">close</span>
-            </button>
-            <header class="nsim-checkout-drawer__header">
-              <h3 id="nsim-drawer-title">Completa la compra de tu numeración SIM</h3>
-              <p id="nsim-drawer-subtitle">Revisamos la disponibilidad, reservamos tu número y coordinamos la activación desde Telvoice.</p>
-            </header>
-            <ol class="nsim-stepper" aria-label="Pasos de compra">
-              <li class="nsim-stepper__item is-active"><span>1</span> Plan</li>
-              <li class="nsim-stepper__item is-active"><span>2</span> Datos</li>
-              <li class="nsim-stepper__item"><span>3</span> Activación</li>
-            </ol>
-            <div class="nsim-checkout-drawer__body">
-              <aside class="nsim-drawer-summary" id="nsim-drawer-summary" aria-live="polite"></aside>
-              <form id="nsim-checkout-form" class="nsim-drawer-form" novalidate>
-                <div class="nsim-form-grid">
-                  <div class="nsim-field">
-                    <label for="nsim-nombre">Nombre</label>
-                    <input id="nsim-nombre" name="nombre" type="text" autocomplete="name" required />
-                  </div>
-                  <div class="nsim-field">
-                    <label for="nsim-empresa">Empresa</label>
-                    <input id="nsim-empresa" name="empresa" type="text" autocomplete="organization" />
-                  </div>
-                  <div class="nsim-field">
-                    <label for="nsim-email">Email</label>
-                    <input id="nsim-email" name="email" type="email" autocomplete="email" required />
-                  </div>
-                  <div class="nsim-field">
-                    <label for="nsim-telefono">Teléfono</label>
-                    <input id="nsim-telefono" name="telefono" type="tel" autocomplete="tel" />
-                  </div>
-                  <div class="nsim-field">
-                    <label for="nsim-rut">RUT o ID tributario</label>
-                    <input id="nsim-rut" name="rut" type="text" />
-                  </div>
-                  <div class="nsim-field nsim-field--full">
-                    <label for="nsim-use-case">Caso de uso</label>
-                    <textarea id="nsim-use-case" name="use_case" rows="2" placeholder="Ej.: validaciones internas, alertas operativas…"></textarea>
-                  </div>
-                </div>
-                <p id="nsim-form-error" class="nsim-form-error" hidden role="alert"></p>
-                <p id="nsim-stock-hint" class="nsim-form-hint" hidden></p>
-                <button type="submit" id="nsim-submit" class="nsim-btn-primary nsim-submit">Continuar con Starter</button>
-              </form>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -226,6 +175,65 @@
   <footer class="nsim-footer">
     <p>© Telvoice · TelefoníaChile LTDA · <a href="index.html">Volver al inicio</a></p>
   </footer>
+
+  <div id="nsim-purchase-modal" class="nsim-purchase-modal" hidden role="dialog" aria-modal="true" aria-labelledby="nsim-modal-title">
+    <div class="nsim-purchase-modal__panel" role="document">
+      <header class="nsim-purchase-modal__header">
+        <div>
+          <h2 id="nsim-modal-title" class="nsim-purchase-modal__title">Comprar numeración SIM Starter</h2>
+          <p id="nsim-modal-subtitle" class="nsim-purchase-modal__subtitle">Completa tus datos para crear la orden y continuar al pago seguro por MercadoPago.</p>
+        </div>
+        <button type="button" class="nsim-purchase-modal__close" id="nsim-modal-close" aria-label="Cerrar">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </header>
+      <div class="nsim-purchase-modal__body">
+        <ol id="nsim-modal-stepper" class="nsim-modal-stepper" aria-label="Pasos de compra">
+          <li class="nsim-modal-stepper__item is-active"><span>1</span> Datos</li>
+          <li class="nsim-modal-stepper__item"><span>2</span> Pago</li>
+          <li class="nsim-modal-stepper__item"><span>3</span> Activación</li>
+        </ol>
+        <aside id="nsim-modal-summary" class="nsim-modal-summary" aria-live="polite"></aside>
+        <div id="nsim-modal-status" class="nsim-modal-status" hidden></div>
+        <form id="nsim-purchase-form" class="nsim-modal-form" novalidate>
+          <div class="nsim-form-grid">
+            <div class="nsim-field">
+              <label for="nsim-nombre">Nombre</label>
+              <input id="nsim-nombre" name="nombre" type="text" autocomplete="name" required />
+            </div>
+            <div class="nsim-field">
+              <label for="nsim-empresa">Empresa</label>
+              <input id="nsim-empresa" name="empresa" type="text" autocomplete="organization" />
+            </div>
+            <div class="nsim-field">
+              <label for="nsim-email">Email</label>
+              <input id="nsim-email" name="email" type="email" autocomplete="email" required />
+            </div>
+            <div class="nsim-field">
+              <label for="nsim-telefono">Teléfono</label>
+              <input id="nsim-telefono" name="telefono" type="tel" autocomplete="tel" />
+            </div>
+            <div class="nsim-field nsim-field--checkout-only">
+              <label for="nsim-rut">RUT o ID tributario</label>
+              <input id="nsim-rut" name="rut" type="text" />
+            </div>
+            <div class="nsim-field nsim-field--full">
+              <label for="nsim-use-case">Caso de uso</label>
+              <textarea id="nsim-use-case" name="use_case" rows="2" placeholder="Ej.: validaciones internas, alertas operativas…"></textarea>
+            </div>
+            <div class="nsim-field nsim-field--full nsim-field--custom-only" hidden>
+              <label for="nsim-volume">Volumen estimado mensual <span class="nsim-field-optional">(opcional)</span></label>
+              <input id="nsim-volume" name="volume" type="text" placeholder="Ej.: 5.000 SMS / mes" />
+            </div>
+          </div>
+          <p id="nsim-form-error" class="nsim-form-error" hidden role="alert"></p>
+          <p id="nsim-stock-hint" class="nsim-form-hint" hidden></p>
+          <button type="submit" id="nsim-submit" class="nsim-btn-primary nsim-submit">Ir a pagar Starter</button>
+          <p id="nsim-modal-footnote" class="nsim-modal-footnote">El pago se procesa de forma segura por MercadoPago. Luego Telvoice coordina la activación de tu numeración.</p>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <script src="js/telvoice-config.js"></script>
   <script src="js/numeracion-sim-page.js"></script>
