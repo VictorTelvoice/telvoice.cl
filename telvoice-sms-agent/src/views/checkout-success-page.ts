@@ -108,9 +108,14 @@ function resolveHeadline(data: CheckoutSuccessPageData): {
     data.summary?.paymentStatus === "paid";
 
   if (approved) {
+    const simText = data.isSimAgentBundle
+      ? "Mercado Pago aprobó tu pago. Estamos activando tu numeración SIM Starter y tu acceso al panel Telvoice."
+      : data.isSimSubscription
+        ? "Mercado Pago aprobó tu pago. Estamos preparando la activación de tu numeración SIM."
+        : "Mercado Pago aprobó tu pago. Estamos preparando la activación de tu cuenta y la carga de tu bolsa SMS.";
     return {
       title: "¡Compra confirmada!",
-      text: "Mercado Pago aprobó tu pago. Estamos preparando la activación de tu cuenta y la carga de tu bolsa SMS.",
+      text: simText,
       iconClass: "payment-icon--ok",
       confirmLayout: true,
     };

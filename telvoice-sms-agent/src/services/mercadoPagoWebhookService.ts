@@ -269,6 +269,33 @@ export async function processPublicCheckoutMercadoPagoWebhook(
 
     const latestBefore = await getOrderById(orderId);
 
+    if (
+      payment.status === "approved" &&
+      latestBefore?.payment_status === "paid" &&
+      String(latestBefore.metadata?.mercadopago_payment_id ?? "") === String(payment.id)
+    ) {
+      await patchOrderFields(orderId, { metadata: metaPatch });
+      if (isSim || isBundle) {
+        try {
+          const postPay = await processSimPostPaymentActivation(orderId);
+          console.log(
+            "[mp-webhook] sim post-payment retry",
+            orderId,
+            postPay.autoActivated ? "auto_activated" : postPay.reason ?? "pending",
+          );
+        } catch (err) {
+          console.error("[mp-webhook] sim post-payment retry failed", orderId, err);
+        }
+      }
+      return {
+        handled: true,
+        orderId,
+        result: isBundle
+          ? "sim_agent_bundle_payment_already_processed"
+          : "sim_payment_already_processed",
+      };
+    }
+
     if (!isSim) {
       if (latestBefore?.credit_status === "credited") {
         await patchOrderFields(orderId, { metadata: metaPatch });

@@ -52,6 +52,8 @@ async function findCompanyByEmail(email: string): Promise<{
     .from("companies")
     .select("id, name, rut, billing_email")
     .ilike("billing_email", email)
+    .order("created_at", { ascending: true })
+    .limit(1)
     .maybeSingle();
   if (error) {
     wrapSupabaseError(error, "provision.findCompanyByEmail");
@@ -92,6 +94,15 @@ async function loadCompany(
 export async function provisionCompanyFromCheckout(
   input: CheckoutProvisionInput,
 ): Promise<CheckoutProvisionResult> {
+  if (input.order.company_id) {
+    await linkSimActivationToCompany(input.order.id, input.order.company_id);
+    return {
+      companyId: input.order.company_id,
+      isNewCompany: false,
+      identityReviewRequired: input.order.metadata?.identity_review_required === true,
+    };
+  }
+
   const email = normalizeEmail(input.checkoutEmail);
   const submittedRut = normalizeRut(input.taxId);
   const submittedCompanyName =
@@ -101,7 +112,22 @@ export async function provisionCompanyFromCheckout(
   let isNewCompany = false;
   let identityReviewRequired = false;
 
-  const byEmail = await findCompanyByEmail(email);
+  const profileCompanyId = await findCompanyByProfileEmail(email);
+  if (profileCompanyId) {
+    companyId = profileCompanyId;
+    const existing = await loadCompany(profileCompanyId);
+    if (existing) {
+      const existingRut = normalizeRut(existing.rut);
+      if (submittedRut && existingRut && submittedRut !== existingRut) {
+        identityReviewRequired = true;
+      }
+      if (companyNameDiffers(existing.name, submittedCompanyName)) {
+        identityReviewRequired = true;
+      }
+    }
+  }
+
+  const byEmail = companyId ? null : await findCompanyByEmail(email);
   if (byEmail?.id) {
     companyId = byEmail.id;
     const existingRut = normalizeRut(byEmail.rut);
@@ -110,23 +136,6 @@ export async function provisionCompanyFromCheckout(
     }
     if (companyNameDiffers(byEmail.name, submittedCompanyName)) {
       identityReviewRequired = true;
-    }
-  }
-
-  if (!companyId) {
-    const profileCompanyId = await findCompanyByProfileEmail(email);
-    if (profileCompanyId) {
-      companyId = profileCompanyId;
-      const existing = await loadCompany(profileCompanyId);
-      if (existing) {
-        const existingRut = normalizeRut(existing.rut);
-        if (submittedRut && existingRut && submittedRut !== existingRut) {
-          identityReviewRequired = true;
-        }
-        if (companyNameDiffers(existing.name, submittedCompanyName)) {
-          identityReviewRequired = true;
-        }
-      }
     }
   }
 

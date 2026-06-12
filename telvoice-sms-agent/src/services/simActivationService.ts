@@ -441,6 +441,20 @@ export async function activatePaidSimActivationRequest(
   let clientNumberId = activation.client_number_id;
 
   if (!clientNumberId) {
+    const sbLookup = getSupabase();
+    const { data: existingCn } = await sbLookup
+      .from("client_numbers")
+      .select("id")
+      .eq("company_id", activation.company_id)
+      .eq("number", inventory.e164_number)
+      .limit(1)
+      .maybeSingle();
+    if (existingCn?.id) {
+      clientNumberId = String(existingCn.id);
+    }
+  }
+
+  if (!clientNumberId) {
     const created = await createAdminClientNumber({
       company_id: activation.company_id,
       number: inventory.e164_number,

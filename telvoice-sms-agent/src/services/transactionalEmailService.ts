@@ -88,15 +88,21 @@ export async function hasSentEmail(
   entityId: string,
   templateKey: TransactionalTemplateKey | string,
   entity: "order" | "invoice" = "order",
+  recipientEmail?: string,
 ): Promise<boolean> {
   const column = entity === "invoice" ? "invoice_id" : "order_id";
-  const { data, error } = await getSupabase()
+  let query = getSupabase()
     .from("email_logs")
     .select("id")
     .eq(column, entityId)
     .eq("template_key", templateKey)
-    .eq("status", "sent")
-    .maybeSingle();
+    .in("status", ["sent", "pending"]);
+
+  if (recipientEmail) {
+    query = query.eq("recipient_email", normalizeEmail(recipientEmail));
+  }
+
+  const { data, error } = await query.limit(1).maybeSingle();
 
   if (error) {
     if (isMissingTableError(error)) {
@@ -232,7 +238,7 @@ export async function sendTransactionalEmail(
   const entityId = input.invoiceId ?? input.orderId;
   const entityType = input.invoiceId ? "invoice" : "order";
   if (entityId && !input.skipIdempotency) {
-    if (await hasSentEmail(entityId, input.templateKey, entityType)) {
+    if (await hasSentEmail(entityId, input.templateKey, entityType, recipient)) {
       await logEmailAttempt({
         templateKey: input.templateKey,
         subject: input.subject,

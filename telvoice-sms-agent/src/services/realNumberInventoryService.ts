@@ -715,6 +715,13 @@ export async function assignInventoryNumberToCompany(input: {
   if (!existing) {
     throw new AppError("Número de inventario no encontrado.", 404);
   }
+  if (
+    existing.sales_status === "active_assigned" &&
+    existing.current_company_id === input.companyId &&
+    existing.current_client_number_id === input.clientNumberId
+  ) {
+    return existing;
+  }
   if (existing.sales_status === "active_assigned") {
     throw new AppError("El número ya está asignado a un cliente.", 400);
   }
