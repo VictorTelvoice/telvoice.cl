@@ -81,8 +81,8 @@ export function renderClientLoginPage(options?: {
       </button>
       <p id="tv-magic-status" class="field-hint" style="margin:0.65rem 0 0" aria-live="polite"></p>
       <style>
-        .tv-magic-ok { color: #6ee7b7; }
-        .tv-magic-error { color: #fca5a5; }
+        .tv-magic-ok { color: #047857; }
+        .tv-magic-error { color: #b91c1c; }
       </style>`
       }
     </div>

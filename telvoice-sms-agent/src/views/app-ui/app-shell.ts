@@ -192,11 +192,11 @@ export function renderAppLayout(options: AppLayoutOptions): string {
 
 export function renderClientAuthPage(title: string, body: string): string {
   return `<!DOCTYPE html>
-<html lang="es" class="tv-lab-theme">
+<html lang="es" class="tv-light-theme">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#050814" />
+  <meta name="theme-color" content="#eef2f8" />
   <title>${escapeHtml(brandPageTitle(title))}</title>
   ${renderFaviconLink()}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -205,8 +205,8 @@ export function renderClientAuthPage(title: string, body: string): string {
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
   ${renderPanelStylesheetLink()}
 </head>
-<body class="tv-lab-auth">
-  ${renderLabBackgroundHtml()}
+<body class="tv-light-auth tv-light-theme">
+  ${renderLightBackgroundHtml()}
   <main class="tv-auth-wrap">${body}</main>
 </body>
 </html>`;
