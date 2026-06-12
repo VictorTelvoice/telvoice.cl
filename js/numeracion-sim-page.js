@@ -20,37 +20,29 @@
   var SIM_PLANS = {
     sim_starter: {
       plan_id: "sim_starter",
-      name: "Starter",
       displayName: "Starter",
-      sms: 1000,
-      total: 19990,
+      total: 29990,
+      checkout: true,
+      submitLabel: "Continuar con Starter",
     },
     sim_pro: {
       plan_id: "sim_pro",
-      name: "Pro",
       displayName: "Pro",
-      sms: 2000,
-      total: 39990,
+      total: 49990,
+      checkout: true,
+      submitLabel: "Continuar con Pro",
     },
-    sim_power: {
-      plan_id: "sim_power",
-      name: "Power",
-      displayName: "Power",
-      sms: 4000,
-      total: 99990,
+    custom: {
+      plan_id: "custom",
+      displayName: "A medida",
+      checkout: false,
+      submitLabel: "Solicitar evaluación",
     },
   };
 
   var SIM_PLAN_AGENT_MAP = {
     sim_starter: "agent_start",
     sim_pro: "agent_pro",
-    sim_power: "agent_business",
-  };
-
-  var AGENT_LABELS = {
-    agent_start: "Agente Start",
-    agent_pro: "Agente Pro",
-    agent_business: "Agente Business",
   };
 
   var SIM_CHECKOUT_ERROR =
@@ -68,6 +60,7 @@
 
   var state = {
     simPlanId: "sim_starter",
+    panelOpen: false,
     submitting: false,
   };
 
@@ -82,40 +75,114 @@
     });
   }
 
-  function updateSummary() {
-    var sim = SIM_PLANS[state.simPlanId];
-    if (!sim) return;
+  function getPlan(planId) {
+    return SIM_PLANS[planId] || null;
+  }
 
-    var agentId = SIM_PLAN_AGENT_MAP[state.simPlanId] || "agent_pro";
-    var agentLabel = AGENT_LABELS[agentId] || "Agente Telvoice";
+  function buildDrawerSummaryHtml(planId) {
+    if (planId === "custom") {
+      return (
+        '<p class="nsim-drawer-summary__plan">A medida</p>' +
+        '<p class="nsim-drawer-summary__price">Cotización personalizada</p>' +
+        '<ul class="nsim-drawer-summary__list">' +
+        "<li>Número(s) SIM según necesidad</li>" +
+        "<li>SMS según volumen</li>" +
+        "<li>Integraciones y automatizaciones personalizadas</li>" +
+        "</ul>"
+      );
+    }
+    if (planId === "sim_pro") {
+      return (
+        '<p class="nsim-drawer-summary__plan">Pro</p>' +
+        '<p class="nsim-drawer-summary__price">' +
+        formatClp(49990) +
+        " / mes</p>" +
+        '<ul class="nsim-drawer-summary__list">' +
+        "<li>Todo lo que incluye Starter</li>" +
+        "<li>2.000 SMS salientes incluidos</li>" +
+        "<li>Bot Telegram y automatizaciones</li>" +
+        "</ul>"
+      );
+    }
+    return (
+      '<p class="nsim-drawer-summary__plan">Starter</p>' +
+      '<p class="nsim-drawer-summary__price">' +
+      formatClp(29990) +
+      " / mes</p>" +
+      '<ul class="nsim-drawer-summary__list">' +
+      "<li>1 número SIM real</li>" +
+      "<li>1.000 SMS salientes incluidos</li>" +
+      "<li>Agente Telvoice incluido</li>" +
+      "</ul>"
+    );
+  }
 
-    var planSelect = qs("nsim-plan-select");
-    if (planSelect) planSelect.value = state.simPlanId;
+  function updateDrawerContent() {
+    var plan = getPlan(state.simPlanId);
+    if (!plan) return;
 
-    var rows = {
-      "nsim-summary-plan": sim.displayName,
-      "nsim-summary-sim": "1 número SIM real incluido",
-      "nsim-summary-sms": fmt(sim.sms) + " SMS salientes / mes",
-      "nsim-summary-agent": agentLabel.replace(/^Agente\s+/i, "Agente Telvoice "),
-      "nsim-summary-total": formatClp(sim.total) + " / mes",
-    };
+    var summary = qs("nsim-drawer-summary");
+    if (summary) summary.innerHTML = buildDrawerSummaryHtml(state.simPlanId);
 
-    Object.keys(rows).forEach(function (id) {
-      var el = qs(id);
-      if (el) el.textContent = rows[id];
-    });
+    var title = qs("nsim-drawer-title");
+    var subtitle = qs("nsim-drawer-subtitle");
+    if (plan.plan_id === "custom") {
+      if (title) title.textContent = "Solicita un plan a medida";
+      if (subtitle) {
+        subtitle.textContent =
+          "Cuéntanos tu volumen e integraciones. Telvoice diseña una propuesta comercial sin compra automática.";
+      }
+    } else {
+      if (title) title.textContent = "Completa la compra de tu numeración SIM";
+      if (subtitle) {
+        subtitle.textContent =
+          "Revisamos la disponibilidad, reservamos tu número y coordinamos la activación desde Telvoice.";
+      }
+    }
+
+    var submitBtn = qs("nsim-submit");
+    if (submitBtn && !state.submitting) submitBtn.textContent = plan.submitLabel;
 
     document.querySelectorAll("[data-nsim-plan]").forEach(function (card) {
-      var selected = card.getAttribute("data-nsim-plan") === state.simPlanId;
+      if (!card.classList.contains("nsim-plan-card")) return;
+      var selected = card.getAttribute("data-nsim-plan") === state.simPlanId && state.panelOpen;
       card.classList.toggle("is-selected", selected);
-      card.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
+
+    refreshStockHint();
+  }
+
+  function openCheckoutPanel(planId) {
+    if (!SIM_PLANS[planId]) return;
+    state.simPlanId = planId;
+    state.panelOpen = true;
+    setError("");
+
+    var drawer = qs("nsim-checkout-drawer");
+    if (drawer) {
+      drawer.removeAttribute("hidden");
+      drawer.classList.add("is-open");
+    }
+
+    updateDrawerContent();
+
+    requestAnimationFrame(function () {
+      if (drawer) {
+        drawer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
     });
   }
 
-  function selectPlan(planId) {
-    if (!SIM_PLANS[planId]) return;
-    state.simPlanId = planId;
-    updateSummary();
+  function closeCheckoutPanel() {
+    state.panelOpen = false;
+    var drawer = qs("nsim-checkout-drawer");
+    if (drawer) {
+      drawer.classList.remove("is-open");
+      drawer.setAttribute("hidden", "");
+    }
+    document.querySelectorAll(".nsim-plan-card[data-nsim-plan]").forEach(function (card) {
+      card.classList.remove("is-selected");
+    });
   }
 
   function setError(message) {
@@ -132,13 +199,22 @@
 
   function setLoading(loading) {
     var btn = qs("nsim-submit");
+    var plan = getPlan(state.simPlanId);
     if (!btn) return;
     btn.disabled = !!loading;
     btn.setAttribute("aria-busy", loading ? "true" : "false");
-    btn.textContent = loading ? "Redirigiendo a Mercado Pago…" : "Comprar numeración SIM";
+    if (loading) {
+      btn.textContent = plan && plan.checkout ? "Redirigiendo a Mercado Pago…" : "Enviando solicitud…";
+    } else if (plan) {
+      btn.textContent = plan.submitLabel;
+    }
   }
 
-  function showDemoModal(planName, totalLabel) {
+  function closeModal(overlay) {
+    if (overlay) overlay.remove();
+  }
+
+  function showDemoCheckoutModal(planName, totalLabel) {
     var existing = qs("nsim-demo-modal");
     if (existing) existing.remove();
 
@@ -147,37 +223,73 @@
     overlay.className = "nsim-demo-modal";
     overlay.setAttribute("role", "dialog");
     overlay.setAttribute("aria-modal", "true");
-    overlay.setAttribute("aria-labelledby", "nsim-demo-modal-title");
     overlay.innerHTML =
       '<div class="nsim-demo-modal__panel">' +
       '<p class="nsim-demo-modal__eyebrow">Demo local</p>' +
-      '<h3 id="nsim-demo-modal-title">Demo local: aquí se crearía la orden y el pago MercadoPago.</h3>' +
+      "<h3>Demo local: aquí se crearía la orden y el pago MercadoPago.</h3>" +
       '<p class="nsim-demo-modal__note">Plan: <strong>' +
       planName +
       "</strong> · Total mensual: <strong>" +
       totalLabel +
       "</strong></p>" +
-      "<ul class=\"nsim-demo-modal__list\">" +
-      "<li>Se reservaría una numeración móvil por 30 minutos.</li>" +
-      "<li>Se crearía una orden pendiente de pago en Telvoice.</li>" +
-      "<li>Al aprobarse el pago, Telvoice activa la numeración.</li>" +
-      "<li>El cliente accede al panel para operar el número y el agente incluido.</li>" +
-      "</ul>" +
       '<p class="nsim-demo-modal__note">Modo demo: no se creó orden, no se llamó MercadoPago y no se reservó numeración real.</p>' +
       '<button type="button" class="nsim-btn-primary nsim-demo-modal__close">Entendido</button>' +
       "</div>";
     document.body.appendChild(overlay);
     overlay.querySelector(".nsim-demo-modal__close").addEventListener("click", function () {
-      overlay.remove();
+      closeModal(overlay);
     });
     overlay.addEventListener("click", function (e) {
-      if (e.target === overlay) overlay.remove();
+      if (e.target === overlay) closeModal(overlay);
     });
+  }
+
+  function showCustomDemoModal() {
+    var existing = qs("nsim-demo-modal");
+    if (existing) existing.remove();
+
+    var overlay = document.createElement("div");
+    overlay.id = "nsim-demo-modal";
+    overlay.className = "nsim-demo-modal";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.innerHTML =
+      '<div class="nsim-demo-modal__panel">' +
+      '<p class="nsim-demo-modal__eyebrow">Demo local</p>' +
+      "<h3>Demo local: aquí se enviaría una solicitud comercial para diseñar un plan a medida.</h3>" +
+      '<p class="nsim-demo-modal__note">Modo demo: no se creó solicitud real ni se llamó al checkout.</p>' +
+      '<button type="button" class="nsim-btn-primary nsim-demo-modal__close">Entendido</button>' +
+      "</div>";
+    document.body.appendChild(overlay);
+    overlay.querySelector(".nsim-demo-modal__close").addEventListener("click", function () {
+      closeModal(overlay);
+    });
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) closeModal(overlay);
+    });
+  }
+
+  function submitCustomRequest() {
+    if (isNumeracionDemoMode()) {
+      state.submitting = false;
+      setLoading(false);
+      showCustomDemoModal();
+      return;
+    }
+    state.submitting = false;
+    setLoading(false);
+    window.location.href = "index.html#contacto";
   }
 
   function refreshStockHint() {
     var hint = qs("nsim-stock-hint");
-    if (!hint) return;
+    if (!hint || !state.panelOpen) return;
+
+    if (state.simPlanId === "custom") {
+      hint.textContent = "Plan a medida: un especialista Telvoice te contactará para diseñar la solución.";
+      hint.hidden = false;
+      return;
+    }
     if (isNumeracionDemoMode()) {
       hint.textContent = "Demo local: disponibilidad simulada para revisión visual.";
       hint.hidden = false;
@@ -229,12 +341,17 @@
     state.submitting = true;
     setLoading(true);
 
-    var sim = SIM_PLANS[state.simPlanId];
+    if (state.simPlanId === "custom") {
+      submitCustomRequest();
+      return;
+    }
+
+    var sim = getPlan(state.simPlanId);
 
     if (isNumeracionDemoMode()) {
       state.submitting = false;
       setLoading(false);
-      showDemoModal(
+      showDemoCheckoutModal(
         sim ? sim.displayName : "Numeración SIM",
         sim ? formatClp(sim.total) + " / mes" : "",
       );
@@ -340,32 +457,17 @@
 
   function init() {
     initNav();
-    updateSummary();
-    refreshStockHint();
-
-    document.querySelectorAll("[data-nsim-plan]").forEach(function (el) {
-      el.addEventListener("click", function (e) {
-        if (e.target.closest(".nsim-plan-cta")) return;
-        selectPlan(el.getAttribute("data-nsim-plan") || "sim_starter");
-      });
-    });
 
     document.querySelectorAll(".nsim-plan-cta").forEach(function (btn) {
       btn.addEventListener("click", function (e) {
         e.stopPropagation();
         var planId = btn.getAttribute("data-nsim-plan");
-        if (planId) selectPlan(planId);
-        var checkout = qs("nsim-checkout");
-        if (checkout) checkout.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (planId) openCheckoutPanel(planId);
       });
     });
 
-    var planSelect = qs("nsim-plan-select");
-    if (planSelect) {
-      planSelect.addEventListener("change", function () {
-        selectPlan(planSelect.value);
-      });
-    }
+    var closeBtn = qs("nsim-drawer-close");
+    if (closeBtn) closeBtn.addEventListener("click", closeCheckoutPanel);
 
     document.querySelectorAll("[data-scroll-to]").forEach(function (btn) {
       btn.addEventListener("click", function () {

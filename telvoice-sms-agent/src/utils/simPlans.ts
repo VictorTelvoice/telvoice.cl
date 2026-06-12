@@ -52,7 +52,7 @@ export const SIM_PLANS: Record<SimPlanId, SimPlanDefinition> = {
     billing_period: "monthly",
     sms_quantity: 1000,
     currency: "CLP",
-    ...clpFromGrossTotal(19990),
+    ...clpFromGrossTotal(29990),
   },
   sim_pro: {
     plan_id: "sim_pro",
@@ -62,7 +62,7 @@ export const SIM_PLANS: Record<SimPlanId, SimPlanDefinition> = {
     billing_period: "monthly",
     sms_quantity: 2000,
     currency: "CLP",
-    ...clpFromGrossTotal(39990),
+    ...clpFromGrossTotal(49990),
   },
   sim_power: {
     plan_id: "sim_power",

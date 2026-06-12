@@ -76,18 +76,19 @@
       <div class="nsim-hero-inner">
         <div>
           <p class="nsim-eyebrow">Numeración móvil Telvoice</p>
-          <h1 id="nsim-hero-title" class="nsim-hero-title">Compra un número SIM real para tu agente SMS</h1>
-          <p class="nsim-hero-sub">Activa una numeración móvil real para enviar y recibir SMS desde Telvoice, con agente incluido y activación asistida por nuestro equipo.</p>
+          <h1 id="nsim-hero-title" class="nsim-hero-title">Compra un número SIM real para operar SMS con tu agente</h1>
+          <p class="nsim-hero-sub">Activa una numeración móvil real para enviar, recibir y automatizar SMS desde Telvoice, con panel web, Bot de Telegram, API y activación asistida.</p>
           <div class="nsim-pills" role="list">
-            <span class="nsim-pill" role="listitem"><span class="material-symbols-outlined" aria-hidden="true">sim_card</span> Número móvil real</span>
+            <span class="nsim-pill" role="listitem"><span class="material-symbols-outlined" aria-hidden="true">sim_card</span> Número SIM real</span>
             <span class="nsim-pill" role="listitem"><span class="material-symbols-outlined" aria-hidden="true">send</span> SMS salientes incluidos</span>
             <span class="nsim-pill" role="listitem"><span class="material-symbols-outlined" aria-hidden="true">sms</span> Recepción SMS</span>
-            <span class="nsim-pill" role="listitem"><span class="material-symbols-outlined" aria-hidden="true">smart_toy</span> Agente Telvoice incluido</span>
-            <span class="nsim-pill" role="listitem"><span class="material-symbols-outlined" aria-hidden="true">support_agent</span> Activación asistida</span>
+            <span class="nsim-pill" role="listitem"><span class="material-symbols-outlined" aria-hidden="true">send</span> Bot de Telegram</span>
+            <span class="nsim-pill" role="listitem"><span class="material-symbols-outlined" aria-hidden="true">api</span> API/Webhooks</span>
+            <span class="nsim-pill" role="listitem"><span class="material-symbols-outlined" aria-hidden="true">smart_toy</span> Agente Telvoice</span>
           </div>
           <div class="nsim-hero-ctas">
-            <button type="button" class="nsim-btn-primary" data-scroll-to="nsim-checkout">Comprar numeración SIM</button>
-            <button type="button" class="nsim-btn-secondary" data-scroll-to="nsim-planes">Ver planes</button>
+            <button type="button" class="nsim-btn-primary" data-scroll-to="nsim-planes">Ver planes</button>
+            <button type="button" class="nsim-btn-secondary" data-scroll-to="nsim-panel-api">Panel + API</button>
           </div>
         </div>
         <aside class="nsim-hero-card" aria-label="Resumen del producto">
@@ -95,7 +96,7 @@
           <ul>
             <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Numeración móvil chilena para operaciones empresariales</li>
             <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> SMS salientes y recepción en un solo plan mensual</li>
-            <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Agente Telvoice incluido en Starter, Pro y Power</li>
+            <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Agente Telvoice con alertas por Telegram en plan Pro</li>
             <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Activación asistida por el equipo Telvoice</li>
           </ul>
         </aside>
@@ -105,73 +106,135 @@
     <section id="nsim-planes" class="nsim-section" aria-labelledby="nsim-planes-title">
       <div class="nsim-section-inner">
         <h2 id="nsim-planes-title" class="nsim-section-title">Planes de numeración móvil Telvoice</h2>
-        <p class="nsim-section-intro">Elige Starter, Pro o Power según el volumen mensual de SMS que necesitas. Cada plan incluye un número SIM real y agente Telvoice.</p>
+        <p class="nsim-section-intro">Elige Starter o Pro para comenzar, o solicita un plan a medida para volúmenes e integraciones avanzadas.</p>
         <div class="nsim-plans-grid">
-          <article class="nsim-plan-card is-selected" data-nsim-plan="sim_starter" role="button" tabindex="0" aria-pressed="true">
+          <article class="nsim-plan-card" data-nsim-plan="sim_starter" tabindex="0">
             <h3 class="nsim-plan-name">Starter</h3>
-            <p class="nsim-plan-price">$19.990 <span>/ mes</span></p>
+            <p class="nsim-plan-price">$29.990 <span>/ mes</span></p>
+            <p class="nsim-plan-desc">Para empresas que quieren activar su primer número SIM real con recepción SMS y operación asistida desde Telvoice.</p>
             <ul class="nsim-plan-features">
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> 1 número SIM real</li>
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> 1.000 SMS salientes incluidos</li>
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Recepción SMS</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Panel web Telvoice</li>
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Agente Telvoice incluido</li>
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Activación asistida</li>
             </ul>
             <button type="button" class="nsim-btn-primary nsim-plan-cta" data-nsim-plan="sim_starter">Comprar Starter</button>
           </article>
-          <article class="nsim-plan-card is-featured" data-nsim-plan="sim_pro" role="button" tabindex="0" aria-pressed="false">
+          <article class="nsim-plan-card is-featured" data-nsim-plan="sim_pro" tabindex="0">
             <span class="nsim-plan-ribbon">Popular</span>
             <h3 class="nsim-plan-name">Pro</h3>
-            <p class="nsim-plan-price">$39.990 <span>/ mes</span></p>
+            <p class="nsim-plan-price">$49.990 <span>/ mes</span></p>
+            <p class="nsim-plan-desc">Para empresas que necesitan operar comunicaciones SMS con agente, notificaciones por Telegram y automatizaciones.</p>
             <ul class="nsim-plan-features">
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> 1 número SIM real</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> 2.000 SMS salientes incluidos</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Recepción SMS</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Agente Telvoice incluido</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Activación asistida</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Todo lo que incluye Starter</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Bot de Telegram para alertas y operación</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Automatizaciones iniciales</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Webhooks/API para integración</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Mayor capacidad operativa</li>
             </ul>
             <button type="button" class="nsim-btn-primary nsim-plan-cta" data-nsim-plan="sim_pro">Comprar Pro</button>
           </article>
-          <article class="nsim-plan-card" data-nsim-plan="sim_power" role="button" tabindex="0" aria-pressed="false">
-            <h3 class="nsim-plan-name">Power</h3>
-            <p class="nsim-plan-price">$99.990 <span>/ mes</span></p>
+          <article class="nsim-plan-card nsim-plan-card--custom" data-nsim-plan="custom" tabindex="0">
+            <h3 class="nsim-plan-name">A medida</h3>
+            <p class="nsim-plan-price nsim-plan-price--custom">Cotización personalizada</p>
+            <p class="nsim-plan-desc">Para empresas que necesitan más volumen, múltiples números, integraciones especiales, flujos de respuesta o automatizaciones avanzadas.</p>
             <ul class="nsim-plan-features">
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> 1 número SIM real</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> 4.000 SMS salientes incluidos</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Recepción SMS</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Agente Telvoice incluido</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Activación asistida</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Múltiples números SIM reales</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Volumen SMS personalizado</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Agentes y automatizaciones avanzadas</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Integración API/Webhooks</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Soporte operativo Telvoice</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Diseño de flujo a medida</li>
             </ul>
-            <button type="button" class="nsim-btn-primary nsim-plan-cta" data-nsim-plan="sim_power">Comprar Power</button>
+            <button type="button" class="nsim-btn-secondary nsim-plan-cta nsim-plan-cta--custom" data-nsim-plan="custom">Solicitar plan a medida</button>
           </article>
+        </div>
+
+        <div id="nsim-checkout-drawer" class="nsim-checkout-drawer" hidden aria-labelledby="nsim-drawer-title">
+          <div class="nsim-checkout-drawer__inner">
+            <button type="button" class="nsim-checkout-drawer__close" id="nsim-drawer-close" aria-label="Cerrar panel de compra">
+              <span class="material-symbols-outlined" aria-hidden="true">close</span>
+            </button>
+            <header class="nsim-checkout-drawer__header">
+              <h3 id="nsim-drawer-title">Completa la compra de tu numeración SIM</h3>
+              <p id="nsim-drawer-subtitle">Revisamos la disponibilidad, reservamos tu número y coordinamos la activación desde Telvoice.</p>
+            </header>
+            <ol class="nsim-stepper" aria-label="Pasos de compra">
+              <li class="nsim-stepper__item is-active"><span>1</span> Plan</li>
+              <li class="nsim-stepper__item is-active"><span>2</span> Datos</li>
+              <li class="nsim-stepper__item"><span>3</span> Activación</li>
+            </ol>
+            <div class="nsim-checkout-drawer__body">
+              <aside class="nsim-drawer-summary" id="nsim-drawer-summary" aria-live="polite"></aside>
+              <form id="nsim-checkout-form" class="nsim-drawer-form" novalidate>
+                <div class="nsim-form-grid">
+                  <div class="nsim-field">
+                    <label for="nsim-nombre">Nombre</label>
+                    <input id="nsim-nombre" name="nombre" type="text" autocomplete="name" required />
+                  </div>
+                  <div class="nsim-field">
+                    <label for="nsim-empresa">Empresa</label>
+                    <input id="nsim-empresa" name="empresa" type="text" autocomplete="organization" />
+                  </div>
+                  <div class="nsim-field">
+                    <label for="nsim-email">Email</label>
+                    <input id="nsim-email" name="email" type="email" autocomplete="email" required />
+                  </div>
+                  <div class="nsim-field">
+                    <label for="nsim-telefono">Teléfono</label>
+                    <input id="nsim-telefono" name="telefono" type="tel" autocomplete="tel" />
+                  </div>
+                  <div class="nsim-field">
+                    <label for="nsim-rut">RUT o ID tributario</label>
+                    <input id="nsim-rut" name="rut" type="text" />
+                  </div>
+                  <div class="nsim-field nsim-field--full">
+                    <label for="nsim-use-case">Caso de uso</label>
+                    <textarea id="nsim-use-case" name="use_case" rows="2" placeholder="Ej.: validaciones internas, alertas operativas…"></textarea>
+                  </div>
+                </div>
+                <p id="nsim-form-error" class="nsim-form-error" hidden role="alert"></p>
+                <p id="nsim-stock-hint" class="nsim-form-hint" hidden></p>
+                <button type="submit" id="nsim-submit" class="nsim-btn-primary nsim-submit">Continuar con Starter</button>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="nsim-section" aria-labelledby="nsim-como-title" style="padding-top: 0;">
+    <section id="nsim-panel-api" class="nsim-section nsim-panel-api" aria-labelledby="nsim-panel-api-title" style="padding-top: 0;">
       <div class="nsim-section-inner">
-        <h2 id="nsim-como-title" class="nsim-section-title">Cómo funciona</h2>
-        <div class="nsim-steps">
-          <article class="nsim-step">
-            <span class="nsim-step-num">1</span>
-            <h4>Eliges tu plan</h4>
-            <p>Seleccionas Starter, Pro o Power según el volumen mensual de SMS que necesitas.</p>
+        <p class="nsim-eyebrow nsim-eyebrow--center">Panel + API</p>
+        <h2 id="nsim-panel-api-title" class="nsim-section-title">Conecta Telvoice a tu operación</h2>
+        <p class="nsim-section-intro">Panel web, Bot de Telegram, Webhooks o API REST. Elige la forma más simple o más avanzada para operar campañas, recibir eventos e integrar tus sistemas.</p>
+        <div class="nsim-panel-api-grid">
+          <article class="nsim-panel-api-card">
+            <span class="material-symbols-outlined nsim-panel-api-icon" aria-hidden="true">dashboard</span>
+            <h4>Panel web</h4>
+            <p>Campañas, saldo, numeraciones y reportes en una interfaz simple.</p>
           </article>
-          <article class="nsim-step">
-            <span class="nsim-step-num">2</span>
-            <h4>Pagas online</h4>
-            <p>Creamos la orden y procesamos el pago desde Telvoice.</p>
+          <article class="nsim-panel-api-card">
+            <span class="material-symbols-outlined nsim-panel-api-icon" aria-hidden="true">send</span>
+            <h4>Telegram Bot</h4>
+            <p>Recibe alertas, notificaciones de SMS y acciones operativas directo en Telegram.</p>
           </article>
-          <article class="nsim-step">
-            <span class="nsim-step-num">3</span>
-            <h4>Reservamos tu número</h4>
-            <p>El sistema reserva una numeración disponible y nuestro equipo valida la activación.</p>
+          <article class="nsim-panel-api-card">
+            <span class="material-symbols-outlined nsim-panel-api-icon" aria-hidden="true">hub</span>
+            <h4>Webhooks</h4>
+            <p>Envía eventos automáticos a tus flujos, sistemas internos o automatizaciones.</p>
           </article>
-          <article class="nsim-step">
-            <span class="nsim-step-num">4</span>
-            <h4>Usas tu agente</h4>
-            <p>Tu empresa accede al panel Telvoice para operar el número, revisar SMS y usar el agente incluido.</p>
+          <article class="nsim-panel-api-card">
+            <span class="material-symbols-outlined nsim-panel-api-icon" aria-hidden="true">api</span>
+            <h4>API REST</h4>
+            <p>Integra Telvoice con CRM, ecommerce, plataformas propias o agentes internos.</p>
           </article>
+        </div>
+        <div class="nsim-panel-api-ctas">
+          <button type="button" class="nsim-btn-secondary" data-scroll-to="nsim-planes">Ver conexiones</button>
+          <a href="index.html#contacto" class="nsim-btn-primary">Probar el agente</a>
         </div>
       </div>
     </section>
@@ -186,62 +249,6 @@
           <article class="nsim-use-card"><h4>Atención y soporte por SMS</h4><p>Canal bidireccional para consultas y respuestas de clientes.</p></article>
           <article class="nsim-use-card"><h4>Agentes IA con canal GSM</h4><p>Automatización conversacional sobre numeración móvil real.</p></article>
           <article class="nsim-use-card"><h4>Recepción de respuestas SMS</h4><p>Captura respuestas y gestión de conversaciones desde Telvoice.</p></article>
-        </div>
-      </div>
-    </section>
-
-    <section id="nsim-checkout" class="nsim-section nsim-checkout" aria-labelledby="nsim-checkout-title">
-      <div class="nsim-section-inner">
-        <h2 id="nsim-checkout-title" class="nsim-section-title">Compra tu numeración SIM</h2>
-        <p class="nsim-section-intro">Completa tus datos y confirma el plan. Telvoice te acompaña en la activación.</p>
-        <div class="nsim-checkout-grid">
-          <form id="nsim-checkout-form" class="nsim-form-card" novalidate>
-            <div class="nsim-form-grid">
-              <div class="nsim-field nsim-field--full">
-                <label for="nsim-plan-select">Plan seleccionado</label>
-                <select id="nsim-plan-select" name="plan">
-                  <option value="sim_starter" selected>Starter — $19.990 / mes</option>
-                  <option value="sim_pro">Pro — $39.990 / mes</option>
-                  <option value="sim_power">Power — $99.990 / mes</option>
-                </select>
-              </div>
-              <div class="nsim-field">
-                <label for="nsim-nombre">Nombre</label>
-                <input id="nsim-nombre" name="nombre" type="text" autocomplete="name" required />
-              </div>
-              <div class="nsim-field">
-                <label for="nsim-empresa">Empresa</label>
-                <input id="nsim-empresa" name="empresa" type="text" autocomplete="organization" />
-              </div>
-              <div class="nsim-field">
-                <label for="nsim-email">Email</label>
-                <input id="nsim-email" name="email" type="email" autocomplete="email" required />
-              </div>
-              <div class="nsim-field">
-                <label for="nsim-telefono">Teléfono</label>
-                <input id="nsim-telefono" name="telefono" type="tel" autocomplete="tel" />
-              </div>
-              <div class="nsim-field">
-                <label for="nsim-rut">RUT o ID tributario</label>
-                <input id="nsim-rut" name="rut" type="text" />
-              </div>
-              <div class="nsim-field nsim-field--full">
-                <label for="nsim-use-case">Caso de uso</label>
-                <textarea id="nsim-use-case" name="use_case" rows="3" placeholder="Ej.: validaciones internas, alertas operativas…"></textarea>
-              </div>
-            </div>
-            <p id="nsim-form-error" class="nsim-form-error" hidden role="alert"></p>
-            <p id="nsim-stock-hint" class="nsim-form-hint" hidden></p>
-            <button type="submit" id="nsim-submit" class="nsim-btn-primary nsim-submit">Comprar numeración SIM</button>
-          </form>
-          <aside class="nsim-summary-card" aria-label="Resumen de compra">
-            <h3 class="text-lg font-bold mb-4" style="font-family: Montserrat, sans-serif;">Resumen mensual</h3>
-            <div class="nsim-summary-row"><span>Plan</span><span id="nsim-summary-plan">Starter</span></div>
-            <div class="nsim-summary-row"><span>Numeración</span><span id="nsim-summary-sim">1 número SIM real incluido</span></div>
-            <div class="nsim-summary-row"><span>SMS incluidos</span><span id="nsim-summary-sms">1.000 SMS salientes / mes</span></div>
-            <div class="nsim-summary-row"><span>Agente</span><span id="nsim-summary-agent">Agente Telvoice Start</span></div>
-            <div class="nsim-summary-row nsim-summary-row--total"><span>Total mensual</span><span id="nsim-summary-total">$19.990 / mes</span></div>
-          </aside>
         </div>
       </div>
     </section>
