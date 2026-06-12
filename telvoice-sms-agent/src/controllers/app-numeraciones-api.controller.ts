@@ -9,7 +9,12 @@ import {
   getClientNumbersModuleState,
   listClientNumbersByCompany,
 } from "../services/clientNumberService.js";
-import { listInboundSmsByCompany } from "../services/inboundSmsService.js";
+import {
+  countInboundByClientNumber,
+  countUnreadInboundByCompany,
+  listInboundSmsByCompany,
+  serializeInboundMessageForApi,
+} from "../services/inboundSmsService.js";
 import { getSupabase } from "../database/supabaseClient.js";
 import type { AgentPlanCode } from "../types/client-numbers.js";
 import { AppError } from "../utils/errors.js";
@@ -80,6 +85,58 @@ export async function getApiNumeracionSms(req: Request, res: Response): Promise<
     res.json({ ok: true, messages });
   } catch (error) {
     res.status(500).json({ ok: false, error: "Error al listar SMS." });
+  }
+}
+
+function parseInboundApiFilters(req: Request) {
+  const q = req.query;
+  const str = (key: string): string | undefined => {
+    const v = q[key];
+    return typeof v === "string" && v.trim() ? v.trim() : undefined;
+  };
+  return {
+    numberId: str("number_id"),
+    q: str("q"),
+    from: str("from"),
+    startDate: str("start_date"),
+    endDate: str("end_date"),
+    afterReceivedAt: str("after"),
+  };
+}
+
+/** Polling JSON liviano para /app/sms-inbox (sesión cliente, sin company_id en query). */
+export async function getApiSmsInboxMessages(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireApiContext(req, res);
+    if (!ctx) return;
+
+    const filters = parseInboundApiFilters(req);
+    const messages = await listInboundSmsByCompany(ctx.company.id, filters, 100);
+    const unreadCount = await countUnreadInboundByCompany(
+      ctx.company.id,
+      filters.numberId,
+    );
+    const countsByNumber = await countInboundByClientNumber(ctx.company.id);
+
+    const latest =
+      messages.length > 0
+        ? messages.reduce((a, b) =>
+            a.received_at >= b.received_at ? a : b,
+          ).received_at
+        : null;
+
+    res.json({
+      ok: true,
+      messages: messages.map(serializeInboundMessageForApi),
+      unread_count: unreadCount,
+      counts_by_number: countsByNumber,
+      latest_received_at: latest,
+    });
+  } catch {
+    res.status(500).json({ ok: false, error: "Error al cargar bandeja." });
   }
 }
 

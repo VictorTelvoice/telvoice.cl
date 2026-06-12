@@ -14,6 +14,8 @@ export type InboundSmsFilters = {
   startDate?: string;
   endDate?: string;
   status?: InboundSmsStatus;
+  /** Polling: solo mensajes con received_at estrictamente posterior. */
+  afterReceivedAt?: string;
 };
 
 function mapRow(row: Record<string, unknown>): InboundSmsMessageRow {
@@ -156,6 +158,9 @@ export async function listInboundSmsByCompany(
   if (filters.endDate) {
     query = query.lte("received_at", `${filters.endDate}T23:59:59.999Z`);
   }
+  if (filters.afterReceivedAt) {
+    query = query.gt("received_at", filters.afterReceivedAt);
+  }
 
   const { data, error } = await query;
   if (error) {
@@ -176,6 +181,81 @@ export async function listInboundSmsByCompany(
   }
 
   return rows;
+}
+
+/** Conteo de no leídos (status received) por empresa. */
+export async function countUnreadInboundByCompany(
+  companyId: string,
+  numberId?: string,
+): Promise<number> {
+  const sb = getSupabase();
+  let query = sb
+    .from("inbound_sms_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", companyId)
+    .eq("status", "received");
+
+  if (numberId) {
+    query = query.eq("client_number_id", numberId);
+  }
+
+  const { count, error } = await query;
+  if (error) {
+    if (isMissingTableError(error)) return 0;
+    throw wrapSupabaseError(error, "inbound_sms_messages");
+  }
+  return count ?? 0;
+}
+
+/** Conteos por client_number_id para sidebar del inbox. */
+export async function countInboundByClientNumber(
+  companyId: string,
+): Promise<Record<string, number>> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from("inbound_sms_messages")
+    .select("client_number_id")
+    .eq("company_id", companyId);
+
+  if (error) {
+    if (isMissingTableError(error)) return {};
+    throw wrapSupabaseError(error, "inbound_sms_messages");
+  }
+
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const id = String(row.client_number_id);
+    counts[id] = (counts[id] ?? 0) + 1;
+  }
+  return counts;
+}
+
+export type InboundSmsApiMessage = {
+  id: string;
+  client_number_id: string;
+  to_number: string;
+  from_number: string | null;
+  body: string;
+  detected_otp: string | null;
+  received_at: string;
+  status: InboundSmsStatus;
+  source: string | null;
+};
+
+export function serializeInboundMessageForApi(
+  row: InboundSmsMessageRow,
+): InboundSmsApiMessage {
+  return {
+    id: row.id,
+    client_number_id: row.client_number_id,
+    to_number: row.to_number,
+    from_number: row.from_number,
+    body: row.body,
+    detected_otp: row.detected_otp,
+    received_at: row.received_at,
+    status: row.status,
+    source: row.source,
+  };
 }
 
 export async function getInboundSmsById(
