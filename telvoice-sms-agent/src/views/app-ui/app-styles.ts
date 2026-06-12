@@ -377,20 +377,37 @@ export function getAppPanelStyles(): string {
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    .tv-send-validation--inline {
+      display: none;
+    }
     @media (max-width: 960px) {
       .tv-app-send-page .tv-send-layout {
         grid-template-columns: 1fr;
       }
       .tv-app-send-page .tv-send-aside {
-        position: static;
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: center;
-        max-width: none;
+        display: none;
       }
-      .tv-send-validation {
-        max-width: min(320px, 100%);
-        flex: 1 1 200px;
+      .tv-send-validation--inline {
+        display: block;
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        margin-top: 0.65rem;
+        padding: 0.55rem 0.65rem;
+        background: var(--tv-surface, #fff);
+        border: 1px solid var(--tv-border, #e2e8f0);
+        border-radius: 10px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      }
+      .tv-send-validation--inline .tv-stat-chips--send-aside {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.45rem;
+      }
+      .tv-send-validation--inline .tv-stat-chip__value {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
       }
     }
     .tv-hero-phone {
@@ -1517,14 +1534,21 @@ export function getAppPanelStyles(): string {
       overflow-x: auto;
       max-height: 58vh;
     }
-    .tv-dlr-report__table { min-width: 1680px; }
+    .tv-dlr-report__table { min-width: 1560px; }
+    .tv-dlr-report__th-nowrap { white-space: nowrap; }
     .tv-dlr-report__error-desc {
-      max-width: 200px;
+      max-width: 14rem;
       font-size: 0.8rem;
       color: var(--tv-muted, #64748b);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .tv-dlr-report__error-code {
       white-space: nowrap;
+      max-width: 8rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .tv-dlr-report__mono { font-family: ui-monospace, monospace; font-size: 0.78rem; }
     .tv-dlr-report__msg {
@@ -1731,6 +1755,20 @@ export function getAppPanelStyles(): string {
     }
     .tv-app-client .tv-invoice__filters-grid {
       grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    }
+    @media (max-width: 640px) {
+      .tv-app-client .tv-invoice-page .tv-invoice__filters-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 0.65rem;
+        align-items: end;
+      }
+      .tv-app-client .tv-invoice-page .tv-invoice__filters-grid > .tv-filter-field {
+        min-width: 0;
+      }
+      .tv-app-client .tv-invoice-page .tv-invoice__filters-grid .tv-dlr-report__filter-actions {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+      }
     }
     .tv-app-client .tv-inbox__filters-grid {
       grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
@@ -2115,16 +2153,74 @@ export function getAppPanelStyles(): string {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
+    .tv-app-client .tv-templates-table-panel {
+      background: var(--tv-surface);
+      border: 1px solid var(--tv-border);
+      border-radius: var(--tv-radius);
+      box-shadow: var(--tv-shadow);
+      overflow: hidden;
+    }
+    .tv-app-client .tv-templates-table-panel .tv-section-head {
+      border-bottom: 1px solid var(--tv-border);
+    }
+    .tv-app-client .tv-templates-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tv-light-theme .tv-templates-table-panel {
+      background: var(--tv-light-surface);
+      border-color: var(--tv-light-border);
+      box-shadow: var(--tv-shadow);
+    }
+    .tv-app-client .tv-orders__filters-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(140px, 200px) !important;
+    }
+    .tv-app-client .tv-orders__filters-grid .tv-dlr-report__filter-actions {
+      grid-column: 1 / -1;
+      justify-content: flex-start;
+    }
+    .tv-orders__count {
+      margin: 0;
+    }
+    .tv-order-row--clickable {
+      cursor: pointer;
+      transition: background 0.12s ease;
+    }
+    .tv-order-row--clickable:hover,
+    .tv-order-row--clickable:focus-visible {
+      background: var(--tv-surface-container-low, rgba(0, 82, 204, 0.06));
+      outline: none;
+    }
     .tv-orders-cards {
       display: none;
       flex-direction: column;
       gap: 0.75rem;
     }
     .tv-order-card {
+      position: relative;
       border: 1px solid var(--tv-border);
       border-radius: var(--tv-radius);
-      padding: 1rem;
+      padding: 1rem 2.25rem 1rem 1rem;
       background: var(--tv-surface);
+    }
+    .tv-order-card--link {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+    .tv-order-card--link:hover {
+      border-color: var(--tv-primary);
+      text-decoration: none;
+      box-shadow: var(--tv-shadow-sm, 0 1px 3px rgba(15, 23, 42, 0.08));
+    }
+    .tv-order-card__chevron {
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--tv-muted);
+      font-size: 1.35rem;
     }
     .tv-order-card__head {
       display: flex;
@@ -2143,6 +2239,11 @@ export function getAppPanelStyles(): string {
       flex-wrap: wrap;
       gap: 0.35rem;
       margin-top: 0.65rem;
+    }
+    @media (max-width: 640px) {
+      .tv-app-client .tv-orders__filters-grid {
+        grid-template-columns: 1fr !important;
+      }
     }
     @media (max-width: 768px) {
       .tv-orders-table-wrap { display: none; }

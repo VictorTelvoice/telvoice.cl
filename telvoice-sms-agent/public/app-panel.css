@@ -2575,20 +2575,37 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    .tv-send-validation--inline {
+      display: none;
+    }
     @media (max-width: 960px) {
       .tv-app-send-page .tv-send-layout {
         grid-template-columns: 1fr;
       }
       .tv-app-send-page .tv-send-aside {
-        position: static;
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: center;
-        max-width: none;
+        display: none;
       }
-      .tv-send-validation {
-        max-width: min(320px, 100%);
-        flex: 1 1 200px;
+      .tv-send-validation--inline {
+        display: block;
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        margin-top: 0.65rem;
+        padding: 0.55rem 0.65rem;
+        background: var(--tv-surface, #fff);
+        border: 1px solid var(--tv-border, #e2e8f0);
+        border-radius: 10px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      }
+      .tv-send-validation--inline .tv-stat-chips--send-aside {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.45rem;
+      }
+      .tv-send-validation--inline .tv-stat-chip__value {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
       }
     }
     .tv-hero-phone {
@@ -3715,14 +3732,21 @@
       overflow-x: auto;
       max-height: 58vh;
     }
-    .tv-dlr-report__table { min-width: 1680px; }
+    .tv-dlr-report__table { min-width: 1560px; }
+    .tv-dlr-report__th-nowrap { white-space: nowrap; }
     .tv-dlr-report__error-desc {
-      max-width: 200px;
+      max-width: 14rem;
       font-size: 0.8rem;
       color: var(--tv-muted, #64748b);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .tv-dlr-report__error-code {
       white-space: nowrap;
+      max-width: 8rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .tv-dlr-report__mono { font-family: ui-monospace, monospace; font-size: 0.78rem; }
     .tv-dlr-report__msg {
@@ -3929,6 +3953,20 @@
     }
     .tv-app-client .tv-invoice__filters-grid {
       grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    }
+    @media (max-width: 640px) {
+      .tv-app-client .tv-invoice-page .tv-invoice__filters-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 0.65rem;
+        align-items: end;
+      }
+      .tv-app-client .tv-invoice-page .tv-invoice__filters-grid > .tv-filter-field {
+        min-width: 0;
+      }
+      .tv-app-client .tv-invoice-page .tv-invoice__filters-grid .tv-dlr-report__filter-actions {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+      }
     }
     .tv-app-client .tv-inbox__filters-grid {
       grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
@@ -4313,16 +4351,74 @@
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
+    .tv-app-client .tv-templates-table-panel {
+      background: var(--tv-surface);
+      border: 1px solid var(--tv-border);
+      border-radius: var(--tv-radius);
+      box-shadow: var(--tv-shadow);
+      overflow: hidden;
+    }
+    .tv-app-client .tv-templates-table-panel .tv-section-head {
+      border-bottom: 1px solid var(--tv-border);
+    }
+    .tv-app-client .tv-templates-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tv-light-theme .tv-templates-table-panel {
+      background: var(--tv-light-surface);
+      border-color: var(--tv-light-border);
+      box-shadow: var(--tv-shadow);
+    }
+    .tv-app-client .tv-orders__filters-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(140px, 200px) !important;
+    }
+    .tv-app-client .tv-orders__filters-grid .tv-dlr-report__filter-actions {
+      grid-column: 1 / -1;
+      justify-content: flex-start;
+    }
+    .tv-orders__count {
+      margin: 0;
+    }
+    .tv-order-row--clickable {
+      cursor: pointer;
+      transition: background 0.12s ease;
+    }
+    .tv-order-row--clickable:hover,
+    .tv-order-row--clickable:focus-visible {
+      background: var(--tv-surface-container-low, rgba(0, 82, 204, 0.06));
+      outline: none;
+    }
     .tv-orders-cards {
       display: none;
       flex-direction: column;
       gap: 0.75rem;
     }
     .tv-order-card {
+      position: relative;
       border: 1px solid var(--tv-border);
       border-radius: var(--tv-radius);
-      padding: 1rem;
+      padding: 1rem 2.25rem 1rem 1rem;
       background: var(--tv-surface);
+    }
+    .tv-order-card--link {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+    .tv-order-card--link:hover {
+      border-color: var(--tv-primary);
+      text-decoration: none;
+      box-shadow: var(--tv-shadow-sm, 0 1px 3px rgba(15, 23, 42, 0.08));
+    }
+    .tv-order-card__chevron {
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--tv-muted);
+      font-size: 1.35rem;
     }
     .tv-order-card__head {
       display: flex;
@@ -4341,6 +4437,11 @@
       flex-wrap: wrap;
       gap: 0.35rem;
       margin-top: 0.65rem;
+    }
+    @media (max-width: 640px) {
+      .tv-app-client .tv-orders__filters-grid {
+        grid-template-columns: 1fr !important;
+      }
     }
     @media (max-width: 768px) {
       .tv-orders-table-wrap { display: none; }
@@ -4425,7 +4526,7 @@
     }
     .tv-buy-sms-calc .calc-hero-title {
       margin: 0.75rem 0 0;
-      font-size: clamp(1.25rem, 2.4vw, 1.5rem);
+      font-size: clamp(1.35rem, 3.5vw, 2rem);
       font-weight: 700;
       line-height: 1.2;
       letter-spacing: -0.02em;
@@ -4451,7 +4552,7 @@
     @media (min-width: 640px) {
       .tv-buy-sms-calc .calc-panel {
         margin-top: 2.5rem;
-        padding: 2rem 2.25rem;
+        padding: 2.5rem 3rem;
       }
     }
     .tv-buy-sms-calc .calc-slider-block {
@@ -4548,7 +4649,7 @@
         display: flex;
         flex-wrap: nowrap;
         justify-content: space-between;
-        gap: 0.3rem;
+        gap: 0.18rem;
       }
       .tv-buy-sms-calc .calc-tier-chip {
         display: inline-flex;
@@ -4557,17 +4658,24 @@
         min-width: 0;
         max-width: none;
         flex-direction: row;
-        gap: 0;
-        min-height: 1.75rem;
-        padding: 0.25rem 0.35rem;
+        align-items: center;
+        justify-content: center;
+        gap: 0.08rem;
+        min-height: 1.5rem;
+        padding: 0.2rem 0.22rem;
         border-radius: 9999px;
-        font-size: 0.6875rem;
+        font-size: 0.625rem;
+        white-space: nowrap;
+        letter-spacing: -0.02em;
       }
     }
     @media (min-width: 1024px) {
+      .tv-buy-sms-calc .calc-tier-chips {
+        gap: 0.22rem;
+      }
       .tv-buy-sms-calc .calc-tier-chip {
-        font-size: 0.7rem;
-        padding: 0.28rem 0.5rem;
+        font-size: 0.65rem;
+        padding: 0.22rem 0.28rem;
       }
     }
     .tv-buy-sms-calc .calc-tier-chip:hover {
@@ -4590,8 +4698,9 @@
     }
     @media (min-width: 768px) {
       .tv-buy-sms-calc .calc-tier-chip-sub {
-        margin-left: 0.25rem;
-        font-size: 0.6rem;
+        margin-left: 0.1rem;
+        font-size: 0.5625rem;
+        opacity: 0.9;
       }
     }
     .tv-buy-sms-calc .calc-tier-chip:not(.is-active) .calc-tier-chip-sub {
@@ -4642,30 +4751,24 @@
     }
     .tv-buy-sms-calc .calc-result-total-wrap { text-align: left; }
     @media (max-width: 767px) {
-      .tv-buy-sms-calc .calc-result-grid {
-        grid-template-columns: 1fr;
-        justify-items: center;
-        text-align: center;
-      }
       .tv-buy-sms-calc .calc-result-dl {
-        width: 100%;
-        max-width: 20rem;
-        margin-left: auto;
-        margin-right: auto;
-        text-align: center;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.65rem 0.5rem;
       }
-      .tv-buy-sms-calc .calc-result-row {
-        text-align: center;
+      .tv-buy-sms-calc .calc-result-row-label {
+        font-size: 0.625rem;
+        letter-spacing: 0.03em;
+      }
+      .tv-buy-sms-calc .calc-result-row-value {
+        margin-top: 0.15rem;
+        font-size: 0.875rem;
       }
       .tv-buy-sms-calc .calc-result-total-wrap {
-        width: 100%;
-        max-width: 20rem;
-        margin-left: auto;
-        margin-right: auto;
-        text-align: center;
+        text-align: right;
+        margin-top: 0.75rem;
       }
-      .tv-buy-sms-calc .calc-result-note {
-        text-align: center;
+      .tv-buy-sms-calc .calc-result-total-value {
+        font-size: clamp(1.5rem, 6vw, 1.75rem);
       }
     }
     @media (min-width: 768px) {
@@ -4712,7 +4815,7 @@
     }
     .tv-buy-sms-calc .pack-includes-block {
       margin-top: 2rem;
-      max-width: 56rem;
+      max-width: 100%;
       margin-left: auto;
       margin-right: auto;
     }
@@ -4798,7 +4901,7 @@
     }
     .tv-buy-sms-calc .calc-cta-actions form {
       width: 100%;
-      max-width: 22rem;
+      max-width: 100%;
       margin: 0;
     }
     .tv-buy-sms-calc .calc-cta-btn {
@@ -4812,6 +4915,13 @@
       line-height: 1.25;
       cursor: pointer;
       transition: filter 0.2s ease, background-color 0.2s ease;
+    }
+    .tv-buy-sms-calc .calc-cta-btn--mp {
+      width: 100%;
+      max-width: 100%;
+      white-space: nowrap;
+      font-size: clamp(0.8125rem, 2.4vw, 1rem);
+      padding: 1rem 1.5rem;
     }
     @media (min-width: 640px) {
       .tv-buy-sms-calc .calc-cta-btn {
@@ -6297,20 +6407,8 @@
       color: #fff !important;
     }
     .tv-light-theme .tv-buy-sms-calc .calc-result-panel {
-      background: linear-gradient(180deg, #f8fbff 0%, #f4f7fc 100%) !important;
-      border: 1px solid rgba(0, 82, 204, 0.1) !important;
-    }
-    .tv-light-theme .tv-buy-sms-calc .calc-result-heading {
-      color: var(--tv-light-muted);
-      font-family: Montserrat, Inter, sans-serif;
-      font-size: 0.8125rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-    .tv-light-theme .tv-buy-sms-calc .calc-result-qty {
-      color: var(--tv-light-text);
-      font-family: Montserrat, Inter, sans-serif;
+      background: linear-gradient(180deg, #f8f9ff 0%, #ffffff 100%) !important;
+      border: 1px solid #e2e7ff !important;
     }
     .tv-light-theme .tv-buy-sms-calc .calc-result-row-label {
       color: var(--tv-light-muted);
@@ -6319,13 +6417,15 @@
       color: var(--tv-light-text);
     }
     .tv-light-theme .tv-buy-sms-calc .calc-result-total-label {
-      color: var(--tv-light-primary);
+      color: var(--tv-light-muted);
     }
-    .tv-light-theme .tv-buy-sms-calc .calc-result-breakdown {
-      border-bottom-color: rgba(0, 82, 204, 0.1);
-    }
-    .tv-light-theme .tv-buy-sms-calc .lab-pack-includes {
+    .tv-light-theme .tv-buy-sms-calc .calc-result-note {
+      color: var(--tv-light-muted);
       border-top-color: #e8ebf4;
+    }
+    .tv-light-theme .tv-buy-sms-calc .pack-includes {
+      border-color: rgba(0, 82, 204, 0.12);
+      background: linear-gradient(180deg, #faf8ff 0%, #f5f7fc 100%);
     }
     .tv-light-theme .tv-buy-sms-calc .pack-includes-title {
       color: var(--tv-light-text);
@@ -6355,6 +6455,146 @@
     }
     .tv-light-theme .table-wrap {
       background: transparent;
+    }
+
+    /* —— Login / auth (modo claro) —— */
+    body.tv-light-auth,
+    .tv-light-auth.tv-light-theme {
+      background: var(--tv-light-bg);
+      color: var(--tv-light-text);
+    }
+    .tv-light-auth .tv-auth-wrap {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .tv-light-auth .tv-lab-glass-card {
+      width: 100%;
+      max-width: 480px;
+      border-radius: 1.25rem;
+      border: 1px solid var(--tv-light-border);
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--tv-shadow-lg);
+      padding: 1.85rem 1.95rem 1.65rem;
+    }
+    .tv-light-auth .tv-auth-brand {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.65rem;
+      margin-bottom: 1rem;
+    }
+    .tv-light-auth .tv-auth-brand .tv-brand-wordmark {
+      color: var(--tv-light-text);
+    }
+    .tv-light-auth .tv-auth-heading {
+      text-align: center;
+      margin-bottom: 1.15rem;
+    }
+    .tv-light-auth .tv-auth-heading__title {
+      margin: 0 0 0.35rem;
+      font-size: 1.35rem;
+    }
+    .tv-light-auth .tv-auth-heading__sub {
+      margin: 0;
+    }
+    .tv-light-auth .tv-auth-sub,
+    .tv-light-auth .field-hint {
+      color: var(--tv-light-muted);
+    }
+    .tv-light-auth .tv-page-title,
+    .tv-light-auth .tv-auth-title {
+      font-family: Montserrat, Inter, sans-serif;
+      color: var(--tv-light-text);
+    }
+    .tv-light-auth .tv-page-sub {
+      color: var(--tv-light-muted);
+    }
+    .tv-light-auth .input {
+      background: #fff;
+      border: 1px solid var(--tv-light-border);
+      color: var(--tv-light-text);
+      border-radius: 0.75rem;
+    }
+    .tv-light-auth .input:focus {
+      outline: none;
+      border-color: var(--tv-light-primary);
+      box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.12);
+    }
+    .tv-light-auth .field-label {
+      color: var(--tv-light-muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .tv-light-auth .alert-error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+      border-radius: 0.75rem;
+      padding: 0.75rem 1rem;
+      font-size: 0.88rem;
+    }
+    .tv-light-auth .tv-lab-auth-divider__line {
+      background: var(--tv-light-border);
+    }
+    .tv-light-auth .tv-lab-auth-divider__text {
+      color: var(--tv-light-muted);
+    }
+    .tv-light-auth .btn-primary,
+    .tv-light-auth .tv-lab-btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      color: #fff !important;
+      background: linear-gradient(135deg, #0052cc 0%, #0369a1 100%) !important;
+      border: none !important;
+      box-shadow: 0 4px 20px rgba(0, 82, 204, 0.22);
+      text-decoration: none;
+      transition: transform 0.2s, filter 0.2s;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.92rem;
+    }
+    .tv-light-auth .btn-primary:hover,
+    .tv-light-auth .tv-lab-btn-primary:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.04);
+    }
+    .tv-light-auth .btn-ghost,
+    .tv-light-auth .tv-lab-btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      color: var(--tv-light-primary) !important;
+      border: 1px solid rgba(0, 82, 204, 0.22) !important;
+      background: #fff !important;
+      text-decoration: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.92rem;
+      width: 100%;
+    }
+    .tv-light-auth .btn-ghost:hover,
+    .tv-light-auth .tv-lab-btn-secondary:hover {
+      border-color: rgba(0, 82, 204, 0.35) !important;
+      background: #eff6ff !important;
+    }
+    .tv-light-auth .tv-auth-submit {
+      width: 100%;
+      margin-top: 0.35rem;
     }
   
     .tv-light-theme .tv-lab-bg-wrap,

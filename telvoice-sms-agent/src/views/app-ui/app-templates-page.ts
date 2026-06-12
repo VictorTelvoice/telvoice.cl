@@ -66,6 +66,43 @@ export const DEFAULT_CLIENT_SMS_TEMPLATES: ClientSmsTemplate[] = [
   },
 ];
 
+function renderTemplateAction(opts: {
+  action: string;
+  id: string;
+  icon: string;
+  label: string;
+  danger?: boolean;
+}): string {
+  const tip = escapeHtml(opts.label);
+  const dangerCls = opts.danger ? " tv-templates-action--danger" : "";
+  return `<button type="button" class="tv-invoice-action tv-templates-action${dangerCls}" data-action="${escapeHtml(opts.action)}" data-id="${escapeHtml(opts.id)}" title="${tip}" aria-label="${tip}">
+    <span class="material-symbols-outlined" aria-hidden="true">${escapeHtml(opts.icon)}</span>
+    <span class="tv-invoice-action__tip">${tip}</span>
+  </button>`;
+}
+
+function renderTemplateRowActions(templateId: string): string {
+  return `<div class="tv-invoice-actions__group tv-templates-actions__group" role="group" aria-label="Acciones de plantilla">
+    ${renderTemplateAction({ action: "edit", id: templateId, icon: "edit", label: "Editar plantilla" })}
+    ${renderTemplateAction({ action: "dup", id: templateId, icon: "content_copy", label: "Duplicar plantilla" })}
+    ${renderTemplateAction({ action: "del", id: templateId, icon: "delete", label: "Eliminar plantilla", danger: true })}
+  </div>`;
+}
+
+function renderTemplatesPrimaryActions(options?: { withIds?: boolean }): string {
+  const idNew = options?.withIds ? ' id="tv-tpl-new-btn"' : "";
+  const idExamples = options?.withIds ? ' id="tv-tpl-examples-btn"' : "";
+  return `
+    <button type="button" class="btn btn-primary"${idNew} data-tv-tpl-new>
+      <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">add</span>
+      Nueva plantilla
+    </button>
+    <button type="button" class="btn btn-secondary"${idExamples} data-tv-tpl-examples>
+      <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">lightbulb</span>
+      Ver ejemplos
+    </button>`;
+}
+
 function templatesPageStyles(): string {
   return `<style>
     .tv-templates-page .tv-templates-examples {
@@ -93,6 +130,16 @@ function templatesPageStyles(): string {
       line-height: 1.4;
       font-size: 0.8rem;
     }
+    .tv-templates-table-panel .tv-section-head {
+      border-bottom: 1px solid var(--tv-border);
+    }
+    .tv-app-client .tv-templates-table-panel {
+      background: var(--tv-surface);
+      border: 1px solid var(--tv-border);
+      border-radius: var(--tv-radius);
+      box-shadow: var(--tv-shadow);
+      overflow: hidden;
+    }
     .tv-templates-table-wrap {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
@@ -106,10 +153,29 @@ function templatesPageStyles(): string {
       font-size: 0.82rem;
     }
     .tv-templates-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.25rem;
+      white-space: nowrap;
+    }
+    .tv-templates-actions__group {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-wrap: nowrap;
       justify-content: flex-end;
+    }
+    .tv-templates-action--danger:hover:not(:disabled) {
+      color: #b91c1c;
+      border-color: rgba(185, 28, 28, 0.35);
+      background: rgba(185, 28, 28, 0.08);
+    }
+    .tv-templates-toolbar {
+      display: none;
+    }
+    .tv-templates-toolbar .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      width: 100%;
     }
     .tv-templates-empty {
       text-align: center;
@@ -190,6 +256,17 @@ function templatesPageStyles(): string {
       font-size: 0.88rem;
     }
     .tv-toast[aria-hidden="true"] { display: none; }
+    @media (max-width: 768px) {
+      .tv-templates-page .tv-page-head--row .tv-page-actions {
+        display: none;
+      }
+      .tv-templates-toolbar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
+      }
+    }
     @media (max-width: 640px) {
       .tv-templates-modal {
         align-items: flex-end;
@@ -198,10 +275,6 @@ function templatesPageStyles(): string {
         width: 100%;
         border-radius: var(--tv-radius) var(--tv-radius) 0 0;
         max-height: 92vh;
-      }
-      .tv-templates-table .tv-templates-actions .btn {
-        padding: 0.2rem 0.4rem;
-        font-size: 0.72rem;
       }
     }
   </style>`;
@@ -464,10 +537,14 @@ function renderTemplatesScript(
         "<td>" + statusBadge(t.status) + "</td>" +
         "<td class=\\"tv-contacts-date\\">" + escapeHtml(fmtDate(t.updatedAt)) + "</td>" +
         '<td class="tv-templates-actions">' +
-        '<button type="button" class="btn btn-ghost btn-sm" data-action="edit" data-id="' + escapeHtml(t.id) + '">Editar</button>' +
-        '<button type="button" class="btn btn-ghost btn-sm" data-action="dup" data-id="' + escapeHtml(t.id) + '">Duplicar</button>' +
-        '<button type="button" class="btn btn-ghost btn-sm" data-action="del" data-id="' + escapeHtml(t.id) + '">Eliminar</button>' +
-        "</td></tr>";
+        '<div class="tv-invoice-actions__group tv-templates-actions__group" role="group" aria-label="Acciones de plantilla">' +
+        '<button type="button" class="tv-invoice-action tv-templates-action" data-action="edit" data-id="' + escapeHtml(t.id) + '" title="Editar plantilla" aria-label="Editar plantilla">' +
+        '<span class="material-symbols-outlined" aria-hidden="true">edit</span><span class="tv-invoice-action__tip">Editar plantilla</span></button>' +
+        '<button type="button" class="tv-invoice-action tv-templates-action" data-action="dup" data-id="' + escapeHtml(t.id) + '" title="Duplicar plantilla" aria-label="Duplicar plantilla">' +
+        '<span class="material-symbols-outlined" aria-hidden="true">content_copy</span><span class="tv-invoice-action__tip">Duplicar plantilla</span></button>' +
+        '<button type="button" class="tv-invoice-action tv-templates-action tv-templates-action--danger" data-action="del" data-id="' + escapeHtml(t.id) + '" title="Eliminar plantilla" aria-label="Eliminar plantilla">' +
+        '<span class="material-symbols-outlined" aria-hidden="true">delete</span><span class="tv-invoice-action__tip">Eliminar plantilla</span></button>' +
+        '</div></td></tr>';
     }).join("");
   }
 
@@ -517,16 +594,20 @@ function renderTemplatesScript(
     return state.templates.find(function (t) { return t.id === id; });
   }
 
-  document.getElementById("tv-tpl-new-btn").addEventListener("click", function () {
-    openModal("new", null);
+  document.querySelectorAll("[data-tv-tpl-new]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      openModal("new", null);
+    });
   });
   document.getElementById("tv-tpl-empty-create").addEventListener("click", function () {
     openModal("new", null);
   });
-  document.getElementById("tv-tpl-examples-btn").addEventListener("click", function () {
-    if (root) root.classList.toggle("tv-templates-page--examples-open");
-    var el = document.getElementById("tv-templates-examples");
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  document.querySelectorAll("[data-tv-tpl-examples]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      if (root) root.classList.toggle("tv-templates-page--examples-open");
+      var el = document.getElementById("tv-templates-examples");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   });
 
   modal.querySelectorAll("[data-tv-templates-close]").forEach(function (btn) {
@@ -718,11 +799,7 @@ function renderInitialTableRows(templates: ClientSmsTemplate[]): string {
       <td>${escapeHtml(smsLabel)}</td>
       <td>${statusHtml}</td>
       <td class="tv-contacts-date">${escapeHtml(formatDateShort(t.updatedAt))}</td>
-      <td class="tv-templates-actions">
-        <button type="button" class="btn btn-ghost btn-sm" data-action="edit" data-id="${escapeHtml(t.id)}">Editar</button>
-        <button type="button" class="btn btn-ghost btn-sm" data-action="dup" data-id="${escapeHtml(t.id)}">Duplicar</button>
-        <button type="button" class="btn btn-ghost btn-sm" data-action="del" data-id="${escapeHtml(t.id)}">Eliminar</button>
-      </td>
+      <td class="tv-templates-actions">${renderTemplateRowActions(t.id)}</td>
     </tr>`;
   }).join("");
 }
@@ -758,16 +835,7 @@ export function renderAppTemplatesPage(
       title: "Plantillas SMS",
       subtitle:
         "Crea y organiza mensajes reutilizables para campañas, validaciones, recordatorios y comunicaciones transaccionales.",
-      actions: `
-        <button type="button" class="btn btn-primary" id="tv-tpl-new-btn">
-          <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">add</span>
-          Nueva plantilla
-        </button>
-        <button type="button" class="btn btn-secondary" id="tv-tpl-examples-btn">
-          <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">lightbulb</span>
-          Ver ejemplos
-        </button>
-      `,
+      actions: renderTemplatesPrimaryActions({ withIds: true }),
     })}
     <div id="tv-templates-toast" class="tv-toast" aria-live="polite" aria-hidden="true"></div>
     ${renderExamplesSection()}
@@ -796,6 +864,9 @@ export function renderAppTemplatesPage(
         </div>
       </div>
     </section>
+    <div class="tv-templates-toolbar">
+      ${renderTemplatesPrimaryActions()}
+    </div>
     <div id="tv-templates-empty" class="tv-panel tv-templates-empty"${showTableInitially ? " hidden" : ""}>
       <span class="material-symbols-outlined" aria-hidden="true">description</span>
       <h2 style="margin:1rem 0 0.5rem;font-size:1.15rem">Aún no tienes plantillas creadas</h2>
@@ -804,15 +875,15 @@ export function renderAppTemplatesPage(
       </p>
       <button type="button" class="btn btn-primary" id="tv-tpl-empty-create">Crear plantilla</button>
     </div>
-    <div class="tv-dash-block tv-dlr-report__table-block" id="tv-templates-table-block"${showTableInitially ? "" : " hidden"}>
-      <div class="tv-dash-block__head">
+    <section class="tv-panel tv-templates-table-panel" id="tv-templates-table-block"${showTableInitially ? "" : " hidden"}>
+      <header class="tv-section-head">
         <h2 class="tv-section-head__title">Tus plantillas</h2>
         <p class="tv-section-head__sub" id="tv-templates-list-sub">${
           dbAvailable
             ? "Plantillas sincronizadas con tu empresa."
             : "Los cambios se guardan en este navegador hasta conectar Supabase."
         }</p>
-      </div>
+      </header>
       <div class="tv-templates-table-wrap">
         <table class="tv-table tv-table--dense tv-templates-table">
           <thead>
@@ -830,7 +901,7 @@ export function renderAppTemplatesPage(
           <tbody id="tv-templates-tbody">${renderInitialTableRows(seedTemplates)}</tbody>
         </table>
       </div>
-    </div>
+    </section>
     </div>
     ${renderModalShell()}
     ${renderTemplatesScript(companyId, data)}`;

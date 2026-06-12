@@ -1,4 +1,4 @@
-/** Tema claro del panel cliente (/app). Login sigue en tema Lab oscuro. */
+/** Tema claro del panel cliente (/app) y login (/login). */
 
 export function renderLightBackgroundHtml(): string {
   return `<div class="tv-light-bg-wrap" aria-hidden="true">
@@ -587,20 +587,8 @@ export function getLightPanelThemeStyles(): string {
       color: #fff !important;
     }
     .tv-light-theme .tv-buy-sms-calc .calc-result-panel {
-      background: linear-gradient(180deg, #f8fbff 0%, #f4f7fc 100%) !important;
-      border: 1px solid rgba(0, 82, 204, 0.1) !important;
-    }
-    .tv-light-theme .tv-buy-sms-calc .calc-result-heading {
-      color: var(--tv-light-muted);
-      font-family: Montserrat, Inter, sans-serif;
-      font-size: 0.8125rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-    .tv-light-theme .tv-buy-sms-calc .calc-result-qty {
-      color: var(--tv-light-text);
-      font-family: Montserrat, Inter, sans-serif;
+      background: linear-gradient(180deg, #f8f9ff 0%, #ffffff 100%) !important;
+      border: 1px solid #e2e7ff !important;
     }
     .tv-light-theme .tv-buy-sms-calc .calc-result-row-label {
       color: var(--tv-light-muted);
@@ -609,13 +597,15 @@ export function getLightPanelThemeStyles(): string {
       color: var(--tv-light-text);
     }
     .tv-light-theme .tv-buy-sms-calc .calc-result-total-label {
-      color: var(--tv-light-primary);
+      color: var(--tv-light-muted);
     }
-    .tv-light-theme .tv-buy-sms-calc .calc-result-breakdown {
-      border-bottom-color: rgba(0, 82, 204, 0.1);
-    }
-    .tv-light-theme .tv-buy-sms-calc .lab-pack-includes {
+    .tv-light-theme .tv-buy-sms-calc .calc-result-note {
+      color: var(--tv-light-muted);
       border-top-color: #e8ebf4;
+    }
+    .tv-light-theme .tv-buy-sms-calc .pack-includes {
+      border-color: rgba(0, 82, 204, 0.12);
+      background: linear-gradient(180deg, #faf8ff 0%, #f5f7fc 100%);
     }
     .tv-light-theme .tv-buy-sms-calc .pack-includes-title {
       color: var(--tv-light-text);
@@ -645,6 +635,146 @@ export function getLightPanelThemeStyles(): string {
     }
     .tv-light-theme .table-wrap {
       background: transparent;
+    }
+
+    /* —— Login / auth (modo claro) —— */
+    body.tv-light-auth,
+    .tv-light-auth.tv-light-theme {
+      background: var(--tv-light-bg);
+      color: var(--tv-light-text);
+    }
+    .tv-light-auth .tv-auth-wrap {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .tv-light-auth .tv-lab-glass-card {
+      width: 100%;
+      max-width: 480px;
+      border-radius: 1.25rem;
+      border: 1px solid var(--tv-light-border);
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--tv-shadow-lg);
+      padding: 1.85rem 1.95rem 1.65rem;
+    }
+    .tv-light-auth .tv-auth-brand {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.65rem;
+      margin-bottom: 1rem;
+    }
+    .tv-light-auth .tv-auth-brand .tv-brand-wordmark {
+      color: var(--tv-light-text);
+    }
+    .tv-light-auth .tv-auth-heading {
+      text-align: center;
+      margin-bottom: 1.15rem;
+    }
+    .tv-light-auth .tv-auth-heading__title {
+      margin: 0 0 0.35rem;
+      font-size: 1.35rem;
+    }
+    .tv-light-auth .tv-auth-heading__sub {
+      margin: 0;
+    }
+    .tv-light-auth .tv-auth-sub,
+    .tv-light-auth .field-hint {
+      color: var(--tv-light-muted);
+    }
+    .tv-light-auth .tv-page-title,
+    .tv-light-auth .tv-auth-title {
+      font-family: Montserrat, Inter, sans-serif;
+      color: var(--tv-light-text);
+    }
+    .tv-light-auth .tv-page-sub {
+      color: var(--tv-light-muted);
+    }
+    .tv-light-auth .input {
+      background: #fff;
+      border: 1px solid var(--tv-light-border);
+      color: var(--tv-light-text);
+      border-radius: 0.75rem;
+    }
+    .tv-light-auth .input:focus {
+      outline: none;
+      border-color: var(--tv-light-primary);
+      box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.12);
+    }
+    .tv-light-auth .field-label {
+      color: var(--tv-light-muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .tv-light-auth .alert-error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+      border-radius: 0.75rem;
+      padding: 0.75rem 1rem;
+      font-size: 0.88rem;
+    }
+    .tv-light-auth .tv-lab-auth-divider__line {
+      background: var(--tv-light-border);
+    }
+    .tv-light-auth .tv-lab-auth-divider__text {
+      color: var(--tv-light-muted);
+    }
+    .tv-light-auth .btn-primary,
+    .tv-light-auth .tv-lab-btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      color: #fff !important;
+      background: linear-gradient(135deg, #0052cc 0%, #0369a1 100%) !important;
+      border: none !important;
+      box-shadow: 0 4px 20px rgba(0, 82, 204, 0.22);
+      text-decoration: none;
+      transition: transform 0.2s, filter 0.2s;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.92rem;
+    }
+    .tv-light-auth .btn-primary:hover,
+    .tv-light-auth .tv-lab-btn-primary:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.04);
+    }
+    .tv-light-auth .btn-ghost,
+    .tv-light-auth .tv-lab-btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      color: var(--tv-light-primary) !important;
+      border: 1px solid rgba(0, 82, 204, 0.22) !important;
+      background: #fff !important;
+      text-decoration: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.92rem;
+      width: 100%;
+    }
+    .tv-light-auth .btn-ghost:hover,
+    .tv-light-auth .tv-lab-btn-secondary:hover {
+      border-color: rgba(0, 82, 204, 0.35) !important;
+      background: #eff6ff !important;
+    }
+    .tv-light-auth .tv-auth-submit {
+      width: 100%;
+      margin-top: 0.35rem;
     }
   `;
 }
