@@ -267,25 +267,21 @@ appRouter.post("/settings", requireClientPanelPage, postAppSettings);
 appRouter.get(
   "/numeraciones",
   requireClientPanelPage,
-  requireClientPanelAgentLinePage,
   getAppNumeraciones,
 );
 appRouter.get(
   "/numeraciones/:id/integraciones",
   requireClientPanelPage,
-  requireClientPanelAgentLinePage,
   getAppNumberIntegrations,
 );
 appRouter.post(
   "/numeraciones/:id/integraciones",
   requireClientPanelPage,
-  requireClientPanelAgentLinePage,
   postAppNumberIntegrations,
 );
 appRouter.post(
   "/numeraciones/:id/webhook/test",
   requireClientPanelPage,
-  requireClientPanelAgentLinePage,
   postAppNumberWebhookTest,
 );
 appRouter.get(
