@@ -222,63 +222,206 @@ export type PublicAvailableNumberItem = {
 
 const PUBLIC_PLAN_ELIGIBLE = ["sim_starter", "sim_pro"] as const;
 
+/** Inventario retenido por órdenes SIM bundle pendientes — no vendible públicamente. */
+export async function getPendingSimBundleHeldInventoryIds(): Promise<Set<string>> {
+  const sb = getSupabase();
+  const held = new Set<string>();
+
+  const { data: reservedRows, error: reservedError } = await sb
+    .from("real_number_inventory")
+    .select("id")
+    .eq("sales_status", "reserved_pending_payment");
+
+  if (reservedError) {
+    if (isMissingTableError(reservedError)) return held;
+    throw wrapSupabaseError(reservedError, "getPendingSimBundleHeldInventoryIds");
+  }
+
+  for (const row of reservedRows ?? []) {
+    held.add(String(row.id));
+  }
+
+  const { data: pendingOrders, error: ordersError } = await sb
+    .from("sms_orders")
+    .select("id, metadata")
+    .eq("payment_status", "pending");
+
+  if (ordersError) {
+    throw wrapSupabaseError(ordersError, "getPendingSimBundleHeldInventoryIds");
+  }
+
+  for (const order of pendingOrders ?? []) {
+    const meta =
+      order.metadata && typeof order.metadata === "object"
+        ? (order.metadata as Record<string, unknown>)
+        : {};
+    if (meta.product_type !== "sim_agent_bundle") continue;
+    const inventoryId = meta.inventory_number_id;
+    if (typeof inventoryId === "string" && inventoryId.trim()) {
+      held.add(inventoryId.trim());
+    }
+  }
+
+  return held;
+}
+
+function isInventoryPubliclySellable(row: {
+  id: string;
+  sales_status?: string;
+  connection_status?: string;
+  webhook_connected?: boolean;
+}): boolean {
+  return (
+    row.sales_status === "connected_available" &&
+    row.connection_status === "connected" &&
+    row.webhook_connected === true
+  );
+}
+
+/** Restaura reserva si una orden pending perdió el hold por expiración automática. */
+export async function ensureSimInventoryHeldForPendingOrder(input: {
+  orderId: string;
+  inventoryId: string;
+}): Promise<{
+  held: boolean;
+  expiresAt: string | null;
+  salesStatus: RealNumberSalesStatus | null;
+}> {
+  const sb = getSupabase();
+  const row = await getInventoryById(input.inventoryId);
+  if (!row) {
+    return { held: false, expiresAt: null, salesStatus: null };
+  }
+
+  const now = Date.now();
+  if (
+    row.sales_status === "reserved_pending_payment" &&
+    row.current_order_id === input.orderId &&
+    row.reserved_until &&
+    new Date(row.reserved_until).getTime() > now
+  ) {
+    return {
+      held: true,
+      expiresAt: row.reserved_until,
+      salesStatus: row.sales_status,
+    };
+  }
+
+  if (
+    row.sales_status === "connected_available" &&
+    !row.current_order_id &&
+    row.connection_status === "connected" &&
+    row.webhook_connected
+  ) {
+    const reservedUntil = new Date(now + RESERVATION_MINUTES * 60 * 1000);
+    const { data, error } = await sb
+      .from("real_number_inventory")
+      .update({
+        sales_status: "reserved_pending_payment",
+        current_order_id: input.orderId,
+        reserved_until: reservedUntil.toISOString(),
+      })
+      .eq("id", input.inventoryId)
+      .eq("sales_status", "connected_available")
+      .is("current_order_id", null)
+      .eq("connection_status", "connected")
+      .eq("webhook_connected", true)
+      .select("sales_status, reserved_until")
+      .maybeSingle();
+
+    if (error) {
+      throw wrapSupabaseError(error, "ensureSimInventoryHeldForPendingOrder");
+    }
+
+    if (data) {
+      return {
+        held: true,
+        expiresAt: String(data.reserved_until),
+        salesStatus: data.sales_status as RealNumberSalesStatus,
+      };
+    }
+  }
+
+  return {
+    held:
+      row.sales_status === "reserved_pending_payment" &&
+      row.current_order_id === input.orderId,
+    expiresAt: row.reserved_until,
+    salesStatus: row.sales_status,
+  };
+}
+
 export async function listPublicAvailableNumbers(
   limit = 10,
 ): Promise<PublicAvailableNumberItem[]> {
   await releaseExpiredReservation();
+  const heldIds = await getPendingSimBundleHeldInventoryIds();
   const sb = getSupabase();
   const { data, error } = await sb
     .from("real_number_inventory")
-    .select("id, e164_number")
+    .select("id, e164_number, sales_status, connection_status, webhook_connected")
     .eq("sales_status", "connected_available")
     .eq("connection_status", "connected")
     .eq("webhook_connected", true)
     .order("updated_at", { ascending: true })
-    .limit(limit);
+    .limit(Math.max(limit, 50));
 
   if (error) {
     if (isMissingTableError(error)) return [];
     throw wrapSupabaseError(error, "listPublicAvailableNumbers");
   }
 
-  return (data ?? []).map((row) => {
-    const e164 = String(row.e164_number);
-    const digits = e164.replace(/\D/g, "");
-    return {
-      inventory_public_id: inventoryPublicId(String(row.id)),
-      display_number: maskE164ChileMobile(e164),
-      suffix: digits.slice(-3),
-      plan_eligible: [...PUBLIC_PLAN_ELIGIBLE],
-    };
-  });
+  return (data ?? [])
+    .filter(
+      (row) =>
+        isInventoryPubliclySellable(row as { id: string; sales_status?: string; connection_status?: string; webhook_connected?: boolean }) &&
+        !heldIds.has(String(row.id)),
+    )
+    .slice(0, limit)
+    .map((row) => {
+      const e164 = String(row.e164_number);
+      const digits = e164.replace(/\D/g, "");
+      return {
+        inventory_public_id: inventoryPublicId(String(row.id)),
+        display_number: maskE164ChileMobile(e164),
+        suffix: digits.slice(-3),
+        plan_eligible: [...PUBLIC_PLAN_ELIGIBLE],
+      };
+    });
 }
 
 export async function getPublicAvailability(): Promise<PublicRealNumberAvailability> {
   await releaseExpiredReservation();
-  const summary = await getInventorySummary();
+  const numbers = await listPublicAvailableNumbers(50);
   return {
-    available: summary.connected_available,
-    in_stock: summary.connected_available > 0,
+    available: numbers.length,
+    in_stock: numbers.length > 0,
   };
 }
 
 async function pickConnectedAvailableId(): Promise<string | null> {
+  const heldIds = await getPendingSimBundleHeldInventoryIds();
   const sb = getSupabase();
   const { data, error } = await sb
     .from("real_number_inventory")
-    .select("id")
+    .select("id, sales_status, connection_status, webhook_connected")
     .eq("sales_status", "connected_available")
     .eq("connection_status", "connected")
     .eq("webhook_connected", true)
     .order("updated_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .limit(50);
 
   if (error) {
     if (isMissingTableError(error)) return null;
     throw wrapSupabaseError(error, "pickConnectedAvailableId");
   }
-  return data?.id != null ? String(data.id) : null;
+
+  const pick = (data ?? []).find(
+    (row) =>
+      isInventoryPubliclySellable(row as { id: string; sales_status?: string; connection_status?: string; webhook_connected?: boolean }) &&
+      !heldIds.has(String(row.id)),
+  );
+  return pick?.id != null ? String(pick.id) : null;
 }
 
 export async function reserveAvailableNumberForCheckout(input: {
@@ -358,7 +501,10 @@ export async function resolvePublicInventoryId(
     if (isMissingTableError(error)) return null;
     throw wrapSupabaseError(error, "resolvePublicInventoryId");
   }
-  const internalIds = (data ?? []).map((r) => String(r.id));
+  const heldIds = await getPendingSimBundleHeldInventoryIds();
+  const internalIds = (data ?? [])
+    .map((r) => String(r.id))
+    .filter((id) => !heldIds.has(id));
   return resolveInventoryIdFromPublicId(publicId, internalIds);
 }
 
@@ -431,23 +577,67 @@ export async function markNumberPaymentApproved(input: {
 export async function releaseExpiredReservation(): Promise<number> {
   const sb = getSupabase();
   const now = new Date().toISOString();
-  const { data, error } = await sb
+  const { data: expiredRows, error: fetchError } = await sb
     .from("real_number_inventory")
-    .update({
-      sales_status: "connected_available",
-      current_order_id: null,
-      current_agent_request_id: null,
-      reserved_until: null,
-    })
+    .select("id, current_order_id")
     .eq("sales_status", "reserved_pending_payment")
-    .lt("reserved_until", now)
-    .select("id");
+    .lt("reserved_until", now);
 
-  if (error) {
-    if (isMissingTableError(error)) return 0;
-    throw wrapSupabaseError(error, "releaseExpiredReservation");
+  if (fetchError) {
+    if (isMissingTableError(fetchError)) return 0;
+    throw wrapSupabaseError(fetchError, "releaseExpiredReservation");
   }
-  return data?.length ?? 0;
+
+  let released = 0;
+  for (const row of expiredRows ?? []) {
+    const orderId =
+      row.current_order_id != null ? String(row.current_order_id) : null;
+
+    if (orderId) {
+      const { data: order } = await sb
+        .from("sms_orders")
+        .select("payment_status, metadata")
+        .eq("id", orderId)
+        .maybeSingle();
+
+      if (order?.payment_status === "pending") {
+        const meta =
+          order.metadata && typeof order.metadata === "object"
+            ? (order.metadata as Record<string, unknown>)
+            : {};
+        if (meta.product_type === "sim_agent_bundle") {
+          const reservedUntil = new Date(
+            Date.now() + RESERVATION_MINUTES * 60 * 1000,
+          );
+          await sb
+            .from("real_number_inventory")
+            .update({ reserved_until: reservedUntil.toISOString() })
+            .eq("id", String(row.id))
+            .eq("sales_status", "reserved_pending_payment")
+            .eq("current_order_id", orderId);
+          continue;
+        }
+      }
+    }
+
+    const { error: releaseError } = await sb
+      .from("real_number_inventory")
+      .update({
+        sales_status: "connected_available",
+        current_order_id: null,
+        current_agent_request_id: null,
+        reserved_until: null,
+      })
+      .eq("id", String(row.id))
+      .eq("sales_status", "reserved_pending_payment");
+
+    if (releaseError) {
+      throw wrapSupabaseError(releaseError, "releaseExpiredReservation");
+    }
+    released += 1;
+  }
+
+  return released;
 }
 
 export async function markWebhookConnected(

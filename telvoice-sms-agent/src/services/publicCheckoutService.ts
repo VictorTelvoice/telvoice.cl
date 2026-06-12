@@ -27,6 +27,7 @@ import { type AgentAddonId, getAgentAddon } from "../utils/agentAddons.js";
 import { linkSimActivationInventory } from "./simActivationService.js";
 import {
   getPublicAvailability,
+  ensureSimInventoryHeldForPendingOrder,
   listPublicAvailableNumbers,
   maskE164ChileMobile,
   releaseReservationForOrder,
@@ -115,6 +116,11 @@ export async function getPublicPendingSimCheckoutForEmail(
   let reservationExpired = false;
 
   if (inventoryId) {
+    const hold = await ensureSimInventoryHeldForPendingOrder({
+      orderId: order.id,
+      inventoryId,
+    });
+
     const { data: invRow } = await sb
       .from("real_number_inventory")
       .select("e164_number, reserved_until, sales_status, current_order_id")
@@ -127,11 +133,16 @@ export async function getPublicPendingSimCheckoutForEmail(
       }
       if (invRow.reserved_until) {
         expiresAt = String(invRow.reserved_until);
-        reservationExpired =
-          new Date(String(invRow.reserved_until)).getTime() <= Date.now() ||
-          invRow.current_order_id !== order.id ||
-          invRow.sales_status !== "reserved_pending_payment";
+      } else if (hold.expiresAt) {
+        expiresAt = hold.expiresAt;
       }
+      reservationExpired =
+        !hold.held ||
+        invRow.current_order_id !== order.id ||
+        invRow.sales_status !== "reserved_pending_payment" ||
+        (expiresAt != null && new Date(expiresAt).getTime() <= Date.now());
+    } else {
+      reservationExpired = true;
     }
   }
 
