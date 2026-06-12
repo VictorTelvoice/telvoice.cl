@@ -174,14 +174,6 @@ export async function startPublicSimAgentBundleCheckout(input: {
   taxId?: string;
   useCase?: string;
 }): Promise<PublicCheckoutStartResult> {
-  if (!isMercadoPagoConfigured()) {
-    throw new AppError(
-      "MercadoPago no está configurado en este servidor.",
-      503,
-      "MP_NOT_CONFIGURED",
-    );
-  }
-
   if (!isSimPlanId(input.simPlanId)) {
     throw new AppError("Plan SIM no válido.", 400, "INVALID_SIM_PLAN");
   }
@@ -189,6 +181,23 @@ export async function startPublicSimAgentBundleCheckout(input: {
   const plan = getSimPlan(input.simPlanId);
   if (!plan) {
     throw new AppError("Plan SIM no encontrado.", 404);
+  }
+
+  const availability = await getPublicAvailability();
+  if (!availability.in_stock) {
+    throw new AppError(
+      "No hay números reales disponibles en este momento.",
+      409,
+      "NO_STOCK",
+    );
+  }
+
+  if (!isMercadoPagoConfigured()) {
+    throw new AppError(
+      "MercadoPago no está configurado en este servidor.",
+      503,
+      "MP_NOT_CONFIGURED",
+    );
   }
 
   const bundledAgentId = getBundledAgentAddonForSimPlan(plan.plan_id);
@@ -204,15 +213,6 @@ export async function startPublicSimAgentBundleCheckout(input: {
   const addon = getAgentAddon(bundledAgentId);
   if (!addon) {
     throw new AppError("Plan agente no válido.", 400, "INVALID_AGENT_ADDON");
-  }
-
-  const availability = await getPublicAvailability();
-  if (!availability.in_stock) {
-    throw new AppError(
-      "No hay números reales disponibles en este momento.",
-      409,
-      "NO_STOCK",
-    );
   }
 
   const { order, claimToken } = await createPublicSimAgentBundleOrder({
