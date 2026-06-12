@@ -78,33 +78,75 @@ try {
       metadata: JSON.stringify(item.metadata ?? {}),
     };
 
-    await client.query(
-      `INSERT INTO real_number_inventory (
-        e164_number, country_code, provider, webhook_connected,
-        connection_status, sales_status, gateway_id, sim_slot, webhook_url, metadata
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)
-      ON CONFLICT (e164_number) DO UPDATE SET
-        webhook_connected = EXCLUDED.webhook_connected,
-        connection_status = EXCLUDED.connection_status,
-        sales_status = EXCLUDED.sales_status,
-        gateway_id = EXCLUDED.gateway_id,
-        sim_slot = EXCLUDED.sim_slot,
-        webhook_url = EXCLUDED.webhook_url,
-        metadata = EXCLUDED.metadata,
-        updated_at = now()`,
-      [
-        e164,
-        payload.country_code,
-        payload.provider,
-        payload.webhook_connected,
-        payload.connection_status,
-        payload.sales_status,
-        payload.gateway_id,
-        payload.sim_slot,
-        payload.webhook_url,
-        payload.metadata,
-      ],
+    const existing = await client.query(
+      `SELECT id, sales_status FROM real_number_inventory WHERE e164_number = $1`,
+      [e164],
     );
+    const row = existing.rows[0];
+    const protectedStatuses = new Set([
+      "active_assigned",
+      "reserved_pending_payment",
+      "sold_pending_activation",
+    ]);
+
+    if (row && protectedStatuses.has(String(row.sales_status))) {
+      console.warn(
+        "SKIP protected:",
+        e164.replace(/\d(?=\d{3})/g, "*"),
+        "status=",
+        row.sales_status,
+      );
+      continue;
+    }
+
+    if (row) {
+      await client.query(
+        `UPDATE real_number_inventory SET
+          country_code = $2,
+          provider = $3,
+          webhook_connected = $4,
+          connection_status = $5,
+          sales_status = $6,
+          gateway_id = $7,
+          sim_slot = $8,
+          webhook_url = $9,
+          metadata = $10::jsonb,
+          updated_at = now()
+        WHERE e164_number = $1
+          AND sales_status NOT IN ('active_assigned', 'reserved_pending_payment', 'sold_pending_activation')`,
+        [
+          e164,
+          payload.country_code,
+          payload.provider,
+          payload.webhook_connected,
+          payload.connection_status,
+          payload.sales_status,
+          payload.gateway_id,
+          payload.sim_slot,
+          payload.webhook_url,
+          payload.metadata,
+        ],
+      );
+    } else {
+      await client.query(
+        `INSERT INTO real_number_inventory (
+          e164_number, country_code, provider, webhook_connected,
+          connection_status, sales_status, gateway_id, sim_slot, webhook_url, metadata
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)`,
+        [
+          e164,
+          payload.country_code,
+          payload.provider,
+          payload.webhook_connected,
+          payload.connection_status,
+          payload.sales_status,
+          payload.gateway_id,
+          payload.sim_slot,
+          payload.webhook_url,
+          payload.metadata,
+        ],
+      );
+    }
     upserted += 1;
   }
 
