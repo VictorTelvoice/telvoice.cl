@@ -24,9 +24,12 @@ import {
   renderSimAgentBundlePaymentReceived,
   renderSimOpsPendingActivation,
   renderSimPaymentReceivedPendingActivation,
+  renderCheckoutPanelAccess,
+  renderSimNumberActive,
+  renderSimActivationInProgress,
   renderWelcomeSmsCredited,
 } from "./transactionalEmailTemplates.js";
-import { resolvePanelAccessLink } from "./checkoutAccessEmailService.js";
+import { buildPanelLoginUrl, resolvePanelAccessLink } from "./checkoutAccessEmailService.js";
 import { isSimAgentBundleOrder } from "../utils/order-display.js";
 import {
   buildInvoiceEmailSubject,
@@ -542,7 +545,7 @@ export async function sendSimAgentBundlePaymentEmails(
   };
 
   if (recipient) {
-    const access = await resolvePanelAccessLink(recipient);
+    const panelUrl = buildPanelLoginUrl(recipient);
     const rendered = renderSimAgentBundlePaymentReceived({
       recipientName: recipient.split("@")[0] ?? "Cliente",
       simPlanName,
@@ -551,7 +554,7 @@ export async function sendSimAgentBundlePaymentEmails(
       amount: Number(order.amount),
       currency: order.currency,
       orderRef: orderRefLabel(order.id, order.public_checkout_reference),
-      panelUrl: access.panelUrl,
+      panelUrl,
     });
 
     customerResult = await sendTransactionalEmail({
@@ -562,8 +565,7 @@ export async function sendSimAgentBundlePaymentEmails(
       text: rendered.text,
       orderId,
       metadata: {
-        panel_url: access.panelUrl,
-        magic_link_sent: access.magicLinkSent,
+        panel_url: panelUrl,
         sim_plan_id: planId,
         agent_addon_id: agentAddonId,
       },
@@ -612,6 +614,114 @@ export async function sendSimAgentBundlePaymentEmails(
     customer: customerResult,
     ops: { ok: anyOpsOk },
   };
+}
+
+export async function sendCheckoutPanelAccessEmail(
+  orderId: string,
+  checkoutEmail: string,
+  options?: { skipIdempotency?: boolean },
+): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+  const email = checkoutEmail.trim().toLowerCase();
+  if (!email.includes("@")) {
+    return { ok: false, error: "invalid_email" };
+  }
+
+  const access = await resolvePanelAccessLink(email);
+  if (!access.magicLinkSent || !access.magicLinkUrl) {
+    return { ok: false, skipped: true, error: "magic_link_unavailable" };
+  }
+
+  const rendered = renderCheckoutPanelAccess({
+    recipientName: email.split("@")[0] ?? "Cliente",
+    recipientEmail: email,
+    accessUrl: access.magicLinkUrl,
+  });
+
+  return sendTransactionalEmail({
+    templateKey: "checkout_panel_access",
+    subject: rendered.subject,
+    recipientEmail: email,
+    html: rendered.html,
+    text: rendered.text,
+    orderId,
+    metadata: { panel_url: access.panelUrl, magic_link: true },
+    skipIdempotency: options?.skipIdempotency,
+  });
+}
+
+export async function sendSimNumberActiveEmail(
+  orderId: string,
+  input: { assignedNumber: string; planName: string },
+  options?: { skipIdempotency?: boolean },
+): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+  const order = await getOrderWithDetails(orderId);
+  if (!order) return { ok: false, error: "order_not_found" };
+
+  const recipient = recipientFromOrder(order);
+  if (!recipient) return { ok: false, error: "missing_recipient" };
+
+  const base = env.publicAppUrl.replace(/\/$/, "");
+  const rendered = renderSimNumberActive({
+    recipientName: recipient.split("@")[0] ?? "Cliente",
+    assignedNumber: input.assignedNumber,
+    planName: input.planName,
+    numeracionesUrl: `${base}/app/numeraciones`,
+    inboxUrl: `${base}/app/sms-inbox`,
+    orderRef: orderRefLabel(order.id, order.public_checkout_reference),
+  });
+
+  return sendTransactionalEmail({
+    templateKey: "sim_number_active",
+    subject: rendered.subject,
+    recipientEmail: recipient,
+    html: rendered.html,
+    text: rendered.text,
+    orderId,
+    companyId: order.company_id,
+    metadata: { plan_name: input.planName },
+    skipIdempotency: options?.skipIdempotency,
+  });
+}
+
+export async function sendSimActivationInProgressEmail(
+  orderId: string,
+  options?: { skipIdempotency?: boolean },
+): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+  const order = await getOrderWithDetails(orderId);
+  if (!order) return { ok: false, error: "order_not_found" };
+  if (order.payment_status !== "paid") {
+    return { ok: false, error: "order_not_paid" };
+  }
+
+  const meta = order.metadata ?? {};
+  const planName =
+    typeof meta.sim_plan_name === "string"
+      ? meta.sim_plan_name
+      : typeof meta.plan_name === "string"
+        ? meta.plan_name
+        : "Numeración SIM Telvoice";
+
+  const recipient = recipientFromOrder(order);
+  if (!recipient) return { ok: false, error: "missing_recipient" };
+
+  const panelUrl = buildPanelLoginUrl(recipient);
+  const rendered = renderSimActivationInProgress({
+    recipientName: recipient.split("@")[0] ?? "Cliente",
+    planName,
+    orderRef: orderRefLabel(order.id, order.public_checkout_reference),
+    panelUrl,
+  });
+
+  return sendTransactionalEmail({
+    templateKey: "sim_activation_in_progress",
+    subject: rendered.subject,
+    recipientEmail: recipient,
+    html: rendered.html,
+    text: rendered.text,
+    orderId,
+    companyId: order.company_id,
+    skipIdempotency: options?.skipIdempotency,
+  });
 }
 
 export async function sendWelcomeAndSmsCreditedEmail(

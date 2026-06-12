@@ -19,6 +19,7 @@ import { sendPaymentReceivedClaimEmail } from "./transactionalEmailService.js";
 import {
   sendSimAgentBundlePaymentEmails,
   sendSimPaymentReceivedEmails,
+  sendCheckoutPanelAccessEmail,
 } from "./transactionalEmailService.js";
 import { hasPurchaseCreditForOrder } from "./walletTransactionService.js";
 import {
@@ -29,6 +30,7 @@ import {
   createSimActivationRequest,
   linkSimActivationInventory,
   markSimActivationPaidPending,
+  processSimPostPaymentActivation,
 } from "./simActivationService.js";
 import { getSimPlan, getBundledAgentAddonForSimPlan } from "../utils/simPlans.js";
 import { getAgentAddon } from "../utils/agentAddons.js";
@@ -395,6 +397,15 @@ export async function processPublicCheckoutMercadoPagoWebhook(
 
         try {
           await sendSimAgentBundlePaymentEmails(orderId);
+          if (provision.isNewCompany) {
+            await sendCheckoutPanelAccessEmail(orderId, checkoutEmail);
+          }
+          const postPay = await processSimPostPaymentActivation(orderId);
+          console.log(
+            "[mp-webhook] sim post-payment",
+            orderId,
+            postPay.autoActivated ? "auto_activated" : postPay.reason ?? "pending",
+          );
         } catch (err) {
           console.error("[mp-webhook] sim agent bundle email failed", orderId, err);
         }
@@ -406,6 +417,19 @@ export async function processPublicCheckoutMercadoPagoWebhook(
         await sendSimPaymentReceivedEmails(orderId);
       } catch (err) {
         console.error("[mp-webhook] sim payment email failed", orderId, err);
+      }
+
+      if (refreshed?.company_id) {
+        try {
+          const postPay = await processSimPostPaymentActivation(orderId);
+          console.log(
+            "[mp-webhook] sim post-payment",
+            orderId,
+            postPay.autoActivated ? "auto_activated" : postPay.reason ?? "pending",
+          );
+        } catch (err) {
+          console.error("[mp-webhook] sim post-payment failed", orderId, err);
+        }
       }
 
       return { handled: true, orderId, result: "sim_paid_pending_activation" };

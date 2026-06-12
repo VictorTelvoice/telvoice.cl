@@ -352,7 +352,7 @@ export type SimAgentBundleCustomerTemplateData = {
 export function renderSimAgentBundlePaymentReceived(
   data: SimAgentBundleCustomerTemplateData,
 ): { subject: string; html: string; text: string } {
-  const subject = "Pago recibido — estamos activando tu cuenta Telvoice";
+  const subject = "Recibimos tu compra Telvoice";
   const sms = fmtSms(data.includedSmsMonthly);
   const total = fmtMoney(data.amount, data.currency);
   const bundleLabel = data.agentPlanName
@@ -360,41 +360,41 @@ export function renderSimAgentBundlePaymentReceived(
     : data.simPlanName;
 
   const summaryRows = `
-    <div><strong>Plan SIM:</strong> ${escapeHtml(data.simPlanName)}</div>
-    ${data.agentPlanName ? `<div><strong>Agente:</strong> ${escapeHtml(data.agentPlanName)}</div>` : ""}
+    <div><strong>Plan:</strong> ${escapeHtml(bundleLabel)}</div>
     <div><strong>SMS salientes incluidos:</strong> ${escapeHtml(sms)} / mes</div>
     <div><strong>Total pagado:</strong> ${escapeHtml(total)}</div>
     <div><strong>Orden:</strong> ${escapeHtml(data.orderRef)}</div>
+    <div><strong>Estado:</strong> Pago confirmado — activación en curso</div>
   `;
 
   const body = `
     <p style="margin:0 0 12px;font-family:Segoe UI,system-ui,sans-serif;font-size:20px;font-weight:700;line-height:1.35;color:#0f172a;text-align:center">
-      Hola ${escapeHtml(data.recipientName)}, tu cuenta Telvoice está lista.
+      Hola ${escapeHtml(data.recipientName)}, recibimos tu compra Telvoice.
     </p>
     <p style="margin:0 0 24px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55;color:#334155;text-align:center;max-width:520px;margin-left:auto;margin-right:auto">
       Confirmamos tu pago para ${escapeHtml(bundleLabel)}.
-      Creamos tu cuenta y recibimos tu solicitud de activación.
-      Nuestro equipo revisará la numeración y configurará tu agente si corresponde.
+      Estamos preparando tu numeración y el acceso al panel.
     </p>
     ${summaryCard(summaryRows)}
     <p style="margin:0 0 16px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55;color:#334155;text-align:center">
-      Entra al panel para revisar el estado de activación.
+      Te avisaremos por correo cuando tu numeración quede activa. Mientras tanto puedes revisar el estado en el panel.
     </p>
-    ${ctaButton(data.panelUrl, "Entrar a mi panel")}`;
+    ${ctaButton(data.panelUrl, "Ir a mi panel")}`;
 
   const text = [
-    `Hola ${data.recipientName}, tu cuenta Telvoice está lista.`,
+    `Hola ${data.recipientName}, recibimos tu compra Telvoice.`,
     "",
     `Plan: ${bundleLabel}`,
     `SMS incluidos: ${sms} / mes`,
     `Total: ${total}`,
     `Orden: ${data.orderRef}`,
+    "Estado: Pago confirmado — activación en curso",
     "",
-    "Entra al panel para revisar el estado de activación.",
+    "Te avisaremos cuando tu numeración quede activa.",
     data.panelUrl,
   ].join("\n");
 
-  return { subject, html: emailShell("Cuenta Telvoice lista", body), text };
+  return { subject, html: emailShell("Compra Telvoice confirmada", body), text };
 }
 
 export type SimAgentBundleOpsTemplateData = SimOpsNotifyTemplateData & {
@@ -445,4 +445,131 @@ export function renderSimAgentBundleOpsPendingActivation(
   const text = [subject, "", ...rowPairs.map(([label, value]) => `${label}: ${value}`), "", data.adminUrl].join("\n");
 
   return { subject, html: emailShell("SIM + Agente pendiente", body), text };
+}
+
+export type CheckoutPanelAccessTemplateData = {
+  recipientName: string;
+  recipientEmail: string;
+  accessUrl: string;
+};
+
+export function renderCheckoutPanelAccess(
+  data: CheckoutPanelAccessTemplateData,
+): { subject: string; html: string; text: string } {
+  const subject = "Accede a tu panel Telvoice";
+  const body = `
+    <p style="margin:0 0 12px;font-family:Segoe UI,system-ui,sans-serif;font-size:20px;font-weight:700;line-height:1.35;color:#0f172a;text-align:center">
+      Hola ${escapeHtml(data.recipientName)}, tu panel Telvoice está listo.
+    </p>
+    <p style="margin:0 0 24px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55;color:#334155;text-align:center;max-width:520px;margin-left:auto;margin-right:auto">
+      Creamos tu cuenta con el correo <strong>${escapeHtml(data.recipientEmail)}</strong>.
+      Usa el botón para entrar de forma segura (enlace de un solo uso, sin contraseña en texto plano).
+    </p>
+    ${ctaButton(data.accessUrl, "Acceder a mi panel")}
+    <p style="margin:16px 0 0;font-family:Segoe UI,system-ui,sans-serif;font-size:12px;line-height:1.5;color:#64748b;text-align:center">
+      Si el botón no funciona, copia este enlace en tu navegador:<br />
+      <span style="word-break:break-all">${escapeHtml(data.accessUrl)}</span>
+    </p>`;
+
+  const text = [
+    subject,
+    "",
+    `Hola ${data.recipientName},`,
+    "",
+    `Cuenta: ${data.recipientEmail}`,
+    "",
+    "Accede a tu panel con este enlace seguro (un solo uso):",
+    data.accessUrl,
+  ].join("\n");
+
+  return { subject, html: emailShell("Acceso al panel", body), text };
+}
+
+export type SimNumberActiveTemplateData = {
+  recipientName: string;
+  assignedNumber: string;
+  planName: string;
+  numeracionesUrl: string;
+  inboxUrl: string;
+  orderRef: string;
+};
+
+export function renderSimNumberActive(
+  data: SimNumberActiveTemplateData,
+): { subject: string; html: string; text: string } {
+  const subject = "Tu numeración Telvoice ya está activa";
+  const body = `
+    <p style="margin:0 0 12px;font-family:Segoe UI,system-ui,sans-serif;font-size:20px;font-weight:700;line-height:1.35;color:#0f172a;text-align:center">
+      Tu numeración Telvoice ya está activa
+    </p>
+    <p style="margin:0 0 24px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55;color:#334155;text-align:center;max-width:520px;margin-left:auto;margin-right:auto">
+      Hola ${escapeHtml(data.recipientName)}, tu número Telvoice ya está activo y listo para recibir SMS.
+    </p>
+    ${summaryCard(`
+      <div><strong>Número asignado:</strong> ${escapeHtml(data.assignedNumber)}</div>
+      <div><strong>Plan:</strong> ${escapeHtml(data.planName)}</div>
+      <div><strong>Orden:</strong> ${escapeHtml(data.orderRef)}</div>
+    `)}
+    <p style="margin:0 0 16px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55;color:#334155;text-align:center">
+      Desde tu panel puedes revisar SMS entrantes, operar con el agente Telvoice y configurar integraciones.
+    </p>
+    ${ctaButton(data.inboxUrl, "Ver SMS entrantes")}
+    <p style="margin:12px 0 0;text-align:center">
+      <a href="${escapeHtml(data.numeracionesUrl)}" style="font-family:Segoe UI,system-ui,sans-serif;font-size:14px;color:#0052cc">Ir a Mis numeraciones</a>
+    </p>`;
+
+  const text = [
+    "Tu numeración Telvoice ya está activa y listo para recibir SMS.",
+    "",
+    `Número asignado: ${data.assignedNumber}`,
+    `Plan: ${data.planName}`,
+    `Orden: ${data.orderRef}`,
+    "",
+    "Desde tu panel puedes revisar SMS entrantes, operar con el agente Telvoice y configurar integraciones.",
+    "",
+    data.inboxUrl,
+    data.numeracionesUrl,
+  ].join("\n");
+
+  return { subject, html: emailShell("Numeración activa", body), text };
+}
+
+export type SimActivationInProgressTemplateData = {
+  recipientName: string;
+  planName: string;
+  orderRef: string;
+  panelUrl: string;
+};
+
+export function renderSimActivationInProgress(
+  data: SimActivationInProgressTemplateData,
+): { subject: string; html: string; text: string } {
+  const subject = "Tu numeración Telvoice está en activación";
+  const body = `
+    <p style="margin:0 0 12px;font-family:Segoe UI,system-ui,sans-serif;font-size:20px;font-weight:700;line-height:1.35;color:#0f172a;text-align:center">
+      Activación en curso
+    </p>
+    <p style="margin:0 0 24px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55;color:#334155;text-align:center;max-width:520px;margin-left:auto;margin-right:auto">
+      Hola ${escapeHtml(data.recipientName)}, confirmamos tu pago.
+      Estamos finalizando la activación técnica de tu numeración Telvoice.
+    </p>
+    ${summaryCard(`
+      <div><strong>Plan:</strong> ${escapeHtml(data.planName)}</div>
+      <div><strong>Referencia:</strong> ${escapeHtml(data.orderRef)}</div>
+      <div><strong>Estado:</strong> Activación en curso</div>
+      <div><strong>Tiempo estimado:</strong> habitualmente el mismo día hábil</div>
+    `)}
+    ${ctaButton(data.panelUrl, "Ver estado en el panel")}`;
+
+  const text = [
+    subject,
+    "",
+    `Plan: ${data.planName}`,
+    `Referencia: ${data.orderRef}`,
+    "Estado: Activación en curso",
+    "",
+    data.panelUrl,
+  ].join("\n");
+
+  return { subject, html: emailShell("Activación en curso", body), text };
 }

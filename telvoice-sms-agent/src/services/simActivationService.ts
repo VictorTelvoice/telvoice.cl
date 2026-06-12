@@ -12,9 +12,17 @@ import { listAgentPlanRequestsByOrderIds, getAgentPlanDefinition } from "./clien
 import {
   assignInventoryNumberToCompany,
   getInventoryById,
+  isInventoryTechnicallyReady,
 } from "./realNumberInventoryService.js";
 import { activateAdminAgentPlanRequest } from "./adminAgentPlanService.js";
 import { createAdminClientNumber } from "./adminClientNumberService.js";
+import { insertAuditLog } from "./auditLogService.js";
+import {
+  sendSimActivationInProgressEmail,
+  sendSimNumberActiveEmail,
+} from "./transactionalEmailService.js";
+import { getBundledAgentAddonForSimPlan, getSimPlan, isSimPlanId } from "../utils/simPlans.js";
+import type { SimPlanId } from "../utils/simPlans.js";
 
 export type SimActivationModuleState = {
   available: boolean;
@@ -315,8 +323,82 @@ export async function linkSimActivationInventory(
   }
 }
 
+function simClientNumberCapabilities(agentEnabled: boolean) {
+  return {
+    receive_sms: true,
+    send_sms: true,
+    otp_authorized: true,
+    api_webhook: true,
+    inbox_enabled: true,
+    agent_enabled: agentEnabled,
+    outbound_sms: true,
+    inbound_sms: true,
+  };
+}
+
+export type SimPostPaymentActivationResult = {
+  autoActivated: boolean;
+  activationId: string | null;
+  reason?: string;
+};
+
+/** Tras pago aprobado: auto-asignar si el inventario está técnicamente listo. */
+export async function processSimPostPaymentActivation(
+  orderId: string,
+): Promise<SimPostPaymentActivationResult> {
+  const activation = await getSimActivationByOrderId(orderId);
+  if (!activation) {
+    return { autoActivated: false, activationId: null, reason: "no_activation" };
+  }
+  if (activation.activation_status === "active") {
+    return { autoActivated: true, activationId: activation.id, reason: "already_active" };
+  }
+  if (!activation.company_id) {
+    return { autoActivated: false, activationId: activation.id, reason: "no_company" };
+  }
+  if (!activation.inventory_number_id) {
+    return { autoActivated: false, activationId: activation.id, reason: "no_inventory" };
+  }
+
+  const inventory = await getInventoryById(activation.inventory_number_id);
+  if (!inventory) {
+    return { autoActivated: false, activationId: activation.id, reason: "inventory_missing" };
+  }
+
+  if (!isInventoryTechnicallyReady(inventory)) {
+    try {
+      await sendSimActivationInProgressEmail(orderId);
+    } catch (err) {
+      console.error("[sim-activation] activation-in-progress email failed", orderId, err);
+    }
+    return {
+      autoActivated: false,
+      activationId: activation.id,
+      reason: "inventory_not_ready",
+    };
+  }
+
+  try {
+    await activatePaidSimActivationRequest(activation.id);
+    return { autoActivated: true, activationId: activation.id };
+  } catch (err) {
+    console.error("[sim-activation] auto-activate failed", orderId, err);
+    try {
+      await sendSimActivationInProgressEmail(orderId);
+    } catch (emailErr) {
+      console.error("[sim-activation] activation-in-progress email failed", orderId, emailErr);
+    }
+    return {
+      autoActivated: false,
+      activationId: activation.id,
+      reason: "activate_failed",
+    };
+  }
+}
+
 export async function activatePaidSimActivationRequest(
   activationId: string,
+  options?: { sendActivationEmail?: boolean },
 ): Promise<SimActivationRequestRow> {
   const activation = await getSimActivationById(activationId);
   if (!activation) {
@@ -347,6 +429,15 @@ export async function activatePaidSimActivationRequest(
     throw new AppError("Número de inventario no encontrado.", 404);
   }
 
+  const planId = activation.plan_id as SimPlanId;
+  const simPlan = getSimPlan(planId);
+  const agentByOrderPre = await listAgentPlanRequestsByOrderIds([activation.order_id]);
+  const agentReqPre = agentByOrderPre.get(activation.order_id);
+  const agentEnabled =
+    Boolean(agentReqPre) ||
+    (isSimPlanId(planId) && Boolean(getBundledAgentAddonForSimPlan(planId)));
+  const caps = simClientNumberCapabilities(agentEnabled);
+
   let clientNumberId = activation.client_number_id;
 
   if (!clientNumberId) {
@@ -359,8 +450,15 @@ export async function activatePaidSimActivationRequest(
       provider: inventory.provider,
       sim_slot: inventory.sim_slot ?? undefined,
       gateway_id: inventory.gateway_id ?? undefined,
+      capabilities: caps,
     });
     clientNumberId = created.id;
+  } else {
+    const { updateAdminClientNumber } = await import("./adminClientNumberService.js");
+    await updateAdminClientNumber(clientNumberId, {
+      status: "active",
+      capabilities: caps,
+    });
   }
 
   await assignInventoryNumberToCompany({
@@ -391,7 +489,35 @@ export async function activatePaidSimActivationRequest(
     .single();
 
   if (error) throw wrapSupabaseError(error, "activatePaidSimActivationRequest");
-  return mapRow(data as Record<string, unknown>);
+
+  const activated = mapRow(data as Record<string, unknown>);
+
+  await insertAuditLog({
+    companyId: activation.company_id,
+    action: "sim.number.activated",
+    entityType: "sim_activation_request",
+    entityId: activationId,
+    metadata: {
+      order_id: activation.order_id,
+      client_number_id: clientNumberId,
+      inventory_number_id: inventory.id,
+      plan_id: planId,
+      auto: options?.sendActivationEmail !== false,
+    },
+  });
+
+  if (options?.sendActivationEmail !== false) {
+    try {
+      await sendSimNumberActiveEmail(activation.order_id, {
+        assignedNumber: inventory.e164_number,
+        planName: simPlan?.name ?? activation.plan_name,
+      });
+    } catch (err) {
+      console.error("[sim-activation] number-active email failed", activation.order_id, err);
+    }
+  }
+
+  return activated;
 }
 
 export function simActivationStatusLabel(status: SimActivationStatus): string {

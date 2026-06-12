@@ -13,7 +13,10 @@ import {
   activatePaidSimActivationRequest,
 } from "../services/simActivationService.js";
 import {
-  assignInventoryNumberManual,
+  sendCheckoutPanelAccessEmail,
+  sendSimNumberActiveEmail,
+} from "../services/transactionalEmailService.js";
+import { getInventoryById, assignInventoryNumberManual,
   createInventoryNumber,
   getInventorySummary,
   getRealNumberInventoryModuleState,
@@ -229,6 +232,80 @@ export async function postAdminSimActivationActivate(
     const id = validateUuidParam(String(req.params.id ?? ""), "activación SIM");
     await activatePaidSimActivationRequest(id);
     redirectNumeraciones(res, { ok: "Activación completada: numeración y agente asignados." });
+  } catch (error) {
+    if (error instanceof AppError) {
+      redirectNumeraciones(res, { error: error.message });
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function postAdminSimActivationResendAccess(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = validateUuidParam(String(req.params.id ?? ""), "activación SIM");
+    const row = await getSimActivationById(id);
+    if (!row) {
+      redirectNumeraciones(res, { error: "Activación no encontrada." });
+      return;
+    }
+    const result = await sendCheckoutPanelAccessEmail(row.order_id, row.checkout_email, {
+      skipIdempotency: true,
+    });
+    if (!result.ok) {
+      redirectNumeraciones(res, {
+        error: result.error ?? "No se pudo reenviar el correo de acceso.",
+      });
+      return;
+    }
+    redirectNumeraciones(res, { ok: "Correo de acceso reenviado." });
+  } catch (error) {
+    if (error instanceof AppError) {
+      redirectNumeraciones(res, { error: error.message });
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function postAdminSimActivationResendActive(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = validateUuidParam(String(req.params.id ?? ""), "activación SIM");
+    const row = await getSimActivationById(id);
+    if (!row) {
+      redirectNumeraciones(res, { error: "Activación no encontrada." });
+      return;
+    }
+    if (row.activation_status !== "active" || !row.inventory_number_id) {
+      redirectNumeraciones(res, {
+        error: "La activación debe estar activa con inventario asignado.",
+      });
+      return;
+    }
+    const inventory = await getInventoryById(row.inventory_number_id);
+    if (!inventory) {
+      redirectNumeraciones(res, { error: "Inventario no encontrado." });
+      return;
+    }
+    const result = await sendSimNumberActiveEmail(row.order_id, {
+      assignedNumber: inventory.e164_number,
+      planName: row.plan_name,
+    }, { skipIdempotency: true });
+    if (!result.ok) {
+      redirectNumeraciones(res, {
+        error: result.error ?? "No se pudo reenviar el correo de numeración activa.",
+      });
+      return;
+    }
+    redirectNumeraciones(res, { ok: "Correo de numeración activa reenviado." });
   } catch (error) {
     if (error instanceof AppError) {
       redirectNumeraciones(res, { error: error.message });

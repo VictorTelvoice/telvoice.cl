@@ -295,6 +295,22 @@ export async function releaseReservationForOrder(orderId: string): Promise<void>
   }
 }
 
+/** Número listo para asignación automática post-pago (conectado + webhook probado). */
+export function isInventoryTechnicallyReady(
+  row: Pick<
+    RealNumberInventoryRow,
+    "connection_status" | "webhook_connected" | "sales_status"
+  >,
+): boolean {
+  return (
+    row.connection_status === "connected" &&
+    row.webhook_connected === true &&
+    ["reserved_pending_payment", "sold_pending_activation"].includes(
+      row.sales_status,
+    )
+  );
+}
+
 export async function markNumberPaymentApproved(input: {
   orderId: string;
   simActivationRequestId?: string;

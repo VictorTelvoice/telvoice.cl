@@ -1,6 +1,5 @@
 import {
   clientNumberStatusLabel,
-  clientNumberTypeLabel,
 } from "../../services/clientNumberService.js";
 import type {
   ClientNumberListItem,
@@ -13,7 +12,6 @@ import { simActivationStatusLabel } from "../../services/simActivationService.js
 import { env } from "../../config/env.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
-import { renderQaLabBadge } from "../shared/agent-module-styles.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
 
@@ -224,9 +222,9 @@ function renderPendingSimActivations(activations: SimActivationRequestRow[]): st
       const statusCls =
         a.activation_status === "paid_pending_activation" ? "warn" : "muted";
       return `<article class="tv-num-card tv-num-activation-card">
-        <h3 class="tv-num-activation-card__title">Numeración Telvoice en configuración</h3>
+        <h3 class="tv-num-activation-card__title">Numeración Telvoice en activación</h3>
         <p class="tv-num-activation-card__text">
-          Telvoice está preparando la numeración y validando su disponibilidad técnica.
+          Confirmamos tu compra. Telvoice está preparando la numeración y validando su disponibilidad técnica.
         </p>
         <dl class="tv-num-meta">
           <div><dt>Plan</dt><dd>${escapeHtml(a.plan_name)}</dd></div>
@@ -277,22 +275,30 @@ function renderAssociatedServices(requests: AgentPlanRequestRow[]): string {
 function renderActiveNumberCard(n: ClientNumberListItem): string {
   const detailHref = `/app/numeraciones/${encodeURIComponent(n.id)}/integraciones`;
   const inboxHref = `/app/sms-inbox?number=${encodeURIComponent(n.id)}`;
+  const smsInbound = n.capabilities.receive_sms ? "Activa" : "No disponible";
+  const inbox = n.capabilities.api_webhook ? "Disponible" : "No disponible";
+  const agentLine = n.has_agent ? "Conectado" : "No incluido";
 
   return `<article class="tv-num-card tv-num-active-card">
     <div class="tv-num-active-card__head">
       <div>
-        <h3 class="tv-num-active-card__number">${escapeHtml(n.number)}${renderQaLabBadge(n.provider)}</h3>
-        <p class="tv-num-active-card__plan">${escapeHtml(n.plan_label || "Plan Telvoice")} · ${escapeHtml(clientNumberTypeLabel(n.type))}</p>
+        <h3 class="tv-num-active-card__number">Número Telvoice activo</h3>
+        <p class="tv-num-active-card__plan">${escapeHtml(n.number)} · ${escapeHtml(n.plan_label || "Plan Telvoice")}</p>
       </div>
       ${renderStatusBadge(n.status)}
     </div>
     <dl class="tv-num-meta">
+      <div><dt>Estado</dt><dd>Activo</dd></div>
+      <div><dt>Recepción SMS</dt><dd>${escapeHtml(smsInbound)}</dd></div>
+      <div><dt>Bandeja SMS</dt><dd>${escapeHtml(inbox)}</dd></div>
+      <div><dt>Agente Telvoice</dt><dd>${escapeHtml(agentLine)}</dd></div>
       <div><dt>Último SMS</dt><dd>${n.last_sms_at ? formatDate(n.last_sms_at) : "—"}</dd></div>
       <div><dt>Origen último SMS</dt><dd>${n.last_sms_from ? escapeHtml(n.last_sms_from) : "—"}</dd></div>
     </dl>
     <p class="tv-num-caps">${renderCapabilities(n.capabilities)}</p>
     <div class="tv-num-active-card__actions">
-      ${renderBtn("Bandeja SMS", { href: inboxHref, variant: "primary", size: "sm", icon: "inbox" })}
+      ${renderBtn("Ver SMS entrantes", { href: inboxHref, variant: "primary", size: "sm", icon: "inbox" })}
+      ${renderBtn("Probar recepción", { href: inboxHref, variant: "secondary", size: "sm", icon: "sms" })}
       ${renderBtn("Configurar webhooks", { href: detailHref, variant: "secondary", size: "sm", icon: "hub" })}
     </div>
   </article>`;

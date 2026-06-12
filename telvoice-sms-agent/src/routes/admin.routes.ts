@@ -104,6 +104,8 @@ import {
   postAdminNumeracionesStatus,
   postAdminSimActivationActivate,
   postAdminSimActivationNotes,
+  postAdminSimActivationResendAccess,
+  postAdminSimActivationResendActive,
   postAdminSimActivationReview,
 } from "../controllers/admin-numeraciones.controller.js";
 import { getAdminSmsInboxPage } from "../controllers/admin-sms-inbox.controller.js";
@@ -557,6 +559,16 @@ adminRouter.post(
   "/numeraciones/sim-activations/:id/activate",
   requireAdminPage,
   postAdminSimActivationActivate,
+);
+adminRouter.post(
+  "/numeraciones/sim-activations/:id/resend-access",
+  requireAdminPage,
+  postAdminSimActivationResendAccess,
+);
+adminRouter.post(
+  "/numeraciones/sim-activations/:id/resend-active",
+  requireAdminPage,
+  postAdminSimActivationResendActive,
 );
 adminRouter.post(
   "/numeraciones/inventory/release-expired",

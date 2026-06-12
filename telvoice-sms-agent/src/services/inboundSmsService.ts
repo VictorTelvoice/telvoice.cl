@@ -80,6 +80,8 @@ async function findActiveClientNumberByDestination(
       .select("id, company_id, number, status")
       .eq("number", candidate)
       .eq("status", "active")
+      .order("updated_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
     if (error) {
       if (isMissingTableError(error)) return null;

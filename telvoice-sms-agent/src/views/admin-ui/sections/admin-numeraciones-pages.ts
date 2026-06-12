@@ -218,6 +218,13 @@ function renderSimActivationsTable(items: SimActivationRequestListItem[]): strin
           <form method="post" action="/admin/numeraciones/sim-activations/${escapeHtml(a.id)}/activate" style="display:inline">
             <button type="submit" class="btn btn-primary btn-sm">Activar</button>
           </form>
+          <form method="post" action="/admin/numeraciones/sim-activations/${escapeHtml(a.id)}/resend-access" style="display:inline">
+            <button type="submit" class="btn btn-ghost btn-sm">Reenviar acceso</button>
+          </form>
+          <form method="post" action="/admin/numeraciones/sim-activations/${escapeHtml(a.id)}/resend-active" style="display:inline">
+            <button type="submit" class="btn btn-ghost btn-sm">Reenviar activo</button>
+          </form>
+          ${a.client_number_id ? `<a href="/admin/sms-inbox?number_id=${escapeHtml(a.client_number_id)}" class="btn btn-ghost btn-sm">Ver SMS entrantes</a>` : ""}
           <form method="post" action="/admin/numeraciones/sim-activations/${escapeHtml(a.id)}/notes" style="display:inline-flex;gap:0.25rem;margin-top:0.35rem">
             <input type="text" name="admin_notes" class="tv-filter-input" placeholder="Nota interna" value="${escapeHtml(a.admin_notes ?? "")}" />
             <button type="submit" class="btn btn-ghost btn-sm">Guardar nota</button>
