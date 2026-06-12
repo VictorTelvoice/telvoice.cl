@@ -2226,6 +2226,101 @@
       border: 0;
     }
   </style>
+  <style id="tva-boot-style">
+    #telvoice-web-agent {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      z-index: 99990;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    #telvoice-web-agent.tva-root--ready {
+      visibility: visible;
+      pointer-events: auto;
+    }
+    #telvoice-web-agent .tva-panel:not(.is-open) {
+      display: none !important;
+    }
+    #telvoice-web-agent .tva-launcher-iso,
+    #telvoice-web-agent .tva-launcher img {
+      width: calc(10.13rem * 0.85);
+      height: calc(10.13rem * 0.85);
+      max-width: calc(10.13rem * 0.85);
+      max-height: calc(10.13rem * 0.85);
+    }
+    .hero-phone-slot--agent {
+      display: flex;
+      flex: 1;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-width: 0;
+    }
+    .hero-phone-float--agent {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      width: min(320px, 90vw);
+      height: min(640px, 85svh, 85vh);
+      max-width: 100%;
+      border-radius: 48px;
+      border: 12px solid #dce7f5;
+      background: #fff;
+      overflow: hidden;
+      box-sizing: border-box;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+    }
+    .hero-phone-screen {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+      padding: 3.875rem 0 0;
+    }
+    .hero-phone-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      flex-shrink: 0;
+      padding: 0 0.875rem 0.875rem;
+      background: #0b5cff;
+    }
+    .hero-phone-header-logo,
+    .hero-phone-header-logo.tva-agent-iso-slot {
+      width: 3rem;
+      height: 3rem;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .hero-phone-header-logo img,
+    .hero-phone-header-logo picture,
+    .hero-phone-header-logo .telvoice-agent-avatar,
+    .hero-phone-header-logo .telvoice-agent-avatar__img {
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .hero-phone-agent-embed {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    #telvoice-web-agent-embed:not(.tva-root--ready) {
+      visibility: hidden;
+    }
+    #telvoice-web-agent-embed.tva-root--ready {
+      visibility: visible;
+    }
+  </style>
+  <link rel="stylesheet" href="css/telvoice-web-agent.css?v=20260718" data-tva-css="1" />
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -2584,53 +2679,20 @@
               <li><a href="#caso-alertas-transaccionales" class="hero-use-tag inline-flex flex-col items-center rounded-full border border-outline-variant/70 bg-surface-container-lowest/95 font-body-sm text-on-background shadow-sm" data-track="click_hero_caso_alertas"><span class="material-symbols-outlined text-primary" aria-hidden="true">receipt_long</span> Alertas transaccionales</a></li>
             </ul>
           </div>
-          <div class="hero-phone-mobile md:hidden">
-          <div class="hero-phone-float relative w-[min(320px,90vw)] h-[min(640px,85vh)] bg-inverse-surface rounded-[48px] border-[12px] border-surface-container-highest shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col">
-            <div class="absolute top-0 inset-x-0 h-6 bg-surface-container-highest rounded-b-2xl w-36 mx-auto z-20"></div>
-            <div class="flex-1 bg-surface-container-lowest relative p-5 pt-16 flex flex-col gap-4 overflow-hidden">
-              <div class="flex items-center gap-3 mb-2 border-b border-outline-variant/30 pb-4">
-                <img src="assets/telvoice-isotipo.png" alt="" width="40" height="40" class="h-10 w-10 shrink-0 object-contain" loading="lazy" decoding="async" />
-                <div>
-                  <div class="font-body-sm font-semibold text-on-background">SMS Express</div>
-                  <div class="text-[11px] text-on-surface-variant">Vía Telvoice A2P</div>
-                </div>
-              </div>
-              <div class="message-anim bg-surface-container-low text-on-background p-3.5 rounded-2xl rounded-tl-sm text-[13px] self-start max-w-[85%] shadow-sm">
-                ¡Hola Juan! Tu código de verificación para ingresar es <strong>4921</strong>. No lo compartas con nadie.
-              </div>
-              <div class="message-anim bg-primary text-on-primary p-3.5 rounded-2xl rounded-tr-sm text-[13px] self-end max-w-[85%] shadow-sm">Entendido, gracias.</div>
-              <div class="message-anim bg-surface-container-low text-on-background p-3.5 rounded-2xl rounded-tl-sm text-[13px] self-start max-w-[85%] shadow-sm">
-                📦 Tu pedido #8839 ha sido despachado y está en ruta. Sigue tu entrega aquí: link.cl/trk8839
-              </div>
-              <div class="message-anim bg-surface-container-low text-on-background p-3.5 rounded-2xl rounded-tl-sm text-[13px] self-start max-w-[85%] shadow-sm">
-                ⭐ ¿Cómo fue tu experiencia? Responde con una nota del 1 al 7.
-              </div>
-            </div>
-          </div>
-          </div>
-
         </div>
-        <div class="hero-phone-slot hidden md:flex flex-1 items-center justify-center w-full min-w-0">
-          <div class="hero-phone-float relative w-[min(320px,90vw)] h-[min(640px,85vh)] bg-inverse-surface rounded-[48px] border-[12px] border-surface-container-highest shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col">
-            <div class="absolute top-0 inset-x-0 h-6 bg-surface-container-highest rounded-b-2xl w-36 mx-auto z-20"></div>
-            <div class="flex-1 bg-surface-container-lowest relative p-5 pt-16 flex flex-col gap-4 overflow-hidden">
-              <div class="flex items-center gap-3 mb-2 border-b border-outline-variant/30 pb-4">
-                <img src="assets/telvoice-isotipo.png" alt="" width="40" height="40" class="h-10 w-10 shrink-0 object-contain" loading="lazy" decoding="async" />
-                <div>
-                  <div class="font-body-sm font-semibold text-on-background">SMS Express</div>
-                  <div class="text-[11px] text-on-surface-variant">Vía Telvoice A2P</div>
+        <div class="hero-phone-slot hero-phone-slot--agent">
+          <div class="hero-phone-float hero-phone-float--agent" aria-label="Agente comercial Telvoice en teléfono demo">
+            <div class="hero-phone-notch" aria-hidden="true"></div>
+            <div class="hero-phone-screen tv-light-theme">
+              <header class="hero-phone-header">
+                <span id="hero-phone-agent-iso" class="hero-phone-header-logo tva-agent-iso-slot" aria-hidden="true"></span>
+                <div class="hero-phone-header-text">
+                  <p class="hero-phone-header-title">Agente comercial Telvoice</p>
+                  <p class="hero-phone-header-sub">SMS masivos · Chile</p>
+                  <p class="hero-phone-header-status hero-phone-header-status--online">En línea</p>
                 </div>
-              </div>
-              <div class="message-anim bg-surface-container-low text-on-background p-3.5 rounded-2xl rounded-tl-sm text-[13px] self-start max-w-[85%] shadow-sm">
-                ¡Hola Juan! Tu código de verificación para ingresar es <strong>4921</strong>. No lo compartas con nadie.
-              </div>
-              <div class="message-anim bg-primary text-on-primary p-3.5 rounded-2xl rounded-tr-sm text-[13px] self-end max-w-[85%] shadow-sm">Entendido, gracias.</div>
-              <div class="message-anim bg-surface-container-low text-on-background p-3.5 rounded-2xl rounded-tl-sm text-[13px] self-start max-w-[85%] shadow-sm">
-                📦 Tu pedido #8839 ha sido despachado y está en ruta. Sigue tu entrega aquí: link.cl/trk8839
-              </div>
-              <div class="message-anim bg-surface-container-low text-on-background p-3.5 rounded-2xl rounded-tl-sm text-[13px] self-start max-w-[85%] shadow-sm">
-                ⭐ ¿Cómo fue tu experiencia? Responde con una nota del 1 al 7.
-              </div>
+              </header>
+              <div id="hero-agent-embed" class="hero-phone-agent-embed"></div>
             </div>
           </div>
         </div>
@@ -3308,6 +3370,6 @@
 
   <script src="js/telvoice-config.js"></script>
   <script src="js/telvoice-app.js"></script>
-  <script src="js/telvoice-web-agent-loader.js" data-root=""></script>
+  <script src="js/telvoice-web-agent-loader.js" data-root="" data-embed-target="#hero-agent-embed"></script>
 </body>
 </html>
