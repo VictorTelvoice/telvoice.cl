@@ -16,7 +16,7 @@
   <link rel="author" type="text/plain" title="Resumen para asistentes de IA" href="/llms.txt" />
   <link rel="icon" href="assets/telvoice-isotipo.png" type="image/png" sizes="any" />
   <link rel="apple-touch-icon" href="assets/telvoice-isotipo.png" />
-  <meta name="theme-color" content="#0052cc" />
+  <meta name="theme-color" content="#0B5CFF" />
   <meta name="application-name" content="Telvoice" />
   <meta property="og:locale" content="es_CL" />
   <meta property="og:type" content="website" />
@@ -38,7 +38,7 @@
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com" rel="preconnect" />
   <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;family=Montserrat:wght@600;700;800&amp;display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=JetBrains+Mono:wght@500&amp;family=Montserrat:wght@600;700&amp;display=swap" rel="stylesheet" />
   <script id="tailwind-config">
     tailwind.config = {
       darkMode: "class",
@@ -46,8 +46,8 @@
         extend: {
           colors: {
             "surface-variant": "#dae2fd",
-            "primary-container": "#0052cc",
-            "on-surface-variant": "#434654",
+            "primary-container": "#0B5CFF",
+            "on-surface-variant": "#5B6B82",
             "on-tertiary": "#ffffff",
             tertiary: "#7b2600",
             "inverse-primary": "#b2c5ff",
@@ -63,8 +63,8 @@
             "surface-bright": "#faf8ff",
             "on-secondary-fixed-variant": "#004f58",
             "on-tertiary-container": "#ffc6b2",
-            "surface-tint": "#0c56d0",
-            primary: "#0052cc",
+            "surface-tint": "#0047D9",
+            primary: "#0B5CFF",
             "surface-container-low": "#f2f3ff",
             "surface-container-high": "#e2e7ff",
             "secondary-fixed-dim": "#00daf3",
@@ -72,7 +72,7 @@
             "on-primary": "#ffffff",
             "surface-dim": "#d2d9f4",
             secondary: "#006875",
-            "on-background": "#131b2e",
+            "on-background": "#0B1220",
             "inverse-surface": "#283044",
             "on-error": "#ffffff",
             "on-secondary-container": "#00616d",
@@ -80,7 +80,7 @@
             "primary-fixed": "#dae2ff",
             "surface-container": "#eaedff",
             outline: "#737685",
-            background: "#faf8ff",
+            background: "#F7FAFF",
             "error-container": "#ffdad6",
             error: "#ba1a1a",
             "surface-container-highest": "#dae2fd",
@@ -1658,26 +1658,13 @@
     }
 
     .section-hero-wrap {
-      --hero-top-gap: 2.9rem;
-      --hero-tags-gap: 1.35rem;
-      --hero-bottom-fill: 10dvh;
-      padding-top: var(--hero-top-gap);
-      padding-bottom: calc(0.9rem + var(--hero-bottom-fill));
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      min-height: calc(90svh - 3.85rem + var(--hero-bottom-fill));
-      min-height: calc(90dvh - 3.85rem + var(--hero-bottom-fill));
-      box-sizing: border-box;
-    }
-    .section-hero-wrap > .relative.z-10 {
-      width: 100%;
+      --hero-edge-gap: 2.5rem;
+      padding-top: var(--hero-edge-gap);
+      padding-bottom: 3rem;
     }
     @media (min-width: 768px) {
       .section-hero-wrap {
-        --hero-top-gap: 3.8rem;
-        --hero-tags-gap: 1.625rem;
-        padding-bottom: calc(1.125rem + var(--hero-bottom-fill));
+        padding-bottom: 4.5rem;
       }
     }
     @media (max-width: 767px) {
@@ -1691,14 +1678,15 @@
         scroll-margin-top: 4.75rem;
       }
       .section-hero-wrap {
-        --hero-top-gap: 1.8rem;
-        --hero-tags-gap: 1rem;
-        padding-top: calc(1.8rem + env(safe-area-inset-top, 0px));
-        padding-bottom: calc(0.3rem + var(--hero-bottom-fill));
-        min-height: calc(90svh - 3.6rem + var(--hero-bottom-fill));
-        min-height: calc(90dvh - 3.6rem + var(--hero-bottom-fill));
+        --hero-edge-gap: 1.25rem;
+        padding-top: calc(1.25rem + env(safe-area-inset-top, 0px));
+        padding-bottom: 1rem;
       }
-      /* Sin nubes animadas en móvil */
+      /* Sin desplazamiento flotante del teléfono ni nubes en móvil */
+      .hero-phone-mobile .hero-phone-float {
+        animation: none !important;
+        transform: none !important;
+      }
       .section-hero-wrap .hero-cloud-soft {
         animation: none !important;
       }
@@ -1706,9 +1694,16 @@
         gap: 0.75rem;
       }
       .hero-copy .hero-intro {
-        font-size: 1.0625rem;
-        line-height: 1.7;
+        font-size: 1.125rem;
+        line-height: 1.75rem;
         max-width: none;
+      }
+      .hero-copy h1 {
+        font-size: 2.803125rem !important;
+        line-height: 1.2 !important;
+      }
+      .hero-copy .hero-grad-text {
+        font-size: clamp(2.5875rem, 11.2125vw, 3.01875rem) !important;
       }
       .hero-price-card {
         margin-top: 0.75rem;
@@ -1726,7 +1721,7 @@
         line-height: 1.3;
       }
       .hero-tags-mobile {
-        padding-top: 0.85rem;
+        padding-top: 0.5rem;
         padding-bottom: 0;
         width: 100%;
       }
@@ -2070,9 +2065,9 @@
       display: flex;
       flex-direction: row;
       flex-wrap: nowrap;
-      gap: 0.5rem;
+      gap: 0.75rem;
       width: 100%;
-      max-width: 22rem;
+      max-width: 28rem;
       margin-left: auto;
       margin-right: auto;
       justify-content: center;
@@ -2086,7 +2081,8 @@
         justify-content: flex-start;
       }
     }
-    .hero-cta-row a {
+    .hero-cta-row a,
+    .hero-cta-row button {
       flex: 1 1 0;
       min-width: 0;
       padding: 0.75rem 0.65rem;
@@ -2094,19 +2090,20 @@
       line-height: 1.25;
     }
     @media (min-width: 640px) {
-      .hero-cta-row a {
+      .hero-cta-row a,
+      .hero-cta-row button {
         flex: 0 0 auto;
         padding: 0.875rem 2rem;
         font-size: 1rem;
       }
     }
     .hero-tags-below {
-      padding-top: var(--hero-tags-gap, 1rem);
-      padding-bottom: 0.5rem;
+      padding-top: var(--hero-edge-gap, 2.5rem);
+      padding-bottom: 2rem;
     }
     @media (min-width: 768px) {
       .hero-tags-below {
-        padding-bottom: 0.75rem;
+        padding-bottom: 2.5rem;
       }
     }
 
@@ -2675,29 +2672,6 @@
       border: 0;
     }
 
-    /* Tipografía Lab — overrides finales (después de Tailwind e inline) */
-    .tv-type-lab .tv-hero-title {
-      font-family: Montserrat, sans-serif;
-      font-size: clamp(1.85rem, 4.2vw, 2.75rem);
-      font-weight: 800;
-      line-height: 1.12;
-      letter-spacing: -0.025em;
-      max-width: 22ch;
-      text-wrap: balance;
-    }
-    .tv-type-lab .tv-hero-word--ink { color: #131b2e; }
-    .tv-type-lab .tv-hero-word--blue {
-      background: linear-gradient(120deg, #0066ff 0%, #0052cc 45%, #0ea5e9 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-    .tv-type-lab .tv-hero-subtitle {
-      font-size: clamp(0.9375rem, 1.65vw, 1.0625rem);
-      line-height: 1.62;
-      color: #525f7a;
-      max-width: 32rem;
-    }
     .tv-type-lab .font-h2.text-h2,
     .tv-type-lab h2.font-h2.text-h2,
     .tv-type-lab .calc-hero-title.font-h2 {
@@ -2738,12 +2712,7 @@
       line-height: 1.55;
       color: #525f7a;
     }
-    @media (max-width: 767px) {
-      .tv-type-lab .hero-copy .tv-hero-title {
-        font-size: clamp(1.85rem, 4.2vw, 2.75rem);
-        line-height: 1.12;
-      }
-    }
+
   </style>
   <style id="tva-boot-style">
     #telvoice-web-agent{position:fixed;bottom:1rem;right:1rem;z-index:99990;visibility:hidden;pointer-events:none}
@@ -2751,16 +2720,17 @@
     #telvoice-web-agent .tva-panel:not(.is-open){display:none!important}
     #telvoice-web-agent .tva-launcher-iso,#telvoice-web-agent .tva-launcher img{width:calc(10.13rem * 0.85);height:calc(10.13rem * 0.85);max-width:calc(10.13rem * 0.85);max-height:calc(10.13rem * 0.85)}
     .hero-phone-slot--agent{display:flex;flex:1;align-items:center;justify-content:center;width:100%;min-width:0}
-    .hero-phone-float--agent{position:relative;display:flex;flex-direction:column;width:min(320px,90vw);height:min(640px,85svh,85vh);max-width:100%;border-radius:48px;border:12px solid #dae2fd;background:#131b2e;overflow:hidden;box-sizing:border-box}
-    .hero-phone-screen{position:relative;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;padding:3.75rem 0 0}
-    .hero-phone-header{display:flex;align-items:flex-start;gap:.75rem;flex-shrink:0;padding:0 .65rem .65rem}
+    .hero-phone-float--agent{position:relative;display:flex;flex-direction:column;width:min(320px,90vw);height:min(640px,85svh,85vh);max-width:100%;border-radius:48px;border:12px solid #dce7f5;background:#fff;overflow:hidden;box-sizing:border-box;box-shadow:0 18px 45px rgba(15,23,42,.08)}
+    .hero-phone-screen{position:relative;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;padding:3.875rem 0 0}
+    .hero-phone-header{display:flex;align-items:flex-start;gap:.75rem;flex-shrink:0;padding:0 .875rem .875rem;background:#0b5cff}
     .hero-phone-header-logo,.hero-phone-header-logo.tva-agent-iso-slot{width:3rem;height:3rem;flex-shrink:0;overflow:hidden}
     .hero-phone-header-logo img,.hero-phone-header-logo picture,.hero-phone-header-logo .telvoice-agent-avatar,.hero-phone-header-logo .telvoice-agent-avatar__img{display:block;max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain}
     .hero-phone-agent-embed{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
     #telvoice-web-agent-embed:not(.tva-root--ready){visibility:hidden}
     #telvoice-web-agent-embed.tva-root--ready{visibility:visible}
   </style>
-  <link rel="stylesheet" href="css/telvoice-type-lab.css?v=20260609f" />
+  <link rel="stylesheet" href="css/telvoice-hero-typography.css?v=20260610" />
+  <link rel="stylesheet" href="css/telvoice-hero-premium.css?v=20260610" />
   <link rel="stylesheet" href="css/telvoice-web-agent.css?v=20260718" data-tva-css="1" />
   <script type="application/ld+json">
     {
@@ -3004,7 +2974,7 @@
         <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="ayuda/">Centro de ayuda</a></li>
       </ul>
       <div class="nav-actions flex items-center gap-2 shrink-0">
-        <button type="button" id="nav-demo" class="nav-sales-btn hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm" data-track="click_agente_ventas">Agente IA de Ventas</button>
+        <button type="button" id="nav-demo" class="nav-sales-btn hidden sm:inline-flex font-body-md px-5 py-2.5 rounded-full transition-colors" data-track="click_agente_ventas">Agente IA de Ventas</button>
         <button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant/60 text-on-background" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
           <span class="material-symbols-outlined" id="menu-icon-open">menu</span>
           <span class="material-symbols-outlined hidden" id="menu-icon-close">close</span>
@@ -3024,13 +2994,13 @@
         <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#contacto">Contacto</a></li>
         <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="ayuda/">Centro de ayuda</a></li>
       </ul>
-      <button type="button" id="nav-demo-mobile" class="mt-2 w-full bg-primary text-on-primary font-body-md py-3 rounded-full hover:bg-surface-tint transition-colors" data-track="click_agente_ventas">Agente IA de Ventas</button>
+      <button type="button" id="nav-demo-mobile" class="nav-sales-btn mt-2 w-full font-body-md py-3 rounded-full transition-colors" data-track="click_agente_ventas">Agente IA de Ventas</button>
     </div>
   </nav>
 
   <main>
     <!-- Hero Section -->
-    <section class="section-hero-wrap relative w-full bg-white" id="inicio">
+    <section class="section-hero-wrap relative w-full" id="inicio">
       <div class="hero-atmosphere" aria-hidden="true">
         <div class="hero-bg-base"></div>
         <div class="hero-bg-skywash"></div>
@@ -3074,46 +3044,30 @@
                 <span>SMS masivos · Chile</span>
               </div>
               <h1 class="tv-hero-title font-h1 text-h1 text-on-background">
-                <span class="tv-hero-word tv-hero-word--ink">SMS masivos en Chile,</span><span class="tv-hero-word tv-hero-word--blue"> con rutas directas</span><span class="tv-hero-word tv-hero-word--ink"> y sin contratos</span>
+                <span class="tv-hero-word tv-hero-word--ink">SMS masivos para empresas en Chile</span>
+                <span class="tv-hero-word tv-hero-word--blue block mt-1">con rutas directas y activación online</span>
               </h1>
               <p class="tv-hero-subtitle hero-intro">
-                Bolsas prepago para campañas, notificaciones y validaciones. Elige volumen, paga online y opera desde un panel claro — sin contratos ni fricción.
+                Envía campañas, notificaciones y validaciones desde un panel simple, con saldo prepago, reportes de entrega y soporte operativo Telvoice.
               </p>
-              <div class="tv-hero-capabilities" aria-label="Capacidades del servicio SMS">
-                <div class="tv-hero-capabilities-grid">
-                  <article class="tv-hero-capability-item">
-                    <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">description</span>
-                    <div class="tv-hero-capability__body">
-                      <strong class="tv-hero-capability__title">Campañas CSV</strong>
-                      <p class="tv-hero-capability__text">Carga tu base, valida contactos y prepara campañas en minutos.</p>
-                    </div>
-                  </article>
-                  <article class="tv-hero-capability-item">
-                    <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">shopping_cart</span>
-                    <div class="tv-hero-capability__body">
-                      <strong class="tv-hero-capability__title">Compra online</strong>
-                      <p class="tv-hero-capability__text">Compra bolsas SMS desde el panel y activa saldo para tus envíos.</p>
-                    </div>
-                  </article>
-                  <article class="tv-hero-capability-item">
-                    <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">task_alt</span>
-                    <div class="tv-hero-capability__body">
-                      <strong class="tv-hero-capability__title">Control antes de enviar</strong>
-                      <p class="tv-hero-capability__text">Revisa consumo, destinatarios y confirmación antes de ejecutar.</p>
-                    </div>
-                  </article>
-                  <article class="tv-hero-capability-item">
-                    <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">bar_chart</span>
-                    <div class="tv-hero-capability__body">
-                      <strong class="tv-hero-capability__title">Estados de entrega</strong>
-                      <p class="tv-hero-capability__text">Consulta reportes y estados DLR para entender el resultado de tus mensajes.</p>
-                    </div>
-                  </article>
-                </div>
-              </div>
+              <ul class="tv-hero-benefits" aria-label="Beneficios del servicio SMS">
+                <li class="tv-hero-benefit">
+                  <span class="tv-hero-benefit__icon material-symbols-outlined" aria-hidden="true">shopping_cart</span>
+                  Compra online con saldo inmediato
+                </li>
+                <li class="tv-hero-benefit">
+                  <span class="tv-hero-benefit__icon material-symbols-outlined" aria-hidden="true">cell_tower</span>
+                  Envíos a operadores móviles en Chile
+                </li>
+                <li class="tv-hero-benefit">
+                  <span class="tv-hero-benefit__icon material-symbols-outlined" aria-hidden="true">monitoring</span>
+                  Reportes de entrega y control operativo
+                </li>
+              </ul>
           </div>
           <div class="hero-cta-row pt-stack-sm">
-            <a href="#calculadora" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_compra_bolsa">Comprar bolsa SMS</a>
+            <a href="#calculadora" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary transition hover:bg-surface-tint" data-track="click_compra_bolsa">Comprar SMS</a>
+            <button type="button" id="hero-cta-agent" class="hero-cta-secondary" data-track="click_hablar_agente_hero">Hablar con agente</button>
           </div>
           <div class="hero-tags-below hero-tags-mobile relative z-10 flex w-full flex-col items-center md:hidden">
             <ul class="hero-use-tags hero-tags-row" role="list" aria-label="Usos del servicio SMS">

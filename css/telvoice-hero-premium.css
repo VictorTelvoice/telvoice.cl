@@ -1,0 +1,134 @@
+/* Hero premium Telvoice — paleta sobria telco/SaaS */
+
+.section-hero-wrap {
+  background: #f7faff;
+}
+
+.hero-bg-base {
+  background:
+    radial-gradient(circle at 75% 20%, rgba(11, 92, 255, 0.1), transparent 32%),
+    linear-gradient(180deg, #f7faff 0%, #ffffff 70%) !important;
+}
+
+.hero-bg-skywash,
+.hero-sky-glow {
+  display: none;
+}
+
+.hero-sky {
+  opacity: 0.12;
+}
+
+@media (max-width: 767px) {
+  .hero-sky,
+  .hero-connect-wrap {
+    display: none !important;
+  }
+}
+
+.hero-connect-wrap .hero-connect-layer {
+  opacity: 0.12 !important;
+}
+
+.hero-connect-layer {
+  color: #0b5cff;
+}
+
+.hero-flow {
+  stroke: rgba(11, 92, 255, 0.12);
+}
+
+.hero-flow-2 {
+  stroke: rgba(11, 92, 255, 0.1);
+}
+
+.hero-node {
+  fill: #0b5cff;
+  opacity: 0.12;
+}
+
+.hero-node-2 {
+  fill: #22c7ff;
+  opacity: 0.1;
+}
+
+.hero-cloud-soft {
+  opacity: 0.12 !important;
+}
+
+/* Beneficios hero — tres filas limpias */
+.tv-hero-benefits {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  width: 100%;
+  max-width: 34rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.tv-hero-benefit {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.75rem;
+  border: 1px solid #dce7f5;
+  background: #ffffff;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.04);
+  font-family: Inter, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #0b1220;
+}
+
+.tv-hero-benefit__icon {
+  flex-shrink: 0;
+  font-size: 1.125rem;
+  color: #0b5cff;
+}
+
+@media (min-width: 768px) {
+  .tv-hero-benefits {
+    gap: 0.5rem;
+  }
+
+  .tv-hero-benefit {
+    font-size: 0.9375rem;
+    padding: 0.7rem 1rem;
+  }
+}
+
+/* Nav — Agente IA secundario premium */
+.nav-sales-btn {
+  border: 1px solid #dce7f5;
+  background: #ffffff !important;
+  color: #0b5cff !important;
+  box-shadow: none !important;
+  font-weight: 600;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.nav-sales-btn:hover {
+  border-color: rgba(11, 92, 255, 0.35);
+  background: #f7faff !important;
+  color: #0047d9 !important;
+}
+
+#nav-demo-mobile.nav-sales-btn {
+  border: 1px solid #dce7f5;
+  background: #ffffff;
+  color: #0b5cff;
+}
+
+#nav-demo-mobile.nav-sales-btn:hover {
+  background: #f7faff;
+  color: #0047d9;
+}
+
+.hero-phone-float {
+  animation: none;
+}
