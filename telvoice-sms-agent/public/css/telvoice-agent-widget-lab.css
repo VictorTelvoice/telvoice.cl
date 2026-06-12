@@ -8,15 +8,13 @@
   --tva-muted: #a8b4d0;
   --tva-border: rgba(120, 160, 255, 0.18);
   --tva-shadow: 0 24px 64px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(56, 189, 248, 0.1);
-  --tva-launcher-size: 10.13rem;
-  --tva-panel-lift: 1.35rem;
   bottom: 1rem;
   right: 1rem;
 }
 
 .tva-root--lab .tva-launcher {
-  width: var(--tva-launcher-size);
-  height: var(--tva-launcher-size);
+  width: 10.13rem;
+  height: 10.13rem;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
@@ -37,22 +35,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--tva-launcher-size);
-  height: var(--tva-launcher-size);
-}
-
-.tva-root--lab .tva-launcher-iso .telvoice-agent-avatar__img {
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
-  animation: none;
-}
-
-/* Panel flotante — posición del chat respecto al bot */
-#tv-panel-agent.tva-root--lab .tva-panel,
-#telvoice-web-agent.tva-root--lab .tva-panel {
-  bottom: calc(var(--tva-launcher-size) + var(--tva-panel-lift));
-  max-height: min(32rem, calc(100dvh - var(--tva-launcher-size) - var(--tva-panel-lift) - 1.5rem));
+  width: 10.13rem;
+  height: 10.13rem;
 }
 
 .tva-root--lab .tva-launcher img,
@@ -274,11 +258,6 @@
   overflow: visible;
 }
 
-.telvoice-agent-avatar--launcher {
-  width: 100%;
-  height: 100%;
-}
-
 .telvoice-agent-avatar.agent-live-motion .telvoice-agent-avatar__img {
   animation: telvoiceAgentBreath 5.4s ease-in-out infinite;
 }
@@ -307,28 +286,15 @@
 
 .telvoice-agent-antenna-glow {
   position: absolute;
-  left: 56.1%;
-  top: 11%;
-  width: 4.4%;
-  height: 4.4%;
-  min-width: 0.5rem;
-  min-height: 0.5rem;
+  top: 8%;
+  left: 50%;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-left: -0.275rem;
   border-radius: 50%;
-  pointer-events: none;
-  z-index: 3;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(
-    circle,
-    rgba(134, 255, 172, 0.95) 0%,
-    rgba(34, 197, 94, 0.58) 42%,
-    rgba(34, 197, 94, 0.12) 72%,
-    rgba(34, 197, 94, 0) 86%
-  );
-  box-shadow:
-    0 0 6px rgba(74, 222, 128, 0.95),
-    0 0 14px rgba(34, 197, 94, 0.62),
-    0 0 24px rgba(34, 197, 94, 0.28);
-  animation: telvoiceAgentAntennaPulse 2.4s ease-in-out infinite;
+  background: rgba(56, 189, 248, 0.85);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.65);
+  animation: telvoiceAgentAntennaPulse 2.8s ease-in-out infinite;
 }
 
 @keyframes telvoiceAgentBreath {
@@ -337,40 +303,15 @@
 }
 
 @keyframes telvoiceAgentAntennaPulse {
-  0%,
-  100% {
-    opacity: 0.82;
-    transform: translate(-50%, -50%) scale(0.9);
-    box-shadow:
-      0 0 5px rgba(74, 222, 128, 0.75),
-      0 0 12px rgba(34, 197, 94, 0.48),
-      0 0 20px rgba(34, 197, 94, 0.2);
-  }
-  50% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.14);
-    box-shadow:
-      0 0 10px rgba(134, 255, 172, 1),
-      0 0 22px rgba(74, 222, 128, 0.82),
-      0 0 36px rgba(34, 197, 94, 0.38);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .telvoice-agent-avatar.agent-live-motion .telvoice-agent-avatar__img {
-    animation: none !important;
-  }
-
-  .telvoice-agent-antenna-glow {
-    animation: none !important;
-    opacity: 0.95;
-  }
+  0%, 100% { opacity: 0.55; transform: scale(0.92); }
+  50% { opacity: 1; transform: scale(1.08); }
 }
 
 @media (max-width: 767px) {
-  .tva-root--lab {
-    --tva-launcher-size: 8.75rem;
-    --tva-panel-lift: 1.1rem;
+  .tva-root--lab .tva-launcher,
+  .tva-root--lab .tva-launcher-iso {
+    width: 8.75rem;
+    height: 8.75rem;
   }
 }
 
