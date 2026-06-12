@@ -58,6 +58,40 @@ export function isSimCheckoutOrder(
   return isSimSubscriptionOrder(order) || isSimAgentBundleOrder(order);
 }
 
+/** Órdenes que pueden acreditar wallet SMS según política explícita de crédito. */
+export function isWalletSmsCreditOrder(
+  order: Pick<SmsOrderRow, "metadata" | "package_id" | "sms_quantity">,
+): boolean {
+  const meta =
+    order.metadata && typeof order.metadata === "object"
+      ? (order.metadata as Record<string, unknown>)
+      : {};
+
+  const productType = String(meta.product_type ?? "").toLowerCase();
+
+  if (productType === "sms_bundle") return true;
+
+  if (order.package_id && Number(order.sms_quantity) > 0 && !isSimCheckoutOrder(order)) {
+    return true;
+  }
+
+  if (productType === "sim_agent_bundle") {
+    const included =
+      Number(meta.included_sms_monthly ?? 0) ||
+      Number(meta.included_sms ?? 0) ||
+      Number(meta.starter_included_sms ?? 0);
+    return included > 0;
+  }
+
+  if (productType === "sim_subscription") {
+    const included =
+      Number(meta.included_sms_monthly ?? 0) || Number(meta.included_sms ?? 0);
+    return included > 0;
+  }
+
+  return false;
+}
+
 export function isPublicCheckoutOrder(
   order: Pick<SmsOrderRow, "metadata" | "company_id">,
 ): boolean {

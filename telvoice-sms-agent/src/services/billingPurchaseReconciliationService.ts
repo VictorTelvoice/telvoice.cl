@@ -10,6 +10,7 @@ import {
   orderLooksQa,
 } from "./adminDataAuditClassifier.js";
 import { isExplicitTestPurchaseEmail } from "./adminProductionScopeService.js";
+import { isWalletSmsCreditOrder } from "../utils/order-display.js";
 import {
   confirmOrderCredit,
   getOrderById,
@@ -31,6 +32,7 @@ export type ReconcileEligibilityStatus =
   | "qa_blocked"
   | "company_conflict"
   | "already_credited"
+  | "non_wallet_product"
   | "test_email"
   | "not_paid"
   | "order_not_found"
@@ -326,6 +328,17 @@ async function assessReconcileEligibility(
     };
   }
 
+  if (!isWalletSmsCreditOrder(order)) {
+    return {
+      status: "non_wallet_product",
+      wouldReconcile: false,
+      requiresManualOverride: false,
+      requiresManualReview: false,
+      resolvedCompanyId: order.company_id,
+      reason: "non_wallet_product",
+    };
+  }
+
   if (isExplicitTestPurchaseEmail(email)) {
     return {
       status: "test_email",
@@ -450,6 +463,9 @@ export async function listPaidUnclaimedPurchases(): Promise<
     } else if (assessment.status === "qa_blocked") {
       recommendation =
         "Bloqueado: orden/empresa QA o test. Requiere --include-qa para override.";
+    } else if (assessment.status === "non_wallet_product") {
+      recommendation =
+        "Omitida: no es bolsa SMS/wallet (SIM, numeración, agente u otro producto).";
     } else if (assessment.status === "company_conflict") {
       recommendation =
         "Bloqueado: company_id de la orden no coincide con empresa resuelta por email.";

@@ -10,6 +10,7 @@ import {
   PUBLIC_LANDING_ORDER_METADATA,
   PUBLIC_SIM_AGENT_BUNDLE_METADATA,
   PUBLIC_SIM_CHECKOUT_METADATA,
+  isWalletSmsCreditOrder,
 } from "../utils/order-display.js";
 import {
   encryptClaimTokenForMetadata,
@@ -746,6 +747,14 @@ export async function confirmOrderCredit(
       ratePlanSource,
     );
     return { order, alreadyCredited: true };
+  }
+
+  if (!isWalletSmsCreditOrder(order)) {
+    throw new AppError(
+      "Esta orden no es una bolsa SMS; no acredita wallet.",
+      400,
+      "NON_WALLET_PRODUCT",
+    );
   }
 
   if (!order.company_id) {
