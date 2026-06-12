@@ -1,125 +1,13 @@
-/* Hero premium Telvoice — fondo espacial + capas UI */
+/* Hero premium Telvoice — paleta sobria telco/SaaS */
 
 .section-hero-wrap {
-  background: #030712;
+  background: #f7faff;
 }
 
-/* Espacio profundo → transición suave hacia zona legible del copy */
 .hero-bg-base {
   background:
-    radial-gradient(ellipse 90% 70% at 78% 18%, rgba(34, 199, 255, 0.14) 0%, transparent 52%),
-    radial-gradient(ellipse 55% 45% at 72% 22%, rgba(11, 92, 255, 0.2) 0%, transparent 58%),
-    linear-gradient(
-      165deg,
-      #020617 0%,
-      #0b1220 18%,
-      #0f172a 34%,
-      #1e293b 48%,
-      #334155 58%,
-      #e2e8f0 76%,
-      #f7faff 88%,
-      #ffffff 100%
-    ) !important;
-}
-
-.hero-bg-base::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    105deg,
-    rgba(247, 250, 255, 0.97) 0%,
-    rgba(247, 250, 255, 0.88) 38%,
-    rgba(247, 250, 255, 0.35) 58%,
-    transparent 72%
-  );
-  pointer-events: none;
-}
-
-.hero-space-scene {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.hero-space-stars {
-  position: absolute;
-  inset: 0;
-  opacity: 0.55;
-  background-image:
-    radial-gradient(1px 1px at 12% 18%, rgba(255, 255, 255, 0.85) 50%, transparent 51%),
-    radial-gradient(1px 1px at 28% 42%, rgba(255, 255, 255, 0.55) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 44% 12%, rgba(255, 255, 255, 0.7) 50%, transparent 51%),
-    radial-gradient(1px 1px at 62% 28%, rgba(255, 255, 255, 0.45) 50%, transparent 51%),
-    radial-gradient(1px 1px at 78% 8%, rgba(255, 255, 255, 0.65) 50%, transparent 51%),
-    radial-gradient(1px 1px at 88% 34%, rgba(255, 255, 255, 0.5) 50%, transparent 51%),
-    radial-gradient(1px 1px at 92% 52%, rgba(255, 255, 255, 0.4) 50%, transparent 51%),
-    radial-gradient(1px 1px at 55% 55%, rgba(255, 255, 255, 0.35) 50%, transparent 51%),
-    radial-gradient(1px 1px at 18% 62%, rgba(255, 255, 255, 0.3) 50%, transparent 51%);
-  mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 85%);
-  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 85%);
-}
-
-.hero-space-planet {
-  position: absolute;
-  top: clamp(3rem, 10vh, 6rem);
-  right: clamp(4%, 8vw, 14%);
-  width: clamp(140px, 22vw, 280px);
-  height: clamp(140px, 22vw, 280px);
-  transform: translateZ(0);
-}
-
-.hero-space-planet__surface {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.35) 0%, transparent 18%),
-    radial-gradient(circle at 38% 32%, #22c7ff 0%, #0b5cff 22%, #1d4ed8 48%, #0b1220 72%, #020617 100%);
-  box-shadow:
-    0 0 40px rgba(34, 199, 255, 0.22),
-    0 0 90px rgba(11, 92, 255, 0.16),
-    inset -18px -22px 36px rgba(0, 0, 0, 0.45);
-  animation: heroPlanetPulse 8s ease-in-out infinite;
-}
-
-.hero-space-planet__atmosphere {
-  position: absolute;
-  inset: -6%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(34, 199, 255, 0.12) 40%, transparent 70%);
-  filter: blur(6px);
-}
-
-.hero-space-planet__ring {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 135%;
-  height: 38%;
-  border: 1px solid rgba(34, 199, 255, 0.22);
-  border-radius: 50%;
-  transform: translate(-50%, -50%) rotate(-18deg);
-  box-shadow: 0 0 18px rgba(34, 199, 255, 0.08);
-  opacity: 0.75;
-}
-
-@keyframes heroPlanetPulse {
-  0%,
-  100% {
-    box-shadow:
-      0 0 40px rgba(34, 199, 255, 0.22),
-      0 0 90px rgba(11, 92, 255, 0.16),
-      inset -18px -22px 36px rgba(0, 0, 0, 0.45);
-  }
-  50% {
-    box-shadow:
-      0 0 52px rgba(34, 199, 255, 0.3),
-      0 0 110px rgba(11, 92, 255, 0.22),
-      inset -18px -22px 36px rgba(0, 0, 0, 0.45);
-  }
+    radial-gradient(circle at 75% 20%, rgba(11, 92, 255, 0.1), transparent 32%),
+    linear-gradient(180deg, #f7faff 0%, #ffffff 70%) !important;
 }
 
 .hero-bg-skywash,
@@ -127,79 +15,45 @@
   display: none;
 }
 
-.hero-sky,
-.hero-cloud-soft {
-  display: none !important;
-}
-
-.hero-connect-wrap {
-  z-index: 2;
-}
-
-.hero-connect-wrap .hero-connect-layer {
-  opacity: 0.32 !important;
-  filter: drop-shadow(0 0 6px rgba(34, 199, 255, 0.25));
+.hero-sky {
+  opacity: 0.12;
 }
 
 @media (max-width: 767px) {
-  .hero-space-planet {
-    top: 4.5rem;
-    right: 50%;
-    width: clamp(100px, 28vw, 140px);
-    height: clamp(100px, 28vw, 140px);
-    transform: translateX(50%);
-    opacity: 0.45;
-  }
-
-  .hero-space-stars {
-    opacity: 0.35;
-  }
-
+  .hero-sky,
   .hero-connect-wrap {
-    display: block !important;
-    opacity: 0.5;
+    display: none !important;
   }
+}
 
-  .hero-connect-wrap .hero-connect-layer {
-    opacity: 0.18 !important;
-  }
+.hero-connect-wrap .hero-connect-layer {
+  opacity: 0.12 !important;
 }
 
 .hero-connect-layer {
-  color: #22c7ff;
+  color: #0b5cff;
 }
 
 .hero-flow {
-  stroke: rgba(34, 199, 255, 0.35);
-  stroke-width: 1.35;
+  stroke: rgba(11, 92, 255, 0.12);
 }
 
 .hero-flow-2 {
-  stroke: rgba(11, 92, 255, 0.28);
-  stroke-width: 1.1;
+  stroke: rgba(11, 92, 255, 0.1);
 }
 
 .hero-node {
-  fill: #22c7ff;
-  opacity: 0.55;
-  filter: drop-shadow(0 0 4px rgba(34, 199, 255, 0.45));
+  fill: #0b5cff;
+  opacity: 0.12;
 }
 
 .hero-node-2 {
-  fill: #0b5cff;
-  opacity: 0.45;
-  filter: drop-shadow(0 0 3px rgba(11, 92, 255, 0.35));
+  fill: #22c7ff;
+  opacity: 0.1;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hero-space-planet__surface {
-    animation: none;
-  }
-
-  .hero-flow,
-  .hero-flow-2 {
-    animation: none;
-  }
+.hero-cloud-soft {
+  opacity: 0.12 !important;
 }
 
 /* Beneficios hero — tres filas limpias */
