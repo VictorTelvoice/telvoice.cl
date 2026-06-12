@@ -94,13 +94,13 @@
   }
 
   function bindNavSalesAgentButtons() {
-    ["nav-demo", "nav-demo-mobile"].forEach(function (sel) {
+    ["nav-demo", "nav-demo-mobile", "hero-cta-agent"].forEach(function (sel) {
       var btn = qs(sel);
       if (!btn) return;
       btn.addEventListener("click", function (e) {
         e.preventDefault();
         closeMobileMenu();
-        openSalesAgent("click_agente_ventas");
+        openSalesAgent(btn.getAttribute("data-track") || "click_agente_ventas");
       });
     });
   }

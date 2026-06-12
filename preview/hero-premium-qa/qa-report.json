@@ -1,0 +1,58 @@
+{
+  "generatedAt": "2026-06-12T00:28:29.051Z",
+  "baseUrl": "http://127.0.0.1:8877",
+  "viewports": [
+    {
+      "viewport": "desktop-1440",
+      "screenshot": "/Users/victor/TELVOICE CHILE/preview/hero-premium-qa/hero-desktop-1440.png"
+    },
+    {
+      "viewport": "desktop-1920",
+      "screenshot": "/Users/victor/TELVOICE CHILE/preview/hero-premium-qa/hero-desktop-1920.png"
+    },
+    {
+      "viewport": "tablet-768",
+      "screenshot": "/Users/victor/TELVOICE CHILE/preview/hero-premium-qa/hero-tablet-768.png"
+    },
+    {
+      "viewport": "mobile-390",
+      "screenshot": "/Users/victor/TELVOICE CHILE/preview/hero-premium-qa/hero-mobile-390.png"
+    }
+  ],
+  "checks": {
+    "titleVisible": true,
+    "subtitleVisible": true,
+    "primaryCta": "Comprar SMS",
+    "secondaryCta": "Hablar con agente",
+    "primaryDominant": true,
+    "secondaryIsOutline": true,
+    "sections": {
+      "calculadora": false,
+      "calculadora_visible": true,
+      "casos-uso": false,
+      "casos-uso_visible": true,
+      "api": false,
+      "api_visible": true,
+      "contacto": false,
+      "contacto_visible": true
+    },
+    "helpLink": true,
+    "comprarSmsScroll": true,
+    "agentPanelOrEmbed": true,
+    "preciosMenu": true,
+    "navAgentClick": true,
+    "floatVisibleOnHero": false,
+    "mobileHeroTitle": true,
+    "mobilePhone": true
+  },
+  "primaryStyles": {
+    "bg": "rgb(11, 92, 255)",
+    "fontWeight": "600",
+    "padding": "14px 32px"
+  },
+  "secondaryStyles": {
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid rgb(220, 231, 245)",
+    "color": "rgb(11, 92, 255)"
+  }
+}
