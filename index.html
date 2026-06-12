@@ -2730,8 +2730,61 @@
     #telvoice-web-agent-embed.tva-root--ready{visibility:visible}
   </style>
   <link rel="stylesheet" href="css/telvoice-hero-typography.css?v=20260610" />
-  <link rel="stylesheet" href="css/telvoice-hero-premium.css?v=20260613" />
+  <link rel="stylesheet" href="css/telvoice-hero-premium.css?v=20260614" />
   <link rel="stylesheet" href="css/telvoice-web-agent.css?v=20260718" data-tva-css="1" />
+  <style id="hero-premium-atmosphere">
+    /* Overrides finales del fondo hero — después de CSS externo e inline */
+    #inicio.section-hero-wrap {
+      background: #f7faff;
+    }
+    #inicio .hero-bg-base {
+      background:
+        radial-gradient(ellipse 80% 55% at 16% 0%, rgba(34, 199, 255, 0.12) 0%, transparent 55%),
+        radial-gradient(ellipse 70% 52% at 84% 6%, rgba(11, 92, 255, 0.16) 0%, transparent 54%),
+        linear-gradient(180deg, #e8f0ff 0%, #f7faff 38%, #ffffff 100%) !important;
+    }
+    #inicio .hero-bg-skywash {
+      display: block !important;
+      opacity: 0.55;
+    }
+    #inicio .hero-sky-glow {
+      display: block !important;
+      opacity: 0.38;
+      animation: none !important;
+    }
+    #inicio .hero-sky {
+      display: block !important;
+      opacity: 0.24;
+    }
+    #inicio .hero-cloud-soft {
+      display: block !important;
+      opacity: 0.2 !important;
+    }
+    #inicio .hero-connect-wrap .hero-connect-layer {
+      opacity: 0.26 !important;
+    }
+    #inicio .hero-flow {
+      stroke: rgba(11, 92, 255, 0.22);
+      stroke-width: 1.15;
+    }
+    #inicio .hero-node {
+      opacity: 0.38;
+    }
+    @media (max-width: 767px) {
+      #inicio .hero-bg-skywash,
+      #inicio .hero-sky-glow,
+      #inicio .hero-sky,
+      #inicio .hero-cloud-soft,
+      #inicio .hero-connect-wrap {
+        display: none !important;
+      }
+      #inicio .hero-bg-base {
+        background:
+          radial-gradient(ellipse 90% 60% at 50% 0%, rgba(11, 92, 255, 0.1) 0%, transparent 58%),
+          linear-gradient(180deg, #eef3ff 0%, #ffffff 100%) !important;
+      }
+    }
+  </style>
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
