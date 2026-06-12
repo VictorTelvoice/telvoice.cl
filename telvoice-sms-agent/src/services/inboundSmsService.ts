@@ -39,6 +39,88 @@ function mapRow(row: Record<string, unknown>): InboundSmsMessageRow {
   };
 }
 
+/** Enmascara E.164 para logs (últimos 3 dígitos visibles). */
+export function maskInboundPhone(e164: string): string {
+  const digits = String(e164).replace(/\D/g, "");
+  const last3 = digits.slice(-3);
+  if (digits.startsWith("569") && digits.length >= 11) {
+    return `+56 9 *** *** ${last3}`;
+  }
+  return `*** *** ${last3 || "?"}`;
+}
+
+function normalizeInboundDigits(raw: string): string {
+  return String(raw ?? "").replace(/\D/g, "");
+}
+
+function inboundPhoneVariants(raw: string): string[] {
+  const trimmed = String(raw ?? "").trim();
+  const digits = normalizeInboundDigits(trimmed);
+  const variants = new Set<string>();
+  if (trimmed) variants.add(trimmed);
+  if (digits) {
+    variants.add(digits);
+    if (digits.startsWith("56")) variants.add(`+${digits}`);
+    if (digits.startsWith("569") && digits.length === 11) {
+      variants.add(`+${digits}`);
+      variants.add(`+56 ${digits.slice(2, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)} ${digits.slice(9)}`);
+    }
+  }
+  return [...variants];
+}
+
+async function findActiveClientNumberByDestination(
+  toRaw: string,
+): Promise<{ id: string; company_id: string; number: string } | null> {
+  const sb = getSupabase();
+  const variants = inboundPhoneVariants(toRaw);
+  for (const candidate of variants) {
+    const { data, error } = await sb
+      .from("client_numbers")
+      .select("id, company_id, number, status")
+      .eq("number", candidate)
+      .eq("status", "active")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      if (isMissingTableError(error)) return null;
+      throw wrapSupabaseError(error, "client_numbers");
+    }
+    if (data) {
+      return {
+        id: String(data.id),
+        company_id: String(data.company_id),
+        number: String(data.number),
+      };
+    }
+  }
+
+  const digits = normalizeInboundDigits(toRaw);
+  if (digits.length >= 9) {
+    const { data: rows, error } = await sb
+      .from("client_numbers")
+      .select("id, company_id, number, status")
+      .eq("status", "active");
+    if (error) {
+      if (isMissingTableError(error)) return null;
+      throw wrapSupabaseError(error, "client_numbers");
+    }
+    const match = (rows ?? []).find(
+      (r) => normalizeInboundDigits(String(r.number)) === digits,
+    );
+    if (match) {
+      return {
+        id: String(match.id),
+        company_id: String(match.company_id),
+        number: String(match.number),
+      };
+    }
+  }
+
+  return null;
+}
+
 /** Detecta OTP: secuencia de 4 a 8 dígitos en el cuerpo del mensaje. */
 export function detectOtpFromBody(body: string): string | null {
   const match = body.match(/\b(\d{4,8})\b/);
@@ -137,36 +219,28 @@ export async function updateInboundSmsStatus(
 export type InboundSmsWebhookPayload = {
   to: string;
   from?: string;
-  body: string;
+  body?: string;
+  text?: string;
   received_at?: string;
   provider?: string;
+  provider_message_id?: string;
 };
 
 export async function processInboundSmsWebhook(
   payload: InboundSmsWebhookPayload,
 ): Promise<{ ok: boolean; messageId?: string; error?: string }> {
   const to = payload.to?.trim();
-  const body = payload.body?.trim();
+  const body = (payload.body ?? payload.text ?? "").trim();
   if (!to || !body) {
-    return { ok: false, error: "Campos to y body son obligatorios." };
+    return { ok: false, error: "Campos to y body/text son obligatorios." };
   }
 
-  const sb = getSupabase();
-  const { data: numberRow, error: numErr } = await sb
-    .from("client_numbers")
-    .select("id, company_id, status")
-    .eq("number", to)
-    .eq("status", "active")
-    .maybeSingle();
-
-  if (numErr) {
-    if (isMissingTableError(numErr)) {
-      return { ok: false, error: "Módulo de numeraciones no disponible." };
-    }
-    throw wrapSupabaseError(numErr, "client_numbers");
-  }
-
+  const numberRow = await findActiveClientNumberByDestination(to);
   if (!numberRow) {
+    console.warn(
+      "[inbound-sms] destino sin numeración activa:",
+      maskInboundPhone(to),
+    );
     return { ok: false, error: "Numeración no encontrada o no activa." };
   }
 
@@ -175,12 +249,18 @@ export async function processInboundSmsWebhook(
     ? new Date(payload.received_at).toISOString()
     : new Date().toISOString();
 
+  const metadata: Record<string, unknown> = {};
+  if (payload.provider_message_id?.trim()) {
+    metadata.provider_message_id = payload.provider_message_id.trim();
+  }
+
+  const sb = getSupabase();
   const { data: inserted, error: insErr } = await sb
     .from("inbound_sms_messages")
     .insert({
       company_id: numberRow.company_id,
       client_number_id: numberRow.id,
-      to_number: to,
+      to_number: numberRow.number,
       from_number: payload.from?.trim() || null,
       body,
       detected_otp: detectedOtp,
@@ -188,6 +268,7 @@ export async function processInboundSmsWebhook(
       status: "received",
       source: payload.provider ?? "gateway",
       raw_payload: payload as unknown as Record<string, unknown>,
+      metadata,
     })
     .select("id")
     .single();
@@ -196,7 +277,35 @@ export async function processInboundSmsWebhook(
     throw wrapSupabaseError(insErr, "inbound_sms_messages");
   }
 
+  console.info(
+    "[inbound-sms] recibido",
+    JSON.stringify({
+      to: maskInboundPhone(numberRow.number),
+      from: payload.from ? maskInboundPhone(payload.from) : null,
+      company_id: numberRow.company_id,
+      message_id: inserted.id,
+    }),
+  );
+
   return { ok: true, messageId: String(inserted.id) };
+}
+
+/** Puente Telsim → bandeja cliente cuando la línea está asignada. */
+export async function forwardTelsimInboundToClientInbox(input: {
+  linePhone: string | null | undefined;
+  from: string;
+  body: string;
+  receivedAt: string;
+}): Promise<{ ok: boolean; messageId?: string }> {
+  const line = input.linePhone?.trim();
+  if (!line) return { ok: false };
+  return processInboundSmsWebhook({
+    to: line,
+    from: input.from,
+    body: input.body,
+    received_at: input.receivedAt,
+    provider: "telsim",
+  });
 }
 
 export function inboundSmsStatusLabel(status: InboundSmsStatus): string {

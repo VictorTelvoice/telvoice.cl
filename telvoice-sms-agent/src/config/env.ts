@@ -89,6 +89,18 @@ function parsePositiveIntEnv(name: string, fallback: number): number {
   return n;
 }
 
+function parseOptionalPositiveIntEnv(name: string): number | null {
+  const raw = optionalEnv(name);
+  if (!raw) {
+    return null;
+  }
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 1) {
+    return null;
+  }
+  return n;
+}
+
 function normalizeSmsProviderMode(value: string): SmsProviderMode {
   return value.trim().toLowerCase() === "live_test" ? "live_test" : "mock";
 }
@@ -321,6 +333,19 @@ export const env = {
     agentLineEnabled:
       optionalEnv("CLIENT_PANEL_AGENT_LINE_ENABLED", "false") === "true",
   },
+  /** Rollout controlado Fase 3: en producción solo correos en esta lista pueden comprar sim_agent_bundle. */
+  simCheckout: {
+    productionAllowlist: parseCsvEnv("SIM_CHECKOUT_PRODUCTION_ALLOWLIST"),
+    /** Precio CLP de prueba para sim_starter (solo emails en starterTestPriceEmails). */
+    starterTestPriceClp: parseOptionalPositiveIntEnv("SIM_STARTER_TEST_PRICE_CLP"),
+    starterTestPriceEmails: parseCsvEnv("SIM_STARTER_TEST_PRICE_EMAILS").map((e) =>
+      e.trim().toLowerCase(),
+    ),
+  },
+  /** Webhook POST /api/webhooks/numeraciones/inbound (opcional en dev). */
+  numeracionesInbound: {
+    webhookSecret: optionalEnv("NUMERACIONES_INBOUND_WEBHOOK_SECRET"),
+  },
   defaultRetailRatePlan: {
     ratePlanId: optionalEnv(
       "PUBLIC_CHECKOUT_DEFAULT_RATE_PLAN_ID",
@@ -425,4 +450,17 @@ export function isGoogleAuthConfigured(): boolean {
 
 export function isClientPanelAgentLineEnabled(): boolean {
   return env.clientPanel.agentLineEnabled;
+}
+
+/** Checkout landing SIM+agente: en producción exige allowlist; fuera de prod no restringe. */
+export function isSimAgentBundleCheckoutEmailAllowed(email: string): boolean {
+  if (!isProduction()) {
+    return true;
+  }
+  const allowlist = env.simCheckout.productionAllowlist;
+  if (allowlist.length === 0) {
+    return false;
+  }
+  const normalized = email.trim().toLowerCase();
+  return allowlist.some((entry) => entry.trim().toLowerCase() === normalized);
 }

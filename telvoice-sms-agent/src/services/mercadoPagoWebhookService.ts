@@ -1,5 +1,4 @@
 import { getSupabase } from "../database/supabaseClient.js";
-import { wrapSupabaseError } from "../utils/supabase-errors.js";
 import { getMercadoPagoPayment, getMercadoPagoPreapproval } from "./mercadoPagoService.js";
 import {
   isClientPanelMercadoPagoOrder,
@@ -17,7 +16,30 @@ import {
   isPublicCheckoutOrder,
 } from "../utils/order-display.js";
 import { sendPaymentReceivedClaimEmail } from "./transactionalEmailService.js";
+import {
+  sendSimAgentBundlePaymentEmails,
+  sendSimPaymentReceivedEmails,
+  sendCheckoutPanelAccessEmail,
+} from "./transactionalEmailService.js";
 import { hasPurchaseCreditForOrder } from "./walletTransactionService.js";
+import {
+  isSimAgentBundleOrder,
+  isSimCheckoutOrder,
+} from "../utils/order-display.js";
+import {
+  createSimActivationRequest,
+  linkSimActivationInventory,
+  markSimActivationPaidPending,
+  processSimPostPaymentActivation,
+} from "./simActivationService.js";
+import { getSimPlan, getBundledAgentAddonForSimPlan } from "../utils/simPlans.js";
+import { getAgentAddon } from "../utils/agentAddons.js";
+import {
+  markNumberPaymentApproved,
+  releaseReservationForOrder,
+} from "./realNumberInventoryService.js";
+import { provisionCompanyFromCheckout } from "./checkoutAccountProvisionService.js";
+import { createAgentPlanRequestFromCheckout } from "./clientAgentPlanService.js";
 import { syncPaymentCardFromOrderMetadata } from "./companyPaymentCardService.js";
 import {
   findSubscriptionByExternalReference,
@@ -25,11 +47,7 @@ import {
   recordSubscriptionPayment,
   updateSmsMpSubscriptionStatus,
 } from "./smsMpSubscriptionService.js";
-import {
-  handlePaidPurchasePostProcessing,
-  runPostCreditPurchaseFlow,
-  shouldSendPaymentClaimEmail,
-} from "./paidPurchasePostProcessingService.js";
+import { runBillingSyncBestEffort } from "./billingSyncService.js";
 import type { MercadoPagoPaymentRecord } from "./mercadoPagoService.js";
 import type { SmsOrderRow } from "../types/wallet.js";
 
@@ -82,18 +100,6 @@ async function syncCreditedOrderState(
   return latest ?? order;
 }
 
-async function runPostPurchaseAfterCredit(orderId: string): Promise<void> {
-  const result = await runPostCreditPurchaseFlow(orderId, {
-    dryRun: false,
-    source: "mercadopago_webhook",
-    skipReconcile: true,
-  });
-  console.log("[mp-webhook] post_purchase_flow", orderId, result.action, {
-    wouldSendEmails: result.wouldSendEmails,
-    missingSteps: result.missingSteps,
-  });
-}
-
 async function resolveAlreadyCredited(
   orderId: string,
   order: SmsOrderRow,
@@ -102,7 +108,7 @@ async function resolveAlreadyCredited(
   if (order.credit_status === "credited") {
     await patchOrderFields(orderId, { metadata: metaPatch });
     console.log("[mp-webhook] already_credited (orden acreditada)", orderId);
-    await runPostPurchaseAfterCredit(orderId);
+    await runBillingSyncBestEffort(orderId, { source: "mercadopago_webhook" });
     return { handled: true, orderId, result: "already_credited" };
   }
 
@@ -110,7 +116,7 @@ async function resolveAlreadyCredited(
   if (hasTx) {
     await syncCreditedOrderState(orderId, order, metaPatch);
     console.log("[mp-webhook] already_credited (purchase_credit existente)", orderId);
-    await runPostPurchaseAfterCredit(orderId);
+    await runBillingSyncBestEffort(orderId, { source: "mercadopago_webhook" });
     return { handled: true, orderId, result: "already_credited" };
   }
 
@@ -144,7 +150,7 @@ async function creditApprovedOrder(
     console.log("[mp-webhook] credited", orderId);
   }
 
-  await runPostPurchaseAfterCredit(orderId);
+  await runBillingSyncBestEffort(orderId, { source: "mercadopago_webhook" });
 
   return { handled: true, orderId, result };
 }
@@ -246,6 +252,9 @@ export async function processPublicCheckoutMercadoPagoWebhook(
 
   const metaPatch = mergeMpMetadata(order, payment);
 
+  const isSim = isSimCheckoutOrder(order);
+  const isBundle = isSimAgentBundleOrder(order);
+
   if (payment.status === "approved") {
     const paidAmount = Math.round(Number(payment.transaction_amount ?? 0));
     const expected = Math.round(Number(order.amount));
@@ -259,50 +268,180 @@ export async function processPublicCheckoutMercadoPagoWebhook(
     }
 
     const latestBefore = await getOrderById(orderId);
+
+    if (!isSim) {
+      if (latestBefore?.credit_status === "credited") {
+        await patchOrderFields(orderId, { metadata: metaPatch });
+        return { handled: true, orderId, result: "already_credited" };
+      }
+    } else if (latestBefore?.metadata?.activation_status === "paid_pending_activation") {
+      await patchOrderFields(orderId, { metadata: metaPatch });
+      return { handled: true, orderId, result: "sim_already_pending_activation" };
+    }
+
     if (latestBefore?.payment_status !== "paid") {
       await markOrderPaid(orderId, null);
     }
 
-    await patchOrderFields(orderId, { metadata: metaPatch });
+    const simMetaPatch = isSim
+      ? { ...metaPatch, activation_status: "paid_pending_activation" }
+      : metaPatch;
 
-    const postResult = await handlePaidPurchasePostProcessing(orderId, {
-      dryRun: false,
-      source: "mp_webhook_public",
+    await patchOrderFields(orderId, {
+      credit_status: isBundle ? "pending" : "pending_claim",
+      metadata: simMetaPatch,
     });
 
-    const refreshed = await getOrderById(orderId);
-    if (
-      refreshed?.credit_status !== "credited" &&
-      (postResult.action === "reconcile_failed" || postResult.action === "not_credited")
-    ) {
-      const { error: claimErr } = await getSupabase()
-        .from("sms_orders")
-        .update({
-          credit_status: "pending_claim",
-          claim_status: latestBefore?.claim_status ?? "unclaimed",
-        })
-        .eq("id", orderId)
-        .neq("credit_status", "credited");
-      if (claimErr) {
-        wrapSupabaseError(claimErr, "publicCheckoutWebhook.pending_claim");
+    if (isSim) {
+      const refreshed = await getOrderById(orderId);
+      const planId = String(
+        refreshed?.metadata?.sim_plan_id ??
+          refreshed?.metadata?.plan_id ??
+          "",
+      );
+      const plan = getSimPlan(planId);
+      const inventoryNumberId =
+        refreshed?.metadata?.inventory_number_id != null
+          ? String(refreshed.metadata.inventory_number_id)
+          : null;
+
+      if (plan) {
+        const activation = await createSimActivationRequest({
+          orderId,
+          plan,
+          checkoutEmail:
+            refreshed?.checkout_email ??
+            String(refreshed?.metadata?.checkout_email ?? ""),
+          payerName:
+            typeof refreshed?.metadata?.payer_name === "string"
+              ? refreshed.metadata.payer_name
+              : undefined,
+          companyName:
+            typeof refreshed?.metadata?.company_name === "string"
+              ? refreshed.metadata.company_name
+              : undefined,
+          phone:
+            typeof refreshed?.metadata?.phone === "string"
+              ? refreshed.metadata.phone
+              : undefined,
+          taxId:
+            typeof refreshed?.metadata?.tax_id === "string"
+              ? refreshed.metadata.tax_id
+              : undefined,
+          useCase:
+            typeof refreshed?.metadata?.use_case === "string"
+              ? refreshed.metadata.use_case
+              : undefined,
+          activationStatus: "paid_pending_activation",
+          inventoryNumberId: inventoryNumberId ?? undefined,
+        });
+
+        if (inventoryNumberId) {
+          await markNumberPaymentApproved({
+            orderId,
+            simActivationRequestId: activation.id,
+          });
+          await linkSimActivationInventory(orderId, inventoryNumberId);
+        }
+      } else if (inventoryNumberId) {
+        await markNumberPaymentApproved({ orderId });
+      }
+      await markSimActivationPaidPending(orderId);
+
+      if (isBundle && refreshed) {
+        const checkoutEmail =
+          refreshed.checkout_email ??
+          String(refreshed.metadata?.checkout_email ?? "");
+        const bundledAgentId = plan
+          ? getBundledAgentAddonForSimPlan(plan.plan_id)
+          : String(refreshed.metadata?.agent_addon_id ?? "agent_pro");
+
+        const provision = await provisionCompanyFromCheckout({
+          order: refreshed,
+          checkoutEmail,
+          payerName:
+            typeof refreshed.metadata?.payer_name === "string"
+              ? refreshed.metadata.payer_name
+              : undefined,
+          companyName:
+            typeof refreshed.metadata?.company_name === "string"
+              ? refreshed.metadata.company_name
+              : undefined,
+          phone:
+            typeof refreshed.metadata?.phone === "string"
+              ? refreshed.metadata.phone
+              : undefined,
+          taxId:
+            typeof refreshed.metadata?.tax_id === "string"
+              ? refreshed.metadata.tax_id
+              : undefined,
+          useCase:
+            typeof refreshed.metadata?.use_case === "string"
+              ? refreshed.metadata.use_case
+              : undefined,
+        });
+
+        const addon = getAgentAddon(bundledAgentId);
+        if (addon?.planCode) {
+          await createAgentPlanRequestFromCheckout({
+            companyId: provision.companyId,
+            orderId,
+            planCode: addon.planCode,
+            checkoutEmail,
+            useCase:
+              typeof refreshed.metadata?.use_case === "string"
+                ? refreshed.metadata.use_case
+                : undefined,
+          });
+        }
+
+        try {
+          await sendSimAgentBundlePaymentEmails(orderId);
+          if (provision.isNewCompany) {
+            await sendCheckoutPanelAccessEmail(orderId, checkoutEmail);
+          }
+          const postPay = await processSimPostPaymentActivation(orderId);
+          console.log(
+            "[mp-webhook] sim post-payment",
+            orderId,
+            postPay.autoActivated ? "auto_activated" : postPay.reason ?? "pending",
+          );
+        } catch (err) {
+          console.error("[mp-webhook] sim agent bundle email failed", orderId, err);
+        }
+
+        return { handled: true, orderId, result: "sim_agent_bundle_paid_pending_activation" };
       }
 
-      if (await shouldSendPaymentClaimEmail(orderId)) {
+      try {
+        await sendSimPaymentReceivedEmails(orderId);
+      } catch (err) {
+        console.error("[mp-webhook] sim payment email failed", orderId, err);
+      }
+
+      if (refreshed?.company_id) {
         try {
-          await sendPaymentReceivedClaimEmail(orderId);
+          const postPay = await processSimPostPaymentActivation(orderId);
+          console.log(
+            "[mp-webhook] sim post-payment",
+            orderId,
+            postPay.autoActivated ? "auto_activated" : postPay.reason ?? "pending",
+          );
         } catch (err) {
-          console.error("[mp-webhook] payment claim email failed", orderId, err);
+          console.error("[mp-webhook] sim post-payment failed", orderId, err);
         }
       }
+
+      return { handled: true, orderId, result: "sim_paid_pending_activation" };
     }
 
-    const result =
-      refreshed?.credit_status === "credited" ||
-      postResult.action === "processed" ||
-      postResult.action === "already_processed"
-        ? "paid_credited"
-        : "paid_pending_claim";
-    return { handled: true, orderId, result };
+    try {
+      await sendPaymentReceivedClaimEmail(orderId);
+    } catch (err) {
+      console.error("[mp-webhook] payment claim email failed", orderId, err);
+    }
+
+    return { handled: true, orderId, result: "paid_pending_claim" };
   }
 
   if (payment.status === "rejected") {
@@ -310,6 +449,9 @@ export async function processPublicCheckoutMercadoPagoWebhook(
       payment_status: "rejected",
       metadata: metaPatch,
     });
+    if (isSim || isBundle) {
+      await releaseReservationForOrder(orderId);
+    }
     return { handled: true, orderId, result: "rejected" };
   }
 
@@ -318,6 +460,9 @@ export async function processPublicCheckoutMercadoPagoWebhook(
       payment_status: "cancelled",
       metadata: metaPatch,
     });
+    if (isSim || isBundle) {
+      await releaseReservationForOrder(orderId);
+    }
     return { handled: true, orderId, result: "cancelled" };
   }
 
