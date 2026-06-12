@@ -3,7 +3,7 @@
  */
 window.HELP_CENTER = {
   siteName: "Telvoice.cl",
-  portalUrl: "https://portal.telvoice.net/",
+  portalUrl: "https://agent.telvoice.cl/app/dashboard",
   home: {
     title: "Centro de ayuda Telvoice",
     subtitle: "Aprende a enviar SMS, revisar reportes y usar tu portal paso a paso",
