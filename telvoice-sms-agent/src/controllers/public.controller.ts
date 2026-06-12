@@ -8,6 +8,8 @@ import { getSupabase } from "../database/supabaseClient.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 import { confirmOrderCredit, getOrderById } from "../services/smsOrderService.js";
 import {
+  getPublicPendingSimCheckoutForEmail,
+  listPublicSimAvailableNumbers,
   startPublicLandingCheckout,
   startPublicSimAgentBundleCheckout,
   startPublicSimCheckout,
@@ -40,6 +42,40 @@ export async function getPublicSimAvailability(
   }
 }
 
+export async function getPublicSimAvailableNumbers(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const limitRaw = Number(req.query.limit ?? 10);
+    const limit = Number.isFinite(limitRaw)
+      ? Math.max(1, Math.min(50, Math.round(limitRaw)))
+      : 10;
+    const result = await listPublicSimAvailableNumbers(limit);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getPublicPendingSimCheckout(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const email = String(req.query.email ?? "").trim();
+    if (!email.includes("@")) {
+      throw new ValidationError("email inválido.");
+    }
+    const result = await getPublicPendingSimCheckoutForEmail(email);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getPublicProducts(
   _req: Request,
   res: Response,
@@ -60,29 +96,45 @@ export async function getPublicProducts(
       res.json({
         success: true,
         country_code: countryCode,
-        products: packages.map((p) => ({
-          id: p.id,
-          package_id: p.id,
-          product_name: p.name,
-          description: null,
-          sms_quantity: p.sms_quantity,
-          currency: p.currency,
-          price_amount: Math.round(Number(p.total_price)),
-          unit_price: Number(p.unit_price ?? 0),
-          checkout_url: null,
-          is_featured: false,
-          product_type: "sms_bundle",
-        })),
+        products: packages.map((p) => {
+          const meta =
+            p.metadata && typeof p.metadata === "object"
+              ? (p.metadata as Record<string, unknown>)
+              : {};
+          return {
+            id: p.id,
+            package_id: p.id,
+            product_name: p.name,
+            description: null,
+            sms_quantity: p.sms_quantity,
+            currency: p.currency,
+            price_amount: Math.round(Number(p.total_price)),
+            unit_price: Number(p.unit_price ?? 0),
+            checkout_url: null,
+            is_featured: false,
+            product_type: "sms_bundle",
+            qa_visible:
+              meta.temporary_qa_commercial === true ||
+              meta.qa_visible === true,
+          };
+        }),
       });
       return;
     }
 
     const visiblePackages = await listCustomerVisiblePackages(countryCode);
     const packageByKey = new Map<string, string>();
+    const packageMetaByKey = new Map<string, Record<string, unknown>>();
     for (const p of visiblePackages) {
       const k = `${p.sms_quantity}|${Math.round(Number(p.total_price))}|${String(p.currency ?? "CLP").toUpperCase()}`;
       if (!packageByKey.has(k)) {
         packageByKey.set(k, p.id);
+        packageMetaByKey.set(
+          k,
+          p.metadata && typeof p.metadata === "object"
+            ? (p.metadata as Record<string, unknown>)
+            : {},
+        );
       }
     }
 
@@ -99,22 +151,25 @@ export async function getPublicProducts(
     res.json({
       success: true,
       country_code: countryCode,
-      products: publicProducts.map((p) => ({
-        id: p.id,
-        package_id:
-          packageByKey.get(
-            `${p.sms_quantity}|${Math.round(Number(p.price_amount))}|${String(p.currency ?? "CLP").toUpperCase()}`,
-          ) ?? null,
-        product_name: p.product_name,
-        description: p.description,
-        sms_quantity: p.sms_quantity,
-        currency: p.currency,
-        price_amount: p.price_amount,
-        unit_price: Number(p.unit_price),
-        checkout_url: p.checkout_url,
-        is_featured: p.is_featured,
-        product_type: p.product_type,
-      })),
+      products: publicProducts.map((p) => {
+        const key = `${p.sms_quantity}|${Math.round(Number(p.price_amount))}|${String(p.currency ?? "CLP").toUpperCase()}`;
+        const meta = packageMetaByKey.get(key) ?? {};
+        return {
+          id: p.id,
+          package_id: packageByKey.get(key) ?? null,
+          product_name: p.product_name,
+          description: p.description,
+          sms_quantity: p.sms_quantity,
+          currency: p.currency,
+          price_amount: p.price_amount,
+          unit_price: Number(p.unit_price),
+          checkout_url: p.checkout_url,
+          is_featured: p.is_featured,
+          product_type: p.product_type,
+          qa_visible:
+            meta.temporary_qa_commercial === true || meta.qa_visible === true,
+        };
+      }),
     });
   } catch (error) {
     next(error);
@@ -269,6 +324,10 @@ export async function postPublicCheckout(
                 : undefined,
           useCase:
             typeof body.use_case === "string" ? body.use_case.trim() : undefined,
+          inventoryPublicId:
+            typeof body.inventory_public_id === "string"
+              ? body.inventory_public_id.trim()
+              : undefined,
         });
 
         res.status(201).json({

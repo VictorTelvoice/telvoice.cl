@@ -1,7 +1,9 @@
 import { Router } from "express";
 import {
+  getPublicPendingSimCheckout,
   getPublicProducts,
   getPublicSimAvailability,
+  getPublicSimAvailableNumbers,
   postPublicCheckout,
   postPublicClaim,
   postPublicLead,
@@ -12,6 +14,8 @@ export const publicRouter = Router();
 
 publicRouter.get("/products", getPublicProducts);
 publicRouter.get("/sim-availability", getPublicSimAvailability);
+publicRouter.get("/sim-available-numbers", getPublicSimAvailableNumbers);
+publicRouter.get("/pending-sim-checkout", getPublicPendingSimCheckout);
 publicRouter.post("/quote", postPublicQuote);
 publicRouter.post("/lead", postPublicLead);
 publicRouter.post("/checkout", postPublicCheckout);

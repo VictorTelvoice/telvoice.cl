@@ -9,6 +9,56 @@
   }
   var CALC_TIERS = CFG.volumeTiers || [];
   var CALC_MAX_VOL = CFG.calcMaxVolume != null ? CFG.calcMaxVolume : 120000;
+  var retail200QaFromApi = false;
+  var retail200ChipEl = null;
+
+  function isQaBolsa200UrlMode() {
+    try {
+      return new URLSearchParams(window.location.search).get("qa_bolsa_200") === "1";
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function shouldShowRetail200QaChip(email) {
+    var cfg = window.TELVOICE_CONFIG || {};
+    if (cfg.showRetail200PurchaseChip === true) return true;
+    if (isQaBolsa200UrlMode()) return true;
+    if (email && String(email).trim().toLowerCase() === "licantravel@gmail.com") return true;
+    if (retail200QaFromApi) return true;
+    return false;
+  }
+
+  function syncRetail200ChipVisibility(email) {
+    if (!retail200ChipEl) return;
+    var show = shouldShowRetail200QaChip(email);
+    retail200ChipEl.hidden = !show;
+    retail200ChipEl.style.display = show ? "" : "none";
+  }
+
+  function probeRetail200QaFromApi() {
+    fetch("https://agent.telvoice.cl/api/public/products", {
+      headers: { Accept: "application/json" },
+    })
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (data) {
+        var products = (data && data.products) || [];
+        retail200QaFromApi = products.some(function (p) {
+          return (
+            p &&
+            p.qa_visible === true &&
+            +p.sms_quantity === 200 &&
+            +p.price_amount === 1000
+          );
+        });
+        syncRetail200ChipVisibility(
+          qs("compra-email") ? (qs("compra-email").value || "").trim() : ""
+        );
+      })
+      .catch(function () {});
+  }
 
   function qs(id) {
     return document.getElementById(id);
@@ -1031,20 +1081,20 @@
       // Total fijo IVA incl. para QA del flujo de compra/login.
       (function addRetail200CalcChip() {
         var cfg = window.TELVOICE_CONFIG || {};
-        if (cfg.showRetail200PurchaseChip !== true) {
-          return;
-        }
         var bag = cfg.retail200Bag || {};
         var sms = bag.sms || 200;
         var totalInclIva = Math.round((bag.priceNet || 840) * (1 + IVA_RATE));
         var net = bag.priceNet || Math.round(totalInclIva / (1 + IVA_RATE));
         var tax = totalInclIva - net;
-        var planName = bag.planName || "Bolsa Chile 200 SMS";
+        var qaMode = shouldShowRetail200QaChip("");
+        var planName = qaMode ? "Bolsa QA 200 SMS" : bag.planName || "Bolsa Chile 200 SMS";
         var btn = document.createElement("button");
         btn.type = "button";
         btn.className = "calc-tier-chip calc-tier-chip--retail200";
         btn.setAttribute("data-volume", String(sms));
         btn.setAttribute("aria-pressed", "false");
+        btn.hidden = !shouldShowRetail200QaChip("");
+        btn.style.display = shouldShowRetail200QaChip("") ? "" : "none";
         btn.setAttribute(
           "aria-label",
           planName + " · $" + fmt(totalInclIva) + " IVA incl."
@@ -1052,7 +1102,9 @@
         btn.appendChild(document.createTextNode(String(sms) + " SMS"));
         var sub = document.createElement("span");
         sub.className = "calc-tier-chip-sub";
-        sub.textContent = "$" + fmt(totalInclIva);
+        sub.textContent = qaMode
+          ? "$" + fmt(totalInclIva) + " · Solo prueba controlada"
+          : "$" + fmt(totalInclIva);
         btn.appendChild(sub);
         btn.addEventListener("click", function () {
           openCompraModal({
@@ -1072,6 +1124,8 @@
           });
         });
         suggestionsEl.appendChild(btn);
+        retail200ChipEl = btn;
+        probeRetail200QaFromApi();
       })();
 
       (function addTestCalcChip() {
@@ -1149,6 +1203,15 @@
     updateCalc();
   }
   initCalculadora();
+
+  var compraEmailEl = qs("compra-email");
+  if (compraEmailEl && !compraEmailEl.dataset.retail200Bound) {
+    compraEmailEl.dataset.retail200Bound = "1";
+    compraEmailEl.addEventListener("input", function () {
+      syncRetail200ChipVisibility((compraEmailEl.value || "").trim());
+    });
+  }
+  syncRetail200ChipVisibility("");
 
   var heroPriceCta = qs("hero-price-cta");
   if (heroPriceCta) {

@@ -10,6 +10,10 @@ import type {
 import { isMissingTableError } from "../utils/db-table.js";
 import { AppError } from "../utils/errors.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
+import {
+  inventoryPublicId,
+  resolveInventoryIdFromPublicId,
+} from "../utils/inventory-public-id.js";
 
 const RESERVATION_MINUTES = 30;
 
@@ -199,6 +203,56 @@ export function maskE164(number: string): string {
   return cc ? `+${cc} *** *** ${last3}` : `*** *** ${last3}`;
 }
 
+/** Formato móvil Chile para UI pública (+56 9 *** *** XXX). */
+export function maskE164ChileMobile(number: string): string {
+  const digits = number.replace(/\D/g, "");
+  const last3 = digits.slice(-3);
+  if (digits.startsWith("569") && digits.length >= 11) {
+    return `+56 9 *** *** ${last3}`;
+  }
+  return maskE164(number);
+}
+
+export type PublicAvailableNumberItem = {
+  inventory_public_id: string;
+  display_number: string;
+  suffix: string;
+  plan_eligible: string[];
+};
+
+const PUBLIC_PLAN_ELIGIBLE = ["sim_starter", "sim_pro"] as const;
+
+export async function listPublicAvailableNumbers(
+  limit = 10,
+): Promise<PublicAvailableNumberItem[]> {
+  await releaseExpiredReservation();
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from("real_number_inventory")
+    .select("id, e164_number")
+    .eq("sales_status", "connected_available")
+    .eq("connection_status", "connected")
+    .eq("webhook_connected", true)
+    .order("updated_at", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    if (isMissingTableError(error)) return [];
+    throw wrapSupabaseError(error, "listPublicAvailableNumbers");
+  }
+
+  return (data ?? []).map((row) => {
+    const e164 = String(row.e164_number);
+    const digits = e164.replace(/\D/g, "");
+    return {
+      inventory_public_id: inventoryPublicId(String(row.id)),
+      display_number: maskE164ChileMobile(e164),
+      suffix: digits.slice(-3),
+      plan_eligible: [...PUBLIC_PLAN_ELIGIBLE],
+    };
+  });
+}
+
 export async function getPublicAvailability(): Promise<PublicRealNumberAvailability> {
   await releaseExpiredReservation();
   const summary = await getInventorySummary();
@@ -230,10 +284,19 @@ async function pickConnectedAvailableId(): Promise<string | null> {
 export async function reserveAvailableNumberForCheckout(input: {
   orderId: string;
   simActivationRequestId?: string;
+  inventoryId?: string;
+}): Promise<RealNumberInventoryRow> {
+  return reserveInventoryNumberForCheckout(input);
+}
+
+export async function reserveInventoryNumberForCheckout(input: {
+  orderId: string;
+  simActivationRequestId?: string;
+  inventoryId?: string;
 }): Promise<RealNumberInventoryRow> {
   await releaseExpiredReservation();
 
-  const inventoryId = await pickConnectedAvailableId();
+  let inventoryId = input.inventoryId ?? (await pickConnectedAvailableId());
   if (!inventoryId) {
     throw new AppError(
       "No hay números reales disponibles en este momento.",
@@ -258,23 +321,48 @@ export async function reserveAvailableNumberForCheckout(input: {
     .update(patch)
     .eq("id", inventoryId)
     .eq("sales_status", "connected_available")
+    .eq("connection_status", "connected")
+    .eq("webhook_connected", true)
     .select("*")
     .maybeSingle();
 
   if (error) {
-    throw wrapSupabaseError(error, "reserveAvailableNumberForCheckout");
+    throw wrapSupabaseError(error, "reserveInventoryNumberForCheckout");
   }
 
   if (!data) {
     throw new AppError(
-      "No hay números reales disponibles en este momento.",
+      "Este número acaba de ser reservado. Elige otra numeración disponible.",
       409,
-      "NO_STOCK",
+      "NUMBER_UNAVAILABLE",
     );
   }
 
   return mapRow(data as Record<string, unknown>);
 }
+
+/** Resuelve inventory_public_id contra inventario vendible online. */
+export async function resolvePublicInventoryId(
+  publicId: string,
+): Promise<string | null> {
+  await releaseExpiredReservation();
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from("real_number_inventory")
+    .select("id")
+    .eq("sales_status", "connected_available")
+    .eq("connection_status", "connected")
+    .eq("webhook_connected", true)
+    .limit(50);
+  if (error) {
+    if (isMissingTableError(error)) return null;
+    throw wrapSupabaseError(error, "resolvePublicInventoryId");
+  }
+  const internalIds = (data ?? []).map((r) => String(r.id));
+  return resolveInventoryIdFromPublicId(publicId, internalIds);
+}
+
+export { inventoryPublicId };
 
 export async function releaseReservationForOrder(orderId: string): Promise<void> {
   const sb = getSupabase();
