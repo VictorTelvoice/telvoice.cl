@@ -73,7 +73,10 @@
     modalOpen: false,
     submitting: false,
     statusVisible: false,
+    stockAvailable: null,
   };
+
+  var FORM_DRAFT_KEY = "telvoice_numeracion_sim_draft_v1";
 
   function parseApiJson(res) {
     return res.text().then(function (text) {
@@ -164,6 +167,28 @@
     });
 
     refreshStockHint();
+    updatePurchaseCta();
+  }
+
+  function updatePurchaseCta() {
+    var submitBtn = qs("nsim-submit");
+    var footnote = qs("nsim-modal-footnote");
+    var banner = qs("nsim-stock-banner");
+    var plan = getPlan(state.simPlanId);
+    if (!submitBtn || !plan || plan.plan_id === "custom") return;
+
+    var noStock =
+      !isNumeracionDemoMode() &&
+      state.stockAvailable === false &&
+      state.modalOpen &&
+      !state.statusVisible;
+
+    if (banner) banner.hidden = !noStock;
+    if (submitBtn) {
+      submitBtn.hidden = noStock;
+      submitBtn.disabled = noStock || state.submitting;
+    }
+    if (footnote) footnote.hidden = noStock || plan.plan_id === "custom";
   }
 
   function resetModalStatus() {
@@ -211,13 +236,36 @@
     status.querySelector(".nsim-modal-status__close").addEventListener("click", closePurchaseModal);
   }
 
+  function clearFormDraft() {
+    try {
+      localStorage.removeItem(FORM_DRAFT_KEY);
+      sessionStorage.removeItem(FORM_DRAFT_KEY);
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function resetPurchaseForm() {
+    var form = qs("nsim-purchase-form");
+    if (form) form.reset();
+    ["nsim-nombre", "nsim-empresa", "nsim-email", "nsim-telefono", "nsim-rut", "nsim-volume"].forEach(
+      function (id) {
+        var el = qs(id);
+        if (el) el.value = "";
+      },
+    );
+    clearFormDraft();
+  }
+
   function openPurchaseModal(planId) {
     if (!SIM_PLANS[planId]) return;
     state.simPlanId = planId;
     state.modalOpen = true;
     state.submitting = false;
+    state.stockAvailable = null;
     setError("");
     resetModalStatus();
+    resetPurchaseForm();
     updateModalChrome();
 
     var modal = qs("nsim-purchase-modal");
@@ -249,6 +297,12 @@
     if (message) {
       err.textContent = message;
       err.hidden = false;
+      if (message === SIM_NO_STOCK_ERROR) {
+        state.stockAvailable = false;
+        var hint = qs("nsim-stock-hint");
+        if (hint) hint.textContent = message;
+        updatePurchaseCta();
+      }
     } else {
       err.textContent = "";
       err.hidden = true;
@@ -276,7 +330,6 @@
       email: (qs("nsim-email") && qs("nsim-email").value || "").trim(),
       telefono: (qs("nsim-telefono") && qs("nsim-telefono").value || "").trim(),
       rut: (qs("nsim-rut") && qs("nsim-rut").value || "").trim(),
-      useCase: (qs("nsim-use-case") && qs("nsim-use-case").value || "").trim(),
       volume: (qs("nsim-volume") && qs("nsim-volume").value || "").trim(),
     };
   }
@@ -295,7 +348,6 @@
     if (values.email) parts.push("<p><strong>Email:</strong> " + values.email + "</p>");
     if (values.empresa) parts.push("<p><strong>Empresa:</strong> " + values.empresa + "</p>");
     if (values.telefono) parts.push("<p><strong>Teléfono:</strong> " + values.telefono + "</p>");
-    if (values.useCase) parts.push("<p><strong>Caso de uso:</strong> " + values.useCase + "</p>");
     if (values.volume) parts.push("<p><strong>Volumen estimado:</strong> " + values.volume + "</p>");
     return parts.join("");
   }
@@ -321,16 +373,16 @@
     if (!hint || !state.modalOpen || state.statusVisible) return;
 
     if (state.simPlanId === "custom") {
-      hint.textContent =
-        "Plan a medida: un especialista Telvoice te contactará para diseñar la solución.";
-      hint.hidden = false;
+      state.stockAvailable = null;
+      updatePurchaseCta();
       return;
     }
     if (isNumeracionDemoMode()) {
-      hint.textContent = "Demo local: disponibilidad simulada para revisión visual.";
-      hint.hidden = false;
+      state.stockAvailable = true;
+      updatePurchaseCta();
       return;
     }
+
     var agentOrigin =
       (window.TELVOICE_CONFIG && window.TELVOICE_CONFIG.agentApiOrigin) ||
       "https://agent.telvoice.cl";
@@ -338,18 +390,30 @@
       headers: { Accept: "application/json" },
     })
       .then(function (res) {
-        return res.json();
+        return res.json().then(function (data) {
+          return { ok: res.ok, data: data };
+        });
       })
-      .then(function (data) {
-        if (data && data.in_stock === false) {
-          hint.textContent = SIM_NO_STOCK_ERROR;
-          hint.hidden = false;
-        } else {
-          hint.hidden = true;
+      .then(function (result) {
+        var data = result.data || {};
+        if (!result.ok || data.success !== true) {
+          state.stockAvailable = null;
+          hint.textContent =
+            "No pudimos verificar la disponibilidad en este momento. Puedes intentar continuar o contactarnos.";
+          var banner = qs("nsim-stock-banner");
+          if (banner) banner.hidden = false;
+          updatePurchaseCta();
+          return;
         }
+        state.stockAvailable = data.in_stock !== false;
+        if (data.in_stock === false) {
+          hint.textContent = SIM_NO_STOCK_ERROR;
+        }
+        updatePurchaseCta();
       })
       .catch(function () {
-        hint.hidden = true;
+        state.stockAvailable = null;
+        updatePurchaseCta();
       });
   }
 
@@ -406,7 +470,6 @@
         company_name: values.empresa || undefined,
         phone: values.telefono || undefined,
         tax_id: values.rut || undefined,
-        use_case: values.useCase || undefined,
       }),
     })
       .then(function (res) {
@@ -502,6 +565,7 @@
   }
 
   function init() {
+    clearFormDraft();
     initPurchaseModal();
 
     document.querySelectorAll(".nsim-plan-cta").forEach(function (btn) {

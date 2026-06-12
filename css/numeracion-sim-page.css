@@ -616,6 +616,30 @@ body.nsim-modal-open {
   margin-top: 0.75rem;
   line-height: 1.5;
 }
+.nsim-stock-banner {
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(180, 35, 24, 0.22);
+  background: #fef3f2;
+}
+.nsim-stock-banner[hidden] { display: none; }
+.nsim-stock-banner__text {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #912018;
+}
+.nsim-stock-banner__link {
+  display: inline-block;
+  margin-top: 0.65rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--nsim-primary, #0052cc);
+  text-decoration: none;
+}
+.nsim-stock-banner__link:hover { text-decoration: underline; }
+.nsim-submit[hidden] { display: none; }
 .nsim-submit {
   width: 100%;
   margin-top: 1rem;
