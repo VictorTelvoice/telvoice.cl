@@ -13,6 +13,7 @@ export type CheckoutProvisionInput = {
   phone?: string;
   taxId?: string;
   useCase?: string;
+  provisionSource?: string;
 };
 
 export type CheckoutProvisionResult = {
@@ -156,7 +157,7 @@ export async function provisionCompanyFromCheckout(
         country: "CL",
         status: "active",
         metadata: {
-          source: "landing_sim_agent_builder",
+          source: input.provisionSource ?? "landing_sim_agent_builder",
           first_order_id: input.order.id,
           account_creation_mode: "post_payment_auto",
         },

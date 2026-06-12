@@ -3,7 +3,7 @@ import { buildPanelLoginUrl } from "./checkoutAccessEmailService.js";
 import type { SmsOrderRow, SmsOrderWithDetails } from "../types/wallet.js";
 import { decryptClaimTokenFromMetadata } from "../utils/claim-token.js";
 import { buildClaimActivationUrl } from "../utils/claim-token.js";
-import { isPublicCheckoutOrder, isSimAgentBundleOrder, isSimSubscriptionOrder } from "../utils/order-display.js";
+import { isPublicCheckoutOrder, isSimAgentBundleOrder, isSimCheckoutOrder, isSimSubscriptionOrder } from "../utils/order-display.js";
 import {
   getOrderById,
   getOrderByMercadoPagoPaymentId,
@@ -121,19 +121,21 @@ export async function buildCheckoutSuccessPageData(
 
   let summary: PublicOrderSummary | null = null;
   let claimUrl: string | null = null;
-  let activationHint: CheckoutSuccessPageData["activationHint"] = "check_email";
+  let activationHint: CheckoutSuccessPageData["activationHint"] = "panel";
 
   if (order && isPublicCheckoutOrder(order)) {
     summary = toPublicOrderSummary(order);
     claimUrl = isSimAgentBundleOrder(order) ? null : resolveClaimUrl(order);
-    if (isSimAgentBundleOrder(order)) {
-      activationHint = "panel";
-    } else if (order.claim_status === "claimed" || order.credit_status === "credited") {
-      activationHint = "panel";
-    } else if (claimUrl) {
-      activationHint = "claim_button";
+    if (isSimAgentBundleOrder(order) || isSimCheckoutOrder(order)) {
+      if (order.claim_status === "claimed" || order.credit_status === "credited") {
+        activationHint = "panel";
+      } else if (claimUrl) {
+        activationHint = "claim_button";
+      } else {
+        activationHint = "check_email";
+      }
     } else {
-      activationHint = "check_email";
+      activationHint = "panel";
     }
   } else if (order) {
     summary = toPublicOrderSummary(order);

@@ -1357,6 +1357,38 @@ export function getAppPanelStyles(): string {
       text-transform: uppercase;
       padding: 0.7rem 1rem;
       border-bottom: 1px solid var(--tv-border);
+      position: relative;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .tv-table--col-resize {
+      table-layout: fixed;
+      width: 100%;
+    }
+    .tv-table--col-resize tbody td {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .tv-col-resize-grip {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 6px;
+      height: 100%;
+      cursor: col-resize;
+      user-select: none;
+      touch-action: none;
+      z-index: 2;
+    }
+    .tv-col-resize-grip:hover,
+    .tv-col-resize-grip.is-dragging {
+      background: rgba(0, 82, 204, 0.22);
+    }
+    body.tv-col-resize-active {
+      cursor: col-resize;
+      user-select: none;
     }
     .tv-client-dash-table-panel .tv-table--dash tbody td {
       padding: 0.8rem 1rem;

@@ -47,13 +47,18 @@ function renderActivationBox(data: CheckoutSuccessPageData): string {
     : "el correo que ingresaste al comprar";
 
   if (data.activationHint === "panel") {
+    const credited = data.summary?.creditStatus === "credited";
     return `
     <div class="payment-account-box">
-      <h2 class="payment-account-box__title">Tu cuenta está lista</h2>
+      <h2 class="payment-account-box__title">${credited ? "Tu saldo ya está disponible" : "Accede a tu panel"}</h2>
       <p class="payment-account-box__text">
-        Ya activaste tu cuenta. Inicia sesión en el panel para usar tus SMS.
+        ${
+          credited
+            ? "Acreditamos tu bolsa SMS. Inicia sesión con Google usando el mismo correo de la compra."
+            : "Estamos acreditando tu bolsa SMS. Inicia sesión con Google usando el mismo correo de la compra; el saldo aparecerá en segundos."
+        }
       </p>
-      <a class="payment-btn payment-btn--primary" href="${escapeHtml(data.appUrl)}/login">
+      <a class="payment-btn payment-btn--primary" href="${escapeHtml(data.panelLoginUrl)}">
         Ir al panel
       </a>
     </div>`;
@@ -97,7 +102,7 @@ function resolveHeadline(data: CheckoutSuccessPageData): {
   if (data.confirmingPayment) {
     return {
       title: "Estamos confirmando tu pago",
-      text: "Mercado Pago aprobó tu pago. En unos minutos recibirás el correo de activación con Google en el email de la compra.",
+      text: "Mercado Pago aprobó tu pago. En unos segundos acreditaremos tu bolsa SMS en el panel con el correo de la compra.",
       iconClass: "payment-icon--pending",
       confirmLayout: true,
     };
@@ -112,7 +117,7 @@ function resolveHeadline(data: CheckoutSuccessPageData): {
       ? "Mercado Pago aprobó tu pago. Estamos activando tu numeración SIM Starter y tu acceso al panel Telvoice."
       : data.isSimSubscription
         ? "Mercado Pago aprobó tu pago. Estamos preparando la activación de tu numeración SIM."
-        : "Mercado Pago aprobó tu pago. Estamos preparando la activación de tu cuenta y la carga de tu bolsa SMS.";
+        : "Mercado Pago aprobó tu pago. Estamos acreditando tu bolsa SMS en tu cuenta.";
     return {
       title: "¡Compra confirmada!",
       text: simText,

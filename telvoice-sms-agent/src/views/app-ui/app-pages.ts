@@ -15,6 +15,7 @@ import {
   renderOrderQaBadgeIfNeeded,
 } from "./app-order-ui.js";
 import { renderPanelMessageStatusBadge } from "./app-sms-ui.js";
+import { renderDashboardTableColumnResizeScript } from "./dashboard-table-resize.js";
 
 function dashboardMonthLabel(): string {
   const label = new Intl.DateTimeFormat("es-CL", {
@@ -292,7 +293,10 @@ export function renderAppDashboardPage(
         })}
         <section class="tv-panel tv-client-dash-table-panel">
           <div class="tv-client-dash-table-inner">
-            <table class="tv-table tv-table--dash">
+            <table class="tv-table tv-table--dash tv-table--col-resize" data-table-id="dash-orders">
+              <colgroup>
+                <col><col><col><col>
+              </colgroup>
               <thead><tr>
                 <th>Fecha</th><th>Bolsa</th><th>SMS</th><th>Pago</th>
               </tr></thead>
@@ -308,7 +312,10 @@ export function renderAppDashboardPage(
         })}
         <section class="tv-panel tv-client-dash-table-panel">
           <div class="tv-client-dash-table-inner">
-            <table class="tv-table tv-table--dash">
+            <table class="tv-table tv-table--dash tv-table--col-resize" data-table-id="dash-sends">
+              <colgroup>
+                <col><col><col><col>
+              </colgroup>
               <thead><tr>
                 <th>Fecha</th><th>Destinatario</th><th>Mensaje</th><th>Estado</th>
               </tr></thead>
@@ -318,6 +325,7 @@ export function renderAppDashboardPage(
         </section>
       </div>
     </div>
+    ${renderDashboardTableColumnResizeScript()}
     </div>`;
   return wrapAppPage(ctx, "dashboard", "Dashboard", body);
 }

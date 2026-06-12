@@ -15,12 +15,12 @@ import {
   CLIENT_PANEL_ORDER_METADATA,
   isPublicCheckoutOrder,
 } from "../utils/order-display.js";
-import { sendPaymentReceivedClaimEmail } from "./transactionalEmailService.js";
 import {
   sendSimAgentBundlePaymentEmails,
   sendSimPaymentReceivedEmails,
   sendCheckoutPanelAccessEmail,
 } from "./transactionalEmailService.js";
+import { processLandingSmsBagAutoCredit } from "./landingSmsPostPaymentService.js";
 import { hasPurchaseCreditForOrder } from "./walletTransactionService.js";
 import {
   isSimAgentBundleOrder,
@@ -286,14 +286,23 @@ export async function processPublicCheckoutMercadoPagoWebhook(
         } catch (err) {
           console.error("[mp-webhook] sim post-payment retry failed", orderId, err);
         }
+        return {
+          handled: true,
+          orderId,
+          result: isBundle
+            ? "sim_agent_bundle_payment_already_processed"
+            : "sim_payment_already_processed",
+        };
       }
-      return {
-        handled: true,
-        orderId,
-        result: isBundle
-          ? "sim_agent_bundle_payment_already_processed"
-          : "sim_payment_already_processed",
-      };
+      if (latestBefore.credit_status !== "credited") {
+        const autoCredit = await processLandingSmsBagAutoCredit(orderId);
+        return { handled: true, orderId, result: autoCredit.result };
+      }
+      return { handled: true, orderId, result: "landing_payment_already_processed" };
+    }
+
+    if (latestBefore?.payment_status !== "paid") {
+      await markOrderPaid(orderId, null);
     }
 
     if (!isSim) {
@@ -301,18 +310,20 @@ export async function processPublicCheckoutMercadoPagoWebhook(
         await patchOrderFields(orderId, { metadata: metaPatch });
         return { handled: true, orderId, result: "already_credited" };
       }
-    } else if (latestBefore?.metadata?.activation_status === "paid_pending_activation") {
+      await patchOrderFields(orderId, { metadata: metaPatch });
+      const autoCredit = await processLandingSmsBagAutoCredit(orderId);
+      return { handled: true, orderId, result: autoCredit.result };
+    }
+
+    if (latestBefore?.metadata?.activation_status === "paid_pending_activation") {
       await patchOrderFields(orderId, { metadata: metaPatch });
       return { handled: true, orderId, result: "sim_already_pending_activation" };
     }
 
-    if (latestBefore?.payment_status !== "paid") {
-      await markOrderPaid(orderId, null);
-    }
-
-    const simMetaPatch = isSim
-      ? { ...metaPatch, activation_status: "paid_pending_activation" }
-      : metaPatch;
+    const simMetaPatch = {
+      ...metaPatch,
+      activation_status: "paid_pending_activation",
+    };
 
     await patchOrderFields(orderId, {
       credit_status: isBundle ? "pending" : "pending_claim",
@@ -461,14 +472,6 @@ export async function processPublicCheckoutMercadoPagoWebhook(
 
       return { handled: true, orderId, result: "sim_paid_pending_activation" };
     }
-
-    try {
-      await sendPaymentReceivedClaimEmail(orderId);
-    } catch (err) {
-      console.error("[mp-webhook] payment claim email failed", orderId, err);
-    }
-
-    return { handled: true, orderId, result: "paid_pending_claim" };
   }
 
   if (payment.status === "rejected") {
