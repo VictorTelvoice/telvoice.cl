@@ -45,6 +45,7 @@ import {
   renderTestClientPage,
 } from "../views/admin-pages.js";
 import { getWalletGlobalStats } from "../services/walletDashboardService.js";
+import { getAdminDashboardSnapshot } from "../services/adminDashboardService.js";
 import { getConfiguredDlrWebhookUrl } from "../utils/dlr-callback.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
@@ -317,6 +318,7 @@ export async function getDashboard(
     }
 
     const walletStats = await getWalletGlobalStats();
+    const dashboardSnapshot = await getAdminDashboardSnapshot();
 
     res.type("html").send(
       renderDashboardPage({
@@ -328,6 +330,7 @@ export async function getDashboard(
         stats,
         asmscBalance,
         walletStats,
+        dashboardSnapshot,
         supabaseConfigured: Boolean(
           env.supabase.url && env.supabase.serviceRoleKey,
         ),

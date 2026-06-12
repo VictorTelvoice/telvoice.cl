@@ -3,6 +3,7 @@ import type { AdminDashboardSnapshot } from "../types/adminDashboard.js";
 import { APP_SCHEDULE_TIMEZONE } from "../utils/scheduleTime.js";
 import {
   companyIdsToPgArray,
+  loadOperationalCompanyIdsFallback,
   loadProductionCompanyIds,
 } from "./adminProductionScopeService.js";
 import {
@@ -60,7 +61,10 @@ function last7DayLabels(): string[] {
 }
 
 export async function getAdminDashboardSnapshot(): Promise<AdminDashboardSnapshot> {
-  const companyIds = await loadProductionCompanyIds();
+  let companyIds = await loadProductionCompanyIds();
+  if (companyIds.size === 0) {
+    companyIds = await loadOperationalCompanyIdsFallback();
+  }
   if (companyIds.size === 0) {
     return emptySnapshot();
   }

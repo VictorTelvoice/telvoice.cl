@@ -82,6 +82,7 @@ export function renderDashboardPage(options: {
   successMessage?: string | null;
   dlrWebhookUrl?: string;
   walletStats?: import("../types/wallet.js").WalletGlobalStats | null;
+  dashboardSnapshot?: import("../types/adminDashboard.js").AdminDashboardSnapshot | null;
 }): string {
   const smsBalance = String(options.balance?.available_units ?? "1,2M");
   const routesOk = options.serviceOk && options.supabaseConfigured;

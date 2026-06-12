@@ -667,6 +667,7 @@ function matchesStatusFilter(
 
 function computeSegmentCounts(
   all: AdminClientListItem[],
+  scope: AdminClientScope,
   signals: CompanyRealSignals,
 ): AdminClientsScopeSummary["segments"] {
   let productionReal = 0;
@@ -679,11 +680,19 @@ function computeSegmentCounts(
   let noActivity = 0;
   let protectedCount = 0;
 
+  const scopedForStatus =
+    scope === "all"
+      ? all
+      : all.filter((item) => matchesScope(item.company, item.audit, scope, signals));
+
   for (const item of all) {
-    const flags = item.operational.operationalFlags;
     if (matchesScope(item.company, item.audit, "real", signals)) productionReal += 1;
     if (matchesScope(item.company, item.audit, "qa", signals)) qaTest += 1;
     if (matchesScope(item.company, item.audit, "review", signals)) reviewRequired += 1;
+  }
+
+  for (const item of scopedForStatus) {
+    const flags = item.operational.operationalFlags;
     if (!flags.hasBalance) noBalance += 1;
     if (flags.hasBalance) hasBalance += 1;
     if (!flags.hasRatePlan) noRatePlan += 1;
@@ -707,6 +716,7 @@ function computeSegmentCounts(
 
 function computeSummary(
   all: AdminClientListItem[],
+  scoped: AdminClientListItem[],
   visible: AdminClientListItem[],
   scope: AdminClientScope,
   signals: CompanyRealSignals,
@@ -714,8 +724,9 @@ function computeSummary(
   return {
     scope,
     visible: visible.length,
+    environmentTotal: scoped.length,
     totalCompanies: all.length,
-    segments: computeSegmentCounts(all, signals),
+    segments: computeSegmentCounts(all, scope, signals),
   };
 }
 
@@ -820,12 +831,20 @@ export async function listAdminClientsForScope(input: {
     }
   }
 
+  let filterEmptyHint: string | null = null;
+  if (totalFiltered === 0 && scoped.length > 0 && (statusFilter || search)) {
+    filterEmptyHint = "No hay clientes que coincidan con el filtro actual.";
+  } else if (totalFiltered === 0 && scoped.length === 0 && scope !== "all" && notArchived.length > 0) {
+    filterEmptyHint = "Hay clientes en otros segmentos. Cambia el filtro para verlos.";
+  }
+
   return {
     items,
-    summary: computeSummary(notArchived, filtered, scope, signals),
+    summary: computeSummary(notArchived, scoped, filtered, scope, signals),
     search,
     statusFilter,
     searchHint,
+    filterEmptyHint,
     page,
     pageSize,
     totalFiltered,

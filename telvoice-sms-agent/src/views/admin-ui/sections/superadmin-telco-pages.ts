@@ -1022,7 +1022,7 @@ function renderClientsSegmentBar(
   ];
   return `<div class="tv-clients-segments">
     ${chips.join("")}
-    <span class="tv-clients-segments__meta">${summary.visible} resultado(s) · ${summary.totalCompanies} empresas en base</span>
+    <span class="tv-clients-segments__meta">${summary.visible} resultado(s) · ${summary.environmentTotal} en ${escapeHtml(CLIENT_SCOPE_LABELS[scope])} · ${summary.totalCompanies} empresas en base</span>
   </div>`;
 }
 
@@ -1033,6 +1033,7 @@ export function renderSaClientsPage(opts: BaseOpts & {
   search: string;
   statusFilter: AdminClientStatusFilter;
   searchHint?: string | null;
+  filterEmptyHint?: string | null;
   page: number;
   totalFiltered: number;
   pageSize: number;
@@ -1070,6 +1071,19 @@ export function renderSaClientsPage(opts: BaseOpts & {
     ? `<div class="alert alert-info" style="margin-bottom:1rem">${escapeHtml(opts.searchHint)} <a href="/admin/clients?scope=qa&amp;q=${encodeURIComponent(opts.search)}">Ver en QA/Test →</a></div>`
     : "";
 
+  const filterEmptyHintBlock = opts.filterEmptyHint
+    ? `<div class="alert alert-info" style="margin-bottom:1rem">${escapeHtml(opts.filterEmptyHint)}</div>`
+    : "";
+
+  const emptyTableMessage =
+    opts.clients.length === 0 && opts.filterEmptyHint
+      ? escapeHtml(opts.filterEmptyHint)
+      : opts.clients.length === 0 && opts.summary.environmentTotal === 0 && opts.scope !== "all"
+        ? "Sin empresas en este ambiente"
+        : opts.clients.length === 0
+          ? "No hay clientes que coincidan con el filtro actual."
+          : "";
+
   const filters = renderFilterBar(`<form method="get" action="/admin/clients" class="tv-filters__form">
       ${renderFilterField(
         "Ambiente",
@@ -1096,9 +1110,10 @@ export function renderSaClientsPage(opts: BaseOpts & {
     ${scopeNote}
     ${filters}
     ${searchHintBlock}
+    ${filterEmptyHintBlock}
     <div class="table-wrap tv-panel tv-clients-table-wrap"><table class="tv-table tv-table--clients"><thead><tr>
       <th>Cliente</th><th>Saldo</th><th>Uso</th><th>Compra reciente</th><th>Rate plan</th><th>Estado</th><th>Acciones</th>
-    </tr></thead><tbody>${rows || `<tr><td colspan="7">Sin empresas en este ambiente</td></tr>`}</tbody></table></div>
+    </tr></thead><tbody>${rows || `<tr><td colspan="7">${emptyTableMessage}</td></tr>`}</tbody></table></div>
     ${pagination}`;
   return wrap(opts, "clients", "Clientes", body);
 }

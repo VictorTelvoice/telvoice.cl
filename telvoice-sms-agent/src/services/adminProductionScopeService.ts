@@ -17,7 +17,11 @@ export function isExplicitTestPurchaseEmail(email: string): boolean {
 
 /** IDs de empresas consideradas producción real para métricas operativas. */
 export async function loadProductionCompanyIds(): Promise<Set<string>> {
-  const realList = await listAdminClientsForScope({ scope: "real" });
+  const realList = await listAdminClientsForScope({
+    scope: "real",
+    page: 1,
+    pageSize: 5000,
+  });
   const ids = new Set(realList.items.map((item) => item.company.id));
 
   const client = createPgClient();
@@ -56,6 +60,25 @@ export async function loadProductionCompanyIds(): Promise<Set<string>> {
   }
 
   return ids;
+}
+
+/** Respaldo cuando la clasificación PROD_REAL aún no tiene flags: empresas con wallet y sin heurística QA obvia. */
+export async function loadOperationalCompanyIdsFallback(): Promise<Set<string>> {
+  const client = createPgClient();
+  await client.connect();
+  try {
+    const { rows } = await client.query(`
+      SELECT DISTINCT c.id::text AS company_id
+      FROM companies c
+      JOIN company_sms_wallets w ON w.company_id = c.id
+      WHERE lower(coalesce(c.billing_email, '')) !~ '@(telvoice\\.test|example\\.invalid)$'
+        AND lower(coalesce(c.billing_email, '')) !~ '^qa\\+'
+        AND lower(coalesce(c.name, '')) !~ '^qa '
+    `);
+    return new Set(rows.map((row) => String(row.company_id)).filter(Boolean));
+  } finally {
+    await client.end();
+  }
 }
 
 export function companyIdsToPgArray(ids: Set<string>): string[] {

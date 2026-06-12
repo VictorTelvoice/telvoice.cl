@@ -104,6 +104,8 @@ export type AdminClientsScopeSummary = {
   scope: AdminClientScope;
   /** Resultados tras filtros activos. */
   visible: number;
+  /** Empresas en el ambiente seleccionado (sin filtro de estado ni búsqueda). */
+  environmentTotal: number;
   totalCompanies: number;
   segments: AdminClientsSegmentCounts;
 };
@@ -117,6 +119,8 @@ export type AdminClientsListResult = {
   page: number;
   pageSize: number;
   totalFiltered: number;
+  /** Mensaje cuando la tabla queda vacía por filtros dentro del ambiente. */
+  filterEmptyHint: string | null;
 };
 
 /** Detalle operativo por cliente (vista /admin/clients/:companyId). */
