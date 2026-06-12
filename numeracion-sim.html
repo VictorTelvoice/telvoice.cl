@@ -9,69 +9,18 @@
   <link rel="icon" href="assets/telvoice-isotipo.png" type="image/png" />
   <meta name="theme-color" content="#0052cc" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Montserrat:wght@600;700&amp;display=swap" rel="stylesheet" />
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: "#0052cc",
-            background: "#faf8ff",
-            "on-background": "#131b2e",
-            "on-surface-variant": "#434654",
-            surface: "#faf8ff",
-            "on-primary": "#ffffff",
-          },
-          fontFamily: {
-            sans: ["Inter", "system-ui", "sans-serif"],
-          },
-        },
-      },
-    };
-  </script>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Montserrat:wght@600;700;800&amp;display=swap" rel="stylesheet" />
+  <script src="js/telvoice-tailwind-config.js"></script>
+  <link rel="stylesheet" href="css/telvoice-shared.css" />
   <link rel="stylesheet" href="css/numeracion-sim-page.css" />
 </head>
-<body class="nsim-page font-sans antialiased">
-  <nav class="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-[#c3c6d6]/30 w-full">
-    <div class="flex justify-between items-center gap-4 py-4 px-4 sm:px-8 max-w-[1100px] mx-auto">
-      <a href="index.html" class="flex items-center gap-2 shrink-0" aria-label="Telvoice.cl, ir al inicio">
-        <img src="assets/telvoice-isotipo.png" alt="" width="36" height="36" class="h-9 w-9 object-contain" />
-        <span class="text-lg font-bold tracking-tight lowercase inline-flex items-baseline">
-          <span class="text-black">telvoice</span><span class="hero-grad-text">.cl</span>
-        </span>
-      </a>
-      <ul class="hidden lg:flex gap-1 items-center">
-        <li class="site-nav-dropdown">
-          <button type="button" class="site-nav-dropdown-toggle text-[#434654] hover:text-primary transition rounded-full px-4 py-2 text-sm font-medium" id="nav-precios-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-precios-menu">Precios</button>
-          <ul class="site-nav-dropdown-menu" id="nav-precios-menu" role="menu" hidden>
-            <li role="none"><a class="site-nav-dropdown-link" href="index.html#calculadora" role="menuitem">Bolsas SMS</a></li>
-            <li role="none"><a class="site-nav-dropdown-link" href="numeracion-sim.html" role="menuitem" aria-current="page">Numeración SIM real</a></li>
-          </ul>
-        </li>
-        <li><a class="text-sm text-[#434654] hover:text-primary transition rounded-full px-4 py-2" href="index.html#casos-uso">Casos de uso</a></li>
-        <li><a class="text-sm text-[#434654] hover:text-primary transition rounded-full px-4 py-2" href="index.html#contacto">Contacto</a></li>
-      </ul>
-      <button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-[#c3c6d6]/60" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
-        <span class="material-symbols-outlined" id="menu-icon-open">menu</span>
-        <span class="material-symbols-outlined hidden" id="menu-icon-close">close</span>
-      </button>
-    </div>
-    <div id="mobile-panel" class="hidden lg:hidden border-t border-[#c3c6d6]/30 bg-white/95 py-4 px-4 max-w-[1100px] mx-auto">
-      <ul class="flex flex-col gap-1">
-        <li class="site-nav-dropdown site-nav-dropdown--mobile">
-          <button type="button" class="site-nav-dropdown-toggle block w-full text-left py-3 px-4 rounded-xl text-[#434654]" id="nav-precios-toggle-mobile" aria-expanded="false" aria-controls="nav-precios-menu-mobile">Precios</button>
-          <ul class="site-nav-dropdown-menu site-nav-dropdown-menu--mobile" id="nav-precios-menu-mobile" hidden>
-            <li><a class="site-nav-dropdown-link" href="index.html#calculadora">Bolsas SMS</a></li>
-            <li><a class="site-nav-dropdown-link" href="numeracion-sim.html">Numeración SIM real</a></li>
-          </ul>
-        </li>
-        <li><a class="block py-3 px-4 rounded-xl text-[#434654]" href="index.html#contacto">Contacto</a></li>
-      </ul>
-    </div>
-  </nav>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col">
+  <div id="tv-site-nav"></div>
 
-  <main>
+  <main class="flex-1 w-full nsim-page">
     <section id="nsim-planes" class="nsim-section nsim-section--lead" aria-labelledby="nsim-planes-title">
       <div class="nsim-section-inner">
         <h1 id="nsim-planes-title" class="nsim-section-title nsim-section-title--lead">Planes de numeración móvil Telvoice</h1>
@@ -172,9 +121,7 @@
     </section>
   </main>
 
-  <footer class="nsim-footer">
-    <p>© Telvoice · TelefoníaChile LTDA · <a href="index.html">Volver al inicio</a></p>
-  </footer>
+  <div id="tv-site-footer"></div>
 
   <div id="nsim-purchase-modal" class="nsim-purchase-modal" hidden role="dialog" aria-modal="true" aria-labelledby="nsim-modal-title">
     <div class="nsim-purchase-modal__panel" role="document">
@@ -236,6 +183,10 @@
   </div>
 
   <script src="js/telvoice-config.js"></script>
+  <script src="js/telvoice-site-chrome.js"></script>
+  <script>
+    TELVOICE_SITE_CHROME.mount({ root: "", active: "numeracion-sim" });
+  </script>
   <script src="js/numeracion-sim-page.js"></script>
 </body>
 </html>

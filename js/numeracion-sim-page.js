@@ -502,7 +502,6 @@
   }
 
   function init() {
-    initNav();
     initPurchaseModal();
 
     document.querySelectorAll(".nsim-plan-cta").forEach(function (btn) {
