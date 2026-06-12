@@ -28,6 +28,8 @@ export async function telsimSmsReceivedHandler(
       inbound_id: result.inbound_id,
       slot_id: result.slot_id,
       verification_code: result.verification_code,
+      inbox_forwarded: result.inbox_forwarded,
+      inbox_message_id: result.inbox_message_id,
     });
   } catch (error) {
     if (error instanceof AppError) {

@@ -7,6 +7,7 @@ import {
   normalizeTelsimLinePhone,
 } from "../utils/telsim-line-phone.js";
 import { verifyTelsimSignature } from "../utils/telsim-signature.js";
+import { forwardTelsimInboundToClientInbox } from "./inboundSmsService.js";
 import {
   getBoundSlotIdForVerifyPhone,
   getLatestTelsimInboundByLinePhone,
@@ -15,6 +16,7 @@ import {
   listRecentTelsimInbound,
   listTelsimInboundByLinePhoneAsc,
   listTelsimInboundBySlotAsc,
+  resolveLinePhoneForTelsimSlot,
 } from "./telsimInboundService.js";
 
 export type TelsimInboundPreview = {
@@ -46,15 +48,36 @@ function rowToFeedItem(row: TelsimInboundSmsRow): TelsimInboundFeedItem {
 function parsePayload(body: Record<string, unknown>): TelsimSmsReceivedPayload {
   const event = String(body.event ?? "").trim();
   if (event !== "sms.received") {
+    console.warn(
+      "[telsim] evento no soportado",
+      JSON.stringify({
+        event: event || "(vacío)",
+        keys: Object.keys(body),
+      }),
+    );
     throw new AppError(`Evento Telsim no soportado: ${event || "(vacío)"}`, 400);
   }
 
-  const from = String(body.from ?? "").trim();
-  const content = String(body.content ?? "").trim();
-  const slot_id = String(body.slot_id ?? "").trim();
-  const received_at = String(body.received_at ?? "").trim();
+  const from = String(body.from ?? body.sender ?? body.sender_from ?? "").trim();
+  const content = String(
+    body.content ?? body.text ?? body.message ?? body.body ?? "",
+  ).trim();
+  const slot_id = String(body.slot_id ?? body.slotId ?? "").trim();
+  const received_at = String(
+    body.received_at ?? body.receivedAt ?? body.timestamp ?? "",
+  ).trim();
 
   if (!from || !content || !slot_id || !received_at) {
+    console.warn(
+      "[telsim] payload incompleto",
+      JSON.stringify({
+        has_from: Boolean(from),
+        has_content: Boolean(content),
+        has_slot_id: Boolean(slot_id),
+        has_received_at: Boolean(received_at),
+        keys: Object.keys(body),
+      }),
+    );
     throw new AppError(
       "Payload Telsim incompleto (from, content, slot_id, received_at requeridos).",
       400,
@@ -93,6 +116,8 @@ export type TelsimWebhookProcessResult = {
   slot_id: string;
   verification_code: string | null;
   line_phone: string | null;
+  inbox_forwarded: boolean;
+  inbox_message_id: string | null;
 };
 
 export async function processTelsimSmsWebhook(input: {
@@ -151,12 +176,53 @@ export async function processTelsimSmsWebhook(input: {
     }),
   );
 
+  const resolvedLine =
+    row?.line_phone ??
+    linePhone ??
+    (await resolveLinePhoneForTelsimSlot(payload.slot_id));
+
+  let inboxForwarded = false;
+  let inboxMessageId: string | null = null;
+
+  if (resolvedLine) {
+    try {
+      const inbox = await forwardTelsimInboundToClientInbox({
+        linePhone: resolvedLine,
+        from: payload.from,
+        body: payload.content,
+        receivedAt: payload.received_at,
+        telsimInboundId: row?.id ?? undefined,
+        slotId: payload.slot_id,
+      });
+      inboxForwarded = inbox.ok;
+      inboxMessageId = inbox.messageId ?? null;
+      if (inbox.ok) {
+        console.info(
+          "[telsim] inbox forward ok",
+          JSON.stringify({
+            slot_id: payload.slot_id,
+            inbox_message_id: inboxMessageId,
+          }),
+        );
+      }
+    } catch (err) {
+      console.error("[telsim] inbox forward failed", payload.slot_id, err);
+    }
+  } else {
+    console.warn(
+      "[telsim] inbox forward omitido: line_phone no resuelto",
+      JSON.stringify({ slot_id: payload.slot_id }),
+    );
+  }
+
   return {
     stored: row != null,
     inbound_id: row?.id ?? null,
     slot_id: payload.slot_id,
     verification_code: payload.verification_code,
-    line_phone: row?.line_phone ?? linePhone,
+    line_phone: resolvedLine ?? row?.line_phone ?? linePhone,
+    inbox_forwarded: inboxForwarded,
+    inbox_message_id: inboxMessageId,
   };
 }
 
