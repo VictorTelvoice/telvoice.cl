@@ -246,6 +246,8 @@ export const env = {
     /\/$/,
     "",
   ),
+  /** Orígenes extra para CORS de /api/public/* (QA preview, separados por coma). */
+  landingExtraOrigins: parseCsvEnv("LANDING_EXTRA_ORIGINS"),
   mercadopago: {
     accessToken: optionalEnv("MERCADOPAGO_ACCESS_TOKEN"),
     sandbox: optionalEnv("MERCADOPAGO_SANDBOX", "true") === "true",

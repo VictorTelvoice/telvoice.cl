@@ -1,12 +1,22 @@
 import type { NextFunction, Request, Response } from "express";
+import { env } from "../config/env.js";
 
-/** Orígenes del landing que pueden llamar /api/public/* desde el navegador. */
-const LANDING_ORIGINS = new Set([
+const BASE_LANDING_ORIGINS = [
   "https://www.telvoice.cl",
   "https://telvoice.cl",
   "http://localhost:3000",
   "http://127.0.0.1:3000",
-]);
+] as const;
+
+function buildLandingOrigins(): Set<string> {
+  const origins = new Set<string>(BASE_LANDING_ORIGINS);
+  for (const origin of env.landingExtraOrigins) {
+    origins.add(origin.replace(/\/$/, ""));
+  }
+  return origins;
+}
+
+const LANDING_ORIGINS = buildLandingOrigins();
 
 function isPublicApiPath(req: Request): boolean {
   const url = req.originalUrl ?? req.url ?? "";
