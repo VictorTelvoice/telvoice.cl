@@ -15,7 +15,6 @@ import {
   renderOrderQaBadgeIfNeeded,
 } from "./app-order-ui.js";
 import { renderPanelMessageStatusBadge } from "./app-sms-ui.js";
-import { renderDashboardTableColumnResizeScript } from "./dashboard-table-resize.js";
 
 function dashboardMonthLabel(): string {
   const label = new Intl.DateTimeFormat("es-CL", {
@@ -325,7 +324,6 @@ export function renderAppDashboardPage(
         </section>
       </div>
     </div>
-    ${renderDashboardTableColumnResizeScript()}
     </div>`;
   return wrapAppPage(ctx, "dashboard", "Dashboard", body);
 }

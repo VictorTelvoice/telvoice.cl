@@ -1365,26 +1365,52 @@ export function getAppPanelStyles(): string {
     .tv-table--col-resize {
       table-layout: fixed;
       width: 100%;
+      min-width: 100%;
     }
     .tv-table--col-resize tbody td {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    .tv-client-dash-tables .tv-table--col-resize thead th {
+      position: relative;
+      overflow: visible;
+      padding-right: 0.85rem;
+    }
     .tv-col-resize-grip {
       position: absolute;
       top: 0;
-      right: 0;
-      width: 6px;
+      right: -5px;
+      width: 10px;
       height: 100%;
       cursor: col-resize;
       user-select: none;
       touch-action: none;
-      z-index: 2;
+      z-index: 4;
+    }
+    .tv-col-resize-grip::before {
+      content: "";
+      position: absolute;
+      top: 18%;
+      bottom: 18%;
+      left: 50%;
+      width: 2px;
+      transform: translateX(-50%);
+      border-radius: 1px;
+      background: rgba(0, 82, 204, 0.18);
+      transition: background 0.15s ease, width 0.15s ease;
+    }
+    .tv-col-resize-grip:hover::before,
+    .tv-col-resize-grip.is-dragging::before {
+      width: 3px;
+      background: rgba(0, 82, 204, 0.55);
+    }
+    .tv-table--col-resize.is-col-resizing {
+      user-select: none;
     }
     .tv-col-resize-grip:hover,
     .tv-col-resize-grip.is-dragging {
-      background: rgba(0, 82, 204, 0.22);
+      background: rgba(0, 82, 204, 0.08);
     }
     body.tv-col-resize-active {
       cursor: col-resize;
@@ -1426,6 +1452,9 @@ export function getAppPanelStyles(): string {
       padding: 0.85rem 1rem 1rem;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+    }
+    .tv-client-dash-tables .tv-table--col-resize {
+      width: max(100%, 520px);
     }
     .tv-client-dash-tables .tv-table--dash {
       width: 100%;

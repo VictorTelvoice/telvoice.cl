@@ -17,6 +17,7 @@ import {
   renderPanelThemeToggleButton,
   renderPanelThemeToggleScript,
 } from "./panel-theme.js";
+import { getDashboardTableColumnResizeScriptBody } from "./dashboard-table-resize.js";
 import {
   getAppNavAgentLine,
   APP_NAV_PRIMARY,
@@ -151,6 +152,8 @@ const SIDEBAR_SCRIPT = `<script>
 })();
 </script>`;
 
+const DASH_TABLE_RESIZE_SCRIPT = `<script>${getDashboardTableColumnResizeScriptBody()}</script>`;
+
 export function renderAppLayout(options: AppLayoutOptions): string {
   const bodyClass = options.bodyClass
     ? ` tv-app-client ${escapeHtml(options.bodyClass)}`
@@ -185,6 +188,7 @@ export function renderAppLayout(options: AppLayoutOptions): string {
   ${renderPanelAgentWidget()}
   ${SIDEBAR_SCRIPT}
   ${renderPanelThemeToggleScript()}
+  ${DASH_TABLE_RESIZE_SCRIPT}
   <script>${getPanelAgentWidgetScript()}</script>
 </body>
 </html>`;
