@@ -13,3 +13,4 @@ data/orders/*.json
 **/scripts/.backup-*
 .vercel
 .pydeps/
+telvoice-sms-agent/qa/**/*.png

@@ -338,7 +338,7 @@
   var SIM_PLANS = {
     sim_starter: {
       plan_id: "sim_starter",
-      name: "Número Real Starter",
+      name: "Numeración móvil Starter",
       sms: 1000,
       net: 16798,
       tax: 3192,
@@ -346,7 +346,7 @@
     },
     sim_pro: {
       plan_id: "sim_pro",
-      name: "Número Real Pro",
+      name: "Numeración móvil Pro",
       sms: 2000,
       net: 33605,
       tax: 6385,
@@ -354,7 +354,7 @@
     },
     sim_power: {
       plan_id: "sim_power",
-      name: "Número Real Power",
+      name: "Numeración móvil Power",
       sms: 4000,
       net: 84025,
       tax: 15965,
@@ -378,10 +378,18 @@
     "No pudimos iniciar el pago en este momento. Escríbenos para activar tu numeración SIM real.";
 
   var SIM_NO_STOCK_ERROR =
-    "No hay números reales disponibles en este momento. Intenta más tarde o contáctanos.";
+    "No hay numeración móvil disponible en este momento. Intenta más tarde o contáctanos.";
+
+  function isNumeracionDemoMode() {
+    try {
+      return new URLSearchParams(window.location.search).get("demo_numeracion") === "1";
+    } catch (e) {
+      return false;
+    }
+  }
 
   var simBuilderState = {
-    simPlanId: "sim_pro",
+    simPlanId: isNumeracionDemoMode() ? "sim_starter" : "sim_pro",
     submitting: false,
   };
 
@@ -402,11 +410,54 @@
     var agentPrice = qs("sim-summary-agent-price");
     var totalEl = qs("sim-summary-total");
 
+    var smsEl = qs("sim-summary-sms");
+    var mobileEl = qs("sim-summary-mobile-label");
+
     if (simLabel) simLabel.textContent = sim.name;
     if (simPrice) simPrice.textContent = formatClpAmount(sim.total);
-    if (agentLabelEl) agentLabelEl.textContent = "Agente incluido";
+    if (agentLabelEl) agentLabelEl.textContent = "Agente Telvoice incluido";
     if (agentPrice) agentPrice.textContent = agentLabel.replace(/^Agente\s+/i, "");
+    if (smsEl) smsEl.textContent = fmt(sim.sms) + " SMS / mes";
+    if (mobileEl) mobileEl.textContent = "1 numeración móvil incluida";
     if (totalEl) totalEl.textContent = formatClpAmount(sim.total);
+  }
+
+  function showNumeracionDemoModal(planName, totalLabel) {
+    var existing = qs("numeracion-demo-modal");
+    if (existing) existing.remove();
+
+    var overlay = document.createElement("div");
+    overlay.id = "numeracion-demo-modal";
+    overlay.className = "numeracion-demo-modal";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "numeracion-demo-modal-title");
+    overlay.innerHTML =
+      '<div class="numeracion-demo-modal__panel">' +
+      '<p class="numeracion-demo-modal__eyebrow">Demo local</p>' +
+      '<h3 id="numeracion-demo-modal-title">Aquí se crearía la orden y el pago MercadoPago</h3>' +
+      '<p class="numeracion-demo-modal__lead">Plan: <strong>' +
+      planName +
+      "</strong> · Total: <strong>" +
+      totalLabel +
+      "</strong></p>" +
+      "<ul class=\"numeracion-demo-modal__list\">" +
+      "<li>Reserva de numeración móvil por 30 minutos</li>" +
+      "<li>Orden pendiente de pago en Telvoice</li>" +
+      "<li>Redirección a MercadoPago (no ejecutada en demo)</li>" +
+      "<li>Activación manual por el equipo Telvoice tras el pago</li>" +
+      "<li>Acceso al panel cliente en /app/numeraciones</li>" +
+      "</ul>" +
+      '<p class="numeracion-demo-modal__note">Modo demo: no se creó orden, no se llamó MercadoPago y no se reservó numeración real.</p>' +
+      '<button type="button" class="sim-plan-cta sim-plan-cta--primary numeracion-demo-modal__close">Entendido</button>' +
+      "</div>";
+    document.body.appendChild(overlay);
+    overlay.querySelector(".numeracion-demo-modal__close").addEventListener("click", function () {
+      overlay.remove();
+    });
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) overlay.remove();
+    });
   }
 
   function setSimBuilderError(message) {
@@ -426,7 +477,11 @@
     if (!btn) return;
     btn.disabled = !!loading;
     btn.setAttribute("aria-busy", loading ? "true" : "false");
-    btn.textContent = loading ? "Redirigiendo a Mercado Pago…" : "Pagar y activar mi cuenta";
+    btn.textContent = loading
+      ? "Redirigiendo a Mercado Pago…"
+      : isNumeracionDemoMode()
+        ? "Comprar numeración móvil"
+        : "Pagar y activar mi cuenta";
   }
 
   function selectSimBuilderSim(planId) {
@@ -443,6 +498,11 @@
   function refreshSimStockHint() {
     var hint = qs("sim-builder-stock-hint");
     if (!hint) return;
+    if (isNumeracionDemoMode()) {
+      hint.textContent = "Demo local: disponibilidad simulada para revisión visual.";
+      hint.hidden = false;
+      return;
+    }
     var agentOrigin =
       (window.TELVOICE_CONFIG && window.TELVOICE_CONFIG.agentApiOrigin) ||
       "https://agent.telvoice.cl";
@@ -488,6 +548,21 @@
     setSimBuilderError("");
     simBuilderState.submitting = true;
     setSimBuilderLoading(true);
+
+    if (isNumeracionDemoMode()) {
+      var demoSim = SIM_PLANS[simBuilderState.simPlanId];
+      simBuilderState.submitting = false;
+      setSimBuilderLoading(false);
+      showNumeracionDemoModal(
+        demoSim ? demoSim.name : "Numeración móvil",
+        demoSim ? formatClpAmount(demoSim.total) : "",
+      );
+      trackEvent("click_sim_agent_bundle_checkout_demo", {
+        sim_plan_id: simBuilderState.simPlanId,
+        demo: true,
+      });
+      return;
+    }
 
     var agentOrigin =
       (window.TELVOICE_CONFIG && window.TELVOICE_CONFIG.agentApiOrigin) ||
@@ -1606,109 +1681,19 @@
   initSiteNavDropdowns();
 
   function initPreciosTabs() {
-    var tabButtons = document.querySelectorAll("[data-precios-tab]");
     var panelBolsas = qs("calculadora");
-    var panelSim = qs("numeracion-sim");
-    if (!tabButtons.length || !panelBolsas || !panelSim) return;
+    if (!panelBolsas) return;
 
-    function activate(tabId, options) {
-      options = options || {};
-      tabButtons.forEach(function (btn) {
-        var isActive = btn.getAttribute("data-precios-tab") === tabId;
-        btn.setAttribute("aria-selected", isActive ? "true" : "false");
-      });
-      if (tabId === "sim") {
-        panelBolsas.setAttribute("hidden", "");
-        panelSim.removeAttribute("hidden");
-      } else {
-        panelSim.setAttribute("hidden", "");
-        panelBolsas.removeAttribute("hidden");
-      }
-      if (options.updateHash && tabId === "sim") {
-        if (window.location.hash !== "#numeracion-sim") {
-          history.replaceState(null, "", "#numeracion-sim");
-        }
-      } else if (options.updateHash && tabId === "bolsas") {
-        if (window.location.hash !== "#calculadora" && window.location.hash !== "#precios") {
-          history.replaceState(null, "", "#calculadora");
-        }
-      }
-    }
-
-    function tabFromHash() {
-      var hash = (window.location.hash || "").replace(/^#/, "");
-      if (hash === "numeracion-sim" || hash === "sim") return "sim";
-      if (hash === "calculadora" || hash === "precios") return "bolsas";
-      return "bolsas";
-    }
-
-    document.querySelectorAll("[data-precios-nav]").forEach(function (link) {
+    document.querySelectorAll("[data-precios-nav=\"bolsas\"]").forEach(function (link) {
       link.addEventListener("click", function () {
-        var tabId = link.getAttribute("data-precios-nav") || "bolsas";
-        activate(tabId, { updateHash: true });
         closeMobileMenu();
         document.querySelectorAll(".site-nav-dropdown.is-open").forEach(function (wrap) {
           var t = wrap.querySelector(".site-nav-dropdown-toggle");
           var menu = wrap.querySelector(".site-nav-dropdown-menu");
           if (t && menu) setSiteNavDropdownOpen(t, menu, false);
         });
-        document.querySelectorAll(".lab-nav-dropdown.is-open").forEach(function (wrap) {
-          var t = wrap.querySelector(".lab-nav-dropdown-toggle");
-          var menu = wrap.querySelector(".lab-nav-dropdown-menu");
-          if (t && menu) {
-            t.setAttribute("aria-expanded", "false");
-            menu.setAttribute("hidden", "");
-            wrap.classList.remove("is-open");
-          }
-        });
       });
     });
-
-    tabButtons.forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        activate(btn.getAttribute("data-precios-tab"), { updateHash: true });
-      });
-    });
-
-    document.querySelectorAll("[data-precios-switch]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        activate(btn.getAttribute("data-precios-switch"), { updateHash: true });
-        var precios = qs("precios");
-        if (precios) precios.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-    });
-
-    activate(tabFromHash());
-
-    window.addEventListener("hashchange", function () {
-      activate(tabFromHash());
-    });
-
-    initSimAgentBuilder();
-
-    document.querySelectorAll(".sim-plan-cta-link[data-sim-plan]").forEach(function (link) {
-      link.addEventListener("click", function () {
-        var plan = link.getAttribute("data-sim-plan") || "SIM";
-        var nota = qs("lead-nota");
-        var uso = qs("uso-principal");
-        if (nota) {
-          nota.value = "Interés en numeración SIM real Telvoice — plan " + plan + ".";
-        }
-        if (uso && !uso.value) {
-          uso.value = "integracion-api";
-        }
-      });
-    });
-
-    var specialistCta = document.querySelector("[data-track=\"click_sim_especialista\"]");
-    if (specialistCta) {
-      specialistCta.addEventListener("click", function () {
-        var nota = qs("lead-nota");
-        if (nota && !nota.value) {
-          nota.value = "Consulta sobre numeración SIM real en Chile (Telvoice).";
-        }
-      });
-    }
   }
 
   initPreciosTabs();
