@@ -1,12 +1,20 @@
 import type { NextFunction, Request, Response } from "express";
-import { listCompanies } from "../services/companyService.js";
+import { listAdminActionLogsForCompany } from "../services/adminActionLogService.js";
+import {
+  getClientActionPermissions,
+  loadClientActionContext,
+} from "../services/adminClientActionsService.js";
+import {
+  getAdminClientOperationalDetail,
+  listAdminClientsForScope,
+} from "../services/adminClientsListService.js";
+import type { ClientActionPermissions } from "../types/adminClientActions.js";
 import {
   getLiveTestControlPanel,
   getSmsProviderStatusView,
 } from "../services/smsProviderStatusService.js";
 import {
   assignCompanyRatePlan,
-  getCompanyRatePlan,
   updateCompanyRatePlanTraffic,
 } from "../services/companyRatePlanService.js";
 import { listPanelMessagesByCompany } from "../services/panelSmsMessageService.js";
@@ -34,6 +42,7 @@ import { CLIENT_TPS_CAP_ERROR } from "../services/smsTrafficPolicyService.js";
 import { sendSuperadminProviderTest } from "../services/superadminProviderTestService.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
+  renderSaClientDetailPage,
   renderSaClientsPage,
   renderSaProviderDetailPage,
   renderSaProviderTestPage,
@@ -548,18 +557,67 @@ export async function getSaClientsPageTelco(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const companies = await listCompanies(100);
-    const withPlans = await Promise.all(
-      companies.map(async (c) => {
-        const rp = await getCompanyRatePlan(c.id);
-        return { company: c, ratePlan: rp };
-      }),
-    );
+    const listResult = await listAdminClientsForScope({
+      scope: req.query.scope,
+      search: req.query.q,
+      status: req.query.status,
+      page: req.query.page,
+    });
     res.type("html").send(
       renderSaClientsPage({
         admin: req.adminUser!,
-        clients: withPlans,
-        useReal: true,
+        clients: listResult.items,
+        summary: listResult.summary,
+        scope: listResult.summary.scope,
+        search: listResult.search,
+        statusFilter: listResult.statusFilter,
+        searchHint: listResult.searchHint,
+        page: listResult.page,
+        totalFiltered: listResult.totalFiltered,
+        pageSize: listResult.pageSize,
+        ...flash(req),
+      }),
+    );
+  } catch (e) {
+    next(e);
+  }
+}
+
+const blockedPermissions: ClientActionPermissions = {
+  updateProfile: { allowed: false, reason: "No disponible" },
+  suspendSending: { allowed: false, reason: "No disponible" },
+  reactivateSending: { allowed: false, reason: "No disponible" },
+  resendWelcome: { allowed: false, reason: "No disponible" },
+  resendReceipt: { allowed: false, reason: "No disponible" },
+  archiveQa: { allowed: false, reason: "No disponible" },
+};
+
+export async function getSaClientDetailPageTelco(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const companyId = validateUuidParam(String(req.params.companyId), "companyId");
+    const [detail, actionCtx, recentAdminActions] = await Promise.all([
+      getAdminClientOperationalDetail(companyId),
+      loadClientActionContext(companyId),
+      listAdminActionLogsForCompany(companyId),
+    ]);
+    if (!detail) {
+      throw new AppError("Cliente no encontrado.", 404);
+    }
+    const actionPermissions = actionCtx
+      ? getClientActionPermissions(actionCtx)
+      : blockedPermissions;
+    res.type("html").send(
+      renderSaClientDetailPage({
+        admin: req.adminUser!,
+        detail: {
+          ...detail,
+          actionPermissions,
+          recentAdminActions,
+        },
         ...flash(req),
       }),
     );

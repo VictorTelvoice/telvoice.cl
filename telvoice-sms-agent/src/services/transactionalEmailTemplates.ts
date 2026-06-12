@@ -22,6 +22,17 @@ export type WelcomeSmsCreditedTemplateData = {
   dashboardUrl: string;
 };
 
+export type PurchaseActivationNoticeTemplateData = {
+  customerName: string;
+  smsQuantity: number;
+  walletBalance: number;
+  ratePlanName: string;
+  orderId: string;
+  orderRef: string;
+  invoiceNumber: string;
+  appLoginUrl: string;
+};
+
 function fmtMoney(amount: number, currency = "CLP"): string {
   return new Intl.NumberFormat("es-CL", {
     style: "currency",
@@ -212,6 +223,48 @@ export function renderWelcomeSmsCredited(
   ].join("\n");
 
   return { subject, html: emailShell("Bienvenida", body), text };
+}
+
+export function renderPurchaseActivationNotice(
+  data: PurchaseActivationNoticeTemplateData,
+): { subject: string; html: string; text: string } {
+  const subject = "Tu bolsa SMS Telvoice ya está activa";
+  const smsQty = fmtSms(data.smsQuantity);
+  const balance = fmtSms(data.walletBalance);
+
+  const summaryRows = `
+    <div><strong>Bolsa activada:</strong> ${escapeHtml(smsQty)} SMS</div>
+    <div><strong>Saldo actual disponible:</strong> ${escapeHtml(balance)} SMS</div>
+    <div><strong>Plan aplicado:</strong> ${escapeHtml(data.ratePlanName)}</div>
+    <div><strong>Orden:</strong> ${escapeHtml(data.orderRef)}</div>
+    <div><strong>Comprobante:</strong> ${escapeHtml(data.invoiceNumber)}</div>
+  `;
+
+  const body = `
+    <p style="margin:0 0 12px;font-family:Segoe UI,system-ui,sans-serif;font-size:20px;font-weight:700;line-height:1.35;color:#0f172a;text-align:center">
+      Hola ${escapeHtml(data.customerName)},
+    </p>
+    <p style="margin:0 0 24px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55;color:#334155;text-align:center;max-width:480px;margin-left:auto;margin-right:auto">
+      Tu pago fue validado correctamente y tu bolsa SMS ya quedó activa en Telvoice.
+    </p>
+    ${summaryCard(summaryRows)}
+    ${ctaButton(data.appLoginUrl, "Ingresar al panel")}`;
+
+  const text = [
+    `Hola ${data.customerName},`,
+    "",
+    "Tu pago fue validado y tu bolsa SMS ya quedó activa en Telvoice.",
+    "",
+    `Bolsa activada: ${smsQty} SMS`,
+    `Saldo disponible: ${balance} SMS`,
+    `Plan: ${data.ratePlanName}`,
+    `Orden: ${data.orderRef}`,
+    `Comprobante: ${data.invoiceNumber}`,
+    "",
+    data.appLoginUrl,
+  ].join("\n");
+
+  return { subject, html: emailShell("Bolsa SMS activada", body), text };
 }
 
 export function buildPaymentClaimUrlFromToken(claimToken: string): string {

@@ -124,7 +124,7 @@ export function getAdminStyles(): string {
       text-transform: lowercase;
       letter-spacing: 0.04em;
     }
-    .tv-sidebar__nav { flex: 1; padding: 0.75rem 0.65rem 1.5rem; }
+    .tv-sidebar__nav { flex: 1; padding: 0.75rem 0.65rem 1rem; }
     .tv-sidebar__footer {
       margin-top: auto;
       flex-shrink: 0;
@@ -507,6 +507,116 @@ export function getAdminStyles(): string {
     .tv-table th, .tv-table td { padding: 0.65rem 1rem; text-align: left; border-bottom: 1px solid var(--tv-border); }
     .tv-table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tv-muted); font-weight: 700; background: #f8fafc; }
     .tv-table tbody tr:hover { background: #f8fafc; }
+
+    /* Admin clients table */
+    .tv-table--clients th,
+    .tv-table--clients td { padding: 0.75rem 0.85rem; vertical-align: top; }
+    .tv-table--clients .tv-clients-cell { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+    .tv-clients-name { font-size: 0.9rem; font-weight: 700; color: var(--tv-text); line-height: 1.25; }
+    .tv-clients-secondary { font-size: 0.78rem; color: #475569; line-height: 1.35; }
+    .tv-clients-muted { font-size: 0.72rem; color: var(--tv-muted); line-height: 1.3; }
+    .tv-clients-warn { font-size: 0.72rem; color: var(--tv-warn); font-weight: 600; }
+    .tv-clients-metric { font-size: 1.05rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--tv-text); line-height: 1.2; }
+    .tv-clients-metric-unit { font-size: 0.72rem; font-weight: 700; color: var(--tv-muted); }
+    .tv-clients-plan-name { font-size: 0.85rem; font-weight: 700; }
+    .tv-clients-link { font-size: 0.72rem; }
+    .tv-clients-id { font-size: 0.68rem; color: var(--tv-muted); }
+    .tv-clients-badges,
+    .tv-clients-status-badges { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.15rem; }
+    .tv-clients-status-badges .badge { font-size: 0.62rem; padding: 0.12rem 0.35rem; }
+    .tv-clients-badges .badge { font-size: 0.62rem; padding: 0.1rem 0.32rem; }
+    .tv-clients-cell--balance .tv-clients-metric { margin-bottom: 0.1rem; }
+    .tv-clients-cell--purchase .tv-clients-muted { display: block; max-width: 11rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tv-clients-actions-cell { width: 6.5rem; white-space: nowrap; }
+    .tv-clients-table-wrap { overflow-x: auto; }
+    .tv-cell-truncate { max-width: 12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Client segment chips */
+    .tv-clients-segments { display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; margin: 0 0 1rem; }
+    .tv-clients-segments__meta { font-size: 0.75rem; color: var(--tv-muted); margin-left: auto; }
+    .tv-segment-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.55rem;
+      border-radius: 999px;
+      border: 1px solid var(--tv-border);
+      background: #fff;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: #475569;
+      text-decoration: none;
+      line-height: 1.2;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+    }
+    .tv-segment-chip:hover { background: #f8fafc; border-color: #cbd5e1; text-decoration: none; color: #1e293b; }
+    .tv-segment-chip--active { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
+    .tv-segment-chip__count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.15rem;
+      height: 1.15rem;
+      padding: 0 0.3rem;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.08);
+      font-size: 0.68rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .tv-segment-chip--active .tv-segment-chip__count { background: rgba(29, 78, 216, 0.15); }
+
+    /* Client actions dropdown */
+    .tv-client-actions { position: relative; display: inline-block; }
+    .tv-client-actions__trigger { list-style: none; cursor: pointer; user-select: none; }
+    .tv-client-actions__trigger::-webkit-details-marker { display: none; }
+    .tv-client-actions[open] .tv-client-actions__trigger { background: #f1f5f9; }
+    .tv-client-actions__menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 0.25rem);
+      z-index: 30;
+      min-width: 11rem;
+      padding: 0.35rem;
+      background: #fff;
+      border: 1px solid var(--tv-border);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    }
+    .tv-client-actions__item {
+      display: block;
+      padding: 0.45rem 0.6rem;
+      border-radius: 7px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #334155;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .tv-client-actions__item:hover { background: #f8fafc; color: var(--tv-primary); text-decoration: none; }
+
+    /* Messages table — filas compactas, una línea por celda crítica */
+    .tv-table--messages th,
+    .tv-table--messages td { padding: 0.5rem 0.65rem; vertical-align: middle; }
+    .tv-table--messages .tv-messages-text {
+      display: block;
+      max-width: 280px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 0.8rem;
+      line-height: 1.25;
+      color: #334155;
+    }
+    .tv-messages-text--empty { color: var(--tv-muted); font-style: italic; }
+    .tv-message-date {
+      white-space: nowrap;
+      min-width: 140px;
+      font-size: 0.82rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .tv-table--messages .tv-cell-truncate { max-width: 9rem; }
+    .tv-table--messages code.tv-code-sm { max-width: 6.5rem; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 
     /* Legacy components */
     .card {

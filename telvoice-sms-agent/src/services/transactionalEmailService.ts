@@ -726,7 +726,11 @@ export async function sendSimActivationInProgressEmail(
 
 export async function sendWelcomeAndSmsCreditedEmail(
   orderId: string,
-  options?: { skipIdempotency?: boolean },
+  options?: {
+    skipIdempotency?: boolean;
+    skipOrderMetadataPatch?: boolean;
+    emailMetadata?: Record<string, unknown>;
+  },
 ): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
   const order = await getOrderWithDetails(orderId);
   if (!order?.company_id) {
@@ -767,12 +771,15 @@ export async function sendWelcomeAndSmsCreditedEmail(
     text: rendered.text,
     orderId,
     companyId: order.company_id,
+    metadata: options?.emailMetadata,
     skipIdempotency: options?.skipIdempotency,
   });
 
-  const meta = { ...(order.metadata ?? {}) };
-  delete meta.claim_token_enc;
-  await patchOrderFields(orderId, { metadata: meta });
+  if (!options?.skipOrderMetadataPatch) {
+    const meta = { ...(order.metadata ?? {}) };
+    delete meta.claim_token_enc;
+    await patchOrderFields(orderId, { metadata: meta });
+  }
 
   return result;
 }

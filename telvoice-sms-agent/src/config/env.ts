@@ -89,6 +89,18 @@ function parsePositiveIntEnv(name: string, fallback: number): number {
   return n;
 }
 
+function parseOptionalPositiveIntEnv(name: string): number | null {
+  const raw = optionalEnv(name);
+  if (!raw) {
+    return null;
+  }
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 1) {
+    return null;
+  }
+  return n;
+}
+
 function normalizeSmsProviderMode(value: string): SmsProviderMode {
   return value.trim().toLowerCase() === "live_test" ? "live_test" : "mock";
 }
@@ -324,6 +336,11 @@ export const env = {
   /** Rollout controlado Fase 3: en producción solo correos en esta lista pueden comprar sim_agent_bundle. */
   simCheckout: {
     productionAllowlist: parseCsvEnv("SIM_CHECKOUT_PRODUCTION_ALLOWLIST"),
+    /** Precio CLP de prueba para sim_starter (solo emails en starterTestPriceEmails). */
+    starterTestPriceClp: parseOptionalPositiveIntEnv("SIM_STARTER_TEST_PRICE_CLP"),
+    starterTestPriceEmails: parseCsvEnv("SIM_STARTER_TEST_PRICE_EMAILS").map((e) =>
+      e.trim().toLowerCase(),
+    ),
   },
   /** Webhook POST /api/webhooks/numeraciones/inbound (opcional en dev). */
   numeracionesInbound: {

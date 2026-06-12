@@ -18,7 +18,12 @@ export type BillingDocumentType =
   | "credit_note"
   | "manual_receipt";
 
-export type BillingEmailStatus = "pending" | "sent" | "failed" | "retrying";
+export type BillingEmailStatus =
+  | "pending"
+  | "sending"
+  | "sent"
+  | "failed"
+  | "retrying";
 
 export type BillingEventType =
   | "invoice.created"

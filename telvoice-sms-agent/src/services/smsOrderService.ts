@@ -341,6 +341,8 @@ export async function createPublicSimOrder(input: {
   companyName?: string;
   phone?: string;
   taxId?: string;
+  checkoutTotalAmount?: number;
+  priceMetadata?: Record<string, unknown>;
 }): Promise<{ order: SmsOrderRow; claimToken: string }> {
   const checkoutEmail = input.checkoutEmail.trim().toLowerCase();
   const payerEmail = (input.payerEmail ?? checkoutEmail).trim().toLowerCase();
@@ -365,7 +367,10 @@ export async function createPublicSimOrder(input: {
     phone: input.phone?.trim() || null,
     tax_id: input.taxId?.trim() || null,
     claim_token_enc: encryptClaimTokenForMetadata(claimToken),
+    ...(input.priceMetadata ?? {}),
   };
+
+  const totalAmount = input.checkoutTotalAmount ?? input.plan.total_amount;
 
   const { data, error } = await getSupabase()
     .from("sms_orders")
@@ -373,7 +378,7 @@ export async function createPublicSimOrder(input: {
       company_id: null,
       package_id: null,
       sms_quantity: input.plan.sms_quantity,
-      amount: input.plan.total_amount,
+      amount: totalAmount,
       currency: input.plan.currency,
       payment_provider: "mercadopago",
       payment_reference: publicRef,
@@ -420,6 +425,8 @@ export async function createPublicSimAgentBundleOrder(input: {
   phone?: string;
   taxId?: string;
   useCase?: string;
+  checkoutTotalAmount?: number;
+  priceMetadata?: Record<string, unknown>;
 }): Promise<{ order: SmsOrderRow; claimToken: string }> {
   const checkoutEmail = input.checkoutEmail.trim().toLowerCase();
   const payerEmail = (input.payerEmail ?? checkoutEmail).trim().toLowerCase();
@@ -432,7 +439,7 @@ export async function createPublicSimAgentBundleOrder(input: {
     throw new AppError("Plan agente no válido.", 400, "INVALID_AGENT_ADDON");
   }
 
-  const totalAmount = input.plan.total_amount;
+  const totalAmount = input.checkoutTotalAmount ?? input.plan.total_amount;
 
   const claimToken = generateClaimToken();
   const claimExpires = new Date();
@@ -456,6 +463,7 @@ export async function createPublicSimAgentBundleOrder(input: {
     tax_id: input.taxId?.trim() || null,
     use_case: input.useCase?.trim() || null,
     claim_token_enc: encryptClaimTokenForMetadata(claimToken),
+    ...(input.priceMetadata ?? {}),
   };
 
   const { data, error } = await getSupabase()

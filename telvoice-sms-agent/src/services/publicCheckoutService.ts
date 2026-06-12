@@ -14,6 +14,7 @@ import {
   createPublicSimOrder,
   patchOrderFields,
 } from "./smsOrderService.js";
+import { resolveSimBundleCheckoutPricing } from "../utils/simTestPricing.js";
 import { getSmsPackageById } from "./smsPackageService.js";
 import {
   getSimPlan,
@@ -123,6 +124,8 @@ export async function startPublicSimCheckout(input: {
     throw new AppError("Plan SIM no encontrado.", 404);
   }
 
+  const pricing = resolveSimBundleCheckoutPricing(plan, input.checkoutEmail);
+
   const { order, claimToken } = await createPublicSimOrder({
     plan,
     checkoutEmail: input.checkoutEmail,
@@ -131,13 +134,15 @@ export async function startPublicSimCheckout(input: {
     companyName: input.companyName,
     phone: input.phone,
     taxId: input.taxId,
+    checkoutTotalAmount: pricing.totalAmount,
+    priceMetadata: pricing.priceMetadata,
   });
 
   const preference = await createPublicSimCheckoutPreference({
     orderId: order.id,
     planId: plan.plan_id,
     smsQuantity: plan.sms_quantity,
-    totalAmount: plan.total_amount,
+    totalAmount: pricing.totalAmount,
     itemTitle: simCheckoutItemTitle(plan),
     itemDescription: simCheckoutItemDescription(plan),
     payer: {
@@ -194,6 +199,8 @@ export async function startPublicSimAgentBundleCheckout(input: {
     throw new AppError("Plan SIM no encontrado.", 404);
   }
 
+  const pricing = resolveSimBundleCheckoutPricing(plan, input.checkoutEmail);
+
   const availability = await getPublicAvailability();
   if (!availability.in_stock) {
     throw new AppError(
@@ -236,6 +243,8 @@ export async function startPublicSimAgentBundleCheckout(input: {
     phone: input.phone,
     taxId: input.taxId,
     useCase: input.useCase,
+    checkoutTotalAmount: pricing.totalAmount,
+    priceMetadata: pricing.priceMetadata,
   });
 
   let inventoryNumberId: string;

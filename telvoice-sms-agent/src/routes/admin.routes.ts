@@ -142,6 +142,22 @@ import {
   postRecoveryOrderUnmarkReviewed,
 } from "../controllers/admin-billing-recovery.controller.js";
 import {
+  getAdminClientAuditPage,
+  getAdminDataAuditReportJson,
+  getAdminDataCleanupPage,
+  postAdminDataCleanupApply,
+  postAdminDataCleanupDryRun,
+  postAdminDataCleanupGenerate,
+} from "../controllers/admin-data-audit.controller.js";
+import {
+  postAdminClientArchiveQa,
+  postAdminClientReactivateSending,
+  postAdminClientResendReceipt,
+  postAdminClientResendWelcome,
+  postAdminClientSuspendSending,
+  postAdminClientUpdateProfile,
+} from "../controllers/admin-client-actions.controller.js";
+import {
   getSaApiKeysPage,
   getSaCampaignsPage,
   getSaDlrPage,
@@ -164,6 +180,7 @@ import {
   postUpdateQueueSchedulerSettings,
 } from "../controllers/admin-traffic-control.controller.js";
 import {
+  getSaClientDetailPageTelco,
   getSaClientsPageTelco,
   getSaProviderDetailPage,
   getSaProviderTestPage,
@@ -225,6 +242,7 @@ import {
   loadAdminSession,
   redirectIfAuthenticated,
   requireAdminPage,
+  requireSuperAdminPage,
 } from "../middleware/admin-auth.js";
 import {
   getWholesaleHub,
@@ -279,6 +297,36 @@ adminRouter.post("/logout", postLogout);
 
 adminRouter.get("/", requireAdminPage, getDashboard);
 adminRouter.get("/clients", requireAdminPage, getSaClientsPageTelco);
+adminRouter.post(
+  "/clients/:companyId/actions/update-profile",
+  requireSuperAdminPage,
+  postAdminClientUpdateProfile,
+);
+adminRouter.post(
+  "/clients/:companyId/actions/suspend-sending",
+  requireSuperAdminPage,
+  postAdminClientSuspendSending,
+);
+adminRouter.post(
+  "/clients/:companyId/actions/reactivate-sending",
+  requireSuperAdminPage,
+  postAdminClientReactivateSending,
+);
+adminRouter.post(
+  "/clients/:companyId/actions/resend-welcome",
+  requireSuperAdminPage,
+  postAdminClientResendWelcome,
+);
+adminRouter.post(
+  "/clients/:companyId/actions/resend-receipt",
+  requireSuperAdminPage,
+  postAdminClientResendReceipt,
+);
+adminRouter.post(
+  "/clients/:companyId/actions/archive-qa",
+  requireSuperAdminPage,
+  postAdminClientArchiveQa,
+);
 adminRouter.get("/pricing", requireAdminPage, getSaPricingPage);
 adminRouter.post("/pricing", requireAdminPage, postCreateSmsPackage);
 adminRouter.post("/pricing/:id/update", requireAdminPage, postUpdateSmsPackage);
@@ -495,6 +543,12 @@ adminRouter.get("/api", requireAdminPage, getSaApiKeysPage);
 adminRouter.get("/bot", requireAdminPage, redirectSaBot);
 adminRouter.get("/inbox", requireAdminPage, getInboxPage);
 adminRouter.get("/reports", requireAdminPage, getReportsPage);
+adminRouter.get("/data-cleanup", requireAdminPage, getAdminDataCleanupPage);
+adminRouter.get("/data-cleanup/client-audit", requireAdminPage, getAdminClientAuditPage);
+adminRouter.get("/data-cleanup/report.json", requireAdminPage, getAdminDataAuditReportJson);
+adminRouter.post("/data-cleanup/generate", requireAdminPage, postAdminDataCleanupGenerate);
+adminRouter.post("/data-cleanup/dry-run", requireAdminPage, postAdminDataCleanupDryRun);
+adminRouter.post("/data-cleanup/apply", requireAdminPage, postAdminDataCleanupApply);
 adminRouter.get("/contacts", requireAdminPage, getContactsPage);
 adminRouter.get("/support", requireAdminPage, getAdminSupportPage);
 adminRouter.post(
@@ -857,3 +911,4 @@ adminRouter.post(
 );
 adminRouter.get("/messages/:id", requireAdminPage, getMessageDetail);
 adminRouter.get("/clients/test", requireAdminPage, getTestClientPage);
+adminRouter.get("/clients/:companyId", requireAdminPage, getSaClientDetailPageTelco);
