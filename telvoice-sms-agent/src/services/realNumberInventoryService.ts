@@ -1,4 +1,5 @@
 import { getSupabase } from "../database/supabaseClient.js";
+import { createAdminClientNumber } from "./adminClientNumberService.js";
 import type {
   PublicRealNumberAvailability,
   RealNumberConnectionStatus,
@@ -149,6 +150,8 @@ export async function getInventorySummary(): Promise<RealNumberInventorySummary>
         reserved: 0,
         sold_pending_activation: 0,
         active_assigned: 0,
+        not_for_sale: 0,
+        suspended: 0,
       };
     }
     throw wrapSupabaseError(error, "getInventorySummary");
@@ -161,6 +164,8 @@ export async function getInventorySummary(): Promise<RealNumberInventorySummary>
     reserved: 0,
     sold_pending_activation: 0,
     active_assigned: 0,
+    not_for_sale: 0,
+    suspended: 0,
   };
 
   for (const row of data ?? []) {
@@ -170,9 +175,28 @@ export async function getInventorySummary(): Promise<RealNumberInventorySummary>
     if (status === "reserved_pending_payment") counts.reserved += 1;
     if (status === "sold_pending_activation") counts.sold_pending_activation += 1;
     if (status === "active_assigned") counts.active_assigned += 1;
+    if (status === "not_for_sale") counts.not_for_sale += 1;
+    if (status === "suspended") counts.suspended += 1;
   }
 
   return counts;
+}
+
+/** Alias semántico para dashboard admin. */
+export async function getInventoryStats(): Promise<RealNumberInventorySummary> {
+  return getInventorySummary();
+}
+
+export function maskE164(number: string): string {
+  const trimmed = number.trim();
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length < 4) return "+** *** ***";
+  const last3 = digits.slice(-3);
+  if (digits.startsWith("56") && digits.length >= 11) {
+    return `+56 *** *** ${last3}`;
+  }
+  const cc = digits.length > 10 ? digits.slice(0, 2) : "";
+  return cc ? `+${cc} *** *** ${last3}` : `*** *** ${last3}`;
 }
 
 export async function getPublicAvailability(): Promise<PublicRealNumberAvailability> {
@@ -391,14 +415,42 @@ export async function assignInventoryNumberToCompany(input: {
   companyId: string;
   clientNumberId: string;
   simActivationRequestId?: string;
+  planCode?: string;
 }): Promise<RealNumberInventoryRow> {
+  const existing = await getInventoryById(input.inventoryId);
+  if (!existing) {
+    throw new AppError("Número de inventario no encontrado.", 404);
+  }
+  if (existing.sales_status === "active_assigned") {
+    throw new AppError("El número ya está asignado a un cliente.", 400);
+  }
+
+  const assignableStatuses: RealNumberSalesStatus[] = [
+    "sold_pending_activation",
+    "reserved_pending_payment",
+    "connected_available",
+    "preconfigured_pending",
+  ];
+  if (!assignableStatuses.includes(existing.sales_status)) {
+    throw new AppError(
+      "El número no está en estado asignable.",
+      400,
+    );
+  }
+
   const sb = getSupabase();
+  const metadata = {
+    ...existing.metadata,
+    ...(input.planCode ? { assigned_plan_code: input.planCode } : {}),
+    assigned_at: new Date().toISOString(),
+  };
   const patch: Record<string, unknown> = {
     sales_status: "active_assigned",
     current_company_id: input.companyId,
     current_client_number_id: input.clientNumberId,
     current_order_id: null,
     reserved_until: null,
+    metadata,
   };
   if (input.simActivationRequestId) {
     patch.current_agent_request_id = input.simActivationRequestId;
@@ -408,18 +460,135 @@ export async function assignInventoryNumberToCompany(input: {
     .from("real_number_inventory")
     .update(patch)
     .eq("id", input.inventoryId)
-    .in("sales_status", ["sold_pending_activation", "reserved_pending_payment"])
+    .in("sales_status", assignableStatuses)
     .select("*")
     .maybeSingle();
 
   if (error) throw wrapSupabaseError(error, "assignInventoryNumberToCompany");
   if (!data) {
     throw new AppError(
-      "El número no está en estado asignable (vendido/reservado).",
+      "El número no está en estado asignable (vendido/reservado/disponible).",
       400,
     );
   }
   return mapRow(data as Record<string, unknown>);
+}
+
+export async function releaseReservationById(
+  inventoryId: string,
+): Promise<RealNumberInventoryRow> {
+  const row = await getInventoryById(inventoryId);
+  if (!row) {
+    throw new AppError("Número de inventario no encontrado.", 404);
+  }
+  if (row.sales_status !== "reserved_pending_payment") {
+    throw new AppError("Solo se pueden liberar números en reserva de checkout.", 400);
+  }
+
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from("real_number_inventory")
+    .update({
+      sales_status: "connected_available",
+      current_order_id: null,
+      current_agent_request_id: null,
+      reserved_until: null,
+    })
+    .eq("id", inventoryId)
+    .eq("sales_status", "reserved_pending_payment")
+    .select("*")
+    .single();
+
+  if (error) throw wrapSupabaseError(error, "releaseReservationById");
+  return mapRow(data as Record<string, unknown>);
+}
+
+export async function createInventoryNumber(input: {
+  e164_number: string;
+  country_code?: string;
+  provider?: string;
+  webhook_connected?: boolean;
+  connection_status?: RealNumberConnectionStatus;
+  sales_status?: RealNumberSalesStatus;
+  gateway_id?: string;
+  sim_slot?: string;
+  webhook_url?: string;
+  metadata?: Record<string, unknown>;
+}): Promise<RealNumberInventoryRow> {
+  const sb = getSupabase();
+  const e164 = input.e164_number.trim();
+  if (!e164) {
+    throw new AppError("e164_number requerido.", 400);
+  }
+
+  const { data: existing } = await sb
+    .from("real_number_inventory")
+    .select("id")
+    .eq("e164_number", e164)
+    .maybeSingle();
+
+  if (existing?.id) {
+    throw new AppError("Ese número ya existe en inventario.", 409);
+  }
+
+  const payload = {
+    e164_number: e164,
+    country_code: input.country_code ?? "CL",
+    provider: input.provider ?? "telsim",
+    webhook_connected: input.webhook_connected ?? false,
+    connection_status: input.connection_status ?? "preconfigured_pending",
+    sales_status: input.sales_status ?? "preconfigured_pending",
+    gateway_id: input.gateway_id ?? null,
+    sim_slot: input.sim_slot ?? null,
+    webhook_url: input.webhook_url ?? null,
+    metadata: input.metadata ?? {},
+  };
+
+  const { data, error } = await sb
+    .from("real_number_inventory")
+    .insert(payload)
+    .select("*")
+    .single();
+  if (error) throw wrapSupabaseError(error, "createInventoryNumber");
+  return mapRow(data as Record<string, unknown>);
+}
+
+export async function assignInventoryNumberManual(input: {
+  inventoryId: string;
+  companyId: string;
+  planCode?: string;
+  simActivationRequestId?: string;
+}): Promise<{ inventory: RealNumberInventoryRow; clientNumberId: string }> {
+  const inventory = await getInventoryById(input.inventoryId);
+  if (!inventory) {
+    throw new AppError("Número de inventario no encontrado.", 404);
+  }
+
+  const created = await createAdminClientNumber({
+    company_id: input.companyId,
+    number: inventory.e164_number,
+    country_code: inventory.country_code,
+    type: "sim_real",
+    status: "active",
+    provider: inventory.provider,
+    sim_slot: inventory.sim_slot ?? undefined,
+    gateway_id: inventory.gateway_id ?? undefined,
+  });
+
+  const updated = await assignInventoryNumberToCompany({
+    inventoryId: inventory.id,
+    companyId: input.companyId,
+    clientNumberId: created.id,
+    simActivationRequestId: input.simActivationRequestId || undefined,
+    planCode: input.planCode || undefined,
+  });
+
+  if (input.simActivationRequestId) {
+    const { updateSimActivationStatus } = await import("./simActivationService.js");
+    await updateSimActivationStatus(input.simActivationRequestId, "active");
+  }
+
+  return { inventory: updated, clientNumberId: created.id };
 }
 
 export function realNumberSalesStatusLabel(status: RealNumberSalesStatus): string {

@@ -13,12 +13,15 @@ import {
   activatePaidSimActivationRequest,
 } from "../services/simActivationService.js";
 import {
+  assignInventoryNumberManual,
+  createInventoryNumber,
   getInventorySummary,
   getRealNumberInventoryModuleState,
   listInventory,
   markInventoryNotForSale,
   markWebhookConnected,
   releaseExpiredReservation,
+  releaseReservationById,
 } from "../services/realNumberInventoryService.js";
 import type { ClientNumberStatus, ClientNumberType } from "../types/client-numbers.js";
 import { AppError } from "../utils/errors.js";
@@ -287,6 +290,92 @@ export async function postAdminInventoryReleaseExpired(
         released > 0
           ? `${released} reserva(s) expirada(s) liberada(s).`
           : "No había reservas expiradas.",
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      redirectNumeraciones(res, { error: error.message });
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function postAdminInventoryAdd(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const webhookConnected = String(req.body?.webhook_connected ?? "") === "1";
+    await createInventoryNumber({
+      e164_number: String(req.body?.e164_number ?? ""),
+      connection_status: String(req.body?.connection_status ?? "preconfigured_pending") as
+        | "connected"
+        | "preconfigured_pending"
+        | "connection_error"
+        | "disabled",
+      sales_status: String(req.body?.sales_status ?? "preconfigured_pending") as
+        | "connected_available"
+        | "preconfigured_pending"
+        | "not_for_sale",
+      provider: String(req.body?.provider ?? "telsim") || "telsim",
+      gateway_id: String(req.body?.gateway_id ?? "") || undefined,
+      sim_slot: String(req.body?.sim_slot ?? "") || undefined,
+      webhook_url: String(req.body?.webhook_url ?? "") || undefined,
+      webhook_connected: webhookConnected,
+      metadata: {
+        internal_notes: String(req.body?.internal_notes ?? "") || undefined,
+      },
+    });
+    redirectNumeraciones(res, { ok: "Número agregado al inventario." });
+  } catch (error) {
+    if (error instanceof AppError) {
+      redirectNumeraciones(res, { error: error.message });
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function postAdminInventoryRelease(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = validateUuidParam(String(req.params.id ?? ""), "inventario");
+    await releaseReservationById(id);
+    redirectNumeraciones(res, { ok: "Reserva liberada. El número vuelve a estar disponible." });
+  } catch (error) {
+    if (error instanceof AppError) {
+      redirectNumeraciones(res, { error: error.message });
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function postAdminInventoryAssign(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = validateUuidParam(String(req.params.id ?? ""), "inventario");
+    const companyId = validateUuidParam(String(req.body?.company_id ?? ""), "empresa");
+    const planCode = String(req.body?.plan_code ?? "sim_starter").trim();
+    const simActivationRequestId = String(req.body?.sim_activation_request_id ?? "").trim();
+
+    await assignInventoryNumberManual({
+      inventoryId: id,
+      companyId,
+      planCode: planCode || undefined,
+      simActivationRequestId: simActivationRequestId || undefined,
+    });
+
+    redirectNumeraciones(res, {
+      ok: "Número asignado a la empresa. Aparecerá en el panel del cliente.",
+      company_id: companyId,
     });
   } catch (error) {
     if (error instanceof AppError) {

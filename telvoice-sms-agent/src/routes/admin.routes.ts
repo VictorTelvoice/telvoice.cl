@@ -94,8 +94,11 @@ import {
 } from "../controllers/admin-agent-plans.controller.js";
 import {
   getAdminNumeracionesPage,
+  postAdminInventoryAdd,
+  postAdminInventoryAssign,
   postAdminInventoryMarkConnected,
   postAdminInventoryNotForSale,
+  postAdminInventoryRelease,
   postAdminInventoryReleaseExpired,
   postAdminNumeracionesCreate,
   postAdminNumeracionesStatus,
@@ -559,6 +562,21 @@ adminRouter.post(
   "/numeraciones/inventory/release-expired",
   requireAdminPage,
   postAdminInventoryReleaseExpired,
+);
+adminRouter.post(
+  "/numeraciones/inventory/add",
+  requireAdminPage,
+  postAdminInventoryAdd,
+);
+adminRouter.post(
+  "/numeraciones/inventory/:id/release",
+  requireAdminPage,
+  postAdminInventoryRelease,
+);
+adminRouter.post(
+  "/numeraciones/inventory/:id/assign",
+  requireAdminPage,
+  postAdminInventoryAssign,
 );
 adminRouter.post(
   "/numeraciones/inventory/:id/mark-connected",

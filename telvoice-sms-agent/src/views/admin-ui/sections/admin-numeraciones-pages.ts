@@ -3,6 +3,7 @@ import type { SimActivationRequestListItem } from "../../../types/sim-activation
 import type { RealNumberInventoryRow, RealNumberInventorySummary } from "../../../types/real-number-inventory.js";
 import { simActivationStatusLabel } from "../../../services/simActivationService.js";
 import {
+  maskE164,
   realNumberConnectionStatusLabel,
   realNumberSalesStatusLabel,
 } from "../../../services/realNumberInventoryService.js";
@@ -191,7 +192,7 @@ function renderSimActivationsTable(items: SimActivationRequestListItem[]): strin
       const statusCls =
         a.activation_status === "paid_pending_activation" ? "warn" : "muted";
       const ref = a.public_checkout_reference ?? a.order_id.slice(0, 8).toUpperCase();
-      return `<tr>
+      return `<tr id="sim-activation-${escapeHtml(a.id)}">
         <td>${formatDate(a.created_at)}</td>
         <td>${escapeHtml(a.payer_name ?? "—")}<br><small>${escapeHtml(a.checkout_email)}</small></td>
         <td>${escapeHtml(a.company_display_name ?? a.company_name ?? "—")}</td>
@@ -233,12 +234,14 @@ function renderSimActivationsTable(items: SimActivationRequestListItem[]): strin
 
 function renderInventorySummary(summary: RealNumberInventorySummary): string {
   const cards = [
-    ["Total", summary.total],
-    ["Conectados disponibles", summary.connected_available],
-    ["Pendientes conexión", summary.preconfigured_pending],
+    ["Total inventario", summary.total],
+    ["Disponibles conectados", summary.connected_available],
+    ["Preconfigurados pendientes", summary.preconfigured_pending],
     ["Reservados", summary.reserved],
-    ["Vendidos pendientes", summary.sold_pending_activation],
+    ["Vendidos pendientes activación", summary.sold_pending_activation],
     ["Activos asignados", summary.active_assigned],
+    ["No vendibles", summary.not_for_sale],
+    ["Suspendidos", summary.suspended],
   ]
     .map(
       ([label, value]) =>
@@ -252,10 +255,69 @@ function renderInventorySummary(summary: RealNumberInventorySummary): string {
     </form>`;
 }
 
-function renderInventoryTable(items: RealNumberInventoryRow[]): string {
+function renderInventoryAddForm(): string {
+  return `<form method="post" action="/admin/numeraciones/inventory/add" class="tv-admin-num-form tv-inventory-add-form">
+    <label>Número E.164<input type="text" name="e164_number" class="tv-filter-input" placeholder="+56000000001" required /></label>
+    <label>Estado conexión<select name="connection_status" class="tv-filter-input">
+      <option value="connected">Conectado</option>
+      <option value="preconfigured_pending" selected>Preconfigurado pendiente</option>
+    </select></label>
+    <label>Estado comercial<select name="sales_status" class="tv-filter-input">
+      <option value="connected_available">Disponible conectado</option>
+      <option value="preconfigured_pending" selected>Preconfigurado pendiente</option>
+      <option value="not_for_sale">No vendible</option>
+    </select></label>
+    <label>Provider (admin)<input type="text" name="provider" class="tv-filter-input" value="telsim" /></label>
+    <label>Gateway ID<input type="text" name="gateway_id" class="tv-filter-input" placeholder="opcional" /></label>
+    <label>SIM slot<input type="text" name="sim_slot" class="tv-filter-input" placeholder="opcional" /></label>
+    <label>Webhook URL<input type="text" name="webhook_url" class="tv-filter-input" placeholder="opcional" /></label>
+    <label>Webhook conectado<input type="checkbox" name="webhook_connected" value="1" /></label>
+    <label class="tv-field-full">Notas internas<textarea name="internal_notes" class="tv-filter-input" rows="2" placeholder="Solo admin Telvoice"></textarea></label>
+    <button type="submit" class="btn btn-primary">Agregar al inventario</button>
+  </form>`;
+}
+
+function lookupCompanyName(
+  companies: CompanyRow[],
+  companyId: string | null,
+): string {
+  if (!companyId) return "—";
+  const match = companies.find((c) => c.id === companyId);
+  return match ? match.name : companyId.slice(0, 8) + "…";
+}
+
+function lookupClientNumber(
+  numbers: AdminClientNumberItem[],
+  clientNumberId: string | null,
+): string {
+  if (!clientNumberId) return "—";
+  const match = numbers.find((n) => n.id === clientNumberId);
+  return match ? maskE164(match.number) : clientNumberId.slice(0, 8) + "…";
+}
+
+function renderInventoryTable(
+  items: RealNumberInventoryRow[],
+  companies: CompanyRow[],
+  numbers: AdminClientNumberItem[],
+  simActivations: SimActivationRequestListItem[],
+): string {
   if (!items.length) {
-    return `<p class="field-hint">Sin registros en inventario. Carga números vía script admin (no versionado).</p>`;
+    return `<p class="field-hint">Sin registros en inventario. Agrega números demo con el formulario superior o el script <code>seed-demo-real-number-inventory.mjs</code>.</p>`;
   }
+
+  const companyOpts = companies
+    .map(
+      (c) =>
+        `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`,
+    )
+    .join("");
+
+  const activationOpts = simActivations
+    .map(
+      (a) =>
+        `<option value="${escapeHtml(a.id)}">${escapeHtml(a.payer_name ?? a.checkout_email)} · ${escapeHtml(a.plan_name)}</option>`,
+    )
+    .join("");
 
   const rows = items
     .map((n) => {
@@ -265,14 +327,26 @@ function renderInventoryTable(items: RealNumberInventoryRow[]): string {
           : n.sales_status === "reserved_pending_payment"
             ? "warn"
             : "muted";
+      const orderRef = n.current_order_id
+        ? n.current_order_id.slice(0, 8).toUpperCase()
+        : "—";
+      const canRelease = n.sales_status === "reserved_pending_payment";
+      const canAssign = !["active_assigned", "not_for_sale", "suspended"].includes(
+        n.sales_status,
+      );
+      const linkedActivation = n.current_agent_request_id
+        ? simActivations.find((a) => a.id === n.current_agent_request_id)
+        : null;
+
       return `<tr>
-        <td><strong>${escapeHtml(n.e164_number)}</strong></td>
-        <td>${escapeHtml(n.provider)}</td>
-        <td>${n.webhook_connected ? "Sí" : "No"}</td>
-        <td>${escapeHtml(realNumberConnectionStatusLabel(n.connection_status))}</td>
+        <td><strong title="ID ${escapeHtml(n.id)}">${escapeHtml(maskE164(n.e164_number))}</strong></td>
         <td><span class="badge badge-${salesCls}">${escapeHtml(realNumberSalesStatusLabel(n.sales_status))}</span></td>
-        <td>${escapeHtml(n.gateway_id ?? "—")}${n.sim_slot ? `<br><small>slot: ${escapeHtml(n.sim_slot)}</small>` : ""}</td>
+        <td>${escapeHtml(realNumberConnectionStatusLabel(n.connection_status))}</td>
+        <td>${escapeHtml(lookupCompanyName(companies, n.current_company_id))}</td>
+        <td><code>${escapeHtml(orderRef)}</code></td>
+        <td>${escapeHtml(lookupClientNumber(numbers, n.current_client_number_id))}</td>
         <td>${n.reserved_until ? formatDate(n.reserved_until) : "—"}</td>
+        <td>${formatDate(n.updated_at)}</td>
         <td style="white-space:nowrap">
           <form method="post" action="/admin/numeraciones/inventory/${escapeHtml(n.id)}/mark-connected" style="display:inline">
             <button type="submit" class="btn btn-ghost btn-sm">Marcar conectado</button>
@@ -280,14 +354,62 @@ function renderInventoryTable(items: RealNumberInventoryRow[]): string {
           <form method="post" action="/admin/numeraciones/inventory/${escapeHtml(n.id)}/not-for-sale" style="display:inline">
             <button type="submit" class="btn btn-ghost btn-sm">No vendible</button>
           </form>
+          ${
+            canRelease
+              ? `<form method="post" action="/admin/numeraciones/inventory/${escapeHtml(n.id)}/release" style="display:inline">
+            <button type="submit" class="btn btn-ghost btn-sm">Liberar reserva</button>
+          </form>`
+              : ""
+          }
+          ${
+            canAssign
+              ? `<details class="tv-inventory-assign">
+            <summary class="btn btn-primary btn-sm">Asignar</summary>
+            <form method="post" action="/admin/numeraciones/inventory/${escapeHtml(n.id)}/assign" class="tv-inventory-assign-form">
+              <label>Empresa<select name="company_id" class="tv-filter-input" required>${companyOpts}</select></label>
+              <label>Plan<select name="plan_code" class="tv-filter-input">
+                <option value="sim_starter">Starter</option>
+                <option value="sim_pro">Pro</option>
+                <option value="custom">A medida / manual</option>
+              </select></label>
+              ${
+                activationOpts
+                  ? `<label>Solicitud activación (opcional)<select name="sim_activation_request_id" class="tv-filter-input"><option value="">—</option>${activationOpts}</select></label>`
+                  : ""
+              }
+              <button type="submit" class="btn btn-primary btn-sm">Confirmar asignación</button>
+            </form>
+          </details>`
+              : ""
+          }
+          ${
+            linkedActivation
+              ? `<a class="btn btn-ghost btn-sm" href="#sim-activation-${escapeHtml(linkedActivation.id)}">Ver activación</a>`
+              : ""
+          }
         </td>
       </tr>`;
     })
     .join("");
 
   return `<div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-    <th>Número</th><th>Proveedor</th><th>Webhook</th><th>Conexión</th><th>Venta</th><th>Gateway / SIM</th><th>Reserva hasta</th><th>Acciones</th>
+    <th>Número</th><th>Estado comercial</th><th>Conexión</th><th>Empresa</th><th>Orden</th><th>Cliente/número</th><th>Reservado hasta</th><th>Actualizado</th><th>Acciones</th>
   </tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function renderInventorySection(ctx: AdminNumeracionesPageContext): string {
+  if (ctx.inventoryModulePending) {
+    return `<p class="field-hint">Requiere migración 057 (real_number_inventory) en Supabase.</p>`;
+  }
+
+  return `
+    <div class="tv-inventory-header">
+      <h3 class="tv-inventory-title">Inventario de números SIM reales</h3>
+      <p class="field-hint tv-inventory-subtitle">Administra las numeraciones disponibles para venta, activación y asignación a clientes Telvoice.</p>
+    </div>
+    ${ctx.inventorySummary ? renderInventorySummary(ctx.inventorySummary) : ""}
+    ${renderPanel("Agregar número al inventario", renderInventoryAddForm())}
+    ${renderInventoryTable(ctx.inventory, ctx.companies, ctx.numbers, ctx.simActivations)}`;
 }
 
 export function renderAdminNumeracionesPage(
@@ -327,12 +449,7 @@ export function renderAdminNumeracionesPage(
         `)}
       </form>`,
     )}
-    ${renderPanel(
-      "Inventario números reales",
-      ctx.inventoryModulePending
-        ? `<p class="field-hint">Requiere migración 057 (real_number_inventory) en Supabase.</p>`
-        : `${ctx.inventorySummary ? renderInventorySummary(ctx.inventorySummary) : ""}${renderInventoryTable(ctx.inventory)}`,
-    )}
+    ${renderPanel("Inventario SIM", renderInventorySection(ctx))}
     ${renderPanel(
       "Activaciones SIM pendientes",
       ctx.simModulePending
@@ -347,6 +464,20 @@ export function renderAdminNumeracionesPage(
       .tv-stat-card { border: 1px solid rgba(0,0,0,0.08); border-radius: 0.75rem; padding: 0.75rem; }
       .tv-stat-label { display: block; font-size: 0.75rem; color: #64748b; }
       .tv-stat-value { font-size: 1.25rem; }
+      .tv-inventory-title { margin: 0 0 0.35rem; font-size: 1.15rem; }
+      .tv-inventory-subtitle { margin: 0 0 1rem; }
+      .tv-inventory-add-form { margin-top: 0.5rem; }
+      .tv-inventory-assign { display: inline-block; margin-top: 0.35rem; }
+      .tv-inventory-assign-form {
+        margin-top: 0.5rem;
+        padding: 0.75rem;
+        border: 1px solid rgba(0,0,0,0.08);
+        border-radius: 0.75rem;
+        display: grid;
+        gap: 0.5rem;
+        min-width: 14rem;
+      }
+      .tv-field-full { grid-column: 1 / -1; }
     </style>
     ${renderAgentModuleStyles()}`;
 

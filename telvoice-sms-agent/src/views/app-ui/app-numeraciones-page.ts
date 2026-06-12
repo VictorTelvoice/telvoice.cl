@@ -10,6 +10,7 @@ import type {
 import { agentPlanStatusLabel, getAgentPlanDefinition } from "../../services/clientAgentPlanService.js";
 import type { SimActivationRequestRow } from "../../types/sim-activation.js";
 import { simActivationStatusLabel } from "../../services/simActivationService.js";
+import { env } from "../../config/env.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
 import {
@@ -116,18 +117,18 @@ function renderActivationSection(
 }
 
 function renderEmptyState(): string {
+  const plansUrl = `${env.publicSiteUrl.replace(/\/$/, "")}/numeracion-sim.html`;
   return `<section class="tv-numeraciones-empty tv-panel">
     <div class="tv-numeraciones-empty__icon" aria-hidden="true">
       <span class="material-symbols-outlined">sim_card</span>
     </div>
-    <h2 class="tv-numeraciones-empty__title">Aún no tienes numeraciones Telvoice</h2>
+    <h2 class="tv-numeraciones-empty__title">Aún no tienes una numeración activa</h2>
     <p class="tv-numeraciones-empty__text">
-      Solicita una línea para recibir SMS, operar validaciones autorizadas y separar
-      comunicaciones sensibles de teléfonos personales.
+      Cuando Telvoice active tu número SIM real, aparecerá aquí junto a su estado, plan y herramientas de operación.
     </p>
     <div class="tv-numeraciones-empty__actions">
-      ${renderBtn("Ver planes del agente", { href: "/app/planes-agente", variant: "primary", icon: "smart_toy" })}
-      ${renderBtn("Solicitar numeración", { href: "/app/planes-agente?action=request", variant: "secondary", icon: "add_call" })}
+      ${renderBtn("Ver planes de numeración", { href: plansUrl, variant: "primary", icon: "sell" })}
+      ${renderBtn("Bandeja SMS", { href: "/app/sms-inbox", variant: "secondary", icon: "inbox" })}
     </div>
   </section>`;
 }

@@ -42,6 +42,8 @@ export type RealNumberInventorySummary = {
   reserved: number;
   sold_pending_activation: number;
   active_assigned: number;
+  not_for_sale: number;
+  suspended: number;
 };
 
 export type PublicRealNumberAvailability = {
