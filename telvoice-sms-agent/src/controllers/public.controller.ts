@@ -289,6 +289,13 @@ export async function postPublicCheckout(
           });
           return;
         }
+        if (err instanceof AppError && err.code === "not_enabled") {
+          res.status(403).json({
+            success: false,
+            code: "not_enabled",
+          });
+          return;
+        }
         throw err;
       }
       return;

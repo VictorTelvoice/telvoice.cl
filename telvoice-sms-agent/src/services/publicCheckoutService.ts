@@ -1,4 +1,7 @@
-import { isMercadoPagoConfigured } from "../config/env.js";
+import {
+  isMercadoPagoConfigured,
+  isSimAgentBundleCheckoutEmailAllowed,
+} from "../config/env.js";
 import { AppError } from "../utils/errors.js";
 import {
   createPublicLandingCheckoutPreference,
@@ -174,6 +177,14 @@ export async function startPublicSimAgentBundleCheckout(input: {
   taxId?: string;
   useCase?: string;
 }): Promise<PublicCheckoutStartResult> {
+  if (!isSimAgentBundleCheckoutEmailAllowed(input.checkoutEmail)) {
+    throw new AppError(
+      "El checkout de numeración + agente no está habilitado para este correo.",
+      403,
+      "not_enabled",
+    );
+  }
+
   if (!isSimPlanId(input.simPlanId)) {
     throw new AppError("Plan SIM no válido.", 400, "INVALID_SIM_PLAN");
   }

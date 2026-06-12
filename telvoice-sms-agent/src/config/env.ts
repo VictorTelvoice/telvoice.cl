@@ -321,6 +321,10 @@ export const env = {
     agentLineEnabled:
       optionalEnv("CLIENT_PANEL_AGENT_LINE_ENABLED", "false") === "true",
   },
+  /** Rollout controlado Fase 3: en producción solo correos en esta lista pueden comprar sim_agent_bundle. */
+  simCheckout: {
+    productionAllowlist: parseCsvEnv("SIM_CHECKOUT_PRODUCTION_ALLOWLIST"),
+  },
   defaultRetailRatePlan: {
     ratePlanId: optionalEnv(
       "PUBLIC_CHECKOUT_DEFAULT_RATE_PLAN_ID",
@@ -425,4 +429,17 @@ export function isGoogleAuthConfigured(): boolean {
 
 export function isClientPanelAgentLineEnabled(): boolean {
   return env.clientPanel.agentLineEnabled;
+}
+
+/** Checkout landing SIM+agente: en producción exige allowlist; fuera de prod no restringe. */
+export function isSimAgentBundleCheckoutEmailAllowed(email: string): boolean {
+  if (!isProduction()) {
+    return true;
+  }
+  const allowlist = env.simCheckout.productionAllowlist;
+  if (allowlist.length === 0) {
+    return false;
+  }
+  const normalized = email.trim().toLowerCase();
+  return allowlist.some((entry) => entry.trim().toLowerCase() === normalized);
 }
