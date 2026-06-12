@@ -636,11 +636,14 @@ function renderOperationalStatusBadges(item: AdminClientListItem): string {
 function renderClientTableCell(item: AdminClientListItem): string {
   const c = item.company;
   const email = c.billing_email ?? c.name;
+  const outsideScopeBadge = item.outsideActiveScope
+    ? `<span class="badge badge-warn">Fuera del filtro actual · ${escapeHtml(item.scopeLabel ?? "Otro segmento")}</span>`
+    : "";
   return `<div class="tv-clients-cell tv-clients-cell--client">
     <strong class="tv-clients-name">${escapeHtml(c.name)}</strong>
     <span class="tv-clients-secondary tv-cell-truncate" title="${escapeHtml(email)}">${escapeHtml(email)}</span>
     <span class="tv-clients-muted">${escapeHtml(c.country ?? "CL")}</span>
-    <div class="tv-clients-badges">${clientScopeBadges(item.audit)}</div>
+    <div class="tv-clients-badges">${clientScopeBadges(item.audit)}${outsideScopeBadge}</div>
     <code class="tv-code-sm tv-clients-id" title="${escapeHtml(c.id)}">${escapeHtml(abbreviateCompanyId(c.id))}</code>
   </div>`;
 }
@@ -1034,6 +1037,8 @@ export function renderSaClientsPage(opts: BaseOpts & {
   statusFilter: AdminClientStatusFilter;
   searchHint?: string | null;
   filterEmptyHint?: string | null;
+  globalSearch?: boolean;
+  duplicateHint?: string | null;
   page: number;
   totalFiltered: number;
   pageSize: number;
@@ -1068,7 +1073,13 @@ export function renderSaClientsPage(opts: BaseOpts & {
       : "";
 
   const searchHintBlock = opts.searchHint
-    ? `<div class="alert alert-info" style="margin-bottom:1rem">${escapeHtml(opts.searchHint)} <a href="/admin/clients?scope=qa&amp;q=${encodeURIComponent(opts.search)}">Ver en QA/Test →</a></div>`
+    ? opts.globalSearch
+      ? `<div class="alert alert-info" style="margin-bottom:1rem">${escapeHtml(opts.searchHint)}</div>`
+      : `<div class="alert alert-info" style="margin-bottom:1rem">${escapeHtml(opts.searchHint)} <a href="/admin/clients?scope=qa&amp;q=${encodeURIComponent(opts.search)}">Ver en QA/Test →</a></div>`
+    : "";
+
+  const duplicateHintBlock = opts.duplicateHint
+    ? `<div class="alert alert-warn" style="margin-bottom:1rem">${escapeHtml(opts.duplicateHint)} <a href="/admin/data-cleanup">Ir a auditoría →</a></div>`
     : "";
 
   const filterEmptyHintBlock = opts.filterEmptyHint
@@ -1110,6 +1121,7 @@ export function renderSaClientsPage(opts: BaseOpts & {
     ${scopeNote}
     ${filters}
     ${searchHintBlock}
+    ${duplicateHintBlock}
     ${filterEmptyHintBlock}
     <div class="table-wrap tv-panel tv-clients-table-wrap"><table class="tv-table tv-table--clients"><thead><tr>
       <th>Cliente</th><th>Saldo</th><th>Uso</th><th>Compra reciente</th><th>Rate plan</th><th>Estado</th><th>Acciones</th>

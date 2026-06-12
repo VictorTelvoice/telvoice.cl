@@ -573,6 +573,8 @@ export async function getSaClientsPageTelco(
         statusFilter: listResult.statusFilter,
         searchHint: listResult.searchHint,
         filterEmptyHint: listResult.filterEmptyHint,
+        globalSearch: listResult.globalSearch,
+        duplicateHint: listResult.duplicateHint,
         page: listResult.page,
         totalFiltered: listResult.totalFiltered,
         pageSize: listResult.pageSize,

@@ -85,6 +85,10 @@ export type AdminClientListItem = {
   company: CompanyRow;
   audit: AdminClientAuditInfo;
   operational: AdminClientOperationalItem;
+  /** Búsqueda global: resultado fuera del ambiente activo. */
+  outsideActiveScope?: boolean;
+  /** Etiqueta del segmento principal del cliente. */
+  scopeLabel?: string | null;
 };
 
 /** Contadores para barra de segmentos (no KPIs globales de dashboard). */
@@ -121,6 +125,10 @@ export type AdminClientsListResult = {
   totalFiltered: number;
   /** Mensaje cuando la tabla queda vacía por filtros dentro del ambiente. */
   filterEmptyHint: string | null;
+  /** Búsqueda activa sin limitar al scope del filtro. */
+  globalSearch: boolean;
+  /** Alerta si hay posibles duplicados en los resultados. */
+  duplicateHint: string | null;
 };
 
 /** Detalle operativo por cliente (vista /admin/clients/:companyId). */

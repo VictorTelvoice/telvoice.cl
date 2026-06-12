@@ -449,6 +449,11 @@ function companyHasObviousQaHeuristics(company: CompanyRow): boolean {
   return false;
 }
 
+/** Clasificación explícita de auditoría como cliente real (prioridad sobre heurísticas QA). */
+function isExplicitProdRealAudit(audit: AdminClientAuditInfo): boolean {
+  return audit.hasFlag && audit.classification === "PROD_REAL";
+}
+
 function companyHasStrongRealSignals(
   company: CompanyRow,
   audit: AdminClientAuditInfo,
@@ -456,6 +461,7 @@ function companyHasStrongRealSignals(
 ): boolean {
   const email = normalizeAuditEmail(company.billing_email);
   if (PROTECTED_CLIENT_EMAILS.has(email)) return true;
+  if (isExplicitProdRealAudit(audit)) return true;
   if (companyHasObviousQaHeuristics(company)) return false;
   if (signals.realPaidOrders.has(company.id)) return true;
   if (signals.liveSms.has(company.id)) return true;
@@ -566,6 +572,7 @@ function companyLooksExcludedFromReal(
 ): boolean {
   const email = normalizeAuditEmail(company.billing_email);
   if (PROTECTED_CLIENT_EMAILS.has(email)) return false;
+  if (isExplicitProdRealAudit(audit)) return false;
   if (QA_EMAIL_DOMAIN_RE.test(email)) return true;
   if (companyHasStrongRealSignals(company, audit, signals)) return false;
   if (companyHasObviousQaHeuristics(company)) return true;
@@ -607,6 +614,7 @@ function matchesScope(
     case "internal":
       return classification === "PROD_INTERNAL";
     case "qa":
+      if (isExplicitProdRealAudit(audit)) return false;
       if (classification === "QA_TEST" || classification === "DEMO_SEED") return true;
       return companyHasObviousQaHeuristics(company);
     case "review":
@@ -626,13 +634,54 @@ function matchesSearch(company: CompanyRow, search: string): boolean {
     company.legal_name,
     company.billing_email,
     company.contact_name,
+    company.contact_phone,
     company.rut,
     company.id,
   ]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
-  return haystack.includes(q);
+  if (haystack.includes(q)) return true;
+  if (q.includes("@") && normalizeAuditEmail(company.billing_email) === q) return true;
+  return false;
+}
+
+const CLIENT_SCOPE_LABELS: Record<AdminClientScope, string> = {
+  real: "Producción real",
+  internal: "Interno Telvoice",
+  qa: "QA/Test",
+  review: "Revisión requerida",
+  all: "Todos",
+};
+
+function resolvePrimaryScopeLabel(
+  item: AdminClientListItem,
+  signals: CompanyRealSignals,
+): string {
+  const scopes: AdminClientScope[] = ["real", "internal", "qa", "review"];
+  for (const scope of scopes) {
+    if (matchesScope(item.company, item.audit, scope, signals)) {
+      return CLIENT_SCOPE_LABELS[scope];
+    }
+  }
+  return CLIENT_SCOPE_LABELS.all;
+}
+
+function detectDuplicateHint(items: AdminClientListItem[]): string | null {
+  const byEmail = new Map<string, number>();
+  const byName = new Map<string, number>();
+  for (const item of items) {
+    const email = normalizeAuditEmail(item.company.billing_email);
+    if (email) byEmail.set(email, (byEmail.get(email) ?? 0) + 1);
+    const name = String(item.company.name ?? "").trim().toLowerCase();
+    if (name) byName.set(name, (byName.get(name) ?? 0) + 1);
+  }
+  const dupEmails = [...byEmail.entries()].filter(([, n]) => n > 1).length;
+  const dupNames = [...byName.entries()].filter(([, n]) => n > 1).length;
+  if (dupEmails > 0 || dupNames > 0) {
+    return "Hay posibles duplicados asociados a este correo o nombre. Revisa la auditoría de datos antes de consolidar.";
+  }
+  return null;
 }
 
 function matchesStatusFilter(
@@ -810,17 +859,28 @@ export async function listAdminClientsForScope(input: {
 
   const notArchived = all.filter((item) => !item.audit.archivedAt);
 
+  const globalSearch = search.length > 0;
   const scoped = notArchived.filter((item) =>
     matchesScope(item.company, item.audit, scope, signals),
   );
-  const searched = scoped.filter((item) => matchesSearch(item.company, search));
+  const searchBase = globalSearch ? notArchived : scoped;
+  const searched = searchBase.filter((item) => matchesSearch(item.company, search));
   const filtered = searched.filter((item) => matchesStatusFilter(item, statusFilter));
   const totalFiltered = filtered.length;
   const offset = (page - 1) * pageSize;
-  const items = filtered.slice(offset, offset + pageSize);
+  const items = filtered.slice(offset, offset + pageSize).map((item) => {
+    const inActiveScope = matchesScope(item.company, item.audit, scope, signals);
+    return {
+      ...item,
+      outsideActiveScope: globalSearch && !inActiveScope,
+      scopeLabel: resolvePrimaryScopeLabel(item, signals),
+    };
+  });
 
   let searchHint: string | null = null;
-  if (search && items.length === 0 && scope === "real" && searchLooksQa(search)) {
+  if (globalSearch) {
+    searchHint = `Resultados globales para: ${search}`;
+  } else if (search && items.length === 0 && scope === "real" && searchLooksQa(search)) {
     const qaHits = notArchived.filter(
       (item) =>
         matchesScope(item.company, item.audit, "qa", signals) &&
@@ -832,11 +892,21 @@ export async function listAdminClientsForScope(input: {
   }
 
   let filterEmptyHint: string | null = null;
-  if (totalFiltered === 0 && scoped.length > 0 && (statusFilter || search)) {
+  if (totalFiltered === 0 && scoped.length > 0 && (statusFilter || search) && !globalSearch) {
     filterEmptyHint = "No hay clientes que coincidan con el filtro actual.";
-  } else if (totalFiltered === 0 && scoped.length === 0 && scope !== "all" && notArchived.length > 0) {
+  } else if (
+    totalFiltered === 0 &&
+    scoped.length === 0 &&
+    scope !== "all" &&
+    notArchived.length > 0 &&
+    !globalSearch
+  ) {
     filterEmptyHint = "Hay clientes en otros segmentos. Cambia el filtro para verlos.";
+  } else if (globalSearch && totalFiltered === 0) {
+    filterEmptyHint = "No hay clientes que coincidan con la búsqueda.";
   }
+
+  const duplicateHint = globalSearch ? detectDuplicateHint(searched) : null;
 
   return {
     items,
@@ -845,6 +915,8 @@ export async function listAdminClientsForScope(input: {
     statusFilter,
     searchHint,
     filterEmptyHint,
+    globalSearch,
+    duplicateHint,
     page,
     pageSize,
     totalFiltered,
