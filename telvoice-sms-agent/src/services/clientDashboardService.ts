@@ -1,21 +1,18 @@
+import { listPanelMessagesByCompany } from "./panelSmsMessageService.js";
 import { findCompanyById } from "./companyService.js";
 import { listSmsOrdersByCompany } from "./smsOrderService.js";
 import { listCustomerVisiblePackages } from "./smsPackageService.js";
 import { getCompanyBalance } from "./smsWalletService.js";
-import { listTransactionsByCompany } from "./walletTransactionService.js";
 import { getSupabase } from "../database/supabaseClient.js";
+import type { PanelSmsMessageRow } from "../types/sms-panel.js";
 import type { CompanyRow } from "../types/tenant.js";
 import type {
   CompanyBalanceView,
   SmsOrderWithDetails,
   SmsPackageRow,
-  WalletTransactionRow,
 } from "../types/wallet.js";
 import { isMissingTableError } from "../utils/db-table.js";
-import {
-  filterClientAccountOrders,
-  isQaTransaction,
-} from "../utils/order-display.js";
+import { filterClientAccountOrders } from "../utils/order-display.js";
 import {
   APP_SCHEDULE_TIMEZONE,
   buildScheduledIsoInTimeZone,
@@ -62,7 +59,7 @@ export type ClientDashboardData = {
   stats: ClientDashboardStats;
   charts: ClientDashboardCharts;
   recentOrders: SmsOrderWithDetails[];
-  recentTransactions: WalletTransactionRow[];
+  recentMessages: PanelSmsMessageRow[];
   pendingOrdersCount: number;
   packagesAvailable: number;
   lastPurchaseAt: string | null;
@@ -329,9 +326,9 @@ export async function getClientDashboardData(
 ): Promise<ClientDashboardData> {
   const { stats, monthRows } = await loadDashboardMonthStats(companyId);
 
-  const [orders, transactions, packages, charts] = await Promise.all([
+  const [orders, recentMessages, packages, charts] = await Promise.all([
     listSmsOrdersByCompany(companyId, 20),
-    listTransactionsByCompany(companyId, 10),
+    listPanelMessagesByCompany(companyId, 5),
     listCustomerVisiblePackages(country),
     loadDashboardCharts(companyId, monthRows),
   ]);
@@ -345,7 +342,6 @@ export async function getClientDashboardData(
   }
 
   const visibleOrders = filterClientAccountOrders(orders);
-  const visibleTransactions = transactions.filter((t) => !isQaTransaction(t));
 
   const pendingOrdersCount = visibleOrders.filter(
     (o) =>
@@ -362,7 +358,7 @@ export async function getClientDashboardData(
     stats,
     charts,
     recentOrders: visibleOrders.slice(0, 5),
-    recentTransactions: visibleTransactions.slice(0, 5),
+    recentMessages,
     pendingOrdersCount,
     packagesAvailable: packages.length,
     lastPurchaseAt,

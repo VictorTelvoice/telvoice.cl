@@ -2,10 +2,10 @@ import type { SmsOrderWithDetails } from "../../types/wallet.js";
 import {
   buildOrderTimeline,
   checkoutModeLabel,
+  filterOrdersForDisplay,
   mercadoPagoOrderHasPendingCheckout,
-  orderMatchesFilter,
   paymentMethodLabel,
-  type OrderListFilter,
+  type AppOrdersPageFilters,
 } from "../../utils/order-display.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
@@ -14,7 +14,7 @@ import { fmtMoney, fmtSms, wrapAppPage } from "./app-page-wrap.js";
 import {
   renderClientCreditBadge,
   renderClientPaymentBadge,
-  renderOrderFilterTabs,
+  renderOrdersFiltersPanel,
   renderOrderQaBadgeIfNeeded,
   renderOrderShortIdCell,
   renderOrderTimeline,
@@ -185,18 +185,19 @@ export function renderAppOrderDetailPage(
 export function renderAppOrdersPage(
   ctx: AppPageContext,
   orders: SmsOrderWithDetails[],
-  filter: OrderListFilter,
+  filters: AppOrdersPageFilters,
 ): string {
-  const filtered = orders.filter((o) => orderMatchesFilter(o, filter));
+  const filtered = filterOrdersForDisplay(orders, filters);
 
   const emptyMsg =
-    '<tr><td colspan="8" class="tv-table-empty">No hay órdenes con este filtro. <a href="/app/buy-sms">Comprar SMS</a></td></tr>';
+    '<tr><td colspan="7" class="tv-table-empty">No hay órdenes con estos filtros. <a href="/app/buy-sms">Comprar SMS</a></td></tr>';
 
   const rows = filtered.length
     ? filtered
         .map((o) => {
           const qa = renderOrderQaBadgeIfNeeded(o);
-          return `<tr>
+          const detailHref = `/app/orders/${escapeHtml(o.id)}`;
+          return `<tr class="tv-order-row tv-order-row--clickable" tabindex="0" role="link" data-href="${detailHref}" aria-label="Ver orden ${escapeHtml(o.package_name ?? "Bolsa SMS")}">
         <td>${formatDate(o.created_at)}</td>
         <td>${escapeHtml(o.package_name ?? "—")}${qa}</td>
         <td>${fmtSms(o.sms_quantity)}</td>
@@ -204,10 +205,6 @@ export function renderAppOrdersPage(
         <td>${renderClientPaymentBadge(o.payment_status)}</td>
         <td>${renderClientCreditBadge(o.credit_status)}</td>
         <td><code>${escapeHtml(o.payment_reference ?? "—")}</code></td>
-        <td class="tv-table-actions">
-          <a href="/app/orders/${escapeHtml(o.id)}" class="btn btn-ghost btn-sm">Ver detalle</a>
-          <a href="${supportOrderHref(o.id)}" class="btn btn-ghost btn-sm">Soporte</a>
-        </td>
       </tr>`;
         })
         .join("")
@@ -217,7 +214,8 @@ export function renderAppOrdersPage(
     ? filtered
         .map((o) => {
           const qa = renderOrderQaBadgeIfNeeded(o);
-          return `<article class="tv-order-card">
+          const detailHref = `/app/orders/${escapeHtml(o.id)}`;
+          return `<a href="${detailHref}" class="tv-order-card tv-order-card--link">
         <div class="tv-order-card__head">
           <strong>${escapeHtml(o.package_name ?? "Bolsa SMS")}</strong>
           ${renderClientPaymentBadge(o.payment_status)}
@@ -225,31 +223,42 @@ export function renderAppOrdersPage(
         <p class="tv-order-card__meta">${formatDate(o.created_at)} · ${fmtSms(o.sms_quantity)} · ${fmtMoney(Number(o.amount), o.currency)}</p>
         <p class="tv-order-card__meta">Acreditación: ${renderClientCreditBadge(o.credit_status)}${qa}</p>
         <p class="tv-order-card__meta"><code>${escapeHtml(o.payment_reference ?? "—")}</code></p>
-        <div class="tv-order-card__actions">
-          <a href="/app/orders/${escapeHtml(o.id)}" class="btn btn-secondary btn-sm">Ver detalle</a>
-          <a href="${supportOrderHref(o.id)}" class="btn btn-ghost btn-sm">Soporte</a>
-        </div>
-      </article>`;
+        <span class="tv-order-card__chevron material-symbols-outlined" aria-hidden="true">chevron_right</span>
+      </a>`;
         })
         .join("")
-    : `<p class="field-hint">No hay órdenes con este filtro. <a href="/app/buy-sms">Comprar SMS</a></p>`;
+    : `<p class="field-hint">No hay órdenes con estos filtros. <a href="/app/buy-sms">Comprar SMS</a></p>`;
 
   const body = `
     <div class="tv-orders-page">
     ${renderPageHeader({
       title: "Mis órdenes",
       subtitle: "Historial de compras de bolsas SMS.",
-      actions: renderBtn("Comprar SMS", { href: "/app/buy-sms", variant: "primary" }),
     })}
-    ${renderOrderFilterTabs(filter)}
-    <p class="field-hint">${filtered.length} de ${orders.length} órdenes</p>
+    ${renderOrdersFiltersPanel(filters)}
+    <p class="field-hint tv-orders__count">${filtered.length} de ${orders.length} órdenes</p>
     <div class="tv-panel tv-orders-table-wrap">
       <table class="tv-table tv-table--dense"><thead><tr>
-      <th>Fecha</th><th>Bolsa</th><th>SMS</th><th>Monto</th><th>Estado pago</th><th>Acreditación</th><th>Referencia</th><th></th>
+      <th>Fecha</th><th>Bolsa</th><th>SMS</th><th>Monto</th><th>Estado pago</th><th>Acreditación</th><th>Referencia</th>
     </tr></thead><tbody>${rows}</tbody></table>
     </div>
     <div class="tv-orders-cards">${orderCards}</div>
-    </div>`;
+    </div>
+    <script>
+    (function () {
+      document.querySelectorAll(".tv-order-row--clickable").forEach(function (row) {
+        var href = row.getAttribute("data-href");
+        if (!href) return;
+        row.addEventListener("click", function () { window.location.href = href; });
+        row.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            window.location.href = href;
+          }
+        });
+      });
+    })();
+    </script>`;
   return wrapAppPage(ctx, "orders", "Mis órdenes", body);
 }
 

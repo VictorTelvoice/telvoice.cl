@@ -96,6 +96,47 @@ export function parseOrderListFilter(raw: string | undefined): OrderListFilter {
   return "all";
 }
 
+export type AppOrdersPageFilters = {
+  status: OrderListFilter;
+  search?: string;
+};
+
+export function parseAppOrdersPageFilters(
+  query: Record<string, string | string[] | undefined>,
+): AppOrdersPageFilters {
+  const pick = (key: string): string => {
+    const v = query[key];
+    return typeof v === "string" ? v.trim() : "";
+  };
+  const search = pick("q");
+  return {
+    status: parseOrderListFilter(pick("filter") || undefined),
+    search: search || undefined,
+  };
+}
+
+export function filterOrdersForDisplay<
+  T extends {
+    id: string;
+    payment_status: PaymentStatus;
+    credit_status: CreditStatus;
+    payment_reference?: string | null;
+    package_name?: string | null;
+  },
+>(orders: T[], filters: AppOrdersPageFilters): T[] {
+  let result = orders.filter((o) => orderMatchesFilter(o, filters.status));
+  const q = filters.search?.trim().toLowerCase();
+  if (!q) {
+    return result;
+  }
+  return result.filter((o) => {
+    const ref = (o.payment_reference ?? "").toLowerCase();
+    const pkg = (o.package_name ?? "").toLowerCase();
+    const id = o.id.toLowerCase();
+    return ref.includes(q) || pkg.includes(q) || id.includes(q);
+  });
+}
+
 export function isQaOrder(
   order: Pick<SmsOrderRow, "metadata" | "payment_reference">,
 ): boolean {

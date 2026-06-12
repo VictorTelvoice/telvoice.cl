@@ -83,6 +83,14 @@ function renderSidebar(active: string): string {
     <nav class="tv-sidebar__nav">
       ${renderNavLinks(active)}
     </nav>
+    <div class="tv-sidebar__footer">
+      <form method="post" action="/app/logout" class="logout-form tv-sidebar__logout">
+        <button type="submit" class="tv-nav-link tv-nav-link--logout">
+          <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+          Cerrar sesión
+        </button>
+      </form>
+    </div>
   </aside>`;
 }
 
@@ -114,15 +122,8 @@ function renderTopbar(tb: AppLayoutTopbar): string {
       <button type="button" class="tv-topbar__icon-btn" aria-label="Notificaciones" title="Notificaciones">
         <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
       </button>
-      <div class="tv-user">
-        <span class="tv-user__avatar" aria-hidden="true">${escapeHtml(userInitials(tb.userName))}</span>
-        <span class="tv-user__meta">
-          <span class="tv-user__name">${escapeHtml(tb.userName)}</span>
-          <span class="tv-user__company">Cuenta cliente</span>
-        </span>
-        <form method="post" action="/app/logout" class="logout-form">
-          <button type="submit" class="btn btn-ghost btn-sm" title="Cerrar sesión">Salir</button>
-        </form>
+      <div class="tv-user tv-user--avatar-only">
+        <span class="tv-user__avatar" title="${escapeHtml(tb.userName)}" aria-label="Cuenta de ${escapeHtml(tb.userName)}">${escapeHtml(userInitials(tb.userName))}</span>
       </div>
     </div>
   </header>`;
@@ -191,11 +192,11 @@ export function renderAppLayout(options: AppLayoutOptions): string {
 
 export function renderClientAuthPage(title: string, body: string): string {
   return `<!DOCTYPE html>
-<html lang="es" class="tv-lab-theme">
+<html lang="es" class="tv-light-theme">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#050814" />
+  <meta name="theme-color" content="#eef2f8" />
   <title>${escapeHtml(brandPageTitle(title))}</title>
   ${renderFaviconLink()}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -204,8 +205,8 @@ export function renderClientAuthPage(title: string, body: string): string {
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
   ${renderPanelStylesheetLink()}
 </head>
-<body class="tv-lab-auth">
-  ${renderLabBackgroundHtml()}
+<body class="tv-light-auth tv-light-theme">
+  ${renderLightBackgroundHtml()}
   <main class="tv-auth-wrap">${body}</main>
 </body>
 </html>`;

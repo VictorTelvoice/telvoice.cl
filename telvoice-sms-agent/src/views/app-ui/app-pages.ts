@@ -11,12 +11,10 @@ import { renderKpiCard } from "../admin-ui/components.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
 import {
-  renderClientCreditBadge,
   renderClientPaymentBadge,
   renderOrderQaBadgeIfNeeded,
-  renderTxQaBadgeIfNeeded,
-  renderWalletTxTypeBadge,
 } from "./app-order-ui.js";
+import { renderPanelMessageStatusBadge } from "./app-sms-ui.js";
 
 function dashboardMonthLabel(): string {
   const label = new Intl.DateTimeFormat("es-CL", {
@@ -199,24 +197,23 @@ export function renderAppDashboardPage(
         <td>${escapeHtml(o.package_name ?? "—")}${renderOrderQaBadgeIfNeeded(o)}</td>
         <td>${fmtSms(o.sms_quantity)}</td>
         <td>${renderClientPaymentBadge(o.payment_status)}</td>
-        <td>${renderClientCreditBadge(o.credit_status)}</td>
       </tr>`,
         )
         .join("")
-    : `<tr><td colspan="5" class="tv-table-empty">Sin órdenes recientes.</td></tr>`;
+    : `<tr><td colspan="4" class="tv-table-empty">Sin órdenes recientes.</td></tr>`;
 
-  const txRows = data.recentTransactions.length
-    ? data.recentTransactions
+  const sendRows = data.recentMessages.length
+    ? data.recentMessages
         .map(
-          (t) => `<tr>
-        <td>${formatDate(t.created_at)}</td>
-        <td>${renderWalletTxTypeBadge(t.type)}${renderTxQaBadgeIfNeeded(t)}</td>
-        <td>${fmtSms(t.sms_amount)}</td>
-        <td>${escapeHtml(t.description ?? "—")}</td>
+          (m) => `<tr>
+        <td>${formatDate(m.sent_at ?? m.created_at)}</td>
+        <td><code>${escapeHtml(m.recipient_number)}</code></td>
+        <td class="tv-cell-truncate" title="${escapeHtml(m.message)}">${escapeHtml(m.message.slice(0, 40))}${m.message.length > 40 ? "…" : ""}</td>
+        <td>${renderPanelMessageStatusBadge(m.status, m.mode)}</td>
       </tr>`,
         )
         .join("")
-    : `<tr><td colspan="4" class="tv-table-empty">Sin movimientos recientes.</td></tr>`;
+    : `<tr><td colspan="4" class="tv-table-empty">Sin envíos recientes.</td></tr>`;
 
   const welcomeBanner = options?.showWelcomeBanner
     ? `<div class="tv-panel-alert" role="status" style="margin-bottom:0.25rem">
@@ -297,7 +294,7 @@ export function renderAppDashboardPage(
           <div class="tv-client-dash-table-inner">
             <table class="tv-table tv-table--dash">
               <thead><tr>
-                <th>Fecha</th><th>Bolsa</th><th>SMS</th><th>Pago</th><th>Acreditación</th>
+                <th>Fecha</th><th>Bolsa</th><th>SMS</th><th>Pago</th>
               </tr></thead>
               <tbody>${orderRows}</tbody>
             </table>
@@ -305,17 +302,17 @@ export function renderAppDashboardPage(
         </section>
       </div>
       <div class="tv-dash-block">
-        ${renderDashBlockHead("Últimos movimientos", {
-          href: "/app/wallet",
-          label: "Ver saldo",
+        ${renderDashBlockHead("Últimos envíos", {
+          href: "/app/inbox",
+          label: "Ver bandeja",
         })}
         <section class="tv-panel tv-client-dash-table-panel">
           <div class="tv-client-dash-table-inner">
             <table class="tv-table tv-table--dash">
               <thead><tr>
-                <th>Fecha</th><th>Tipo</th><th>SMS</th><th>Descripción</th>
+                <th>Fecha</th><th>Destinatario</th><th>Mensaje</th><th>Estado</th>
               </tr></thead>
-              <tbody>${txRows}</tbody>
+              <tbody>${sendRows}</tbody>
             </table>
           </div>
         </section>
