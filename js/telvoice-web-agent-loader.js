@@ -19,6 +19,8 @@
   var embedTarget = script.getAttribute("data-embed-target");
   if (embedTarget) {
     window.TELVOICE_WEB_AGENT_EMBED = embedTarget;
+  } else {
+    window.TELVOICE_WEB_AGENT_PANEL_UI = true;
   }
 
   var AGENT_JS_VERSION = "20260718";

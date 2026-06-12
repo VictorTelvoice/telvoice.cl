@@ -289,6 +289,7 @@
 
   function loadAgent(root) {
     if (document.querySelector('script[src*="telvoice-web-agent-loader.js"]')) return;
+    window.TELVOICE_WEB_AGENT_PANEL_UI = true;
     var agentLoader = document.createElement("script");
     agentLoader.src = root + "js/telvoice-web-agent-loader.js";
     agentLoader.setAttribute("data-root", root);

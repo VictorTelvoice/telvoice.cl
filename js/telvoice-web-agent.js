@@ -979,7 +979,11 @@
   }
 
   function usesPanelAgentUi() {
-    return isLabLanding() || hasHeroEmbedSlot();
+    return (
+      isLabLanding() ||
+      hasHeroEmbedSlot() ||
+      window.TELVOICE_WEB_AGENT_PANEL_UI === true
+    );
   }
 
   function usesAgentAvatarIn(container) {
