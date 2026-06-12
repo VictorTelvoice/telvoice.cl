@@ -1,14 +1,27 @@
 #!/usr/bin/env bash
 # Despliegue controlado en VPS desde una rama feature (sin merge a main).
-# Ejecutar EN EL SERVIDOR dentro del directorio del agente.
+# Ejecutar EN EL SERVIDOR. Incluye snapshot pre-deploy para rollback.
 set -euo pipefail
 
 BRANCH="${1:-feature/sim-checkout-fase1}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REPO_ROOT="$(cd "$ROOT/.." && pwd)"
+SNAPSHOT_DIR="${TELVOICE_DEPLOY_SNAPSHOT_DIR:-/tmp/telvoice-prod-deploy-snapshot}"
+HEALTH_URL="${PUBLIC_APP_URL:-https://agent.telvoice.cl}/health"
+
+mkdir -p "$SNAPSHOT_DIR"
+
+echo "=== Pre-deploy snapshot (rollback) ==="
+cd "$REPO_ROOT"
+CURRENT_SHA="$(git rev-parse HEAD)"
+echo "SHA actual antes del deploy: ${CURRENT_SHA}"
+printf '%s\n' "$CURRENT_SHA" > "${SNAPSHOT_DIR}/pre-deploy-sha.txt"
+
+echo "→ health actual"
+curl -s "$HEALTH_URL" | tee "${SNAPSHOT_DIR}/pre-deploy-health.json"
+echo ""
 
 echo "→ Despliegue controlado rama: ${BRANCH}"
-cd "$REPO_ROOT"
 git fetch origin --prune
 git checkout "$BRANCH"
 git pull --ff-only "origin/${BRANCH}"
@@ -24,5 +37,7 @@ pm2 delete telvoice-sms-agent 2>/dev/null || true
 pm2 start ecosystem.config.cjs --update-env
 pm2 save 2>/dev/null || true
 
-curl -sf "${PUBLIC_APP_URL:-http://127.0.0.1:3001}/health" && echo ""
-echo "Listo (${BRANCH}). Verifica build en /health y allowlist SIM en .env."
+echo "→ health post-deploy"
+curl -sf "$HEALTH_URL" && echo ""
+echo "Listo (${BRANCH}). Snapshot en ${SNAPSHOT_DIR}"
+echo "Si falla: bash scripts/rollback-vps-to-main.sh"
