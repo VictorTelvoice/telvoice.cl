@@ -62,9 +62,6 @@ export function renderClientLoginPage(options?: {
         <span class="material-symbols-outlined" aria-hidden="true" style="font-size:1.1rem">login</span>
         Continuar con Google
       </button>
-      <p class="field-hint" style="margin:0.85rem 0 0">
-        Opción recomendada. Usamos Supabase Auth (Google OAuth).
-      </p>
       ${
         "errorHtml" in cfg
           ? ""
