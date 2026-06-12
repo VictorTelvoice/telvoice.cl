@@ -11,6 +11,7 @@ import {
   PUBLIC_SIM_AGENT_BUNDLE_METADATA,
   PUBLIC_SIM_CHECKOUT_METADATA,
   isWalletSmsCreditOrder,
+  resolveWalletCreditSmsAmount,
 } from "../utils/order-display.js";
 import {
   encryptClaimTokenForMetadata,
@@ -806,9 +807,17 @@ export async function confirmOrderCredit(
   }
 
   try {
+    const smsAmount = resolveWalletCreditSmsAmount(order);
+    if (smsAmount <= 0) {
+      throw new AppError(
+        "La orden no tiene cantidad SMS acreditable.",
+        400,
+        "ZERO_SMS_CREDIT",
+      );
+    }
     await applyPurchaseCredit({
       companyId: order.company_id,
-      smsAmount: order.sms_quantity,
+      smsAmount,
       orderId: order.id,
       actorUserId,
     });
