@@ -279,7 +279,7 @@
     var isBot = role !== "user";
     div.className = "tva-msg tva-msg--" + (isBot ? "bot" : "user");
 
-    if (isBot && usesAgentAvatarIn(container)) {
+    if (isBot && isLabLanding()) {
       div.classList.add("tva-msg--with-avatar");
       var avatar = document.createElement("picture");
       avatar.className = "tva-msg-avatar-wrap";
@@ -356,16 +356,6 @@
   }
 
   function collapseActionDrawer() {
-    if (usesPanelAgentUi()) {
-      if (els.suggestions) {
-        els.suggestions.hidden = false;
-      }
-      if (els.suggestionsPanel) {
-        els.suggestionsPanel.hidden = false;
-      }
-      updateActionDrawerHint();
-      return;
-    }
     collapseDrawerUi(els);
     updateActionDrawerHint();
   }
@@ -497,7 +487,7 @@
     };
     var split = splitCtas(ctas);
     var quickForEmbed =
-      quickActions && quickActions.length ? quickActions : getHeroEmbedQuickDefaults();
+      quickActions && quickActions.length ? quickActions : HERO_EMBED_QUICK;
 
     renderQuickActions(els.quick, quickActions, onQuick);
     if (elsEmbed.quick) {
@@ -700,20 +690,6 @@
     "¿Quieres conocer números exclusivos, campañas SMS o probar el agente?",
   ];
 
-  var MAIN_HERO_EMBED_INTRO_LINES = [
-    "Hola, soy el Agente comercial de Telvoice.",
-    "Te ayudo a elegir bolsas SMS, estimar consumo y preparar campañas en Chile.",
-    "Puedes comprar saldo online, revisar precios por volumen y resolver dudas de operación.",
-    "¿Quieres ver precios, armar una campaña o probar cómo funciona?",
-  ];
-
-  var MAIN_HERO_EMBED_QUICK = [
-    { id: "precios", label: "Ver precios SMS" },
-    { id: "quote", label: "Armar una campaña" },
-    { id: "how_it_works", label: "¿Cómo funciona?" },
-    { id: "try_agent", label: "Probar el agente" },
-  ];
-
   var HERO_QUICK_INTENT_MAP = {
     own_number: "numero_exclusivo",
     validate_account: "validar_cuentas",
@@ -859,14 +835,14 @@
   }
 
   function agentIsotipoUrl() {
-    if (usesPanelAgentUi()) {
+    if (isLabLanding()) {
       return labAgentFloatingPngUrl();
     }
     return asset("public/telvoice-agent-isotipo.png");
   }
 
   function renderLabAgentAntennaGlowMarkup() {
-    return '<span class="telvoice-agent-antenna-glow" role="status" aria-label="En línea"></span>';
+    return '<span class="telvoice-agent-antenna-glow" aria-hidden="true"></span>';
   }
 
   function renderLabAgentImageMarkup(opts) {
@@ -901,23 +877,21 @@
   }
 
   function initLabAgentIsotipos() {
-    mountLabAgentIsotipo(document.getElementById("lab-phone-agent-iso"), {
-      context: "phone",
-    });
-    mountLabAgentIsotipo(document.getElementById("hero-phone-agent-iso"), {
-      context: "phone",
-    });
-    if (!usesPanelAgentUi()) {
+    if (!isLabLanding()) {
       return;
     }
     mountLabAgentIsotipo(
-      document.querySelector("#telvoice-web-agent .tva-launcher-iso"),
-      { context: "launcher" },
+      document.getElementById("lab-phone-agent-iso"),
+      { context: "phone" }
     );
-    mountLabAgentIsotipo(
-      document.querySelector("#telvoice-web-agent .tva-header-iso"),
-      { context: "header" },
-    );
+    var launcherSlot = document.querySelector("#telvoice-web-agent .tva-launcher-iso");
+    if (launcherSlot) {
+      launcherSlot.innerHTML = renderLabAgentImageMarkup({ context: "launcher" });
+    }
+    var headerSlot = document.querySelector("#telvoice-web-agent .tva-header-iso");
+    if (headerSlot) {
+      headerSlot.innerHTML = renderLabAgentImageMarkup({ context: "header" });
+    }
   }
 
   function submitUserMessage(text) {
@@ -972,32 +946,6 @@
 
   function isLabLanding() {
     return /landing-agent-lab/.test(window.location.pathname || "");
-  }
-
-  function hasHeroEmbedSlot() {
-    return !!document.getElementById("hero-agent-embed");
-  }
-
-  function usesPanelAgentUi() {
-    return isLabLanding() || hasHeroEmbedSlot();
-  }
-
-  function usesAgentAvatarIn(container) {
-    if (!container) {
-      return false;
-    }
-    if (container.id === "tva-embed-messages") {
-      return true;
-    }
-    return container.id === "tva-messages" && usesPanelAgentUi();
-  }
-
-  function getHeroEmbedIntroLines() {
-    return isLabLanding() ? HERO_EMBED_INTRO_LINES : MAIN_HERO_EMBED_INTRO_LINES;
-  }
-
-  function getHeroEmbedQuickDefaults() {
-    return isLabLanding() ? HERO_EMBED_QUICK : MAIN_HERO_EMBED_QUICK;
   }
 
   function expandEmbedSuggestions() {
@@ -1282,16 +1230,10 @@
     }
   }
 
-  function filterRegisterAdvisorCtas(ctas) {
-    return (ctas || []).filter(function (cta) {
-      return cta && cta.type !== "register" && cta.type !== "advisor";
-    });
-  }
-
   function syncHeroEmbedDrawer(quickActions, ctas) {
     heroEmbedState.drawerQuick =
-      quickActions && quickActions.length ? quickActions : getHeroEmbedQuickDefaults();
-    heroEmbedState.drawerCtas = filterRegisterAdvisorCtas(ctas);
+      quickActions && quickActions.length ? quickActions : HERO_EMBED_QUICK;
+    heroEmbedState.drawerCtas = ctas || [];
     if (!elsEmbed.quick) {
       return;
     }
@@ -1321,7 +1263,7 @@
   function deliverHeroEmbedReplies(replies, quick, ctas, index) {
     index = index || 0;
     if (!replies || index >= replies.length) {
-      syncHeroEmbedDrawer(quick || getHeroEmbedQuickDefaults(), ctas || []);
+      syncHeroEmbedDrawer(quick || HERO_EMBED_QUICK, ctas || []);
       expandEmbedSuggestions();
       persistHeroEmbedState();
       return;
@@ -1340,7 +1282,7 @@
         if (index + 1 < replies.length) {
           deliverHeroEmbedReplies(replies, quick, ctas, index + 1);
         } else {
-          syncHeroEmbedDrawer(quick || getHeroEmbedQuickDefaults(), ctas || []);
+          syncHeroEmbedDrawer(quick || HERO_EMBED_QUICK, ctas || []);
           expandEmbedSuggestions();
           persistHeroEmbedState();
         }
@@ -1482,13 +1424,13 @@
     heroEmbedState.presentationDone = true;
     heroEmbedState.mode = "interaction";
     hideEmbedTyping();
-    syncHeroEmbedDrawer(getHeroEmbedQuickDefaults(), []);
+    syncHeroEmbedDrawer(HERO_EMBED_QUICK, []);
     expandEmbedSuggestions();
     persistHeroEmbedState();
   }
 
   function handleHeroEmbedQuick(id, label) {
-    if (!embedEnabled()) {
+    if (!embedEnabled() || !isLabLanding()) {
       return false;
     }
     cancelHeroEmbedSeed();
@@ -1512,6 +1454,9 @@
   }
 
   function seedHeroEmbedConversation() {
+    if (!isLabLanding()) {
+      return;
+    }
     cancelHeroEmbedSeed();
     heroEmbedState.messages = [];
     heroEmbedState.drawerQuick = [];
@@ -1544,7 +1489,7 @@
       if (!heroEmbedSeedActive) {
         return;
       }
-      if (index >= getHeroEmbedIntroLines().length) {
+      if (index >= HERO_EMBED_INTRO_LINES.length) {
         finishHeroEmbedSeed();
         return;
       }
@@ -1556,9 +1501,9 @@
           return;
         }
         hideEmbedTyping();
-        appendHeroEmbedBot(getHeroEmbedIntroLines()[index], true);
+        appendHeroEmbedBot(HERO_EMBED_INTRO_LINES[index], true);
         index += 1;
-        if (index >= getHeroEmbedIntroLines().length) {
+        if (index >= HERO_EMBED_INTRO_LINES.length) {
           finishHeroEmbedSeed();
           return;
         }
@@ -1570,7 +1515,7 @@
   }
 
   function resetHeroAgentDemo() {
-    if (!embedEnabled()) {
+    if (!isLabLanding()) {
       return;
     }
     clearLegacyHeroEmbedStorage();
@@ -1608,7 +1553,7 @@
   }
 
   function startHeroAgentPresentation() {
-    if (!embedEnabled()) {
+    if (!isLabLanding() || !embedEnabled()) {
       return;
     }
     resetHeroAgentDemo();
@@ -1694,6 +1639,11 @@
     appendFloatMessage("bot", LAB_FLOAT_WELCOME, true);
     state.drawerQuick = LAB_FLOAT_QUICK;
     syncActionDrawer(LAB_FLOAT_QUICK, []);
+    if (els.suggestions) {
+      els.suggestions.hidden = false;
+      collapseActionDrawer();
+      updateActionDrawerHint();
+    }
     persistChatState();
   }
 
@@ -1850,7 +1800,7 @@
 
   function buildUi() {
     var iso = agentIsotipoUrl();
-    var lab = usesPanelAgentUi();
+    var lab = isLabLanding();
     var root = document.createElement("div");
     root.className = lab ? "tva-root tva-root--lab" : "tva-root";
     root.id = "telvoice-web-agent";
@@ -1871,21 +1821,6 @@
     var inputPlaceholder = lab
       ? "Consulta sobre numeración, campañas o validaciones…"
       : "Escribe tu mensaje…";
-    var suggestionsHtml = lab
-      ? '<div class="tva-suggestions" id="tva-suggestions">' +
-        '<div class="tva-suggestions-panel" id="tva-suggestions-panel">' +
-        '<div class="tva-quick" id="tva-quick"></div>' +
-        '<div class="tva-drawer-ctas" id="tva-drawer-ctas"></div>' +
-        "</div></div>"
-      : '<div class="tva-suggestions" id="tva-suggestions" hidden>' +
-        '<button type="button" class="tva-suggestions-toggle" id="tva-suggestions-toggle" aria-expanded="false" aria-controls="tva-suggestions-panel" aria-label="Ver sugerencias y acciones">' +
-        '<span class="tva-suggestions-chevron" aria-hidden="true"></span>' +
-        '<span class="tva-suggestions-dot" aria-hidden="true"></span>' +
-        "</button>" +
-        '<div class="tva-suggestions-panel" id="tva-suggestions-panel" hidden>' +
-        '<div class="tva-quick" id="tva-quick"></div>' +
-        '<div class="tva-drawer-ctas" id="tva-drawer-ctas"></div>' +
-        "</div></div>";
     root.innerHTML =
       '<div class="tva-launcher-wrap">' +
       '<button type="button" class="tva-launcher" aria-expanded="false" aria-controls="tva-panel" aria-label="Abrir agente comercial Telvoice">' +
@@ -1900,7 +1835,15 @@
       (lab ? " tva-panel--lab" : "") +
       '" role="dialog" aria-labelledby="tva-title" aria-modal="true">' +
       headerHtml +
-      suggestionsHtml +
+      '<div class="tva-suggestions" id="tva-suggestions" hidden>' +
+      '<button type="button" class="tva-suggestions-toggle" id="tva-suggestions-toggle" aria-expanded="false" aria-controls="tva-suggestions-panel" aria-label="Ver sugerencias y acciones">' +
+      '<span class="tva-suggestions-chevron" aria-hidden="true"></span>' +
+      '<span class="tva-suggestions-dot" aria-hidden="true"></span>' +
+      "</button>" +
+      '<div class="tva-suggestions-panel" id="tva-suggestions-panel" hidden>' +
+      '<div class="tva-quick" id="tva-quick"></div>' +
+      '<div class="tva-drawer-ctas" id="tva-drawer-ctas"></div>' +
+      "</div></div>" +
       '<div class="tva-messages" id="tva-messages" aria-live="polite"></div>' +
       '<div class="tva-conversation-actions" id="tva-conversation-actions" hidden></div>' +
       '<form class="tva-form" id="tva-form">' +
@@ -1962,7 +1905,7 @@
 
     var embedRoot = document.createElement("div");
     embedRoot.className =
-      "tva-root tva-root--embedded tva-root--hero-embed tva-root--lab tva-root--inline-open";
+      "tva-root tva-root--embedded tva-root--hero-embed tva-root--inline-open";
     embedRoot.id = "telvoice-web-agent-embed";
     embedRoot.innerHTML =
       '<div class="tva-panel tva-panel--inline is-open" role="region" aria-label="Agente comercial Telvoice">' +
@@ -1978,7 +1921,7 @@
       '<div class="tva-messages" id="tva-embed-messages" aria-live="polite"></div>' +
       '<div class="tva-conversation-actions" id="tva-embed-conversation-actions" hidden></div>' +
       '<form class="tva-form" id="tva-embed-form">' +
-      '<input type="text" id="tva-embed-input" placeholder="Escribe tu mensaje…" autocomplete="off" maxlength="2000" />' +
+      '<input type="text" id="tva-embed-input" placeholder="Escribir aquí" autocomplete="off" maxlength="2000" />' +
       '<button type="submit">Enviar</button>' +
       "</form></div>";
 
@@ -2077,7 +2020,7 @@
     syncMobileViewport();
     if (!state.welcomed && state.messages.length === 0) {
       state.welcomed = true;
-      if (usesPanelAgentUi()) {
+      if (isLabLanding()) {
         welcomeLabFloatPanel();
       } else {
         sendToApi({ message: "" });
@@ -2262,25 +2205,18 @@
     }
     try {
       buildEmbedUi(embedSelector);
-      startHeroAgentPresentation();
+      if (isLabLanding()) {
+        startHeroAgentPresentation();
+        return;
+      }
+      var hadChat = state.messages.length > 0 || restoreChatState();
+      if (hadChat) {
+        renderStoredMessages();
+        syncActionDrawer(state.drawerQuick, state.drawerCtas);
+      }
     } catch (embedErr) {
       console.warn("[Telvoice agent] embed init failed:", embedErr);
     }
-  }
-
-  function markAgentUiReady() {
-    var floatRoot = document.getElementById("telvoice-web-agent");
-    var embedRoot = document.getElementById("telvoice-web-agent-embed");
-    window.requestAnimationFrame(function () {
-      window.requestAnimationFrame(function () {
-        if (floatRoot) {
-          floatRoot.classList.add("tva-root--ready");
-        }
-        if (embedRoot) {
-          embedRoot.classList.add("tva-root--ready");
-        }
-      });
-    });
   }
 
   function init() {
@@ -2291,8 +2227,8 @@
       initEmbedOnly();
       initLabHeroConnection();
       initLabAgentIsotipos();
-      var heroEmbedActive = embedEnabled();
-      if (!heroEmbedActive) {
+      var labHeroEmbed = isLabLanding() && embedEnabled();
+      if (!labHeroEmbed) {
         if (state.messages.length === 0) {
           restoreChatState();
         }
@@ -2302,7 +2238,7 @@
         }
       }
       resumeChatFromServer().then(function (data) {
-        if (heroEmbedActive) {
+        if (labHeroEmbed) {
           return;
         }
         if (data && data.messages && data.messages.length) {
@@ -2312,8 +2248,6 @@
       initPendingCheckoutOnLanding();
     } catch (err) {
       console.warn("[Telvoice agent] init failed:", err);
-    } finally {
-      markAgentUiReady();
     }
   }
 

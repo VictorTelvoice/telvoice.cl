@@ -43,16 +43,19 @@ export function renderSidebarBrand(
   </a>${badge}`;
 }
 
-export function renderAuthBrand(title: string, subtitle: string): string {
+export function renderAuthBrand(title: string, subtitle?: string): string {
   const titleHtml =
     title.trim().toLowerCase() === TV_BRAND.name
       ? renderBrandWordmark()
       : `<span class="tv-brand-wordmark tv-brand-wordmark--plain">${escapeHtml(title)}</span>`;
+  const subtitleBlock = subtitle?.trim()
+    ? `<p class="tv-auth-sub">${escapeHtml(subtitle)}</p>`
+    : "";
   return `<div class="tv-auth-brand">
     ${renderBrandIsotipo(38)}
     <div>
       <h1 class="tv-auth-title">${titleHtml}</h1>
-      <p class="tv-auth-sub">${escapeHtml(subtitle)}</p>
+      ${subtitleBlock}
     </div>
   </div>`;
 }
