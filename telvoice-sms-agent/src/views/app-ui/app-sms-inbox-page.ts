@@ -1,7 +1,7 @@
 import {
   inboundSmsStatusLabel,
 } from "../../services/inboundSmsService.js";
-import { clientNumberStatusLabel } from "../../services/clientNumberService.js";
+import { clientNumberStatusLabel, filterClientPanelNumbers } from "../../services/clientNumberService.js";
 import type {
   ClientNumberListItem,
   ClientNumberStatus,
@@ -114,13 +114,6 @@ function buildCountsByNumber(messages: InboundSmsMessageRow[]): Map<string, numb
     counts.set(m.client_number_id, (counts.get(m.client_number_id) ?? 0) + 1);
   }
   return counts;
-}
-
-/** Solo numeraciones operativas en sidebar inbox (oculta canceladas por error de sistema). */
-export function filterInboxSidebarNumbers(
-  numbers: ClientNumberListItem[],
-): ClientNumberListItem[] {
-  return numbers.filter((n) => n.status !== "cancelled");
 }
 
 function renderInboxHeader(filters: SmsInboxFilters): string {
@@ -519,7 +512,7 @@ export function renderAppSmsInboxPage(
   data: AppSmsInboxPageData,
 ): string {
   const filters = data.filters;
-  const sidebarNumbers = filterInboxSidebarNumbers(data.numbers);
+  const sidebarNumbers = filterClientPanelNumbers(data.numbers);
   const countsByNumber = buildCountsByNumber(data.messages);
   const hasActiveNumbers = sidebarNumbers.some((n) => n.status === "active");
   const latestAt = data.messages[0]?.received_at ?? "";

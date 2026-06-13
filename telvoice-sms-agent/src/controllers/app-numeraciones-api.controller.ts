@@ -7,6 +7,7 @@ import {
 import {
   getClientNumberById,
   getClientNumbersModuleState,
+  filterClientPanelNumbers,
   listClientNumbersByCompany,
 } from "../services/clientNumberService.js";
 import {
@@ -37,7 +38,9 @@ export async function getApiNumeraciones(req: Request, res: Response): Promise<v
     if (!ctx) return;
 
     const module = await getClientNumbersModuleState();
-    const numbers = await listClientNumbersByCompany(ctx.company.id);
+    const numbers = filterClientPanelNumbers(
+      await listClientNumbersByCompany(ctx.company.id),
+    );
     res.json({ ok: true, module, numbers });
   } catch (error) {
     res.status(500).json({ ok: false, error: "Error al listar numeraciones." });
