@@ -9,7 +9,8 @@ import type {
   InboundSmsStatus,
 } from "../../types/client-numbers.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
-import { renderBtn, renderFilterField, renderPageHeader } from "../admin-ui/page-kit.js";
+import { renderBtn, renderFilterField } from "../admin-ui/page-kit.js";
+import { renderAgentModuleStyles } from "../shared/agent-module-styles.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
 
@@ -116,19 +117,24 @@ function buildCountsByNumber(messages: InboundSmsMessageRow[]): Map<string, numb
 }
 
 function renderInboxHeader(filters: SmsInboxFilters): string {
-  return `${renderPageHeader({
-    title: "Bandeja SMS entrantes",
-    subtitleHtml: `SMS recibidos en tus numeraciones Telvoice contratadas.
+  return `<header class="tv-inbox-page-head">
+    <div class="tv-inbox-page-head__main">
+      <h1 class="tv-inbox-page-head__title">Bandeja SMS entrantes</h1>
+      <p class="tv-inbox-page-head__sub">SMS recibidos en tus numeraciones Telvoice contratadas.</p>
+    </div>
+    <div class="tv-inbox-page-head__actions">
       <span class="tv-inbox-live-badge tv-inbox-live-badge--ok" id="tv-inbox-live-badge" role="status">
         <span class="tv-inbox-live-badge__dot" aria-hidden="true"></span>
         En tiempo real
-      </span>`,
-    actions: renderBtn("Exportar CSV", {
-      href: `/app/sms-inbox/export.csv${inboxQueryString(filters)}`,
-      variant: "secondary",
-      icon: "download",
-    }),
-  })}
+      </span>
+      ${renderBtn("Exportar CSV", {
+        href: `/app/sms-inbox/export.csv${inboxQueryString(filters)}`,
+        variant: "secondary",
+        icon: "download",
+        size: "sm",
+      })}
+    </div>
+  </header>
   <div class="tv-inbox-toast" id="tv-inbox-toast" role="status" aria-live="polite" hidden>
     Nuevo SMS recibido
   </div>`;
@@ -533,7 +539,10 @@ export function renderAppSmsInboxPage(
         ${renderMessageDetail(data.selectedMessage, filters)}
       </div>
     </div>
-    ${renderPollingScript(data.messages, filters)}`;
+    ${renderPollingScript(data.messages, filters)}
+    ${renderAgentModuleStyles()}`;
 
-  return wrapAppPage(ctx, "sms-inbox", "Bandeja SMS", body);
+  return wrapAppPage(ctx, "sms-inbox", "Bandeja SMS", body, {
+    bodyClass: "tv-page--sms-inbox",
+  });
 }

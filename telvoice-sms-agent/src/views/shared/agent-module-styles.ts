@@ -194,12 +194,47 @@ export function renderAgentModuleStyles(): string {
     .tv-admin-detail-actions .field-hint { width: 100%; margin: 0.25rem 0 0; }
 
     /* ── SMS Inbox (cliente) ── */
+    .tv-page--sms-inbox .tv-content {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      max-width: none;
+    }
+    .tv-inbox-page-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem 1.5rem;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--tv-border, rgba(15,23,42,0.08));
+    }
+    .tv-inbox-page-head__title {
+      margin: 0 0 0.35rem;
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--tv-text, #0f172a);
+    }
+    .tv-inbox-page-head__sub {
+      margin: 0;
+      font-size: 0.925rem;
+      opacity: 0.72;
+      line-height: 1.45;
+    }
+    .tv-inbox-page-head__actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.65rem;
+    }
     .tv-inbox-live-badge {
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      margin-left: 0.75rem;
-      padding: 0.2rem 0.65rem;
+      margin-left: 0;
+      padding: 0.35rem 0.75rem;
       border-radius: 999px;
       font-size: 0.75rem;
       font-weight: 600;
@@ -276,24 +311,29 @@ export function renderAgentModuleStyles(): string {
     }
     .tv-inbox-filters__actions { display: flex; gap: 0.5rem; align-items: center; }
 
-    .tv-inbox-shell { margin-top: 0.25rem; }
+    .tv-inbox-shell { margin-top: 0; flex: 1; min-height: 0; display: flex; flex-direction: column; }
     .tv-inbox-layout {
       display: grid;
-      grid-template-columns: minmax(260px, 300px) minmax(0, 1fr) minmax(340px, 400px);
+      grid-template-columns: minmax(260px, 280px) minmax(0, 1fr) minmax(320px, 380px);
       gap: 1rem;
       align-items: stretch;
-      min-height: calc(100vh - 14rem);
+      flex: 1;
+      min-height: 520px;
+      height: calc(100vh - 13.5rem);
+      width: 100%;
     }
     .tv-inbox-col { min-height: 0; display: flex; flex-direction: column; }
     .tv-inbox-card {
       background: var(--tv-panel-bg, #fff);
       border: 1px solid var(--tv-border, rgba(15,23,42,0.08));
       border-radius: 12px;
-      box-shadow: 0 1px 3px rgba(15,23,42,0.04);
+      box-shadow: 0 2px 8px rgba(15,23,42,0.06);
       display: flex;
       flex-direction: column;
       min-height: 0;
       flex: 1;
+      height: 100%;
+      overflow: hidden;
     }
     .tv-inbox-card--messages { overflow: hidden; }
     .tv-inbox-card__head {
@@ -333,10 +373,11 @@ export function renderAgentModuleStyles(): string {
     .tv-inbox-nav {
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: 0.35rem;
       padding: 0.65rem;
       overflow-y: auto;
-      max-height: calc(100vh - 18rem);
+      flex: 1;
+      min-height: 0;
     }
     .tv-inbox-nav__item {
       display: flex;
@@ -380,23 +421,38 @@ export function renderAgentModuleStyles(): string {
     .tv-inbox-msg-list {
       overflow-y: auto;
       flex: 1;
-      max-height: calc(100vh - 16rem);
+      min-height: 0;
+      background: rgba(15,23,42,0.015);
     }
     .tv-inbox-msg {
       display: block;
-      padding: 0.95rem 1.1rem;
-      border-bottom: 1px solid var(--tv-border, rgba(15,23,42,0.06));
+      padding: 1rem 1.15rem;
+      margin: 0.5rem 0.65rem;
+      border: 1px solid var(--tv-border, rgba(15,23,42,0.07));
+      border-radius: 10px;
+      background: var(--tv-panel-bg, #fff);
+      box-shadow: 0 1px 2px rgba(15,23,42,0.04);
       text-decoration: none;
       color: inherit;
-      transition: background 0.12s ease;
+      transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
     }
-    .tv-inbox-msg:hover { background: rgba(59,130,246,0.04); }
+    .tv-inbox-msg:hover {
+      background: rgba(59,130,246,0.04);
+      border-color: rgba(59,130,246,0.18);
+      box-shadow: 0 2px 6px rgba(59,130,246,0.08);
+    }
     .tv-inbox-msg--active {
-      background: rgba(59,130,246,0.08);
-      border-left: 3px solid var(--tv-accent, #2563eb);
-      padding-left: calc(1.1rem - 3px);
+      background: rgba(59,130,246,0.07);
+      border-color: rgba(37,99,235,0.45);
+      box-shadow: 0 0 0 1px rgba(37,99,235,0.12);
+      border-left-width: 3px;
+      border-left-color: var(--tv-accent, #2563eb);
+      padding-left: calc(1.15rem - 2px);
     }
-    .tv-inbox-msg--unread { border-left: 3px solid #22c55e; padding-left: calc(1.1rem - 3px); }
+    .tv-inbox-msg--unread {
+      border-left: 3px solid #22c55e;
+      padding-left: calc(1.15rem - 2px);
+    }
     .tv-inbox-msg--active.tv-inbox-msg--unread { border-left-color: var(--tv-accent, #2563eb); }
     .tv-inbox-msg__head { display: flex; justify-content: space-between; gap: 0.5rem; align-items: baseline; }
     .tv-inbox-msg__from { font-size: 0.925rem; font-weight: 700; }
@@ -493,16 +549,21 @@ export function renderAgentModuleStyles(): string {
 
     @media (max-width: 1200px) {
       .tv-inbox-layout {
-        grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+        grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+        height: auto;
+        min-height: 480px;
       }
-      .tv-inbox-col--detail { grid-column: 1 / -1; }
+      .tv-inbox-col--detail { grid-column: 1 / -1; min-height: 280px; }
     }
     @media (max-width: 860px) {
-      .tv-inbox-layout { grid-template-columns: 1fr; min-height: auto; }
-      .tv-inbox-col--numbers { order: 2; }
-      .tv-inbox-col--messages { order: 1; }
+      .tv-inbox-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+      .tv-inbox-col--numbers { order: 2; max-height: 16rem; }
+      .tv-inbox-col--messages { order: 1; min-height: 22rem; }
       .tv-inbox-col--detail { order: 3; }
-      .tv-inbox-nav, .tv-inbox-msg-list { max-height: 24rem; }
+      .tv-inbox-page-head__actions { width: 100%; justify-content: flex-start; }
     }
 
     .tv-numeraciones-table .tv-table-actions { white-space: nowrap; }
