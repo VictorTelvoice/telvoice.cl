@@ -116,6 +116,13 @@ function buildCountsByNumber(messages: InboundSmsMessageRow[]): Map<string, numb
   return counts;
 }
 
+/** Solo numeraciones operativas en sidebar inbox (oculta canceladas por error de sistema). */
+export function filterInboxSidebarNumbers(
+  numbers: ClientNumberListItem[],
+): ClientNumberListItem[] {
+  return numbers.filter((n) => n.status !== "cancelled");
+}
+
 function renderInboxHeader(filters: SmsInboxFilters): string {
   return `<header class="tv-inbox-page-head">
     <div class="tv-inbox-page-head__main">
@@ -180,14 +187,13 @@ function renderNumberSidebar(
   const items = numbers
     .map((n) => {
       const active = filters.numberId === n.id ? " tv-inbox-nav__item--active" : "";
-      const cancelled = n.status === "cancelled" ? " tv-inbox-nav__item--cancelled" : "";
       const statusCls = numberStatusBadgeCls(n.status);
       const count = countsByNumber.get(n.id) ?? 0;
       const countHtml =
         count > 0
           ? `<span class="tv-inbox-nav__count" data-count-for="${escapeHtml(n.id)}">${count}</span>`
           : `<span class="tv-inbox-nav__count tv-inbox-nav__count--zero" data-count-for="${escapeHtml(n.id)}">0</span>`;
-      return `<a href="/app/sms-inbox${inboxQueryString({ ...filters, numberId: n.id })}" class="tv-inbox-nav__item${active}${cancelled}" data-number-search="${escapeHtml(n.number.toLowerCase())} ${escapeHtml(n.status)}">
+      return `<a href="/app/sms-inbox${inboxQueryString({ ...filters, numberId: n.id })}" class="tv-inbox-nav__item${active}" data-number-search="${escapeHtml(n.number.toLowerCase())} ${escapeHtml(n.status)}">
         <span class="tv-inbox-nav__row">
           <span class="tv-inbox-nav__num">${escapeHtml(n.number)}</span>
           ${countHtml}
@@ -513,8 +519,9 @@ export function renderAppSmsInboxPage(
   data: AppSmsInboxPageData,
 ): string {
   const filters = data.filters;
+  const sidebarNumbers = filterInboxSidebarNumbers(data.numbers);
   const countsByNumber = buildCountsByNumber(data.messages);
-  const hasActiveNumbers = data.numbers.some((n) => n.status === "active");
+  const hasActiveNumbers = sidebarNumbers.some((n) => n.status === "active");
   const latestAt = data.messages[0]?.received_at ?? "";
 
   const body = `
@@ -524,7 +531,7 @@ export function renderAppSmsInboxPage(
          data-latest-at="${escapeHtml(latestAt)}"
          data-known-ids="${escapeHtml(JSON.stringify(data.messages.map((m) => m.id)))}">
       <div class="tv-inbox-layout">
-        ${renderNumberSidebar(data.numbers, filters, countsByNumber, data.messages.length)}
+        ${renderNumberSidebar(sidebarNumbers, filters, countsByNumber, data.messages.length)}
         <section class="tv-inbox-col tv-inbox-col--messages">
           <div class="tv-inbox-card tv-inbox-card--messages">
             <header class="tv-inbox-card__head tv-inbox-card__head--row">

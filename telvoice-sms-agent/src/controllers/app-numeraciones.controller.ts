@@ -32,6 +32,7 @@ import { renderAppNumeracionesPage } from "../views/app-ui/app-numeraciones-page
 import {
   parseSmsInboxFilters,
   renderAppSmsInboxPage,
+  filterInboxSidebarNumbers,
 } from "../views/app-ui/app-sms-inbox-page.js";
 import { renderAppAgentePage } from "../views/app-ui/app-agente-page.js";
 import { renderAppAgentPlansPage } from "../views/app-ui/app-agent-plans-page.js";
@@ -80,20 +81,25 @@ export async function getAppSmsInbox(
   next: NextFunction,
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
-    const filters = parseSmsInboxFilters(
+    let filters = parseSmsInboxFilters(
       req.query as Record<string, string | string[] | undefined>,
     );
-    const [numbers, messages] = await Promise.all([
-      listClientNumbersByCompany(ctx.company.id),
-      listInboundSmsByCompany(ctx.company.id, {
-        numberId: filters.numberId,
-        q: filters.q,
-        from: filters.from,
-        startDate: filters.startDate,
-        endDate: filters.endDate,
-        status: filters.status || undefined,
-      }),
-    ]);
+    const allNumbers = await listClientNumbersByCompany(ctx.company.id);
+    const numbers = filterInboxSidebarNumbers(allNumbers);
+    if (
+      filters.numberId &&
+      !numbers.some((n) => n.id === filters.numberId)
+    ) {
+      filters = { ...filters, numberId: undefined };
+    }
+    const messages = await listInboundSmsByCompany(ctx.company.id, {
+      numberId: filters.numberId,
+      q: filters.q,
+      from: filters.from,
+      startDate: filters.startDate,
+      endDate: filters.endDate,
+      status: filters.status || undefined,
+    });
 
     let selectedMessage = null;
     if (filters.selectedId) {
