@@ -3350,7 +3350,7 @@ html.lab-theme body {
   background: linear-gradient(135deg, rgba(0, 82, 204, 0.15) 0%, rgba(8, 16, 40, 0.9) 100%);
 }
 
-#mobile-panel {
+nav.lab-nav #mobile-panel {
   background: rgba(5, 8, 20, 0.96);
   backdrop-filter: blur(16px);
 }

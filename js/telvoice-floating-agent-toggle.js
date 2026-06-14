@@ -196,7 +196,7 @@
 
   function bindButtons() {
     buttons = Array.prototype.slice.call(
-      document.querySelectorAll("#nav-floating-agent-toggle, #nav-floating-agent-toggle-mobile")
+      document.querySelectorAll("#nav-floating-agent-toggle")
     );
     buttons.forEach(function (btn) {
       btn.addEventListener("click", function (e) {
