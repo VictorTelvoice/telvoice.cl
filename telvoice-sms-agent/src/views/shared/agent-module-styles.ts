@@ -224,32 +224,38 @@ export function renderAgentModuleStyles(): string {
       gap: 0.45rem;
       padding: 0.55rem 0.95rem;
       border-radius: 999px;
-      border: 1px solid var(--tv-border, rgba(15, 23, 42, 0.12));
+      border: 1px solid var(--tv-border, rgba(15, 23, 42, 0.14));
       background: var(--tv-panel-bg, #fff);
-      color: inherit;
+      color: #0f172a;
       text-decoration: none;
       font-size: 0.875rem;
       font-weight: 600;
       line-height: 1.2;
-      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+      transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .tv-sms-in-line:hover {
-      border-color: rgba(0, 82, 204, 0.35);
+      border-color: rgba(15, 23, 42, 0.28);
       box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
     }
     .tv-sms-in-line--active {
-      background: var(--tv-primary, #0052cc);
-      border-color: var(--tv-primary, #0052cc);
-      color: #fff;
-      box-shadow: 0 4px 14px rgba(0, 82, 204, 0.22);
+      background: var(--tv-panel-bg, #fff);
+      border: 2px solid #0f172a;
+      padding: calc(0.55rem - 1px) calc(0.95rem - 1px);
+      color: #0f172a;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
     }
     .tv-sms-in-line__icon {
       font-size: 1.05rem;
+      color: #0f172a;
+      opacity: 0.55;
+    }
+    .tv-sms-in-line--active .tv-sms-in-line__icon {
       opacity: 0.85;
     }
     .tv-sms-in-line__num {
       letter-spacing: 0.01em;
       white-space: nowrap;
+      color: #0f172a;
     }
     .tv-sms-in-line__badge {
       min-width: 1.25rem;
@@ -264,10 +270,6 @@ export function renderAgentModuleStyles(): string {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-    }
-    .tv-sms-in-line--active .tv-sms-in-line__badge {
-      background: #fff;
-      color: #ef4444;
     }
 
     .tv-sms-in-layout {
