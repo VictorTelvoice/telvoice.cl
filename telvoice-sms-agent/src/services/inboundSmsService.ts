@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { getSupabase } from "../database/supabaseClient.js";
 import type {
   InboundSmsMessageRow,
@@ -13,6 +14,8 @@ export type InboundSmsFilters = {
   startDate?: string;
   endDate?: string;
   status?: InboundSmsStatus;
+  /** Polling: solo mensajes con received_at estrictamente posterior. */
+  afterReceivedAt?: string;
 };
 
 function mapRow(row: Record<string, unknown>): InboundSmsMessageRow {
@@ -155,6 +158,9 @@ export async function listInboundSmsByCompany(
   if (filters.endDate) {
     query = query.lte("received_at", `${filters.endDate}T23:59:59.999Z`);
   }
+  if (filters.afterReceivedAt) {
+    query = query.gt("received_at", filters.afterReceivedAt);
+  }
 
   const { data, error } = await query;
   if (error) {
@@ -175,6 +181,81 @@ export async function listInboundSmsByCompany(
   }
 
   return rows;
+}
+
+/** Conteo de no leídos (status received) por empresa. */
+export async function countUnreadInboundByCompany(
+  companyId: string,
+  numberId?: string,
+): Promise<number> {
+  const sb = getSupabase();
+  let query = sb
+    .from("inbound_sms_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", companyId)
+    .eq("status", "received");
+
+  if (numberId) {
+    query = query.eq("client_number_id", numberId);
+  }
+
+  const { count, error } = await query;
+  if (error) {
+    if (isMissingTableError(error)) return 0;
+    throw wrapSupabaseError(error, "inbound_sms_messages");
+  }
+  return count ?? 0;
+}
+
+/** Conteos por client_number_id para sidebar del inbox. */
+export async function countInboundByClientNumber(
+  companyId: string,
+): Promise<Record<string, number>> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from("inbound_sms_messages")
+    .select("client_number_id")
+    .eq("company_id", companyId);
+
+  if (error) {
+    if (isMissingTableError(error)) return {};
+    throw wrapSupabaseError(error, "inbound_sms_messages");
+  }
+
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const id = String(row.client_number_id);
+    counts[id] = (counts[id] ?? 0) + 1;
+  }
+  return counts;
+}
+
+export type InboundSmsApiMessage = {
+  id: string;
+  client_number_id: string;
+  to_number: string;
+  from_number: string | null;
+  body: string;
+  detected_otp: string | null;
+  received_at: string;
+  status: InboundSmsStatus;
+  source: string | null;
+};
+
+export function serializeInboundMessageForApi(
+  row: InboundSmsMessageRow,
+): InboundSmsApiMessage {
+  return {
+    id: row.id,
+    client_number_id: row.client_number_id,
+    to_number: row.to_number,
+    from_number: row.from_number,
+    body: row.body,
+    detected_otp: row.detected_otp,
+    received_at: row.received_at,
+    status: row.status,
+    source: row.source,
+  };
 }
 
 export async function getInboundSmsById(
@@ -224,7 +305,61 @@ export type InboundSmsWebhookPayload = {
   received_at?: string;
   provider?: string;
   provider_message_id?: string;
+  /** Idempotencia: fila raw telsim_inbound_sms (referencia, no clave única). */
+  telsim_inbound_id?: string;
+  slot_id?: string;
+  idempotency_key?: string;
 };
+
+/** Clave idempotente para inbox — evita duplicados en reintentos del proveedor. */
+export function buildInboundIdempotencyKey(input: {
+  provider?: string;
+  providerMessageId?: string;
+  telsimInboundId?: string;
+  slotId?: string;
+  to: string;
+  from?: string;
+  body: string;
+  receivedAt: string;
+}): string {
+  if (input.providerMessageId?.trim()) {
+    return `provider:${input.provider ?? "gateway"}:${input.providerMessageId.trim()}`;
+  }
+
+  const norm = (s: string) => String(s).replace(/\D/g, "");
+  const bodyHash = createHash("sha256")
+    .update(input.body)
+    .digest("hex")
+    .slice(0, 16);
+  const ts = input.receivedAt.trim();
+
+  return [
+    "inbound",
+    input.provider ?? "gateway",
+    input.slotId?.trim() ?? "",
+    norm(input.to),
+    norm(input.from ?? ""),
+    bodyHash,
+    ts,
+  ].join(":");
+}
+
+async function findExistingInboundByIdempotencyKey(
+  idempotencyKey: string,
+): Promise<string | null> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from("inbound_sms_messages")
+    .select("id")
+    .eq("metadata->>idempotency_key", idempotencyKey)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error)) return null;
+    throw wrapSupabaseError(error, "inbound_sms_messages");
+  }
+  return data?.id != null ? String(data.id) : null;
+}
 
 export async function processInboundSmsWebhook(
   payload: InboundSmsWebhookPayload,
@@ -249,9 +384,43 @@ export async function processInboundSmsWebhook(
     ? new Date(payload.received_at).toISOString()
     : new Date().toISOString();
 
-  const metadata: Record<string, unknown> = {};
+  const idempotencyKey =
+    payload.idempotency_key?.trim() ??
+    buildInboundIdempotencyKey({
+      provider: payload.provider,
+      providerMessageId: payload.provider_message_id,
+      telsimInboundId: payload.telsim_inbound_id,
+      slotId: payload.slot_id,
+      to,
+      from: payload.from,
+      body,
+      receivedAt,
+    });
+
+  const existingId = await findExistingInboundByIdempotencyKey(idempotencyKey);
+  if (existingId) {
+    console.info(
+      "[inbound-sms] idempotente (existente)",
+      JSON.stringify({
+        to: maskInboundPhone(to),
+        message_id: existingId,
+        idempotency_key: idempotencyKey.slice(0, 48),
+      }),
+    );
+    return { ok: true, messageId: existingId };
+  }
+
+  const metadata: Record<string, unknown> = {
+    idempotency_key: idempotencyKey,
+  };
   if (payload.provider_message_id?.trim()) {
     metadata.provider_message_id = payload.provider_message_id.trim();
+  }
+  if (payload.telsim_inbound_id?.trim()) {
+    metadata.telsim_inbound_id = payload.telsim_inbound_id.trim();
+  }
+  if (payload.slot_id?.trim()) {
+    metadata.telsim_slot_id = payload.slot_id.trim();
   }
 
   const sb = getSupabase();
@@ -296,15 +465,85 @@ export async function forwardTelsimInboundToClientInbox(input: {
   from: string;
   body: string;
   receivedAt: string;
-}): Promise<{ ok: boolean; messageId?: string }> {
+  telsimInboundId?: string;
+  slotId?: string;
+  providerMessageId?: string;
+}): Promise<{ ok: boolean; messageId?: string; skipped?: boolean }> {
   const line = input.linePhone?.trim();
-  if (!line) return { ok: false };
+  if (!line) {
+    console.warn(
+      "[inbound-sms] telsim forward omitido: sin line_phone",
+      JSON.stringify({ slot_id: input.slotId ?? null }),
+    );
+    return { ok: false, skipped: true };
+  }
+
+  const idempotencyKey = buildInboundIdempotencyKey({
+    provider: "telsim",
+    providerMessageId: input.providerMessageId,
+    telsimInboundId: input.telsimInboundId,
+    slotId: input.slotId,
+    to: line,
+    from: input.from,
+    body: input.body,
+    receivedAt: input.receivedAt,
+  });
+
   return processInboundSmsWebhook({
     to: line,
     from: input.from,
     body: input.body,
     received_at: input.receivedAt,
     provider: "telsim",
+    provider_message_id: input.providerMessageId,
+    telsim_inbound_id: input.telsimInboundId,
+    slot_id: input.slotId,
+    idempotency_key: idempotencyKey,
+  });
+}
+
+/** Simula SMS entrante desde el panel cliente (origen `simulation`). */
+export async function simulateInboundSmsForCompany(input: {
+  companyId: string;
+  clientNumberId: string;
+  from: string;
+  body: string;
+}): Promise<{ ok: boolean; messageId?: string; error?: string }> {
+  const from = input.from?.trim();
+  const body = input.body?.trim();
+  if (!from) {
+    return { ok: false, error: "Número remitente requerido." };
+  }
+  if (!body) {
+    return { ok: false, error: "Mensaje requerido." };
+  }
+
+  const sb = getSupabase();
+  const { data: numberRow, error } = await sb
+    .from("client_numbers")
+    .select("id, company_id, number, status")
+    .eq("company_id", input.companyId)
+    .eq("id", input.clientNumberId)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return { ok: false, error: "Módulo de numeraciones no disponible." };
+    }
+    throw wrapSupabaseError(error, "client_numbers");
+  }
+  if (!numberRow) {
+    return { ok: false, error: "Numeración no encontrada." };
+  }
+  if (String(numberRow.status) !== "active") {
+    return { ok: false, error: "La numeración no está activa para recibir SMS." };
+  }
+
+  return processInboundSmsWebhook({
+    to: String(numberRow.number),
+    from,
+    body,
+    provider: "simulation",
   });
 }
 

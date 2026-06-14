@@ -8,6 +8,7 @@ import {
 import {
   getClientNumberById,
   getClientNumbersModuleState,
+  filterClientPanelNumbers,
   listClientNumbersByCompany,
 } from "../services/clientNumberService.js";
 import {
@@ -66,10 +67,11 @@ export async function getAppNumeraciones(
   next: NextFunction,
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
-    const [module, numbers] = await Promise.all([
+    const [module, allNumbers] = await Promise.all([
       getClientNumbersModuleState(),
       listClientNumbersByCompany(ctx.company.id),
     ]);
+    const numbers = filterClientPanelNumbers(allNumbers);
     return renderAppNumeracionesPage(ctx, { module, numbers });
   });
 }
@@ -80,20 +82,29 @@ export async function getAppSmsInbox(
   next: NextFunction,
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
-    const filters = parseSmsInboxFilters(
+    let filters = parseSmsInboxFilters(
       req.query as Record<string, string | string[] | undefined>,
     );
-    const [numbers, messages] = await Promise.all([
-      listClientNumbersByCompany(ctx.company.id),
-      listInboundSmsByCompany(ctx.company.id, {
-        numberId: filters.numberId,
-        q: filters.q,
-        from: filters.from,
-        startDate: filters.startDate,
-        endDate: filters.endDate,
-        status: filters.status || undefined,
-      }),
-    ]);
+    const allNumbers = await listClientNumbersByCompany(ctx.company.id);
+    const numbers = filterClientPanelNumbers(allNumbers);
+    if (
+      filters.numberId &&
+      !numbers.some((n) => n.id === filters.numberId)
+    ) {
+      filters = { ...filters, numberId: undefined };
+    }
+    const activeNumbers = numbers.filter((n) => n.status === "active");
+    if (!filters.numberId && activeNumbers.length > 0) {
+      filters = { ...filters, numberId: activeNumbers[0]!.id };
+    }
+    const messages = await listInboundSmsByCompany(ctx.company.id, {
+      numberId: filters.numberId,
+      q: filters.q,
+      from: filters.from,
+      startDate: filters.startDate,
+      endDate: filters.endDate,
+      status: filters.status || undefined,
+    });
 
     let selectedMessage = null;
     if (filters.selectedId) {

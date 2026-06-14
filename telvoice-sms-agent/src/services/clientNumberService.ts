@@ -132,6 +132,13 @@ export async function listClientNumbersByCompany(
   });
 }
 
+/** Oculta numeraciones canceladas (p. ej. duplicados por error de activación) en panel cliente. */
+export function filterClientPanelNumbers(
+  numbers: ClientNumberListItem[],
+): ClientNumberListItem[] {
+  return numbers.filter((n) => n.status !== "cancelled");
+}
+
 export async function getClientNumberById(
   companyId: string,
   numberId: string,

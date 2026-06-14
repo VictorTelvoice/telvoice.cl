@@ -7,9 +7,17 @@ import {
 import {
   getClientNumberById,
   getClientNumbersModuleState,
+  filterClientPanelNumbers,
   listClientNumbersByCompany,
 } from "../services/clientNumberService.js";
-import { listInboundSmsByCompany } from "../services/inboundSmsService.js";
+import {
+  countInboundByClientNumber,
+  countUnreadInboundByCompany,
+  getInboundSmsById,
+  listInboundSmsByCompany,
+  serializeInboundMessageForApi,
+  simulateInboundSmsForCompany,
+} from "../services/inboundSmsService.js";
 import { getSupabase } from "../database/supabaseClient.js";
 import type { AgentPlanCode } from "../types/client-numbers.js";
 import { AppError } from "../utils/errors.js";
@@ -32,7 +40,9 @@ export async function getApiNumeraciones(req: Request, res: Response): Promise<v
     if (!ctx) return;
 
     const module = await getClientNumbersModuleState();
-    const numbers = await listClientNumbersByCompany(ctx.company.id);
+    const numbers = filterClientPanelNumbers(
+      await listClientNumbersByCompany(ctx.company.id),
+    );
     res.json({ ok: true, module, numbers });
   } catch (error) {
     res.status(500).json({ ok: false, error: "Error al listar numeraciones." });
@@ -80,6 +90,116 @@ export async function getApiNumeracionSms(req: Request, res: Response): Promise<
     res.json({ ok: true, messages });
   } catch (error) {
     res.status(500).json({ ok: false, error: "Error al listar SMS." });
+  }
+}
+
+function parseInboundApiFilters(req: Request) {
+  const q = req.query;
+  const str = (key: string): string | undefined => {
+    const v = q[key];
+    return typeof v === "string" && v.trim() ? v.trim() : undefined;
+  };
+  return {
+    numberId: str("number_id"),
+    q: str("q"),
+    from: str("from"),
+    startDate: str("start_date"),
+    endDate: str("end_date"),
+    afterReceivedAt: str("after"),
+  };
+}
+
+/** Polling JSON liviano para /app/sms-inbox (sesión cliente, sin company_id en query). */
+export async function getApiSmsInboxMessages(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireApiContext(req, res);
+    if (!ctx) return;
+
+    const filters = parseInboundApiFilters(req);
+    if (filters.numberId) {
+      const owned = await getClientNumberById(ctx.company.id, filters.numberId);
+      if (!owned) {
+        res.status(404).json({ ok: false, error: "Numeración no encontrada." });
+        return;
+      }
+    }
+    const messages = await listInboundSmsByCompany(ctx.company.id, filters, 100);
+    const unreadCount = await countUnreadInboundByCompany(
+      ctx.company.id,
+      filters.numberId,
+    );
+    const countsByNumber = await countInboundByClientNumber(ctx.company.id);
+
+    const latest =
+      messages.length > 0
+        ? messages.reduce((a, b) =>
+            a.received_at >= b.received_at ? a : b,
+          ).received_at
+        : null;
+
+    res.json({
+      ok: true,
+      messages: messages.map(serializeInboundMessageForApi),
+      unread_count: unreadCount,
+      counts_by_number: countsByNumber,
+      latest_received_at: latest,
+    });
+  } catch {
+    res.status(500).json({ ok: false, error: "Error al cargar bandeja." });
+  }
+}
+
+/** Simula recepción de SMS entrante en numeración del tenant (origen `simulation`). */
+export async function postApiSmsInboxSimulate(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireApiContext(req, res);
+    if (!ctx) return;
+    if (!canOperateClientPanel(ctx.profile.role)) {
+      res.status(403).json({ ok: false, error: "Sin permiso para simular SMS." });
+      return;
+    }
+
+    const clientNumberId = validateUuidParam(
+      String(req.body?.number_id ?? req.body?.client_number_id ?? ""),
+      "numeración",
+    );
+    const from = String(req.body?.from ?? req.body?.from_number ?? "").trim();
+    const body = String(req.body?.body ?? req.body?.message ?? req.body?.text ?? "").trim();
+
+    const result = await simulateInboundSmsForCompany({
+      companyId: ctx.company.id,
+      clientNumberId,
+      from,
+      body,
+    });
+
+    if (!result.ok) {
+      const status = result.error?.includes("no encontrada") ? 404 : 400;
+      res.status(status).json({ ok: false, error: result.error ?? "Error al simular." });
+      return;
+    }
+
+    const message = result.messageId
+      ? await getInboundSmsById(ctx.company.id, result.messageId)
+      : null;
+
+    res.status(201).json({
+      ok: true,
+      message_id: result.messageId,
+      message: message ? serializeInboundMessageForApi(message) : null,
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      res.status(error.statusCode).json({ ok: false, error: error.message });
+      return;
+    }
+    res.status(500).json({ ok: false, error: "Error al simular SMS entrante." });
   }
 }
 

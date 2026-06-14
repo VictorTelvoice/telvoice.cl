@@ -404,6 +404,9 @@ export async function activatePaidSimActivationRequest(
   if (!activation) {
     throw new AppError("Activación SIM no encontrada.", 404);
   }
+  if (activation.activation_status === "active" && activation.client_number_id) {
+    return activation;
+  }
   if (
     !["paid_pending_activation", "activation_review", "number_reserved", "number_assigned"].includes(
       activation.activation_status,
@@ -438,7 +441,10 @@ export async function activatePaidSimActivationRequest(
     (isSimPlanId(planId) && Boolean(getBundledAgentAddonForSimPlan(planId)));
   const caps = simClientNumberCapabilities(agentEnabled);
 
-  let clientNumberId = activation.client_number_id;
+  let clientNumberId =
+    activation.client_number_id ??
+    inventory.current_client_number_id ??
+    null;
 
   if (!clientNumberId) {
     const sbLookup = getSupabase();
@@ -447,10 +453,22 @@ export async function activatePaidSimActivationRequest(
       .select("id")
       .eq("company_id", activation.company_id)
       .eq("number", inventory.e164_number)
+      .in("status", ["active", "pending_activation", "reserved"])
+      .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();
     if (existingCn?.id) {
       clientNumberId = String(existingCn.id);
+    }
+  }
+
+  if (!clientNumberId) {
+    const freshInventory = await getInventoryById(inventory.id);
+    if (
+      freshInventory?.current_client_number_id &&
+      freshInventory.current_company_id === activation.company_id
+    ) {
+      clientNumberId = freshInventory.current_client_number_id;
     }
   }
 

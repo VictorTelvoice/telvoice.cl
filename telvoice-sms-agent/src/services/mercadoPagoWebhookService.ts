@@ -25,6 +25,7 @@ import { hasPurchaseCreditForOrder } from "./walletTransactionService.js";
 import {
   isSimAgentBundleOrder,
   isSimCheckoutOrder,
+  isWalletSmsCreditOrder,
 } from "../utils/order-display.js";
 import {
   createSimActivationRequest,
@@ -431,6 +432,20 @@ export async function processPublicCheckoutMercadoPagoWebhook(
                 ? refreshed.metadata.use_case
                 : undefined,
           });
+        }
+
+        const afterProvision = await getOrderById(orderId);
+        if (afterProvision?.company_id && isWalletSmsCreditOrder(afterProvision)) {
+          try {
+            const credit = await confirmOrderCredit(orderId, null);
+            console.log(
+              "[mp-webhook] sim bundle wallet credit",
+              orderId,
+              credit.alreadyCredited ? "already_credited" : "credited",
+            );
+          } catch (err) {
+            console.error("[mp-webhook] sim bundle wallet credit failed", orderId, err);
+          }
         }
 
         try {

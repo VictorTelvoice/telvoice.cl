@@ -121,6 +121,55 @@ export async function upsertTelsimSlotBinding(
   }
 }
 
+/** Resuelve E.164 de la línea destino a partir del slot Telsim (binding o inventario). */
+export async function resolveLinePhoneForTelsimSlot(
+  slotId: string,
+): Promise<string | null> {
+  const trimmed = slotId.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const verifyEntry = findVerifyNumberBySlotId(trimmed);
+  if (verifyEntry?.phone) {
+    return normalizeTelsimLinePhone(verifyEntry.phone);
+  }
+
+  const { data: binding, error: bindErr } = await getSupabase()
+    .from("telsim_slot_bindings")
+    .select("verify_phone")
+    .eq("slot_id", trimmed)
+    .maybeSingle();
+
+  if (bindErr && !isMissingTableError(bindErr)) {
+    wrapSupabaseError(bindErr, "resolveLinePhoneForTelsimSlot.binding");
+  }
+
+  const boundPhone = (binding as { verify_phone?: string } | null)?.verify_phone;
+  if (boundPhone) {
+    return normalizeTelsimLinePhone(boundPhone);
+  }
+
+  const { data: inv, error: invErr } = await getSupabase()
+    .from("real_number_inventory")
+    .select("e164_number")
+    .eq("sim_slot", trimmed)
+    .eq("sales_status", "active_assigned")
+    .limit(1)
+    .maybeSingle();
+
+  if (invErr && !isMissingTableError(invErr)) {
+    wrapSupabaseError(invErr, "resolveLinePhoneForTelsimSlot.inventory");
+  }
+
+  const e164 = (inv as { e164_number?: string } | null)?.e164_number;
+  if (e164) {
+    return normalizeTelsimLinePhone(e164);
+  }
+
+  return null;
+}
+
 export async function getBoundSlotIdForVerifyPhone(
   verifyPhone: string,
 ): Promise<string | null> {

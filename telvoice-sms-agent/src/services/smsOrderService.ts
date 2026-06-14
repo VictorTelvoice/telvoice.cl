@@ -10,6 +10,8 @@ import {
   PUBLIC_LANDING_ORDER_METADATA,
   PUBLIC_SIM_AGENT_BUNDLE_METADATA,
   PUBLIC_SIM_CHECKOUT_METADATA,
+  isWalletSmsCreditOrder,
+  resolveWalletCreditSmsAmount,
 } from "../utils/order-display.js";
 import {
   encryptClaimTokenForMetadata,
@@ -748,6 +750,14 @@ export async function confirmOrderCredit(
     return { order, alreadyCredited: true };
   }
 
+  if (!isWalletSmsCreditOrder(order)) {
+    throw new AppError(
+      "Esta orden no es una bolsa SMS; no acredita wallet.",
+      400,
+      "NON_WALLET_PRODUCT",
+    );
+  }
+
   if (!order.company_id) {
     throw new AppError(
       "La orden no tiene empresa asociada; no se puede acreditar saldo.",
@@ -797,9 +807,17 @@ export async function confirmOrderCredit(
   }
 
   try {
+    const smsAmount = resolveWalletCreditSmsAmount(order);
+    if (smsAmount <= 0) {
+      throw new AppError(
+        "La orden no tiene cantidad SMS acreditable.",
+        400,
+        "ZERO_SMS_CREDIT",
+      );
+    }
     await applyPurchaseCredit({
       companyId: order.company_id,
-      smsAmount: order.sms_quantity,
+      smsAmount,
       orderId: order.id,
       actorUserId,
     });
