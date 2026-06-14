@@ -321,6 +321,27 @@ export async function updateInboundSmsStatus(
   return true;
 }
 
+/** Marca como leídos todos los SMS entrantes no leídos de una numeración. */
+export async function markInboundSmsReadForClientNumber(
+  companyId: string,
+  clientNumberId: string,
+): Promise<number> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from("inbound_sms_messages")
+    .update({ status: "read" })
+    .eq("company_id", companyId)
+    .eq("client_number_id", clientNumberId)
+    .eq("status", "received")
+    .select("id");
+
+  if (error) {
+    if (isMissingTableError(error)) return 0;
+    throw wrapSupabaseError(error, "inbound_sms_messages");
+  }
+  return data?.length ?? 0;
+}
+
 export type InboundSmsWebhookPayload = {
   to: string;
   from?: string;

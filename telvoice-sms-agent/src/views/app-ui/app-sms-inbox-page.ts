@@ -96,7 +96,7 @@ function renderLineTabs(
       const badgeLabel = formatUnreadBadge(unread);
       const badge = badgeLabel
         ? `<span class="tv-sms-in-line__badge" id="tv-sms-in-badge-${escapeHtml(n.id)}" data-number-id="${escapeHtml(n.id)}">${escapeHtml(badgeLabel)}</span>`
-        : `<span class="tv-sms-in-line__badge tv-sms-in-line__badge--empty" id="tv-sms-in-badge-${escapeHtml(n.id)}" data-number-id="${escapeHtml(n.id)}" hidden aria-hidden="true"></span>`;
+        : "";
 
       return `<a href="/app/sms-inbox?number=${encodeURIComponent(n.id)}"
         class="tv-sms-in-line${active ? " tv-sms-in-line--active" : ""}"
@@ -233,38 +233,40 @@ function renderPageScript(
     return count > 99 ? "99+" : String(count);
   }
 
+  function setLineBadge(numberId, count) {
+    if (!numberId || numberId === selectedNumberId || count <= 0) {
+      var stale = document.getElementById("tv-sms-in-badge-" + numberId);
+      if (stale) stale.remove();
+      return;
+    }
+    var tab = document.querySelector('.tv-sms-in-line[data-number-id="' + numberId + '"]');
+    if (!tab) return;
+    var badge = document.getElementById("tv-sms-in-badge-" + numberId);
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "tv-sms-in-line__badge";
+      badge.id = "tv-sms-in-badge-" + numberId;
+      badge.setAttribute("data-number-id", numberId);
+      tab.appendChild(badge);
+    }
+    badge.textContent = formatBadgeCount(count);
+  }
+
   function updateLineBadges(unreadByNumber) {
     if (!unreadByNumber) return;
-    document.querySelectorAll(".tv-sms-in-line__badge").forEach(function(badge) {
-      var numberId = badge.getAttribute("data-number-id");
+    document.querySelectorAll(".tv-sms-in-line[data-number-id]").forEach(function(tab) {
+      var numberId = tab.getAttribute("data-number-id");
       if (!numberId) return;
       var count = numberId === selectedNumberId ? 0 : (unreadByNumber[numberId] || 0);
-      var label = formatBadgeCount(count);
-      if (label) {
-        badge.hidden = false;
-        badge.removeAttribute("aria-hidden");
-        badge.textContent = label;
-        badge.classList.remove("tv-sms-in-line__badge--empty");
-      } else {
-        badge.hidden = true;
-        badge.setAttribute("aria-hidden", "true");
-        badge.textContent = "";
-        badge.classList.add("tv-sms-in-line__badge--empty");
-      }
+      setLineBadge(numberId, count);
     });
   }
 
   function bumpLineBadge(numberId) {
     if (!numberId || numberId === selectedNumberId) return;
     var badge = document.getElementById("tv-sms-in-badge-" + numberId);
-    if (!badge) return;
-    var current = parseInt(badge.textContent, 10);
-    var next = (Number.isFinite(current) ? current : 0) + 1;
-    var label = formatBadgeCount(next);
-    badge.hidden = false;
-    badge.removeAttribute("aria-hidden");
-    badge.textContent = label;
-    badge.classList.remove("tv-sms-in-line__badge--empty");
+    var current = badge ? parseInt(badge.textContent, 10) : 0;
+    setLineBadge(numberId, (Number.isFinite(current) ? current : 0) + 1);
   }
 
   function setLiveBadge(state) {
@@ -321,6 +323,7 @@ function renderPageScript(
 
     if (m.client_number_id === selectedNumberId) {
       appendToFeed(m);
+      setLineBadge(selectedNumberId, 0);
       if (fromPoll) showToast();
     } else if (m.status === "received") {
       bumpLineBadge(m.client_number_id);

@@ -146,6 +146,8 @@ import {
   listCompanyInvoices,
   summarizeCompanyInvoices,
 } from "../services/billingInvoiceService.js";
+import { findPaidCreditedOrdersWithoutInvoice } from "../services/billingRecoveryService.js";
+import { runBillingSyncBestEffort } from "../services/billingSyncService.js";
 import {
   generateInvoiceHtmlFromData,
   sanitizeInvoiceDocumentData,
@@ -1741,6 +1743,17 @@ export async function getAppInvoices(
     const filters = parseAppInvoiceFilters(
       req.query as Record<string, string | string[] | undefined>,
     );
+
+    const missingInvoices = await findPaidCreditedOrdersWithoutInvoice({
+      companyId: ctx.company.id,
+      limit: 30,
+    });
+    for (const row of missingInvoices) {
+      await runBillingSyncBestEffort(row.order_id, {
+        source: "client_invoices_page",
+      });
+    }
+
     const invoices = await listCompanyInvoices(ctx.company.id, {
       status: filters.status,
       documentType: filters.documentType,
