@@ -287,7 +287,7 @@
 @media (max-width: 767px) {
   .tv-type-lab .hero-copy .tv-hero-title,
   .tv-type-lab .hero-copy .tv-hero-slide-title {
-    font-size: clamp(1.85rem, 6.2vw, 2.25rem);
+    font-size: clamp(2.22rem, 7.44vw, 2.7rem);
     line-height: 1.08;
   }
 }
@@ -295,7 +295,7 @@
 @media (max-width: 380px) {
   .tv-type-lab .hero-copy .tv-hero-title,
   .tv-type-lab .hero-copy .tv-hero-slide-title {
-    font-size: clamp(1.5rem, 4.8vw, 1.85rem);
+    font-size: clamp(1.8rem, 5.76vw, 2.22rem);
     line-height: 1.08;
   }
 }

@@ -80,6 +80,10 @@
     goTo(current + 1);
   }
 
+  function prevSlide() {
+    goTo(current - 1);
+  }
+
   function clearAutoplay() {
     if (timer) {
       window.clearInterval(timer);
@@ -97,11 +101,20 @@
 
   heroSection.addEventListener("click", function (e) {
     var dot = e.target.closest(".tv-hero-dot");
-    if (!dot) {
+    if (dot) {
+      e.preventDefault();
+      goTo(dot.getAttribute("data-slide-to"));
       return;
     }
-    e.preventDefault();
-    goTo(dot.getAttribute("data-slide-to"));
+    if (e.target.closest(".tv-hero-slider-nav--prev")) {
+      e.preventDefault();
+      prevSlide();
+      return;
+    }
+    if (e.target.closest(".tv-hero-slider-nav--next")) {
+      e.preventDefault();
+      nextSlide();
+    }
   });
 
   heroSection.addEventListener("mouseenter", function () {
