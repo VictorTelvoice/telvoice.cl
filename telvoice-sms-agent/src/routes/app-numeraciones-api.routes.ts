@@ -8,6 +8,7 @@ import {
   patchApiNumeracionConfig,
   postApiAgentPlanRequest,
   postApiNumeracionWebhookTest,
+  postApiSmsInboxSimulate,
 } from "../controllers/app-numeraciones-api.controller.js";
 import { loadClientSession } from "../middleware/admin-auth.js";
 import { requireClientPanelApi } from "../middleware/client-panel-api-auth.js";
@@ -20,6 +21,7 @@ appNumeracionesApiRouter.use(requireClientPanelApi);
 
 appNumeracionesApiRouter.get("/numeraciones", getApiNumeraciones);
 appNumeracionesApiRouter.get("/sms-inbox/messages", getApiSmsInboxMessages);
+appNumeracionesApiRouter.post("/sms-inbox/simulate", postApiSmsInboxSimulate);
 appNumeracionesApiRouter.get("/numeraciones/:id", getApiNumeracionById);
 appNumeracionesApiRouter.get("/numeraciones/:id/sms", getApiNumeracionSms);
 appNumeracionesApiRouter.patch("/numeraciones/:id/config", patchApiNumeracionConfig);

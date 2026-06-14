@@ -13,8 +13,10 @@ import {
 import {
   countInboundByClientNumber,
   countUnreadInboundByCompany,
+  getInboundSmsById,
   listInboundSmsByCompany,
   serializeInboundMessageForApi,
+  simulateInboundSmsForCompany,
 } from "../services/inboundSmsService.js";
 import { getSupabase } from "../database/supabaseClient.js";
 import type { AgentPlanCode } from "../types/client-numbers.js";
@@ -117,6 +119,13 @@ export async function getApiSmsInboxMessages(
     if (!ctx) return;
 
     const filters = parseInboundApiFilters(req);
+    if (filters.numberId) {
+      const owned = await getClientNumberById(ctx.company.id, filters.numberId);
+      if (!owned) {
+        res.status(404).json({ ok: false, error: "Numeración no encontrada." });
+        return;
+      }
+    }
     const messages = await listInboundSmsByCompany(ctx.company.id, filters, 100);
     const unreadCount = await countUnreadInboundByCompany(
       ctx.company.id,
@@ -140,6 +149,57 @@ export async function getApiSmsInboxMessages(
     });
   } catch {
     res.status(500).json({ ok: false, error: "Error al cargar bandeja." });
+  }
+}
+
+/** Simula recepción de SMS entrante en numeración del tenant (origen `simulation`). */
+export async function postApiSmsInboxSimulate(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireApiContext(req, res);
+    if (!ctx) return;
+    if (!canOperateClientPanel(ctx.profile.role)) {
+      res.status(403).json({ ok: false, error: "Sin permiso para simular SMS." });
+      return;
+    }
+
+    const clientNumberId = validateUuidParam(
+      String(req.body?.number_id ?? req.body?.client_number_id ?? ""),
+      "numeración",
+    );
+    const from = String(req.body?.from ?? req.body?.from_number ?? "").trim();
+    const body = String(req.body?.body ?? req.body?.message ?? req.body?.text ?? "").trim();
+
+    const result = await simulateInboundSmsForCompany({
+      companyId: ctx.company.id,
+      clientNumberId,
+      from,
+      body,
+    });
+
+    if (!result.ok) {
+      const status = result.error?.includes("no encontrada") ? 404 : 400;
+      res.status(status).json({ ok: false, error: result.error ?? "Error al simular." });
+      return;
+    }
+
+    const message = result.messageId
+      ? await getInboundSmsById(ctx.company.id, result.messageId)
+      : null;
+
+    res.status(201).json({
+      ok: true,
+      message_id: result.messageId,
+      message: message ? serializeInboundMessageForApi(message) : null,
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      res.status(error.statusCode).json({ ok: false, error: error.message });
+      return;
+    }
+    res.status(500).json({ ok: false, error: "Error al simular SMS entrante." });
   }
 }
 

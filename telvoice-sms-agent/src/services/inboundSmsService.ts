@@ -502,6 +502,51 @@ export async function forwardTelsimInboundToClientInbox(input: {
   });
 }
 
+/** Simula SMS entrante desde el panel cliente (origen `simulation`). */
+export async function simulateInboundSmsForCompany(input: {
+  companyId: string;
+  clientNumberId: string;
+  from: string;
+  body: string;
+}): Promise<{ ok: boolean; messageId?: string; error?: string }> {
+  const from = input.from?.trim();
+  const body = input.body?.trim();
+  if (!from) {
+    return { ok: false, error: "Número remitente requerido." };
+  }
+  if (!body) {
+    return { ok: false, error: "Mensaje requerido." };
+  }
+
+  const sb = getSupabase();
+  const { data: numberRow, error } = await sb
+    .from("client_numbers")
+    .select("id, company_id, number, status")
+    .eq("company_id", input.companyId)
+    .eq("id", input.clientNumberId)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return { ok: false, error: "Módulo de numeraciones no disponible." };
+    }
+    throw wrapSupabaseError(error, "client_numbers");
+  }
+  if (!numberRow) {
+    return { ok: false, error: "Numeración no encontrada." };
+  }
+  if (String(numberRow.status) !== "active") {
+    return { ok: false, error: "La numeración no está activa para recibir SMS." };
+  }
+
+  return processInboundSmsWebhook({
+    to: String(numberRow.number),
+    from,
+    body,
+    provider: "simulation",
+  });
+}
+
 export function inboundSmsStatusLabel(status: InboundSmsStatus): string {
   const map: Record<InboundSmsStatus, string> = {
     received: "Recibido",

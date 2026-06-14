@@ -93,6 +93,10 @@ export async function getAppSmsInbox(
     ) {
       filters = { ...filters, numberId: undefined };
     }
+    const activeNumbers = numbers.filter((n) => n.status === "active");
+    if (!filters.numberId && activeNumbers.length > 0) {
+      filters = { ...filters, numberId: activeNumbers[0]!.id };
+    }
     const messages = await listInboundSmsByCompany(ctx.company.id, {
       numberId: filters.numberId,
       q: filters.q,
