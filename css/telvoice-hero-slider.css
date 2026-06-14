@@ -154,6 +154,34 @@
   max-width: 100%;
 }
 
+@media (max-width: 767px) {
+  .tv-hero-cta-slide .hero-cta-row {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    max-width: 100%;
+    gap: 0.45rem;
+    justify-content: center;
+  }
+
+  .tv-hero-cta-slide .hero-cta-row a {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    max-width: none;
+    padding: 0.7rem 0.45rem;
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    text-align: center;
+  }
+}
+
+@media (max-width: 767px) and (min-width: 381px) {
+  .tv-hero-cta-slide .hero-cta-row a {
+    font-size: 0.75rem;
+    padding: 0.72rem 0.5rem;
+  }
+}
+
 @media (min-width: 768px) {
   .tv-hero-cta-slide .hero-cta-row {
     max-width: 38rem;

@@ -54,11 +54,11 @@
 .tv-type-lab h2.tv-hero-title,
 .tv-type-lab .tv-hero-slide-title {
   font-family: Montserrat, sans-serif;
-  font-size: clamp(2.6rem, 5.9vw, 3.85rem);
+  font-size: clamp(2.15rem, 4.2vw, 3.45rem);
   font-weight: 800;
-  line-height: 1.12;
+  line-height: 1.08;
   letter-spacing: -0.025em;
-  max-width: 28ch;
+  max-width: 100%;
   text-wrap: balance;
 }
 
@@ -276,10 +276,27 @@
   }
 }
 
+@media (min-width: 768px) and (max-width: 1023px) {
+  .tv-type-lab .hero-copy .tv-hero-title,
+  .tv-type-lab .hero-copy .tv-hero-slide-title {
+    font-size: clamp(1.95rem, 3.6vw, 2.55rem);
+    line-height: 1.1;
+  }
+}
+
 @media (max-width: 767px) {
-  .tv-type-lab .hero-copy .tv-hero-title {
-    font-size: clamp(2.6rem, 5.9vw, 3.85rem);
-    line-height: 1.12;
+  .tv-type-lab .hero-copy .tv-hero-title,
+  .tv-type-lab .hero-copy .tv-hero-slide-title {
+    font-size: clamp(1.85rem, 6.2vw, 2.25rem);
+    line-height: 1.08;
+  }
+}
+
+@media (max-width: 380px) {
+  .tv-type-lab .hero-copy .tv-hero-title,
+  .tv-type-lab .hero-copy .tv-hero-slide-title {
+    font-size: clamp(1.5rem, 4.8vw, 1.85rem);
+    line-height: 1.08;
   }
 }
 

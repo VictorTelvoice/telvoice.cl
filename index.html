@@ -2680,11 +2680,11 @@
     .tv-type-lab h2.tv-hero-title,
     .tv-type-lab .tv-hero-slide-title {
       font-family: Montserrat, sans-serif;
-      font-size: clamp(2.6rem, 5.9vw, 3.85rem);
+      font-size: clamp(2.15rem, 4.2vw, 3.45rem);
       font-weight: 800;
-      line-height: 1.12;
+      line-height: 1.08;
       letter-spacing: -0.025em;
-      max-width: 28ch;
+      max-width: 100%;
       text-wrap: balance;
     }
     .tv-type-lab h2.tv-hero-title,
@@ -2744,11 +2744,25 @@
       line-height: 1.55;
       color: #525f7a;
     }
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .tv-type-lab .hero-copy .tv-hero-title,
+      .tv-type-lab .hero-copy .tv-hero-slide-title {
+        font-size: clamp(1.95rem, 3.6vw, 2.55rem);
+        line-height: 1.1;
+      }
+    }
     @media (max-width: 767px) {
       .tv-type-lab .hero-copy .tv-hero-title,
       .tv-type-lab .hero-copy .tv-hero-slide-title {
-        font-size: clamp(2.6rem, 5.9vw, 3.85rem);
-        line-height: 1.12;
+        font-size: clamp(1.85rem, 6.2vw, 2.25rem);
+        line-height: 1.08;
+      }
+    }
+    @media (max-width: 380px) {
+      .tv-type-lab .hero-copy .tv-hero-title,
+      .tv-type-lab .hero-copy .tv-hero-slide-title {
+        font-size: clamp(1.5rem, 4.8vw, 1.85rem);
+        line-height: 1.08;
       }
     }
   </style>
@@ -2757,6 +2771,7 @@
     #telvoice-web-agent.tva-root--ready{visibility:visible;pointer-events:auto}
     #telvoice-web-agent .tva-panel:not(.is-open){display:none!important}
     #telvoice-web-agent .tva-launcher-iso,#telvoice-web-agent .tva-launcher img{width:calc(10.13rem * 0.85);height:calc(10.13rem * 0.85);max-width:calc(10.13rem * 0.85);max-height:calc(10.13rem * 0.85)}
+    #telvoice-web-agent.tva-root--lab .telvoice-agent-avatar--launcher .telvoice-agent-antenna-glow{display:none!important}
     .hero-phone-slot--agent{display:flex;flex:1;align-items:center;justify-content:center;width:100%;min-width:0}
     .hero-phone-float--agent{position:relative;display:flex;flex-direction:column;width:min(320px,90vw);height:min(640px,85svh,85vh);max-width:100%;border-radius:48px;border:12px solid #dae2fd;background:#131b2e;overflow:hidden;box-sizing:border-box}
     .hero-phone-screen{position:relative;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;padding:3.75rem 0 0}
@@ -2767,11 +2782,11 @@
     #telvoice-web-agent-embed:not(.tva-root--ready){visibility:hidden}
     #telvoice-web-agent-embed.tva-root--ready{visibility:visible}
   </style>
-  <link rel="stylesheet" href="css/telvoice-type-lab.css?v=20260614c" />
-  <link rel="stylesheet" href="css/telvoice-hero-slider.css?v=20260614c" />
+  <link rel="stylesheet" href="css/telvoice-type-lab.css?v=20260531" />
+  <link rel="stylesheet" href="css/telvoice-hero-slider.css?v=20260529b" />
   <link rel="stylesheet" href="css/landing-agent-lab.css?v=20260717" />
-  <link rel="stylesheet" href="css/telvoice-numeracion-section.css?v=20260614d" />
-  <link rel="stylesheet" href="css/telvoice-web-agent.css?v=20260718" data-tva-css="1" />
+  <link rel="stylesheet" href="css/telvoice-numeracion-section.css?v=20260529b" />
+  <link rel="stylesheet" href="css/telvoice-web-agent.css?v=20260615" data-tva-css="1" />
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -3112,7 +3127,7 @@
                   <span>Agentes con números reales</span>
                 </div>
                 <h2 class="tv-hero-title tv-hero-slide-title font-h1 text-h1 text-on-background">
-                  <span class="tv-hero-word tv-hero-word--ink">Números SIM reales para </span><span class="tv-hero-word tv-hero-word--blue">agentes y operación empresarial</span>
+                  <span class="tv-hero-word tv-hero-word--ink">Números SIM reales para operación de agentes </span><span class="tv-hero-word tv-hero-word--blue">empresa</span>
                 </h2>
                 <p class="tv-hero-subtitle hero-intro">
                   Recibe SMS, códigos, alertas y eventos operativos en agentes autorizados, automatizaciones y equipos
@@ -3240,8 +3255,8 @@
               </div>
               <div class="tv-hero-cta-slide" data-slide="2" aria-hidden="true">
                 <div class="hero-cta-row pt-stack-sm">
-                  <a href="/numeracion-sim.html" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_activar_agente_numero_hero">Activar agente con número real</a>
-                  <a href="#casos-uso" class="hero-cta-secondary inline-flex items-center justify-center rounded-full font-body-md font-semibold shadow-sm transition" data-track="click_ver_soluciones_empresariales_hero">Ver soluciones empresariales</a>
+                  <a href="/numeracion-sim.html" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_activar_agente_numero_hero">Activar Numero</a>
+                  <a href="#casos-uso" class="hero-cta-secondary inline-flex items-center justify-center rounded-full font-body-md font-semibold shadow-sm transition" data-track="click_ver_soluciones_empresariales_hero">Ver Soluciones</a>
                 </div>
               </div>
             </div>
@@ -3357,7 +3372,7 @@
     </section>
 
     <!-- Numeración Telvoice -->
-    <section class="tv-numeracion-section lab-section" id="numeracion" aria-labelledby="numeracion-titulo" tabindex="-1">
+    <section class="tv-numeracion-section section-bg-sky py-14 md:py-20" id="numeracion" aria-labelledby="numeracion-titulo" tabindex="-1">
             <div class="lab-section-inner lab-section-inner--numeracion">
               <header class="lab-header-center">
                 <span class="lab-eyebrow">Numeración Telvoice</span>
@@ -3534,7 +3549,7 @@
                 </article>
               </div>
               <div class="lab-num-band lab-num-band--compact mt-10">
-                <p class="text-slate-300 leading-relaxed text-center max-w-2xl mx-auto">
+                <p class="text-on-surface-variant leading-relaxed text-center max-w-2xl mx-auto">
                   ¿Necesitas números reales para agentes, OTP autorizado o webhooks? Revisa la sección
                   <a href="/numeracion-sim.html" class="text-lab-cyan hover:underline font-medium">planes SIM reales</a>.
                 </p>

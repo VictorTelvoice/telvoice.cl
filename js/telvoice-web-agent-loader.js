@@ -34,6 +34,7 @@
       "#telvoice-web-agent.tva-root--ready{visibility:visible;pointer-events:auto}" +
       "#telvoice-web-agent .tva-panel:not(.is-open){display:none!important}" +
       "#telvoice-web-agent .tva-launcher-iso,#telvoice-web-agent .tva-launcher img{width:calc(10.13rem * 0.85);height:calc(10.13rem * 0.85);max-width:calc(10.13rem * 0.85);max-height:calc(10.13rem * 0.85)}" +
+      "#telvoice-web-agent.tva-root--lab .telvoice-agent-avatar--launcher .telvoice-agent-antenna-glow{display:none!important}" +
       ".hero-phone-slot--agent{display:flex;flex:1;align-items:center;justify-content:center;width:100%;min-width:0}" +
       ".hero-phone-float--agent{position:relative;display:flex;flex-direction:column;width:min(320px,90vw);height:min(640px,85svh,85vh);max-width:100%;border-radius:48px;border:12px solid #dae2fd;background:#131b2e;overflow:hidden;box-sizing:border-box}" +
       ".hero-phone-screen{position:relative;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;padding:3.75rem 0 0}" +
