@@ -1,0 +1,53 @@
+/* Control manual del launcher flotante (#telvoice-web-agent) — no afecta el embed del Hero */
+
+body.tva-floating-agent-hidden #telvoice-web-agent,
+html.tva-floating-agent-prehidden #telvoice-web-agent {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+.nav-floating-agent-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid #dce7f5;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #0b5cff;
+  font-family: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.nav-floating-agent-toggle:hover {
+  background: rgba(11, 92, 255, 0.06);
+  border-color: rgba(11, 92, 255, 0.22);
+}
+
+.nav-floating-agent-toggle:focus-visible {
+  outline: 2px solid #0b5cff;
+  outline-offset: 2px;
+}
+
+.nav-floating-agent-toggle--mobile {
+  width: 100%;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+@media (max-width: 639px) {
+  .nav-actions .nav-floating-agent-toggle:not(.nav-floating-agent-toggle--mobile) {
+    padding-inline: 0.65rem;
+    font-size: 0.8125rem;
+  }
+}

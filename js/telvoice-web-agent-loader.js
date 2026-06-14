@@ -4,6 +4,29 @@
  * data-root: prefijo hasta la raíz del sitio ("" en home, "../" en ayuda/, etc.)
  */
 (function () {
+  var STORAGE_KEY = "telvoice:floating-agent-visible";
+
+  function applyHiddenToBody() {
+    if (!document.body) {
+      return;
+    }
+    document.body.classList.add("tva-floating-agent-hidden");
+    document.documentElement.classList.remove("tva-floating-agent-prehidden");
+  }
+
+  try {
+    if (localStorage.getItem(STORAGE_KEY) === "false") {
+      if (document.body) {
+        applyHiddenToBody();
+      } else {
+        document.documentElement.classList.add("tva-floating-agent-prehidden");
+        document.addEventListener("DOMContentLoaded", applyHiddenToBody, { once: true });
+      }
+    }
+  } catch (e) {
+    /* ignore */
+  }
+
   var script =
     document.currentScript ||
     document.querySelector('script[src*="telvoice-web-agent-loader.js"]');
@@ -43,7 +66,8 @@
       ".hero-phone-header-logo img,.hero-phone-header-logo picture,.hero-phone-header-logo .telvoice-agent-avatar,.hero-phone-header-logo .telvoice-agent-avatar__img{display:block;max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain}" +
       ".hero-phone-agent-embed{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}" +
       "#telvoice-web-agent-embed:not(.tva-root--ready){visibility:hidden}" +
-      "#telvoice-web-agent-embed.tva-root--ready{visibility:visible}";
+      "#telvoice-web-agent-embed.tva-root--ready{visibility:visible}" +
+      "body.tva-floating-agent-hidden #telvoice-web-agent,html.tva-floating-agent-prehidden #telvoice-web-agent{display:none!important;pointer-events:none!important;visibility:hidden!important}";
     document.head.appendChild(boot);
   }
 
