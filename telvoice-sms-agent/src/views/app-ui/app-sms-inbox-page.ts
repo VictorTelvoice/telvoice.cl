@@ -8,7 +8,13 @@ import type {
   InboundSmsStatus,
 } from "../../types/client-numbers.js";
 import { escapeHtml } from "../../utils/html.js";
-import { renderBtn, renderFilterField } from "../admin-ui/page-kit.js";
+import { renderKpiCard } from "../admin-ui/components.js";
+import {
+  renderBtn,
+  renderFilterBar,
+  renderFilterField,
+  renderPageHeader,
+} from "../admin-ui/page-kit.js";
 import { renderAgentModuleStyles } from "../shared/agent-module-styles.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
@@ -121,12 +127,12 @@ function renderStatusBadge(status: InboundSmsStatus): string {
     failed: "err",
   };
   const cls = clsMap[status] ?? "muted";
-  return `<span class="badge badge-${cls} tv-sms-in-status">${escapeHtml(inboundSmsStatusLabel(status))}</span>`;
+  return `<span class="badge badge-${cls}">${escapeHtml(inboundSmsStatusLabel(status))}</span>`;
 }
 
 function renderSourceBadge(source: string | null): string {
   if (source === "simulation") {
-    return `<span class="tv-sms-in-source tv-sms-in-source--sim">Simulación</span>`;
+    return `<span class="badge badge-muted tv-sms-in-source">Simulación</span>`;
   }
   return "";
 }
@@ -168,40 +174,34 @@ function renderStatsCards(
       : receptionOk
         ? "Recepción activa"
         : "Sin numeración activa";
-  const fourthExtraCls =
-    receptionOk && activeCount <= 1 ? " tv-sms-in-reception--ok" : "";
+  const fourthVariant = receptionOk ? "success" : "warn";
 
-  return `<div class="tv-sms-in-stats">
-    <article class="tv-sms-in-stat">
-      <span class="tv-sms-in-stat__icon material-symbols-outlined" aria-hidden="true">sim_card</span>
-      <div>
-        <p class="tv-sms-in-stat__label">Numeraciones activas</p>
-        <p class="tv-sms-in-stat__value">${activeCount}</p>
+  return `<div class="tv-kpi-grid tv-kpi-grid--client">
+    ${renderKpiCard({
+      label: "Numeraciones activas",
+      value: String(activeCount),
+      icon: "sim_card",
+      variant: "primary",
+    })}
+    ${renderKpiCard({
+      label: "SMS recibidos hoy",
+      value: String(todayCount),
+      icon: "today",
+      variant: "success",
+    })}
+    <article class="tv-kpi tv-kpi--default">
+      <div class="tv-kpi__head">
+        <span class="material-symbols-outlined tv-kpi__icon" aria-hidden="true">schedule</span>
+        <span class="tv-kpi__label">Último SMS recibido</span>
       </div>
+      <div class="tv-kpi__value tv-kpi__value--sm" id="tv-sms-in-last">${escapeHtml(lastLabel)}</div>
     </article>
-    <article class="tv-sms-in-stat">
-      <span class="tv-sms-in-stat__icon material-symbols-outlined" aria-hidden="true">today</span>
-      <div>
-        <p class="tv-sms-in-stat__label">SMS recibidos hoy</p>
-        <p class="tv-sms-in-stat__value">${todayCount}</p>
-      </div>
-    </article>
-    <article class="tv-sms-in-stat tv-sms-in-stat--wide">
-      <span class="tv-sms-in-stat__icon material-symbols-outlined" aria-hidden="true">schedule</span>
-      <div>
-        <p class="tv-sms-in-stat__label">Último SMS recibido</p>
-        <p class="tv-sms-in-stat__value tv-sms-in-stat__value--sm" id="tv-sms-in-last">${escapeHtml(lastLabel)}</p>
-      </div>
-    </article>
-    <article class="tv-sms-in-stat">
-      <span class="tv-sms-in-stat__icon material-symbols-outlined" aria-hidden="true">cell_tower</span>
-      <div>
-        <p class="tv-sms-in-stat__label">${escapeHtml(fourthLabel)}</p>
-        <p class="tv-sms-in-stat__value tv-sms-in-stat__value--sm${fourthExtraCls}" id="tv-sms-in-reception">
-          ${escapeHtml(fourthValue)}
-        </p>
-      </div>
-    </article>
+    ${renderKpiCard({
+      label: fourthLabel,
+      value: fourthValue,
+      icon: "cell_tower",
+      variant: fourthVariant,
+    })}
   </div>`;
 }
 
@@ -218,70 +218,12 @@ function renderLineSelectorBar(
     })
     .join("");
 
-  return `<div class="tv-sms-in-line-bar">
-    <div class="tv-sms-in-line-bar__label">
-      <span class="material-symbols-outlined" aria-hidden="true">dialpad</span>
-      <span>Línea en revisión</span>
-    </div>
-    <select id="tv-sms-in-number-id" class="tv-filter-input tv-sms-in-select" aria-label="Seleccionar numeración">
-      ${options}
-    </select>
-  </div>`;
-}
-
-function renderSimulateNumberField(
-  numbers: ClientNumberListItem[],
-  selectedNumber: ClientNumberListItem | null,
-): string {
-  const active = numbers.filter((n) => n.status === "active");
-  if (!active.length) return "";
-
-  if (active.length === 1 && active[0]) {
-    const n = active[0];
-    return `<div class="tv-sms-in-number-single">
-      <span class="tv-sms-in-number-single__label">Numeración destino</span>
-      <strong class="tv-sms-in-number-single__value">${escapeHtml(n.number)}</strong>
-      <input type="hidden" id="tv-sms-in-number-id" value="${escapeHtml(n.id)}" />
-    </div>`;
-  }
-
-  const line = selectedNumber?.number ?? "—";
-  const id = selectedNumber?.id ?? "";
-  return `<div class="tv-sms-in-number-single tv-sms-in-number-single--linked">
-    <span class="tv-sms-in-number-single__label">Numeración destino</span>
-    <strong class="tv-sms-in-number-single__value">${escapeHtml(line)}</strong>
-    <input type="hidden" id="tv-sms-in-sim-number-id" value="${escapeHtml(id)}" />
-    <p class="field-hint">Usa el selector superior para cambiar de línea.</p>
-  </div>`;
-}
-
-function renderSimulateForm(
-  numbers: ClientNumberListItem[],
-  selectedNumber: ClientNumberListItem | null,
-): string {
-  const active = numbers.filter((n) => n.status === "active");
-  if (!active.length) return "";
-
-  return `<section class="tv-sms-in-panel tv-sms-in-panel--simulate">
-    <header class="tv-sms-in-panel__head">
-      <h2 class="tv-sms-in-panel__title">
-        <span class="material-symbols-outlined" aria-hidden="true">science</span>
-        Simular SMS entrante
-      </h2>
-      <p class="tv-sms-in-panel__sub">Prueba la recepción en tu numeración. Los envíos de prueba se distinguen con el badge <strong>Simulación</strong>.</p>
-    </header>
-    <form id="tv-sms-in-simulate-form" class="tv-sms-in-simulate-form" novalidate>
-      ${renderSimulateNumberField(numbers, selectedNumber)}
-      <div class="tv-sms-in-simulate-grid">
-        ${renderFilterField("Número remitente", `<input type="tel" id="tv-sms-in-from" name="from" class="tv-filter-input" placeholder="+56912345678" required autocomplete="off" />`)}
-        ${renderFilterField("Mensaje recibido", `<textarea id="tv-sms-in-body" name="body" class="tv-filter-input tv-sms-in-textarea" rows="3" placeholder="Escribe el contenido del SMS entrante…" required></textarea>`)}
-      </div>
-      <div class="tv-sms-in-simulate-actions">
-        ${renderBtn("Simular SMS entrante", { type: "submit", variant: "primary", icon: "send" })}
-        <p class="tv-sms-in-simulate-error" id="tv-sms-in-simulate-error" role="alert" hidden></p>
-      </div>
-    </form>
-  </section>`;
+  return renderFilterBar(
+    renderFilterField(
+      "Línea en revisión",
+      `<select id="tv-sms-in-number-id" class="tv-filter-input" aria-label="Seleccionar numeración">${options}</select>`,
+    ),
+  );
 }
 
 function renderPhoneFeedItem(m: InboundSmsMessageRow, isLatest: boolean): string {
@@ -348,11 +290,13 @@ function renderHistoryTable(
   hasNumbers: boolean,
 ): string {
   if (!hasNumbers) {
-    return `<section class="tv-sms-in-panel tv-sms-in-panel--history">
-      <div class="tv-sms-in-empty">
-        <span class="material-symbols-outlined" aria-hidden="true">sim_card</span>
-        <h3>Sin numeraciones contratadas</h3>
-        <p>Contrata una numeración Telvoice para recibir y simular SMS entrantes en tu panel.</p>
+    return `<section class="tv-panel tv-sms-in-empty">
+      <div class="tv-sms-in-empty__icon" aria-hidden="true">
+        <span class="material-symbols-outlined">sim_card</span>
+      </div>
+      <h2 class="tv-section-head__title">Sin numeraciones contratadas</h2>
+      <p class="tv-page-sub">Contrata una numeración Telvoice para recibir SMS entrantes en tu panel.</p>
+      <div class="tv-sms-in-empty__actions">
         ${renderBtn("Ver planes y numeraciones", { href: "/app/planes-agente", variant: "primary", icon: "add_call" })}
         ${renderBtn("Mis numeraciones", { href: "/app/numeraciones", variant: "secondary" })}
       </div>
@@ -365,54 +309,53 @@ function renderHistoryTable(
           .map(
             (m) => `<tr data-msg-id="${escapeHtml(m.id)}" data-number-id="${escapeHtml(m.client_number_id)}">
           <td><time datetime="${escapeHtml(m.received_at)}">${escapeHtml(formatInboxDateTime(m.received_at))}</time></td>
-          <td><code class="tv-sms-in-num">${escapeHtml(m.to_number)}</code></td>
+          <td><code>${escapeHtml(m.to_number)}</code></td>
           <td>${escapeHtml(m.from_number ?? "—")}</td>
-          <td class="tv-sms-in-msg-cell">${escapeHtml(m.body.slice(0, 120))}${m.body.length > 120 ? "…" : ""}${m.detected_otp ? `<span class="tv-otp-pill"><code>${escapeHtml(m.detected_otp)}</code></span>` : ""}</td>
+          <td class="tv-cell-truncate" title="${escapeHtml(m.body)}">${escapeHtml(m.body.slice(0, 120))}${m.body.length > 120 ? "…" : ""}${m.detected_otp ? `<span class="tv-otp-pill"><code>${escapeHtml(m.detected_otp)}</code></span>` : ""}</td>
           <td>${renderStatusBadge(m.status)} ${renderSourceBadge(m.source)}</td>
         </tr>`,
           )
           .join("")
-      : `<tr><td colspan="5" class="tv-sms-in-table-empty">No hay SMS entrantes con los filtros actuales.</td></tr>`;
+      : `<tr><td colspan="5" class="tv-table-empty">No hay SMS entrantes con los filtros actuales.</td></tr>`;
 
-  return `<section class="tv-sms-in-panel tv-sms-in-panel--history">
-    <header class="tv-sms-in-panel__head tv-sms-in-panel__head--row">
-      <div>
-        <h2 class="tv-sms-in-panel__title">
-          <span class="material-symbols-outlined" aria-hidden="true">history</span>
-          Historial de SMS entrantes
-        </h2>
+  return `<div class="tv-sms-in-history-col">
+    <div class="tv-dash-block">
+      <div class="tv-dash-block__head">
+        <h2 class="tv-dash-block__title">Historial de SMS entrantes</h2>
+        ${renderBtn("Exportar CSV", {
+          href: `/app/sms-inbox/export.csv${inboxQueryString(filters)}`,
+          variant: "ghost",
+          icon: "download",
+          size: "sm",
+        })}
       </div>
-      ${renderBtn("Exportar CSV", {
-        href: `/app/sms-inbox/export.csv${inboxQueryString(filters)}`,
-        variant: "ghost",
-        icon: "download",
-        size: "sm",
-      })}
-    </header>
-    <form method="get" action="/app/sms-inbox" class="tv-sms-in-history-filters">
-      ${filters.numberId ? `<input type="hidden" name="number" value="${escapeHtml(filters.numberId)}" />` : ""}
-      ${renderFilterField("Buscar", `<input type="search" name="q" class="tv-filter-input" value="${escapeHtml(filters.q ?? "")}" placeholder="Remitente o contenido" />`)}
-      ${renderFilterField("Remitente", `<input type="text" name="from" class="tv-filter-input" value="${escapeHtml(filters.from ?? "")}" placeholder="+569…" />`)}
-      <div class="tv-sms-in-history-filters__actions">
-        ${renderBtn("Filtrar", { type: "submit", variant: "secondary", size: "sm" })}
-        ${renderBtn("Limpiar", { href: filters.numberId ? `/app/sms-inbox?number=${encodeURIComponent(filters.numberId)}` : "/app/sms-inbox", variant: "ghost", size: "sm" })}
-      </div>
-    </form>
-    <div class="tv-table-wrap tv-sms-in-table-wrap">
-      <table class="tv-table tv-sms-in-table" id="tv-sms-in-history-table">
-        <thead>
-          <tr>
-            <th>Fecha / hora</th>
-            <th>Numeración destino</th>
-            <th>Remitente</th>
-            <th>Mensaje</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody id="tv-sms-in-history-body">${rows}</tbody>
-      </table>
+      <section class="tv-panel tv-client-dash-table-panel">
+        <form method="get" action="/app/sms-inbox" class="tv-filters tv-filters--wrap tv-sms-in-history-filters">
+          ${filters.numberId ? `<input type="hidden" name="number" value="${escapeHtml(filters.numberId)}" />` : ""}
+          ${renderFilterField("Buscar", `<input type="search" name="q" class="tv-filter-input" value="${escapeHtml(filters.q ?? "")}" placeholder="Remitente o contenido" />`)}
+          ${renderFilterField("Remitente", `<input type="text" name="from" class="tv-filter-input" value="${escapeHtml(filters.from ?? "")}" placeholder="+569…" />`)}
+          <div class="tv-sms-in-history-filters__actions">
+            ${renderBtn("Filtrar", { type: "submit", variant: "secondary", size: "sm" })}
+            ${renderBtn("Limpiar", { href: filters.numberId ? `/app/sms-inbox?number=${encodeURIComponent(filters.numberId)}` : "/app/sms-inbox", variant: "ghost", size: "sm" })}
+          </div>
+        </form>
+        <div class="tv-client-dash-table-inner">
+          <table class="tv-table tv-table--dash" id="tv-sms-in-history-table">
+            <thead>
+              <tr>
+                <th>Fecha / hora</th>
+                <th>Numeración destino</th>
+                <th>Remitente</th>
+                <th>Mensaje</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="tv-sms-in-history-body">${rows}</tbody>
+          </table>
+        </div>
+      </section>
     </div>
-  </section>`;
+  </div>`;
 }
 
 function renderPageScript(
@@ -441,11 +384,7 @@ function renderPageScript(
   var toast = document.getElementById("tv-sms-in-toast");
   var liveBadge = document.getElementById("tv-sms-in-live");
   var numberSelect = document.getElementById("tv-sms-in-number-id");
-  var simNumberHidden = document.getElementById("tv-sms-in-sim-number-id");
   var lastStat = document.getElementById("tv-sms-in-last");
-  var simForm = document.getElementById("tv-sms-in-simulate-form");
-  var simError = document.getElementById("tv-sms-in-simulate-error");
-  var simBtn = simForm ? simForm.querySelector('button[type="submit"]') : null;
 
   var knownIds = new Set(${JSON.stringify(knownIds)});
   var latestAt = ${JSON.stringify(latestAt)};
@@ -476,11 +415,11 @@ function renderPageScript(
     var cls = { received: "warn", read: "ok", archived: "muted", forwarded: "ok", failed: "err" };
     var l = labels[status] || status;
     var c = cls[status] || "muted";
-    return '<span class="badge badge-' + c + ' tv-sms-in-status">' + esc(l) + '</span>';
+    return '<span class="badge badge-' + c + '">' + esc(l) + '</span>';
   }
 
   function sourceBadge(source) {
-    return source === "simulation" ? '<span class="tv-sms-in-source tv-sms-in-source--sim">Simulación</span>' : "";
+    return source === "simulation" ? '<span class="badge badge-muted tv-sms-in-source">Simulación</span>' : "";
   }
 
   function buildPollUrl() {
@@ -490,7 +429,8 @@ function renderPageScript(
 
   function setLiveBadge(state) {
     if (!liveBadge) return;
-    liveBadge.classList.toggle("tv-sms-in-live--warn", state !== "ok");
+    liveBadge.classList.toggle("badge-warn", state !== "ok");
+    liveBadge.classList.toggle("badge-ok", state === "ok");
     liveBadge.innerHTML = state === "ok"
       ? '<span class="tv-sms-in-live__dot" aria-hidden="true"></span> En tiempo real'
       : "Reconectando…";
@@ -523,16 +463,16 @@ function renderPageScript(
   function prependHistoryRow(m) {
     if (!historyBody) return;
     if (selectedNumberId && m.client_number_id !== selectedNumberId) return;
-    var emptyRow = historyBody.querySelector(".tv-sms-in-table-empty");
+    var emptyRow = historyBody.querySelector(".tv-table-empty");
     if (emptyRow) emptyRow.closest("tr").remove();
     var tr = document.createElement("tr");
     tr.setAttribute("data-msg-id", m.id);
     tr.setAttribute("data-number-id", m.client_number_id);
     var body = esc((m.body || "").slice(0, 120)) + ((m.body || "").length > 120 ? "…" : "");
     tr.innerHTML = '<td><time datetime="' + esc(m.received_at) + '">' + esc(formatDateTime(m.received_at)) + '</time></td>' +
-      '<td><code class="tv-sms-in-num">' + esc(m.to_number) + '</code></td>' +
+      '<td><code>' + esc(m.to_number) + '</code></td>' +
       '<td>' + esc(m.from_number || "—") + '</td>' +
-      '<td class="tv-sms-in-msg-cell">' + body + '</td>' +
+      '<td class="tv-cell-truncate">' + body + '</td>' +
       '<td>' + statusBadge(m.status) + " " + sourceBadge(m.source) + '</td>';
     historyBody.insertBefore(tr, historyBody.firstChild);
   }
@@ -610,70 +550,6 @@ function renderPageScript(
       window.location.href = "/app/sms-inbox?" + p.toString();
     });
   }
-
-  function getActiveNumberId() {
-    if (numberSelect) return numberSelect.value || "";
-    if (simNumberHidden) return simNumberHidden.value || "";
-    return selectedNumberId || "";
-  }
-
-  if (simForm) {
-    simForm.addEventListener("submit", function(ev) {
-      ev.preventDefault();
-      if (simError) { simError.hidden = true; simError.textContent = ""; }
-      var numberId = getActiveNumberId();
-      var fromEl = document.getElementById("tv-sms-in-from");
-      var bodyEl = document.getElementById("tv-sms-in-body");
-      var from = fromEl && "value" in fromEl ? fromEl.value : "";
-      var body = bodyEl && "value" in bodyEl ? bodyEl.value : "";
-      if (!numberId) {
-        if (simError) { simError.textContent = "Selecciona una numeración destino."; simError.hidden = false; }
-        return;
-      }
-      if (!from.trim()) {
-        if (simError) { simError.textContent = "Ingresa el número remitente."; simError.hidden = false; }
-        return;
-      }
-      if (!body.trim()) {
-        if (simError) { simError.textContent = "Ingresa el mensaje recibido."; simError.hidden = false; }
-        return;
-      }
-      if (simBtn) {
-        simBtn.disabled = true;
-        simBtn.setAttribute("aria-busy", "true");
-        simBtn.classList.add("tv-sms-in-btn--loading");
-        simBtn.dataset.label = simBtn.textContent || "Simular SMS entrante";
-        simBtn.textContent = "Simulando…";
-      }
-      fetch("/api/app/sms-inbox/simulate", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ number_id: numberId, from: from.trim(), body: body.trim() })
-      })
-      .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, j: j }; }); })
-      .then(function(res) {
-        if (!res.ok || !res.j.ok) throw new Error((res.j && res.j.error) || "Error al simular");
-        var m = res.j.message;
-        if (m) {
-          ingestMessage(m, false);
-          showToast("SMS simulado recibido");
-          if (bodyEl && "value" in bodyEl) bodyEl.value = "";
-        }
-      })
-      .catch(function(err) {
-        if (simError) { simError.textContent = err.message || "No se pudo simular el SMS."; simError.hidden = false; }
-      })
-      .finally(function() {
-        if (simBtn) {
-          simBtn.disabled = false;
-          simBtn.removeAttribute("aria-busy");
-          simBtn.classList.remove("tv-sms-in-btn--loading");
-          simBtn.textContent = simBtn.dataset.label || "Simular SMS entrante";
-        }
-      });
-    });
-  }
 })();
 </script>`;
 }
@@ -698,18 +574,14 @@ export function renderAppSmsInboxPage(
     : data.messages;
 
   const body = `
-    <header class="tv-sms-in-head">
-      <div class="tv-sms-in-head__main">
-        <h1 class="tv-sms-in-head__title">SMS Entrantes</h1>
-        <p class="tv-sms-in-head__sub">Revisa y simula la recepción de mensajes en tus numeraciones Telvoice.</p>
-      </div>
-      <div class="tv-sms-in-head__actions">
-        <span class="tv-sms-in-live" id="tv-sms-in-live" role="status">
-          <span class="tv-sms-in-live__dot" aria-hidden="true"></span>
-          En tiempo real
-        </span>
-      </div>
-    </header>
+    ${renderPageHeader({
+      title: "SMS Entrantes",
+      subtitle: "Mensajes recibidos en tus numeraciones Telvoice.",
+      actions: `<span class="badge badge-ok tv-sms-in-live" id="tv-sms-in-live" role="status">
+        <span class="tv-sms-in-live__dot" aria-hidden="true"></span>
+        En tiempo real
+      </span>`,
+    })}
 
     ${renderStatsCards(numbers, data.messages, selectedNumber)}
 
@@ -718,13 +590,9 @@ export function renderAppSmsInboxPage(
     <div class="tv-sms-in-root" id="tv-sms-in-root"
          data-number-id="${escapeHtml(selectedNumber?.id ?? "")}"
          data-latest-at="${escapeHtml(data.messages[0]?.received_at ?? "")}">
-
       <div class="tv-sms-in-layout">
-        <div class="tv-sms-in-main">
-          ${activeNumbers.length ? renderSimulateForm(numbers, selectedNumber) : ""}
-          ${renderHistoryTable(data.messages, filters, numbers.length > 0)}
-        </div>
         ${activeNumbers.length ? renderPhoneMockup(selectedNumber, phoneMessages) : ""}
+        ${renderHistoryTable(data.messages, filters, numbers.length > 0)}
       </div>
     </div>
 
@@ -735,7 +603,5 @@ export function renderAppSmsInboxPage(
     ${renderPageScript(data.messages, filters, selectedNumber)}
     ${renderAgentModuleStyles()}`;
 
-  return wrapAppPage(ctx, "sms-inbox", "SMS Entrantes", body, {
-    bodyClass: "tv-page--sms-inbox",
-  });
+  return wrapAppPage(ctx, "sms-inbox", "SMS Entrantes", body);
 }

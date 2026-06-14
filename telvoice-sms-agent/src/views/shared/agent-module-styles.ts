@@ -193,307 +193,64 @@ export function renderAgentModuleStyles(): string {
     }
     .tv-admin-detail-actions .field-hint { width: 100%; margin: 0.25rem 0 0; }
 
-    /* ── SMS Entrantes (cliente) — premium ── */
-    .tv-page--sms-inbox .tv-content {
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-      max-width: none;
-    }
-
-    .tv-sms-in-head {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 1rem 1.5rem;
-      margin-bottom: 1.25rem;
-    }
-    .tv-sms-in-head__title {
-      margin: 0 0 0.35rem;
-      font-size: 1.55rem;
-      font-weight: 800;
-      letter-spacing: -0.025em;
-      background: linear-gradient(135deg, #eef2ff 0%, #38bdf8 55%, #818cf8 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-    .tv-sms-in-head__sub {
-      margin: 0;
-      font-size: 0.925rem;
-      color: var(--tv-lab-muted, rgba(168, 180, 208, 0.92));
-      line-height: 1.5;
-      max-width: 36rem;
+    /* ── SMS Entrantes (cliente) ── */
+    .tv-kpi__value--sm {
+      font-size: 0.95rem;
+      line-height: 1.35;
     }
     .tv-sms-in-live {
       display: inline-flex;
       align-items: center;
-      gap: 0.45rem;
-      padding: 0.4rem 0.85rem;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      background: rgba(34, 197, 94, 0.12);
-      color: #4ade80;
-      border: 1px solid rgba(34, 197, 94, 0.28);
-    }
-    .tv-sms-in-live--warn {
-      background: rgba(245, 158, 11, 0.12);
-      color: #fbbf24;
-      border-color: rgba(245, 158, 11, 0.28);
+      gap: 0.4rem;
     }
     .tv-sms-in-live__dot {
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #22c55e;
-      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25);
+      background: currentColor;
       animation: tv-sms-in-pulse 2s ease-in-out infinite;
     }
     @keyframes tv-sms-in-pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.55; }
     }
+    .tv-sms-in-source { margin-left: 0.35rem; }
 
-    .tv-sms-in-stats {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 0.85rem;
-      margin-bottom: 1.25rem;
-    }
-    .tv-sms-in-stat {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.75rem;
-      padding: 1rem 1.1rem;
-      border-radius: 12px;
-      background: rgba(12, 20, 48, 0.72);
-      border: 1px solid rgba(120, 160, 255, 0.14);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
-    }
-    .tv-sms-in-stat--wide { grid-column: span 1; }
-    .tv-sms-in-stat__icon {
-      font-size: 1.35rem;
-      opacity: 0.75;
-      color: var(--tv-lab-cyan, #38bdf8);
-    }
-    .tv-sms-in-stat__label {
-      margin: 0 0 0.2rem;
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--tv-lab-muted, #a8b4d0);
-    }
-    .tv-sms-in-stat__value {
-      margin: 0;
-      font-size: 1.35rem;
-      font-weight: 700;
-      color: var(--tv-lab-text, #eef2ff);
-    }
-    .tv-sms-in-stat__value--sm {
-      font-size: 0.82rem;
-      font-weight: 600;
-      line-height: 1.4;
-    }
-    .tv-sms-in-reception--ok { color: #4ade80; }
-
-    .tv-sms-in-line-bar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.75rem 1rem;
-      margin-bottom: 1.1rem;
-      padding: 0.85rem 1.1rem;
-      border-radius: 12px;
-      background: rgba(12, 20, 48, 0.82);
-      border: 1px solid rgba(56, 189, 248, 0.22);
-      backdrop-filter: blur(12px);
-    }
-    .tv-sms-in-line-bar__label {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: var(--tv-lab-text, #eef2ff);
-      white-space: nowrap;
-    }
-    .tv-sms-in-line-bar__label .material-symbols-outlined {
-      font-size: 1.1rem;
-      color: var(--tv-lab-cyan, #38bdf8);
-    }
-    .tv-sms-in-line-bar .tv-sms-in-select {
-      flex: 1;
-      min-width: 200px;
-      max-width: 320px;
-    }
-
-    .tv-sms-in-root { flex: 1; min-height: 0; }
     .tv-sms-in-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+      grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
       gap: 1.25rem;
       align-items: start;
     }
-    .tv-sms-in-main {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      min-width: 0;
-    }
-
-    .tv-sms-in-panel {
-      border-radius: 14px;
-      background: rgba(12, 20, 48, 0.72);
-      border: 1px solid rgba(120, 160, 255, 0.14);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-      overflow: hidden;
-    }
-    .tv-sms-in-panel__head {
-      padding: 1.1rem 1.25rem 0.85rem;
-      border-bottom: 1px solid rgba(120, 160, 255, 0.1);
-    }
-    .tv-sms-in-panel__head--row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    .tv-sms-in-panel__title {
-      margin: 0;
-      font-size: 1rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 0.45rem;
-    }
-    .tv-sms-in-panel__title .material-symbols-outlined {
-      font-size: 1.2rem;
-      color: var(--tv-lab-cyan, #38bdf8);
-    }
-    .tv-sms-in-panel__sub {
-      margin: 0.45rem 0 0;
-      font-size: 0.82rem;
-      color: var(--tv-lab-muted, #a8b4d0);
-      line-height: 1.45;
-    }
-
-    .tv-sms-in-simulate-form { padding: 1rem 1.25rem 1.25rem; }
-    .tv-sms-in-simulate-grid {
-      display: grid;
-      grid-template-columns: 1fr 1.4fr;
-      gap: 0.85rem;
-      margin-top: 0.85rem;
-    }
-    .tv-sms-in-textarea { min-height: 4.5rem; resize: vertical; }
-    .tv-sms-in-simulate-actions {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.75rem;
-      margin-top: 1rem;
-    }
-    .tv-sms-in-simulate-error {
-      margin: 0;
-      font-size: 0.85rem;
-      color: #f87171;
-    }
-    .tv-sms-in-btn--loading {
-      opacity: 0.85;
-      cursor: wait;
-    }
-    .tv-sms-in-number-single {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.5rem 0.75rem;
-      padding: 0.65rem 0.85rem;
-      border-radius: 10px;
-      background: rgba(56, 189, 248, 0.08);
-      border: 1px solid rgba(56, 189, 248, 0.2);
-      margin-bottom: 0.85rem;
-    }
-    .tv-sms-in-number-single__label {
-      font-size: 0.72rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      opacity: 0.7;
-    }
-    .tv-sms-in-number-single__value {
-      font-size: 1rem;
-      letter-spacing: 0.02em;
-    }
-    .tv-sms-in-select { width: 100%; max-width: 100%; }
-
+    .tv-sms-in-history-col { min-width: 0; }
     .tv-sms-in-history-filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      align-items: flex-end;
-      padding: 0.85rem 1.25rem;
-      border-bottom: 1px solid rgba(120, 160, 255, 0.1);
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--tv-border, rgba(15, 23, 42, 0.08));
     }
     .tv-sms-in-history-filters__actions {
       display: flex;
       gap: 0.5rem;
-      align-items: center;
+      align-items: flex-end;
     }
-    .tv-sms-in-table-wrap { padding: 0 0 0.5rem; }
-    .tv-sms-in-table .tv-sms-in-num {
-      font-size: 0.82rem;
-      background: rgba(56, 189, 248, 0.1);
-      padding: 0.15rem 0.4rem;
-      border-radius: 4px;
-    }
-    .tv-sms-in-msg-cell { max-width: 18rem; line-height: 1.4; }
-    .tv-sms-in-table-empty {
-      text-align: center;
-      padding: 2rem 1rem !important;
-      opacity: 0.65;
-    }
-    .tv-sms-in-status { font-size: 0.72rem; }
-    .tv-sms-in-source {
-      display: inline-block;
-      margin-left: 0.35rem;
-      font-size: 0.65rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      padding: 0.1rem 0.4rem;
-      border-radius: 999px;
-    }
-    .tv-sms-in-source--sim {
-      background: rgba(129, 140, 248, 0.18);
-      color: #a5b4fc;
-      border: 1px solid rgba(129, 140, 248, 0.35);
-    }
-
     .tv-sms-in-empty {
       text-align: center;
       padding: 3rem 1.5rem;
     }
-    .tv-sms-in-empty .material-symbols-outlined {
+    .tv-sms-in-empty__icon .material-symbols-outlined {
       font-size: 2.75rem;
       opacity: 0.45;
-      display: block;
-      margin: 0 auto 0.75rem;
-      color: var(--tv-lab-cyan, #38bdf8);
     }
-    .tv-sms-in-empty h3 { margin: 0 0 0.5rem; }
-    .tv-sms-in-empty p {
-      margin: 0 auto 1.25rem;
-      max-width: 24rem;
-      opacity: 0.75;
-      line-height: 1.5;
+    .tv-sms-in-empty__actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 1.25rem;
     }
-    .tv-sms-in-empty .btn { margin: 0.25rem; }
 
     .tv-sms-in-phone-col {
+      display: flex;
+      justify-content: center;
       position: sticky;
       top: 1rem;
     }
@@ -637,13 +394,13 @@ export function renderAgentModuleStyles(): string {
       right: 1.5rem;
       z-index: 1200;
       padding: 0.75rem 1.1rem;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #1e293b, #0f172a);
-      color: #fff;
+      border-radius: 8px;
+      background: var(--tv-panel-bg, #fff);
+      color: var(--tv-text, #0f172a);
       font-size: 0.875rem;
       font-weight: 500;
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--tv-border, rgba(15, 23, 42, 0.12));
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
       opacity: 0;
       transform: translateY(8px);
       transition: opacity 0.25s ease, transform 0.25s ease;
@@ -651,28 +408,20 @@ export function renderAgentModuleStyles(): string {
     }
     .tv-sms-in-toast--visible { opacity: 1; transform: translateY(0); }
 
-    @media (max-width: 1100px) {
-      .tv-sms-in-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (max-width: 960px) {
       .tv-sms-in-layout {
         grid-template-columns: 1fr;
-        display: flex;
-        flex-direction: column;
       }
-      .tv-sms-in-main { display: contents; }
-      .tv-sms-in-line-bar { order: 0; }
-      .tv-sms-in-panel--simulate { order: 1; }
-      .tv-sms-in-phone-col { order: 2; position: static; }
-      .tv-sms-in-panel--history { order: 3; }
-      .tv-sms-in-simulate-grid { grid-template-columns: 1fr; }
+      .tv-sms-in-phone-col {
+        position: static;
+        order: 1;
+      }
+      .tv-sms-in-history-col { order: 2; }
       .tv-sms-in-phone.tv-hero-phone {
         max-height: min(560px, 65vh);
         height: auto;
         min-height: 480px;
       }
-    }
-    @media (max-width: 640px) {
-      .tv-sms-in-stats { grid-template-columns: 1fr; }
-      .tv-sms-in-head__actions { width: 100%; }
     }
 
     .tv-numeraciones-table .tv-table-actions { white-space: nowrap; }
