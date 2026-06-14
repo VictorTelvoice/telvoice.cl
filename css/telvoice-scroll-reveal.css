@@ -1,0 +1,32 @@
+/* Revelado progresivo al scroll — solo móvil */
+
+@media (max-width: 767px) {
+  .tv-scroll-reveal-stack .tv-scroll-reveal-item {
+    opacity: 0;
+    transform: translate3d(0, 1.35rem, 0);
+    transition:
+      opacity 0.52s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform 0.52s cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: opacity, transform;
+  }
+
+  .tv-scroll-reveal-stack .tv-scroll-reveal-item.is-revealed {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (min-width: 768px) {
+  .tv-scroll-reveal-stack .tv-scroll-reveal-item {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tv-scroll-reveal-stack .tv-scroll-reveal-item {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
