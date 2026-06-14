@@ -166,16 +166,6 @@ function emailStatusBadge(status: string): string {
   return `<span class="badge badge-${cls}">${escapeHtml(label)}</span>`;
 }
 
-function latestEmailLog(logs: BillingEmailLog[]): BillingEmailLog | null {
-  if (!logs.length) {
-    return null;
-  }
-  const sorted = [...logs].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-  );
-  return sorted[0] ?? null;
-}
-
 function renderInfoNotice(): string {
   return `<section class="tv-panel tv-panel--hint tv-invoice-notice">
     <div class="tv-panel__body">
@@ -271,24 +261,6 @@ function renderEmptyState(): string {
   </section>`;
 }
 
-function renderSentToCell(
-  inv: BillingInvoice,
-  emailLogs: BillingEmailLog[] | undefined,
-): string {
-  const latest = emailLogs ? latestEmailLog(emailLogs) : null;
-  if (latest) {
-    return `<div class="tv-invoice-sent">
-      <span>${escapeHtml(latest.to_email)}</span>
-      ${emailStatusBadge(latest.status)}
-    </div>`;
-  }
-  const email = inv.customer_email?.trim();
-  if (email) {
-    return `<span title="Email de facturación">${escapeHtml(email)}</span>`;
-  }
-  return `<span class="field-hint">—</span>`;
-}
-
 function renderInvoiceAction(
   opts: {
     href?: string;
@@ -343,7 +315,6 @@ function renderInvoiceTable(invoices: BillingInvoice[]): string {
         <td>${escapeHtml(documentTypeLabel(inv.document_type))}</td>
         <td>${fmtMoney(Number(inv.total_amount), inv.currency)}</td>
         <td>${invoiceStatusBadge(inv.status)}</td>
-        <td>${renderSentToCell(inv, undefined)}</td>
         <td class="tv-invoice-actions">
           <div class="tv-invoice-actions__group" role="group" aria-label="Acciones del documento">
             ${renderInvoiceAction({ href: detailHref, icon: "visibility", label: "Ver detalle del documento" })}
@@ -368,7 +339,7 @@ function renderInvoiceTable(invoices: BillingInvoice[]): string {
           <table class="tv-table tv-table--dash">
             <thead><tr>
               <th>Fecha</th><th>Documento</th><th>Orden</th><th>Tipo</th><th>Monto</th>
-              <th>Estado</th><th>Enviado a</th><th>Acciones</th>
+              <th>Estado</th><th>Acciones</th>
             </tr></thead>
             <tbody>${rows}</tbody>
           </table>
