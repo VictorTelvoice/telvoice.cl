@@ -371,14 +371,12 @@ export function getSmsBagCalculatorStyles(): string {
       border: 1px solid rgba(0, 82, 204, 0.12);
       background: linear-gradient(180deg, #faf8ff 0%, #f5f7fc 100%);
       border-radius: 1.25rem;
-      padding: 1.25rem 1.5rem;
-      overflow: visible;
+      padding: 1rem 0.85rem;
+      overflow: hidden;
     }
     @media (min-width: 768px) {
       .tv-buy-sms-calc .pack-includes {
-        padding: 1.5rem 2rem;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        padding: 1.15rem 1.25rem;
       }
     }
     .tv-buy-sms-calc .pack-includes-list {
@@ -386,41 +384,36 @@ export function getSmsBagCalculatorStyles(): string {
       margin: 0;
       padding: 0;
       display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0.65rem;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      justify-content: center;
+      align-items: center;
+      gap: clamp(0.35rem, 1.1vw, 0.85rem);
       width: 100%;
+      max-width: 100%;
     }
     @media (min-width: 768px) {
       .tv-buy-sms-calc .pack-includes-list {
-        flex-direction: row;
-        flex-wrap: nowrap;
-        justify-content: center;
-        align-items: center;
-        gap: 1rem 2rem;
-        width: auto;
+        gap: clamp(0.5rem, 1.4vw, 1.15rem);
       }
     }
     .tv-buy-sms-calc .pack-includes-item {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
-      font-size: 0.8125rem;
-      line-height: 1.35;
+      gap: 0.28rem;
+      font-size: clamp(0.625rem, 1.75vw, 0.75rem);
+      line-height: 1.25;
       color: #43474e;
-      white-space: normal;
+      white-space: nowrap;
+      flex: 0 1 auto;
+      min-width: 0;
       text-align: center;
     }
-    @media (min-width: 768px) {
-      .tv-buy-sms-calc .pack-includes-item {
-        display: inline-flex;
-        white-space: nowrap;
-      }
-    }
     .tv-buy-sms-calc .pack-includes-item .material-symbols-outlined {
-      font-size: 1.125rem;
+      font-size: clamp(0.75rem, 2vw, 0.9375rem);
       color: #0052cc;
+      flex-shrink: 0;
     }
     .tv-buy-sms-calc .calc-cta-wrap {
       margin-top: 1.75rem;

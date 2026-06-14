@@ -112,6 +112,7 @@ export function renderTelvoiceAgentWidgetShell(options: TelvoiceAgentWidgetShell
   const rootClass = [
     "tva-root",
     "tva-root--embedded",
+    "tva-floating-launcher-root",
     useLab ? "tva-root--lab" : "tva-root--quick-visible",
     options.rootExtraClass ?? "",
   ]

@@ -13,6 +13,11 @@ import {
 import { LEGACY_NAV, MAIN_NAV } from "./nav.js";
 import { getAdminStyles } from "./styles.js";
 import { renderPanelStylesheetLink } from "../shared/panel-stylesheet.js";
+import {
+  getPanelFloatingAgentToggleScript,
+  renderPanelFloatingAgentToggleBootScript,
+  renderPanelFloatingAgentToggleButton,
+} from "../../components/agent/panel-floating-agent-toggle.js";
 
 export interface LayoutTopbarOptions {
   smsBalance?: string;
@@ -131,6 +136,7 @@ function renderTopbar(options: LayoutOptions): string {
       </span>
     </div>
     <div class="tv-topbar__actions">
+      ${renderPanelFloatingAgentToggleButton("nav-floating-agent-toggle")}
       <a href="/admin/clients" class="tv-btn-campaign">
         <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">business</span>
         Nuevo cliente
@@ -226,6 +232,7 @@ export function renderLayout(options: LayoutOptions): string {
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
   ${renderPanelStylesheetLink()}
   ${renderTelvoiceAgentStylesheetLink()}
+  ${renderPanelFloatingAgentToggleBootScript()}
 </head>
 <body class="tv-admin">
   <div class="tv-app">
@@ -238,6 +245,7 @@ export function renderLayout(options: LayoutOptions): string {
   </div>
   ${renderAdminAgentWidget()}
   ${SIDEBAR_SCRIPT}
+  <script>${getPanelFloatingAgentToggleScript({ buttonIds: ["nav-floating-agent-toggle"], floatingRootId: "tv-admin-agent" })}</script>
   ${getAdminAgentWidgetScript()}
 </body>
 </html>`;

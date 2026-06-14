@@ -17,6 +17,11 @@ import {
   renderPanelThemeToggleButton,
   renderPanelThemeToggleScript,
 } from "./panel-theme.js";
+import {
+  getPanelFloatingAgentToggleScript,
+  renderPanelFloatingAgentToggleBootScript,
+  renderPanelFloatingAgentToggleButton,
+} from "../../components/agent/panel-floating-agent-toggle.js";
 import { getDashboardTableColumnResizeScriptBody } from "./dashboard-table-resize.js";
 import {
   getAppNavAgentLine,
@@ -115,6 +120,7 @@ function renderTopbar(tb: AppLayoutTopbar): string {
       </span>
     </div>
     <div class="tv-topbar__actions">
+      ${renderPanelFloatingAgentToggleButton("nav-floating-agent-toggle")}
       <a href="/app/buy-sms" class="tv-btn-buy-sms" aria-label="Comprar bolsa SMS">
         <span class="material-symbols-outlined tv-btn-buy-sms__icon" aria-hidden="true">shopping_cart</span>
         <span class="tv-btn-buy-sms__label">Comprar SMS</span>
@@ -172,6 +178,7 @@ export function renderAppLayout(options: AppLayoutOptions): string {
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
   ${renderPanelStylesheetLink()}
   ${renderTelvoiceAgentStylesheetLink({ lab: true, panelLight: true })}
+  ${renderPanelFloatingAgentToggleBootScript()}
 </head>
 <body class="tv-admin${bodyClass}">
   ${renderPanelThemeBootScript()}
@@ -189,6 +196,7 @@ export function renderAppLayout(options: AppLayoutOptions): string {
   ${SIDEBAR_SCRIPT}
   ${renderPanelThemeToggleScript()}
   ${DASH_TABLE_RESIZE_SCRIPT}
+  <script>${getPanelFloatingAgentToggleScript({ buttonIds: ["nav-floating-agent-toggle"], floatingRootId: "tv-panel-agent" })}</script>
   <script>${getPanelAgentWidgetScript()}</script>
 </body>
 </html>`;

@@ -843,13 +843,12 @@
       border: 1px solid rgba(0, 82, 204, 0.12);
       background: linear-gradient(180deg, #faf8ff 0%, #f5f7fc 100%);
       border-radius: 1.25rem;
-      padding: 1.25rem 1.5rem;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
+      padding: 1rem 0.85rem;
+      overflow: hidden;
     }
     @media (min-width: 768px) {
       .pack-includes {
-        padding: 1.5rem 2rem;
+        padding: 1.15rem 1.25rem;
       }
     }
     .pack-includes-title {
@@ -874,26 +873,30 @@
       flex-wrap: nowrap;
       justify-content: center;
       align-items: center;
-      gap: 0.75rem 1.5rem;
+      gap: clamp(0.35rem, 1.1vw, 0.85rem);
       margin-top: 0;
+      max-width: 100%;
     }
     @media (min-width: 768px) {
       .pack-includes-list {
-        gap: 1rem 2rem;
+        gap: clamp(0.5rem, 1.4vw, 1.15rem);
       }
     }
     .pack-includes-item {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      font-size: 0.8125rem;
-      line-height: 1.35;
+      gap: 0.28rem;
+      font-size: clamp(0.625rem, 1.75vw, 0.75rem);
+      line-height: 1.25;
       color: #43474e;
       white-space: nowrap;
+      flex: 0 1 auto;
+      min-width: 0;
     }
     .pack-includes-item .material-symbols-outlined {
-      font-size: 1.125rem;
+      font-size: clamp(0.75rem, 2vw, 0.9375rem);
       color: #0052cc;
+      flex-shrink: 0;
     }
 
     .precios-footnote {
@@ -1833,11 +1836,17 @@
       }
       main .pack-includes-list {
         justify-content: center;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        gap: clamp(0.3rem, 1vw, 0.65rem);
       }
       main .pack-includes-item {
         justify-content: center;
         text-align: center;
+        font-size: clamp(0.6rem, 2.8vw, 0.6875rem);
+        gap: 0.22rem;
+      }
+      main .pack-includes-item .material-symbols-outlined {
+        font-size: clamp(0.6875rem, 3vw, 0.8125rem);
       }
       #compliance ul li {
         justify-content: flex-start;
@@ -3141,7 +3150,7 @@
                   <span>Agentes con números reales</span>
                 </div>
                 <h2 class="tv-hero-title tv-hero-slide-title font-h1 text-h1 text-on-background">
-                  <span class="tv-hero-word tv-hero-word--ink">Dale Autonomia a tus Agentes de IA con un </span><span class="tv-hero-word tv-hero-word--blue">Números Móvil</span>
+                  <span class="tv-hero-word tv-hero-word--ink">Dale Autonomía a tus Agentes de IA con un </span><span class="tv-hero-word tv-hero-word--blue">Número Móvil</span>
                 </h2>
                 <p class="tv-hero-subtitle hero-intro">
                   Recibe SMS, códigos, alertas y eventos operativos en agentes autorizados, automatizaciones y equipos

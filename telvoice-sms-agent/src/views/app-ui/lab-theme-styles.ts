@@ -437,7 +437,7 @@ export function getLabPanelThemeStyles(): string {
     .tv-lab-theme .tv-overlay {
       background: rgba(5, 8, 20, 0.72);
     }
-    .tv-lab-theme a:not(.btn):not(.tv-nav-link):not(.tv-dash-block__link):not(.tv-brand-lockup) {
+    .tv-lab-theme a:not(.btn):not(.tv-nav-link):not(.tv-dash-block__link):not(.tv-brand-lockup):not(.tv-sms-in-line) {
       color: var(--tv-lab-cyan);
     }
 
@@ -729,25 +729,32 @@ export function getLabPanelThemeStyles(): string {
     }
     .tv-lab-theme .tv-buy-sms-calc .pack-includes-list {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       justify-content: center;
-      gap: 0.75rem 1.5rem;
+      gap: clamp(0.35rem, 1.1vw, 0.85rem);
       list-style: none;
       padding: 0;
       margin: 0;
+      max-width: 100%;
     }
     .tv-lab-theme .tv-buy-sms-calc .pack-includes-item {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      font-size: 0.875rem;
+      gap: 0.28rem;
+      font-size: clamp(0.625rem, 1.75vw, 0.75rem);
+      line-height: 1.25;
       color: var(--tv-lab-muted) !important;
       background: transparent !important;
       border: none !important;
       padding: 0;
+      white-space: nowrap;
+      flex: 0 1 auto;
+      min-width: 0;
     }
     .tv-lab-theme .tv-buy-sms-calc .pack-includes-item .material-symbols-outlined {
       color: var(--tv-lab-cyan);
+      font-size: clamp(0.75rem, 2vw, 0.9375rem);
+      flex-shrink: 0;
     }
     .tv-lab-theme .tv-buy-sms-calc .calc-cta-btn--secondary {
       background: rgba(12, 20, 48, 0.65) !important;
