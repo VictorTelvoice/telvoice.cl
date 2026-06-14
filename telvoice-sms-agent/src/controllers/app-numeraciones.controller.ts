@@ -12,6 +12,7 @@ import {
   listClientNumbersByCompany,
 } from "../services/clientNumberService.js";
 import {
+  countUnreadInboundByClientNumber,
   getInboundSmsById,
   listInboundSmsByCompany,
   updateInboundSmsStatus,
@@ -113,11 +114,14 @@ export async function getAppSmsInbox(
       selectedMessage = messages[0] ?? null;
     }
 
+    const unreadByNumber = await countUnreadInboundByClientNumber(ctx.company.id);
+
     return renderAppSmsInboxPage(ctx, {
       numbers,
       messages,
       filters,
       selectedMessage,
+      unreadByNumber,
     });
   });
 }

@@ -12,6 +12,7 @@ import {
 } from "../services/clientNumberService.js";
 import {
   countInboundByClientNumber,
+  countUnreadInboundByClientNumber,
   countUnreadInboundByCompany,
   getInboundSmsById,
   listInboundSmsByCompany,
@@ -132,6 +133,7 @@ export async function getApiSmsInboxMessages(
       filters.numberId,
     );
     const countsByNumber = await countInboundByClientNumber(ctx.company.id);
+    const unreadByNumber = await countUnreadInboundByClientNumber(ctx.company.id);
 
     const latest =
       messages.length > 0
@@ -145,6 +147,7 @@ export async function getApiSmsInboxMessages(
       messages: messages.map(serializeInboundMessageForApi),
       unread_count: unreadCount,
       counts_by_number: countsByNumber,
+      unread_by_number: unreadByNumber,
       latest_received_at: latest,
     });
   } catch {

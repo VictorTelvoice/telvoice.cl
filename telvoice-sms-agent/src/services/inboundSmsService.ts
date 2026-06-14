@@ -230,6 +230,30 @@ export async function countInboundByClientNumber(
   return counts;
 }
 
+/** Conteos de no leídos (status received) por client_number_id. */
+export async function countUnreadInboundByClientNumber(
+  companyId: string,
+): Promise<Record<string, number>> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from("inbound_sms_messages")
+    .select("client_number_id")
+    .eq("company_id", companyId)
+    .eq("status", "received");
+
+  if (error) {
+    if (isMissingTableError(error)) return {};
+    throw wrapSupabaseError(error, "inbound_sms_messages");
+  }
+
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const id = String(row.client_number_id);
+    counts[id] = (counts[id] ?? 0) + 1;
+  }
+  return counts;
+}
+
 export type InboundSmsApiMessage = {
   id: string;
   client_number_id: string;

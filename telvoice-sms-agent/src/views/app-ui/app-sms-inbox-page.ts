@@ -1,6 +1,3 @@
-import {
-  inboundSmsStatusLabel,
-} from "../../services/inboundSmsService.js";
 import { filterClientPanelNumbers } from "../../services/clientNumberService.js";
 import type {
   ClientNumberListItem,
@@ -8,13 +5,7 @@ import type {
   InboundSmsStatus,
 } from "../../types/client-numbers.js";
 import { escapeHtml } from "../../utils/html.js";
-import { renderKpiCard } from "../admin-ui/components.js";
-import {
-  renderBtn,
-  renderFilterBar,
-  renderFilterField,
-  renderPageHeader,
-} from "../admin-ui/page-kit.js";
+import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
 import { renderAgentModuleStyles } from "../shared/agent-module-styles.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
@@ -56,21 +47,6 @@ export function parseSmsInboxFilters(
   };
 }
 
-function inboxQueryString(filters: SmsInboxFilters, extra?: Record<string, string>): string {
-  const p = new URLSearchParams();
-  if (filters.numberId) p.set("number", filters.numberId);
-  if (filters.q) p.set("q", filters.q);
-  if (filters.from) p.set("from", filters.from);
-  if (filters.startDate) p.set("start_date", filters.startDate);
-  if (filters.endDate) p.set("end_date", filters.endDate);
-  if (filters.status) p.set("status", filters.status);
-  if (extra) {
-    for (const [k, v] of Object.entries(extra)) p.set(k, v);
-  }
-  const s = p.toString();
-  return s ? `?${s}` : "";
-}
-
 function formatInboxTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
@@ -80,54 +56,6 @@ function formatInboxTime(value: string): string {
     minute: "2-digit",
     hour12: true,
   });
-}
-
-function formatInboxDateTime(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleString("es-CL", {
-    timeZone: "America/Santiago",
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-}
-
-function chileTodayBounds(): { start: string; end: string } {
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Santiago",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-  const y = parts.find((p) => p.type === "year")?.value ?? "2026";
-  const m = parts.find((p) => p.type === "month")?.value ?? "01";
-  const d = parts.find((p) => p.type === "day")?.value ?? "01";
-  return {
-    start: `${y}-${m}-${d}T00:00:00.000-03:00`,
-    end: `${y}-${m}-${d}T23:59:59.999-03:00`,
-  };
-}
-
-function isTodayInChile(iso: string): boolean {
-  const { start, end } = chileTodayBounds();
-  const t = new Date(iso).getTime();
-  return t >= new Date(start).getTime() && t <= new Date(end).getTime();
-}
-
-function renderStatusBadge(status: InboundSmsStatus): string {
-  const clsMap: Record<InboundSmsStatus, string> = {
-    received: "warn",
-    read: "ok",
-    archived: "muted",
-    forwarded: "ok",
-    failed: "err",
-  };
-  const cls = clsMap[status] ?? "muted";
-  return `<span class="badge badge-${cls}">${escapeHtml(inboundSmsStatusLabel(status))}</span>`;
 }
 
 function renderSourceBadge(source: string | null): string {
@@ -149,81 +77,40 @@ function resolveSelectedNumber(
   return null;
 }
 
-function renderStatsCards(
-  numbers: ClientNumberListItem[],
-  messages: InboundSmsMessageRow[],
-  selectedNumber: ClientNumberListItem | null,
-): string {
-  const activeCount = numbers.filter((n) => n.status === "active").length;
-  const scopedMessages = selectedNumber
-    ? messages.filter((m) => m.client_number_id === selectedNumber.id)
-    : messages;
-  const todayCount = scopedMessages.filter((m) => isTodayInChile(m.received_at)).length;
-  const lastMsg = scopedMessages[0];
-  const receptionOk = activeCount > 0;
-
-  const lastLabel = lastMsg
-    ? `${formatInboxDateTime(lastMsg.received_at)} · ${lastMsg.from_number ?? "Desconocido"}`
-    : "Sin mensajes aún";
-
-  const fourthLabel =
-    selectedNumber && activeCount > 1 ? "Línea en vista" : "Estado de recepción";
-  const fourthValue =
-    selectedNumber && activeCount > 1
-      ? selectedNumber.number
-      : receptionOk
-        ? "Recepción activa"
-        : "Sin numeración activa";
-  const fourthVariant = receptionOk ? "success" : "warn";
-
-  return `<div class="tv-kpi-grid tv-kpi-grid--client">
-    ${renderKpiCard({
-      label: "Numeraciones activas",
-      value: String(activeCount),
-      icon: "sim_card",
-      variant: "primary",
-    })}
-    ${renderKpiCard({
-      label: "SMS recibidos hoy",
-      value: String(todayCount),
-      icon: "today",
-      variant: "success",
-    })}
-    <article class="tv-kpi tv-kpi--default">
-      <div class="tv-kpi__head">
-        <span class="material-symbols-outlined tv-kpi__icon" aria-hidden="true">schedule</span>
-        <span class="tv-kpi__label">Último SMS recibido</span>
-      </div>
-      <div class="tv-kpi__value tv-kpi__value--sm" id="tv-sms-in-last">${escapeHtml(lastLabel)}</div>
-    </article>
-    ${renderKpiCard({
-      label: fourthLabel,
-      value: fourthValue,
-      icon: "cell_tower",
-      variant: fourthVariant,
-    })}
-  </div>`;
+function formatUnreadBadge(count: number): string {
+  if (count <= 0) return "";
+  return count > 99 ? "99+" : String(count);
 }
 
-function renderLineSelectorBar(
+function renderLineTabs(
   activeNumbers: ClientNumberListItem[],
   selectedNumber: ClientNumberListItem | null,
+  unreadByNumber: Record<string, number>,
 ): string {
-  if (activeNumbers.length < 2) return "";
+  if (!activeNumbers.length) return "";
 
-  const options = activeNumbers
+  const tabs = activeNumbers
     .map((n) => {
-      const sel = selectedNumber?.id === n.id ? " selected" : "";
-      return `<option value="${escapeHtml(n.id)}"${sel}>${escapeHtml(n.number)}</option>`;
+      const active = selectedNumber?.id === n.id;
+      const unread = active ? 0 : (unreadByNumber[n.id] ?? 0);
+      const badgeLabel = formatUnreadBadge(unread);
+      const badge = badgeLabel
+        ? `<span class="tv-sms-in-line__badge" id="tv-sms-in-badge-${escapeHtml(n.id)}" data-number-id="${escapeHtml(n.id)}">${escapeHtml(badgeLabel)}</span>`
+        : `<span class="tv-sms-in-line__badge tv-sms-in-line__badge--empty" id="tv-sms-in-badge-${escapeHtml(n.id)}" data-number-id="${escapeHtml(n.id)}" hidden aria-hidden="true"></span>`;
+
+      return `<a href="/app/sms-inbox?number=${encodeURIComponent(n.id)}"
+        class="tv-sms-in-line${active ? " tv-sms-in-line--active" : ""}"
+        role="tab"
+        aria-selected="${active ? "true" : "false"}"
+        data-number-id="${escapeHtml(n.id)}">
+        <span class="material-symbols-outlined tv-sms-in-line__icon" aria-hidden="true">sim_card</span>
+        <span class="tv-sms-in-line__num">${escapeHtml(n.number)}</span>
+        ${badge}
+      </a>`;
     })
     .join("");
 
-  return renderFilterBar(
-    renderFilterField(
-      "Línea en revisión",
-      `<select id="tv-sms-in-number-id" class="tv-filter-input" aria-label="Seleccionar numeración">${options}</select>`,
-    ),
-  );
+  return `<div class="tv-sms-in-lines" role="tablist" aria-label="Líneas contratadas">${tabs}</div>`;
 }
 
 function renderPhoneFeedItem(m: InboundSmsMessageRow, isLatest: boolean): string {
@@ -260,118 +147,50 @@ function renderPhoneMockup(
           .join("")
       : `<p class="tv-sms-in-feed__empty" id="tv-sms-in-feed-empty">Aún no hay SMS entrantes para esta numeración.</p>`;
 
-  return `<aside class="tv-sms-in-phone-col">
-    <div class="tv-sms-in-phone-wrap">
-      <div class="tv-hero-phone tv-hero-phone--compact tv-sms-in-phone" id="tv-sms-in-phone">
-        <div class="tv-hero-phone__notch" aria-hidden="true"></div>
-        <div class="tv-hero-phone__screen">
-          <header class="tv-sms-in-phone-head">
-            <div class="tv-sms-in-phone-head__brand">
-              <span class="tv-sms-in-phone-head__logo material-symbols-outlined" aria-hidden="true">sms</span>
-              <div>
-                <p class="tv-sms-in-phone-head__title">Telvoice SMS</p>
-                <p class="tv-sms-in-phone-head__line" id="tv-sms-in-phone-line">${escapeHtml(lineLabel)}</p>
-              </div>
+  return `<div class="tv-sms-in-phone-wrap">
+    <div class="tv-hero-phone tv-hero-phone--compact tv-sms-in-phone" id="tv-sms-in-phone">
+      <div class="tv-hero-phone__notch" aria-hidden="true"></div>
+      <div class="tv-hero-phone__screen">
+        <header class="tv-sms-in-phone-head">
+          <div class="tv-sms-in-phone-head__brand">
+            <span class="tv-sms-in-phone-head__logo material-symbols-outlined" aria-hidden="true">sms</span>
+            <div>
+              <p class="tv-sms-in-phone-head__title">Telvoice SMS</p>
+              <p class="tv-sms-in-phone-head__line" id="tv-sms-in-phone-line">${escapeHtml(lineLabel)}</p>
             </div>
-            <span class="tv-sms-in-phone-status ${receptionCls}" id="tv-sms-in-phone-status">${escapeHtml(receptionLabel)}</span>
-          </header>
-          <div class="tv-hero-phone__messages tv-sms-in-feed" id="tv-sms-in-feed" role="log" aria-live="polite" aria-relevant="additions">
-            ${feed}
           </div>
+          <span class="tv-sms-in-phone-status ${receptionCls}" id="tv-sms-in-phone-status">${escapeHtml(receptionLabel)}</span>
+        </header>
+        <div class="tv-hero-phone__messages tv-sms-in-feed" id="tv-sms-in-feed" role="log" aria-live="polite" aria-relevant="additions">
+          ${feed}
         </div>
       </div>
-    </div>
-  </aside>`;
-}
-
-function renderHistoryTable(
-  messages: InboundSmsMessageRow[],
-  filters: SmsInboxFilters,
-  hasNumbers: boolean,
-): string {
-  if (!hasNumbers) {
-    return `<section class="tv-panel tv-sms-in-empty">
-      <div class="tv-sms-in-empty__icon" aria-hidden="true">
-        <span class="material-symbols-outlined">sim_card</span>
-      </div>
-      <h2 class="tv-section-head__title">Sin numeraciones contratadas</h2>
-      <p class="tv-page-sub">Contrata una numeración Telvoice para recibir SMS entrantes en tu panel.</p>
-      <div class="tv-sms-in-empty__actions">
-        ${renderBtn("Ver planes y numeraciones", { href: "/app/planes-agente", variant: "primary", icon: "add_call" })}
-        ${renderBtn("Mis numeraciones", { href: "/app/numeraciones", variant: "secondary" })}
-      </div>
-    </section>`;
-  }
-
-  const rows =
-    messages.length > 0
-      ? messages
-          .map(
-            (m) => `<tr data-msg-id="${escapeHtml(m.id)}" data-number-id="${escapeHtml(m.client_number_id)}">
-          <td><time datetime="${escapeHtml(m.received_at)}">${escapeHtml(formatInboxDateTime(m.received_at))}</time></td>
-          <td><code>${escapeHtml(m.to_number)}</code></td>
-          <td>${escapeHtml(m.from_number ?? "—")}</td>
-          <td class="tv-cell-truncate" title="${escapeHtml(m.body)}">${escapeHtml(m.body.slice(0, 120))}${m.body.length > 120 ? "…" : ""}${m.detected_otp ? `<span class="tv-otp-pill"><code>${escapeHtml(m.detected_otp)}</code></span>` : ""}</td>
-          <td>${renderStatusBadge(m.status)} ${renderSourceBadge(m.source)}</td>
-        </tr>`,
-          )
-          .join("")
-      : `<tr><td colspan="5" class="tv-table-empty">No hay SMS entrantes con los filtros actuales.</td></tr>`;
-
-  return `<div class="tv-sms-in-history-col">
-    <div class="tv-dash-block">
-      <div class="tv-dash-block__head">
-        <h2 class="tv-dash-block__title">Historial de SMS entrantes</h2>
-        ${renderBtn("Exportar CSV", {
-          href: `/app/sms-inbox/export.csv${inboxQueryString(filters)}`,
-          variant: "ghost",
-          icon: "download",
-          size: "sm",
-        })}
-      </div>
-      <section class="tv-panel tv-client-dash-table-panel">
-        <form method="get" action="/app/sms-inbox" class="tv-filters tv-filters--wrap tv-sms-in-history-filters">
-          ${filters.numberId ? `<input type="hidden" name="number" value="${escapeHtml(filters.numberId)}" />` : ""}
-          ${renderFilterField("Buscar", `<input type="search" name="q" class="tv-filter-input" value="${escapeHtml(filters.q ?? "")}" placeholder="Remitente o contenido" />`)}
-          ${renderFilterField("Remitente", `<input type="text" name="from" class="tv-filter-input" value="${escapeHtml(filters.from ?? "")}" placeholder="+569…" />`)}
-          <div class="tv-sms-in-history-filters__actions">
-            ${renderBtn("Filtrar", { type: "submit", variant: "secondary", size: "sm" })}
-            ${renderBtn("Limpiar", { href: filters.numberId ? `/app/sms-inbox?number=${encodeURIComponent(filters.numberId)}` : "/app/sms-inbox", variant: "ghost", size: "sm" })}
-          </div>
-        </form>
-        <div class="tv-client-dash-table-inner">
-          <table class="tv-table tv-table--dash" id="tv-sms-in-history-table">
-            <thead>
-              <tr>
-                <th>Fecha / hora</th>
-                <th>Numeración destino</th>
-                <th>Remitente</th>
-                <th>Mensaje</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody id="tv-sms-in-history-body">${rows}</tbody>
-          </table>
-        </div>
-      </section>
     </div>
   </div>`;
 }
 
+function renderEmptyState(): string {
+  return `<section class="tv-panel tv-sms-in-empty">
+    <div class="tv-sms-in-empty__icon" aria-hidden="true">
+      <span class="material-symbols-outlined">sim_card</span>
+    </div>
+    <h2 class="tv-section-head__title">Sin numeraciones contratadas</h2>
+    <p class="tv-page-sub">Contrata una numeración Telvoice para recibir SMS entrantes en tu panel.</p>
+    <div class="tv-sms-in-empty__actions">
+      ${renderBtn("Ver planes y numeraciones", { href: "/app/planes-agente", variant: "primary", icon: "add_call" })}
+      ${renderBtn("Mis numeraciones", { href: "/app/numeraciones", variant: "secondary" })}
+    </div>
+  </section>`;
+}
+
 function renderPageScript(
   messages: InboundSmsMessageRow[],
-  filters: SmsInboxFilters,
   selectedNumber: ClientNumberListItem | null,
+  filters: SmsInboxFilters,
 ): string {
   const latestAt = messages[0]?.received_at ?? "";
   const knownIds = messages.map((m) => m.id);
-  const pollParams = new URLSearchParams();
-  if (filters.numberId) pollParams.set("number_id", filters.numberId);
-  if (filters.q) pollParams.set("q", filters.q);
-  if (filters.from) pollParams.set("from", filters.from);
-  if (filters.startDate) pollParams.set("start_date", filters.startDate);
-  if (filters.endDate) pollParams.set("end_date", filters.endDate);
-  const pollBase = `/api/app/sms-inbox/messages${pollParams.toString() ? `?${pollParams}` : ""}`;
+  const selectedNumberId = selectedNumber?.id ?? filters.numberId ?? "";
 
   return `<script>
 (function() {
@@ -380,16 +199,13 @@ function renderPageScript(
   if (!root) return;
 
   var feedEl = document.getElementById("tv-sms-in-feed");
-  var historyBody = document.getElementById("tv-sms-in-history-body");
   var toast = document.getElementById("tv-sms-in-toast");
   var liveBadge = document.getElementById("tv-sms-in-live");
-  var numberSelect = document.getElementById("tv-sms-in-number-id");
-  var lastStat = document.getElementById("tv-sms-in-last");
 
   var knownIds = new Set(${JSON.stringify(knownIds)});
   var latestAt = ${JSON.stringify(latestAt)};
-  var pollBase = ${JSON.stringify(pollBase)};
-  var selectedNumberId = ${JSON.stringify(selectedNumber?.id ?? filters.numberId ?? "")};
+  var pollBase = "/api/app/sms-inbox/messages";
+  var selectedNumberId = ${JSON.stringify(selectedNumberId)};
   var pollTimer = null;
 
   function esc(s) {
@@ -404,27 +220,51 @@ function renderPageScript(
     } catch (e) { return ""; }
   }
 
-  function formatDateTime(iso) {
-    try {
-      return new Date(iso).toLocaleString("es-CL", { timeZone: "America/Santiago", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true });
-    } catch (e) { return iso; }
-  }
-
-  function statusBadge(status) {
-    var labels = { received: "Recibido", read: "Leído", archived: "Archivado", forwarded: "Reenviado", failed: "Fallido" };
-    var cls = { received: "warn", read: "ok", archived: "muted", forwarded: "ok", failed: "err" };
-    var l = labels[status] || status;
-    var c = cls[status] || "muted";
-    return '<span class="badge badge-' + c + '">' + esc(l) + '</span>';
-  }
-
   function sourceBadge(source) {
     return source === "simulation" ? '<span class="badge badge-muted tv-sms-in-source">Simulación</span>' : "";
   }
 
   function buildPollUrl() {
-    var sep = pollBase.indexOf("?") >= 0 ? "&" : "?";
-    return pollBase + (latestAt ? sep + "after=" + encodeURIComponent(latestAt) : "");
+    return pollBase + (latestAt ? "?after=" + encodeURIComponent(latestAt) : "");
+  }
+
+  function formatBadgeCount(count) {
+    if (count <= 0) return "";
+    return count > 99 ? "99+" : String(count);
+  }
+
+  function updateLineBadges(unreadByNumber) {
+    if (!unreadByNumber) return;
+    document.querySelectorAll(".tv-sms-in-line__badge").forEach(function(badge) {
+      var numberId = badge.getAttribute("data-number-id");
+      if (!numberId) return;
+      var count = numberId === selectedNumberId ? 0 : (unreadByNumber[numberId] || 0);
+      var label = formatBadgeCount(count);
+      if (label) {
+        badge.hidden = false;
+        badge.removeAttribute("aria-hidden");
+        badge.textContent = label;
+        badge.classList.remove("tv-sms-in-line__badge--empty");
+      } else {
+        badge.hidden = true;
+        badge.setAttribute("aria-hidden", "true");
+        badge.textContent = "";
+        badge.classList.add("tv-sms-in-line__badge--empty");
+      }
+    });
+  }
+
+  function bumpLineBadge(numberId) {
+    if (!numberId || numberId === selectedNumberId) return;
+    var badge = document.getElementById("tv-sms-in-badge-" + numberId);
+    if (!badge) return;
+    var current = parseInt(badge.textContent, 10);
+    var next = (Number.isFinite(current) ? current : 0) + 1;
+    var label = formatBadgeCount(next);
+    badge.hidden = false;
+    badge.removeAttribute("aria-hidden");
+    badge.textContent = label;
+    badge.classList.remove("tv-sms-in-line__badge--empty");
   }
 
   function setLiveBadge(state) {
@@ -460,23 +300,6 @@ function renderPageScript(
       '<time datetime="' + esc(m.received_at) + '">' + esc(formatTime(m.received_at)) + '</time>' + sourceBadge(m.source) + '</div></div>';
   }
 
-  function prependHistoryRow(m) {
-    if (!historyBody) return;
-    if (selectedNumberId && m.client_number_id !== selectedNumberId) return;
-    var emptyRow = historyBody.querySelector(".tv-table-empty");
-    if (emptyRow) emptyRow.closest("tr").remove();
-    var tr = document.createElement("tr");
-    tr.setAttribute("data-msg-id", m.id);
-    tr.setAttribute("data-number-id", m.client_number_id);
-    var body = esc((m.body || "").slice(0, 120)) + ((m.body || "").length > 120 ? "…" : "");
-    tr.innerHTML = '<td><time datetime="' + esc(m.received_at) + '">' + esc(formatDateTime(m.received_at)) + '</time></td>' +
-      '<td><code>' + esc(m.to_number) + '</code></td>' +
-      '<td>' + esc(m.from_number || "—") + '</td>' +
-      '<td class="tv-cell-truncate">' + body + '</td>' +
-      '<td>' + statusBadge(m.status) + " " + sourceBadge(m.source) + '</td>';
-    historyBody.insertBefore(tr, historyBody.firstChild);
-  }
-
   function appendToFeed(m) {
     if (!feedEl) return;
     if (selectedNumberId && m.client_number_id !== selectedNumberId) return;
@@ -491,20 +314,18 @@ function renderPageScript(
     scrollFeedToBottom();
   }
 
-  function updateLastStat(m) {
-    if (!lastStat || !m) return;
-    if (selectedNumberId && m.client_number_id !== selectedNumberId) return;
-    lastStat.textContent = formatDateTime(m.received_at) + " · " + (m.from_number || "Desconocido");
-  }
-
   function ingestMessage(m, fromPoll) {
     if (knownIds.has(m.id)) return;
     knownIds.add(m.id);
     if (!latestAt || m.received_at > latestAt) latestAt = m.received_at;
-    prependHistoryRow(m);
-    appendToFeed(m);
-    updateLastStat(m);
-    if (fromPoll) showToast();
+
+    if (m.client_number_id === selectedNumberId) {
+      appendToFeed(m);
+      if (fromPoll) showToast();
+    } else if (m.status === "received") {
+      bumpLineBadge(m.client_number_id);
+      if (fromPoll) showToast("Nuevo SMS en otra línea");
+    }
   }
 
   function poll() {
@@ -513,6 +334,7 @@ function renderPageScript(
       .then(function(data) {
         if (!data.ok) throw new Error("poll");
         setLiveBadge("ok");
+        updateLineBadges(data.unread_by_number);
         var incoming = (data.messages || []).filter(function(m) { return !knownIds.has(m.id); });
         if (incoming.length) {
           incoming.sort(function(a, b) { return a.received_at.localeCompare(b.received_at); });
@@ -540,16 +362,6 @@ function renderPageScript(
   });
   startPoll();
   scrollFeedToBottom();
-
-  if (numberSelect && numberSelect.tagName === "SELECT") {
-    numberSelect.addEventListener("change", function() {
-      var id = numberSelect.value;
-      var p = new URLSearchParams(window.location.search);
-      if (id) p.set("number", id); else p.delete("number");
-      p.delete("msg");
-      window.location.href = "/app/sms-inbox?" + p.toString();
-    });
-  }
 })();
 </script>`;
 }
@@ -559,6 +371,7 @@ export type AppSmsInboxPageData = {
   messages: InboundSmsMessageRow[];
   filters: SmsInboxFilters;
   selectedMessage: InboundSmsMessageRow | null;
+  unreadByNumber: Record<string, number>;
 };
 
 export function renderAppSmsInboxPage(
@@ -583,16 +396,13 @@ export function renderAppSmsInboxPage(
       </span>`,
     })}
 
-    ${renderStatsCards(numbers, data.messages, selectedNumber)}
-
-    ${activeNumbers.length >= 2 ? renderLineSelectorBar(activeNumbers, selectedNumber) : ""}
+    ${renderLineTabs(activeNumbers, selectedNumber, data.unreadByNumber)}
 
     <div class="tv-sms-in-root" id="tv-sms-in-root"
          data-number-id="${escapeHtml(selectedNumber?.id ?? "")}"
          data-latest-at="${escapeHtml(data.messages[0]?.received_at ?? "")}">
       <div class="tv-sms-in-layout">
-        ${activeNumbers.length ? renderPhoneMockup(selectedNumber, phoneMessages) : ""}
-        ${renderHistoryTable(data.messages, filters, numbers.length > 0)}
+        ${activeNumbers.length ? renderPhoneMockup(selectedNumber, phoneMessages) : renderEmptyState()}
       </div>
     </div>
 
@@ -600,7 +410,7 @@ export function renderAppSmsInboxPage(
       Nuevo SMS recibido
     </div>
 
-    ${renderPageScript(data.messages, filters, selectedNumber)}
+    ${activeNumbers.length ? renderPageScript(data.messages, selectedNumber, filters) : ""}
     ${renderAgentModuleStyles()}`;
 
   return wrapAppPage(ctx, "sms-inbox", "SMS Entrantes", body);
