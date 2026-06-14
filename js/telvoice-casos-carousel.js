@@ -7,8 +7,6 @@
   var viewport = root.querySelector(".casos-carousel-viewport");
   var track = root.querySelector(".casos-carousel-track");
   var cards = track ? track.querySelectorAll(".caso-card") : [];
-  var prevBtn = root.querySelector(".casos-carousel-nav--prev");
-  var nextBtn = root.querySelector(".casos-carousel-nav--next");
   var dotsWrap = root.querySelector(".casos-carousel-dots");
   var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var currentPage = 0;
@@ -64,15 +62,6 @@
     });
   }
 
-  function updateNav() {
-    if (prevBtn) {
-      prevBtn.disabled = currentPage <= 0;
-    }
-    if (nextBtn) {
-      nextBtn.disabled = currentPage >= maxPage();
-    }
-  }
-
   function renderDots() {
     if (!dotsWrap) {
       return;
@@ -93,7 +82,6 @@
     currentPage = clampPage(page);
     updateTrack();
     updateDots();
-    updateNav();
     if (opts.focusCard && cards[currentPage * perPage()]) {
       cards[currentPage * perPage()].focus({ preventScroll: true });
     }
@@ -135,22 +123,19 @@
   }
 
   root.addEventListener("click", function (e) {
-    if (e.target.closest(".casos-carousel-nav--prev")) {
-      e.preventDefault();
-      prevPage();
-      return;
-    }
-    if (e.target.closest(".casos-carousel-nav--next")) {
-      e.preventDefault();
-      nextPage();
-      return;
-    }
     var dot = e.target.closest(".casos-carousel-dot");
     if (dot) {
       e.preventDefault();
       goToPage(parseInt(dot.getAttribute("data-page"), 10));
     }
   });
+
+  if (typeof window.TelvoiceBindSwipe === "function") {
+    window.TelvoiceBindSwipe(viewport, {
+      onSwipeLeft: nextPage,
+      onSwipeRight: prevPage,
+    });
+  }
 
   window.addEventListener("hashchange", syncFromHash);
   window.addEventListener("resize", onResize);

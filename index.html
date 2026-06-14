@@ -2783,8 +2783,8 @@
     #telvoice-web-agent-embed.tva-root--ready{visibility:visible}
   </style>
   <link rel="stylesheet" href="css/telvoice-type-lab.css?v=20260615" />
-  <link rel="stylesheet" href="css/telvoice-casos-carousel.css?v=20260615" />
-  <link rel="stylesheet" href="css/telvoice-hero-slider.css?v=20260615" />
+  <link rel="stylesheet" href="css/telvoice-casos-carousel.css?v=20260616" />
+  <link rel="stylesheet" href="css/telvoice-hero-slider.css?v=20260616" />
   <link rel="stylesheet" href="css/landing-agent-lab.css?v=20260717" />
   <link rel="stylesheet" href="css/telvoice-numeracion-section.css?v=20260529b" />
   <link rel="stylesheet" href="css/telvoice-web-agent.css?v=20260615" data-tva-css="1" />
@@ -3095,11 +3095,7 @@
       <div class="hero-main-row flex flex-col md:flex-row items-start justify-between gap-8 md:gap-16">
         <div class="hero-copy flex flex-1 flex-col px-4 md:px-0 md:pl-20 lg:pl-28 xl:pl-36">
           <div class="tv-hero-slider" id="hero-copy-slider" data-autoplay="7000">
-            <div class="tv-hero-slider-nav-wrap">
-              <button type="button" class="tv-hero-slider-nav tv-hero-slider-nav--prev" aria-label="Slide anterior">
-                <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
-              </button>
-              <div class="tv-hero-slider-copy">
+            <div class="tv-hero-slider-copy">
               <article class="tv-hero-slide is-active" data-slide="0" aria-hidden="false">
                 <div class="tv-hero-eyebrow">
                   <span class="tv-hero-pill-dot" aria-hidden="true"></span>
@@ -3138,10 +3134,6 @@
                   Recibe SMS, códigos, alertas y eventos operativos en agentes autorizados, automatizaciones y equipos
                 </p>
               </article>
-            </div>
-              <button type="button" class="tv-hero-slider-nav tv-hero-slider-nav--next" aria-label="Slide siguiente">
-                <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
-              </button>
             </div>
 
             <div class="tv-hero-cap-stack">
@@ -3269,6 +3261,11 @@
                 </div>
               </div>
             </div>
+            <nav class="tv-hero-dots tv-hero-dots--below-cta" aria-label="Servicios destacados Telvoice">
+              <button type="button" class="tv-hero-dot is-active" data-slide-to="0" aria-label="Ver SMS masivos" aria-current="true"></button>
+              <button type="button" class="tv-hero-dot" data-slide-to="1" aria-label="Ver números SIM reales"></button>
+              <button type="button" class="tv-hero-dot" data-slide-to="2" aria-label="Ver agentes y automatización"></button>
+            </nav>
           </div>
           <div class="hero-tags-below hero-tags-mobile relative z-10 flex w-full flex-col items-center md:hidden">
             <ul class="hero-use-tags hero-tags-row" role="list" aria-label="Usos del servicio SMS">
@@ -3578,9 +3575,6 @@
         <p class="section-intro mt-4 text-on-surface-variant leading-relaxed">Utiliza SMS para confirmar acciones, enviar alertas, validar usuarios, recordar citas y mantener informados a tus clientes con una comunicación directa, confiable y oportuna.</p>
       </header>
       <div class="casos-carousel mt-10" id="casos-carousel">
-        <button type="button" class="casos-carousel-nav casos-carousel-nav--prev" aria-label="Casos de uso anteriores">
-          <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
-        </button>
         <div class="casos-carousel-viewport">
           <div class="casos-carousel-track casos-grid">
         <article id="caso-promociones" class="caso-card scroll-mt-[4.75rem]" tabindex="-1">
@@ -3645,9 +3639,6 @@
         </article>
           </div>
         </div>
-        <button type="button" class="casos-carousel-nav casos-carousel-nav--next" aria-label="Casos de uso siguientes">
-          <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
-        </button>
         <nav class="casos-carousel-dots" aria-label="Paginación casos de uso"></nav>
       </div>
       </div>
@@ -4148,8 +4139,9 @@
 
   <script src="js/telvoice-config.js"></script>
   <script src="js/telvoice-app.js"></script>
-  <script src="js/telvoice-casos-carousel.js?v=20260615"></script>
-  <script src="js/telvoice-hero-slider.js?v=20260615"></script>
+  <script src="js/telvoice-touch-swipe.js?v=20260616"></script>
+  <script src="js/telvoice-casos-carousel.js?v=20260616"></script>
+  <script src="js/telvoice-hero-slider.js?v=20260616"></script>
   <script src="js/telvoice-web-agent-loader.js" data-root="" data-embed-target="#hero-agent-embed"></script>
 </body>
 </html>

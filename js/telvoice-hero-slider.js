@@ -26,8 +26,9 @@
   }
 
   function updateDots(index) {
-    dots.forEach(function (dot, i) {
-      var active = i === index;
+    dots.forEach(function (dot) {
+      var slideTo = parseInt(dot.getAttribute("data-slide-to"), 10);
+      var active = slideTo === index;
       dot.classList.toggle("is-active", active);
       if (active) {
         dot.setAttribute("aria-current", "true");
@@ -104,18 +105,15 @@
     if (dot) {
       e.preventDefault();
       goTo(dot.getAttribute("data-slide-to"));
-      return;
-    }
-    if (e.target.closest(".tv-hero-slider-nav--prev")) {
-      e.preventDefault();
-      prevSlide();
-      return;
-    }
-    if (e.target.closest(".tv-hero-slider-nav--next")) {
-      e.preventDefault();
-      nextSlide();
     }
   });
+
+  if (typeof window.TelvoiceBindSwipe === "function") {
+    window.TelvoiceBindSwipe(slider, {
+      onSwipeLeft: nextSlide,
+      onSwipeRight: prevSlide,
+    });
+  }
 
   heroSection.addEventListener("mouseenter", function () {
     hoverPaused = true;
