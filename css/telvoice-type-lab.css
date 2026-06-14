@@ -50,7 +50,9 @@
   flex-shrink: 0;
 }
 
-.tv-type-lab .tv-hero-title {
+.tv-type-lab .tv-hero-title,
+.tv-type-lab h2.tv-hero-title,
+.tv-type-lab .tv-hero-slide-title {
   font-family: Montserrat, sans-serif;
   font-size: clamp(2.6rem, 5.9vw, 3.85rem);
   font-weight: 800;
@@ -58,6 +60,11 @@
   letter-spacing: -0.025em;
   max-width: 28ch;
   text-wrap: balance;
+}
+
+.tv-type-lab h2.tv-hero-title,
+.tv-type-lab .tv-hero-slide-title {
+  margin: 0;
 }
 
 .tv-type-lab .tv-hero-word--ink {

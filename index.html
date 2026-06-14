@@ -2676,7 +2676,9 @@
     }
 
     /* Tipografía Lab — overrides finales (después de Tailwind e inline) */
-    .tv-type-lab .tv-hero-title {
+    .tv-type-lab .tv-hero-title,
+    .tv-type-lab h2.tv-hero-title,
+    .tv-type-lab .tv-hero-slide-title {
       font-family: Montserrat, sans-serif;
       font-size: clamp(2.6rem, 5.9vw, 3.85rem);
       font-weight: 800;
@@ -2684,6 +2686,10 @@
       letter-spacing: -0.025em;
       max-width: 28ch;
       text-wrap: balance;
+    }
+    .tv-type-lab h2.tv-hero-title,
+    .tv-type-lab .tv-hero-slide-title {
+      margin: 0;
     }
     .tv-type-lab .tv-hero-word--ink { color: #131b2e; }
     .tv-type-lab .tv-hero-word--blue {
@@ -2739,7 +2745,8 @@
       color: #525f7a;
     }
     @media (max-width: 767px) {
-      .tv-type-lab .hero-copy .tv-hero-title {
+      .tv-type-lab .hero-copy .tv-hero-title,
+      .tv-type-lab .hero-copy .tv-hero-slide-title {
         font-size: clamp(2.6rem, 5.9vw, 3.85rem);
         line-height: 1.12;
       }
@@ -2760,7 +2767,8 @@
     #telvoice-web-agent-embed:not(.tva-root--ready){visibility:hidden}
     #telvoice-web-agent-embed.tva-root--ready{visibility:visible}
   </style>
-  <link rel="stylesheet" href="css/telvoice-type-lab.css?v=20260614a" />
+  <link rel="stylesheet" href="css/telvoice-type-lab.css?v=20260614c" />
+  <link rel="stylesheet" href="css/telvoice-hero-slider.css?v=20260614c" />
   <link rel="stylesheet" href="css/telvoice-web-agent.css?v=20260718" data-tva-css="1" />
   <script type="application/ld+json">
     {
@@ -3030,7 +3038,7 @@
 
   <main>
     <!-- Hero Section -->
-    <section class="section-hero-wrap relative w-full bg-white" id="inicio">
+    <section class="section-hero-wrap relative w-full bg-white" id="inicio" aria-labelledby="hero-title">
       <div class="hero-atmosphere" aria-hidden="true">
         <div class="hero-bg-base"></div>
         <div class="hero-bg-skywash"></div>
@@ -3068,52 +3076,173 @@
       <div class="relative z-10 mx-auto max-w-container-max px-4 sm:px-margin-page">
       <div class="hero-main-row flex flex-col md:flex-row items-start justify-between gap-8 md:gap-16">
         <div class="hero-copy flex flex-1 flex-col px-4 md:px-0 md:pl-20 lg:pl-28 xl:pl-36">
-          <div class="flex w-full flex-col items-center gap-stack-md md:items-start tv-hero-copy-stack">
-              <div class="tv-hero-eyebrow">
-                <span class="tv-hero-pill-dot" aria-hidden="true"></span>
-                <span>SMS masivos · Chile</span>
-              </div>
-              <h1 class="tv-hero-title font-h1 text-h1 text-on-background">
-                <span class="tv-hero-word tv-hero-word--ink">SMS masivos en Chile con </span><span class="tv-hero-word tv-hero-word--blue">gestión asistida para empresas</span>
-              </h1>
-              <p class="tv-hero-subtitle hero-intro">
-                Envía campañas, notificaciones, validaciones y alertas empresariales con rutas SMS directas.
-              </p>
-              <div class="tv-hero-capabilities" aria-label="Capacidades del servicio SMS">
-                <div class="tv-hero-capabilities-grid">
-                  <article class="tv-hero-capability-item">
-                    <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">description</span>
-                    <div class="tv-hero-capability__body">
-                      <strong class="tv-hero-capability__title">Campañas CSV</strong>
-                      <p class="tv-hero-capability__text">Carga tu base, valida contactos y prepara campañas en minutos.</p>
-                    </div>
-                  </article>
-                  <article class="tv-hero-capability-item">
-                    <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">shopping_cart</span>
-                    <div class="tv-hero-capability__body">
-                      <strong class="tv-hero-capability__title">Compra online</strong>
-                      <p class="tv-hero-capability__text">Compra bolsas SMS desde el panel y activa saldo para tus envíos.</p>
-                    </div>
-                  </article>
-                  <article class="tv-hero-capability-item">
-                    <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">task_alt</span>
-                    <div class="tv-hero-capability__body">
-                      <strong class="tv-hero-capability__title">Control antes de enviar</strong>
-                      <p class="tv-hero-capability__text">Revisa consumo, destinatarios y confirmación antes de ejecutar.</p>
-                    </div>
-                  </article>
-                  <article class="tv-hero-capability-item">
-                    <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">bar_chart</span>
-                    <div class="tv-hero-capability__body">
-                      <strong class="tv-hero-capability__title">Estados de entrega</strong>
-                      <p class="tv-hero-capability__text">Consulta reportes y estados DLR para entender el resultado de tus mensajes.</p>
-                    </div>
-                  </article>
+          <div class="tv-hero-slider" id="hero-copy-slider" data-autoplay="7000">
+            <div class="tv-hero-slider-copy">
+              <article class="tv-hero-slide is-active" data-slide="0" aria-hidden="false">
+                <div class="tv-hero-eyebrow">
+                  <span class="tv-hero-pill-dot" aria-hidden="true"></span>
+                  <span>SMS masivos · Chile</span>
+                </div>
+                <h1 id="hero-title" class="tv-hero-title font-h1 text-h1 text-on-background">
+                  <span class="tv-hero-word tv-hero-word--ink">SMS masivos en Chile con </span><span class="tv-hero-word tv-hero-word--blue">gestión asistida para empresas</span>
+                </h1>
+                <p class="tv-hero-subtitle hero-intro">
+                  Envía campañas, notificaciones, validaciones y alertas empresariales con rutas SMS directas.
+                </p>
+              </article>
+
+              <article class="tv-hero-slide" data-slide="1" aria-hidden="true">
+                <div class="tv-hero-eyebrow">
+                  <span class="tv-hero-pill-dot" aria-hidden="true"></span>
+                  <span>Números móviles reales</span>
+                </div>
+                <h2 class="tv-hero-title tv-hero-slide-title font-h1 text-h1 text-on-background">
+                  <span class="tv-hero-word tv-hero-word--ink">Números SIM reales para cuentas digitales de </span><span class="tv-hero-word tv-hero-word--blue">empresa</span>
+                </h2>
+                <p class="tv-hero-subtitle hero-intro">
+                  Centraliza recepción SMS, registros, códigos y validaciones autorizadas con numeración móvil real
+                </p>
+              </article>
+
+              <article class="tv-hero-slide" data-slide="2" aria-hidden="true">
+                <div class="tv-hero-eyebrow">
+                  <span class="tv-hero-pill-dot" aria-hidden="true"></span>
+                  <span>Agentes con números reales</span>
+                </div>
+                <h2 class="tv-hero-title tv-hero-slide-title font-h1 text-h1 text-on-background">
+                  <span class="tv-hero-word tv-hero-word--ink">Números SIM reales para </span><span class="tv-hero-word tv-hero-word--blue">agentes y operación empresarial</span>
+                </h2>
+                <p class="tv-hero-subtitle hero-intro">
+                  Recibe SMS, códigos, alertas y eventos operativos en agentes autorizados, automatizaciones y equipos
+                </p>
+              </article>
+            </div>
+
+            <div class="tv-hero-cap-stack">
+              <div class="tv-hero-cap-slide is-active" data-slide="0" aria-hidden="false">
+                <div class="tv-hero-capabilities" aria-label="Beneficios SMS masivos">
+                  <div class="tv-hero-capabilities-grid">
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">campaign</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Campañas SMS</strong>
+                        <p class="tv-hero-capability__text">Prepara envíos comerciales, informativos o transaccionales desde un panel simple.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">shopping_cart</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Compra online</strong>
+                        <p class="tv-hero-capability__text">Elige volumen, paga online y activa saldo para comenzar a operar.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">support_agent</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Gestión asistida</strong>
+                        <p class="tv-hero-capability__text">Tu agente Telvoice te ayuda a preparar campañas, revisar datos y resolver dudas antes de enviar.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">bar_chart</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Reportes de entrega</strong>
+                        <p class="tv-hero-capability__text">Consulta estados, resultados y trazabilidad de tus mensajes.</p>
+                      </div>
+                    </article>
+                  </div>
                 </div>
               </div>
-          </div>
-          <div class="hero-cta-row pt-stack-sm">
-            <a href="#calculadora" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_compra_bolsa">Comprar bolsa SMS</a>
+              <div class="tv-hero-cap-slide" data-slide="1" aria-hidden="true">
+                <div class="tv-hero-capabilities" aria-label="Beneficios números SIM reales">
+                  <div class="tv-hero-capabilities-grid">
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">sim_card</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">SIM real única</strong>
+                        <p class="tv-hero-capability__text">Usa numeración móvil real para cuentas propias, procesos internos o canales corporativos.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">sms</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Recepción SMS</strong>
+                        <p class="tv-hero-capability__text">Centraliza mensajes, códigos, respuestas y alertas en un canal empresarial.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">verified_user</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Validación autorizada</strong>
+                        <p class="tv-hero-capability__text">Opera registros, accesos y verificaciones bajo control de tu empresa.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">work</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Separación operativa</strong>
+                        <p class="tv-hero-capability__text">Evita depender del teléfono personal de gerentes, colaboradores o equipos externos.</p>
+                      </div>
+                    </article>
+                  </div>
+                </div>
+              </div>
+              <div class="tv-hero-cap-slide" data-slide="2" aria-hidden="true">
+                <div class="tv-hero-capabilities" aria-label="Beneficios agentes y automatización">
+                  <div class="tv-hero-capabilities-grid">
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">shield</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Validaciones autorizadas</strong>
+                        <p class="tv-hero-capability__text">Recibe OTP, códigos y verificaciones en cuentas o procesos bajo control de tu empresa.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">smart_toy</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Agentes conectados</strong>
+                        <p class="tv-hero-capability__text">Conecta numeración real con bots, agentes conversacionales y flujos automatizados.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">groups</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Operación por equipos</strong>
+                        <p class="tv-hero-capability__text">Permite que áreas comerciales, fintech, growth o soporte operen sin depender de un móvil personal.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">hub</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Recepción centralizada</strong>
+                        <p class="tv-hero-capability__text">Gestiona mensajes, alertas y eventos críticos desde una operación trazable y compartida.</p>
+                      </div>
+                    </article>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="tv-hero-cta-stack">
+              <div class="tv-hero-cta-slide is-active" data-slide="0" aria-hidden="false">
+                <div class="hero-cta-row pt-stack-sm">
+                  <a href="#calculadora" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_comprar_sms_hero">Comprar SMS</a>
+                  <a href="#hero-phone-slot" class="hero-cta-secondary inline-flex items-center justify-center rounded-full font-body-md font-semibold shadow-sm transition" data-track="click_hablar_agente_hero">Hablar con el agente</a>
+                </div>
+              </div>
+              <div class="tv-hero-cta-slide" data-slide="1" aria-hidden="true">
+                <div class="hero-cta-row pt-stack-sm">
+                  <a href="/numeracion-sim.html" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_solicitar_numero_hero">Solicitar número real</a>
+                  <a href="#casos-uso" class="hero-cta-secondary inline-flex items-center justify-center rounded-full font-body-md font-semibold shadow-sm transition" data-track="click_ver_casos_uso_hero">Ver casos de uso</a>
+                </div>
+              </div>
+              <div class="tv-hero-cta-slide" data-slide="2" aria-hidden="true">
+                <div class="hero-cta-row pt-stack-sm">
+                  <a href="/numeracion-sim.html" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_activar_agente_numero_hero">Activar agente con número real</a>
+                  <a href="#casos-uso" class="hero-cta-secondary inline-flex items-center justify-center rounded-full font-body-md font-semibold shadow-sm transition" data-track="click_ver_soluciones_empresariales_hero">Ver soluciones empresariales</a>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="hero-tags-below hero-tags-mobile relative z-10 flex w-full flex-col items-center md:hidden">
             <ul class="hero-use-tags hero-tags-row" role="list" aria-label="Usos del servicio SMS">
@@ -3125,7 +3254,7 @@
           </div>
 
         </div>
-        <div class="hero-phone-slot hero-phone-slot--agent">
+        <div class="hero-phone-slot hero-phone-slot--agent" id="hero-phone-slot">
           <div class="hero-phone-float hero-phone-float--agent" aria-label="Agente comercial Telvoice en teléfono demo">
             <div class="hero-phone-notch" aria-hidden="true"></div>
             <div class="hero-phone-screen tv-light-theme">
@@ -3142,6 +3271,11 @@
           </div>
         </div>
       </div>
+      <nav class="tv-hero-dots tv-hero-dots--below-columns" id="hero-slider-dots" aria-label="Servicios destacados Telvoice">
+        <button type="button" class="tv-hero-dot is-active" data-slide-to="0" aria-label="Ver SMS masivos" aria-current="true"></button>
+        <button type="button" class="tv-hero-dot" data-slide-to="1" aria-label="Ver números SIM reales"></button>
+        <button type="button" class="tv-hero-dot" data-slide-to="2" aria-label="Ver agentes y automatización"></button>
+      </nav>
       <div class="hero-tags-below hero-tags-desktop relative z-10 hidden flex-col items-center md:flex">
         <ul class="hero-use-tags hero-tags-row flex w-full max-w-5xl flex-nowrap justify-center gap-2 overflow-x-auto py-1 sm:justify-center" role="list" aria-label="Usos del servicio SMS">
           <li class="shrink-0">
@@ -3799,6 +3933,7 @@
 
   <script src="js/telvoice-config.js"></script>
   <script src="js/telvoice-app.js"></script>
+  <script src="js/telvoice-hero-slider.js?v=20260614c"></script>
   <script src="js/telvoice-web-agent-loader.js" data-root="" data-embed-target="#hero-agent-embed"></script>
 </body>
 </html>
