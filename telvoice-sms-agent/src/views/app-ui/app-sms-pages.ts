@@ -10,7 +10,10 @@ import type { SendControlPanelView } from "../../services/smsSendControlPanelSer
 import { escapeHtml } from "../../utils/html.js";
 import { renderKpiCard } from "../admin-ui/components.js";
 import type { ClientSmsTemplateStatus } from "../../types/sms-templates.js";
-import { suggestSenderIdFromCompanyName } from "../../utils/suggestSenderId.js";
+import {
+  resolveAccreditedCompanyName,
+  suggestSenderIdFromCompany,
+} from "../../utils/suggestSenderId.js";
 import {
   renderBtn,
   renderHeroPhonePreview,
@@ -362,8 +365,9 @@ export function renderAppSendSmsPage(
       : !canSubmit
         ? `<div class="alert alert-warn tv-send-block-reason" role="status">Puedes preparar el mensaje; el envío se habilitará cuando tu cuenta cumpla los requisitos del checklist.</div>`
         : "";
-  const suggestedSenderId = suggestSenderIdFromCompanyName(ctx.company.name);
-  const companyDisplayName = ctx.company.name.trim() || "Tu empresa";
+  const accreditedCompanyName = resolveAccreditedCompanyName(ctx.company);
+  const suggestedSenderId = suggestSenderIdFromCompany(ctx.company);
+  const companyDisplayName = accreditedCompanyName || "Tu empresa";
 
   const headerNavBtn = (label: string, href: string, icon: string) =>
     `<a href="${escapeHtml(href)}" class="btn btn-ghost btn-sm tv-head-nav-btn" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
@@ -462,7 +466,7 @@ export function renderAppSendSmsPage(
               <div class="form-group">
                 <label for="sender_id">Remitente / Sender ID</label>
                 <input id="sender_id" class="tv-input-full" name="sender_id" value="${escapeHtml(suggestedSenderId)}" placeholder="${escapeHtml(suggestedSenderId)}" required maxlength="11" pattern="[A-Za-z0-9]+" title="Solo letras y números, máximo 11 caracteres" ${disabledAttr} />
-                <p class="field-hint">Sugerencia según tu empresa registrada: <strong>${escapeHtml(ctx.company.name)}</strong></p>
+                <p class="field-hint">Sugerencia según tu empresa acreditada: <strong>${escapeHtml(accreditedCompanyName || "—")}</strong></p>
               </div>
             </div>
             <div class="tv-send-meta-row tv-send-recipient-row">
@@ -1188,6 +1192,7 @@ export function renderAppInboxPage(
   filters?: AppInboxPageFilters,
 ): string {
   const f = filters ?? {};
+  const senderFilterPlaceholder = `Ej. ${suggestSenderIdFromCompany(ctx.company)}`;
   const status = (f.status ?? "").trim();
   const statusOpts = [
     ["", "Todos"],
@@ -1217,7 +1222,7 @@ export function renderAppInboxPage(
             ${renderFilterField("Desde", `<input type="date" name="start_date" class="tv-filter-input" value="${escapeHtml(f.startDate ?? "")}" />`)}
             ${renderFilterField("Hasta", `<input type="date" name="end_date" class="tv-filter-input" value="${escapeHtml(f.endDate ?? "")}" />`)}
             ${renderFilterField("Estado", `<select name="status" class="tv-filter-input">${statusOpts}</select>`)}
-            ${renderFilterField("Remitente", `<input type="text" name="sender_id" class="tv-filter-input" placeholder="Ej. TELVOICE" value="${escapeHtml(f.senderId ?? "")}" />`)}
+            ${renderFilterField("Remitente", `<input type="text" name="sender_id" class="tv-filter-input" placeholder="${escapeHtml(senderFilterPlaceholder)}" value="${escapeHtml(f.senderId ?? "")}" />`)}
             ${renderFilterField("Destinatario", `<input type="text" name="recipient" class="tv-filter-input" placeholder="Ej. +569…" value="${escapeHtml(f.recipient ?? "")}" />`)}
             ${renderFilterField("Referencia", `<input type="text" name="reference" class="tv-filter-input" placeholder="Ej. 22486311" value="${escapeHtml(f.reference ?? "")}" />`)}
             <div class="tv-dlr-report__filter-actions">
@@ -1271,6 +1276,7 @@ export function renderAppCampaignsPage(
   },
 ): string {
   const f = filters ?? {};
+  const senderFilterPlaceholder = `Ej. ${suggestSenderIdFromCompany(ctx.company)}`;
   const status = (f.status ?? "").trim();
   const statusOpts = [
     ["", "Todos"],
@@ -1314,7 +1320,7 @@ export function renderAppCampaignsPage(
             ${renderFilterField("Desde", `<input type="date" name="start_date" class="tv-filter-input" value="${escapeHtml(f.startDate ?? "")}" />`)}
             ${renderFilterField("Hasta", `<input type="date" name="end_date" class="tv-filter-input" value="${escapeHtml(f.endDate ?? "")}" />`)}
             ${renderFilterField("Estado", `<select name="status" class="tv-filter-input">${statusOpts}</select>`)}
-            ${renderFilterField("Remitente", `<input type="text" name="sender_id" class="tv-filter-input" placeholder="Ej. TELVOICE" value="${escapeHtml(f.senderId ?? "")}" />`)}
+            ${renderFilterField("Remitente", `<input type="text" name="sender_id" class="tv-filter-input" placeholder="${escapeHtml(senderFilterPlaceholder)}" value="${escapeHtml(f.senderId ?? "")}" />`)}
             ${renderFilterField("Nombre", `<input type="text" name="q" class="tv-filter-input" placeholder="Buscar por nombre" value="${escapeHtml(f.q ?? "")}" />`)}
             <div class="tv-dlr-report__filter-actions">
               <button type="submit" class="btn btn-primary btn-sm">Buscar</button>

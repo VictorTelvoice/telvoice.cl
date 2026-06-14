@@ -3,6 +3,7 @@ import type {
   ClientSettingsData,
 } from "../../types/client-settings.js";
 import { escapeHtml } from "../../utils/html.js";
+import { suggestSenderIdFromCompany } from "../../utils/suggestSenderId.js";
 import { renderPageHeader, renderTabs } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
@@ -32,6 +33,7 @@ function countryLabel(code: string): string {
 export function buildDefaultClientSettings(ctx: AppPageContext): ClientSettingsData {
   const c = ctx.company;
   const p = ctx.profile;
+  const defaultSenderId = suggestSenderIdFromCompany(c);
   const meta = (c.metadata ?? {}) as Record<string, unknown>;
   const str = (k: string) => {
     const v = meta[k];
@@ -88,7 +90,7 @@ export function buildDefaultClientSettings(ctx: AppPageContext): ClientSettingsD
       homePage: "dashboard",
       ticketView: "table",
       showQuickHelp: true,
-      defaultSender: "Telvoice",
+      defaultSender: defaultSenderId,
       defaultCountry: "Chile",
       phoneFormat: "e164",
       warnMultiSms: true,
@@ -428,7 +430,7 @@ function renderNotificacionesTab(): string {
   </div>`;
 }
 
-function renderPreferenciasTab(): string {
+function renderPreferenciasTab(senderPlaceholder: string): string {
   return `<div class="tv-settings-tab-panel" data-tv-settings-tab="preferencias">
     <section class="tv-panel">
       <header class="tv-section-head" style="padding:1rem 1.25rem 0">
@@ -469,7 +471,7 @@ function renderPreferenciasTab(): string {
       </header>
       <div class="tv-panel__body">
         <div class="tv-settings-form-grid">
-          ${field("Remitente por defecto", textInput("tv-set-p-sender", "Telvoice"))}
+          ${field("Remitente por defecto", textInput("tv-set-p-sender", senderPlaceholder))}
           ${field("País por defecto para envíos", `<select id="tv-set-p-sms-country" class="tv-input-full" data-settings-field>
             <option>Chile</option><option>Argentina</option><option>Brasil</option>
             <option>Perú</option><option>México</option><option>Colombia</option><option>Otro</option>
@@ -938,7 +940,7 @@ export function renderAppSettingsPage(
           ${renderFacturacionTab()}
           ${renderSeguridadTab(ctx)}
           ${renderNotificacionesTab()}
-          ${renderPreferenciasTab()}
+          ${renderPreferenciasTab(defaults.preferences.defaultSender)}
         </div>
       </div>
       ${renderAccountAside(ctx)}

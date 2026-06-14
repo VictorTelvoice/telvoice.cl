@@ -98,7 +98,7 @@ import {
 } from "../services/clientSupportTicketService.js";
 import type { SupportTicketPriority, SupportTicket } from "../types/support-tickets.js";
 import { renderAppCampaignNewPage } from "../views/app-ui/app-campaigns-new-page.js";
-import { suggestSenderIdFromCompanyName } from "../utils/suggestSenderId.js";
+import { suggestSenderIdFromCompany } from "../utils/suggestSenderId.js";
 import {
   audienceHiddenFields,
   buildCampaignPreviewFromRequest,
@@ -271,7 +271,7 @@ async function trySendProductionCampaignFromForm(
   }
 
   const senderId = String(
-    req.body?.sender_id ?? suggestSenderIdFromCompanyName(ctx.company.name),
+    req.body?.sender_id ?? suggestSenderIdFromCompany(ctx.company),
   ).trim();
   const campaignName =
     String(req.body?.campaign_name ?? "").trim() ||
@@ -921,7 +921,7 @@ export async function postAppSendSms(
       companyId: ctx.company.id,
       senderId: String(
         req.body?.sender_id ??
-          suggestSenderIdFromCompanyName(ctx.company.name),
+          suggestSenderIdFromCompany(ctx.company),
       ),
       to,
       message,
@@ -998,7 +998,7 @@ export async function getAppCampaignNew(
   await withAppContext(req, res, next, async (ctx) => {
     const params = audienceParamsFromRequest(req);
     const source = parseAudienceSourceFromQuery(params);
-    const defaultSenderId = suggestSenderIdFromCompanyName(ctx.company.name);
+    const defaultSenderId = suggestSenderIdFromCompany(ctx.company);
 
     if (!source) {
       return renderAppCampaignNewPage(ctx, {

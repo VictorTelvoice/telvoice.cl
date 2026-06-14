@@ -13,7 +13,7 @@ export function renderMassCampaignCsvPreviewScript(
   opts: MassCampaignCsvPreviewScriptOptions,
 ): string {
   const initialMode = opts.initialMode ?? "mass";
-  const suggestedSenderId = opts.suggestedSenderId ?? "TELVOICE";
+  const suggestedSenderId = opts.suggestedSenderId ?? "EMPRESA";
   const maxLiveSegments = opts.maxLiveSegments ?? 10;
   const maxPreviewRows = opts.maxPreviewRows ?? 12;
   const allowedLiveNumbers = opts.allowedLiveNumbers ?? [];
