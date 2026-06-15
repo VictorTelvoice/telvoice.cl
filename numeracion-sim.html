@@ -39,8 +39,9 @@
     };
   </script>
   <link rel="stylesheet" href="css/numeracion-sim-page.css" />
+  <link rel="stylesheet" href="css/telvoice-site-footer.css" />
 </head>
-<body class="nsim-page font-sans antialiased">
+<body class="nsim-page font-sans antialiased min-h-screen flex flex-col">
   <nav class="bg-surface/90 backdrop-blur-md sticky top-0 z-50 border-b border-outline-variant/30 w-full">
     <div class="flex justify-between items-center gap-4 py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 lg:pl-28 lg:pr-10 max-w-[1440px] mx-auto">
       <a href="index.html" class="flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" aria-label="Telvoice, ir al inicio">
@@ -88,19 +89,15 @@
     </div>
   </nav>
 
-  <main>
+  <main class="flex-1">
     <section id="nsim-planes" class="nsim-section nsim-section--lead" aria-labelledby="nsim-planes-title">
       <div class="nsim-section-inner">
         <p class="nsim-eyebrow nsim-eyebrow--center">Numeración SIM real · Suscripción</p>
         <h1 id="nsim-planes-title" class="nsim-section-title nsim-section-title--lead">Numeración SIM real Telvoice</h1>
-        <p class="nsim-section-intro">Activa una numeración SIM real bajo membresía recurrente para recibir SMS, validar procesos y comunicarte con clientes, agentes o equipos críticos.</p>
+        <p class="nsim-section-intro">Activa una numeración SIM para recibir SMS, validar procesos y comunicarte con clientes, agentes o equipos críticos.</p>
         <p class="nsim-section-intro nsim-section-intro--note">A diferencia de las bolsas SMS prepago, la numeración funciona como suscripción mensual o anual. La membresía anual aplica 20% de descuento y se paga por adelantado.</p>
 
-        <div class="nsim-billing-card" aria-label="Modalidad de membresía">
-          <div>
-            <p class="nsim-billing-card__label">Modalidad de membresía</p>
-            <p class="nsim-billing-card__text">Elige pago mensual recurrente o membresía anual con descuento.</p>
-          </div>
+        <div class="nsim-billing-card nsim-billing-card--switch-only" aria-label="Modalidad de pago">
           <div class="nsim-billing-switch" role="group" aria-label="Seleccionar modalidad de pago">
             <button type="button" class="nsim-billing-switch__button is-active" data-billing-cycle="monthly" aria-pressed="true">Mensual</button>
             <button type="button" class="nsim-billing-switch__button" data-billing-cycle="annual" aria-pressed="false">Anual <span>-20%</span></button>
@@ -113,7 +110,7 @@
             <h3 class="nsim-plan-name">Starter</h3>
             <p class="nsim-plan-price" data-nsim-price="sim_starter">$29.990 <span>/ mes</span></p>
             <p class="nsim-plan-price-subnote" data-nsim-price-note="sim_starter">Pago recurrente mensual.</p>
-            <p class="nsim-plan-desc">Para empresas que quieren activar su primer número SIM real con recepción SMS. Incluye asistencia del agente Telvoice sin costo adicional.</p>
+            <p class="nsim-plan-desc">Activa tu primer número SIM real con recepción SMS.</p>
             <ul class="nsim-plan-features">
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> 1 número SIM real</li>
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> 1.000 SMS salientes incluidos cada mes</li>
@@ -131,7 +128,7 @@
             <h3 class="nsim-plan-name">Pro</h3>
             <p class="nsim-plan-price" data-nsim-price="sim_pro">$49.990 <span>/ mes</span></p>
             <p class="nsim-plan-price-subnote" data-nsim-price-note="sim_pro">Pago recurrente mensual.</p>
-            <p class="nsim-plan-desc">Para empresas que necesitan mayor capacidad operativa, notificaciones por Telegram, webhooks e integraciones. Agente Telvoice incluido.</p>
+            <p class="nsim-plan-desc">Mayor capacidad operativa, notificaciones por Telegram, webhooks e integraciones.</p>
             <ul class="nsim-plan-features">
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Todo lo que incluye Starter</li>
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> 2.000 SMS salientes incluidos cada mes</li>
@@ -147,7 +144,6 @@
             <h3 class="nsim-plan-name">A medida</h3>
             <p class="nsim-plan-price nsim-plan-price--custom">Cotización personalizada</p>
             <p class="nsim-plan-price-subnote">Para múltiples números, volumen o integraciones especiales.</p>
-            <p class="nsim-plan-desc">Para empresas que necesitan más volumen, múltiples números, integraciones especiales, flujos de respuesta o automatizaciones avanzadas.</p>
             <ul class="nsim-plan-features">
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Múltiples números SIM reales</li>
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Volumen SMS personalizado</li>
@@ -195,9 +191,7 @@
     </section>
   </main>
 
-  <footer class="nsim-footer">
-    <p>© Telvoice · TelefoníaChile LTDA · <a href="index.html">Volver al inicio</a></p>
-  </footer>
+  <div id="telvoice-site-footer" data-root=""></div>
 
   <div id="nsim-purchase-modal" class="nsim-purchase-modal" hidden role="dialog" aria-modal="true" aria-labelledby="nsim-modal-title">
     <div class="nsim-purchase-modal__panel" role="document">
@@ -244,6 +238,7 @@
   </div>
 
   <script src="js/telvoice-config.js"></script>
+  <script src="js/telvoice-site-footer.js"></script>
   <script src="js/numeracion-sim-page.js"></script>
 </body>
 </html>

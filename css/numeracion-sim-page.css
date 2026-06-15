@@ -107,8 +107,21 @@
   box-shadow: 0 20px 50px -28px rgba(0, 82, 204, 0.28);
   backdrop-filter: blur(10px);
 }
+.nsim-billing-card--switch-only {
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  max-width: 12.5rem;
+  margin: 1.75rem auto 0;
+  padding: 0.2rem;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
 @media (min-width: 720px) {
   .nsim-billing-card { flex-direction: row; align-items: center; padding: 1rem 1.15rem 1rem 1.35rem; }
+  .nsim-billing-card--switch-only { padding: 0.2rem; }
 }
 .nsim-billing-card__label {
   margin: 0;
@@ -126,22 +139,32 @@
 .nsim-billing-switch {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.35rem;
-  padding: 0.35rem;
+  gap: 0.25rem;
+  padding: 0.25rem;
   border-radius: 9999px;
   background: #eef3ff;
   border: 1px solid rgba(0, 82, 204, 0.12);
+  width: 100%;
+}
+.nsim-billing-card--switch-only .nsim-billing-switch {
+  gap: 0.2rem;
+  padding: 0.2rem;
 }
 .nsim-billing-switch__button {
   border: none;
   border-radius: 9999px;
   background: transparent;
   color: var(--nsim-muted);
-  padding: 0.72rem 1rem;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.nsim-billing-card--switch-only .nsim-billing-switch__button {
+  padding: 0.45rem 0.55rem;
+  font-size: 0.75rem;
 }
 .nsim-billing-switch__button span {
   margin-left: 0.25rem;
@@ -359,5 +382,5 @@ body.nsim-modal-open { overflow: hidden; }
   .nsim-plan-card,
   .nsim-panel-api-card,
   .nsim-use-card { text-align: left; }
-  .nsim-billing-switch__button { padding-left: 0.75rem; padding-right: 0.75rem; }
+  .nsim-billing-card--switch-only .nsim-billing-switch__button { padding-left: 0.45rem; padding-right: 0.45rem; }
 }
