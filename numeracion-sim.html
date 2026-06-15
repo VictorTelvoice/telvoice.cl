@@ -3,14 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Compra numeración SIM real Telvoice en Chile: número móvil dedicado, SMS incluidos, recepción SMS y agente Telvoice incluido sin costo adicional." />
+  <meta name="description" content="Suscripción de numeración SIM real Telvoice en Chile: número móvil dedicado, SMS incluidos, recepción SMS, membresía mensual o anual y agente Telvoice incluido." />
   <meta name="robots" content="index, follow" />
-  <title>Numeración SIM real Telvoice | Planes y activación</title>
+  <title>Numeración SIM real Telvoice | Suscripción mensual o anual</title>
+  <link rel="canonical" href="https://www.telvoice.cl/numeracion-sim.html" />
   <link rel="icon" href="assets/telvoice-isotipo.png" type="image/png" />
   <meta name="theme-color" content="#0052cc" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Montserrat:wght@600;700&amp;display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Montserrat:wght@600;700;800&amp;display=swap" rel="stylesheet" />
   <script>
     tailwind.config = {
       theme: {
@@ -18,97 +21,132 @@
           colors: {
             primary: "#0052cc",
             background: "#faf8ff",
+            surface: "#faf8ff",
+            "surface-container-low": "#f2f3ff",
+            "surface-tint": "#0c56d0",
+            "outline-variant": "#c3c6d6",
             "on-background": "#131b2e",
             "on-surface-variant": "#434654",
-            surface: "#faf8ff",
-            "on-primary": "#ffffff",
+            "on-primary": "#ffffff"
           },
           fontFamily: {
             sans: ["Inter", "system-ui", "sans-serif"],
-          },
-        },
-      },
+            h3: ["Montserrat", "sans-serif"],
+            h1: ["Montserrat", "sans-serif"]
+          }
+        }
+      }
     };
   </script>
   <link rel="stylesheet" href="css/numeracion-sim-page.css" />
 </head>
 <body class="nsim-page font-sans antialiased">
-  <nav class="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-[#c3c6d6]/30 w-full">
-    <div class="flex justify-between items-center gap-4 py-4 px-4 sm:px-8 max-w-[1100px] mx-auto">
-      <a href="index.html" class="flex items-center gap-2 shrink-0" aria-label="Telvoice.cl, ir al inicio">
-        <img src="assets/telvoice-isotipo.png" alt="" width="36" height="36" class="h-9 w-9 object-contain" />
-        <span class="text-lg font-bold tracking-tight lowercase inline-flex items-baseline">
-          <span class="text-black">telvoice</span><span class="hero-grad-text">.cl</span>
-        </span>
+  <nav class="bg-surface/90 backdrop-blur-md sticky top-0 z-50 border-b border-outline-variant/30 w-full">
+    <div class="flex justify-between items-center gap-4 py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 lg:pl-28 lg:pr-10 max-w-[1440px] mx-auto">
+      <a href="index.html" class="flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" aria-label="Telvoice, ir al inicio">
+        <img src="assets/telvoice-isotipo.png" alt="Telvoice Chile" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" />
+        <span class="font-h3 text-2xl font-bold tracking-tight lowercase text-black">telvoice</span>
       </a>
       <ul class="hidden lg:flex gap-1 items-center">
         <li class="site-nav-dropdown">
-          <button type="button" class="site-nav-dropdown-toggle text-[#434654] hover:text-primary transition rounded-full px-4 py-2 text-sm font-medium" id="nav-precios-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-precios-menu">Precios</button>
-          <ul class="site-nav-dropdown-menu" id="nav-precios-menu" role="menu" hidden>
+          <button type="button" class="site-nav-dropdown-toggle text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2 text-sm font-medium" id="nav-precios-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-precios-menu">Precios</button>
+          <ul class="site-nav-dropdown-menu" id="nav-precios-menu" role="menu" aria-labelledby="nav-precios-toggle" hidden>
             <li role="none"><a class="site-nav-dropdown-link" href="index.html#calculadora" role="menuitem">Bolsas SMS</a></li>
             <li role="none"><a class="site-nav-dropdown-link" href="numeracion-sim.html" role="menuitem" aria-current="page">Numeración SIM</a></li>
           </ul>
         </li>
-        <li><a class="text-sm text-[#434654] hover:text-primary transition rounded-full px-4 py-2" href="index.html#casos-uso">Casos de uso</a></li>
-        <li><a class="text-sm text-[#434654] hover:text-primary transition rounded-full px-4 py-2" href="index.html#contacto">Contacto</a></li>
+        <li><a class="text-sm text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="index.html#casos-uso">Casos de uso</a></li>
+        <li><a class="text-sm text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="index.html#api">API</a></li>
+        <li><a class="text-sm text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="index.html#contacto">Contacto</a></li>
+        <li><a class="text-sm text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="ayuda/">Centro de ayuda</a></li>
       </ul>
-      <button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-[#c3c6d6]/60" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
-        <span class="material-symbols-outlined" id="menu-icon-open">menu</span>
-        <span class="material-symbols-outlined hidden" id="menu-icon-close">close</span>
-      </button>
+      <div class="nav-actions flex items-center gap-2 shrink-0">
+        <a href="#nsim-planes" id="nav-suscribir-sim" class="nav-sales-btn hidden sm:inline-flex bg-primary text-on-primary px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm no-underline">Suscribir número</a>
+        <button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant/60 text-on-background" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
+          <span class="material-symbols-outlined" id="menu-icon-open">menu</span>
+          <span class="material-symbols-outlined hidden" id="menu-icon-close">close</span>
+        </button>
+      </div>
     </div>
-    <div id="mobile-panel" class="hidden lg:hidden border-t border-[#c3c6d6]/30 bg-white/95 py-4 px-4 max-w-[1100px] mx-auto">
+    <div id="mobile-panel" class="hidden lg:hidden border-t border-outline-variant/30 bg-surface/95 backdrop-blur-md py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 max-w-[1440px] mx-auto">
       <ul class="flex flex-col gap-1">
         <li class="site-nav-dropdown site-nav-dropdown--mobile">
-          <button type="button" class="site-nav-dropdown-toggle block w-full text-left py-3 px-4 rounded-xl text-[#434654]" id="nav-precios-toggle-mobile" aria-expanded="false" aria-controls="nav-precios-menu-mobile">Precios</button>
+          <button type="button" class="site-nav-dropdown-toggle block w-full text-left py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" id="nav-precios-toggle-mobile" aria-expanded="false" aria-controls="nav-precios-menu-mobile">Precios</button>
           <ul class="site-nav-dropdown-menu site-nav-dropdown-menu--mobile" id="nav-precios-menu-mobile" hidden>
             <li><a class="site-nav-dropdown-link" href="index.html#calculadora">Bolsas SMS</a></li>
-            <li><a class="site-nav-dropdown-link" href="numeracion-sim.html">Numeración SIM</a></li>
+            <li><a class="site-nav-dropdown-link" href="numeracion-sim.html" aria-current="page">Numeración SIM</a></li>
           </ul>
         </li>
-        <li><a class="block py-3 px-4 rounded-xl text-[#434654]" href="index.html#contacto">Contacto</a></li>
+        <li><a class="block py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="index.html#casos-uso">Casos de uso</a></li>
+        <li><a class="block py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="index.html#api">API</a></li>
+        <li><a class="block py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="index.html#contacto">Contacto</a></li>
+        <li><a class="block py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="ayuda/">Centro de ayuda</a></li>
       </ul>
+      <div class="mt-4 sm:hidden">
+        <a href="#nsim-planes" class="block w-full text-center bg-primary text-on-primary py-3 rounded-full hover:bg-surface-tint transition-colors no-underline">Suscribir número</a>
+      </div>
     </div>
   </nav>
 
   <main>
     <section id="nsim-planes" class="nsim-section nsim-section--lead" aria-labelledby="nsim-planes-title">
       <div class="nsim-section-inner">
+        <p class="nsim-eyebrow nsim-eyebrow--center">Numeración SIM real · Suscripción</p>
         <h1 id="nsim-planes-title" class="nsim-section-title nsim-section-title--lead">Numeración SIM real Telvoice</h1>
-        <p class="nsim-section-intro">Compra una numeración SIM real para recibir SMS, validar procesos y comunicarte con clientes o equipos críticos. El agente Telvoice viene incluido para guiarte en la activación, uso de la bandeja SMS entrantes e integraciones.</p>
-        <p class="nsim-section-intro nsim-section-intro--note">La activación de la numeración es manual y queda sujeta a disponibilidad y validación comercial. Los SMS incluidos dependen del plan de numeración contratado.</p>
+        <p class="nsim-section-intro">Activa una numeración SIM real bajo membresía recurrente para recibir SMS, validar procesos y comunicarte con clientes, agentes o equipos críticos.</p>
+        <p class="nsim-section-intro nsim-section-intro--note">A diferencia de las bolsas SMS prepago, la numeración funciona como suscripción mensual o anual. La membresía anual aplica 20% de descuento y se paga por adelantado.</p>
+
+        <div class="nsim-billing-card" aria-label="Modalidad de membresía">
+          <div>
+            <p class="nsim-billing-card__label">Modalidad de membresía</p>
+            <p class="nsim-billing-card__text">Elige pago mensual recurrente o membresía anual con descuento.</p>
+          </div>
+          <div class="nsim-billing-switch" role="group" aria-label="Seleccionar modalidad de pago">
+            <button type="button" class="nsim-billing-switch__button is-active" data-billing-cycle="monthly" aria-pressed="true">Mensual</button>
+            <button type="button" class="nsim-billing-switch__button" data-billing-cycle="annual" aria-pressed="false">Anual <span>-20%</span></button>
+          </div>
+        </div>
+
         <div class="nsim-plans-grid">
           <article class="nsim-plan-card" data-nsim-plan="sim_starter" tabindex="0">
+            <span class="nsim-plan-billing-badge" data-nsim-billing-label="sim_starter">Suscripción mensual</span>
             <h3 class="nsim-plan-name">Starter</h3>
-            <p class="nsim-plan-price">$29.990 <span>/ mes</span></p>
+            <p class="nsim-plan-price" data-nsim-price="sim_starter">$29.990 <span>/ mes</span></p>
+            <p class="nsim-plan-price-subnote" data-nsim-price-note="sim_starter">Pago recurrente mensual.</p>
             <p class="nsim-plan-desc">Para empresas que quieren activar su primer número SIM real con recepción SMS. Incluye asistencia del agente Telvoice sin costo adicional.</p>
             <ul class="nsim-plan-features">
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> 1 número SIM real</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> 1.000 SMS salientes incluidos</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> 1.000 SMS salientes incluidos cada mes</li>
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Recepción SMS</li>
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Panel web Telvoice</li>
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Agente Telvoice incluido</li>
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Activación asistida</li>
             </ul>
-            <button type="button" class="nsim-btn-primary nsim-plan-cta" data-nsim-plan="sim_starter">Comprar Starter</button>
+            <button type="button" class="nsim-btn-primary nsim-plan-cta" data-nsim-plan="sim_starter">Suscribirme Starter</button>
           </article>
+
           <article class="nsim-plan-card is-featured" data-nsim-plan="sim_pro" tabindex="0">
             <span class="nsim-plan-ribbon">Popular</span>
+            <span class="nsim-plan-billing-badge" data-nsim-billing-label="sim_pro">Suscripción mensual</span>
             <h3 class="nsim-plan-name">Pro</h3>
-            <p class="nsim-plan-price">$49.990 <span>/ mes</span></p>
+            <p class="nsim-plan-price" data-nsim-price="sim_pro">$49.990 <span>/ mes</span></p>
+            <p class="nsim-plan-price-subnote" data-nsim-price-note="sim_pro">Pago recurrente mensual.</p>
             <p class="nsim-plan-desc">Para empresas que necesitan mayor capacidad operativa, notificaciones por Telegram, webhooks e integraciones. Agente Telvoice incluido.</p>
             <ul class="nsim-plan-features">
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Todo lo que incluye Starter</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> 2.000 SMS salientes incluidos cada mes</li>
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Bot de Telegram para alertas y operación</li>
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Automatizaciones iniciales</li>
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Webhooks/API para integración</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Mayor capacidad operativa</li>
             </ul>
-            <button type="button" class="nsim-btn-primary nsim-plan-cta" data-nsim-plan="sim_pro">Comprar Pro</button>
+            <button type="button" class="nsim-btn-primary nsim-plan-cta" data-nsim-plan="sim_pro">Suscribirme Pro</button>
           </article>
+
           <article class="nsim-plan-card nsim-plan-card--custom" data-nsim-plan="custom" tabindex="0">
+            <span class="nsim-plan-billing-badge nsim-plan-billing-badge--custom">Contrato comercial</span>
             <h3 class="nsim-plan-name">A medida</h3>
             <p class="nsim-plan-price nsim-plan-price--custom">Cotización personalizada</p>
+            <p class="nsim-plan-price-subnote">Para múltiples números, volumen o integraciones especiales.</p>
             <p class="nsim-plan-desc">Para empresas que necesitan más volumen, múltiples números, integraciones especiales, flujos de respuesta o automatizaciones avanzadas.</p>
             <ul class="nsim-plan-features">
               <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Múltiples números SIM reales</li>
@@ -130,29 +168,13 @@
         <h2 id="nsim-panel-api-title" class="nsim-section-title">Conecta Telvoice a tu operación</h2>
         <p class="nsim-section-intro">Panel web, Bot de Telegram, Webhooks o API REST. Elige la forma más simple o más avanzada para operar campañas, recibir eventos e integrar tus sistemas.</p>
         <div class="nsim-panel-api-grid">
-          <article class="nsim-panel-api-card">
-            <span class="material-symbols-outlined nsim-panel-api-icon" aria-hidden="true">dashboard</span>
-            <h4>Panel web</h4>
-            <p>Campañas, saldo, numeraciones y reportes en una interfaz simple.</p>
-          </article>
-          <article class="nsim-panel-api-card">
-            <span class="material-symbols-outlined nsim-panel-api-icon" aria-hidden="true">send</span>
-            <h4>Telegram Bot</h4>
-            <p>Recibe alertas, notificaciones de SMS y acciones operativas directo en Telegram.</p>
-          </article>
-          <article class="nsim-panel-api-card">
-            <span class="material-symbols-outlined nsim-panel-api-icon" aria-hidden="true">hub</span>
-            <h4>Webhooks</h4>
-            <p>Envía eventos automáticos a tus flujos, sistemas internos o automatizaciones.</p>
-          </article>
-          <article class="nsim-panel-api-card">
-            <span class="material-symbols-outlined nsim-panel-api-icon" aria-hidden="true">api</span>
-            <h4>API REST</h4>
-            <p>Integra Telvoice con CRM, ecommerce, plataformas propias o agentes internos.</p>
-          </article>
+          <article class="nsim-panel-api-card"><span class="material-symbols-outlined nsim-panel-api-icon" aria-hidden="true">dashboard</span><h4>Panel web</h4><p>Campañas, saldo, numeraciones y reportes en una interfaz simple.</p></article>
+          <article class="nsim-panel-api-card"><span class="material-symbols-outlined nsim-panel-api-icon" aria-hidden="true">send</span><h4>Telegram Bot</h4><p>Recibe alertas, notificaciones de SMS y acciones operativas directo en Telegram.</p></article>
+          <article class="nsim-panel-api-card"><span class="material-symbols-outlined nsim-panel-api-icon" aria-hidden="true">hub</span><h4>Webhooks</h4><p>Envía eventos automáticos a tus flujos, sistemas internos o automatizaciones.</p></article>
+          <article class="nsim-panel-api-card"><span class="material-symbols-outlined nsim-panel-api-icon" aria-hidden="true">api</span><h4>API REST</h4><p>Integra Telvoice con CRM, ecommerce, plataformas propias o agentes internos.</p></article>
         </div>
         <div class="nsim-panel-api-ctas">
-          <button type="button" class="nsim-btn-secondary" data-scroll-to="nsim-planes">Ver conexiones</button>
+          <button type="button" class="nsim-btn-secondary" data-scroll-to="nsim-planes">Ver planes</button>
           <a href="index.html#contacto" class="nsim-btn-primary">Consultar activación</a>
         </div>
       </div>
@@ -181,51 +203,30 @@
     <div class="nsim-purchase-modal__panel" role="document">
       <header class="nsim-purchase-modal__header">
         <div>
-          <h2 id="nsim-modal-title" class="nsim-purchase-modal__title">Comprar numeración SIM Starter</h2>
-          <p id="nsim-modal-subtitle" class="nsim-purchase-modal__subtitle">Completa tus datos para crear la orden y continuar al pago seguro por MercadoPago.</p>
+          <h2 id="nsim-modal-title" class="nsim-purchase-modal__title">Suscripción numeración SIM Starter</h2>
+          <p id="nsim-modal-subtitle" class="nsim-purchase-modal__subtitle">Completa tus datos para iniciar una suscripción recurrente por Mercado Pago.</p>
         </div>
         <button type="button" class="nsim-purchase-modal__close" id="nsim-modal-close" aria-label="Cerrar">
           <span class="material-symbols-outlined" aria-hidden="true">close</span>
         </button>
       </header>
       <div class="nsim-purchase-modal__body">
-        <ol id="nsim-modal-stepper" class="nsim-modal-stepper" aria-label="Pasos de compra">
+        <ol id="nsim-modal-stepper" class="nsim-modal-stepper" aria-label="Pasos de suscripción">
           <li class="nsim-modal-stepper__item is-active"><span>1</span> Datos</li>
-          <li class="nsim-modal-stepper__item"><span>2</span> Pago</li>
+          <li class="nsim-modal-stepper__item"><span>2</span> Suscripción</li>
           <li class="nsim-modal-stepper__item"><span>3</span> Activación</li>
         </ol>
         <aside id="nsim-modal-summary" class="nsim-modal-summary" aria-live="polite"></aside>
         <div id="nsim-modal-status" class="nsim-modal-status" hidden></div>
         <form id="nsim-purchase-form" class="nsim-modal-form" novalidate>
           <div class="nsim-form-grid">
-            <div class="nsim-field">
-              <label for="nsim-nombre">Nombre</label>
-              <input id="nsim-nombre" name="nombre" type="text" autocomplete="name" required />
-            </div>
-            <div class="nsim-field">
-              <label for="nsim-empresa">Empresa</label>
-              <input id="nsim-empresa" name="empresa" type="text" autocomplete="organization" />
-            </div>
-            <div class="nsim-field">
-              <label for="nsim-email">Email</label>
-              <input id="nsim-email" name="email" type="email" autocomplete="email" required />
-            </div>
-            <div class="nsim-field">
-              <label for="nsim-telefono">Teléfono</label>
-              <input id="nsim-telefono" name="telefono" type="tel" autocomplete="tel" />
-            </div>
-            <div class="nsim-field nsim-field--checkout-only">
-              <label for="nsim-rut">RUT o ID tributario</label>
-              <input id="nsim-rut" name="rut" type="text" />
-            </div>
-            <div class="nsim-field nsim-field--full nsim-field--custom-only" hidden>
-              <label for="nsim-use-case">Caso de uso</label>
-              <textarea id="nsim-use-case" name="use_case" rows="2" placeholder="Ej.: validaciones internas, alertas operativas…"></textarea>
-            </div>
-            <div class="nsim-field nsim-field--full nsim-field--custom-only" hidden>
-              <label for="nsim-volume">Volumen estimado mensual <span class="nsim-field-optional">(opcional)</span></label>
-              <input id="nsim-volume" name="volume" type="text" placeholder="Ej.: 5.000 SMS / mes" />
-            </div>
+            <div class="nsim-field"><label for="nsim-nombre">Nombre</label><input id="nsim-nombre" name="nombre" type="text" autocomplete="name" required /></div>
+            <div class="nsim-field"><label for="nsim-empresa">Empresa</label><input id="nsim-empresa" name="empresa" type="text" autocomplete="organization" /></div>
+            <div class="nsim-field"><label for="nsim-email">Email</label><input id="nsim-email" name="email" type="email" autocomplete="email" required /></div>
+            <div class="nsim-field"><label for="nsim-telefono">Teléfono</label><input id="nsim-telefono" name="telefono" type="tel" autocomplete="tel" /></div>
+            <div class="nsim-field nsim-field--checkout-only"><label for="nsim-rut">RUT o ID tributario</label><input id="nsim-rut" name="rut" type="text" /></div>
+            <div class="nsim-field nsim-field--full nsim-field--custom-only" hidden><label for="nsim-use-case">Caso de uso</label><textarea id="nsim-use-case" name="use_case" rows="2" placeholder="Ej.: validaciones internas, alertas operativas…"></textarea></div>
+            <div class="nsim-field nsim-field--full nsim-field--custom-only" hidden><label for="nsim-volume">Volumen estimado mensual <span class="nsim-field-optional">(opcional)</span></label><input id="nsim-volume" name="volume" type="text" placeholder="Ej.: 5.000 SMS / mes" /></div>
           </div>
           <div id="nsim-pending-order" class="nsim-pending-order" hidden aria-live="polite"></div>
           <div id="nsim-number-picker" class="nsim-number-picker nsim-field--checkout-only" hidden>
@@ -235,8 +236,8 @@
           </div>
           <p id="nsim-form-error" class="nsim-form-error" hidden role="alert"></p>
           <p id="nsim-stock-hint" class="nsim-form-hint" hidden></p>
-          <button type="submit" id="nsim-submit" class="nsim-btn-primary nsim-submit">Ir a pagar Starter</button>
-          <p id="nsim-modal-footnote" class="nsim-modal-footnote">El pago se procesa de forma segura por MercadoPago. Luego Telvoice coordina la activación de tu numeración.</p>
+          <button type="submit" id="nsim-submit" class="nsim-btn-primary nsim-submit">Activar suscripción Starter</button>
+          <p id="nsim-modal-footnote" class="nsim-modal-footnote">La numeración se cobra como membresía recurrente. Luego del pago, Telvoice coordina la activación de tu número.</p>
         </form>
       </div>
     </div>
