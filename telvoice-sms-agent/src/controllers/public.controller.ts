@@ -1,7 +1,11 @@
 import type { NextFunction, Request, Response } from "express";
 import { quoteSmsQuantity } from "../services/commercialQuoteService.js";
 import { createPublicLead } from "../services/publicLeadService.js";
-import { listActiveSmsProducts } from "../services/smsProductService.js";
+import {
+  getCachedActiveSmsProducts,
+  getCachedCustomerVisiblePackages,
+  getCachedPublicSimAvailability,
+} from "../services/publicCatalogCacheService.js";
 import { ValidationError } from "../utils/errors.js";
 import { createHash } from "node:crypto";
 import { getSupabase } from "../database/supabaseClient.js";
@@ -16,12 +20,10 @@ import {
 } from "../services/publicCheckoutService.js";
 import { runBillingSyncBestEffort } from "../services/billingSyncService.js";
 import { sendPostClaimEmailsBestEffort } from "../services/transactionalEmailService.js";
-import { listCustomerVisiblePackages } from "../services/smsPackageService.js";
 import { isSimAgentBundleOrder, isSimSubscriptionOrder } from "../utils/order-display.js";
 import { isSimPlanId, getBundledAgentAddonForSimPlan } from "../utils/simPlans.js";
 import { isAgentAddonId, type AgentAddonId } from "../utils/agentAddons.js";
 import { AppError } from "../utils/errors.js";
-import { getPublicAvailability } from "../services/realNumberInventoryService.js";
 import { linkSimActivationToCompany } from "../services/simActivationService.js";
 import {
   getBearerTokenFromRequestHeader,
@@ -35,7 +37,7 @@ export async function getPublicSimAvailability(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const availability = await getPublicAvailability();
+    const availability = await getCachedPublicSimAvailability();
     res.json({ success: true, ...availability });
   } catch (error) {
     next(error);
@@ -87,12 +89,12 @@ export async function getPublicProducts(
         ? _req.query.country_code.toUpperCase()
         : "CL";
 
-    const products = await listActiveSmsProducts(countryCode);
+    const products = await getCachedActiveSmsProducts(countryCode);
 
     // Preferimos sms_products si existe; si está vacío (por compatibilidad),
     // devolvemos un catálogo mínimo desde sms_packages visibles para web.
     if (!products.length) {
-      const packages = await listCustomerVisiblePackages(countryCode);
+      const packages = await getCachedCustomerVisiblePackages(countryCode);
       res.json({
         success: true,
         country_code: countryCode,
@@ -122,7 +124,7 @@ export async function getPublicProducts(
       return;
     }
 
-    const visiblePackages = await listCustomerVisiblePackages(countryCode);
+    const visiblePackages = await getCachedCustomerVisiblePackages(countryCode);
     const packageByKey = new Map<string, string>();
     const packageMetaByKey = new Map<string, Record<string, unknown>>();
     for (const p of visiblePackages) {

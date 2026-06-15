@@ -204,7 +204,7 @@ function renderPageScript(
 
   var knownIds = new Set(${JSON.stringify(knownIds)});
   var latestAt = ${JSON.stringify(latestAt)};
-  var pollBase = "/api/app/sms-inbox/messages";
+  var pollBase = "/api/app/sms-inbox/poll";
   var selectedNumberId = ${JSON.stringify(selectedNumberId)};
   var pollTimer = null;
 
@@ -225,7 +225,8 @@ function renderPageScript(
   }
 
   function buildPollUrl() {
-    return pollBase + (latestAt ? "?after=" + encodeURIComponent(latestAt) : "");
+    if (!latestAt) return pollBase;
+    return pollBase + "?after=" + encodeURIComponent(latestAt);
   }
 
   function formatBadgeCount(count) {

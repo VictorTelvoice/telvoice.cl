@@ -5,6 +5,7 @@ import {
   getApiNumeracionSms,
   getApiNumeraciones,
   getApiSmsInboxMessages,
+  getApiSmsInboxPoll,
   patchApiNumeracionConfig,
   postApiAgentPlanRequest,
   postApiNumeracionWebhookTest,
@@ -21,6 +22,7 @@ appNumeracionesApiRouter.use(requireClientPanelApi);
 
 appNumeracionesApiRouter.get("/numeraciones", getApiNumeraciones);
 appNumeracionesApiRouter.get("/sms-inbox/messages", getApiSmsInboxMessages);
+appNumeracionesApiRouter.get("/sms-inbox/poll", getApiSmsInboxPoll);
 appNumeracionesApiRouter.post("/sms-inbox/simulate", postApiSmsInboxSimulate);
 appNumeracionesApiRouter.get("/numeraciones/:id", getApiNumeracionById);
 appNumeracionesApiRouter.get("/numeraciones/:id/sms", getApiNumeracionSms);

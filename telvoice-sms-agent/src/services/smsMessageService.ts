@@ -113,7 +113,7 @@ async function countMessages(filter?: {
 }): Promise<number> {
   let query = getSupabase()
     .from("sms_messages")
-    .select("*", { count: "exact", head: true });
+    .select("id", { count: "exact", head: true });
 
   if (filter?.status) {
     query = query.eq("status", filter.status);

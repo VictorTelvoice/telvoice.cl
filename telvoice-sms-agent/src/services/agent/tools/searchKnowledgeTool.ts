@@ -3,7 +3,7 @@ import {
   KNOWLEDGE_MIN_SCORE,
   searchKnowledgeRaw,
 } from "../../knowledgeService.js";
-import { answerKnowledgeQuestion } from "../../telegramKnowledge.js";
+import { KNOWLEDGE_NOT_FOUND_MSG } from "../../telegramKnowledge.js";
 import type { AgentChannel } from "../types.js";
 import type { AgentToolContext, AgentToolResult } from "./types.js";
 
@@ -62,12 +62,10 @@ export async function searchKnowledgeForChannel(
     return { reply, confidence: conf, matched: true };
   }
 
-  const fallback = await answerKnowledgeQuestion(query);
-  const notFound = fallback.includes("No encontré una respuesta exacta");
   return {
-    reply: fallback,
-    confidence: notFound ? 0.25 : 0.45,
-    matched: !notFound,
+    reply: KNOWLEDGE_NOT_FOUND_MSG,
+    confidence: 0.25,
+    matched: false,
   };
 }
 

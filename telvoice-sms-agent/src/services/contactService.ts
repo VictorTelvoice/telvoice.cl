@@ -73,6 +73,9 @@ function resolveDisplayName(input: CreateContactInput): string {
   throw new AppError("El nombre del contacto es obligatorio.", 400);
 }
 
+const CONTACT_LIST_COLUMNS =
+  "id, company_id, first_name, last_name, display_name, phone, phone_normalized, email, status, source, consent_status, opt_out_at, created_at, updated_at";
+
 export async function findContactByPhone(
   companyId: string,
   phoneNormalized: string,
@@ -451,7 +454,7 @@ export async function listContacts(
 
   let query = getSupabase()
     .from("contacts")
-    .select("*")
+    .select(CONTACT_LIST_COLUMNS)
     .eq("company_id", companyId)
     .order("updated_at", { ascending: false })
     .limit(limit);
@@ -472,7 +475,14 @@ export async function listContacts(
     wrapSupabaseError(error, "listContacts");
   }
 
-  let rows = (data ?? []) as ContactRow[];
+  let rows = (data ?? []).map(
+    (row) =>
+      ({
+        ...row,
+        notes: null,
+        metadata: {},
+      }) as ContactRow,
+  );
 
   const q = (filters.q ?? "").trim().toLowerCase();
   if (q) {

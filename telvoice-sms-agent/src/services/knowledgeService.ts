@@ -20,6 +20,47 @@ const KNOWLEDGE_RELATED_SCORE_RATIO = 0.35;
 
 export const KNOWLEDGE_MAX_RELATED = 3;
 
+/** Columnas para búsqueda en memoria (evita select * y reduce egress). */
+const KNOWLEDGE_SEARCH_COLUMNS =
+  "id, title, category, keywords, content, is_active, allowed_channels, audience, priority, source_unanswered_question_id, created_at, updated_at";
+
+const KNOWLEDGE_LIST_COLUMNS =
+  "id, title, category, keywords, is_active, allowed_channels, audience, priority, updated_at, created_at";
+
+const KNOWLEDGE_CACHE_TTL_MS = 60_000;
+let activeKnowledgeCache: {
+  fetchedAt: number;
+  rows: KnowledgeArticleRow[];
+} | null = null;
+
+/** Invalida caché tras mutaciones admin (create/update/delete). */
+export function invalidateActiveKnowledgeCache(): void {
+  activeKnowledgeCache = null;
+}
+
+async function loadActiveKnowledgeArticles(): Promise<KnowledgeArticleRow[]> {
+  const now = Date.now();
+  if (
+    activeKnowledgeCache &&
+    now - activeKnowledgeCache.fetchedAt < KNOWLEDGE_CACHE_TTL_MS
+  ) {
+    return activeKnowledgeCache.rows;
+  }
+
+  const { data, error } = await getSupabase()
+    .from("knowledge_articles")
+    .select(KNOWLEDGE_SEARCH_COLUMNS)
+    .eq("is_active", true);
+
+  if (error) {
+    wrapSupabaseError(error, "loadActiveKnowledgeArticles");
+  }
+
+  const rows = (data ?? []) as KnowledgeArticleRow[];
+  activeKnowledgeCache = { fetchedAt: now, rows };
+  return rows;
+}
+
 const STOP_WORDS = new Set([
   "si",
   "que",
@@ -274,7 +315,7 @@ export async function listKnowledgeArticles(options?: {
 }): Promise<KnowledgeArticleRow[]> {
   let query = getSupabase()
     .from("knowledge_articles")
-    .select("*")
+    .select(KNOWLEDGE_LIST_COLUMNS)
     .order("updated_at", { ascending: false });
 
   if (options?.activeOnly) {
@@ -304,7 +345,7 @@ export async function listKnowledgeArticles(options?: {
 export async function countActiveKnowledgeArticles(): Promise<number> {
   const { count, error } = await getSupabase()
     .from("knowledge_articles")
-    .select("*", { count: "exact", head: true })
+    .select("id", { count: "exact", head: true })
     .eq("is_active", true);
 
   if (error) {
@@ -390,6 +431,7 @@ export async function createKnowledgeArticle(
     wrapSupabaseError(error, "createKnowledgeArticle");
   }
 
+  invalidateActiveKnowledgeCache();
   return data as KnowledgeArticleRow;
 }
 
@@ -426,6 +468,7 @@ export async function updateKnowledgeArticle(
     wrapSupabaseError(error, "updateKnowledgeArticle");
   }
 
+  invalidateActiveKnowledgeCache();
   return data as KnowledgeArticleRow;
 }
 
@@ -438,6 +481,7 @@ export async function deleteKnowledgeArticle(id: string): Promise<void> {
   if (error) {
     wrapSupabaseError(error, "deleteKnowledgeArticle");
   }
+  invalidateActiveKnowledgeCache();
 }
 
 export async function searchKnowledge(
@@ -449,19 +493,12 @@ export async function searchKnowledge(
     return [];
   }
 
-  const { data, error } = await getSupabase()
-    .from("knowledge_articles")
-    .select("*")
-    .eq("is_active", true);
-
-  if (error) {
-    wrapSupabaseError(error, "searchKnowledge");
-  }
+  const rows = await loadActiveKnowledgeArticles();
 
   const normalizedQuery = normalizeText(trimmed);
   const terms = tokenizeQuery(trimmed);
 
-  const ranked = ((data ?? []) as KnowledgeArticleRow[])
+  const ranked = rows
     .map((article) => ({
       article,
       score: scoreArticle(article, normalizedQuery, terms),
@@ -486,19 +523,12 @@ export async function searchKnowledgeRaw(
     return [];
   }
 
-  const { data, error } = await getSupabase()
-    .from("knowledge_articles")
-    .select("*")
-    .eq("is_active", true);
-
-  if (error) {
-    wrapSupabaseError(error, "searchKnowledge");
-  }
+  const rows = await loadActiveKnowledgeArticles();
 
   const normalizedQuery = normalizeText(trimmed);
   const terms = tokenizeQuery(trimmed);
 
-  return ((data ?? []) as KnowledgeArticleRow[])
+  return rows
     .map((article) => ({
       article,
       score: scoreArticle(article, normalizedQuery, terms),

@@ -9,6 +9,12 @@ import { isMissingTableError } from "../utils/db-table.js";
 import { AppError } from "../utils/errors.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 
+const PANEL_LIST_COLUMNS =
+  "id, company_id, campaign_id, recipient_number, sender_id, message, segments, cost_sms, provider, provider_message_id, operator, status, error_code, error_message, mode, sent_at, delivered_at, metadata, created_at, updated_at";
+
+const PANEL_ADMIN_LIST_COLUMNS =
+  "id, company_id, campaign_id, recipient_number, sender_id, message, segments, cost_sms, provider, provider_message_id, operator, status, error_code, error_message, mode, sent_at, delivered_at, metadata, created_at, updated_at, companies(name), sms_campaigns(name)";
+
 export async function createPanelSmsMessage(input: {
   companyId: string;
   campaignId?: string | null;
@@ -312,7 +318,7 @@ export async function listPanelMessagesByCompany(
 ): Promise<PanelSmsMessageRow[]> {
   let q = getSupabase()
     .from("panel_sms_messages")
-    .select("*")
+    .select(PANEL_LIST_COLUMNS)
     .eq("company_id", companyId);
 
   if (filters?.startDate) {
@@ -382,7 +388,7 @@ export async function listPanelMessagesByCampaign(
 ): Promise<PanelSmsMessageRow[]> {
   const { data, error } = await getSupabase()
     .from("panel_sms_messages")
-    .select("*")
+    .select(PANEL_LIST_COLUMNS)
     .eq("campaign_id", campaignId)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -427,7 +433,7 @@ export async function listAllPanelMessagesWithCompany(
 
   let query = getSupabase()
     .from("panel_sms_messages")
-    .select("*, companies(name), sms_campaigns(name)")
+    .select(PANEL_ADMIN_LIST_COLUMNS)
     .order("created_at", { ascending: false })
     .limit(fetchLimit);
 
@@ -445,14 +451,26 @@ export async function listAllPanelMessagesWithCompany(
   }
 
   let rows = (data ?? []).map((row) => {
-    const r = row as PanelSmsMessageRow & {
-      companies?: { name: string } | null;
-      sms_campaigns?: { name: string } | null;
-    };
+    const r = row as Record<string, unknown>;
+    const companies = r.companies;
+    const campaigns = r.sms_campaigns;
+    const companyName =
+      companies && typeof companies === "object" && "name" in companies
+        ? String((companies as { name: string }).name)
+        : Array.isArray(companies) && companies[0] && typeof companies[0] === "object"
+          ? String((companies[0] as { name?: string }).name ?? "—")
+          : "—";
+    const campaignName =
+      campaigns && typeof campaigns === "object" && "name" in campaigns
+        ? String((campaigns as { name: string }).name)
+        : Array.isArray(campaigns) && campaigns[0] && typeof campaigns[0] === "object"
+          ? String((campaigns[0] as { name?: string }).name ?? "—")
+          : "—";
+    const { companies: _c, sms_campaigns: _s, ...base } = r;
     return {
-      ...r,
-      company_name: r.companies?.name ?? "—",
-      campaign_name: r.sms_campaigns?.name ?? "—",
+      ...(base as PanelSmsMessageRow),
+      company_name: companyName,
+      campaign_name: campaignName,
     };
   });
 

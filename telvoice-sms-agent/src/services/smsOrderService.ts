@@ -26,6 +26,10 @@ import { createSimActivationRequest } from "./simActivationService.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 import { AppError } from "../utils/errors.js";
 
+/** Columnas para listados (sin claim_token_hash ni created_by). */
+const SMS_ORDER_LIST_COLUMNS =
+  "id, company_id, package_id, sms_quantity, amount, currency, payment_provider, payment_reference, payment_status, credit_status, credited_at, checkout_email, payer_email, public_checkout_reference, claim_status, claim_expires_at, claimed_at, created_at, updated_at, metadata";
+
 export async function getOrderById(id: string): Promise<SmsOrderRow | null> {
   const { data, error } = await getSupabase()
     .from("sms_orders")
@@ -138,7 +142,7 @@ export async function listSmsOrdersByCompany(
 ): Promise<SmsOrderWithDetails[]> {
   const { data, error } = await getSupabase()
     .from("sms_orders")
-    .select("*")
+    .select(SMS_ORDER_LIST_COLUMNS)
     .eq("company_id", companyId)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -223,7 +227,7 @@ export async function getOrderWithDetails(
 export async function listSmsOrders(limit = 100): Promise<SmsOrderWithDetails[]> {
   const { data, error } = await getSupabase()
     .from("sms_orders")
-    .select("*")
+    .select(SMS_ORDER_LIST_COLUMNS)
     .order("created_at", { ascending: false })
     .limit(limit);
 

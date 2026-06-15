@@ -16,6 +16,7 @@ import {
   countUnreadInboundByCompany,
   getInboundSmsById,
   listInboundSmsByCompany,
+  pollInboundSmsForCompany,
   serializeInboundMessageForApi,
   simulateInboundSmsForCompany,
 } from "../services/inboundSmsService.js";
@@ -101,7 +102,7 @@ function parseInboundApiFilters(req: Request) {
     return typeof v === "string" && v.trim() ? v.trim() : undefined;
   };
   return {
-    numberId: str("number_id"),
+    numberId: str("number_id") ?? str("client_number_id"),
     q: str("q"),
     from: str("from"),
     startDate: str("start_date"),
@@ -110,7 +111,19 @@ function parseInboundApiFilters(req: Request) {
   };
 }
 
-/** Polling JSON liviano para /app/sms-inbox (sesión cliente, sin company_id en query). */
+function parseInboundPollParams(req: Request) {
+  const q = req.query;
+  const str = (key: string): string | undefined => {
+    const v = q[key];
+    return typeof v === "string" && v.trim() ? v.trim() : undefined;
+  };
+  return {
+    afterReceivedAt: str("after"),
+    clientNumberId: str("client_number_id") ?? str("number_id"),
+  };
+}
+
+/** Listado completo / filtros para carga inicial de /app/sms-inbox. */
 export async function getApiSmsInboxMessages(
   req: Request,
   res: Response,
@@ -152,6 +165,41 @@ export async function getApiSmsInboxMessages(
     });
   } catch {
     res.status(500).json({ ok: false, error: "Error al cargar bandeja." });
+  }
+}
+
+/** Polling dedicado: mensajes nuevos + conteos agrupados (egress mínimo). */
+export async function getApiSmsInboxPoll(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireApiContext(req, res);
+    if (!ctx) return;
+
+    const { afterReceivedAt, clientNumberId } = parseInboundPollParams(req);
+    if (clientNumberId) {
+      const owned = await getClientNumberById(ctx.company.id, clientNumberId);
+      if (!owned) {
+        res.status(404).json({ ok: false, error: "Numeración no encontrada." });
+        return;
+      }
+    }
+
+    const result = await pollInboundSmsForCompany(ctx.company.id, {
+      afterReceivedAt,
+      clientNumberId,
+    });
+
+    res.json({
+      ok: true,
+      messages: result.messages.map(serializeInboundMessageForApi),
+      unread_total: result.unreadTotal,
+      unread_by_number: result.unreadByNumber,
+      latest_received_at: result.latestReceivedAt,
+    });
+  } catch {
+    res.status(500).json({ ok: false, error: "Error en polling de bandeja." });
   }
 }
 

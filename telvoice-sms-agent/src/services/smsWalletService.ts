@@ -29,13 +29,16 @@ function assertWalletCanTransact(wallet: CompanySmsWalletRow): void {
   }
 }
 
+const WALLET_ROW_COLUMNS =
+  "id, company_id, country, available_sms, reserved_sms, consumed_sms, total_purchased_sms, status, created_at, updated_at";
+
 export async function getOrCreateCompanyWallet(
   companyId: string,
   country: string = DEFAULT_COUNTRY,
 ): Promise<CompanySmsWalletRow> {
   const { data: existing, error: findError } = await getSupabase()
     .from("company_sms_wallets")
-    .select("*")
+    .select(WALLET_ROW_COLUMNS)
     .eq("company_id", companyId)
     .eq("country", country)
     .maybeSingle();
@@ -65,7 +68,7 @@ export async function getOrCreateCompanyWallet(
       total_purchased_sms: 0,
       status: "active",
     })
-    .select("*")
+    .select(WALLET_ROW_COLUMNS)
     .single();
 
   if (error) {
@@ -103,7 +106,7 @@ export async function readCompanyBalance(
 ): Promise<CompanyBalanceView> {
   const { data, error } = await getSupabase()
     .from("company_sms_wallets")
-    .select("*")
+    .select(WALLET_ROW_COLUMNS)
     .eq("company_id", companyId)
     .eq("country", country)
     .maybeSingle();
@@ -142,7 +145,7 @@ async function persistWallet(
     .from("company_sms_wallets")
     .update(patch)
     .eq("id", walletId)
-    .select("*")
+    .select(WALLET_ROW_COLUMNS)
     .single();
 
   if (error) {
@@ -160,7 +163,7 @@ export async function listWalletsForAdmin(): Promise<WalletListRow[]> {
 
   const { data: wallets, error } = await getSupabase()
     .from("company_sms_wallets")
-    .select("*");
+    .select(WALLET_ROW_COLUMNS);
 
   if (error) {
     if (isMissingTableError(error)) {

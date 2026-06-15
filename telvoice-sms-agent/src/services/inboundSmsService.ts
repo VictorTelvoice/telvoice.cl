@@ -18,6 +18,10 @@ export type InboundSmsFilters = {
   afterReceivedAt?: string;
 };
 
+/** Listado/polling: sin raw_payload ni metadata (reduce egress). */
+const INBOUND_LIST_COLUMNS =
+  "id, company_id, client_number_id, to_number, from_number, body, detected_otp, received_at, status, source, created_at";
+
 function mapRow(row: Record<string, unknown>): InboundSmsMessageRow {
   return {
     id: String(row.id),
@@ -138,7 +142,7 @@ export async function listInboundSmsByCompany(
   const sb = getSupabase();
   let query = sb
     .from("inbound_sms_messages")
-    .select("*")
+    .select(INBOUND_LIST_COLUMNS)
     .eq("company_id", companyId)
     .order("received_at", { ascending: false })
     .limit(limit);
@@ -234,6 +238,87 @@ export async function countInboundByClientNumber(
 export async function countUnreadInboundByClientNumber(
   companyId: string,
 ): Promise<Record<string, number>> {
+  const grouped = await getUnreadInboundCountsGrouped(companyId);
+  return grouped.unreadByNumber;
+}
+
+type UnreadGroupedCounts = {
+  unreadByNumber: Record<string, number>;
+  unreadTotal: number;
+};
+
+function isMissingRpcError(error: { code?: string; message?: string }): boolean {
+  const code = error.code ?? "";
+  const msg = (error.message ?? "").toLowerCase();
+  return (
+    code === "PGRST202" ||
+    code === "42883" ||
+    msg.includes("could not find the function") ||
+    (msg.includes("function") && msg.includes("does not exist"))
+  );
+}
+
+let lastInboundUnreadRpcFallbackLogAt = 0;
+const INBOUND_UNREAD_RPC_FALLBACK_LOG_MS = 60_000;
+
+/** Aviso rate-limited: migración 062 no aplicada o RPC inaccesible. */
+function logInboundUnreadRpcFallback(error: {
+  code?: string;
+  message?: string;
+}): void {
+  const now = Date.now();
+  if (now - lastInboundUnreadRpcFallbackLogAt < INBOUND_UNREAD_RPC_FALLBACK_LOG_MS) {
+    return;
+  }
+  lastInboundUnreadRpcFallbackLogAt = now;
+  console.warn(
+    "[inboundSms] count_inbound_sms_unread_by_number no disponible; fallback legacy (status=received).",
+    { code: error.code ?? null, message: error.message ?? null },
+  );
+}
+
+/** Conteos agrupados vía RPC SQL (fallback a escaneo por filas si migración 062 no aplicada). */
+export async function getUnreadInboundCountsGrouped(
+  companyId: string,
+): Promise<UnreadGroupedCounts> {
+  const sb = getSupabase();
+  const { data, error } = await sb.rpc("count_inbound_sms_unread_by_number", {
+    p_company_id: companyId,
+    p_client_number_id: null,
+  });
+
+  if (!error) {
+    const unreadByNumber: Record<string, number> = {};
+    let unreadTotal = 0;
+    for (const row of (data ?? []) as {
+      client_number_id: string;
+      unread_count: number | string;
+    }[]) {
+      const id = String(row.client_number_id);
+      const count = Number(row.unread_count) || 0;
+      unreadByNumber[id] = count;
+      unreadTotal += count;
+    }
+    return { unreadByNumber, unreadTotal };
+  }
+
+  if (!isMissingRpcError(error) && !isMissingTableError(error)) {
+    throw wrapSupabaseError(error, "getUnreadInboundCountsGrouped");
+  }
+
+  if (isMissingTableError(error)) {
+    return { unreadByNumber: {}, unreadTotal: 0 };
+  }
+
+  logInboundUnreadRpcFallback(error);
+  const unreadByNumber = await countUnreadInboundByClientNumberLegacy(companyId);
+  const unreadTotal = Object.values(unreadByNumber).reduce((a, b) => a + b, 0);
+  return { unreadByNumber, unreadTotal };
+}
+
+async function countUnreadInboundByClientNumberLegacy(
+  companyId: string,
+): Promise<Record<string, number>> {
   const sb = getSupabase();
   const { data, error } = await sb
     .from("inbound_sms_messages")
@@ -243,7 +328,7 @@ export async function countUnreadInboundByClientNumber(
 
   if (error) {
     if (isMissingTableError(error)) return {};
-    throw wrapSupabaseError(error, "inbound_sms_messages");
+    throw wrapSupabaseError(error, "countUnreadInboundByClientNumber");
   }
 
   const counts: Record<string, number> = {};
@@ -252,6 +337,55 @@ export async function countUnreadInboundByClientNumber(
     counts[id] = (counts[id] ?? 0) + 1;
   }
   return counts;
+}
+
+const INBOUND_POLL_LIMIT = 30;
+
+export type InboundSmsPollResult = {
+  messages: InboundSmsMessageRow[];
+  unreadTotal: number;
+  unreadByNumber: Record<string, number>;
+  latestReceivedAt: string | null;
+};
+
+/** Polling liviano: solo mensajes nuevos tras `after`, conteos agrupados vía RPC. */
+export async function pollInboundSmsForCompany(
+  companyId: string,
+  options: {
+    afterReceivedAt?: string;
+    clientNumberId?: string;
+    limit?: number;
+  } = {},
+): Promise<InboundSmsPollResult> {
+  const limit = options.limit ?? INBOUND_POLL_LIMIT;
+  const messages = options.afterReceivedAt
+    ? await listInboundSmsByCompany(
+        companyId,
+        { afterReceivedAt: options.afterReceivedAt },
+        limit,
+      )
+    : [];
+
+  const { unreadByNumber, unreadTotal: companyUnreadTotal } =
+    await getUnreadInboundCountsGrouped(companyId);
+
+  const unreadTotal = options.clientNumberId
+    ? (unreadByNumber[options.clientNumberId] ?? 0)
+    : companyUnreadTotal;
+
+  const latestReceivedAt =
+    messages.length > 0
+      ? messages.reduce((a, b) =>
+          a.received_at >= b.received_at ? a : b,
+        ).received_at
+      : null;
+
+  return {
+    messages,
+    unreadTotal,
+    unreadByNumber,
+    latestReceivedAt,
+  };
 }
 
 export type InboundSmsApiMessage = {
