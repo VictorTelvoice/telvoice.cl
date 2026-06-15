@@ -40,6 +40,37 @@
   </script>
   <link rel="stylesheet" href="css/numeracion-sim-page.css" />
   <link rel="stylesheet" href="css/telvoice-site-footer.css" />
+  <style>
+    .nsim-panel-api-grid,
+    .nsim-use-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    @media (min-width: 960px) {
+      .nsim-panel-api-grid,
+      .nsim-use-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 430px) {
+      .nsim-panel-api-grid,
+      .nsim-use-grid {
+        gap: 0.75rem;
+      }
+      .nsim-panel-api-card,
+      .nsim-use-card {
+        padding: 1rem;
+      }
+      .nsim-panel-api-card h4,
+      .nsim-use-card h4 {
+        font-size: 0.8125rem;
+      }
+      .nsim-panel-api-card p,
+      .nsim-use-card p {
+        font-size: 0.72rem;
+        line-height: 1.45;
+      }
+    }
+  </style>
 </head>
 <body class="nsim-page font-sans antialiased min-h-screen flex flex-col">
   <nav class="bg-surface/90 backdrop-blur-md sticky top-0 z-50 border-b border-outline-variant/30 w-full">
@@ -92,8 +123,8 @@
   <main class="flex-1">
     <section id="nsim-planes" class="nsim-section nsim-section--lead" aria-labelledby="nsim-planes-title">
       <div class="nsim-section-inner">
-        <p class="nsim-eyebrow nsim-eyebrow--center">Numeración SIM real · Suscripción</p>
-        <h1 id="nsim-planes-title" class="nsim-section-title nsim-section-title--lead">Numeración SIM real Telvoice</h1>
+        <p class="nsim-eyebrow nsim-eyebrow--center">Número Mobile real</p>
+        <h1 id="nsim-planes-title" class="nsim-section-title nsim-section-title--lead">Numeración SIM real</h1>
         <p class="nsim-section-intro">Activa una numeración SIM para recibir SMS, validar procesos y comunicarte con clientes, agentes o equipos críticos.</p>
 
         <div class="nsim-billing-card nsim-billing-card--switch-only" aria-label="Modalidad de pago">
