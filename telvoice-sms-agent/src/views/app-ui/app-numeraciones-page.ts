@@ -42,7 +42,7 @@ function renderEmptyState(): string {
       y operar comunicaciones empresariales sin depender de un teléfono físico.
     </p>
     <div class="tv-numeraciones-empty__actions">
-      ${renderBtn("Ver planes del agente", { href: "/app/planes-agente", variant: "primary", icon: "smart_toy" })}
+      ${renderBtn("Ver planes de numeración", { href: "/app/planes-agente", variant: "primary", icon: "sim_card" })}
       ${renderBtn("Solicitar numeración", { href: "/app/planes-agente?action=request", variant: "secondary", icon: "add_call" })}
     </div>
   </section>`;
@@ -115,7 +115,7 @@ export function renderAppNumeracionesPage(
       subtitle: "Numeraciones Telvoice contratadas por tu empresa.",
       actions: `
         ${renderBtn("Solicitar nueva numeración", { href: "/app/planes-agente?action=request", variant: "primary", icon: "add_call" })}
-        ${renderBtn("Ver planes del agente", { href: "/app/planes-agente", variant: "secondary", icon: "smart_toy" })}
+        ${renderBtn("Ver planes de numeración", { href: "/app/planes-agente", variant: "secondary", icon: "sim_card" })}
       `,
     })}
     ${migrationNotice}

@@ -144,12 +144,12 @@ export type AgentPlanDefinition = {
 export const AGENT_PLAN_DEFINITIONS: AgentPlanDefinition[] = [
   {
     code: "start",
-    name: "Agente Start",
+    name: "Numeración Start",
     priceClp: 39990,
     features: [
-      "1 línea Telvoice incluida",
+      "1 numeración Telvoice incluida",
       "SIM real única o número de red fija según disponibilidad",
-      "Agente comercial básico",
+      "Agente Telvoice incluido",
       "Recepción SMS",
       "OTP autorizado",
       "Historial de mensajes",
@@ -158,11 +158,11 @@ export const AGENT_PLAN_DEFINITIONS: AgentPlanDefinition[] = [
   },
   {
     code: "pro",
-    name: "Agente Pro",
+    name: "Numeración Pro",
     priceClp: 59900,
     features: [
-      "1 línea Telvoice incluida",
-      "Agente para campañas y validaciones",
+      "1 numeración Telvoice incluida",
+      "Agente Telvoice incluido",
       "Envío y recepción SMS",
       "Campañas asistidas",
       "Notificaciones por panel y Telegram",
@@ -173,11 +173,11 @@ export const AGENT_PLAN_DEFINITIONS: AgentPlanDefinition[] = [
   },
   {
     code: "business",
-    name: "Agente Business",
+    name: "Numeración Business",
     priceClp: 99990,
     features: [
-      "1 línea Telvoice incluida",
-      "Agente avanzado",
+      "1 numeración Telvoice incluida",
+      "Agente Telvoice incluido",
       "Envío y recepción SMS",
       "Validaciones OTP autorizadas",
       "API/webhooks",

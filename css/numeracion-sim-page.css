@@ -109,6 +109,11 @@
   max-width: 42rem;
   font-size: 1.0625rem;
 }
+.nsim-section-intro--note {
+  max-width: 38rem;
+  font-size: 0.9375rem;
+  opacity: 0.85;
+}
 .nsim-section--lead .nsim-plans-grid {
   margin-top: 2rem;
 }

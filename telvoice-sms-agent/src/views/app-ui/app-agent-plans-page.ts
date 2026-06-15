@@ -44,10 +44,10 @@ function renderPlanCard(
   const ctaLabel = isSelected
     ? "Confirmar solicitud"
     : plan.code === "start"
-      ? "Contratar Start"
+      ? "Solicitar numeración Start"
       : plan.code === "pro"
-        ? "Contratar Pro"
-        : "Contratar Business";
+        ? "Solicitar numeración Pro"
+        : "Solicitar numeración Business";
 
   const disabled = hasActivePlan || hasPending;
   const featuredClass = isSelected ? " tv-agent-plan-card--selected" : "";
@@ -65,7 +65,7 @@ function renderPlanCard(
       hasPending
         ? `<p class="tv-agent-plan-card__pending">Ya tienes una solicitud pendiente para este plan.</p>`
         : hasActivePlan
-          ? `<p class="tv-agent-plan-card__pending">Ya tienes un plan agente activo.</p>`
+          ? `<p class="tv-agent-plan-card__pending">Ya tienes una numeración activa con plan contratado.</p>`
           : ""
     }
     <form method="post" action="/app/planes-agente/request" class="tv-agent-plan-card__cta">
@@ -112,7 +112,7 @@ function renderActiveSubscriptionPanel(
   const plan = AGENT_PLAN_DEFINITIONS.find((p) => p.code === subscription.plan_code);
   return `<section class="tv-panel tv-agent-plan-status" style="margin-bottom:1rem">
     <header class="tv-section-head">
-      <h2 class="tv-section-head__title">Plan agente activo</h2>
+      <h2 class="tv-section-head__title">Numeración activa</h2>
       <span class="badge badge-ok">${escapeHtml(agentPlanStatusLabel(subscription.status))}</span>
     </header>
     <div class="tv-panel__body">
@@ -159,8 +159,8 @@ export function renderAppAgentPlansPage(
 
   const body = `
     ${renderPageHeader({
-      title: "Planes del agente",
-      subtitle: "Contrata un plan con línea Telvoice incluida y agente comercial.",
+      title: "Planes de numeración SIM",
+      subtitle: "Contrata una numeración Telvoice con agente incluido sin costo adicional.",
       actions: renderBtn("Mis números", { href: "/app/numeraciones", variant: "secondary", icon: "sim_card" }),
     })}
     ${intentBanner}
@@ -204,5 +204,5 @@ export function renderAppAgentPlansPage(
       .tv-agent-plan-status__message { margin: 0; line-height: 1.5; }
     </style>`;
 
-  return wrapAppPage(ctx, "agent-plans", "Planes del agente", body);
+  return wrapAppPage(ctx, "agent-plans", "Planes de numeración SIM", body);
 }

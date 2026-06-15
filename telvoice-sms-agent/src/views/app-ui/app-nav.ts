@@ -27,7 +27,7 @@ export const APP_NAV_PRIMARY: AppNavItem[] = [
 /** Agente Telvoice y planes — solo con CLIENT_PANEL_AGENT_LINE_ENABLED. */
 const APP_NAV_AGENT_LINE_ITEMS: AppNavItem[] = [
   { id: "agente", label: "Agente Telvoice", href: "/app/agente", icon: "smart_toy" },
-  { id: "agent-plans", label: "Planes del agente", href: "/app/planes-agente", icon: "workspace_premium" },
+  { id: "agent-plans", label: "Planes de numeración SIM", href: "/app/planes-agente", icon: "workspace_premium" },
 ];
 
 export function getAppNavAgentLine(): AppNavItem[] {
