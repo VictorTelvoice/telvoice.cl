@@ -57,6 +57,36 @@
   var SIM_NUMBER_TAKEN_ERROR =
     "Este número acaba de ser reservado. Elige otra numeración disponible.";
 
+  function formatCheckoutError(data, fallbackMessage) {
+    if (data && typeof data === "object") {
+      var apiErr = data.error;
+      if (typeof apiErr === "string" && apiErr.trim()) return apiErr.trim();
+      if (apiErr && typeof apiErr === "object") {
+        var code = typeof apiErr.code === "string" ? apiErr.code : "";
+        var message = typeof apiErr.message === "string" ? apiErr.message.trim() : "";
+        if (code === "PENDING_ORDER_EXISTS" || message.indexOf("orden pendiente") !== -1) {
+          return "Ya tienes una orden pendiente. Continúa el pago anterior.";
+        }
+        if (code === "NO_STOCK" || code === "no_stock" || code === "NUMBER_UNAVAILABLE") {
+          return SIM_NUMBER_TAKEN_ERROR;
+        }
+        if (code === "not_enabled" || code === "NOT_ENABLED") {
+          return SIM_NOT_ENABLED_ERROR;
+        }
+        if (code === "VALIDATION_ERROR" && message.indexOf("plan_id SIM") !== -1) {
+          return "La suscripción mensual aún no está disponible para este plan. Usa compra única o contacta a soporte.";
+        }
+        if (message) return message;
+        if (code) return code;
+      }
+      if (typeof data.message === "string" && data.message.trim()) return data.message.trim();
+    }
+    if (typeof fallbackMessage === "string" && fallbackMessage.trim() && fallbackMessage !== "[object Object]") {
+      return fallbackMessage.trim();
+    }
+    return SIM_CHECKOUT_ERROR;
+  }
+
   var NUMBERS_PAGE_SIZE = 10;
 
   function agentApiOrigin() {
@@ -190,6 +220,13 @@
     state.contextLoading = false;
     hidePendingOrder();
     hideNumberPicker();
+  }
+
+  function clearPersonalFormFields() {
+    ["nsim-nombre", "nsim-empresa", "nsim-telefono", "nsim-rut", "nsim-use-case", "nsim-volume"].forEach(function (id) {
+      var el = qs(id);
+      if (el) el.value = "";
+    });
   }
 
   function hidePendingOrder() {
@@ -387,6 +424,7 @@
     state.modalOpen = true;
     state.submitting = false;
     setError("");
+    clearPersonalFormFields();
     resetModalStatus();
     resetCheckoutContext();
     updateModalChrome();
@@ -716,14 +754,17 @@
               "Ya tienes una orden pendiente para este correo. Usa Continuar pago."
             );
           }
-          throw new Error((data && (data.error || data.message)) || SIM_CHECKOUT_ERROR);
+          throw new Error(formatCheckoutError(data));
         }
         window.location.href = checkoutUrl;
       })
       .catch(function (err) {
         state.submitting = false;
         setLoading(false);
-        setError((err && err.message) || SIM_CHECKOUT_ERROR);
+        if (isNumeracionDemoMode() && window.console) {
+          console.debug("[nsim checkout]", err);
+        }
+        setError(formatCheckoutError(null, err && err.message));
       });
   }
 

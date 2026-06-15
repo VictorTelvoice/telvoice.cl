@@ -276,7 +276,11 @@ export async function postPublicCheckout(
     const payerName =
       typeof body.payer_name === "string" ? body.payer_name.trim() : undefined;
     const productType = String(body.product_type ?? "").trim().toLowerCase();
-    const planIdRaw = String(body.plan_id ?? body.planId ?? "").trim().toLowerCase();
+    const planIdRaw = String(
+      body.plan_id ?? body.planId ?? body.sim_plan_id ?? "",
+    )
+      .trim()
+      .toLowerCase();
 
     if (!checkoutEmail.includes("@")) {
       throw new ValidationError("checkout_email inválido.");
