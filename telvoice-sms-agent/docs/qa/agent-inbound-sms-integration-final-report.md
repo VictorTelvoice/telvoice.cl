@@ -1,8 +1,9 @@
 # Reporte final — Agente Telvoice con conocimiento SMS entrantes
 
 **Rama:** `feature/agent-inbound-sms-knowledge`  
+**PR:** [draft #17](https://github.com/VictorTelvoice/telvoice.cl/pull/17) (`main` ← `feature/agent-inbound-sms-knowledge`)  
 **Fecha:** junio 2026  
-**Estado:** listo para revisión técnica (sin push, merge ni producción)
+**Estado:** listo para revisión técnica — PR draft creado; pendiente merge, deploy productivo y migraciones en producción
 
 ---
 
@@ -29,6 +30,7 @@ El usuario debe poder preguntar por bandeja entrante, numeraciones, SIM, webhook
 1. `e9991dd` — feat(agent): add inbound SMS knowledge articles  
 2. `6c05451` — fix(agent): improve inbound SMS knowledge scoring  
 3. `133535f` — feat(agent): route inbound SMS questions to knowledge  
+4. `8cae590` — docs(agent): add inbound SMS integration final review report  
 
 ---
 
@@ -62,7 +64,7 @@ El usuario debe poder preguntar por bandeja entrante, numeraciones, SIM, webhook
 | `docs/qa/agent-inbound-sms-knowledge-qa.md` | Nuevo | QA manual y rollback |
 | `docs/qa/agent-inbound-sms-integration-final-report.md` | Nuevo | Este reporte |
 
-**Diff vs `main`:** 8 archivos, +693 líneas, −1 línea.
+**Diff vs `main`:** 9 archivos, +888 líneas, −1 línea.
 
 ### Scripts untracked (fuera de rama)
 
@@ -173,11 +175,11 @@ git branch -D feature/agent-inbound-sms-knowledge
 
 ## 11. Recomendación
 
-1. **Abrir PR draft** contra `main` (tras push de rama cuando apruebes).
-2. **Revisar diff** — 8 archivos, cambio acotado en agente.
+1. **PR draft creado** para revisión — [#17](https://github.com/VictorTelvoice/telvoice.cl/pull/17) contra `main`; pendiente marcar ready, merge, deploy y migraciones en producción.
+2. **Revisar diff** — 9 archivos, cambio acotado en agente + documentación QA.
 3. **Probar en panel staging real** — asistente flotante autenticado con las 10 preguntas inbound + 6 regresión.
 4. **Aplicar 060/061 en staging del deploy** si el panel apunta a otra BD que la local QA.
-5. **Decidir producción** solo después de revisión y prueba manual en panel.
+5. **Decidir producción** solo después de revisión, merge y plan controlado de deploy/migraciones.
 
 **No iniciar Fase 3** (tools/lectura real) en el mismo PR.
 
