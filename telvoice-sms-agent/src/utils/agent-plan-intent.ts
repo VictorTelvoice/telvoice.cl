@@ -3,9 +3,9 @@ import type { AgentPlanCode } from "../types/client-numbers.js";
 export const AGENT_PLAN_CODES: AgentPlanCode[] = ["start", "pro", "business"];
 
 const PLAN_NAMES: Record<AgentPlanCode, string> = {
-  start: "Agente Start",
-  pro: "Agente Pro",
-  business: "Agente Business",
+  start: "Numeración Start",
+  pro: "Numeración Pro",
+  business: "Numeración Business",
 };
 
 export function parseAgentPlanCode(raw: unknown): AgentPlanCode | undefined {

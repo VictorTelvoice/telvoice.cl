@@ -95,9 +95,8 @@ export function simCheckoutItemTitle(plan: SimPlanDefinition): string {
 
 export function simCheckoutItemDescription(plan: SimPlanDefinition): string {
   const qty = new Intl.NumberFormat("es-CL").format(plan.sms_quantity);
-  const agent = getBundledAgentAddonForSimPlan(plan.plan_id);
   return (
-    `Suscripción mensual: ${plan.name} con agente Telvoice ${agent.replace("agent_", "")} ` +
-    `y ${qty} SMS salientes incluidos por mes. IVA incluido. Activación tras confirmar el pago.`
+    `Suscripción mensual: ${plan.name} con ${qty} SMS salientes incluidos por mes. ` +
+    `Agente Telvoice incluido sin costo adicional. IVA incluido. Activación tras confirmar el pago.`
   );
 }

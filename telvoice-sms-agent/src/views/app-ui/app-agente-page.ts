@@ -27,7 +27,7 @@ function renderLatestRequestPanel(request: AgentPlanRequestRow): string {
       <p><strong>${escapeHtml(agentPlanDisplayName(request.plan_code))}</strong> · ${escapeHtml(preferredNumberTypeLabel(request.preferred_number_type))}</p>
       <p class="field-hint">Solicitado el ${formatDate(request.created_at)}</p>
       <p>${escapeHtml(agentPlanRequestStatusMessage(request.status))}</p>
-      ${renderBtn("Ver planes", { href: "/app/planes-agente", variant: "secondary", size: "sm" })}
+      ${renderBtn("Ver planes de numeración", { href: "/app/planes-agente", variant: "secondary", size: "sm" })}
     </div>
   </section>`;
 }
@@ -94,7 +94,7 @@ export function renderAppAgentePage(
       subtitle: "Gestiona el agente asociado a tu empresa y su línea Telvoice.",
       actions: `
         ${renderBtn("Abrir chat del agente", { href: "/app/dashboard#agent", variant: "primary", icon: "smart_toy" })}
-        ${renderBtn("Ver planes", { href: "/app/planes-agente", variant: "secondary" })}
+        ${renderBtn("Ver planes de numeración", { href: "/app/planes-agente", variant: "secondary" })}
       `,
     })}
     ${pendingNotice}
