@@ -17,6 +17,7 @@ import {
   matchesSendSmsFlowIntent,
   parseFollowUpSmsBody,
 } from "./agentSendSmsIntent.js";
+import { matchesInboundSmsKnowledgeIntent } from "./agentInboundSmsIntent.js";
 import type { ConversationMemory } from "./agentConversationMemory.js";
 import type { AgentChannel, AgentIntent } from "./types.js";
 
@@ -294,6 +295,16 @@ export function routeAgentIntent(
     !/\b(comprar|cargar|cotizar|necesito mas)\b/.test(normalized)
   ) {
     return { intent: "balance", confidence: 0.88, commercialQuantity: null, requiresAuth: true, operationalCommand: null };
+  }
+
+  if (matchesInboundSmsKnowledgeIntent(normalized)) {
+    return {
+      intent: "inbound_sms_knowledge",
+      confidence: 0.9,
+      commercialQuantity: null,
+      requiresAuth: false,
+      operationalCommand: null,
+    };
   }
 
   if (/\b(ultimos envios|últimos envíos|historial|bandeja|ultimos sms)\b/.test(normalized)) {

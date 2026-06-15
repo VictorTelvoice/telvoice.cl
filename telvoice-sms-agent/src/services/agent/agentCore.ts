@@ -703,6 +703,7 @@ export async function runAgentCore(
     response.confidence < 0.45 &&
     response.intent !== "commercial" &&
     response.intent !== "knowledge" &&
+    response.intent !== "inbound_sms_knowledge" &&
     isLikelyCommercialPhrase(message)
   ) {
     const commercialRoute = routeAgentIntent(message, channel, {
@@ -730,6 +731,7 @@ export async function runAgentCore(
     response.confidence < 0.45 &&
     response.intent !== "commercial" &&
     response.intent !== "knowledge" &&
+    response.intent !== "inbound_sms_knowledge" &&
     response.intent !== "send_sms" &&
     response.intent !== "send_sms_flow" &&
     response.intent !== "campaign_draft" &&

@@ -19,6 +19,7 @@ export type AgentIntent =
   | "send_sms_flow"
   | "launch_campaign"
   | "knowledge"
+  | "inbound_sms_knowledge"
   | "capabilities"
   | "confirm"
   | "cancel"
