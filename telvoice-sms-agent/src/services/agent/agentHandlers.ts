@@ -426,11 +426,12 @@ export async function dispatchRoutedIntent(
       });
     }
 
+    case "inbound_sms_knowledge":
     case "knowledge": {
       const k = await searchKnowledgeForChannel(message, ctx.channel);
       return baseResponse({
         reply: k.reply,
-        intent: "knowledge",
+        intent,
         confidence: k.confidence,
         sessionId,
       });
