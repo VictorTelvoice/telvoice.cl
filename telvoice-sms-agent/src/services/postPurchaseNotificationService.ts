@@ -3,6 +3,7 @@ import { getSupabase } from "../database/supabaseClient.js";
 import type { SmsOrderRow } from "../types/wallet.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 import { normalizeAuditEmail } from "./adminDataAuditClassifier.js";
+import { resolveTransactionalRecipient } from "./transactionalEmailService.js";
 import { sendInvoiceEmail } from "./billingEmailService.js";
 import {
   claimBillingEmailSend,
@@ -69,6 +70,15 @@ function orderEmail(order: SmsOrderRow): string {
   return normalizeAuditEmail(order.checkout_email ?? order.payer_email);
 }
 
+async function resolvePlanEmail(order: SmsOrderRow): Promise<string> {
+  const fromOrder = orderEmail(order);
+  if (fromOrder) {
+    return fromOrder;
+  }
+  const resolved = await resolveTransactionalRecipient(order);
+  return normalizeAuditEmail(resolved.email ?? "");
+}
+
 function documentNumber(invoice: {
   id: string;
   invoice_number: string | null;
@@ -126,7 +136,7 @@ function stepToSendList(
 async function buildPlanForOrder(
   order: SmsOrderRow,
 ): Promise<PostPurchaseNotificationPlan> {
-  const email = orderEmail(order);
+  const email = await resolvePlanEmail(order);
   const invoice = await getInvoiceByOrderId(order.id);
   const invoiceNumber = invoice ? documentNumber(invoice) : null;
 

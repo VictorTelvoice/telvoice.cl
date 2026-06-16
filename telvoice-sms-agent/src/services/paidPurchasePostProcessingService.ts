@@ -24,6 +24,7 @@ import {
 } from "./postPurchaseNotificationService.js";
 import { getOrderById } from "./smsOrderService.js";
 import { hasPurchaseCreditForOrder } from "./walletTransactionService.js";
+import { resolveTransactionalRecipient } from "./transactionalEmailService.js";
 import { getSupabase } from "../database/supabaseClient.js";
 
 export type PaidPurchasePostProcessingAction =
@@ -74,8 +75,9 @@ export type PaidPurchasePostProcessingOptions = {
   skipProdRealMark?: boolean;
 };
 
-function orderBuyerEmail(order: SmsOrderRow): string {
-  return normalizeAuditEmail(order.checkout_email ?? order.payer_email);
+async function orderBuyerEmail(order: SmsOrderRow): Promise<string> {
+  const resolved = await resolveTransactionalRecipient(order);
+  return normalizeAuditEmail(resolved.email ?? "");
 }
 
 function isQaPurchaseBlocked(order: SmsOrderRow, email: string): boolean {
@@ -245,7 +247,7 @@ export async function runPostCreditPurchaseFlow(
     };
   }
 
-  const email = orderBuyerEmail(order);
+  const email = await orderBuyerEmail(order);
   const walletCreditExists = await hasPurchaseCreditForOrder(orderId);
   const invoiceBefore = await getInvoiceByOrderId(orderId);
 
@@ -431,7 +433,7 @@ export async function handlePaidPurchasePostProcessing(
 
     if (!reconcileAllowsPostCredit(reconcile)) {
       const order = await getOrderById(orderId);
-      const email = order ? orderBuyerEmail(order) : "";
+      const email = order ? await orderBuyerEmail(order) : "";
       const isQa =
         reconcile.status === "test_email" || reconcile.status === "qa_blocked";
       return {
@@ -501,7 +503,7 @@ export async function shouldSendPaymentClaimEmail(
   if (!order) return false;
   if (order.credit_status === "credited") return false;
   if (order.credit_status !== "pending_claim") return false;
-  const email = orderBuyerEmail(order);
+  const email = await orderBuyerEmail(order);
   if (!email) return false;
   if (await hasPaymentClaimEmailSent(orderId, email)) return false;
   return true;
