@@ -40,6 +40,7 @@ import {
   getAdminInvoiceById,
 } from "./billingInvoiceService.js";
 import { patchOrderFields } from "./smsOrderService.js";
+import { findCompanyById } from "./companyService.js";
 
 export type LogEmailAttemptInput = {
   templateKey: string;
@@ -68,7 +69,7 @@ function resolveTransactionalProvider(): string {
   return p || "transactional";
 }
 
-function recipientFromOrder(order: SmsOrderRow): string | null {
+function recipientFromOrderFields(order: SmsOrderRow): string | null {
   const candidates = [
     order.checkout_email,
     order.payer_email,
@@ -82,6 +83,67 @@ function recipientFromOrder(order: SmsOrderRow): string | null {
     }
   }
   return null;
+}
+
+export type TransactionalRecipientResolution = {
+  email: string | null;
+  source: string | null;
+};
+
+async function findProfileEmailForOrderCreator(
+  createdBy: string | null | undefined,
+): Promise<string | null> {
+  const id = createdBy?.trim();
+  if (!id) {
+    return null;
+  }
+  const sb = getSupabase();
+  const byProfileId = await sb
+    .from("user_profiles")
+    .select("email")
+    .eq("id", id)
+    .maybeSingle();
+  const profileEmail = byProfileId.data?.email?.trim();
+  if (profileEmail?.includes("@")) {
+    return normalizeEmail(profileEmail);
+  }
+  const byAdminId = await sb
+    .from("user_profiles")
+    .select("email")
+    .eq("admin_user_id", id)
+    .maybeSingle();
+  const adminEmail = byAdminId.data?.email?.trim();
+  if (adminEmail?.includes("@")) {
+    return normalizeEmail(adminEmail);
+  }
+  return null;
+}
+
+/**
+ * Destinatario transaccional: orden → empresa → perfil creador.
+ */
+export async function resolveTransactionalRecipient(
+  order: SmsOrderRow,
+): Promise<TransactionalRecipientResolution> {
+  const fromOrder = recipientFromOrderFields(order);
+  if (fromOrder) {
+    return { email: fromOrder, source: "order" };
+  }
+
+  if (order.company_id) {
+    const company = await findCompanyById(order.company_id);
+    const billing = company?.billing_email?.trim();
+    if (billing?.includes("@")) {
+      return { email: normalizeEmail(billing), source: "company.billing_email" };
+    }
+  }
+
+  const profileEmail = await findProfileEmailForOrderCreator(order.created_by);
+  if (profileEmail) {
+    return { email: profileEmail, source: "user_profiles.email" };
+  }
+
+  return { email: null, source: null };
 }
 
 export async function hasSentEmail(
@@ -365,7 +427,7 @@ export async function sendPaymentReceivedClaimEmail(
     return { ok: false, error: "order_not_pending_claim" };
   }
 
-  const recipient = recipientFromOrder(order);
+  const { email: recipient } = await resolveTransactionalRecipient(order);
   if (!recipient) {
     await logEmailAttempt({
       templateKey: "payment_received_pending_claim",
@@ -373,7 +435,7 @@ export async function sendPaymentReceivedClaimEmail(
       recipientEmail: "(vacío)",
       status: "failed",
       orderId,
-      errorMessage: "Sin email de checkout/payer",
+      errorMessage: "Sin email de checkout/payer/empresa",
     });
     return { ok: false, error: "missing_recipient" };
   }
@@ -439,7 +501,7 @@ export async function sendSimPaymentReceivedEmails(
       : "Numeración SIM real";
   const planId = typeof meta.plan_id === "string" ? meta.plan_id : "sim_unknown";
 
-  const recipient = recipientFromOrder(order);
+  const { email: recipient } = await resolveTransactionalRecipient(order);
   let customerResult: { ok: boolean; skipped?: boolean; error?: string } = {
     ok: false,
     error: "missing_recipient",
@@ -544,7 +606,7 @@ export async function sendSimAgentBundlePaymentEmails(
   const agentAddonId =
     typeof meta.agent_addon_id === "string" ? meta.agent_addon_id : "none";
 
-  const recipient = recipientFromOrder(order);
+  const { email: recipient } = await resolveTransactionalRecipient(order);
   let customerResult: { ok: boolean; skipped?: boolean; error?: string } = {
     ok: false,
     error: "missing_recipient",
@@ -663,7 +725,7 @@ export async function sendSimNumberActiveEmail(
   const order = await getOrderWithDetails(orderId);
   if (!order) return { ok: false, error: "order_not_found" };
 
-  const recipient = recipientFromOrder(order);
+  const { email: recipient } = await resolveTransactionalRecipient(order);
   if (!recipient) return { ok: false, error: "missing_recipient" };
 
   const base = env.publicAppUrl.replace(/\/$/, "");
@@ -707,7 +769,7 @@ export async function sendSimActivationInProgressEmail(
         ? meta.plan_name
         : "Numeración SIM Telvoice";
 
-  const recipient = recipientFromOrder(order);
+  const { email: recipient } = await resolveTransactionalRecipient(order);
   if (!recipient) return { ok: false, error: "missing_recipient" };
 
   const panelUrl = buildPanelLoginUrl(recipient);
@@ -746,7 +808,8 @@ export async function sendWelcomeAndSmsCreditedEmail(
     return { ok: false, error: "order_not_credited" };
   }
 
-  const recipient = recipientFromOrder(order);
+  const { email: recipient, source: recipientSource } =
+    await resolveTransactionalRecipient(order);
   if (!recipient) {
     await logEmailAttempt({
       templateKey: "welcome_sms_credited",
@@ -755,7 +818,8 @@ export async function sendWelcomeAndSmsCreditedEmail(
       status: "failed",
       orderId,
       companyId: order.company_id,
-      errorMessage: "Sin email de checkout/payer",
+      errorMessage: "Sin email de checkout/payer/empresa/perfil",
+      metadata: { recipient_resolution: recipientSource },
     });
     return { ok: false, error: "missing_recipient" };
   }

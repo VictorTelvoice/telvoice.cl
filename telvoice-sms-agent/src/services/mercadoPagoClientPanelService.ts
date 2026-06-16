@@ -4,6 +4,7 @@ import {
   isPublicCheckoutOrder,
 } from "../utils/order-display.js";
 import { AppError } from "../utils/errors.js";
+import { findCompanyById } from "./companyService.js";
 import { getSmsPackageById } from "./smsPackageService.js";
 import {
   createOrder,
@@ -28,6 +29,23 @@ export type ClientPanelCheckoutResult = {
   preferenceId: string | null;
 };
 
+/** Resuelve emails de compra panel: payer MP → billing empresa. */
+export function resolvePanelCheckoutEmails(input: {
+  payerEmail?: string | null;
+  companyBillingEmail?: string | null;
+}): { checkoutEmail: string; payerEmail: string } | null {
+  const payer = input.payerEmail?.trim().toLowerCase() ?? "";
+  const billing = input.companyBillingEmail?.trim().toLowerCase() ?? "";
+  const checkout = payer || billing;
+  if (!checkout.includes("@")) {
+    return null;
+  }
+  return {
+    checkoutEmail: checkout,
+    payerEmail: payer || checkout,
+  };
+}
+
 export async function startClientPanelMercadoPagoCheckout(input: {
   companyId: string;
   packageId: string;
@@ -47,15 +65,30 @@ export async function startClientPanelMercadoPagoCheckout(input: {
     throw new AppError("Bolsa SMS no encontrada o inactiva.", 404);
   }
 
+  const company = await findCompanyById(input.companyId);
+  const emails = resolvePanelCheckoutEmails({
+    payerEmail: input.payer.email,
+    companyBillingEmail: company?.billing_email,
+  });
+  if (!emails) {
+    console.warn(
+      "[client-panel-checkout] orden sin checkout_email resoluble",
+      input.companyId,
+    );
+  }
+
   const order = await createOrder({
     companyId: input.companyId,
     packageId: input.packageId,
     createdBy: input.createdBy,
     paymentProvider: "mercadopago",
     paymentReference: `APP-MP-${Date.now()}`,
+    checkoutEmail: emails?.checkoutEmail ?? null,
+    payerEmail: emails?.payerEmail ?? null,
     metadata: {
       ...CLIENT_PANEL_ORDER_METADATA,
       checkout_mode: "mercadopago",
+      buyer_source: "client_panel",
     },
   });
 
