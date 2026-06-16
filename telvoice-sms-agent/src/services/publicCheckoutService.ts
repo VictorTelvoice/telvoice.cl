@@ -14,7 +14,7 @@ import {
   createPublicSimOrder,
   patchOrderFields,
 } from "./smsOrderService.js";
-import { resolveSimBundleCheckoutPricing } from "../utils/simTestPricing.js";
+import { resolveSimBundleCheckoutPricing, resolveSimSubscriptionCheckoutPricing, inventorySuffixFromE164 } from "../utils/simTestPricing.js";
 import { getSmsPackageById } from "./smsPackageService.js";
 import {
   getSimPlan,
@@ -37,6 +37,7 @@ import {
   reserveAvailableNumberForCheckout,
   resolvePublicInventoryId,
   inventoryPublicId,
+  getInventoryById,
 } from "./realNumberInventoryService.js";
 import { getSupabase } from "../database/supabaseClient.js";
 import { isSimAgentBundleOrder, isSimSubscriptionOrder } from "../utils/order-display.js";
@@ -287,7 +288,31 @@ export async function startPublicSimCheckout(input: {
     );
   }
 
-  const pricing = resolveSimBundleCheckoutPricing(plan, input.checkoutEmail);
+  const resolvedInventoryId =
+    (await resolvePublicInventoryId(input.inventoryPublicId.trim())) ?? null;
+  if (!resolvedInventoryId) {
+    throw new AppError(
+      "Esta numeración ya no está disponible. Elige otra numeración.",
+      409,
+      "NUMBER_UNAVAILABLE",
+    );
+  }
+
+  const inventoryRow = await getInventoryById(resolvedInventoryId);
+  if (!inventoryRow) {
+    throw new AppError(
+      "Esta numeración ya no está disponible. Elige otra numeración.",
+      409,
+      "NUMBER_UNAVAILABLE",
+    );
+  }
+
+  const inventorySuffix = inventorySuffixFromE164(inventoryRow.e164_number);
+  const pricing = resolveSimSubscriptionCheckoutPricing(
+    plan,
+    input.checkoutEmail,
+    inventorySuffix,
+  );
   const bundledAgentId = getBundledAgentAddonForSimPlan(plan.plan_id);
 
   const { order, claimToken } = await createPublicSimOrder({
@@ -312,16 +337,6 @@ export async function startPublicSimCheckout(input: {
 
   let inventoryNumberId: string;
   try {
-    const resolvedInventoryId =
-      (await resolvePublicInventoryId(input.inventoryPublicId.trim())) ?? undefined;
-    if (!resolvedInventoryId) {
-      throw new AppError(
-        "Esta numeración ya no está disponible. Elige otra numeración.",
-        409,
-        "NUMBER_UNAVAILABLE",
-      );
-    }
-
     const reserved = await reserveAvailableNumberForCheckout({
       orderId: order.id,
       inventoryId: resolvedInventoryId,
