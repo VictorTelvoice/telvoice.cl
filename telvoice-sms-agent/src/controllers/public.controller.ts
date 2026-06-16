@@ -276,6 +276,8 @@ export async function postPublicCheckout(
     const payerName =
       typeof body.payer_name === "string" ? body.payer_name.trim() : undefined;
     const productType = String(body.product_type ?? "").trim().toLowerCase();
+    // Compat: algunos frontends históricos envían sim_plan_id.
+    // Aceptamos ambos para evitar errores de validación.
     const planIdRaw = String(
       body.plan_id ?? body.planId ?? body.sim_plan_id ?? "",
     )
@@ -368,38 +370,49 @@ export async function postPublicCheckout(
       productType === "sim_subscription" || isSimPlanId(planIdRaw);
 
     if (isSimCheckout) {
-      if (!isSimPlanId(planIdRaw)) {
-        throw new ValidationError("plan_id SIM no válido.");
-      }
+      try {
+        if (!isSimPlanId(planIdRaw)) {
+          throw new ValidationError("plan_id SIM no válido.");
+        }
 
-      const result = await startPublicSimCheckout({
-        planId: planIdRaw,
-        checkoutEmail,
-        payerEmail,
-        payerName,
-        companyName:
-          typeof body.company_name === "string"
-            ? body.company_name.trim()
-            : undefined,
-        phone: typeof body.phone === "string" ? body.phone.trim() : undefined,
-        taxId:
-          typeof body.tax_id === "string"
-            ? body.tax_id.trim()
-            : typeof body.rut === "string"
-              ? body.rut.trim()
+        const result = await startPublicSimCheckout({
+          planId: planIdRaw,
+          checkoutEmail,
+          payerEmail,
+          payerName,
+          companyName:
+            typeof body.company_name === "string"
+              ? body.company_name.trim()
               : undefined,
-      });
+          phone:
+            typeof body.phone === "string" ? body.phone.trim() : undefined,
+          taxId:
+            typeof body.tax_id === "string"
+              ? body.tax_id.trim()
+              : typeof body.rut === "string"
+                ? body.rut.trim()
+                : undefined,
+        });
 
-      res.status(201).json({
-        success: true,
-        product_type: "sim_subscription",
-        order_id: result.orderId,
-        claim_token: result.claimToken,
-        checkout_url: result.checkoutUrl,
-        public_checkout_reference: result.publicCheckoutReference,
-        preference_id: result.preferenceId,
-      });
-      return;
+        res.status(201).json({
+          success: true,
+          product_type: "sim_subscription",
+          order_id: result.orderId,
+          claim_token: result.claimToken,
+          checkout_url: result.checkoutUrl,
+          public_checkout_reference: result.publicCheckoutReference,
+          preference_id: result.preferenceId,
+        });
+        return;
+      } catch (err) {
+        // Importante para UI legacy: en este flujo devolvemos `error` como string
+        // para evitar que el frontend renderice "[object Object]".
+        if (err instanceof AppError && productType === "sim_subscription") {
+          res.status(err.statusCode).json({ success: false, error: err.message });
+          return;
+        }
+        throw err;
+      }
     }
 
     const packageIdRaw = String(body.package_id ?? "").trim();

@@ -248,6 +248,22 @@ export async function startPublicSimCheckout(input: {
     throw new AppError("Plan SIM no válido.", 400, "INVALID_SIM_PLAN");
   }
 
+  // El checkout recurrente `sim_subscription` todavía no implementa el flujo
+  // completo de numeración (reserva + activación post-aprobación).
+  //
+  // Lo mantenemos deshabilitado por defecto para evitar órdenes pending sin inventario.
+  // Se puede re-habilitar explícitamente con:
+  //   SIM_SUBSCRIPTION_PUBLIC_ENABLED=true
+  const simSubscriptionEnabled =
+    process.env.SIM_SUBSCRIPTION_PUBLIC_ENABLED?.trim() === "true";
+  if (!simSubscriptionEnabled) {
+    throw new AppError(
+      "La suscripción mensual aún no está disponible para este plan. Usa compra única o contacta a soporte.",
+      403,
+      "SIM_SUBSCRIPTION_NOT_READY",
+    );
+  }
+
   const plan = getSimPlan(input.planId);
   if (!plan) {
     throw new AppError("Plan SIM no encontrado.", 404);
