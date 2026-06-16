@@ -37,6 +37,7 @@ import {
   renderPageHeader,
 } from "../page-kit.js";
 import { renderSuperadminBanner, statusBadgeSa } from "../superadmin-kit.js";
+import { isSuperadminRole } from "../../../types/roles.js";
 
 type BaseOpts = {
   admin: AdminSessionUser;
@@ -606,7 +607,40 @@ function abbreviateCompanyId(id: string): string {
   return `${id.slice(0, 8)}…`;
 }
 
-function renderOperationalStatusBadges(item: AdminClientListItem): string {
+function renderApiAccessStatusBadge(item: AdminClientListItem): string {
+  const flags = item.operational.operationalFlags;
+  if (flags.apiPending) {
+    return `<span class="badge badge-warn tv-api-access-badge" data-state="pending">API pendiente</span>`;
+  }
+  if (flags.apiActive && flags.hasApprovedProductionKey) {
+    return `<span class="badge badge-ok tv-api-access-badge" data-state="active">API activa</span>`;
+  }
+  if (flags.apiActive && !flags.hasProductionApiKey) {
+    return `<span class="badge badge-warn tv-api-access-badge" data-state="no-key">API sin key</span>`;
+  }
+  if (flags.apiActive) {
+    return `<span class="badge badge-warn tv-api-access-badge" data-state="approval">API activa · key pendiente</span>`;
+  }
+  return `<span class="badge badge-muted tv-api-access-badge" data-state="inactive">API inactiva</span>`;
+}
+
+function renderApiAccessSwitch(item: AdminClientListItem, canToggle: boolean): string {
+  const flags = item.operational.operationalFlags;
+  const companyId = item.company.id;
+  const checked = flags.apiActive ? " checked" : "";
+  const disabled = canToggle ? "" : " disabled";
+  return `<div class="tv-api-access-row" data-company-id="${escapeHtml(companyId)}">
+    <label class="tv-api-switch" title="API productiva">
+      <input type="checkbox" class="tv-api-switch__input"${checked}${disabled} aria-label="API productiva" />
+      <span class="tv-api-switch__slider" aria-hidden="true"></span>
+      <span class="tv-api-switch__label">API productiva</span>
+    </label>
+    ${renderApiAccessStatusBadge(item)}
+    <span class="tv-api-access-feedback field-hint" aria-live="polite"></span>
+  </div>`;
+}
+
+function renderOperationalStatusBadges(item: AdminClientListItem, canToggleApi: boolean): string {
   const flags = item.operational.operationalFlags;
   const parts: string[] = [];
   if (item.company.status === "active") {
@@ -619,18 +653,16 @@ function renderOperationalStatusBadges(item: AdminClientListItem): string {
   if (flags.isProtected) {
     parts.push(`<span class="badge badge-success">PROTEGIDO</span>`);
   }
-  if (flags.apiActive) {
-    parts.push(`<span class="badge badge-ok">API ACTIVA</span>`);
-  } else if (flags.hasRatePlan) {
-    parts.push(`<span class="badge badge-muted">API INACTIVA</span>`);
-  }
   if (flags.hasPaidPendingCredit) {
     parts.push(`<span class="badge badge-err">POR ACREDITAR</span>`);
   }
   if (!flags.hasBalance) parts.push(`<span class="badge badge-warn">SIN SALDO</span>`);
   if (!flags.hasRatePlan) parts.push(`<span class="badge badge-warn">SIN PLAN</span>`);
   if (flags.needsReview) parts.push(`<span class="badge badge-warn">REVIEW</span>`);
-  return `<div class="tv-clients-status-badges">${parts.join("")}</div>`;
+  return `<div class="tv-clients-status-cell">
+    <div class="tv-clients-status-badges">${parts.join("")}</div>
+    ${renderApiAccessSwitch(item, canToggleApi)}
+  </div>`;
 }
 
 function renderClientTableCell(item: AdminClientListItem): string {
@@ -1026,6 +1058,123 @@ function renderClientsSegmentBar(
   </div>`;
 }
 
+function renderClientsPageScript(): string {
+  return `<script>
+(function () {
+  var openMenu = null;
+
+  document.querySelectorAll(".tv-client-actions").forEach(function (details) {
+    details.addEventListener("toggle", function () {
+      if (!details.open) {
+        if (openMenu === details) openMenu = null;
+        return;
+      }
+      if (openMenu && openMenu !== details) openMenu.open = false;
+      openMenu = details;
+    });
+  });
+
+  document.addEventListener("click", function (e) {
+    if (!openMenu) return;
+    if (e.target.closest(".tv-client-actions")) return;
+    openMenu.open = false;
+    openMenu = null;
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && openMenu) {
+      openMenu.open = false;
+      openMenu = null;
+    }
+  });
+
+  document.querySelectorAll(".tv-client-actions__item").forEach(function (link) {
+    link.addEventListener("click", function () {
+      if (openMenu) {
+        openMenu.open = false;
+        openMenu = null;
+      }
+    });
+  });
+
+  function badgeHtml(state) {
+    if (state === "active") return '<span class="badge badge-ok tv-api-access-badge" data-state="active">API activa</span>';
+    if (state === "no-key") return '<span class="badge badge-warn tv-api-access-badge" data-state="no-key">API sin key</span>';
+    if (state === "approval") return '<span class="badge badge-warn tv-api-access-badge" data-state="approval">API activa · key pendiente</span>';
+    if (state === "pending") return '<span class="badge badge-warn tv-api-access-badge" data-state="pending">API pendiente</span>';
+    return '<span class="badge badge-muted tv-api-access-badge" data-state="inactive">API inactiva</span>';
+  }
+
+  function resolveBadgeState(result) {
+    if (!result.api_enabled) return "inactive";
+    if (!result.has_production_key) return "no-key";
+    if (!result.can_send_api_sms && result.can_use_production_api) return "approval";
+    if (result.can_send_api_sms) return "active";
+    return "approval";
+  }
+
+  document.querySelectorAll(".tv-api-access-row").forEach(function (row) {
+    var input = row.querySelector(".tv-api-switch__input");
+    if (!input || input.disabled) return;
+    var companyId = row.getAttribute("data-company-id");
+    var feedback = row.querySelector(".tv-api-access-feedback");
+    var badge = row.querySelector(".tv-api-access-badge");
+    var busy = false;
+
+    input.addEventListener("change", function () {
+      if (busy) return;
+      var enabled = input.checked;
+      if (!enabled) {
+        var ok = window.confirm(
+          "Desactivar API productiva impedirá nuevos envíos por API para este cliente. No afecta saldo ni historial."
+        );
+        if (!ok) {
+          input.checked = true;
+          return;
+        }
+      }
+
+      busy = true;
+      input.disabled = true;
+      if (feedback) feedback.textContent = "Procesando…";
+
+      fetch("/admin/clients/" + encodeURIComponent(companyId) + "/api-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ enabled: enabled }),
+      })
+        .then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+        .then(function (res) {
+          var body = res.body || {};
+          if (!res.ok || !body.success) {
+            input.checked = !enabled;
+            if (feedback) feedback.textContent = body.message || "Error al actualizar API.";
+            return;
+          }
+          input.checked = Boolean(body.api_enabled);
+          if (badge) {
+            var next = document.createElement("span");
+            next.innerHTML = badgeHtml(resolveBadgeState(body));
+            badge.replaceWith(next.firstChild);
+            badge = row.querySelector(".tv-api-access-badge");
+          }
+          if (feedback) feedback.textContent = body.message || "";
+        })
+        .catch(function () {
+          input.checked = !enabled;
+          if (feedback) feedback.textContent = "Error de red al actualizar API.";
+        })
+        .finally(function () {
+          busy = false;
+          input.disabled = false;
+        });
+    });
+  });
+})();
+</script>`;
+}
+
 export function renderSaClientsPage(opts: BaseOpts & {
   clients: AdminClientListItem[];
   summary: AdminClientsScopeSummary;
@@ -1037,6 +1186,7 @@ export function renderSaClientsPage(opts: BaseOpts & {
   totalFiltered: number;
   pageSize: number;
 }): string {
+  const canToggleApi = isSuperadminRole(opts.admin.role);
   const rows = opts.clients
     .map(
       (item) => `<tr class="tv-clients-row">
@@ -1045,7 +1195,7 @@ export function renderSaClientsPage(opts: BaseOpts & {
       <td>${renderUsageTableCell(item)}</td>
       <td>${renderPurchaseTableCell(item)}</td>
       <td>${renderRatePlanTableCell(item)}</td>
-      <td>${renderOperationalStatusBadges(item)}</td>
+      <td>${renderOperationalStatusBadges(item, canToggleApi)}</td>
       <td class="tv-clients-actions-cell">${renderClientActionsMenu(item, opts.scope === "qa")}</td>
     </tr>`,
     )
@@ -1099,7 +1249,8 @@ export function renderSaClientsPage(opts: BaseOpts & {
     <div class="table-wrap tv-panel tv-clients-table-wrap"><table class="tv-table tv-table--clients"><thead><tr>
       <th>Cliente</th><th>Saldo</th><th>Uso</th><th>Compra reciente</th><th>Rate plan</th><th>Estado</th><th>Acciones</th>
     </tr></thead><tbody>${rows || `<tr><td colspan="7">Sin empresas en este ambiente</td></tr>`}</tbody></table></div>
-    ${pagination}`;
+    ${pagination}
+    ${renderClientsPageScript()}`;
   return wrap(opts, "clients", "Clientes", body);
 }
 

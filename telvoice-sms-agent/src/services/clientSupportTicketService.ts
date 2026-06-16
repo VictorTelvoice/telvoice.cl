@@ -597,7 +597,17 @@ export async function createSupportTicket(
       wrapSupabaseError(error, "createSupportTicket");
     }
 
-    return { ok: true, data: rowToSupportTicket(data as ClientSupportTicketRow) };
+    const ticket = rowToSupportTicket(data as ClientSupportTicketRow);
+    const { notifyInternalSupportTicketCreatedBestEffort } = await import(
+      "./supportTicketNotificationService.js"
+    );
+    void notifyInternalSupportTicketCreatedBestEffort(
+      ticket,
+      input.companyId,
+      row.source,
+    );
+
+    return { ok: true, data: ticket };
   } catch (error) {
     if (error instanceof AppError) {
       return { ok: false, error: error.message };

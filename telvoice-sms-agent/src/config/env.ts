@@ -327,6 +327,9 @@ export const env = {
     fromAddress: optionalEnv("EMAIL_FROM_ADDRESS", "no-reply@telvoice.cl"),
     replyTo: optionalEnv("EMAIL_REPLY_TO", "soporte@telvoice.cl"),
   },
+  support: {
+    alertEmail: optionalEnv("TELVOICE_SUPPORT_ALERT_EMAIL"),
+  },
   clientPanel: {
     /** POST /app/buy-sms (pago manual). Desactivado por defecto hasta habilitar operación. */
     manualCheckoutEnabled:
