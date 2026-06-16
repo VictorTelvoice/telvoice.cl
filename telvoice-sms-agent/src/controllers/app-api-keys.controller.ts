@@ -140,8 +140,12 @@ export async function postAppApiKeyCreate(req: Request, res: Response): Promise<
       ok: true,
       key: result.data.key,
       plainTextKey: result.data.plainTextKey,
+      production_approved: result.data.key.productionApproved,
+      auto_approved: result.data.autoApproved === true,
       message:
-        "Copia esta API Key ahora. Por seguridad no volverás a verla completa.",
+        result.data.autoApproved
+          ? "API Key creada y aprobada para producción. Copia esta clave ahora; no volverás a verla completa."
+          : "Copia esta API Key ahora. Por seguridad no volverás a verla completa.",
     });
   } catch (error) {
     const msg = error instanceof AppError ? error.message : "No se pudo crear la API Key.";
