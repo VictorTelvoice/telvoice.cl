@@ -27,6 +27,7 @@ import { AppError } from "../utils/errors.js";
 import { renderAppApiPage } from "../views/app-ui/app-api-page.js";
 import { renderAppApiDocsPage } from "../views/app-ui/app-api-docs-page.js";
 import { generateApiDocumentationPdf } from "../services/apiDocumentationPdfService.js";
+import { resolveApiDocContentForCompany } from "../services/apiDocumentationContextService.js";
 import { buildAppContext } from "./app.controller.js";
 import type { AppPageContext } from "../views/app-ui/app-page-wrap.js";
 
@@ -144,7 +145,10 @@ export async function getAppApiDocs(
       res.redirect("/login?next=%2Fapp%2Fapi%2Fdocs");
       return;
     }
-    res.type("html").send(renderAppApiDocsPage(ctx, true));
+    const docOptions = ctx.company.id
+      ? await resolveApiDocContentForCompany(ctx.company.id)
+      : { mode: "sandbox" as const, keyMaskedHint: null };
+    res.type("html").send(renderAppApiDocsPage(ctx, true, docOptions));
   } catch (error) {
     next(error);
   }
@@ -161,12 +165,17 @@ export async function getAppApiDocsPdf(
       res.redirect("/login?next=%2Fapp%2Fapi%2Fdocs.pdf");
       return;
     }
-    const pdf = await generateApiDocumentationPdf();
+    const docOptions = ctx.company.id
+      ? await resolveApiDocContentForCompany(ctx.company.id)
+      : { mode: "sandbox" as const, keyMaskedHint: null };
+    const pdf = await generateApiDocumentationPdf(docOptions);
+    const suffix = docOptions.mode === "production" ? "production" : "sandbox";
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
-      'attachment; filename="telvoice-api-docs.pdf"',
+      `attachment; filename="telvoice-api-docs-${suffix}.pdf"`,
     );
+    res.setHeader("Cache-Control", "private, no-store");
     res.send(pdf);
   } catch (error) {
     next(error);
