@@ -510,7 +510,7 @@ export async function resolvePublicInventoryId(
   const sb = getSupabase();
   const { data, error } = await sb
     .from("real_number_inventory")
-    .select("id")
+    .select("id, sales_status, connection_status, webhook_connected, metadata")
     .eq("sales_status", "connected_available")
     .eq("connection_status", "connected")
     .eq("webhook_connected", true)
