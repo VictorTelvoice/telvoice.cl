@@ -255,7 +255,9 @@ export async function getPendingSimBundleHeldInventoryIds(): Promise<Set<string>
       order.metadata && typeof order.metadata === "object"
         ? (order.metadata as Record<string, unknown>)
         : {};
-    if (meta.product_type !== "sim_agent_bundle") continue;
+    if (meta.product_type !== "sim_agent_bundle" && meta.product_type !== "sim_subscription") {
+      continue;
+    }
     const inventoryId = meta.inventory_number_id;
     if (typeof inventoryId === "string" && inventoryId.trim()) {
       held.add(inventoryId.trim());

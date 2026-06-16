@@ -1,7 +1,6 @@
 /**
  * Landing dedicada — Numeración SIM real Telvoice
- * Checkout público vía sim_agent_bundle (pago único validado).
- * La suscripción recurrente MP permanece deshabilitada hasta implementación completa.
+ * Checkout público vía sim_subscription (suscripción mensual recurrente MercadoPago).
  */
 (function () {
   "use strict";
@@ -23,7 +22,7 @@
   };
 
   var DEFAULT_ERROR =
-    "No pudimos iniciar la operación. Inténtalo nuevamente o contáctanos.";
+    "No pudimos iniciar la suscripción. Inténtalo nuevamente o contáctanos.";
   var ANNUAL_NOT_READY =
     "La membresía anual estará disponible pronto. Por ahora elige modalidad mensual.";
   var NUMBER_TAKEN =
@@ -110,8 +109,11 @@
       if (typeof apiErr.message === "string" && apiErr.message.trim()) {
         return apiErr.message.trim();
       }
-      if (apiErr.code === "SIM_SUBSCRIPTION_NOT_READY") {
+      if (apiErr.code === "SIM_SUBSCRIPTION_NOT_READY" || apiErr.code === "SUBSCRIPTION_NOT_READY") {
         return "La suscripción mensual aún no está disponible para este plan.";
+      }
+      if (apiErr.code === "MP_PREAPPROVAL_FAILED") {
+        return "No pudimos iniciar la suscripción en MercadoPago. Intenta nuevamente.";
       }
       if (apiErr.code === "PENDING_ORDER_EXISTS") {
         return "Ya tienes una orden pendiente. Continúa el pago anterior.";
@@ -152,13 +154,13 @@
     var btn = $("nsim-submit");
     if (!btn) return;
     btn.disabled = busy;
-    btn.textContent = busy ? "Redirigiendo a Mercado Pago…" : submitLabel();
+    btn.textContent = busy ? "Redirigiendo a MercadoPago…" : submitLabel();
   }
 
   function submitLabel() {
     if (state.planId === "custom") return "Solicitar evaluación";
     var plan = PLANS[state.planId];
-    return plan ? "Ir a pagar " + plan.name : "Ir a pagar";
+    return plan ? "Activar suscripción " + plan.name : "Activar suscripción";
   }
 
   function clearPersonalFormFields() {
@@ -188,7 +190,7 @@
         note.textContent =
           state.billing === "annual"
             ? "Pago anual: " + money(annual(plan)) + "/año · 20% de descuento."
-            : "Primer pago mensual por MercadoPago.";
+            : "Suscripción mensual recurrente por MercadoPago.";
       }
       if (label) {
         label.textContent =
@@ -223,7 +225,7 @@
       priceText +
       '</p><ul class="nsim-modal-summary__list"><li>Modalidad: ' +
       billingLabel() +
-      '</li><li>1 número SIM real</li><li>' +
+      '</li><li>1 número SIM real (suscripción mensual)</li><li>' +
       plan.sms +
       "</li><li>Agente Telvoice incluido</li></ul>";
   }
@@ -255,8 +257,8 @@
     block.innerHTML =
       '<p class="nsim-pending-order__title">' +
       (expired
-        ? "Tienes una orden pendiente con reserva expirada."
-        : "Ya tienes una orden pendiente para esta numeración.") +
+        ? "Tienes una suscripción pendiente con reserva expirada."
+        : "Ya tienes una suscripción pendiente para esta numeración.") +
       "</p>" +
       '<div class="nsim-pending-order__meta">' +
       "<p><strong>Referencia:</strong> " +
@@ -271,7 +273,7 @@
       (expired ? "<p>La reserva expiró. Contacta a Telvoice si necesitas reactivarla.</p>" : "") +
       "</div>" +
       (pending.payment_url && !expired
-        ? '<button type="button" class="nsim-btn-primary nsim-pending-order__cta" id="nsim-continue-payment">Continuar pago</button>'
+        ? '<button type="button" class="nsim-btn-primary nsim-pending-order__cta" id="nsim-continue-payment">Continuar suscripción</button>'
         : "");
 
     block.hidden = false;
@@ -297,22 +299,20 @@
     if (title) {
       title.textContent = custom
         ? "Solicitar plan a medida"
-        : "Comprar numeración SIM " + plan.name;
+        : "Suscripción numeración SIM " + plan.name;
     }
     if (subtitle) {
       subtitle.textContent = custom
         ? "Cuéntanos qué necesitas y nuestro equipo diseñará una solución para tu empresa."
-        : "Completa tus datos para crear la orden y pagar la primera mensualidad por MercadoPago. Modalidad: " +
-          billingLabel() +
-          ".";
+        : "Completa tus datos para iniciar una suscripción mensual recurrente por MercadoPago.";
     }
     if (stepper) stepper.hidden = custom;
     if (footnote) {
       footnote.hidden = custom;
       footnote.textContent =
         state.billing === "annual"
-          ? "La membresía anual estará disponible pronto. Por ahora el primer mes se paga por MercadoPago."
-          : "Tras el pago, Telvoice reserva la numeración y coordina la activación en el panel.";
+          ? "La membresía anual estará disponible pronto. Por ahora solo suscripción mensual."
+          : "La numeración se cobra como suscripción mensual recurrente.";
     }
     if (submit) submit.textContent = submitLabel();
     document.querySelectorAll(".nsim-field--checkout-only").forEach(function (el) {
@@ -545,10 +545,10 @@
     setBusy(true);
 
     var payload = {
-      product_type: "sim_agent_bundle",
-      sim_plan_id: state.planId,
+      product_type: "sim_subscription",
       plan_id: state.planId,
-      agent_addon_id: plan.agent,
+      billing_mode: "subscription",
+      recurring: true,
       checkout_email: v.email,
       payer_name: v.nombre,
       company_name: v.empresa || undefined,
@@ -578,7 +578,7 @@
           }
           if (result.status === 409 && data.code === "PENDING_ORDER_EXISTS") {
             refreshCheckoutContext(v.email);
-            throw new Error("Ya tienes una orden pendiente. Usa Continuar pago.");
+            throw new Error("Ya tienes una suscripción pendiente. Usa Continuar suscripción.");
           }
           throw new Error(getHumanErrorMessage(data));
         }

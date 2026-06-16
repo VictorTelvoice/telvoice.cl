@@ -29,6 +29,16 @@ import {
 } from "../services/supabaseAuthVerifyService.js";
 import { validateUuidParam } from "../utils/validation.js";
 
+function respondPublicSimCheckoutError(res: Response, err: AppError): void {
+  res.status(err.statusCode).json({
+    success: false,
+    error: {
+      code: err.code,
+      message: err.message,
+    },
+  });
+}
+
 export async function getPublicSimAvailability(
   _req: Request,
   res: Response,
@@ -374,6 +384,18 @@ export async function postPublicCheckout(
         if (!isSimPlanId(planIdRaw)) {
           throw new ValidationError("plan_id SIM no válido.");
         }
+        if (!payerName || payerName.length < 2) {
+          throw new ValidationError("payer_name es obligatorio.");
+        }
+        const inventoryPublicId =
+          typeof body.inventory_public_id === "string"
+            ? body.inventory_public_id.trim()
+            : "";
+        if (!inventoryPublicId) {
+          throw new ValidationError(
+            "inventory_public_id es obligatorio para suscripción SIM.",
+          );
+        }
 
         const result = await startPublicSimCheckout({
           planId: planIdRaw,
@@ -392,6 +414,7 @@ export async function postPublicCheckout(
               : typeof body.rut === "string"
                 ? body.rut.trim()
                 : undefined,
+          inventoryPublicId,
         });
 
         res.status(201).json({
@@ -402,13 +425,37 @@ export async function postPublicCheckout(
           checkout_url: result.checkoutUrl,
           public_checkout_reference: result.publicCheckoutReference,
           preference_id: result.preferenceId,
+          preapproval_id: result.preferenceId,
         });
         return;
       } catch (err) {
-        // Importante para UI legacy: en este flujo devolvemos `error` como string
-        // para evitar que el frontend renderice "[object Object]".
-        if (err instanceof AppError && productType === "sim_subscription") {
-          res.status(err.statusCode).json({ success: false, error: err.message });
+        if (err instanceof AppError) {
+          if (err.code === "NO_STOCK") {
+            res.status(409).json({
+              success: false,
+              error: { code: "NO_STOCK", message: err.message },
+            });
+            return;
+          }
+          if (err.code === "NUMBER_UNAVAILABLE") {
+            res.status(409).json({
+              success: false,
+              error: { code: "NUMBER_UNAVAILABLE", message: err.message },
+            });
+            return;
+          }
+          if (err.code === "PENDING_ORDER_EXISTS") {
+            res.status(409).json({
+              success: false,
+              error: { code: "PENDING_ORDER_EXISTS", message: err.message },
+            });
+            return;
+          }
+          respondPublicSimCheckoutError(res, err);
+          return;
+        }
+        if (err instanceof ValidationError) {
+          respondPublicSimCheckoutError(res, err);
           return;
         }
         throw err;

@@ -6,7 +6,7 @@ import { AppError } from "../utils/errors.js";
 import {
   createPublicLandingCheckoutPreference,
   createPublicSimAgentBundlePreference,
-  createPublicSimCheckoutPreference,
+  createPublicSimSubscriptionPreapproval,
 } from "./mercadoPagoService.js";
 import {
   createPublicLandingOrder,
@@ -20,8 +20,6 @@ import {
   getSimPlan,
   getBundledAgentAddonForSimPlan,
   isSimPlanId,
-  simCheckoutItemDescription,
-  simCheckoutItemTitle,
 } from "../utils/simPlans.js";
 import { type AgentAddonId, getAgentAddon } from "../utils/agentAddons.js";
 import { linkSimActivationInventory } from "./simActivationService.js";
@@ -36,7 +34,7 @@ import {
   inventoryPublicId,
 } from "./realNumberInventoryService.js";
 import { getSupabase } from "../database/supabaseClient.js";
-import { isSimAgentBundleOrder } from "../utils/order-display.js";
+import { isSimAgentBundleOrder, isSimSubscriptionOrder } from "../utils/order-display.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 import type { SmsOrderRow } from "../types/wallet.js";
 
@@ -96,7 +94,7 @@ export async function getPublicPendingSimCheckoutForEmail(
 
   const order = (data ?? [])
     .map((row) => row as SmsOrderRow)
-    .find((row) => isSimAgentBundleOrder(row));
+    .find((row) => isSimSubscriptionOrder(row) || isSimAgentBundleOrder(row));
 
   if (!order) {
     return { has_pending_order: false };
@@ -231,37 +229,43 @@ export async function startPublicSimCheckout(input: {
   planId: string;
   checkoutEmail: string;
   payerEmail?: string;
-  payerName?: string;
+  payerName: string;
   companyName?: string;
   phone?: string;
   taxId?: string;
+  inventoryPublicId: string;
 }): Promise<PublicCheckoutStartResult> {
   if (!isMercadoPagoConfigured()) {
     throw new AppError(
-      "MercadoPago no está configurado en este servidor.",
+      "La suscripción mensual está en preparación. Contáctanos para activar tu numeración.",
       503,
-      "MP_NOT_CONFIGURED",
+      "SUBSCRIPTION_NOT_READY",
+    );
+  }
+
+  if (!input.payerName || input.payerName.trim().length < 2) {
+    throw new AppError("payer_name es obligatorio.", 400, "VALIDATION_ERROR");
+  }
+
+  if (!input.inventoryPublicId?.trim()) {
+    throw new AppError(
+      "Elige una numeración disponible para continuar.",
+      400,
+      "VALIDATION_ERROR",
+    );
+  }
+
+  const pending = await getPublicPendingSimCheckoutForEmail(input.checkoutEmail);
+  if (pending.has_pending_order && !pending.reservation_expired && pending.payment_url) {
+    throw new AppError(
+      "Ya existe una orden pendiente para este correo.",
+      409,
+      "PENDING_ORDER_EXISTS",
     );
   }
 
   if (!isSimPlanId(input.planId)) {
-    throw new AppError("Plan SIM no válido.", 400, "INVALID_SIM_PLAN");
-  }
-
-  // El checkout recurrente `sim_subscription` todavía no implementa el flujo
-  // completo de numeración (reserva + activación post-aprobación).
-  //
-  // Lo mantenemos deshabilitado por defecto para evitar órdenes pending sin inventario.
-  // Se puede re-habilitar explícitamente con:
-  //   SIM_SUBSCRIPTION_PUBLIC_ENABLED=true
-  const simSubscriptionEnabled =
-    process.env.SIM_SUBSCRIPTION_PUBLIC_ENABLED?.trim() === "true";
-  if (!simSubscriptionEnabled) {
-    throw new AppError(
-      "La suscripción mensual aún no está disponible para este plan. Usa compra única o contacta a soporte.",
-      403,
-      "SIM_SUBSCRIPTION_NOT_READY",
-    );
+    throw new AppError("plan_id SIM no válido.", 400, "INVALID_SIM_PLAN");
   }
 
   const plan = getSimPlan(input.planId);
@@ -269,7 +273,17 @@ export async function startPublicSimCheckout(input: {
     throw new AppError("Plan SIM no encontrado.", 404);
   }
 
+  const availability = await getPublicAvailability();
+  if (!availability.in_stock) {
+    throw new AppError(
+      "No hay números reales disponibles en este momento.",
+      409,
+      "NO_STOCK",
+    );
+  }
+
   const pricing = resolveSimBundleCheckoutPricing(plan, input.checkoutEmail);
+  const bundledAgentId = getBundledAgentAddonForSimPlan(plan.plan_id);
 
   const { order, claimToken } = await createPublicSimOrder({
     plan,
@@ -280,38 +294,100 @@ export async function startPublicSimCheckout(input: {
     phone: input.phone,
     taxId: input.taxId,
     checkoutTotalAmount: pricing.totalAmount,
-    priceMetadata: pricing.priceMetadata,
+    priceMetadata: {
+      ...pricing.priceMetadata,
+      billing_mode: "subscription",
+      recurring: true,
+      checkout_mode: "mercadopago_subscription",
+      subscription_status: "pending",
+      agent_addon_id: bundledAgentId,
+      account_creation_mode: "post_payment_auto",
+    },
   });
 
-  const preference = await createPublicSimCheckoutPreference({
-    orderId: order.id,
-    planId: plan.plan_id,
-    smsQuantity: plan.sms_quantity,
-    totalAmount: pricing.totalAmount,
-    itemTitle: simCheckoutItemTitle(plan),
-    itemDescription: simCheckoutItemDescription(plan),
-    payer: {
-      email: input.checkoutEmail,
-      name: input.payerName?.trim() || "Cliente Telvoice",
-    },
-    publicCheckoutReference: order.public_checkout_reference ?? order.id,
-  });
+  let inventoryNumberId: string;
+  try {
+    const resolvedInventoryId =
+      (await resolvePublicInventoryId(input.inventoryPublicId.trim())) ?? undefined;
+    if (!resolvedInventoryId) {
+      throw new AppError(
+        "Esta numeración ya no está disponible. Elige otra numeración.",
+        409,
+        "NUMBER_UNAVAILABLE",
+      );
+    }
+
+    const reserved = await reserveAvailableNumberForCheckout({
+      orderId: order.id,
+      inventoryId: resolvedInventoryId,
+    });
+    inventoryNumberId = reserved.id;
+    await linkSimActivationInventory(order.id, inventoryNumberId);
+
+    const digits = reserved.e164_number.replace(/\D/g, "");
+    await patchOrderFields(order.id, {
+      metadata: {
+        ...(order.metadata ?? {}),
+        inventory_number_id: inventoryNumberId,
+        inventory_public_id: inventoryPublicId(inventoryNumberId),
+        selected_number_masked: maskE164ChileMobile(reserved.e164_number),
+        number_suffix: digits.slice(-3),
+        selected_by_customer: true,
+      },
+    });
+  } catch (err) {
+    await patchOrderFields(order.id, {
+      payment_status: "cancelled",
+      metadata: {
+        ...(order.metadata ?? {}),
+        checkout_cancel_reason: "inventory_unavailable",
+      },
+    });
+    throw err;
+  }
+
+  let preapproval;
+  try {
+    preapproval = await createPublicSimSubscriptionPreapproval({
+      orderId: order.id,
+      plan,
+      monthlyAmount: pricing.totalAmount,
+      payer: {
+        email: input.checkoutEmail,
+        name: input.payerName.trim() || "Cliente Telvoice",
+      },
+      publicCheckoutReference: order.public_checkout_reference ?? order.id,
+    });
+  } catch (err) {
+    await releaseReservationForOrder(order.id);
+    if (err instanceof AppError && err.code === "MP_PREAPPROVAL_FAILED") {
+      throw new AppError(
+        "No pudimos iniciar la suscripción en MercadoPago. Intenta nuevamente.",
+        502,
+        "MP_PREAPPROVAL_FAILED",
+      );
+    }
+    throw err;
+  }
 
   await patchOrderFields(order.id, {
-    payment_reference: preference.preference_id ?? order.payment_reference,
+    payment_reference: preapproval.preapproval_id ?? order.payment_reference,
     metadata: {
       ...(order.metadata ?? {}),
-      mercadopago_preference_id: preference.preference_id,
-      mercadopago_init_point: preference.checkout_url,
+      inventory_number_id: inventoryNumberId,
+      inventory_public_id: inventoryPublicId(inventoryNumberId),
+      mercadopago_preapproval_id: preapproval.preapproval_id,
+      mercadopago_init_point: preapproval.checkout_url,
+      subscription_status: "pending",
     },
   });
 
   return {
     orderId: order.id,
     claimToken,
-    checkoutUrl: preference.checkout_url,
+    checkoutUrl: preapproval.checkout_url,
     publicCheckoutReference: order.public_checkout_reference ?? order.id,
-    preferenceId: preference.preference_id,
+    preferenceId: preapproval.preapproval_id,
     productType: "sim_subscription",
   };
 }
