@@ -73,8 +73,8 @@ export function createApp() {
     } catch {
       // ignore
     }
-    if (!build) {
-      build = env.deploy.gitSha || undefined;
+    if (!build || build === "unknown") {
+      build = env.deploy.gitSha || (build === "unknown" ? undefined : build);
     }
     res.json({
       success: true,
