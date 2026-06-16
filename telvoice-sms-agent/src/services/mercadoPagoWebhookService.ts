@@ -49,6 +49,13 @@ import {
   recordSubscriptionPayment,
   updateSmsMpSubscriptionStatus,
 } from "./smsMpSubscriptionService.js";
+import {
+  applySimSubscriptionPreapprovalWebhook,
+  getSimSubscriptionByOrderId,
+  getSimSubscriptionByPreapprovalId,
+  processSimSubscriptionMercadoPagoPayment,
+  syncSimSubscriptionAfterOrderFirstPayment,
+} from "./simSubscriptionService.js";
 import { runBillingSyncBestEffort } from "./billingSyncService.js";
 import type { MercadoPagoPaymentRecord } from "./mercadoPagoService.js";
 import type { SmsOrderRow } from "../types/wallet.js";
@@ -514,17 +521,14 @@ export async function processPublicCheckoutMercadoPagoWebhook(
         }
 
         const afterProvision = await getOrderById(orderId);
-        if (afterProvision?.company_id && isWalletSmsCreditOrder(afterProvision)) {
+        if (afterProvision?.company_id) {
           try {
-            const credit = await confirmOrderCredit(orderId, null);
-            console.log(
-              "[mp-webhook] sim subscription wallet credit",
-              orderId,
-              credit.alreadyCredited ? "already_credited" : "credited",
-            );
+            const paymentId = String(payment.id ?? metaPatch.mercadopago_payment_id ?? "");
+            await syncSimSubscriptionAfterOrderFirstPayment(orderId, paymentId);
+            console.log("[mp-webhook] sim subscription month-1 credit", orderId);
           } catch (err) {
             console.error(
-              "[mp-webhook] sim subscription wallet credit failed",
+              "[mp-webhook] sim subscription month-1 credit failed",
               orderId,
               err,
             );
@@ -674,6 +678,18 @@ async function applyPublicSimSubscriptionPreapprovalStatus(
   pre: { status?: string; id?: string },
 ): Promise<void> {
   const status = (pre.status ?? "").toLowerCase();
+  const subscription =
+    (await getSimSubscriptionByOrderId(order.id)) ??
+    (pre.id ? await getSimSubscriptionByPreapprovalId(pre.id) : null);
+
+  if (subscription) {
+    await applySimSubscriptionPreapprovalWebhook({
+      subscription,
+      preapprovalStatus: status,
+      preapprovalId: pre.id ?? null,
+    });
+  }
+
   const metaPatch = {
     ...(order.metadata ?? {}),
     mercadopago_preapproval_id: pre.id ?? order.metadata?.mercadopago_preapproval_id ?? null,
@@ -832,8 +848,36 @@ export async function routeMercadoPagoWebhook(
   paymentId: string,
 ): Promise<{ ok: boolean; skipped?: string; orderId?: string; result?: string }> {
   const payment = await getMercadoPagoPayment(paymentId);
+  const preapprovalId =
+    (payment as { preapproval_id?: string }).preapproval_id?.trim() ?? "";
+
+  if (preapprovalId) {
+    const simSub = await processSimSubscriptionMercadoPagoPayment({
+      paymentId: String(payment.id ?? paymentId),
+      paymentStatus: String(payment.status ?? ""),
+      transactionAmount: Number(payment.transaction_amount ?? 0),
+      preapprovalId,
+      externalReference: payment.external_reference,
+    });
+    if (simSub.handled && simSub.result !== "delegate_first_payment_to_order_webhook") {
+      return {
+        ok: true,
+        orderId: simSub.orderId,
+        result: simSub.result,
+      };
+    }
+  }
+
   const orderId = payment.external_reference?.trim();
   if (!orderId) {
+    const sub = await processSubscriptionMercadoPagoPayment(paymentId);
+    if (sub.handled) {
+      return {
+        ok: true,
+        orderId: sub.orderId,
+        result: sub.result ?? "subscription_payment",
+      };
+    }
     return { ok: true, skipped: "no_external_reference" };
   }
 

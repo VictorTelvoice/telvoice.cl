@@ -227,7 +227,7 @@
       billingLabel() +
       '</li><li>1 número SIM real (suscripción mensual)</li><li>' +
       plan.sms +
-      "</li><li>Agente Telvoice incluido</li></ul>";
+      " mensuales incluidos</li><li>Agente Telvoice incluido</li><li>Cobro mensual recurrente por MercadoPago</li></ul>";
   }
 
   function hidePendingOrder() {

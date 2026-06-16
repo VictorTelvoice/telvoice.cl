@@ -1,6 +1,7 @@
 import cookieParser from "cookie-parser";
 import express, { type Request, type Response } from "express";
 import path from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { adminRouter } from "./routes/admin.routes.js";
 import { appRouter } from "./routes/app.routes.js";
@@ -38,11 +39,9 @@ import {
 } from "./controllers/client-google-auth.controller.js";
 import { getCheckoutSuccessPage } from "./controllers/checkout-success.controller.js";
 
-const publicDir = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "public",
-);
+const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+
+const publicDir = path.join(moduleDir, "..", "public");
 
 export function createApp() {
   const app = express();
@@ -65,11 +64,23 @@ export function createApp() {
   app.use(express.static(publicDir, { maxAge: "7d", etag: true }));
 
   app.get("/health", (_req, res) => {
+    let build: string | undefined;
+    try {
+      const shaPath = path.join(moduleDir, "build-sha.txt");
+      if (existsSync(shaPath)) {
+        build = readFileSync(shaPath, "utf8").trim();
+      }
+    } catch {
+      // ignore
+    }
+    if (!build) {
+      build = env.deploy.gitSha || undefined;
+    }
     res.json({
       success: true,
       service: "telvoice-sms-agent",
       status: "ok",
-      ...(env.deploy.gitSha ? { build: env.deploy.gitSha } : {}),
+      ...(build ? { build } : {}),
     });
   });
 

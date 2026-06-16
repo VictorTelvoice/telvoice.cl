@@ -24,6 +24,11 @@ import {
 import { type AgentAddonId, getAgentAddon } from "../utils/agentAddons.js";
 import { linkSimActivationInventory } from "./simActivationService.js";
 import {
+  attachPreapprovalToSimSubscription,
+  createPendingSimSubscription,
+  updateSimSubscriptionStatus,
+} from "./simSubscriptionService.js";
+import {
   getPublicAvailability,
   ensureSimInventoryHeldForPendingOrder,
   listPublicAvailableNumbers,
@@ -333,6 +338,7 @@ export async function startPublicSimCheckout(input: {
         selected_number_masked: maskE164ChileMobile(reserved.e164_number),
         number_suffix: digits.slice(-3),
         selected_by_customer: true,
+        reservation_reason: "sim_subscription",
       },
     });
   } catch (err) {
@@ -341,6 +347,27 @@ export async function startPublicSimCheckout(input: {
       metadata: {
         ...(order.metadata ?? {}),
         checkout_cancel_reason: "inventory_unavailable",
+      },
+    });
+    throw err;
+  }
+
+  let simSubscription;
+  try {
+    simSubscription = await createPendingSimSubscription({
+      order,
+      plan,
+      checkoutEmail: input.checkoutEmail,
+      inventoryNumberId,
+      monthlyAmount: pricing.totalAmount,
+    });
+  } catch (err) {
+    await releaseReservationForOrder(order.id);
+    await patchOrderFields(order.id, {
+      payment_status: "cancelled",
+      metadata: {
+        ...(order.metadata ?? {}),
+        checkout_cancel_reason: "sim_subscription_record_failed",
       },
     });
     throw err;
@@ -360,6 +387,19 @@ export async function startPublicSimCheckout(input: {
     });
   } catch (err) {
     await releaseReservationForOrder(order.id);
+    await updateSimSubscriptionStatus({
+      subscriptionId: simSubscription.id,
+      status: "cancelled",
+      patch: { cancelled_at: new Date().toISOString() },
+      metadata: { checkout_cancel_reason: "mp_preapproval_failed" },
+    }).catch(() => undefined);
+    await patchOrderFields(order.id, {
+      payment_status: "cancelled",
+      metadata: {
+        ...(order.metadata ?? {}),
+        checkout_cancel_reason: "mp_preapproval_failed",
+      },
+    });
     if (err instanceof AppError && err.code === "MP_PREAPPROVAL_FAILED") {
       throw new AppError(
         "No pudimos iniciar la suscripción en MercadoPago. Intenta nuevamente.",
@@ -370,6 +410,11 @@ export async function startPublicSimCheckout(input: {
     throw err;
   }
 
+  await attachPreapprovalToSimSubscription({
+    subscriptionId: simSubscription.id,
+    preapprovalId: preapproval.preapproval_id ?? "",
+  });
+
   await patchOrderFields(order.id, {
     payment_reference: preapproval.preapproval_id ?? order.payment_reference,
     metadata: {
@@ -379,6 +424,7 @@ export async function startPublicSimCheckout(input: {
       mercadopago_preapproval_id: preapproval.preapproval_id,
       mercadopago_init_point: preapproval.checkout_url,
       subscription_status: "pending",
+      sim_subscription_id: simSubscription.id,
     },
   });
 
