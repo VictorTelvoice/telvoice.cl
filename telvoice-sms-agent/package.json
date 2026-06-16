@@ -31,6 +31,7 @@
     "test:agent-send-flow-ui": "tsx scripts/test-agent-send-flow-ui.ts",
     "test:agent-confirm-pending": "tsx scripts/test-agent-confirm-pending.ts",
     "test:agent-purchase-flow": "tsx scripts/test-agent-purchase-flow.ts",
+    "test:client-panel-post-purchase": "tsx scripts/test-client-panel-post-purchase.ts",
     "test:agent-sales": "tsx scripts/test-agent-sales-metrics.ts",
     "test:agent-greeting-reset": "tsx scripts/test-agent-greeting-reset.ts",
     "test:billing-email-idempotency": "tsx scripts/test-billing-email-idempotency.ts",

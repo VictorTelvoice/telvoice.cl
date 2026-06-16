@@ -522,12 +522,18 @@ export async function createOrder(input: {
   createdBy?: string | null;
   paymentProvider?: string;
   paymentReference?: string;
+  checkoutEmail?: string | null;
+  payerEmail?: string | null;
   metadata?: Record<string, unknown>;
 }): Promise<SmsOrderRow> {
   const pkg = await getSmsPackageById(input.packageId);
   if (!pkg || !pkg.is_active) {
     throw new AppError("Bolsa SMS no encontrada o inactiva.", 404);
   }
+
+  const checkoutEmail = input.checkoutEmail?.trim().toLowerCase() || null;
+  const payerEmail =
+    input.payerEmail?.trim().toLowerCase() || checkoutEmail || null;
 
   const { data, error } = await getSupabase()
     .from("sms_orders")
@@ -542,9 +548,12 @@ export async function createOrder(input: {
       payment_status: "pending",
       credit_status: "pending",
       created_by: input.createdBy ?? null,
+      checkout_email: checkoutEmail,
+      payer_email: payerEmail,
       metadata: {
         ...CLIENT_PANEL_ORDER_METADATA,
         ...(input.metadata ?? {}),
+        ...(checkoutEmail ? { buyer_email_source: "client_panel_checkout" } : {}),
       },
     })
     .select("*")
@@ -567,6 +576,8 @@ export async function patchOrderFields(
     company_id?: string | null;
     claim_status?: SmsOrderRow["claim_status"];
     claimed_at?: string | null;
+    checkout_email?: string | null;
+    payer_email?: string | null;
     metadata?: Record<string, unknown>;
   },
 ): Promise<SmsOrderRow> {
@@ -596,6 +607,12 @@ export async function patchOrderFields(
   }
   if (patch.claimed_at !== undefined) {
     update.claimed_at = patch.claimed_at;
+  }
+  if (patch.checkout_email !== undefined) {
+    update.checkout_email = patch.checkout_email?.trim().toLowerCase() || null;
+  }
+  if (patch.payer_email !== undefined) {
+    update.payer_email = patch.payer_email?.trim().toLowerCase() || null;
   }
   if (patch.metadata !== undefined) {
     update.metadata = {

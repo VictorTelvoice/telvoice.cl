@@ -49,6 +49,7 @@ import {
   updateSmsMpSubscriptionStatus,
 } from "./smsMpSubscriptionService.js";
 import { runBillingSyncBestEffort } from "./billingSyncService.js";
+import { runClientPanelPostCreditBestEffort } from "./clientPanelPostPurchaseService.js";
 import type { MercadoPagoPaymentRecord } from "./mercadoPagoService.js";
 import type { SmsOrderRow } from "../types/wallet.js";
 
@@ -110,6 +111,7 @@ async function resolveAlreadyCredited(
     await patchOrderFields(orderId, { metadata: metaPatch });
     console.log("[mp-webhook] already_credited (orden acreditada)", orderId);
     await runBillingSyncBestEffort(orderId, { source: "mercadopago_webhook" });
+    await runClientPanelPostCreditBestEffort(orderId);
     return { handled: true, orderId, result: "already_credited" };
   }
 
@@ -118,6 +120,7 @@ async function resolveAlreadyCredited(
     await syncCreditedOrderState(orderId, order, metaPatch);
     console.log("[mp-webhook] already_credited (purchase_credit existente)", orderId);
     await runBillingSyncBestEffort(orderId, { source: "mercadopago_webhook" });
+    await runClientPanelPostCreditBestEffort(orderId);
     return { handled: true, orderId, result: "already_credited" };
   }
 
@@ -152,6 +155,7 @@ async function creditApprovedOrder(
   }
 
   await runBillingSyncBestEffort(orderId, { source: "mercadopago_webhook" });
+  await runClientPanelPostCreditBestEffort(orderId);
 
   return { handled: true, orderId, result };
 }
