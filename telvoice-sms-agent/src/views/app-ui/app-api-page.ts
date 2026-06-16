@@ -8,6 +8,10 @@ import type {
   ClientApiSettings,
   ClientApiWebhookConfig,
 } from "../../types/client-api-settings.js";
+import {
+  CLIENT_API_PRODUCTION_BLOCKING_LABELS,
+  type ClientApiProductionBlockingReason,
+} from "../../types/client-api-production-status.js";
 import type {
   ClientApiKey,
   ClientApiKeyEnvironment,
@@ -270,16 +274,56 @@ function apiKeyEnvironmentLabel(env: ClientApiKeyEnvironment): string {
   return env === "production" ? "Producción" : "Sandbox";
 }
 
-function productionApprovalClientBadges(k: ClientApiKey): string {
+function productionApprovalClientBadges(
+  k: ClientApiKey,
+  operational: boolean,
+): string {
   if (k.environment !== "production") {
     return "";
   }
-  const approval = k.productionApproved
-    ? '<span class="badge badge-ok">Producción aprobada</span>'
-    : '<span class="badge badge-warn">Producción pendiente de aprobación</span>';
-  const sendNote =
-    '<span class="badge badge-muted" title="Envío SMS productivo no activo">Producción no habilitada para envío real</span>';
-  return `<div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.25rem">${approval} ${sendNote}</div>`;
+  if (!k.productionApproved) {
+    return `<div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.25rem"><span class="badge badge-warn">Falta aprobación productiva</span></div>`;
+  }
+  if (operational && k.status === "active") {
+    return `<div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.25rem"><span class="badge badge-ok">Producción activa</span></div>`;
+  }
+  return `<div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.25rem"><span class="badge badge-ok">Producción aprobada</span></div>`;
+}
+
+function renderBlockingReasonsList(
+  reasons: ClientApiProductionBlockingReason[],
+): string {
+  if (!reasons.length) {
+    return "";
+  }
+  const items = reasons
+    .map(
+      (r) =>
+        `<li>${escapeHtml(CLIENT_API_PRODUCTION_BLOCKING_LABELS[r] ?? r)}</li>`,
+    )
+    .join("");
+  return `<ul class="tv-api-blocking-list" style="margin:0.5rem 0 0;padding-left:1.25rem">${items}</ul>`;
+}
+
+function renderProductionStatusBanner(data: AppApiPageData): string {
+  const status = data.productionStatus;
+  if (!status) {
+    return "";
+  }
+  if (status.canUseProductionApi) {
+    const sendNote = status.canSendApiSms
+      ? "Puedes autenticarte, consultar saldo/mensajes y enviar SMS con tus API Keys productivas aprobadas."
+      : "Puedes autenticarte con tus API Keys productivas. Revisa los requisitos de envío SMS abajo.";
+    return `<div class="alert alert-success" role="status" id="tv-api-production-banner">
+      <strong>API productiva habilitada</strong>
+      <span class="badge badge-ok" style="margin-left:0.5rem">Producción activa</span>
+      <p class="field-hint" style="margin:0.5rem 0 0">${escapeHtml(sendNote)}</p>
+    </div>`;
+  }
+  return `<div class="alert alert-warn" role="status" id="tv-api-production-banner">
+    <strong>API productiva pendiente</strong>
+    ${renderBlockingReasonsList(status.blockingReasons)}
+  </div>`;
 }
 
 function renderKeyScopesBadges(scopes: ClientApiKeyScope[]): string {
@@ -296,6 +340,7 @@ function renderRealApiKeysPanel(ctx: AppPageContext, data: AppApiPageData): stri
   const keysModule = data.keysModule ?? { available: false, migrationPending: false };
   const keys = data.keys ?? [];
   const pepperOk = data.pepperConfigured === true;
+  const operational = data.productionStatus?.canUseProductionApi === true;
 
   let bodyInner = "";
   if (!keysModule.available) {
@@ -308,15 +353,27 @@ function renderRealApiKeysPanel(ctx: AppPageContext, data: AppApiPageData): stri
     </div>`;
   }
 
+  const keysIntro = operational
+    ? `<p class="field-hint" style="margin:0 0 1rem">Administra tus API Keys productivas. El secreto completo solo se muestra al crear o regenerar una key.</p>`
+    : data.productionStatus?.blockingReasons.length
+      ? `<p class="field-hint" style="margin:0 0 1rem">Cuando tu cuenta cumpla los requisitos, podrás usar las keys de esta tabla en producción.</p>`
+      : `<p class="field-hint" style="margin:0 0 1rem">Crea una API Key de producción y solicita su aprobación a Telvoice.</p>`;
+
+  const keysAlert = operational
+    ? ""
+    : `<div class="alert alert-warn" role="status" style="margin-bottom:1rem">
+        El envío por API en producción requiere plan con API habilitada, key activa aprobada y scopes adecuados.
+      </div>`;
+
   const rows =
     keys.length === 0
-      ? `<tr><td colspan="8" class="tv-api-keys-empty">Aún no tienes API Keys. Crea una para futuras integraciones.</td></tr>`
+      ? `<tr><td colspan="8" class="tv-api-keys-empty">Aún no tienes API Keys. Crea una para integrar tus sistemas.</td></tr>`
       : keys
           .map((k) => {
             const isRevoked = k.status === "revoked";
             const isActive = k.status === "active";
             const isPaused = k.status === "paused";
-            const prodBadge = productionApprovalClientBadges(k);
+            const prodBadge = productionApprovalClientBadges(k, operational);
             const lastUsed = k.lastUsedAt
               ? escapeHtml(formatDateShort(k.lastUsedAt))
               : "—";
@@ -365,17 +422,13 @@ function renderRealApiKeysPanel(ctx: AppPageContext, data: AppApiPageData): stri
     <header class="tv-section-head" style="padding:1rem 1.25rem 0;display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:0.75rem">
       <div>
         <h2 class="tv-section-head__title">API Keys</h2>
-        <p class="tv-section-head__sub">Crea y administra claves de acceso para futuras integraciones API de Telvoice.</p>
+        <p class="tv-section-head__sub">Claves Bearer para autenticar en <code>/api/v1/*</code>.</p>
       </div>
       ${createBtn}
     </header>
     <div class="tv-panel__body">
-      <div class="alert alert-warn" role="status" style="margin-bottom:1rem">
-        Estas claves son reales para autenticación futura, pero el envío SMS por API aún no está habilitado.
-      </div>
-      <p class="field-hint" style="margin:0 0 1rem">
-        Aunque una key de producción esté aprobada, el envío SMS productivo será habilitado en una fase posterior por Telvoice.
-      </p>
+      ${keysAlert}
+      ${keysIntro}
       ${bodyInner}
       <div class="tv-api-keys-table-wrap">
         <table class="tv-api-keys-table">
@@ -722,32 +775,70 @@ function renderRealApiKeysScript(data: AppApiPageData): string {
 </script>`;
 }
 
+function findMaskedApiKeyForPrefix(
+  apiKeys: ClientApiKey[] | undefined,
+  prefix: string,
+): string | null {
+  const list = apiKeys ?? [];
+  const match = list.find((k) => k.keyPrefix === prefix);
+  return match?.keyMasked ?? null;
+}
+
 function renderCredentialsPanel(
   ctx: AppPageContext,
-  settings: ClientApiSettings,
+  data: AppApiPageData,
 ): string {
+  const status = data.productionStatus;
+  const operational = status?.canUseProductionApi === true;
   const companyLabel = ctx.company.name?.trim() || "Tu empresa";
   const companyId = ctx.company.id?.trim() || "—";
+
+  if (operational) {
+    const prefix = status?.primaryProductionKeyPrefix ?? "—";
+    const maskedKey = findMaskedApiKeyForPrefix(data.keys, prefix);
+    return `<section class="tv-panel" id="tv-api-credentials-panel">
+    <header class="tv-section-head" style="padding:1rem 1.25rem 0">
+      <h2 class="tv-section-head__title">Credenciales de acceso</h2>
+      <p class="tv-section-head__sub">Usa tus API Keys productivas de la tabla inferior. La documentación describe autenticación Bearer y endpoints.</p>
+    </header>
+    <div class="tv-panel__body">
+      <dl class="tv-api-meta-grid">
+        <div><dt>Estado</dt><dd><span class="badge badge-ok">API productiva habilitada</span></dd></div>
+        <div><dt>Key principal</dt><dd><code id="tv-api-key-display">${escapeHtml(maskedKey ?? prefix)}</code></dd></div>
+        <div><dt>Ambiente</dt><dd>Producción</dd></div>
+        <div><dt>Empresa</dt><dd>${escapeHtml(companyLabel)}</dd></div>
+        <div><dt>Company ID</dt><dd><code class="tv-code-sm">${escapeHtml(companyId)}</code></dd></div>
+      </dl>
+      <p class="field-hint" style="margin-top:0.75rem">Para copiar el secreto completo, crea una nueva key o usa la que guardaste al crearla. Por seguridad no almacenamos el secreto en el panel.</p>
+    </div>
+  </section>`;
+  }
+
+  const settings = data.settings;
   const creds = settingsToCredentials(settings);
   const statusCls = statusBadgeClass(settings.apiStatus);
 
   return `<section class="tv-panel" id="tv-api-credentials-panel">
     <header class="tv-section-head" style="padding:1rem 1.25rem 0">
       <h2 class="tv-section-head__title">Credenciales de acceso</h2>
-      <p class="tv-section-head__sub">Clave de demostración para integración visual. No autentica envíos SMS reales.</p>
+      <p class="tv-section-head__sub">Vista de referencia sandbox. Las credenciales productivas se gestionan en API Keys.</p>
     </header>
     <div class="tv-panel__body">
-      <div class="alert alert-warn" role="status" style="margin-bottom:1rem">
-        Clave de demostración. La activación de API productiva será habilitada por Telvoice.
-      </div>
+      ${
+        status?.blockingReasons.length
+          ? `<div class="alert alert-warn" role="status" style="margin-bottom:1rem">
+        <strong>Requisitos pendientes para API productiva</strong>
+        ${renderBlockingReasonsList(status.blockingReasons)}
+      </div>`
+          : ""
+      }
       <div class="tv-api-key-row">
-        <span class="field-hint" style="margin:0">API Key (demo)</span>
+        <span class="field-hint" style="margin:0">Referencia sandbox (no productiva)</span>
         <code id="tv-api-key-display">${escapeHtml(creds.apiKey)}</code>
         <button type="button" class="btn btn-secondary btn-sm" id="tv-api-copy-key-btn">
           <span class="material-symbols-outlined" style="font-size:1rem" aria-hidden="true">content_copy</span>
-          Copiar API Key
+          Copiar referencia
         </button>
-        <button type="button" class="btn btn-ghost btn-sm" id="tv-api-regen-key-btn">Regenerar API Key</button>
       </div>
       <p class="field-hint" style="margin:0.35rem 0 0">Vista enmascarada: <code id="tv-api-key-masked">${escapeHtml(settings.apiKeyMasked)}</code></p>
       <dl class="tv-api-meta-grid">
@@ -755,8 +846,6 @@ function renderCredentialsPanel(
         <div><dt>Estado</dt><dd><span class="badge ${statusCls}" id="tv-api-status-badge">${escapeHtml(settings.apiStatus)}</span></dd></div>
         <div><dt>Empresa</dt><dd>${escapeHtml(companyLabel)}</dd></div>
         <div><dt>Company ID</dt><dd><code class="tv-code-sm">${escapeHtml(companyId)}</code></dd></div>
-        <div><dt>Creada</dt><dd id="tv-api-created-at">${escapeHtml(formatDateShort(creds.createdAt))}</dd></div>
-        <div><dt>Último uso</dt><dd id="tv-api-last-used">${escapeHtml(creds.lastUsedLabel)}</dd></div>
       </dl>
     </div>
   </section>`;
@@ -792,6 +881,17 @@ function renderWebhookPanel(): string {
 function renderApiScript(ctx: AppPageContext, pageData: AppApiPageData): string {
   const companyId = escapeHtml(ctx.company.id || "default");
   const serverJson = JSON.stringify(pageData.settings).replace(/</g, "\\u003c");
+  const productionStatusJson = JSON.stringify(pageData.productionStatus ?? null).replace(
+    /</g,
+    "\\u003c",
+  );
+  const operational = pageData.productionStatus?.canUseProductionApi === true;
+  const primaryKeyMasked = operational
+    ? findMaskedApiKeyForPrefix(
+        pageData.keys,
+        pageData.productionStatus?.primaryProductionKeyPrefix ?? "",
+      ) ?? pageData.productionStatus?.primaryProductionKeyPrefix ?? ""
+    : "";
   const credsJson = JSON.stringify(settingsToCredentials(pageData.settings)).replace(
     /</g,
     "\\u003c",
@@ -816,6 +916,9 @@ function renderApiScript(ctx: AppPageContext, pageData: AppApiPageData): string 
   var CRED_KEY = "telvoice_client_api_credentials_${companyId}";
   var WEBHOOK_KEY = "telvoice_client_api_webhook_${companyId}";
   var SERVER_SETTINGS = ${serverJson};
+  var PRODUCTION_STATUS = ${productionStatusJson};
+  var API_OPERATIONAL = ${operational ? "true" : "false"};
+  var PRIMARY_KEY_MASKED = ${JSON.stringify(primaryKeyMasked)};
   var DEFAULT_CRED = ${credsJson};
   var DEFAULT_WEBHOOK = ${webhookJson};
   var DB_AVAILABLE = ${dbAvailable ? "true" : "false"};
@@ -1061,10 +1164,22 @@ function renderApiScript(ctx: AppPageContext, pageData: AppApiPageData): string 
   applySettingsUI(loadSettings());
 
   document.getElementById("tv-api-copy-header")?.addEventListener("click", function () {
-    copyText(state ? state.apiKeyDemo : "", "API Key copiada.");
+    if (API_OPERATIONAL) {
+      if (PRIMARY_KEY_MASKED) {
+        copyText(PRIMARY_KEY_MASKED, "Prefijo de API Key copiado. El secreto completo solo estuvo visible al crear la key.");
+      } else {
+        showToast("Crea o regenera una API Key para obtener el secreto completo.", true);
+      }
+      return;
+    }
+    copyText(state ? state.apiKeyDemo : "", "Referencia sandbox copiada.");
   });
   document.getElementById("tv-api-copy-key-btn")?.addEventListener("click", function () {
-    copyText(state ? state.apiKeyDemo : "", "API Key copiada.");
+    if (API_OPERATIONAL) {
+      showToast("El secreto completo no se almacena en el panel. Usa la key guardada al crearla.", true);
+      return;
+    }
+    copyText(state ? state.apiKeyDemo : "", "Referencia sandbox copiada.");
   });
 
   document.getElementById("tv-api-regen-key-btn")?.addEventListener("click", function () {
@@ -1237,7 +1352,8 @@ export function renderAppApiPage(
     requestsModule: { available: false, migrationPending: false },
     recentApiRequests: [],
   };
-  const settings = data.settings;
+  const operational = data.productionStatus?.canUseProductionApi === true;
+  const headerCopyLabel = operational ? "Copiar prefijo key" : "Copiar referencia";
 
   const body = `
     ${apiPageStyles()}
@@ -1251,7 +1367,7 @@ export function renderAppApiPage(
       actions: `
         <button type="button" class="btn btn-primary" id="tv-api-copy-header">
           <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">content_copy</span>
-          Copiar API Key
+          ${headerCopyLabel}
         </button>
         <a href="/app/api/docs" class="btn btn-secondary">
           <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">menu_book</span>
@@ -1265,7 +1381,8 @@ export function renderAppApiPage(
     })}
     <div class="tv-api-layout">
       <div class="tv-api-main">
-        ${renderCredentialsPanel(ctx, settings)}
+        ${renderProductionStatusBanner(data)}
+        ${renderCredentialsPanel(ctx, data)}
         ${renderRealApiKeysPanel(ctx, data)}
         ${renderWebhookPanel()}
       </div>

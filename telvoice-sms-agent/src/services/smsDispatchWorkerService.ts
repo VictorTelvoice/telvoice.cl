@@ -600,6 +600,36 @@ export async function processQueueTick(
   return result;
 }
 
+/** Integración API productiva: política + TPS antes del envío por API. */
+export async function assertApiTrafficAllowed(input: {
+  companyId: string;
+  routeId: string;
+  providerId: string;
+  ratePlanId: string;
+  segmentCost: number;
+  trafficType?: string;
+}): Promise<void> {
+  const trafficType = (input.trafficType ?? "transactional").trim().toLowerCase();
+
+  await resolveTrafficPolicy({
+    companyId: input.companyId,
+    routeId: input.routeId,
+    providerId: input.providerId,
+    ratePlanId: input.ratePlanId,
+    trafficType,
+  });
+
+  await assertCanSendNow({
+    companyId: input.companyId,
+    providerId: input.providerId,
+    routeId: input.routeId,
+    ratePlanId: input.ratePlanId,
+    trafficType,
+    flow: "api",
+    segmentCost: input.segmentCost,
+  });
+}
+
 /** Integración live_test: política + TPS antes del envío inmediato. */
 export async function assertLiveTestTrafficAllowed(input: {
   companyId: string;

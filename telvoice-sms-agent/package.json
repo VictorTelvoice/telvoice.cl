@@ -32,6 +32,8 @@
     "test:agent-confirm-pending": "tsx scripts/test-agent-confirm-pending.ts",
     "test:agent-purchase-flow": "tsx scripts/test-agent-purchase-flow.ts",
     "test:client-panel-post-purchase": "tsx scripts/test-client-panel-post-purchase.ts",
+    "test:client-api-production-status": "tsx scripts/test-client-api-production-status.ts",
+    "test:public-api-production-send-access": "tsx scripts/test-public-api-production-send-access.ts",
     "test:agent-sales": "tsx scripts/test-agent-sales-metrics.ts",
     "test:agent-greeting-reset": "tsx scripts/test-agent-greeting-reset.ts",
     "test:billing-email-idempotency": "tsx scripts/test-billing-email-idempotency.ts",

@@ -1,16 +1,26 @@
 import type { Request, Response } from "express";
 import { getPublicApiRequestId } from "../middleware/public-api-request-context.js";
 import { recordPublicApiRequest } from "../middleware/public-api-request-log.js";
+import { validateProductionApiSmsSendAccess } from "../services/clientApiProductionStatusService.js";
 import {
   getSmsApiMessagesModuleState,
+  resolveProductionSmsSend,
   resolveSandboxSmsSend,
   validateIdempotencyKeyHeader,
   validateSmsApiSendPayload,
 } from "../services/smsApiMessageService.js";
 import type { SmsApiMessage } from "../types/sms-api-messages.js";
+import { AppError } from "../utils/errors.js";
 import { publicApiError } from "../utils/public-api-response.js";
 
 const SEND_ENDPOINT = "/api/v1/sms/send";
+
+function mapValidationCode(code: string): string {
+  if (code === "INVALID_RECIPIENT") {
+    return "INVALID_DESTINATION";
+  }
+  return code;
+}
 
 function logSmsSend(
   req: Request,
@@ -50,6 +60,24 @@ function messageBody(message: SmsApiMessage) {
   };
 }
 
+function mapAppError(error: AppError): { statusCode: number; code: string; message: string } {
+  const msg = error.message;
+  if (msg.includes("saldo") || msg.includes("Saldo")) {
+    return { statusCode: 402, code: "INSUFFICIENT_BALANCE", message: msg };
+  }
+  if (msg.includes("Wallet") || msg.includes("wallet")) {
+    return { statusCode: 403, code: "WALLET_INACTIVE", message: msg };
+  }
+  if (msg.includes("API no está habilitado") || msg.includes("rate plan")) {
+    return { statusCode: 403, code: "API_NOT_ENABLED", message: msg };
+  }
+  return {
+    statusCode: error.statusCode,
+    code: error.statusCode === 400 ? "VALIDATION_ERROR" : "INTERNAL_ERROR",
+    message: msg,
+  };
+}
+
 export async function postPublicApiSmsSend(
   req: Request,
   res: Response,
@@ -70,27 +98,6 @@ export async function postPublicApiSmsSend(
       requestId,
       "INTERNAL_ERROR",
       "An internal error occurred.",
-    );
-    return;
-  }
-
-  if (auth.environment === "production") {
-    logSmsSend(req, {
-      statusCode: 403,
-      success: false,
-      errorCode: "PRODUCTION_SEND_NOT_ENABLED",
-      errorMessage: "Production SMS send is not enabled yet.",
-      metadata: {
-        production_approved: auth.productionApproved,
-        reason: "production_send_not_enabled",
-      },
-    });
-    publicApiError(
-      res,
-      403,
-      requestId,
-      "PRODUCTION_SEND_NOT_ENABLED",
-      "Production SMS send is not enabled yet.",
     );
     return;
   }
@@ -116,17 +123,18 @@ export async function postPublicApiSmsSend(
 
   const validated = validateSmsApiSendPayload(req.body);
   if (!validated.ok) {
+    const code = mapValidationCode(validated.error.code);
     logSmsSend(req, {
       statusCode: validated.error.statusCode,
       success: false,
-      errorCode: validated.error.code,
+      errorCode: code,
       errorMessage: validated.error.message,
     });
     publicApiError(
       res,
       validated.error.statusCode,
       requestId,
-      validated.error.code,
+      code,
       validated.error.message,
     );
     return;
@@ -150,23 +158,66 @@ export async function postPublicApiSmsSend(
     return;
   }
 
-  try {
-    const resolution = await resolveSandboxSmsSend(
-      {
-        companyId: auth.companyId,
-        apiKeyId: auth.apiKeyId,
+  const isProduction = auth.environment === "production";
+
+  if (isProduction) {
+    const access = await validateProductionApiSmsSendAccess(auth, validated.segments);
+    if (!access.ok) {
+      logSmsSend(req, {
+        statusCode: access.error.statusCode,
+        success: false,
+        errorCode: access.error.code,
+        errorMessage: access.error.message,
+        metadata: {
+          production_approved: auth.productionApproved,
+          blocking_reason: access.error.blockingReason ?? null,
+        },
+      });
+      publicApiError(
+        res,
+        access.error.statusCode,
         requestId,
-        recipient: validated.payload.to,
-        message: validated.payload.message,
-        sender: validated.payload.sender,
-        country: validated.payload.country,
-        externalReference: validated.payload.external_reference,
-        segments: validated.segments,
-        idempotencyKey: idempotency.value,
-        environment: auth.environment,
-      },
-      validated.payload,
-    );
+        access.error.code,
+        access.error.message,
+      );
+      return;
+    }
+  }
+
+  try {
+    const resolution = isProduction
+      ? await resolveProductionSmsSend(
+          {
+            companyId: auth.companyId,
+            apiKeyId: auth.apiKeyId,
+            requestId,
+            recipient: validated.payload.to,
+            message: validated.payload.message,
+            sender: validated.payload.sender,
+            country: validated.payload.country,
+            externalReference: validated.payload.external_reference,
+            segments: validated.segments,
+            idempotencyKey: idempotency.value,
+            environment: auth.environment,
+          },
+          validated.payload,
+        )
+      : await resolveSandboxSmsSend(
+          {
+            companyId: auth.companyId,
+            apiKeyId: auth.apiKeyId,
+            requestId,
+            recipient: validated.payload.to,
+            message: validated.payload.message,
+            sender: validated.payload.sender,
+            country: validated.payload.country,
+            externalReference: validated.payload.external_reference,
+            segments: validated.segments,
+            idempotencyKey: idempotency.value,
+            environment: auth.environment,
+          },
+          validated.payload,
+        );
 
     if (resolution.outcome === "conflict") {
       logSmsSend(req, {
@@ -199,7 +250,8 @@ export async function postPublicApiSmsSend(
       metadata: {
         message_id: message.id,
         segments: message.segments,
-        sandbox: true,
+        sandbox: !isProduction,
+        production: isProduction,
         idempotency_key_present: !!idempotency.value,
         idempotent_replay: isReplay,
       },
@@ -213,6 +265,7 @@ export async function postPublicApiSmsSend(
       requestId,
       messageId: message.id,
       idempotentReplay: isReplay,
+      environment: auth.environment,
     });
 
     res.status(statusCode).json({
@@ -221,11 +274,25 @@ export async function postPublicApiSmsSend(
       ...(isReplay ? { idempotent_replay: true } : {}),
       message: messageBody(message),
       notice: isReplay
-        ? "Idempotent replay: returning the original sandbox message."
-        : "Sandbox mode: no SMS was sent and no balance was deducted.",
+        ? "Idempotent replay: returning the original message."
+        : isProduction
+          ? "Production SMS accepted for delivery."
+          : "Sandbox mode: no SMS was sent and no balance was deducted.",
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    if (error instanceof AppError) {
+      const mapped = mapAppError(error);
+      logSmsSend(req, {
+        statusCode: mapped.statusCode,
+        success: false,
+        errorCode: mapped.code,
+        errorMessage: mapped.message,
+      });
+      publicApiError(res, mapped.statusCode, requestId, mapped.code, mapped.message);
+      return;
+    }
+
     console.warn("[public-api] POST /api/v1/sms/send", error);
     logSmsSend(req, {
       statusCode: 500,

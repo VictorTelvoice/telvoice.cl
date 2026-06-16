@@ -13,6 +13,7 @@ import {
   validateApiKeyName,
   validateApiKeyScopes,
 } from "../services/clientApiKeyService.js";
+import { resolveClientApiProductionStatus } from "../services/clientApiProductionStatusService.js";
 import type { ClientApiKeyScope } from "../types/client-api-keys.js";
 import { canOperateClientPanel } from "../types/roles.js";
 import { AppError } from "../utils/errors.js";
@@ -65,10 +66,18 @@ export async function getAppApiKeysJson(req: Request, res: Response): Promise<vo
       return;
     }
 
+    const productionStatus = await resolveClientApiProductionStatus(ctx.company.id);
+
     res.json({
       ok: true,
       keys: listed.data,
       pepperConfigured: isApiKeyPepperConfigured(),
+      apiEnabled: productionStatus.apiEnabled,
+      hasProductionApprovedKey: productionStatus.hasProductionApprovedKey,
+      canSendApiSms: productionStatus.canSendApiSms,
+      canUseProductionApi: productionStatus.canUseProductionApi,
+      blockingReasons: productionStatus.blockingReasons,
+      productionStatus,
     });
   } catch (error) {
     const msg =

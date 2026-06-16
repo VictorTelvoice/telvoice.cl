@@ -73,6 +73,7 @@ export type AppApiPageData = {
   keysModule?: import("./client-api-keys.js").ClientApiKeysModuleState;
   keys?: import("./client-api-keys.js").ClientApiKey[];
   pepperConfigured?: boolean;
+  productionStatus?: import("./client-api-production-status.js").ClientApiProductionStatus;
   requestsModule?: import("./client-api-requests.js").ClientApiRequestsModuleState;
   recentApiRequests?: import("./client-api-requests.js").ClientApiRequest[];
 };

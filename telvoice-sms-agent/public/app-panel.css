@@ -5605,7 +5605,7 @@
     .tv-lab-theme .tv-overlay {
       background: rgba(5, 8, 20, 0.72);
     }
-    .tv-lab-theme a:not(.btn):not(.tv-nav-link):not(.tv-dash-block__link):not(.tv-brand-lockup) {
+    .tv-lab-theme a:not(.btn):not(.tv-nav-link):not(.tv-dash-block__link):not(.tv-brand-lockup):not(.tv-sms-in-line) {
       color: var(--tv-lab-cyan);
     }
 
