@@ -90,6 +90,52 @@ function apiPageStyles(): string {
       gap: 0.85rem 1rem;
       margin-top: 1rem;
     }
+    .tv-api-meta-grid--operational {
+      grid-template-columns: 1fr;
+      gap: 0.75rem 1rem;
+    }
+    @media (min-width: 640px) {
+      .tv-api-meta-grid--operational {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (min-width: 960px) {
+      .tv-api-meta-grid--operational {
+        grid-template-columns: minmax(120px, 0.9fr) minmax(0, 2.2fr) minmax(90px, 0.7fr) minmax(120px, 1fr) minmax(160px, 1.2fr);
+      }
+    }
+    .tv-api-meta-grid__cell {
+      min-width: 0;
+    }
+    .tv-api-meta-grid__cell--key {
+      min-width: 0;
+    }
+    @media (max-width: 959px) {
+      .tv-api-meta-grid__cell--key {
+        grid-column: 1 / -1;
+      }
+    }
+    .tv-api-key-principal {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 0;
+      max-width: 100%;
+    }
+    .tv-api-key-principal code {
+      display: block;
+      flex: 1 1 auto;
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.85rem;
+      padding: 0.35rem 0.5rem;
+      background: var(--tv-bg);
+      border-radius: 6px;
+    }
     .tv-api-meta-grid dt {
       font-size: 0.72rem;
       text-transform: uppercase;
@@ -775,13 +821,36 @@ function renderRealApiKeysScript(data: AppApiPageData): string {
 </script>`;
 }
 
-function findMaskedApiKeyForPrefix(
-  apiKeys: ClientApiKey[] | undefined,
-  prefix: string,
-): string | null {
-  const list = apiKeys ?? [];
-  const match = list.find((k) => k.keyPrefix === prefix);
-  return match?.keyMasked ?? null;
+function resolvePrimaryProductionKey(
+  data: AppApiPageData,
+): ClientApiKey | null {
+  const keys = data.keys ?? [];
+  const status = data.productionStatus;
+  const isPrimary = (k: ClientApiKey) =>
+    k.environment === "production" &&
+    k.status === "active" &&
+    k.productionApproved;
+
+  if (status?.primaryProductionKeyId) {
+    const byId = keys.find((k) => k.id === status.primaryProductionKeyId);
+    if (byId && isPrimary(byId)) {
+      return byId;
+    }
+  }
+  if (status?.primaryProductionKeyPrefix) {
+    const byPrefix = keys.find((k) => k.keyPrefix === status.primaryProductionKeyPrefix);
+    if (byPrefix && isPrimary(byPrefix)) {
+      return byPrefix;
+    }
+  }
+  const approved = keys
+    .filter(isPrimary)
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  return approved[0] ?? null;
+}
+
+function primaryKeyDisplayLabel(key: ClientApiKey): string {
+  return key.keyMasked?.trim() || key.keyPrefix;
 }
 
 function renderCredentialsPanel(
@@ -794,22 +863,32 @@ function renderCredentialsPanel(
   const companyId = ctx.company.id?.trim() || "—";
 
   if (operational) {
-    const prefix = status?.primaryProductionKeyPrefix ?? "—";
-    const maskedKey = findMaskedApiKeyForPrefix(data.keys, prefix);
+    const primaryKey = resolvePrimaryProductionKey(data);
+    const keyLabel = primaryKey ? primaryKeyDisplayLabel(primaryKey) : "—";
+    const keyPrefixHint = primaryKey?.keyPrefix ?? "";
     return `<section class="tv-panel" id="tv-api-credentials-panel">
     <header class="tv-section-head" style="padding:1rem 1.25rem 0">
       <h2 class="tv-section-head__title">Credenciales de acceso</h2>
       <p class="tv-section-head__sub">Usa tus API Keys productivas de la tabla inferior. La documentación describe autenticación Bearer y endpoints.</p>
     </header>
     <div class="tv-panel__body">
-      <dl class="tv-api-meta-grid">
-        <div><dt>Estado</dt><dd><span class="badge badge-ok">API productiva habilitada</span></dd></div>
-        <div><dt>Key principal</dt><dd><code id="tv-api-key-display">${escapeHtml(maskedKey ?? prefix)}</code></dd></div>
-        <div><dt>Ambiente</dt><dd>Producción</dd></div>
-        <div><dt>Empresa</dt><dd>${escapeHtml(companyLabel)}</dd></div>
-        <div><dt>Company ID</dt><dd><code class="tv-code-sm">${escapeHtml(companyId)}</code></dd></div>
+      <dl class="tv-api-meta-grid tv-api-meta-grid--operational">
+        <div class="tv-api-meta-grid__cell"><dt>Estado</dt><dd><span class="badge badge-ok">API productiva habilitada</span></dd></div>
+        <div class="tv-api-meta-grid__cell tv-api-meta-grid__cell--key">
+          <dt>Key principal</dt>
+          <dd class="tv-api-key-principal">
+            <code id="tv-api-key-display" title="${escapeHtml(keyLabel)}">${escapeHtml(keyLabel)}</code>
+            ${keyPrefixHint ? `<button type="button" class="btn btn-secondary btn-sm" id="tv-api-copy-key-btn" title="Copiar prefijo enmascarado">
+              <span class="material-symbols-outlined" style="font-size:1rem" aria-hidden="true">content_copy</span>
+              Copiar prefijo
+            </button>` : ""}
+          </dd>
+        </div>
+        <div class="tv-api-meta-grid__cell"><dt>Ambiente</dt><dd>Producción</dd></div>
+        <div class="tv-api-meta-grid__cell"><dt>Empresa</dt><dd>${escapeHtml(companyLabel)}</dd></div>
+        <div class="tv-api-meta-grid__cell"><dt>Company ID</dt><dd><code class="tv-code-sm">${escapeHtml(companyId)}</code></dd></div>
       </dl>
-      <p class="field-hint" style="margin-top:0.75rem">Para copiar el secreto completo, crea una nueva key o usa la que guardaste al crearla. Por seguridad no almacenamos el secreto en el panel.</p>
+      <p class="field-hint" style="margin-top:0.75rem">Para copiar el secreto completo, crea o regenera una API Key. Por seguridad, el secret solo se muestra una vez.</p>
     </div>
   </section>`;
   }
@@ -886,12 +965,8 @@ function renderApiScript(ctx: AppPageContext, pageData: AppApiPageData): string 
     "\\u003c",
   );
   const operational = pageData.productionStatus?.canUseProductionApi === true;
-  const primaryKeyMasked = operational
-    ? findMaskedApiKeyForPrefix(
-        pageData.keys,
-        pageData.productionStatus?.primaryProductionKeyPrefix ?? "",
-      ) ?? pageData.productionStatus?.primaryProductionKeyPrefix ?? ""
-    : "";
+  const primaryKey = operational ? resolvePrimaryProductionKey(pageData) : null;
+  const primaryKeyMasked = primaryKey ? primaryKeyDisplayLabel(primaryKey) : "";
   const credsJson = JSON.stringify(settingsToCredentials(pageData.settings)).replace(
     /</g,
     "\\u003c",
@@ -1080,6 +1155,15 @@ function renderApiScript(ctx: AppPageContext, pageData: AppApiPageData): string 
 
   function applySettingsUI(s) {
     state = s;
+    if (API_OPERATIONAL) {
+      if (keyDisplay && PRIMARY_KEY_MASKED) {
+        keyDisplay.textContent = PRIMARY_KEY_MASKED;
+        keyDisplay.setAttribute("title", PRIMARY_KEY_MASKED);
+      }
+      applyWebhookUI(settingsToWebhookCfg(s));
+      updateSyncHint();
+      return;
+    }
     var c = settingsToCred(s);
     if (keyDisplay) keyDisplay.textContent = c.apiKey;
     if (keyMasked) keyMasked.textContent = s.apiKeyMasked || "";
@@ -1166,7 +1250,7 @@ function renderApiScript(ctx: AppPageContext, pageData: AppApiPageData): string 
   document.getElementById("tv-api-copy-header")?.addEventListener("click", function () {
     if (API_OPERATIONAL) {
       if (PRIMARY_KEY_MASKED) {
-        copyText(PRIMARY_KEY_MASKED, "Prefijo de API Key copiado. El secreto completo solo estuvo visible al crear la key.");
+        copyText(PRIMARY_KEY_MASKED, "Prefijo enmascarado copiado. El secret completo solo se muestra al crear la key.");
       } else {
         showToast("Crea o regenera una API Key para obtener el secreto completo.", true);
       }
@@ -1176,7 +1260,11 @@ function renderApiScript(ctx: AppPageContext, pageData: AppApiPageData): string 
   });
   document.getElementById("tv-api-copy-key-btn")?.addEventListener("click", function () {
     if (API_OPERATIONAL) {
-      showToast("El secreto completo no se almacena en el panel. Usa la key guardada al crearla.", true);
+      if (PRIMARY_KEY_MASKED) {
+        copyText(PRIMARY_KEY_MASKED, "Prefijo enmascarado copiado. El secret completo solo se muestra al crear la key.");
+      } else {
+        showToast("Crea o regenera una API Key para obtener el secreto completo.", true);
+      }
       return;
     }
     copyText(state ? state.apiKeyDemo : "", "Referencia sandbox copiada.");
