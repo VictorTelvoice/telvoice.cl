@@ -1,107 +1,62 @@
 /**
  * Landing dedicada — Numeración SIM real Telvoice
- * Modo demo: ?demo_numeracion=1 (sin MercadoPago, sin orden, sin Supabase)
+ * Checkout público vía sim_agent_bundle (pago único validado).
+ * La suscripción recurrente MP permanece deshabilitada hasta implementación completa.
  */
 (function () {
   "use strict";
 
-  function qs(id) {
+  var ANNUAL_DISCOUNT = 20;
+  var PLANS = {
+    sim_starter: {
+      name: "Starter",
+      monthly: 29990,
+      sms: "1.000 SMS salientes incluidos",
+      agent: "agent_start",
+    },
+    sim_pro: {
+      name: "Pro",
+      monthly: 49990,
+      sms: "2.000 SMS salientes incluidos",
+      agent: "agent_pro",
+    },
+  };
+
+  var DEFAULT_ERROR =
+    "No pudimos iniciar la operación. Inténtalo nuevamente o contáctanos.";
+  var ANNUAL_NOT_READY =
+    "La membresía anual estará disponible pronto. Por ahora elige modalidad mensual.";
+  var NUMBER_TAKEN =
+    "Esta numeración ya no está disponible. Elige otra numeración.";
+  var NUMBERS_PAGE_SIZE = 10;
+
+  var state = {
+    planId: "sim_starter",
+    billing: "monthly",
+    open: false,
+    busy: false,
+    numbers: [],
+    numbersLimit: NUMBERS_PAGE_SIZE,
+    selectedNumber: null,
+    pendingOrder: null,
+  };
+
+  function $(id) {
     return document.getElementById(id);
   }
 
-  function fmt(n) {
-    return new Intl.NumberFormat("es-CL").format(Math.round(Number(n) || 0));
+  function money(n) {
+    return "$" + new Intl.NumberFormat("es-CL").format(Math.round(Number(n) || 0));
   }
 
-  function formatClp(amount) {
-    return "$" + fmt(amount);
-  }
-
-  var SIM_PLANS = {
-    sim_starter: {
-      plan_id: "sim_starter",
-      displayName: "Starter",
-      modalTitle: "Comprar numeración SIM Starter",
-      total: 29990,
-      checkout: true,
-      submitLabel: "Ir a pagar Starter",
-    },
-    sim_pro: {
-      plan_id: "sim_pro",
-      displayName: "Pro",
-      modalTitle: "Comprar numeración SIM Pro",
-      total: 49990,
-      checkout: true,
-      submitLabel: "Ir a pagar Pro",
-    },
-    custom: {
-      plan_id: "custom",
-      displayName: "A medida",
-      modalTitle: "Solicitar plan a medida",
-      checkout: false,
-      submitLabel: "Solicitar evaluación",
-    },
-  };
-
-  var SIM_PLAN_AGENT_MAP = {
-    sim_starter: "agent_start",
-    sim_pro: "agent_pro",
-  };
-
-  var SIM_CHECKOUT_ERROR =
-    "No pudimos iniciar el pago. Intenta nuevamente o solicita asistencia de Telvoice.";
-  var SIM_NOT_ENABLED_ERROR =
-    "La compra online de numeración SIM está habilitada solo para clientes autorizados durante la etapa de lanzamiento.";
-  var SIM_NO_STOCK_ERROR =
-    "No hay numeraciones disponibles para compra online en este momento. Déjanos tus datos y te contactaremos.";
-  var SIM_NUMBER_TAKEN_ERROR =
-    "Este número acaba de ser reservado. Elige otra numeración disponible.";
-
-  function formatCheckoutError(data, fallbackMessage) {
-    if (data && typeof data === "object") {
-      var apiErr = data.error;
-      if (typeof apiErr === "string" && apiErr.trim()) return apiErr.trim();
-      if (apiErr && typeof apiErr === "object") {
-        var code = typeof apiErr.code === "string" ? apiErr.code : "";
-        var message = typeof apiErr.message === "string" ? apiErr.message.trim() : "";
-        if (code === "PENDING_ORDER_EXISTS" || message.indexOf("orden pendiente") !== -1) {
-          return "Ya tienes una orden pendiente. Continúa el pago anterior.";
-        }
-        if (code === "NO_STOCK" || code === "no_stock" || code === "NUMBER_UNAVAILABLE") {
-          return SIM_NUMBER_TAKEN_ERROR;
-        }
-        if (code === "not_enabled" || code === "NOT_ENABLED") {
-          return SIM_NOT_ENABLED_ERROR;
-        }
-        if (code === "VALIDATION_ERROR" && message.indexOf("plan_id SIM") !== -1) {
-          return "La suscripción mensual aún no está disponible para este plan. Usa compra única o contacta a soporte.";
-        }
-        if (message) return message;
-        if (code) return code;
-      }
-      if (typeof data.message === "string" && data.message.trim()) return data.message.trim();
-    }
-    if (typeof fallbackMessage === "string" && fallbackMessage.trim() && fallbackMessage !== "[object Object]") {
-      return fallbackMessage.trim();
-    }
-    return SIM_CHECKOUT_ERROR;
-  }
-
-  var NUMBERS_PAGE_SIZE = 10;
-
-  function agentApiOrigin() {
+  function origin() {
     return (
       (window.TELVOICE_CONFIG && window.TELVOICE_CONFIG.agentApiOrigin) ||
       "https://agent.telvoice.cl"
     );
   }
 
-  var CHECKOUT_SUBTITLE =
-    "Completa tus datos para crear la orden y continuar al pago seguro por MercadoPago.";
-  var CUSTOM_SUBTITLE =
-    "Cuéntanos qué necesitas y nuestro equipo diseñará una solución de numeración, SMS e integraciones para tu empresa.";
-
-  function isNumeracionDemoMode() {
+  function demo() {
     try {
       return new URLSearchParams(window.location.search).get("demo_numeracion") === "1";
     } catch (e) {
@@ -109,17 +64,431 @@
     }
   }
 
-  var state = {
-    simPlanId: "sim_starter",
-    modalOpen: false,
-    submitting: false,
-    statusVisible: false,
-    availableNumbers: [],
-    numbersLimit: NUMBERS_PAGE_SIZE,
-    selectedInventoryPublicId: null,
-    pendingOrder: null,
-    contextLoading: false,
-  };
+  function annual(plan) {
+    return Math.round(plan.monthly * 12 * 0.8);
+  }
+
+  function annualEq(plan) {
+    return Math.round(plan.monthly * 0.8);
+  }
+
+  function billingLabel() {
+    return state.billing === "annual" ? "membresía anual" : "pago mensual";
+  }
+
+  function charge(plan) {
+    return state.billing === "annual" ? annual(plan) : plan.monthly;
+  }
+
+  function getHumanErrorMessage(dataOrError, fallback) {
+    if (!dataOrError) {
+      return typeof fallback === "string" && fallback.trim() && fallback !== "[object Object]"
+        ? fallback.trim()
+        : DEFAULT_ERROR;
+    }
+
+    if (typeof dataOrError === "string") {
+      return dataOrError.trim() || DEFAULT_ERROR;
+    }
+
+    if (dataOrError instanceof Error) {
+      var msg = dataOrError.message;
+      if (typeof msg === "string" && msg.trim() && msg !== "[object Object]") {
+        return msg.trim();
+      }
+    }
+
+    if (typeof dataOrError.message === "string" && dataOrError.message.trim()) {
+      return dataOrError.message.trim();
+    }
+
+    var apiErr = dataOrError.error;
+    if (typeof apiErr === "string" && apiErr.trim()) {
+      return apiErr.trim();
+    }
+    if (apiErr && typeof apiErr === "object") {
+      if (typeof apiErr.message === "string" && apiErr.message.trim()) {
+        return apiErr.message.trim();
+      }
+      if (apiErr.code === "SIM_SUBSCRIPTION_NOT_READY") {
+        return "La suscripción mensual aún no está disponible para este plan.";
+      }
+      if (apiErr.code === "PENDING_ORDER_EXISTS") {
+        return "Ya tienes una orden pendiente. Continúa el pago anterior.";
+      }
+      if (
+        apiErr.code === "NO_STOCK" ||
+        apiErr.code === "no_stock" ||
+        apiErr.code === "NUMBER_UNAVAILABLE"
+      ) {
+        return NUMBER_TAKEN;
+      }
+      if (typeof apiErr.code === "string" && apiErr.code.trim()) {
+        return apiErr.code.trim();
+      }
+    }
+
+    if (dataOrError.details && typeof dataOrError.details.message === "string") {
+      return dataOrError.details.message.trim();
+    }
+    if (typeof dataOrError.code === "string" && dataOrError.code.trim()) {
+      return dataOrError.code.trim();
+    }
+
+    return typeof fallback === "string" && fallback.trim() && fallback !== "[object Object]"
+      ? fallback.trim()
+      : DEFAULT_ERROR;
+  }
+
+  function setError(text) {
+    var node = $("nsim-form-error");
+    if (!node) return;
+    node.textContent = text || "";
+    node.hidden = !text;
+  }
+
+  function setBusy(busy) {
+    state.busy = busy;
+    var btn = $("nsim-submit");
+    if (!btn) return;
+    btn.disabled = busy;
+    btn.textContent = busy ? "Redirigiendo a Mercado Pago…" : submitLabel();
+  }
+
+  function submitLabel() {
+    if (state.planId === "custom") return "Solicitar evaluación";
+    var plan = PLANS[state.planId];
+    return plan ? "Ir a pagar " + plan.name : "Ir a pagar";
+  }
+
+  function clearPersonalFormFields() {
+    ["nsim-nombre", "nsim-empresa", "nsim-telefono", "nsim-rut", "nsim-use-case", "nsim-volume"].forEach(
+      function (id) {
+        var el = $(id);
+        if (el) el.value = "";
+      }
+    );
+    var email = $("nsim-email");
+    if (email) email.value = "";
+  }
+
+  function updatePricing() {
+    Object.keys(PLANS).forEach(function (id) {
+      var plan = PLANS[id];
+      var price = document.querySelector('[data-nsim-price="' + id + '"]');
+      var note = document.querySelector('[data-nsim-price-note="' + id + '"]');
+      var label = document.querySelector('[data-nsim-billing-label="' + id + '"]');
+      if (price) {
+        price.innerHTML =
+          state.billing === "annual"
+            ? money(annualEq(plan)) + " <span>/ mes eq.</span>"
+            : money(plan.monthly) + " <span>/ mes</span>";
+      }
+      if (note) {
+        note.textContent =
+          state.billing === "annual"
+            ? "Pago anual: " + money(annual(plan)) + "/año · 20% de descuento."
+            : "Primer pago mensual por MercadoPago.";
+      }
+      if (label) {
+        label.textContent =
+          state.billing === "annual" ? "Membresía anual -20%" : "Pago mensual";
+      }
+    });
+
+    document.querySelectorAll("[data-billing-cycle]").forEach(function (button) {
+      var active = button.getAttribute("data-billing-cycle") === state.billing;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+  }
+
+  function renderSummary() {
+    var summary = $("nsim-modal-summary");
+    if (!summary) return;
+    if (state.planId === "custom") {
+      summary.innerHTML =
+        '<p class="nsim-modal-summary__plan">Plan a medida</p><p class="nsim-modal-summary__price">Cotización personalizada</p><ul class="nsim-modal-summary__list"><li>Múltiples números SIM</li><li>Volumen SMS personalizado</li><li>API, Webhooks y automatizaciones avanzadas</li></ul>';
+      return;
+    }
+    var plan = PLANS[state.planId];
+    var priceText =
+      state.billing === "annual"
+        ? money(annual(plan)) + " / año · equivale a " + money(annualEq(plan)) + " / mes"
+        : money(plan.monthly) + " / mes";
+    summary.innerHTML =
+      '<p class="nsim-modal-summary__plan">' +
+      plan.name +
+      '</p><p class="nsim-modal-summary__price">' +
+      priceText +
+      '</p><ul class="nsim-modal-summary__list"><li>Modalidad: ' +
+      billingLabel() +
+      '</li><li>1 número SIM real</li><li>' +
+      plan.sms +
+      "</li><li>Agente Telvoice incluido</li></ul>";
+  }
+
+  function hidePendingOrder() {
+    var block = $("nsim-pending-order");
+    if (block) {
+      block.hidden = true;
+      block.innerHTML = "";
+    }
+  }
+
+  function renderPendingOrder(pending) {
+    var block = $("nsim-pending-order");
+    var submitBtn = $("nsim-submit");
+    if (!block) return;
+
+    if (!pending || !pending.has_pending_order) {
+      hidePendingOrder();
+      if (submitBtn) submitBtn.hidden = false;
+      return;
+    }
+
+    var ref = pending.public_reference || "—";
+    var amount = pending.amount != null ? money(pending.amount) : "—";
+    var number = pending.selected_number || "Numeración reservada";
+    var expired = pending.reservation_expired === true;
+
+    block.innerHTML =
+      '<p class="nsim-pending-order__title">' +
+      (expired
+        ? "Tienes una orden pendiente con reserva expirada."
+        : "Ya tienes una orden pendiente para esta numeración.") +
+      "</p>" +
+      '<div class="nsim-pending-order__meta">' +
+      "<p><strong>Referencia:</strong> " +
+      ref +
+      "</p>" +
+      "<p><strong>Monto:</strong> " +
+      amount +
+      "</p>" +
+      "<p><strong>Numeración:</strong> " +
+      number +
+      "</p>" +
+      (expired ? "<p>La reserva expiró. Contacta a Telvoice si necesitas reactivarla.</p>" : "") +
+      "</div>" +
+      (pending.payment_url && !expired
+        ? '<button type="button" class="nsim-btn-primary nsim-pending-order__cta" id="nsim-continue-payment">Continuar pago</button>'
+        : "");
+
+    block.hidden = false;
+    if (submitBtn) submitBtn.hidden = !!(pending.payment_url && !expired);
+
+    var continueBtn = $("nsim-continue-payment");
+    if (continueBtn && pending.payment_url) {
+      continueBtn.addEventListener("click", function () {
+        window.location.href = pending.payment_url;
+      });
+    }
+  }
+
+  function updateModal() {
+    var custom = state.planId === "custom";
+    var plan = PLANS[state.planId];
+    var title = $("nsim-modal-title");
+    var subtitle = $("nsim-modal-subtitle");
+    var stepper = $("nsim-modal-stepper");
+    var footnote = $("nsim-modal-footnote");
+    var submit = $("nsim-submit");
+
+    if (title) {
+      title.textContent = custom
+        ? "Solicitar plan a medida"
+        : "Comprar numeración SIM " + plan.name;
+    }
+    if (subtitle) {
+      subtitle.textContent = custom
+        ? "Cuéntanos qué necesitas y nuestro equipo diseñará una solución para tu empresa."
+        : "Completa tus datos para crear la orden y pagar la primera mensualidad por MercadoPago. Modalidad: " +
+          billingLabel() +
+          ".";
+    }
+    if (stepper) stepper.hidden = custom;
+    if (footnote) {
+      footnote.hidden = custom;
+      footnote.textContent =
+        state.billing === "annual"
+          ? "La membresía anual estará disponible pronto. Por ahora el primer mes se paga por MercadoPago."
+          : "Tras el pago, Telvoice reserva la numeración y coordina la activación en el panel.";
+    }
+    if (submit) submit.textContent = submitLabel();
+    document.querySelectorAll(".nsim-field--checkout-only").forEach(function (el) {
+      el.hidden = custom;
+    });
+    document.querySelectorAll(".nsim-field--custom-only").forEach(function (el) {
+      el.hidden = !custom;
+    });
+    renderSummary();
+  }
+
+  function renderNumbers(numbers) {
+    var picker = $("nsim-number-picker");
+    var list = $("nsim-number-list");
+    var moreBtn = $("nsim-number-show-more");
+    if (!picker || !list || state.planId === "custom") return;
+
+    state.numbers = Array.isArray(numbers) ? numbers : [];
+    if (
+      state.pendingOrder &&
+      state.pendingOrder.has_pending_order &&
+      !state.pendingOrder.reservation_expired &&
+      state.pendingOrder.payment_url
+    ) {
+      picker.hidden = true;
+      return;
+    }
+
+    var visible = state.numbers.slice(0, state.numbersLimit);
+    if (!visible.length) {
+      picker.hidden = true;
+      return;
+    }
+
+    if (!state.selectedNumber || !visible.some(function (n) {
+      return n.inventory_public_id === state.selectedNumber;
+    })) {
+      state.selectedNumber = visible[0].inventory_public_id;
+    }
+
+    list.innerHTML = visible
+      .map(function (n) {
+        var selected = state.selectedNumber === n.inventory_public_id;
+        return (
+          '<label class="nsim-number-option' +
+          (selected ? " is-selected" : "") +
+          '"><input type="radio" name="nsim-number" value="' +
+          n.inventory_public_id +
+          '"' +
+          (selected ? " checked" : "") +
+          ' /><span class="nsim-number-option__body"><span class="nsim-number-option__number">' +
+          n.display_number +
+          '</span><span class="nsim-number-option__note">Disponible para activación inmediata</span></span></label>'
+        );
+      })
+      .join("");
+
+    picker.hidden = false;
+    list.querySelectorAll('input[name="nsim-number"]').forEach(function (input) {
+      input.addEventListener("change", function () {
+        state.selectedNumber = String(input.value || "").trim();
+        list.querySelectorAll(".nsim-number-option").forEach(function (el) {
+          el.classList.toggle(
+            "is-selected",
+            el.querySelector('input[name="nsim-number"]').value === input.value
+          );
+        });
+      });
+    });
+
+    if (moreBtn) moreBtn.hidden = !(state.numbers.length > state.numbersLimit);
+  }
+
+  function refreshCheckoutContext(emailOverride) {
+    if (!state.open || state.planId === "custom") return;
+
+    if (demo()) {
+      renderNumbers([{ inventory_public_id: "demo_001", display_number: "+56 9 *** *** 513" }]);
+      return;
+    }
+
+    var email = (emailOverride || ($("nsim-email") && $("nsim-email").value) || "").trim();
+    var pendingPromise = email
+      ? fetch(
+          origin() + "/api/public/pending-sim-checkout?email=" + encodeURIComponent(email),
+          { headers: { Accept: "application/json" } }
+        )
+          .then(function (res) {
+            return res.json();
+          })
+          .catch(function () {
+            return { has_pending_order: false };
+          })
+      : Promise.resolve({ has_pending_order: false });
+
+    var numbersPromise = fetch(origin() + "/api/public/sim-available-numbers?limit=50", {
+      headers: { Accept: "application/json" },
+    })
+      .then(function (res) {
+        return res.json();
+      })
+      .catch(function () {
+        return { numbers: [] };
+      });
+
+    Promise.all([pendingPromise, numbersPromise]).then(function (results) {
+      if (!state.open) return;
+      var pending = results[0] || { has_pending_order: false };
+      state.pendingOrder = pending.has_pending_order ? pending : null;
+      renderPendingOrder(pending);
+      renderNumbers((results[1] && results[1].numbers) || []);
+    });
+  }
+
+  function openModal(planId) {
+    state.planId = planId;
+    state.open = true;
+    state.busy = false;
+    state.pendingOrder = null;
+    state.numbersLimit = NUMBERS_PAGE_SIZE;
+    state.selectedNumber = null;
+    clearPersonalFormFields();
+    setError("");
+    updateModal();
+    var modal = $("nsim-purchase-modal");
+    if (modal) modal.removeAttribute("hidden");
+    document.body.classList.add("nsim-modal-open");
+    refreshCheckoutContext();
+    var first = $("nsim-nombre");
+    if (first) setTimeout(function () { first.focus(); }, 100);
+  }
+
+  function closeModal() {
+    state.open = false;
+    state.busy = false;
+    var modal = $("nsim-purchase-modal");
+    if (modal) modal.setAttribute("hidden", "");
+    document.body.classList.remove("nsim-modal-open");
+    setError("");
+    setBusy(false);
+    hidePendingOrder();
+    state.pendingOrder = null;
+  }
+
+  function values() {
+    return {
+      nombre: (($("nsim-nombre") || {}).value || "").trim(),
+      empresa: (($("nsim-empresa") || {}).value || "").trim(),
+      email: (($("nsim-email") || {}).value || "").trim(),
+      telefono: (($("nsim-telefono") || {}).value || "").trim(),
+      rut: (($("nsim-rut") || {}).value || "").trim(),
+      useCase: (($("nsim-use-case") || {}).value || "").trim(),
+      volume: (($("nsim-volume") || {}).value || "").trim(),
+    };
+  }
+
+  function showDemo(v, plan) {
+    var status = $("nsim-modal-status");
+    var form = $("nsim-purchase-form");
+    var summary = $("nsim-modal-summary");
+    var stepper = $("nsim-modal-stepper");
+    if (form) form.hidden = true;
+    if (summary) summary.hidden = true;
+    if (stepper) stepper.hidden = true;
+    if (!status) return;
+    status.innerHTML =
+      '<p class="nsim-modal-status__eyebrow">Demo local</p><h3 class="nsim-modal-status__title">Aquí se crearía la orden y se abriría Mercado Pago.</h3><div class="nsim-modal-status__meta"><p><strong>Plan:</strong> ' +
+      plan.name +
+      '</p><p><strong>Modalidad:</strong> ' +
+      billingLabel() +
+      '</p><p><strong>Email:</strong> ' +
+      v.email +
+      '</p></div><button type="button" class="nsim-btn-primary nsim-modal-status__close">Entendido</button>';
+    status.hidden = false;
+    status.querySelector("button").addEventListener("click", closeModal);
+  }
 
   function parseApiJson(res) {
     return res.text().then(function (text) {
@@ -132,570 +501,27 @@
     });
   }
 
-  function getPlan(planId) {
-    return SIM_PLANS[planId] || null;
-  }
-
-  function renderModalSummary(planId) {
-    var summary = qs("nsim-modal-summary");
-    if (!summary) return;
-
-    if (planId === "custom") {
-      summary.innerHTML =
-        '<p class="nsim-modal-summary__plan">Plan a medida</p>' +
-        '<p class="nsim-modal-summary__price">Cotización personalizada</p>' +
-        '<ul class="nsim-modal-summary__list">' +
-        "<li>Múltiples números SIM</li>" +
-        "<li>Volumen SMS personalizado</li>" +
-        "<li>API, Webhooks y automatizaciones avanzadas</li>" +
-        "</ul>";
-      return;
-    }
-    if (planId === "sim_pro") {
-      summary.innerHTML =
-        '<p class="nsim-modal-summary__plan">Pro</p>' +
-        '<p class="nsim-modal-summary__price">' +
-        formatClp(49990) +
-        " / mes</p>" +
-        '<ul class="nsim-modal-summary__list">' +
-        "<li>Todo lo que incluye Starter</li>" +
-        "<li>2.000 SMS salientes incluidos</li>" +
-        "<li>Bot Telegram y automatizaciones</li>" +
-        "</ul>";
-      return;
-    }
-    summary.innerHTML =
-      '<p class="nsim-modal-summary__plan">Starter</p>' +
-      '<p class="nsim-modal-summary__price">' +
-      formatClp(29990) +
-      " / mes</p>" +
-      '<ul class="nsim-modal-summary__list">' +
-      "<li>1 número SIM real</li>" +
-      "<li>1.000 SMS salientes incluidos</li>" +
-      "<li>Agente Telvoice incluido</li>" +
-      "</ul>";
-  }
-
-  function updateModalChrome() {
-    var plan = getPlan(state.simPlanId);
-    if (!plan) return;
-
-    var title = qs("nsim-modal-title");
-    var subtitle = qs("nsim-modal-subtitle");
-    var stepper = qs("nsim-modal-stepper");
-    var footnote = qs("nsim-modal-footnote");
-    var submitBtn = qs("nsim-submit");
-    var isCustom = plan.plan_id === "custom";
-
-    if (title) title.textContent = plan.modalTitle;
-    if (subtitle) subtitle.textContent = isCustom ? CUSTOM_SUBTITLE : CHECKOUT_SUBTITLE;
-    if (stepper) stepper.hidden = isCustom;
-    if (footnote) footnote.hidden = isCustom;
-
-    document.querySelectorAll(".nsim-field--checkout-only").forEach(function (el) {
-      el.hidden = isCustom;
-    });
-    document.querySelectorAll(".nsim-field--custom-only").forEach(function (el) {
-      el.hidden = !isCustom;
-    });
-
-    renderModalSummary(state.simPlanId);
-
-    if (submitBtn && !state.submitting) submitBtn.textContent = plan.submitLabel;
-
-    document.querySelectorAll("[data-nsim-plan]").forEach(function (card) {
-      if (!card.classList.contains("nsim-plan-card")) return;
-      var selected = card.getAttribute("data-nsim-plan") === state.simPlanId && state.modalOpen;
-      card.classList.toggle("is-selected", selected);
-    });
-
-    refreshCheckoutContext();
-  }
-
-  function resetCheckoutContext() {
-    state.availableNumbers = [];
-    state.numbersLimit = NUMBERS_PAGE_SIZE;
-    state.selectedInventoryPublicId = null;
-    state.pendingOrder = null;
-    state.contextLoading = false;
-    hidePendingOrder();
-    hideNumberPicker();
-  }
-
-  function clearPersonalFormFields() {
-    ["nsim-nombre", "nsim-empresa", "nsim-telefono", "nsim-rut", "nsim-use-case", "nsim-volume"].forEach(function (id) {
-      var el = qs(id);
-      if (el) el.value = "";
-    });
-  }
-
-  function hidePendingOrder() {
-    var block = qs("nsim-pending-order");
-    if (block) {
-      block.hidden = true;
-      block.innerHTML = "";
-    }
-  }
-
-  function hideNumberPicker() {
-    var picker = qs("nsim-number-picker");
-    if (picker) picker.hidden = true;
-    var list = qs("nsim-number-list");
-    if (list) list.innerHTML = "";
-    var more = qs("nsim-number-show-more");
-    if (more) more.hidden = true;
-  }
-
-  function renderPendingOrder(pending) {
-    var block = qs("nsim-pending-order");
-    var submitBtn = qs("nsim-submit");
-    if (!block) return;
-
-    if (!pending || !pending.has_pending_order) {
-      hidePendingOrder();
-      if (submitBtn) submitBtn.hidden = false;
-      return;
-    }
-
-    var ref = pending.public_reference || "—";
-    var amount = pending.amount != null ? formatClp(pending.amount) : "—";
-    var number = pending.selected_number || "Numeración reservada";
-    var expired = pending.reservation_expired === true;
-    var title = expired
-      ? "Tienes una orden pendiente con reserva expirada."
-      : "Ya tienes una orden pendiente para esta numeración.";
-
-    block.innerHTML =
-      '<p class="nsim-pending-order__title">' +
-      title +
-      "</p>" +
-      '<div class="nsim-pending-order__meta">' +
-      "<p><strong>Referencia:</strong> " +
-      ref +
-      "</p>" +
-      "<p><strong>Monto:</strong> " +
-      amount +
-      "</p>" +
-      "<p><strong>Numeración:</strong> " +
-      number +
-      "</p>" +
-      (expired
-        ? "<p>La reserva expiró. Contacta a Telvoice si necesitas reactivarla.</p>"
-        : "") +
-      "</div>" +
-      (pending.payment_url && !expired
-        ? '<button type="button" class="nsim-btn-primary nsim-pending-order__cta" id="nsim-continue-payment">Continuar pago</button>'
-        : "");
-
-    block.hidden = false;
-    hideNumberPicker();
-
-    if (submitBtn) {
-      submitBtn.hidden = !!(pending.payment_url && !expired);
-    }
-
-    var continueBtn = qs("nsim-continue-payment");
-    if (continueBtn && pending.payment_url) {
-      continueBtn.addEventListener("click", function () {
-        window.location.href = pending.payment_url;
-      });
-    }
-  }
-
-  function renderNumberPicker() {
-    var picker = qs("nsim-number-picker");
-    var list = qs("nsim-number-list");
-    var moreBtn = qs("nsim-number-show-more");
-    if (!picker || !list) return;
-
-    if (
-      state.simPlanId === "custom" ||
-      state.statusVisible ||
-      (state.pendingOrder &&
-        state.pendingOrder.has_pending_order &&
-        !state.pendingOrder.reservation_expired &&
-        state.pendingOrder.payment_url)
-    ) {
-      hideNumberPicker();
-      return;
-    }
-
-    var numbers = state.availableNumbers.slice(0, state.numbersLimit);
-    if (!numbers.length) {
-      hideNumberPicker();
-      return;
-    }
-
-    if (!state.selectedInventoryPublicId && numbers[0]) {
-      state.selectedInventoryPublicId = numbers[0].inventory_public_id;
-    }
-
-    list.innerHTML = numbers
-      .map(function (item) {
-        var selected =
-          state.selectedInventoryPublicId === item.inventory_public_id;
-        return (
-          '<label class="nsim-number-option' +
-          (selected ? " is-selected" : "") +
-          '">' +
-          '<input type="radio" name="nsim-number" value="' +
-          item.inventory_public_id +
-          '"' +
-          (selected ? " checked" : "") +
-          " />" +
-          '<span class="nsim-number-option__body">' +
-          '<span class="nsim-number-option__number">' +
-          item.display_number +
-          "</span>" +
-          '<span class="nsim-number-option__note">Disponible para activación inmediata</span>' +
-          "</span>" +
-          "</label>"
-        );
-      })
-      .join("");
-
-    list.querySelectorAll('input[name="nsim-number"]').forEach(function (input) {
-      input.addEventListener("change", function () {
-        state.selectedInventoryPublicId = input.value;
-        list.querySelectorAll(".nsim-number-option").forEach(function (el) {
-          el.classList.toggle(
-            "is-selected",
-            el.querySelector('input[name="nsim-number"]').value === input.value
-          );
-        });
-      });
-    });
-
-    picker.hidden = false;
-
-    if (moreBtn) {
-      moreBtn.hidden = !(state.availableNumbers.length > state.numbersLimit);
-    }
-  }
-
-  function resetModalStatus() {
-    state.statusVisible = false;
-    var status = qs("nsim-modal-status");
-    var form = qs("nsim-purchase-form");
-    var summary = qs("nsim-modal-summary");
-    var stepper = qs("nsim-modal-stepper");
-    if (status) {
-      status.hidden = true;
-      status.innerHTML = "";
-    }
-    if (form) form.hidden = false;
-    if (summary) summary.hidden = false;
-    if (stepper && state.simPlanId !== "custom") stepper.hidden = false;
-  }
-
-  function showModalStatus(type, message, metaHtml) {
-    state.statusVisible = true;
-    var status = qs("nsim-modal-status");
-    var form = qs("nsim-purchase-form");
-    var summary = qs("nsim-modal-summary");
-    var stepper = qs("nsim-modal-stepper");
-    if (!status) return;
-
-    if (form) form.hidden = true;
-    if (summary) summary.hidden = true;
-    if (stepper) stepper.hidden = true;
-
-    var eyebrow = type === "demo" ? "Demo local" : type === "error" ? "Atención" : "Información";
-    status.innerHTML =
-      '<p class="nsim-modal-status__eyebrow">' +
-      eyebrow +
-      "</p>" +
-      '<h3 class="nsim-modal-status__title">' +
-      message +
-      "</h3>" +
-      (metaHtml ? '<div class="nsim-modal-status__meta">' + metaHtml + "</div>" : "") +
-      (type === "demo"
-        ? '<p class="nsim-modal-status__note">Después del pago, Telvoice reserva la numeración y coordina la activación en el panel del cliente.</p>'
-        : "") +
-      '<button type="button" class="nsim-btn-primary nsim-modal-status__close">Entendido</button>';
-
-    status.hidden = false;
-    status.querySelector(".nsim-modal-status__close").addEventListener("click", closePurchaseModal);
-  }
-
-  function openPurchaseModal(planId) {
-    if (!SIM_PLANS[planId]) return;
-    state.simPlanId = planId;
-    state.modalOpen = true;
-    state.submitting = false;
-    setError("");
-    clearPersonalFormFields();
-    resetModalStatus();
-    resetCheckoutContext();
-    updateModalChrome();
-
-    var modal = qs("nsim-purchase-modal");
-    if (!modal) return;
-    modal.removeAttribute("hidden");
-    document.body.classList.add("nsim-modal-open");
-
-    var first = qs("nsim-nombre");
-    if (first) setTimeout(function () { first.focus(); }, 100);
-  }
-
-  function closePurchaseModal() {
-    state.modalOpen = false;
-    state.submitting = false;
-    var modal = qs("nsim-purchase-modal");
-    if (modal) modal.setAttribute("hidden", "");
-    document.body.classList.remove("nsim-modal-open");
-    resetModalStatus();
-    setError("");
-    setLoading(false);
-    resetCheckoutContext();
-    document.querySelectorAll(".nsim-plan-card[data-nsim-plan]").forEach(function (card) {
-      card.classList.remove("is-selected");
-    });
-  }
-
-  function setError(message) {
-    var err = qs("nsim-form-error");
-    if (!err) return;
-    if (message) {
-      err.textContent = message;
-      err.hidden = false;
-    } else {
-      err.textContent = "";
-      err.hidden = true;
-    }
-  }
-
-  function setLoading(loading) {
-    var btn = qs("nsim-submit");
-    var plan = getPlan(state.simPlanId);
-    if (!btn) return;
-    btn.disabled = !!loading;
-    btn.setAttribute("aria-busy", loading ? "true" : "false");
-    if (loading) {
-      btn.textContent =
-        plan && plan.checkout ? "Redirigiendo a Mercado Pago…" : "Enviando solicitud…";
-    } else if (plan) {
-      btn.textContent = plan.submitLabel;
-    }
-  }
-
-  function getFormValues() {
-    return {
-      nombre: (qs("nsim-nombre") && qs("nsim-nombre").value || "").trim(),
-      empresa: (qs("nsim-empresa") && qs("nsim-empresa").value || "").trim(),
-      email: (qs("nsim-email") && qs("nsim-email").value || "").trim(),
-      telefono: (qs("nsim-telefono") && qs("nsim-telefono").value || "").trim(),
-      rut: (qs("nsim-rut") && qs("nsim-rut").value || "").trim(),
-      useCase: (qs("nsim-use-case") && qs("nsim-use-case").value || "").trim(),
-      volume: (qs("nsim-volume") && qs("nsim-volume").value || "").trim(),
-    };
-  }
-
-  function buildDemoMetaHtml(values, plan) {
-    var parts = [];
-    if (plan) {
-      parts.push(
-        "<p><strong>Plan:</strong> " +
-          plan.displayName +
-          (plan.total ? " · <strong>" + formatClp(plan.total) + " / mes</strong>" : "") +
-          "</p>"
-      );
-    }
-    if (values.nombre) parts.push("<p><strong>Nombre:</strong> " + values.nombre + "</p>");
-    if (values.email) parts.push("<p><strong>Email:</strong> " + values.email + "</p>");
-    if (values.empresa) parts.push("<p><strong>Empresa:</strong> " + values.empresa + "</p>");
-    if (values.telefono) parts.push("<p><strong>Teléfono:</strong> " + values.telefono + "</p>");
-    if (values.useCase) parts.push("<p><strong>Caso de uso:</strong> " + values.useCase + "</p>");
-    if (values.volume) parts.push("<p><strong>Volumen estimado:</strong> " + values.volume + "</p>");
-    return parts.join("");
-  }
-
-  function submitCustomRequest(values) {
-    if (isNumeracionDemoMode()) {
-      state.submitting = false;
-      setLoading(false);
-      showModalStatus(
-        "demo",
-        "Demo local: aquí se enviaría una solicitud comercial para diseñar un plan a medida.",
-        buildDemoMetaHtml(values, getPlan("custom"))
-      );
-      return;
-    }
-    state.submitting = false;
-    setLoading(false);
-    window.location.href = "index.html#contacto";
-  }
-
-  function refreshCheckoutContext(emailOverride) {
-    var hint = qs("nsim-stock-hint");
-    if (!state.modalOpen || state.statusVisible || state.simPlanId === "custom") {
-      refreshStockHint();
-      return;
-    }
-
-    if (isNumeracionDemoMode()) {
-      state.availableNumbers = [
-        {
-          inventory_public_id: "demo_pub_001",
-          display_number: "+56 9 *** *** 513",
-          suffix: "513",
-        },
-      ];
-      state.selectedInventoryPublicId = "demo_pub_001";
-      hidePendingOrder();
-      renderNumberPicker();
-      refreshStockHint();
-      return;
-    }
-
-    var emailInput = qs("nsim-email");
-    var email = (emailOverride || (emailInput && emailInput.value) || "").trim();
-    var origin = agentApiOrigin();
-    var pendingPromise = email
-      ? fetch(
-          origin +
-            "/api/public/pending-sim-checkout?email=" +
-            encodeURIComponent(email),
-          { headers: { Accept: "application/json" } }
-        )
-          .then(function (res) {
-            return res.json();
-          })
-          .catch(function () {
-            return { has_pending_order: false };
-          })
-      : Promise.resolve({ has_pending_order: false });
-
-    var numbersPromise = fetch(
-      origin + "/api/public/sim-available-numbers?limit=50",
-      { headers: { Accept: "application/json" } }
-    )
-      .then(function (res) {
-        return res.json();
-      })
-      .catch(function () {
-        return { numbers: [] };
-      });
-
-    state.contextLoading = true;
-    Promise.all([pendingPromise, numbersPromise]).then(function (results) {
-      if (!state.modalOpen || state.statusVisible) return;
-
-      var pending = results[0] || { has_pending_order: false };
-      var numbersData = results[1] || { numbers: [] };
-      state.pendingOrder = pending.has_pending_order ? pending : null;
-      state.availableNumbers = Array.isArray(numbersData.numbers)
-        ? numbersData.numbers
-        : [];
-
-      renderPendingOrder(pending);
-
-      if (
-        pending.has_pending_order &&
-        !pending.reservation_expired &&
-        pending.payment_url
-      ) {
-        if (hint) hint.hidden = true;
-        state.contextLoading = false;
-        return;
-      }
-
-      renderNumberPicker();
-      refreshStockHint();
-      state.contextLoading = false;
-    });
-  }
-
-  function refreshStockHint() {
-    var hint = qs("nsim-stock-hint");
-    if (!hint || !state.modalOpen || state.statusVisible) return;
-
-    if (state.simPlanId === "custom") {
-      hint.textContent =
-        "Plan a medida: un especialista Telvoice te contactará para diseñar la solución.";
-      hint.hidden = false;
-      return;
-    }
-    if (isNumeracionDemoMode()) {
-      hint.textContent = "Demo local: disponibilidad simulada para revisión visual.";
-      hint.hidden = false;
-      return;
-    }
-    var agentOrigin =
-      (window.TELVOICE_CONFIG && window.TELVOICE_CONFIG.agentApiOrigin) ||
-      "https://agent.telvoice.cl";
-    fetch(agentOrigin + "/api/public/sim-availability", {
-      headers: { Accept: "application/json" },
-    })
-      .then(function (res) {
-        return res.json();
-      })
-      .then(function (data) {
-        if (
-          state.pendingOrder &&
-          state.pendingOrder.has_pending_order &&
-          !state.pendingOrder.reservation_expired &&
-          state.pendingOrder.payment_url
-        ) {
-          hint.hidden = true;
-          return;
-        }
-        if (state.availableNumbers.length > 0) {
-          hint.hidden = true;
-          return;
-        }
-        if (data && data.in_stock === false) {
-          hint.textContent = SIM_NO_STOCK_ERROR;
-          hint.hidden = false;
-        } else {
-          hint.hidden = true;
-        }
-      })
-      .catch(function () {
-        hint.hidden = true;
-      });
-  }
-
-  function submitPurchaseModal(e) {
+  function submit(e) {
     if (e) e.preventDefault();
-    if (state.submitting || state.statusVisible) return;
+    if (state.busy) return;
 
-    var values = getFormValues();
-    if (values.nombre.length < 2) {
-      setError("Ingresa tu nombre.");
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
-      setError("Ingresa un email válido.");
-      return;
-    }
+    var v = values();
+    if (v.nombre.length < 2) return setError("Ingresa tu nombre.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) return setError("Ingresa un email válido.");
 
-    setError("");
-    state.submitting = true;
-    setLoading(true);
-
-    if (state.simPlanId === "custom") {
-      submitCustomRequest(values);
+    if (state.planId === "custom") {
+      window.location.href = "index.html#contacto";
       return;
     }
 
-    var sim = getPlan(state.simPlanId);
-
-    if (isNumeracionDemoMode()) {
-      state.submitting = false;
-      setLoading(false);
-      showModalStatus(
-        "demo",
-        "Demo local: aquí se crearía la orden y serías redirigido al pago seguro por MercadoPago.",
-        buildDemoMetaHtml(values, sim)
-      );
-      return;
+    if (state.billing === "annual") {
+      return setError(ANNUAL_NOT_READY);
     }
 
-    var agentOrigin =
-      (window.TELVOICE_CONFIG && window.TELVOICE_CONFIG.agentApiOrigin) ||
-      "https://agent.telvoice.cl";
-    var agentAddonId = SIM_PLAN_AGENT_MAP[state.simPlanId] || "agent_pro";
+    var plan = PLANS[state.planId];
+    if (!plan) return setError(DEFAULT_ERROR);
+
+    if (demo()) return showDemo(v, plan);
 
     if (
       state.pendingOrder &&
@@ -707,174 +533,154 @@
       return;
     }
 
-    var payload = {
-      product_type: "sim_agent_bundle",
-      sim_plan_id: state.simPlanId,
-      agent_addon_id: agentAddonId,
-      checkout_email: values.email,
-      payer_name: values.nombre,
-      company_name: values.empresa || undefined,
-      phone: values.telefono || undefined,
-      tax_id: values.rut || undefined,
-    };
-
-    if (state.selectedInventoryPublicId) {
-      payload.inventory_public_id = state.selectedInventoryPublicId;
-    } else if (state.availableNumbers[0]) {
-      payload.inventory_public_id = state.availableNumbers[0].inventory_public_id;
+    var inventoryId = state.selectedNumber;
+    if (!inventoryId && state.numbers[0]) {
+      inventoryId = state.numbers[0].inventory_public_id;
+    }
+    if (typeof inventoryId !== "string" || !inventoryId.trim()) {
+      return setError("Elige una numeración disponible para continuar.");
     }
 
-    fetch(agentOrigin + "/api/public/checkout", {
+    setError("");
+    setBusy(true);
+
+    var payload = {
+      product_type: "sim_agent_bundle",
+      sim_plan_id: state.planId,
+      plan_id: state.planId,
+      agent_addon_id: plan.agent,
+      checkout_email: v.email,
+      payer_name: v.nombre,
+      company_name: v.empresa || undefined,
+      phone: v.telefono || undefined,
+      tax_id: v.rut || undefined,
+      use_case: v.useCase || undefined,
+      inventory_public_id: inventoryId.trim(),
+    };
+
+    fetch(origin() + "/api/public/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(payload),
     })
       .then(function (res) {
         return parseApiJson(res).then(function (data) {
-          return { httpOk: res.ok, status: res.status, data: data };
+          return { ok: res.ok, status: res.status, data: data };
         });
       })
       .then(function (result) {
         var data = result.data || {};
-        var checkoutUrl = data.checkout_url;
-        if (!result.httpOk || data.success !== true || !checkoutUrl) {
-          if (result.status === 403 && data.code === "not_enabled") {
-            throw new Error(SIM_NOT_ENABLED_ERROR);
-          }
-          if (result.status === 409 && data.code === "no_stock") {
-            throw new Error(SIM_NO_STOCK_ERROR);
-          }
+        var url = data.checkout_url || data.init_point || data.payment_url;
+        if (!result.ok || data.success !== true || !url) {
           if (result.status === 409 && data.code === "NUMBER_UNAVAILABLE") {
-            refreshCheckoutContext(values.email);
-            throw new Error(SIM_NUMBER_TAKEN_ERROR);
+            refreshCheckoutContext(v.email);
+            throw new Error(NUMBER_TAKEN);
           }
           if (result.status === 409 && data.code === "PENDING_ORDER_EXISTS") {
-            refreshCheckoutContext(values.email);
-            throw new Error(
-              "Ya tienes una orden pendiente para este correo. Usa Continuar pago."
-            );
+            refreshCheckoutContext(v.email);
+            throw new Error("Ya tienes una orden pendiente. Usa Continuar pago.");
           }
-          throw new Error(formatCheckoutError(data));
+          throw new Error(getHumanErrorMessage(data));
         }
-        window.location.href = checkoutUrl;
+        window.location.href = url;
       })
       .catch(function (err) {
-        state.submitting = false;
-        setLoading(false);
-        if (isNumeracionDemoMode() && window.console) {
-          console.debug("[nsim checkout]", err);
-        }
-        setError(formatCheckoutError(null, err && err.message));
+        setBusy(false);
+        setError(getHumanErrorMessage(err));
       });
   }
 
   function initNav() {
     document.querySelectorAll(".site-nav-dropdown-toggle").forEach(function (toggle) {
-      var menuId = toggle.getAttribute("aria-controls");
-      var menu = menuId ? document.getElementById(menuId) : null;
+      var menu = document.getElementById(toggle.getAttribute("aria-controls"));
       if (!menu) return;
       toggle.addEventListener("click", function () {
         var wrap = toggle.closest(".site-nav-dropdown");
-        var open = wrap && wrap.classList.contains("is-open");
+        var open = wrap.classList.contains("is-open");
         document.querySelectorAll(".site-nav-dropdown.is-open").forEach(function (w) {
-          var t = w.querySelector(".site-nav-dropdown-toggle");
-          var m = w.querySelector(".site-nav-dropdown-menu");
-          if (t && m) {
-            w.classList.remove("is-open");
-            t.setAttribute("aria-expanded", "false");
-            m.setAttribute("hidden", "");
-          }
+          w.classList.remove("is-open");
+          w.querySelector(".site-nav-dropdown-toggle").setAttribute("aria-expanded", "false");
+          w.querySelector(".site-nav-dropdown-menu").setAttribute("hidden", "");
         });
-        if (!open && wrap) {
+        if (!open) {
           wrap.classList.add("is-open");
           toggle.setAttribute("aria-expanded", "true");
           menu.removeAttribute("hidden");
         }
       });
     });
-
-    var menuToggle = qs("menu-toggle");
-    var mobilePanel = qs("mobile-panel");
+    var menuToggle = $("menu-toggle");
+    var mobilePanel = $("mobile-panel");
     if (menuToggle && mobilePanel) {
       menuToggle.addEventListener("click", function () {
         var open = !mobilePanel.classList.contains("hidden");
         mobilePanel.classList.toggle("hidden", open);
         menuToggle.setAttribute("aria-expanded", open ? "false" : "true");
-        var openIcon = qs("menu-icon-open");
-        var closeIcon = qs("menu-icon-close");
+        var openIcon = $("menu-icon-open");
+        var closeIcon = $("menu-icon-close");
         if (openIcon) openIcon.classList.toggle("hidden", !open);
         if (closeIcon) closeIcon.classList.toggle("hidden", open);
-      });
-    }
-
-    document.addEventListener("click", function (e) {
-      if (!e.target.closest(".site-nav-dropdown")) {
-        document.querySelectorAll(".site-nav-dropdown.is-open").forEach(function (wrap) {
-          var t = wrap.querySelector(".site-nav-dropdown-toggle");
-          var m = wrap.querySelector(".site-nav-dropdown-menu");
-          if (t && m) {
-            wrap.classList.remove("is-open");
-            t.setAttribute("aria-expanded", "false");
-            m.setAttribute("hidden", "");
-          }
-        });
-      }
-    });
-  }
-
-  function initPurchaseModal() {
-    var closeBtn = qs("nsim-modal-close");
-    if (closeBtn) closeBtn.addEventListener("click", closePurchaseModal);
-
-    document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && state.modalOpen) closePurchaseModal();
-    });
-
-    var form = qs("nsim-purchase-form");
-    if (form) form.addEventListener("submit", submitPurchaseModal);
-
-    var emailInput = qs("nsim-email");
-    if (emailInput) {
-      var emailTimer = null;
-      emailInput.addEventListener("input", function () {
-        if (!state.modalOpen || state.simPlanId === "custom") return;
-        window.clearTimeout(emailTimer);
-        emailTimer = window.setTimeout(function () {
-          refreshCheckoutContext(emailInput.value.trim());
-        }, 450);
-      });
-      emailInput.addEventListener("blur", function () {
-        if (!state.modalOpen || state.simPlanId === "custom") return;
-        refreshCheckoutContext(emailInput.value.trim());
-      });
-    }
-
-    var showMoreBtn = qs("nsim-number-show-more");
-    if (showMoreBtn) {
-      showMoreBtn.addEventListener("click", function () {
-        state.numbersLimit += NUMBERS_PAGE_SIZE;
-        renderNumberPicker();
       });
     }
   }
 
   function init() {
     initNav();
-    initPurchaseModal();
+    updatePricing();
 
-    document.querySelectorAll(".nsim-plan-cta").forEach(function (btn) {
-      btn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        var planId = btn.getAttribute("data-nsim-plan");
-        if (planId) openPurchaseModal(planId);
+    document.querySelectorAll("[data-billing-cycle]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        state.billing = button.getAttribute("data-billing-cycle");
+        updatePricing();
+        if (state.open) updateModal();
       });
     });
 
-    document.querySelectorAll("[data-scroll-to]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var target = document.getElementById(btn.getAttribute("data-scroll-to"));
-        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.querySelectorAll(".nsim-plan-cta").forEach(function (button) {
+      button.addEventListener("click", function () {
+        openModal(button.getAttribute("data-nsim-plan"));
       });
+    });
+
+    document.querySelectorAll("[data-scroll-to]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        var target = document.getElementById(button.getAttribute("data-scroll-to"));
+        if (target) target.scrollIntoView({ behavior: "smooth" });
+      });
+    });
+
+    var close = $("nsim-modal-close");
+    if (close) close.addEventListener("click", closeModal);
+
+    var form = $("nsim-purchase-form");
+    if (form) form.addEventListener("submit", submit);
+
+    var emailInput = $("nsim-email");
+    if (emailInput) {
+      var emailTimer = null;
+      emailInput.addEventListener("input", function () {
+        if (!state.open || state.planId === "custom") return;
+        window.clearTimeout(emailTimer);
+        emailTimer = window.setTimeout(function () {
+          refreshCheckoutContext(emailInput.value.trim());
+        }, 450);
+      });
+      emailInput.addEventListener("blur", function () {
+        if (!state.open || state.planId === "custom") return;
+        refreshCheckoutContext(emailInput.value.trim());
+      });
+    }
+
+    var showMoreBtn = $("nsim-number-show-more");
+    if (showMoreBtn) {
+      showMoreBtn.addEventListener("click", function () {
+        state.numbersLimit += NUMBERS_PAGE_SIZE;
+        renderNumbers(state.numbers);
+      });
+    }
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && state.open) closeModal();
     });
   }
 
