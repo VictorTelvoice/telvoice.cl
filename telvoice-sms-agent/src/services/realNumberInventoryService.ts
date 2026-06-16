@@ -1,4 +1,5 @@
 import { getSupabase } from "../database/supabaseClient.js";
+import { env } from "../config/env.js";
 import { createAdminClientNumber } from "./adminClientNumberService.js";
 import type {
   PublicRealNumberAvailability,
@@ -272,12 +273,27 @@ function isInventoryPubliclySellable(row: {
   sales_status?: string;
   connection_status?: string;
   webhook_connected?: boolean;
+  metadata?: Record<string, unknown> | null;
 }): boolean {
-  return (
+  const base =
     row.sales_status === "connected_available" &&
     row.connection_status === "connected" &&
-    row.webhook_connected === true
-  );
+    row.webhook_connected === true;
+  if (!base) return false;
+  return passesPublicInventoryListingFilter(row.metadata);
+}
+
+function inventoryMetadataQaOnly(metadata: unknown): boolean {
+  if (!metadata || typeof metadata !== "object") return false;
+  const qa = (metadata as Record<string, unknown>).qa_only;
+  return qa === true || qa === "true";
+}
+
+/** Producción: excluye qa_only. agent-qa: solo qa_only. */
+export function passesPublicInventoryListingFilter(metadata: unknown): boolean {
+  const qaOnly = inventoryMetadataQaOnly(metadata);
+  if (env.simQaE2e.inventoryQaOnlyListing) return qaOnly;
+  return !qaOnly;
 }
 
 /** Restaura reserva si una orden pending perdió el hold por expiración automática. */
@@ -361,7 +377,7 @@ export async function listPublicAvailableNumbers(
   const sb = getSupabase();
   const { data, error } = await sb
     .from("real_number_inventory")
-    .select("id, e164_number, sales_status, connection_status, webhook_connected")
+    .select("id, e164_number, sales_status, connection_status, webhook_connected, metadata")
     .eq("sales_status", "connected_available")
     .eq("connection_status", "connected")
     .eq("webhook_connected", true)
@@ -406,7 +422,7 @@ async function pickConnectedAvailableId(): Promise<string | null> {
   const sb = getSupabase();
   const { data, error } = await sb
     .from("real_number_inventory")
-    .select("id, sales_status, connection_status, webhook_connected")
+    .select("id, sales_status, connection_status, webhook_connected, metadata")
     .eq("sales_status", "connected_available")
     .eq("connection_status", "connected")
     .eq("webhook_connected", true)
@@ -505,6 +521,17 @@ export async function resolvePublicInventoryId(
   }
   const heldIds = await getPendingSimBundleHeldInventoryIds();
   const internalIds = (data ?? [])
+    .filter((r) =>
+      isInventoryPubliclySellable(
+        r as {
+          id: string;
+          sales_status?: string;
+          connection_status?: string;
+          webhook_connected?: boolean;
+          metadata?: Record<string, unknown> | null;
+        },
+      ),
+    )
     .map((r) => String(r.id))
     .filter((id) => !heldIds.has(id));
   return resolveInventoryIdFromPublicId(publicId, internalIds);

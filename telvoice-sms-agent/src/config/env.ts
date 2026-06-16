@@ -246,6 +246,15 @@ export const env = {
     /\/$/,
     "",
   ),
+  /**
+   * agent-qa / sim-qa: listar solo inventario metadata.qa_only=true.
+   * Producción: oculta inventario qa_only.
+   */
+  simQaE2e: {
+    inventoryQaOnlyListing:
+      optionalEnv("SIM_QA_E2E_INVENTORY_QA_ONLY", "false") === "true" ||
+      optionalEnv("PUBLIC_APP_URL", "").includes("agent-qa"),
+  },
   /** Orígenes extra para CORS de /api/public/* (QA preview, separados por coma). */
   landingExtraOrigins: parseCsvEnv("LANDING_EXTRA_ORIGINS"),
   mercadopago: {
