@@ -1,12 +1,13 @@
 import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
-import { renderPageHeader } from "../admin-ui/page-kit.js";
 import {
-  getApiDocPageSubtitle,
+  API_DOC_TITLE,
+  getApiDocSubtitle,
   apiDocumentationStyles,
   renderApiDocumentationBody,
   type ApiDocContentOptions,
 } from "./api-documentation-content.js";
+import { escapeHtml } from "../../utils/html.js";
 
 function renderDocsScript(): string {
   return `<script>
@@ -64,17 +65,18 @@ export function renderAppApiDocsPage(
 
   const body = `
     ${apiDocumentationStyles()}
-    ${renderPageHeader({
-      title: "Documentación API",
-      subtitle: getApiDocPageSubtitle(docOptions),
-      actions: `<div class="tv-api-docs-actions">
+    <header class="tv-api-doc-hero">
+      <img src="/assets/telvoice-isotipo.png" alt="" width="40" height="40" class="tv-api-doc-hero__logo" decoding="async" aria-hidden="true" />
+      <h1 class="tv-api-doc-hero__title">${escapeHtml(API_DOC_TITLE)}</h1>
+      <p class="tv-api-doc-hero__subtitle">${escapeHtml(getApiDocSubtitle(docOptions))}</p>
+      <div class="tv-api-docs-actions tv-api-doc-hero__actions">
         ${pdfAction}
         <a href="/app/api" class="btn btn-ghost tv-api-docs-no-print">
           <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">arrow_back</span>
           Volver a API
         </a>
-      </div>`,
-    })}
+      </div>
+    </header>
     ${renderApiDocumentationBody({ interactive: true, doc: docOptions })}
     ${renderDocsScript()}`;
 

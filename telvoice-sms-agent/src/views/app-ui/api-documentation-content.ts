@@ -500,6 +500,31 @@ export function renderApiDocumentationBody(options?: {
 
 export function apiDocumentationStyles(): string {
   return `<style>
+    .tv-api-doc-hero {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--tv-border);
+    }
+    .tv-api-doc-hero__logo {
+      display: block;
+      margin: 0 auto 0.85rem;
+    }
+    .tv-api-doc-hero__title {
+      margin: 0 0 0.35rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--tv-text);
+    }
+    .tv-api-doc-hero__subtitle {
+      margin: 0 0 1rem;
+      font-size: 1rem;
+      color: var(--tv-muted);
+    }
+    .tv-api-doc-hero__actions {
+      justify-content: center;
+    }
     .tv-api-doc-page { max-width: 920px; }
     .tv-api-doc-page .tv-api-doc-status {
       display: grid;
