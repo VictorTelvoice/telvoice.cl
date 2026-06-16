@@ -171,6 +171,7 @@ import {
   postAdminClientSuspendSending,
   postAdminClientUpdateProfile,
 } from "../controllers/admin-client-actions.controller.js";
+import { postAdminClientApiAccess } from "../controllers/admin-client-api-access.controller.js";
 import {
   getSaClientDetailPageTelco,
   getSaClientsPageTelco,
@@ -320,6 +321,11 @@ adminRouter.post(
   "/clients/:companyId/actions/archive-qa",
   requireSuperAdminPage,
   postAdminClientArchiveQa,
+);
+adminRouter.post(
+  "/clients/:companyId/api-access",
+  requireSuperAdminPage,
+  postAdminClientApiAccess,
 );
 adminRouter.get("/pricing", requireAdminPage, getSaPricingPage);
 adminRouter.post("/pricing", requireAdminPage, postCreateSmsPackage);

@@ -89,11 +89,17 @@ type RatePlanAgg = {
   created_at: string | null;
 };
 
+type ApiKeyAgg = {
+  has_production_key: boolean;
+  has_approved_production_key: boolean;
+};
+
 type OperationalMaps = {
   wallets: Map<string, WalletAgg>;
   usage: Map<string, UsageAgg>;
   purchases: Map<string, PurchaseAgg>;
   ratePlans: Map<string, RatePlanAgg>;
+  apiKeys: Map<string, ApiKeyAgg>;
 };
 
 async function loadCompanyRealSignals(client: {
@@ -139,7 +145,7 @@ async function loadOperationalMaps(client: {
   const tz = APP_SCHEDULE_TIMEZONE;
   const statuses = COUNTABLE_MSG_STATUSES;
 
-  const [walletRes, usageRes, purchaseRes, ratePlanRes, campRes, emailRes] =
+  const [walletRes, usageRes, purchaseRes, ratePlanRes, campRes, emailRes, apiKeyRes] =
     await Promise.all([
     client.query(`
       SELECT company_id::text AS company_id, available_sms, total_purchased_sms,
@@ -237,6 +243,19 @@ async function loadOperationalMaps(client: {
       ) e
       GROUP BY company_id
     `),
+    client.query(`
+      SELECT
+        company_id::text AS company_id,
+        BOOL_OR(environment = 'production' AND status = 'active') AS has_production_key,
+        BOOL_OR(
+          environment = 'production'
+          AND status = 'active'
+          AND production_approved = true
+        ) AS has_approved_production_key
+      FROM client_api_keys
+      WHERE revoked_at IS NULL
+      GROUP BY company_id
+    `),
   ]);
 
   const wallets = new Map<string, WalletAgg>();
@@ -318,7 +337,15 @@ async function loadOperationalMaps(client: {
     });
   }
 
-  return { wallets, usage, purchases, ratePlans };
+  const apiKeys = new Map<string, ApiKeyAgg>();
+  for (const row of apiKeyRes.rows) {
+    apiKeys.set(String(row.company_id), {
+      has_production_key: Boolean(row.has_production_key),
+      has_approved_production_key: Boolean(row.has_approved_production_key),
+    });
+  }
+
+  return { wallets, usage, purchases, ratePlans, apiKeys };
 }
 
 function emptyWallet(): AdminClientOperationalWallet {
@@ -364,6 +391,7 @@ function buildOperationalItem(
   const u = maps.usage.get(company.id);
   const p = maps.purchases.get(company.id);
   const rp = maps.ratePlans.get(company.id);
+  const apiKey = maps.apiKeys.get(company.id);
 
   const wallet: AdminClientOperationalWallet = w
     ? {
@@ -407,6 +435,12 @@ function buildOperationalItem(
     usage.lastSmsAt == null &&
     purchases.paidOrdersCount === 0;
   const apiActive = Boolean(rp?.api_enabled);
+  const hasProductionApiKey = Boolean(apiKey?.has_production_key);
+  const hasApprovedProductionKey = Boolean(apiKey?.has_approved_production_key);
+  const walletActive = wallet.hasWallet && wallet.status === "active";
+  const companyActive = company.status === "active";
+  const apiPending =
+    !hasRatePlan || !wallet.hasWallet || !walletActive || !companyActive;
 
   const operationalFlags: AdminClientOperationalFlags = {
     hasRatePlan,
@@ -419,6 +453,11 @@ function buildOperationalItem(
     isProtected: audit.protected,
     apiActive,
     hasPaidPendingCredit: purchases.paidPendingCreditCount > 0,
+    hasProductionApiKey,
+    hasApprovedProductionKey,
+    apiPending,
+    walletActive,
+    companyActive,
   };
 
   return {

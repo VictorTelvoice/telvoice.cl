@@ -743,7 +743,9 @@ function renderSupportScript(
     var replies = (t.replies || []).filter(function (r) { return !r.internal; });
     repliesEl.innerHTML = replies.length
       ? replies.map(function (r) {
-          var who = r.author === "support" ? "Telvoice" : "Tú";
+          var who = r.author === "support"
+            ? (r.authorName || "Equipo Telvoice")
+            : "Tú";
           return '<div class="tv-support-reply"><p class="tv-support-reply__meta"><strong>' + escapeHtml(who) +
             "</strong> · " + escapeHtml(fmtDate(r.createdAt)) + "</p><p style=\\"margin:0\\">" + escapeHtml(r.message) + "</p></div>";
         }).join("")

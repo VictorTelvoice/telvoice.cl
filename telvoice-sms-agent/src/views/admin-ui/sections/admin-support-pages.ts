@@ -10,6 +10,7 @@ import type {
 } from "../../../types/support-tickets.js";
 import { SUPPORT_CATEGORIES } from "../../../types/support-tickets.js";
 import { escapeHtml, formatDate } from "../../../utils/html.js";
+import { resolveSupportReplyDisplayName } from "../../../utils/supportDisplayName.js";
 import { renderKpiCard } from "../components.js";
 import { wrapAdminPage } from "../admin-page-wrap.js";
 import {
@@ -341,7 +342,7 @@ function renderReplyHistory(ticket: AdminSupportTicketListItem): string {
         r.internal
           ? `${escapeHtml(r.authorName ?? "Interno")} (nota interna)`
           : r.author === "support"
-            ? escapeHtml(r.authorName ?? "Telvoice")
+            ? escapeHtml(resolveSupportReplyDisplayName(r.authorName))
             : "Cliente";
       const cls = r.internal ? "tv-support-admin-reply tv-support-admin-reply--internal" : "tv-support-admin-reply";
       return `<div class="${cls}">

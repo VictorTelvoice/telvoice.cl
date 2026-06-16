@@ -20,6 +20,7 @@ import type {
 } from "../types/support-tickets.js";
 import { buildAdminAuditActorFromRequest } from "../services/supportTicketAudit.js";
 import { AppError } from "../utils/errors.js";
+import { resolveSupportReplyDisplayName } from "../utils/supportDisplayName.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
   parseAdminSupportFilters,
@@ -188,7 +189,7 @@ export async function postAdminSupportTicketReply(
     const ticketId = validateUuidParam(String(req.params.id ?? ""), "ticket");
     const body = req.body as Record<string, string | undefined>;
     const message = body.message ?? "";
-    const authorName = req.adminUser?.name?.trim() || "Equipo Telvoice";
+    const authorName = resolveSupportReplyDisplayName(req.adminUser?.name);
 
     const result = await addAdminSupportTicketReply(
       ticketId,

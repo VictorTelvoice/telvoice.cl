@@ -62,6 +62,11 @@ export type AdminClientOperationalFlags = {
   isProtected: boolean;
   apiActive: boolean;
   hasPaidPendingCredit: boolean;
+  hasProductionApiKey: boolean;
+  hasApprovedProductionKey: boolean;
+  apiPending: boolean;
+  walletActive: boolean;
+  companyActive: boolean;
 };
 
 export type AdminClientOperationalItem = {
