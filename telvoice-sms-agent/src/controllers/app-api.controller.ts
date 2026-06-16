@@ -15,6 +15,7 @@ import {
   getClientApiKeysModuleState,
   listClientApiKeys,
 } from "../services/clientApiKeyService.js";
+import { resolveClientApiProductionStatus } from "../services/clientApiProductionStatusService.js";
 import {
   getClientApiRequestsModuleState,
   listApiRequestLogs,
@@ -106,6 +107,9 @@ export async function getAppApi(
       if (listed.ok) {
         pageData.keys = listed.data;
       }
+      pageData.productionStatus = await resolveClientApiProductionStatus(
+        ctx.company.id,
+      );
     }
 
     if (requestsModule.available && ctx.company.id) {

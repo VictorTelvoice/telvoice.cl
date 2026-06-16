@@ -2,6 +2,11 @@ import type { Request, Response } from "express";
 import { getPublicApiRequestId } from "../middleware/public-api-request-context.js";
 import { recordPublicApiRequest } from "../middleware/public-api-request-log.js";
 import {
+  formatBlockingReason,
+  publicApiErrorCodeForBlockingReason,
+  resolveClientApiProductionStatus,
+} from "../services/clientApiProductionStatusService.js";
+import {
   getSmsApiMessagesModuleState,
   resolveSandboxSmsSend,
   validateIdempotencyKeyHeader,
@@ -75,6 +80,24 @@ export async function postPublicApiSmsSend(
   }
 
   if (auth.environment === "production") {
+    const productionStatus = await resolveClientApiProductionStatus(auth.companyId);
+    if (!productionStatus.canSendApiSms) {
+      const reason = productionStatus.blockingReasons[0] ?? "api_not_enabled";
+      const errorCode = publicApiErrorCodeForBlockingReason(reason);
+      const errorMessage = formatBlockingReason(reason);
+      logSmsSend(req, {
+        statusCode: 403,
+        success: false,
+        errorCode,
+        errorMessage,
+        metadata: {
+          production_approved: auth.productionApproved,
+          blocking_reason: reason,
+        },
+      });
+      publicApiError(res, 403, requestId, errorCode, errorMessage);
+      return;
+    }
     logSmsSend(req, {
       statusCode: 403,
       success: false,
