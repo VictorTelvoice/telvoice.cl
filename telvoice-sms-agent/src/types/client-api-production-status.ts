@@ -7,7 +7,8 @@ export type ClientApiProductionBlockingReason =
   | "api_not_enabled"
   | "no_active_api_key"
   | "missing_production_approval"
-  | "insufficient_scopes";
+  | "insufficient_scopes"
+  | "qa_demo_account";
 
 export const CLIENT_API_PRODUCTION_BLOCKING_LABELS: Record<
   ClientApiProductionBlockingReason,
@@ -20,6 +21,8 @@ export const CLIENT_API_PRODUCTION_BLOCKING_LABELS: Record<
   no_active_api_key: "No tienes API key activa.",
   missing_production_approval: "Falta aprobación productiva de tu API key.",
   insufficient_scopes: "Scopes insuficientes en tu API key (se requiere sms:send).",
+  qa_demo_account:
+    "Las cuentas QA/demo no pueden enviar SMS productivos por API.",
 };
 
 export type ClientApiProductionStatus = {

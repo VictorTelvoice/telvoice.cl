@@ -14,11 +14,21 @@ import type {
   SmsApiMessagesModuleState,
   SmsApiSendPayload,
   SmsApiSendValidationError,
+  ProductionSmsSendResolution,
 } from "../types/sms-api-messages.js";
 import { SMS_API_MESSAGE_STATUSES } from "../types/sms-api-messages.js";
 import { isMissingTableError } from "../utils/db-table.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 import { assertCompanyCanSendSms } from "./companySendGuardService.js";
+import { assertApiTrafficAllowed } from "./smsDispatchWorkerService.js";
+import { dispatchProviderSend } from "./smsProviderDispatchService.js";
+import { resolveRouteForMessage } from "./smsRoutingService.js";
+import { debitSmsUsage } from "./smsWalletService.js";
+import { hasSmsDebitForApiMessage } from "./walletTransactionService.js";
+import { assertDlrWebhookSafeForLiveTraffic } from "../utils/dlr-callback.js";
+import { AppError } from "../utils/errors.js";
+import { recordTpsSend } from "./smsTpsLimiterService.js";
+import { isAsmscConfigured } from "./sms-providers/realApiProvider.js";
 
 const MAX_MESSAGE_LENGTH = 918;
 const MAX_SENDER_LENGTH = 11;
@@ -450,6 +460,247 @@ export async function createSandboxSmsApiMessage(
   }
 
   return rowToSmsApiMessage(data as SmsApiMessageRow);
+}
+
+async function updateSmsApiMessageRow(
+  messageId: string,
+  companyId: string,
+  patch: Partial<{
+    status: SmsApiMessageStatus;
+    provider_message_id: string | null;
+    dlr_status: string | null;
+    cost_sms: number;
+    metadata: Record<string, unknown>;
+  }>,
+): Promise<SmsApiMessage> {
+  const { data, error } = await getSupabase()
+    .from("sms_api_messages")
+    .update(patch)
+    .eq("id", messageId)
+    .eq("company_id", companyId)
+    .select("*")
+    .single();
+
+  if (error) {
+    wrapSupabaseError(error, "updateSmsApiMessageRow");
+  }
+
+  return rowToSmsApiMessage(data as SmsApiMessageRow);
+}
+
+async function createProductionSmsApiMessage(
+  input: CreateSandboxSmsApiMessageInput,
+): Promise<SmsApiMessage> {
+  const metadata: Record<string, unknown> = {
+    source: "public_api",
+    mode: "production",
+  };
+  if (input.idempotencyKey) {
+    metadata.idempotency_key = input.idempotencyKey;
+  }
+
+  const { data, error } = await getSupabase()
+    .from("sms_api_messages")
+    .insert({
+      company_id: input.companyId,
+      api_key_id: input.apiKeyId,
+      request_id: input.requestId,
+      external_reference: input.externalReference ?? null,
+      recipient: input.recipient,
+      sender: input.sender ?? null,
+      message: input.message,
+      country: input.country ?? null,
+      segments: input.segments,
+      status: "pending",
+      environment: "production",
+      provider_message_id: null,
+      dlr_status: null,
+      cost_sms: input.segments,
+      idempotency_key: input.idempotencyKey ?? null,
+      payload_hash: input.payloadHash ?? null,
+      metadata,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      throw new Error("SMS API messages table not available.");
+    }
+    if (isUniqueViolation(error)) {
+      throw error;
+    }
+    wrapSupabaseError(error, "createProductionSmsApiMessage");
+  }
+
+  return rowToSmsApiMessage(data as SmsApiMessageRow);
+}
+
+export async function resolveProductionSmsSend(
+  input: CreateSandboxSmsApiMessageInput,
+  payload: SmsApiSendPayload,
+): Promise<ProductionSmsSendResolution> {
+  if (!isAsmscConfigured()) {
+    throw new AppError("Proveedor SMS no disponible.", 503);
+  }
+
+  await assertCompanyCanSendSms(input.companyId);
+
+  const environment = "production" as const;
+  const payloadHash = input.payloadHash ?? hashSmsApiSendPayload(payload);
+
+  if (input.idempotencyKey) {
+    const existing = await findIdempotentSmsMessage(
+      input.companyId,
+      input.apiKeyId,
+      environment,
+      input.idempotencyKey,
+    );
+    if (existing) {
+      if (existing.payload_hash === payloadHash) {
+        return { outcome: "replay", message: rowToSmsApiMessage(existing) };
+      }
+      return { outcome: "conflict" };
+    }
+  }
+
+  const country = (input.country ?? "CL").trim().toUpperCase();
+  const resolved = await resolveRouteForMessage({
+    companyId: input.companyId,
+    country,
+    phone: input.recipient,
+    trafficType: "transactional",
+  });
+
+  await assertApiTrafficAllowed({
+    companyId: input.companyId,
+    routeId: resolved.route.id,
+    providerId: resolved.provider.id,
+    ratePlanId: resolved.ratePlan.id,
+    segmentCost: input.segments,
+    trafficType: "transactional",
+  });
+  assertDlrWebhookSafeForLiveTraffic();
+
+  const effectiveSender =
+    (input.sender?.trim() || "") ||
+    resolved.provider.default_sender_id ||
+    "TELVOICE";
+
+  let pendingMessage: SmsApiMessage;
+  try {
+    pendingMessage = await createProductionSmsApiMessage({
+      ...input,
+      environment,
+      payloadHash,
+      sender: effectiveSender,
+      country,
+    });
+  } catch (error) {
+    if (input.idempotencyKey && isUniqueViolation(error)) {
+      const existing = await findIdempotentSmsMessage(
+        input.companyId,
+        input.apiKeyId,
+        environment,
+        input.idempotencyKey,
+      );
+      if (existing) {
+        if (existing.payload_hash === payloadHash) {
+          return { outcome: "replay", message: rowToSmsApiMessage(existing) };
+        }
+        return { outcome: "conflict" };
+      }
+    }
+    throw error;
+  }
+
+  if (await hasSmsDebitForApiMessage(pendingMessage.id)) {
+    return { outcome: "replay", message: pendingMessage };
+  }
+
+  const providerResult = await dispatchProviderSend(resolved.provider, {
+    to: input.recipient,
+    message: input.message,
+    senderId: effectiveSender,
+    metadata: {
+      segments: input.segments,
+      sms_api_message_id: pendingMessage.id,
+      route_id: resolved.route.id,
+    },
+  });
+
+  if (!providerResult.accepted) {
+    await updateSmsApiMessageRow(pendingMessage.id, input.companyId, {
+      status: "failed",
+      provider_message_id: providerResult.provider_message_id,
+      metadata: {
+        source: "public_api",
+        mode: "production",
+        error_code: providerResult.error_code ?? "PROVIDER_REJECTED",
+        error_message: providerResult.error_message ?? "Proveedor rechazó el envío",
+        raw_response: providerResult.raw_response,
+      },
+    });
+    throw new AppError(
+      providerResult.error_message ??
+        "El proveedor no aceptó el SMS. No se descontó saldo.",
+      502,
+    );
+  }
+
+  try {
+    await debitSmsUsage({
+      companyId: input.companyId,
+      amount: input.segments,
+      referenceType: "sms_api_message",
+      referenceId: pendingMessage.id,
+      description: "Consumo por envío SMS (API)",
+      metadata: {
+        mode: "production",
+        provider: providerResult.provider,
+        api_key_id: input.apiKeyId,
+      },
+    });
+  } catch (err) {
+    await updateSmsApiMessageRow(pendingMessage.id, input.companyId, {
+      status: "failed",
+      metadata: {
+        source: "public_api",
+        mode: "production",
+        error_code: "debit_failed",
+        error_message: err instanceof Error ? err.message : "Error al descontar saldo",
+      },
+    });
+    throw err;
+  }
+
+  const panelStatus: SmsApiMessageStatus =
+    providerResult.status === "pending" ? "pending" : "sent";
+
+  const updated = await updateSmsApiMessageRow(pendingMessage.id, input.companyId, {
+    status: panelStatus,
+    provider_message_id: providerResult.provider_message_id,
+    cost_sms: input.segments,
+    metadata: {
+      source: "public_api",
+      mode: "production",
+      provider: resolved.provider.code,
+      provider_id: resolved.provider.id,
+      route_id: resolved.route.id,
+      rate_plan_id: resolved.ratePlan.id,
+      asmsc_uid: providerResult.asmsc_uid ?? null,
+      raw_response: providerResult.raw_response,
+    },
+  });
+
+  recordTpsSend({
+    companyId: input.companyId,
+    providerId: resolved.provider.id,
+    routeId: resolved.route.id,
+    ratePlanId: resolved.ratePlan.id,
+  });
+
+  return { outcome: "created", message: updated };
 }
 
 export async function getSmsApiMessageById(

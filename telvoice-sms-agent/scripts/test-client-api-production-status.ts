@@ -34,6 +34,7 @@ function baseKey(overrides: Partial<ClientApiKey> = {}): ClientApiKey {
 
 function testFelipeOperational(): void {
   const status = resolveClientApiProductionStatusFromInputs({
+    companyId: FELIPE_COMPANY_ID,
     companyStatus: "active",
     walletStatus: "active",
     ratePlanRows: [
@@ -41,6 +42,7 @@ function testFelipeOperational(): void {
       { status: "active", api_enabled: true },
     ],
     keys: [baseKey()],
+    qaDemoAccount: false,
   });
   assert.equal(status.apiEnabled, true);
   assert.equal(status.hasProductionApprovedKey, true);
@@ -53,6 +55,7 @@ function testFelipeOperational(): void {
 
 function testLicantravelNotEnabled(): void {
   const status = resolveClientApiProductionStatusFromInputs({
+    companyId: LICANTRAVEL_COMPANY_ID,
     companyStatus: "active",
     walletStatus: "active",
     ratePlanRows: [{ status: "active", api_enabled: false }],

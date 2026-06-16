@@ -92,6 +92,8 @@ export type SandboxSmsSendResolution =
   | { outcome: "replay"; message: SmsApiMessage }
   | { outcome: "conflict" };
 
+export type ProductionSmsSendResolution = SandboxSmsSendResolution;
+
 export const SMS_API_MESSAGE_STATUSES: readonly SmsApiMessageStatus[] = [
   "sandbox_accepted",
   "sandbox_rejected",

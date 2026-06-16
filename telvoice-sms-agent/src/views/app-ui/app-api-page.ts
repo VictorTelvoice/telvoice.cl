@@ -312,7 +312,7 @@ function renderProductionStatusBanner(data: AppApiPageData): string {
   }
   if (status.canUseProductionApi) {
     const sendNote = status.canSendApiSms
-      ? "Puedes autenticarte y consultar saldo y mensajes con tus API Keys productivas. Tu cuenta cumple los requisitos de envío SMS aprobados."
+      ? "Puedes autenticarte, consultar saldo/mensajes y enviar SMS con tus API Keys productivas aprobadas."
       : "Puedes autenticarte con tus API Keys productivas. Revisa los requisitos de envío SMS abajo.";
     return `<div class="alert alert-success" role="status" id="tv-api-production-banner">
       <strong>API productiva habilitada</strong>

@@ -1,15 +1,27 @@
-import type { ClientApiKey, ClientApiKeyScope } from "../types/client-api-keys.js";
+import type {
+  AuthenticatedApiKeyContext,
+  ClientApiKey,
+  ClientApiKeyScope,
+} from "../types/client-api-keys.js";
 import {
   CLIENT_API_PRODUCTION_BLOCKING_LABELS,
   type ClientApiProductionBlockingReason,
   type ClientApiProductionStatus,
 } from "../types/client-api-production-status.js";
+import { isCompanyInLiveTestAllowlist } from "./commercialSmsAuthorizationService.js";
 import { findCompanyById } from "./companyService.js";
 import { listClientApiKeys } from "./clientApiKeyService.js";
 import { listActiveCompanyRatePlans } from "./companyRatePlanService.js";
 import { getOrCreateCompanyWallet } from "./smsWalletService.js";
 
 const SEND_SCOPES: ClientApiKeyScope[] = ["sms:send"];
+
+export type ProductionApiSendAccessError = {
+  statusCode: number;
+  code: string;
+  message: string;
+  blockingReason?: ClientApiProductionBlockingReason;
+};
 
 function isActiveProductionKey(key: ClientApiKey): boolean {
   return key.environment === "production" && key.status === "active";
@@ -20,10 +32,12 @@ function keyHasScopes(key: ClientApiKey, required: ClientApiKeyScope[]): boolean
 }
 
 export function resolveClientApiProductionStatusFromInputs(input: {
+  companyId?: string;
   companyStatus: string | null | undefined;
   walletStatus: string | null | undefined;
   ratePlanRows: Array<{ api_enabled?: boolean | null; status?: string | null }>;
   keys: ClientApiKey[];
+  qaDemoAccount?: boolean;
 }): ClientApiProductionStatus {
   const blockingReasons: ClientApiProductionBlockingReason[] = [];
 
@@ -80,17 +94,24 @@ export function resolveClientApiProductionStatusFromInputs(input: {
     blockingReasons.push("insufficient_scopes");
   }
 
+  const qaDemoAccount =
+    input.qaDemoAccount ??
+    (input.companyId ? isCompanyInLiveTestAllowlist(input.companyId) : false);
+  if (qaDemoAccount) {
+    blockingReasons.push("qa_demo_account");
+  }
+
   const canUseProductionApi =
     companyActive &&
     walletActive &&
     apiEnabled &&
     hasProductionApprovedActiveKey &&
+    !qaDemoAccount &&
     approvedActiveProduction.some(
       (k) => k.productionApproved && keyHasScopes(k, ["balance:read"]),
     );
 
-  const canSendApiSms =
-    canUseProductionApi && Boolean(sendReadyKey);
+  const canSendApiSms = canUseProductionApi && Boolean(sendReadyKey);
 
   return {
     apiEnabled,
@@ -119,10 +140,12 @@ export async function resolveClientApiProductionStatus(
   const keys = listed.ok ? (listed.data ?? []) : [];
 
   return resolveClientApiProductionStatusFromInputs({
+    companyId,
     companyStatus: company?.status,
     walletStatus: wallet.status,
     ratePlanRows: ratePlans,
     keys,
+    qaDemoAccount: isCompanyInLiveTestAllowlist(companyId),
   });
 }
 
@@ -138,8 +161,10 @@ export function publicApiErrorCodeForBlockingReason(
   switch (reason) {
     case "api_not_enabled":
       return "API_NOT_ENABLED";
+    case "missing_rate_plan":
+      return "RATE_PLAN_NOT_ENABLED";
     case "missing_production_approval":
-      return "PRODUCTION_NOT_APPROVED";
+      return "PRODUCTION_KEY_NOT_APPROVED";
     case "no_active_api_key":
       return "API_KEY_INACTIVE";
     case "insufficient_scopes":
@@ -148,9 +173,89 @@ export function publicApiErrorCodeForBlockingReason(
       return "WALLET_INACTIVE";
     case "company_inactive":
       return "ACCOUNT_INACTIVE";
-    case "missing_rate_plan":
-      return "RATE_PLAN_MISSING";
+    case "qa_demo_account":
+      return "API_NOT_ENABLED";
     default:
       return "API_NOT_AVAILABLE";
   }
+}
+
+export async function validateProductionApiSmsSendAccess(
+  auth: AuthenticatedApiKeyContext,
+  segmentCost: number,
+): Promise<{ ok: true } | { ok: false; error: ProductionApiSendAccessError }> {
+  if (auth.environment !== "production") {
+    return {
+      ok: false,
+      error: {
+        statusCode: 403,
+        code: "API_NOT_ENABLED",
+        message: "Production SMS send requires a production API key.",
+      },
+    };
+  }
+
+  if (!auth.productionApproved) {
+    return {
+      ok: false,
+      error: {
+        statusCode: 403,
+        code: "PRODUCTION_KEY_NOT_APPROVED",
+        message: "Falta aprobación productiva de tu API key.",
+        blockingReason: "missing_production_approval",
+      },
+    };
+  }
+
+  if (!auth.scopes.includes("sms:send")) {
+    return {
+      ok: false,
+      error: {
+        statusCode: 403,
+        code: "INSUFFICIENT_SCOPE",
+        message: "Scopes insuficientes en tu API key (se requiere sms:send).",
+        blockingReason: "insufficient_scopes",
+      },
+    };
+  }
+
+  const status = await resolveClientApiProductionStatus(auth.companyId);
+  if (!status.canSendApiSms) {
+    const reason = status.blockingReasons[0] ?? "api_not_enabled";
+    return {
+      ok: false,
+      error: {
+        statusCode: 403,
+        code: publicApiErrorCodeForBlockingReason(reason),
+        message: formatBlockingReason(reason),
+        blockingReason: reason,
+      },
+    };
+  }
+
+  const wallet = await getOrCreateCompanyWallet(auth.companyId);
+  if (wallet.status !== "active") {
+    return {
+      ok: false,
+      error: {
+        statusCode: 403,
+        code: "WALLET_INACTIVE",
+        message: CLIENT_API_PRODUCTION_BLOCKING_LABELS.wallet_inactive,
+        blockingReason: "wallet_inactive",
+      },
+    };
+  }
+
+  if (wallet.available_sms < segmentCost) {
+    return {
+      ok: false,
+      error: {
+        statusCode: 402,
+        code: "INSUFFICIENT_BALANCE",
+        message: "No tienes saldo SMS suficiente para este envío.",
+      },
+    };
+  }
+
+  return { ok: true };
 }
