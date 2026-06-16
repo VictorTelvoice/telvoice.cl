@@ -302,7 +302,10 @@ export async function processPublicCheckoutMercadoPagoWebhook(
       return { handled: true, orderId, result: "landing_payment_already_processed" };
     }
 
-    if (latestBefore?.payment_status !== "paid") {
+    // Seguridad: si la orden fue cancelada, no debemos marcarla como pagada
+    // aunque MercadoPago envíe un webhook "approved".
+    // Esto evita activaciones/provisioning sobre órdenes QA canceladas.
+    if (latestBefore?.payment_status === "pending") {
       await markOrderPaid(orderId, null);
     }
 
