@@ -2,9 +2,10 @@ import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
 import { renderPageHeader } from "../admin-ui/page-kit.js";
 import {
-  API_DOC_PAGE_SUBTITLE,
+  getApiDocPageSubtitle,
   apiDocumentationStyles,
   renderApiDocumentationBody,
+  type ApiDocContentOptions,
 } from "./api-documentation-content.js";
 
 function renderDocsScript(): string {
@@ -46,7 +47,11 @@ function renderDocsScript(): string {
 <div class="tv-api-toast" id="tv-api-docs-toast" role="status" aria-live="polite" aria-hidden="true"></div>`;
 }
 
-export function renderAppApiDocsPage(ctx: AppPageContext, pdfEnabled: boolean): string {
+export function renderAppApiDocsPage(
+  ctx: AppPageContext,
+  pdfEnabled: boolean,
+  docOptions: ApiDocContentOptions = { mode: "sandbox", keyMaskedHint: null },
+): string {
   const pdfAction = pdfEnabled
     ? `<a href="/app/api/docs.pdf" class="btn btn-secondary" download="telvoice-api-docs.pdf">
          <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">download</span>
@@ -61,7 +66,7 @@ export function renderAppApiDocsPage(ctx: AppPageContext, pdfEnabled: boolean): 
     ${apiDocumentationStyles()}
     ${renderPageHeader({
       title: "Documentación API",
-      subtitle: API_DOC_PAGE_SUBTITLE,
+      subtitle: getApiDocPageSubtitle(docOptions),
       actions: `<div class="tv-api-docs-actions">
         ${pdfAction}
         <a href="/app/api" class="btn btn-ghost tv-api-docs-no-print">
@@ -70,7 +75,7 @@ export function renderAppApiDocsPage(ctx: AppPageContext, pdfEnabled: boolean): 
         </a>
       </div>`,
     })}
-    ${renderApiDocumentationBody({ interactive: true })}
+    ${renderApiDocumentationBody({ interactive: true, doc: docOptions })}
     ${renderDocsScript()}`;
 
   return wrapAppPage(ctx, "api", "Documentación API", body);

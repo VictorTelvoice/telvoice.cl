@@ -865,7 +865,6 @@ function renderCredentialsPanel(
   if (operational) {
     const primaryKey = resolvePrimaryProductionKey(data);
     const keyLabel = primaryKey ? primaryKeyDisplayLabel(primaryKey) : "—";
-    const keyPrefixHint = primaryKey?.keyPrefix ?? "";
     return `<section class="tv-panel" id="tv-api-credentials-panel">
     <header class="tv-section-head" style="padding:1rem 1.25rem 0">
       <h2 class="tv-section-head__title">Credenciales de acceso</h2>
@@ -878,17 +877,17 @@ function renderCredentialsPanel(
           <dt>Key principal</dt>
           <dd class="tv-api-key-principal">
             <code id="tv-api-key-display" title="${escapeHtml(keyLabel)}">${escapeHtml(keyLabel)}</code>
-            ${keyPrefixHint ? `<button type="button" class="btn btn-secondary btn-sm" id="tv-api-copy-key-btn" title="Copiar prefijo enmascarado">
-              <span class="material-symbols-outlined" style="font-size:1rem" aria-hidden="true">content_copy</span>
-              Copiar prefijo
-            </button>` : ""}
+            <button type="button" class="btn btn-primary btn-sm" id="tv-api-goto-keys-btn">
+              <span class="material-symbols-outlined" style="font-size:1rem" aria-hidden="true">vpn_key</span>
+              Crear / regenerar API Key
+            </button>
           </dd>
         </div>
         <div class="tv-api-meta-grid__cell"><dt>Ambiente</dt><dd>Producción</dd></div>
         <div class="tv-api-meta-grid__cell"><dt>Empresa</dt><dd>${escapeHtml(companyLabel)}</dd></div>
         <div class="tv-api-meta-grid__cell"><dt>Company ID</dt><dd><code class="tv-code-sm">${escapeHtml(companyId)}</code></dd></div>
       </dl>
-      <p class="field-hint" style="margin-top:0.75rem">Para copiar el secreto completo, crea o regenera una API Key. Por seguridad, el secret solo se muestra una vez.</p>
+      <p class="field-hint" style="margin-top:0.75rem">Este valor es solo una referencia enmascarada. Para autenticarte, crea o regenera una API Key y copia el secret completo cuando se muestre.</p>
     </div>
   </section>`;
   }
@@ -977,8 +976,9 @@ function renderApiScript(ctx: AppPageContext, pageData: AppApiPageData): string 
   );
   const dbAvailable =
     pageData.module.available && companyId !== "default";
-  const syncHint =
-    pageData.syncSource === "supabase"
+  const syncHint = operational
+    ? "API productiva habilitada. La configuración avanzada es opcional."
+    : pageData.syncSource === "supabase"
       ? "Configuración API sincronizada con tu empresa."
       : pageData.syncSource === "local"
         ? "Configuración API guardada localmente."
@@ -1061,6 +1061,10 @@ function renderApiScript(ctx: AppPageContext, pageData: AppApiPageData): string 
 
   function updateSyncHint() {
     if (!syncHintEl) return;
+    if (API_OPERATIONAL) {
+      syncHintEl.textContent = "API productiva habilitada. La configuración avanzada es opcional.";
+      return;
+    }
     if (syncSource === "supabase") {
       syncHintEl.textContent = "Configuración API sincronizada con tu empresa.";
     } else if (syncSource === "local") {
@@ -1245,28 +1249,30 @@ function renderApiScript(ctx: AppPageContext, pageData: AppApiPageData): string 
     } catch (e) { return false; }
   }
 
+  function scrollToApiKeysPanel() {
+    var panel = document.getElementById("tv-api-keys-panel");
+    if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   applySettingsUI(loadSettings());
+
+  document.getElementById("tv-api-goto-keys-header")?.addEventListener("click", function () {
+    scrollToApiKeysPanel();
+  });
+  document.getElementById("tv-api-goto-keys-btn")?.addEventListener("click", function () {
+    scrollToApiKeysPanel();
+  });
 
   document.getElementById("tv-api-copy-header")?.addEventListener("click", function () {
     if (API_OPERATIONAL) {
-      if (PRIMARY_KEY_MASKED) {
-        copyText(PRIMARY_KEY_MASKED, "Prefijo enmascarado copiado. El secret completo solo se muestra al crear la key.");
-      } else {
-        showToast("Crea o regenera una API Key para obtener el secreto completo.", true);
-      }
+      showToast("Este valor es solo una referencia enmascarada. Crea o regenera una API Key para obtener el secret completo.", true);
+      scrollToApiKeysPanel();
       return;
     }
     copyText(state ? state.apiKeyDemo : "", "Referencia sandbox copiada.");
   });
   document.getElementById("tv-api-copy-key-btn")?.addEventListener("click", function () {
-    if (API_OPERATIONAL) {
-      if (PRIMARY_KEY_MASKED) {
-        copyText(PRIMARY_KEY_MASKED, "Prefijo enmascarado copiado. El secret completo solo se muestra al crear la key.");
-      } else {
-        showToast("Crea o regenera una API Key para obtener el secreto completo.", true);
-      }
-      return;
-    }
+    if (API_OPERATIONAL) return;
     copyText(state ? state.apiKeyDemo : "", "Referencia sandbox copiada.");
   });
 
@@ -1441,7 +1447,15 @@ export function renderAppApiPage(
     recentApiRequests: [],
   };
   const operational = data.productionStatus?.canUseProductionApi === true;
-  const headerCopyLabel = operational ? "Copiar prefijo key" : "Copiar referencia";
+  const headerPrimaryAction = operational
+    ? `<button type="button" class="btn btn-primary" id="tv-api-goto-keys-header">
+          <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">vpn_key</span>
+          Crear API Key
+        </button>`
+    : `<button type="button" class="btn btn-primary" id="tv-api-copy-header">
+          <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">content_copy</span>
+          Copiar referencia
+        </button>`;
 
   const body = `
     ${apiPageStyles()}
@@ -1453,10 +1467,7 @@ export function renderAppApiPage(
       subtitleHtml:
         'Conecta tus sistemas a Telvoice para enviar SMS transaccionales, OTP, alertas y notificaciones desde tus propias aplicaciones. <span id="tv-api-sync-hint" class="field-hint" style="display:block;margin-top:0.35rem"></span>',
       actions: `
-        <button type="button" class="btn btn-primary" id="tv-api-copy-header">
-          <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">content_copy</span>
-          ${headerCopyLabel}
-        </button>
+        ${headerPrimaryAction}
         <a href="/app/api/docs" class="btn btn-secondary">
           <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">menu_book</span>
           Ver documentación

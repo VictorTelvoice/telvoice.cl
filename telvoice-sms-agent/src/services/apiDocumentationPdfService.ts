@@ -1,38 +1,90 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import PDFDocument from "pdfkit";
 import {
-  API_DOC_LEGAL_NOTE,
-  API_DOC_SUBTITLE,
-  API_DOC_TITLE,
+  type ApiDocContentOptions,
   docSnippetAuthHeader,
   docSnippetBalance,
   docSnippetMessageDetail,
   docSnippetMessageList,
   docSnippetSend,
+  getApiDocAuthNotes,
   getApiDocCurrentStateBullets,
   getApiDocErrorRows,
   getApiDocIdempotencyBullets,
+  getApiDocLegalNote,
   getApiDocRateLimits,
   getApiDocRecommendedFlow,
   getApiDocScopeRows,
+  getApiDocSendEndpointLabel,
   getApiDocStatusItems,
+  getApiDocStatusLine,
+  getApiDocSubtitle,
+  getApiDocSummary,
+  API_DOC_TITLE,
 } from "../views/app-ui/api-documentation-content.js";
 
 type PdfDoc = InstanceType<typeof PDFDocument>;
 
+const PROJECT_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
+const ISOTIPO_PATH = path.join(PROJECT_ROOT, "public/assets/telvoice-isotipo.png");
+
+function ensureSpace(doc: PdfDoc, minHeight = 60): void {
+  if (doc.y > doc.page.height - minHeight) {
+    doc.addPage();
+  }
+}
+
 function addHeading(doc: PdfDoc, text: string, size = 14): void {
+  ensureSpace(doc, 80);
   doc.moveDown(0.5);
   doc.font("Helvetica-Bold").fontSize(size).text(text, { continued: false });
   doc.moveDown(0.25);
   doc.font("Helvetica").fontSize(10);
 }
 
+function addParagraph(doc: PdfDoc, text: string): void {
+  ensureSpace(doc, 50);
+  doc.font("Helvetica").fontSize(10).text(text, { lineGap: 2 });
+  doc.moveDown(0.2);
+}
+
 function addMonoBlock(doc: PdfDoc, text: string): void {
-  doc.font("Courier").fontSize(8).text(text, { lineGap: 2 });
+  ensureSpace(doc, 100);
+  doc.font("Courier").fontSize(7.5).text(text, { lineGap: 2 });
   doc.font("Helvetica").fontSize(10);
   doc.moveDown(0.35);
 }
 
-export function generateApiDocumentationPdf(): Promise<Buffer> {
+function renderBrandedHeader(doc: PdfDoc, subtitle: string): void {
+  const margin = 50;
+  const logoSize = 36;
+  const contentLeft = fs.existsSync(ISOTIPO_PATH) ? margin + logoSize + 12 : margin;
+  const contentWidth = doc.page.width - contentLeft - margin;
+
+  if (fs.existsSync(ISOTIPO_PATH)) {
+    doc.image(ISOTIPO_PATH, margin, margin, { width: logoSize, height: logoSize });
+  }
+
+  doc.font("Helvetica-Bold").fontSize(18).text(API_DOC_TITLE, contentLeft, margin, {
+    width: contentWidth,
+  });
+  const titleBottom = doc.y;
+  doc.font("Helvetica").fontSize(11).fillColor("#444444").text(subtitle, contentLeft, titleBottom + 2, {
+    width: contentWidth,
+  });
+  doc.fillColor("#000000");
+  doc.y = Math.max(margin + logoSize + 8, doc.y + 12);
+  doc.x = margin;
+}
+
+export function generateApiDocumentationPdf(
+  docOptions: ApiDocContentOptions = { mode: "sandbox", keyMaskedHint: null },
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50, size: "A4" });
     const chunks: Buffer[] = [];
@@ -45,76 +97,74 @@ export function generateApiDocumentationPdf(): Promise<Buffer> {
       timeStyle: "short",
     });
 
-    doc.font("Helvetica-Bold").fontSize(20).text(API_DOC_TITLE);
-    doc.moveDown(0.25);
-    doc.font("Helvetica").fontSize(12).fillColor("#444444").text(API_DOC_SUBTITLE);
-    doc.fillColor("#000000");
-    doc.moveDown(0.35);
+    renderBrandedHeader(doc, getApiDocSubtitle(docOptions));
     doc.fontSize(9).text(`Generado: ${generatedAt}`);
-    doc.text("Estado: sandbox activo — envío real no habilitado");
+    doc.text(`Estado: ${getApiDocStatusLine(docOptions)}`);
     doc.moveDown(0.75);
 
     addHeading(doc, "Resumen");
-    doc.text(
-      "API Telvoice para integración SMS. Autenticación Bearer con API Key sandbox (tlv_test_).",
-    );
+    addParagraph(doc, getApiDocSummary(docOptions));
 
     addHeading(doc, "Estado de la API");
-    for (const item of getApiDocStatusItems()) {
-      doc.text(`${item.label}: ${item.value}`);
+    for (const item of getApiDocStatusItems(docOptions)) {
+      addParagraph(doc, `${item.label}: ${item.value}`);
     }
 
     addHeading(doc, "Autenticación");
-    addMonoBlock(doc, docSnippetAuthHeader());
+    for (const note of getApiDocAuthNotes(docOptions)) {
+      addParagraph(doc, note);
+    }
+    addMonoBlock(doc, docSnippetAuthHeader(docOptions));
 
     addHeading(doc, "Endpoints");
-    doc.text("GET /api/v1/balance — Consultar saldo (scope balance:read)");
-    addMonoBlock(doc, docSnippetBalance());
-    doc.text("POST /api/v1/sms/send — Enviar SMS sandbox (scope sms:send)");
-    addMonoBlock(doc, docSnippetSend());
-    doc.text("GET /api/v1/messages/:id — Consultar mensaje (scope messages:read)");
-    addMonoBlock(doc, docSnippetMessageDetail());
-    doc.text("GET /api/v1/messages — Listar mensajes (scope messages:read)");
-    addMonoBlock(doc, docSnippetMessageList());
+    addParagraph(doc, "GET /api/v1/balance — Consultar saldo (scope balance:read)");
+    addMonoBlock(doc, docSnippetBalance(docOptions));
+    addParagraph(doc, getApiDocSendEndpointLabel(docOptions));
+    addMonoBlock(doc, docSnippetSend(docOptions));
+    addParagraph(doc, "GET /api/v1/messages/:id — Consultar mensaje (scope messages:read)");
+    addMonoBlock(doc, docSnippetMessageDetail(docOptions));
+    addParagraph(doc, "GET /api/v1/messages — Listar mensajes (scope messages:read)");
+    addMonoBlock(doc, docSnippetMessageList(docOptions));
 
     addHeading(doc, "Scopes");
-    for (const row of getApiDocScopeRows()) {
-      doc.text(`${row.scope} — ${row.use}`);
+    for (const row of getApiDocScopeRows(docOptions)) {
+      addParagraph(doc, `${row.scope} — ${row.use}`);
     }
 
     addHeading(doc, "Errores comunes");
-    for (const row of getApiDocErrorRows()) {
-      doc.text(`${row.http} ${row.code} — ${row.description}`);
+    for (const row of getApiDocErrorRows(docOptions)) {
+      addParagraph(doc, `${row.http} ${row.code} — ${row.description}`);
     }
 
     addHeading(doc, "Rate limits");
-    for (const block of getApiDocRateLimits()) {
+    for (const block of getApiDocRateLimits(docOptions)) {
+      ensureSpace(doc, 70);
       doc.font("Helvetica-Bold").text(block.title);
       doc.font("Helvetica");
       for (const item of block.items) {
-        doc.text(`• ${item}`);
+        addParagraph(doc, `• ${item}`);
       }
-      doc.moveDown(0.15);
+      doc.moveDown(0.1);
     }
 
     addHeading(doc, "Idempotency-Key");
     for (const bullet of getApiDocIdempotencyBullets()) {
-      doc.text(`• ${bullet}`);
+      addParagraph(doc, `• ${bullet}`);
     }
 
     addHeading(doc, "Flujo recomendado");
-    getApiDocRecommendedFlow().forEach((step, i) => {
-      doc.text(`${i + 1}. ${step}`);
+    getApiDocRecommendedFlow(docOptions).forEach((step, i) => {
+      addParagraph(doc, `${i + 1}. ${step}`);
     });
 
     addHeading(doc, "Estado actual");
-    for (const bullet of getApiDocCurrentStateBullets()) {
-      doc.text(`• ${bullet}`);
+    for (const bullet of getApiDocCurrentStateBullets(docOptions)) {
+      addParagraph(doc, `• ${bullet}`);
     }
 
     addHeading(doc, "Nota");
-    doc.font("Helvetica-Oblique").text(API_DOC_LEGAL_NOTE);
-    doc.font("Helvetica");
+    doc.font("Helvetica-Oblique").fontSize(9).text(getApiDocLegalNote(docOptions), { lineGap: 2 });
+    doc.font("Helvetica").fontSize(10);
 
     doc.end();
   });
