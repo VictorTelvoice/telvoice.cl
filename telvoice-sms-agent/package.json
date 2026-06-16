@@ -34,6 +34,7 @@
     "test:client-panel-post-purchase": "tsx scripts/test-client-panel-post-purchase.ts",
     "test:client-api-production-status": "tsx scripts/test-client-api-production-status.ts",
     "test:public-api-production-send-access": "tsx scripts/test-public-api-production-send-access.ts",
+    "test:sms-api-dlr-sync": "tsx scripts/test-sms-api-dlr-sync.ts",
     "test:agent-sales": "tsx scripts/test-agent-sales-metrics.ts",
     "test:agent-greeting-reset": "tsx scripts/test-agent-greeting-reset.ts",
     "test:billing-email-idempotency": "tsx scripts/test-billing-email-idempotency.ts",
