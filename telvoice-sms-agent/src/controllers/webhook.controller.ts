@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { processPanelSmsDlrFromAsmsc } from "../services/panelSmsDlrService.js";
 import { processAsmscDlrWebhook } from "../services/sms.service.js";
+import { syncSmsApiMessageFromAsmscDlrWebhook } from "../services/smsApiDlrSyncService.js";
 import type { AsmscDlrWebhookBody } from "../types/asmsc.js";
 
 export async function asmscDlrHandler(
@@ -12,6 +13,7 @@ export async function asmscDlrHandler(
     const body = (req.body ?? {}) as AsmscDlrWebhookBody;
     const result = await processAsmscDlrWebhook(body);
     const panelResult = await processPanelSmsDlrFromAsmsc(body);
+    const apiResult = await syncSmsApiMessageFromAsmscDlrWebhook(body);
 
     res.status(200).json({
       success: true,
@@ -19,6 +21,9 @@ export async function asmscDlrHandler(
       dlr_event_id: result.dlr_event_id,
       sms_message_id: result.sms_message_id,
       panel_message_id: panelResult.panel_message_id,
+      api_message_id: apiResult.apiMessageId,
+      api_sync_outcome: apiResult.outcome,
+      api_sync_reason: apiResult.reason,
     });
   } catch (error) {
     next(error);
