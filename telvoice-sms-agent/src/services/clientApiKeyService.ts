@@ -1,4 +1,8 @@
 import { getSupabase } from "../database/supabaseClient.js";
+import { isCompanyInLiveTestAllowlist } from "./commercialSmsAuthorizationService.js";
+import { resolveClientApiProductionStatus } from "./clientApiProductionStatusService.js";
+import { insertAuditLog } from "./auditLogService.js";
+import type { ClientApiProductionStatus } from "../types/client-api-production-status.js";
 import {
   assertApiKeyPepperConfigured,
   extractKeyPrefix,
@@ -27,6 +31,120 @@ import { validateUuidParam } from "../utils/validation.js";
 
 const KEY_LIST_COLUMNS =
   "id, company_id, created_by_user_id, name, key_prefix, key_masked, status, scopes, environment, last_used_at, expires_at, revoked_at, revoked_reason, metadata, source, created_at, updated_at, production_approved, production_approved_at, production_approved_by_admin_id, production_approval_notes";
+
+export const MIN_PRODUCTION_API_SCOPES: ClientApiKeyScope[] = [
+  "balance:read",
+  "messages:read",
+  "sms:send",
+];
+
+export function mergeMinProductionApiScopes(
+  scopes: ClientApiKeyScope[],
+): ClientApiKeyScope[] {
+  return validateApiKeyScopes([
+    ...new Set([...scopes, ...MIN_PRODUCTION_API_SCOPES]),
+  ]);
+}
+
+export function shouldAutoApproveProductionKeyOnCreate(input: {
+  environment: ClientApiKeyEnvironment;
+  companyId: string;
+  createdByUserId?: string | null;
+  productionStatus: ClientApiProductionStatus;
+  existingProductionKeys: ClientApiKey[];
+}): boolean {
+  if (input.environment !== "production") {
+    return false;
+  }
+  if (!input.createdByUserId) {
+    return false;
+  }
+  if (isCompanyInLiveTestAllowlist(input.companyId)) {
+    return false;
+  }
+
+  const status = input.productionStatus;
+  if (!status.companyActive || !status.walletActive) {
+    return false;
+  }
+  if (!status.apiEnabled || !status.ratePlanAssigned) {
+    return false;
+  }
+  if (status.blockingReasons.includes("qa_demo_account")) {
+    return false;
+  }
+
+  if (status.canUseProductionApi) {
+    return true;
+  }
+
+  const hasApprovedProductionKey = input.existingProductionKeys.some(
+    (key) =>
+      key.environment === "production" &&
+      key.status === "active" &&
+      key.productionApproved,
+  );
+  if (hasApprovedProductionKey) {
+    return true;
+  }
+
+  return status.apiEnabled && status.ratePlanAssigned;
+}
+
+async function autoApproveProductionKeyOnCreate(input: {
+  companyId: string;
+  keyId: string;
+  keyName: string;
+  scopes: ClientApiKeyScope[];
+  actorUserId: string;
+}): Promise<ClientApiKey | null> {
+  const mergedScopes = mergeMinProductionApiScopes(input.scopes);
+  const now = new Date().toISOString();
+  const { data, error } = await getSupabase()
+    .from("client_api_keys")
+    .update({
+      production_approved: true,
+      production_approved_at: now,
+      production_approved_by_admin_id: null,
+      production_approval_notes: null,
+      scopes: mergedScopes,
+      metadata: appendKeyAudit(null, {
+        action: "auto_production_approved",
+        adminId: "system",
+        adminEmail: "client_panel_key_create",
+        adminName: "Auto-approval",
+        previous: { production_approved: false },
+        next: { production_approved: true, scopes: mergedScopes },
+      }),
+    })
+    .eq("id", input.keyId)
+    .eq("company_id", input.companyId)
+    .select(KEY_LIST_COLUMNS)
+    .single();
+
+  if (error) {
+    console.warn("[client-api-keys] autoApproveProductionKeyOnCreate", error.message);
+    return null;
+  }
+
+  await insertAuditLog({
+    actorUserId: input.actorUserId,
+    actorRole: "client",
+    companyId: input.companyId,
+    action: "api_key_auto_approved_for_approved_company",
+    entityType: "client_api_key",
+    entityId: input.keyId,
+    metadata: {
+      source: "client_panel_key_create",
+      key_name: input.keyName,
+      reason: "company_already_production_enabled",
+      api_enabled: true,
+      minimum_scopes_ensured: true,
+    },
+  });
+
+  return rowToClientApiKey(data as ClientApiKeyRow);
+}
 
 type ApiKeyAuditEntry = {
   id: string;
@@ -251,6 +369,12 @@ export async function createClientApiKey(
       }
     }
 
+    const [listed, productionStatus] = await Promise.all([
+      listClientApiKeys(input.companyId),
+      resolveClientApiProductionStatus(input.companyId),
+    ]);
+    const existingKeys = listed.ok ? (listed.data ?? []) : [];
+
     const { data, error } = await getSupabase()
       .from("client_api_keys")
       .insert({
@@ -267,7 +391,7 @@ export async function createClientApiKey(
         source: "client_panel",
       })
       .select(
-        "id, company_id, created_by_user_id, name, key_prefix, key_masked, status, scopes, environment, last_used_at, expires_at, revoked_at, revoked_reason, metadata, source, created_at, updated_at",
+        "id, company_id, created_by_user_id, name, key_prefix, key_masked, status, scopes, environment, last_used_at, expires_at, revoked_at, revoked_reason, metadata, source, created_at, updated_at, production_approved, production_approved_at, production_approved_by_admin_id, production_approval_notes",
       )
       .single();
 
@@ -282,11 +406,37 @@ export async function createClientApiKey(
       wrapSupabaseError(error, "createClientApiKey");
     }
 
+    let key = rowToClientApiKey(data as ClientApiKeyRow);
+    let autoApproved = false;
+
+    if (
+      shouldAutoApproveProductionKeyOnCreate({
+        environment,
+        companyId: input.companyId,
+        createdByUserId: input.createdByUserId,
+        productionStatus,
+        existingProductionKeys: existingKeys,
+      })
+    ) {
+      const approved = await autoApproveProductionKeyOnCreate({
+        companyId: input.companyId,
+        keyId: key.id,
+        keyName: key.name,
+        scopes: key.scopes,
+        actorUserId: input.createdByUserId!,
+      });
+      if (approved) {
+        key = approved;
+        autoApproved = true;
+      }
+    }
+
     return {
       ok: true,
       data: {
-        key: rowToClientApiKey(data as ClientApiKeyRow),
+        key,
         plainTextKey,
+        autoApproved,
       },
     };
   } catch (error) {

@@ -73,6 +73,7 @@ export type UpdateClientApiKeyInput = {
 export type CreatedClientApiKeyResult = {
   key: ClientApiKey;
   plainTextKey: string;
+  autoApproved?: boolean;
 };
 
 export type ClientApiKeysModuleState = {

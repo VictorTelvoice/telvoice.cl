@@ -331,9 +331,9 @@ function productionApprovalClientBadges(
     return `<div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.25rem"><span class="badge badge-warn">Falta aprobación productiva</span></div>`;
   }
   if (operational && k.status === "active") {
-    return `<div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.25rem"><span class="badge badge-ok">Producción activa</span></div>`;
+    return `<div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.25rem"><span class="badge badge-ok">Lista para enviar</span></div>`;
   }
-  return `<div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.25rem"><span class="badge badge-ok">Producción aprobada</span></div>`;
+  return `<div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.25rem"><span class="badge badge-ok">Productiva aprobada</span></div>`;
 }
 
 function renderBlockingReasonsList(
@@ -703,7 +703,11 @@ function renderRealApiKeysScript(data: AppApiPageData): string {
         var revealEl = document.getElementById("tv-api-keys-reveal-value");
         if (revealEl) revealEl.textContent = revealPlainKey;
         document.getElementById("tv-api-keys-reveal-modal")?.setAttribute("aria-hidden", "false");
-        keysToast("API Key creada.");
+        keysToast(
+          r.body.auto_approved
+            ? "API Key creada y aprobada para producción."
+            : "API Key creada.",
+        );
       } else {
         keysToast((r.body && r.body.error) || "No se pudo crear la API Key.", true);
       }

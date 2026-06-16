@@ -41,6 +41,7 @@
     "test:billing-email-idempotency": "tsx scripts/test-billing-email-idempotency.ts",
     "test:admin-client-actions": "tsx scripts/test-admin-client-actions.ts",
     "test:admin-api-support-ops": "tsx scripts/test-admin-api-support-ops.ts",
+    "test:client-api-key-auto-approval": "tsx scripts/test-client-api-key-auto-approval.ts",
     "test:admin-client-actions:qa": "tsx scripts/qa-admin-actions-controlled-test.ts",
     "validate:migration-059-schema": "tsx scripts/validate-migration-059-schema.ts",
     "migrate:057": "node scripts/apply-migration-057.mjs",
