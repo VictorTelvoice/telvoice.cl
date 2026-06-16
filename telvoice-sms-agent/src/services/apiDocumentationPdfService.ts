@@ -19,7 +19,6 @@ import {
   getApiDocScopeRows,
   getApiDocSendEndpointLabel,
   getApiDocStatusItems,
-  getApiDocStatusLine,
   getApiDocSubtitle,
   getApiDocSummary,
   API_DOC_TITLE,
@@ -62,23 +61,28 @@ function addMonoBlock(doc: PdfDoc, text: string): void {
 
 function renderBrandedHeader(doc: PdfDoc, subtitle: string): void {
   const margin = 50;
-  const logoSize = 36;
-  const contentLeft = fs.existsSync(ISOTIPO_PATH) ? margin + logoSize + 12 : margin;
-  const contentWidth = doc.page.width - contentLeft - margin;
+  const pageWidth = doc.page.width;
+  const contentWidth = pageWidth - margin * 2;
+  const logoSize = 40;
+  let y = margin;
 
   if (fs.existsSync(ISOTIPO_PATH)) {
-    doc.image(ISOTIPO_PATH, margin, margin, { width: logoSize, height: logoSize });
+    doc.image(ISOTIPO_PATH, (pageWidth - logoSize) / 2, y, {
+      width: logoSize,
+      height: logoSize,
+    });
+    y += logoSize + 18;
   }
 
-  doc.font("Helvetica-Bold").fontSize(18).text(API_DOC_TITLE, contentLeft, margin, {
-    width: contentWidth,
-  });
-  const titleBottom = doc.y;
-  doc.font("Helvetica").fontSize(11).fillColor("#444444").text(subtitle, contentLeft, titleBottom + 2, {
-    width: contentWidth,
-  });
+  doc.font("Helvetica-Bold").fontSize(20).fillColor("#111111");
+  doc.text(API_DOC_TITLE, margin, y, { width: contentWidth, align: "center" });
+  y = doc.y + 10;
+
+  doc.font("Helvetica").fontSize(12).fillColor("#444444");
+  doc.text(subtitle, margin, y, { width: contentWidth, align: "center" });
   doc.fillColor("#000000");
-  doc.y = Math.max(margin + logoSize + 8, doc.y + 12);
+
+  doc.y = doc.y + 24;
   doc.x = margin;
 }
 
@@ -92,15 +96,8 @@ export function generateApiDocumentationPdf(
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    const generatedAt = new Date().toLocaleString("es-CL", {
-      dateStyle: "long",
-      timeStyle: "short",
-    });
-
     renderBrandedHeader(doc, getApiDocSubtitle(docOptions));
-    doc.fontSize(9).text(`Generado: ${generatedAt}`);
-    doc.text(`Estado: ${getApiDocStatusLine(docOptions)}`);
-    doc.moveDown(0.75);
+    doc.moveDown(0.5);
 
     addHeading(doc, "Resumen");
     addParagraph(doc, getApiDocSummary(docOptions));
