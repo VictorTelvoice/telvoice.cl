@@ -421,6 +421,8 @@ export async function markEntityAsProdReal(input: {
   entityId: string;
   reason?: string;
   actorEmail?: string | null;
+  metadata?: Record<string, unknown>;
+  protected?: boolean;
 }): Promise<void> {
   await upsertAuditFlag({
     entityType: input.entityType,
@@ -430,11 +432,12 @@ export async function markEntityAsProdReal(input: {
       input.reason ??
       "MercadoPago approved payment reconciled by email",
     confidence: 0.98,
-    protected: true,
+    protected: input.protected ?? true,
     metadata: {
       source: "paid_purchase_reconcile",
       actor_email: input.actorEmail ?? null,
       reconciled_at: new Date().toISOString(),
+      ...input.metadata,
     },
   });
 }
