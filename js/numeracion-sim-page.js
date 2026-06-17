@@ -594,42 +594,7 @@
       });
   }
 
-  function initNav() {
-    document.querySelectorAll(".site-nav-dropdown-toggle").forEach(function (toggle) {
-      var menu = document.getElementById(toggle.getAttribute("aria-controls"));
-      if (!menu) return;
-      toggle.addEventListener("click", function () {
-        var wrap = toggle.closest(".site-nav-dropdown");
-        var open = wrap.classList.contains("is-open");
-        document.querySelectorAll(".site-nav-dropdown.is-open").forEach(function (w) {
-          w.classList.remove("is-open");
-          w.querySelector(".site-nav-dropdown-toggle").setAttribute("aria-expanded", "false");
-          w.querySelector(".site-nav-dropdown-menu").setAttribute("hidden", "");
-        });
-        if (!open) {
-          wrap.classList.add("is-open");
-          toggle.setAttribute("aria-expanded", "true");
-          menu.removeAttribute("hidden");
-        }
-      });
-    });
-    var menuToggle = $("menu-toggle");
-    var mobilePanel = $("mobile-panel");
-    if (menuToggle && mobilePanel) {
-      menuToggle.addEventListener("click", function () {
-        var open = !mobilePanel.classList.contains("hidden");
-        mobilePanel.classList.toggle("hidden", open);
-        menuToggle.setAttribute("aria-expanded", open ? "false" : "true");
-        var openIcon = $("menu-icon-open");
-        var closeIcon = $("menu-icon-close");
-        if (openIcon) openIcon.classList.toggle("hidden", !open);
-        if (closeIcon) closeIcon.classList.toggle("hidden", open);
-      });
-    }
-  }
-
   function init() {
-    initNav();
     updatePricing();
 
     document.querySelectorAll("[data-billing-cycle]").forEach(function (button) {
