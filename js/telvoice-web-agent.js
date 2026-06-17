@@ -1854,6 +1854,15 @@
     var root = document.createElement("div");
     root.className = lab ? "tva-root tva-root--lab" : "tva-root";
     root.id = "telvoice-web-agent";
+    var windowActionBtn =
+      'class="tva-window-action';
+    var minimizeBtnHtml =
+      '<button type="button" ' + windowActionBtn + ' tva-window-action--minimize tva-minimize" aria-label="Minimizar agente al menú" title="Minimizar al menú">' +
+      '<svg class="tva-window-action__icon" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">' +
+      '<path d="M4 12L12 4M12 4H6M12 4V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+    var closeBtnHtml =
+      '<button type="button" ' + windowActionBtn + ' tva-window-action--close tva-close" aria-label="Cerrar conversación" title="Cerrar conversación">' +
+      '<span class="tva-window-action__glyph" aria-hidden="true">×</span></button>';
     var headerHtml = lab
       ? '<div class="tva-header tva-header--lab">' +
         '<div class="tva-header-brand">' +
@@ -1861,13 +1870,19 @@
         '<div class="tva-header-text"><h2 id="tva-title">Agente Telvoice</h2>' +
         '<p class="tva-header-role">Especialista comercial</p></div></div>' +
         '<span class="tva-header-status">En línea</span>' +
-        '<button type="button" class="tva-close" aria-label="Cerrar chat"><span aria-hidden="true">×</span></button></div>'
+        '<div class="tva-header-actions">' +
+        minimizeBtnHtml +
+        closeBtnHtml +
+        '</div></div>'
       : '<div class="tva-header">' +
         '<img src="' +
         escHtml(iso) +
         '" alt="" width="40" height="40" decoding="async" data-tva-iso="1" />' +
         '<div class="tva-header-text"><h2 id="tva-title">Agente comercial Telvoice</h2><p>Cotiza SMS para Chile</p></div>' +
-        '<button type="button" class="tva-close" aria-label="Cerrar chat"><span aria-hidden="true">×</span></button></div>';
+        '<div class="tva-header-actions">' +
+        minimizeBtnHtml +
+        closeBtnHtml +
+        '</div></div>';
     var inputPlaceholder = lab
       ? "Consulta sobre numeración, campañas o validaciones…"
       : "Escribe tu mensaje…";
@@ -1937,9 +1952,20 @@
     els.form = qs("#tva-form", root);
     els.input = qs("#tva-input", root);
     els.close = qs(".tva-close", root);
+    els.minimize = qs(".tva-minimize", root);
 
     els.launcher.addEventListener("click", togglePanel);
-    els.close.addEventListener("click", closePanel);
+    if (els.close) {
+      els.close.addEventListener("click", function () {
+        finishClosePanel();
+      });
+    }
+    if (els.minimize) {
+      els.minimize.addEventListener("click", function () {
+        finishClosePanel();
+        agentChrome("minimize");
+      });
+    }
     if (els.suggestionsToggle) {
       els.suggestionsToggle.addEventListener("click", toggleSuggestions);
     }
@@ -2011,6 +2037,20 @@
       openPanel();
     }
   }
+
+  function agentChrome(action) {
+    try {
+      document.dispatchEvent(new CustomEvent("telvoice:agent-chrome", { detail: { action: action } }));
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  document.addEventListener("telvoice:agent-panel-close", function () {
+    if (state.open) {
+      finishClosePanel();
+    }
+  });
 
   function setChatOpenLock(on) {
     try {

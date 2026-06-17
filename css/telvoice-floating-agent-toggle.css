@@ -1,7 +1,8 @@
 /* Control manual del launcher flotante (#telvoice-web-agent) — no afecta el embed del Hero */
 
 body.tva-floating-agent-hidden #telvoice-web-agent,
-html.tva-floating-agent-prehidden #telvoice-web-agent {
+html.tva-floating-agent-prehidden #telvoice-web-agent,
+body.tva-floating-agent-minimized #telvoice-web-agent {
   display: none !important;
   pointer-events: none !important;
   visibility: hidden !important;
@@ -11,6 +12,37 @@ body.tva-floating-agent-animating #telvoice-web-agent {
   opacity: 0 !important;
   visibility: hidden !important;
   pointer-events: none !important;
+}
+
+#telvoice-web-agent.tva-root--entry-reveal {
+  animation: tva-agent-entry-reveal 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes tva-agent-entry-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.88);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__ring {
+  opacity: 1;
+  animation: tva-toggle-glow 2.2s ease-in-out infinite;
+}
+
+.nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__avatar {
+  opacity: 1;
+  filter: saturate(1.08) brightness(1.06);
+  box-shadow:
+    0 0 0 1px rgba(220, 231, 245, 0.95),
+    0 0 18px rgba(11, 92, 255, 0.35),
+    0 0 28px rgba(72, 255, 220, 0.22);
 }
 
 .nav-floating-agent-toggle--avatar {
@@ -146,7 +178,8 @@ body.tva-floating-agent-animating #telvoice-web-agent {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nav-floating-agent-toggle.is-agent-dormant .nav-floating-agent-toggle__ring {
+  .nav-floating-agent-toggle.is-agent-dormant .nav-floating-agent-toggle__ring,
+  .nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__ring {
     animation: none;
     opacity: 0.85;
   }
@@ -154,5 +187,9 @@ body.tva-floating-agent-animating #telvoice-web-agent {
   .nav-floating-agent-toggle--avatar:hover,
   .nav-floating-agent-toggle--avatar:active {
     transform: none;
+  }
+
+  #telvoice-web-agent.tva-root--entry-reveal {
+    animation: none;
   }
 }

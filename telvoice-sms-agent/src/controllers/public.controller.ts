@@ -15,6 +15,7 @@ import {
   getPublicPendingSimCheckoutForEmail,
   listPublicSimAvailableNumbers,
   startPublicLandingCheckout,
+  startPublicLandingCheckoutBySmsQuantity,
   startPublicSimAgentBundleCheckout,
   startPublicSimCheckout,
 } from "../services/publicCheckoutService.js";
@@ -465,6 +466,36 @@ export async function postPublicCheckout(
     }
 
     const packageIdRaw = String(body.package_id ?? "").trim();
+    const smsQtyRaw =
+      body.sms_quantity ?? body.smsQuantity ?? body.calc_sms ?? body.quantity;
+    const hasSmsQuantity = smsQtyRaw != null && smsQtyRaw !== "";
+    const smsQuantity = hasSmsQuantity ? Number(smsQtyRaw) : NaN;
+
+    if (hasSmsQuantity) {
+      if (!Number.isFinite(smsQuantity) || smsQuantity < 1000) {
+        throw new ValidationError("La compra mínima online es 1.000 SMS.");
+      }
+
+      const result = await startPublicLandingCheckoutBySmsQuantity({
+        smsQuantity: Math.round(smsQuantity),
+        checkoutEmail,
+        payerEmail,
+        payerName,
+        source: typeof body.source === "string" ? body.source.trim() : "landing",
+      });
+
+      res.status(201).json({
+        success: true,
+        product_type: "sms_bundle",
+        order_id: result.orderId,
+        claim_token: result.claimToken,
+        checkout_url: result.checkoutUrl,
+        public_checkout_reference: result.publicCheckoutReference,
+        preference_id: result.preferenceId,
+      });
+      return;
+    }
+
     const packageId = validateUuidParam(packageIdRaw, "package_id");
 
     const result = await startPublicLandingCheckout({

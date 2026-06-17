@@ -1,24 +1,48 @@
 (function () {
-  var STORAGE_KEY = "telvoice:floating-agent-visible";
+  var SURFACE = "public";
+  var LEGACY_KEY = "telvoice:floating-agent-visible";
 
-  function applyHiddenToBody() {
+  function storageKey() {
+    return "telvoice:floating-agent-state:" + SURFACE;
+  }
+
+  function readState() {
+    try {
+      var stored = localStorage.getItem(storageKey());
+      if (stored === "open" || stored === "minimized" || stored === "hidden") {
+        return stored;
+      }
+      if (localStorage.getItem(LEGACY_KEY) === "false") {
+        return "hidden";
+      }
+    } catch (e) {
+      /* ignore */
+    }
+    return "open";
+  }
+
+  function applyState(state) {
     if (!document.body) {
       return;
     }
-    document.body.classList.add("tva-floating-agent-hidden");
+    document.body.classList.toggle("tva-floating-agent-hidden", state === "hidden");
+    document.body.classList.toggle("tva-floating-agent-minimized", state === "minimized");
     document.documentElement.classList.remove("tva-floating-agent-prehidden");
   }
 
-  try {
-    if (localStorage.getItem(STORAGE_KEY) === "false") {
-      if (document.body) {
-        applyHiddenToBody();
-      } else {
-        document.documentElement.classList.add("tva-floating-agent-prehidden");
-        document.addEventListener("DOMContentLoaded", applyHiddenToBody, { once: true });
-      }
+  var state = readState();
+  if (state === "hidden" || state === "minimized") {
+    if (document.body) {
+      applyState(state);
+    } else {
+      document.documentElement.classList.add("tva-floating-agent-prehidden");
+      document.addEventListener(
+        "DOMContentLoaded",
+        function () {
+          applyState(readState());
+        },
+        { once: true },
+      );
     }
-  } catch (e) {
-    /* ignore */
   }
 })();
