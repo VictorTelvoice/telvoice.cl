@@ -7,19 +7,29 @@ import { sendTransactionalEmail } from "./transactionalEmailService.js";
 
 const TEMPLATE_KEY = "support_ticket_created_admin_alert";
 
-function supportAlertEmails(): string[] {
+function parseSupportAlertEmailList(raw: string): string[] {
+  return raw
+    .split(/[,;]/)
+    .map((email) => email.trim().toLowerCase())
+    .filter((email) => email.includes("@"));
+}
+
+/** Destinatarios internos de alertas de soporte (env → fallbacks operativos). */
+export function resolveSupportTeamAlertEmails(): string[] {
   const configured = env.support.alertEmail?.trim();
   if (configured && configured.includes("@")) {
-    return [configured];
+    return parseSupportAlertEmailList(configured);
   }
   const ops =
     process.env.ORDER_NOTIFY_EMAIL?.trim() ||
     process.env.BILLING_NOTIFY_EMAIL?.trim() ||
+    env.admin.superadminEmail?.trim() ||
     "victor@telvoice.net";
-  return ops
-    .split(/[,;]/)
-    .map((email) => email.trim())
-    .filter((email) => email.includes("@"));
+  return parseSupportAlertEmailList(ops);
+}
+
+function supportAlertEmails(): string[] {
+  return resolveSupportTeamAlertEmails();
 }
 
 function summarizeMessage(message: string, max = 400): string {

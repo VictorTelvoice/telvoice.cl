@@ -705,12 +705,13 @@ export async function addSupportTicketReply(
     }
 
     const replies = parseReplies(existing.replies);
-    replies.push({
+    const replyEntry: SupportTicketReply = {
       id: `rep_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       author: reply.author ?? "client",
       message: text,
       createdAt: new Date().toISOString(),
-    });
+    };
+    replies.push(replyEntry);
 
     const { data, error } = await getSupabase()
       .from("client_support_tickets")
@@ -730,7 +731,19 @@ export async function addSupportTicketReply(
       wrapSupabaseError(error, "addSupportTicketReply");
     }
 
-    return { ok: true, data: rowToSupportTicket(data as ClientSupportTicketRow) };
+    const updatedRow = data as ClientSupportTicketRow;
+    if (replyEntry.author === "client" && !replyEntry.internal) {
+      const { sendSupportTicketClientReplyEmailBestEffort } = await import(
+        "./supportTicketClientReplyEmailService.js"
+      );
+      void sendSupportTicketClientReplyEmailBestEffort({
+        ticketRow: updatedRow,
+        replyId: replyEntry.id,
+        replyMessage: replyEntry.message,
+      });
+    }
+
+    return { ok: true, data: rowToSupportTicket(updatedRow) };
   } catch (error) {
     if (error instanceof AppError) {
       return { ok: false, error: error.message };

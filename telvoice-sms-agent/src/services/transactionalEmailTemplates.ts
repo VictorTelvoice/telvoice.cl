@@ -683,7 +683,10 @@ export function renderSupportTicketReplyToClient(
         </td>
       </tr>
     </table>
-    ${ctaButton(data.panelUrl, "Ver ticket en mi panel")}
+    ${ctaButton(data.panelUrl, "Ver y responder ticket en mi panel")}
+    <p style="margin:16px 0 0;font-family:Segoe UI,system-ui,sans-serif;font-size:13px;line-height:1.55;color:#64748b;text-align:center;max-width:520px;margin-left:auto;margin-right:auto">
+      Para mantener el historial completo, responde desde tu panel Telvoice.
+    </p>
     <p style="margin:16px 0 0;font-family:Segoe UI,system-ui,sans-serif;font-size:12px;line-height:1.5;color:#64748b;text-align:center">
       Si el botón no funciona, copia este enlace en tu navegador:<br />
       <a href="${escapeHtml(data.panelUrl)}" style="color:#0052cc;word-break:break-all;text-decoration:none">${escapeHtml(data.panelUrl)}</a>
@@ -703,7 +706,84 @@ export function renderSupportTicketReplyToClient(
     `${data.authorName}:`,
     data.replyMessage,
     "",
-    `Ver ticket: ${data.panelUrl}`,
+    "Para mantener el historial completo, responde desde tu panel Telvoice.",
+    "",
+    `Ver y responder ticket: ${data.panelUrl}`,
+  ].join("\n");
+
+  return { subject, html: emailShell("Soporte Telvoice", body), text };
+}
+
+export type SupportTicketClientReplyToAdminTemplateData = {
+  ticketCode: string;
+  subject: string;
+  statusLabel: string;
+  companyName: string;
+  clientEmail: string;
+  clientName: string;
+  replyMessage: string;
+  panelUrl: string;
+  updatedAt: string;
+};
+
+export function renderSupportTicketClientReplyToAdmin(
+  data: SupportTicketClientReplyToAdminTemplateData,
+): { subject: string; html: string; text: string } {
+  const subject = `Cliente respondió el ticket ${data.ticketCode} — Telvoice`;
+  const when = fmtSupportDate(data.updatedAt);
+  const summaryRows = `
+    <div><strong>Ticket:</strong> ${escapeHtml(data.ticketCode)}</div>
+    <div><strong>Empresa:</strong> ${escapeHtml(data.companyName)}</div>
+    <div><strong>Cliente:</strong> ${escapeHtml(data.clientName)}</div>
+    <div><strong>Correo:</strong> ${escapeHtml(data.clientEmail)}</div>
+    <div><strong>Asunto:</strong> ${escapeHtml(data.subject)}</div>
+    <div><strong>Estado:</strong> ${escapeHtml(data.statusLabel)}</div>
+    <div><strong>Fecha:</strong> ${escapeHtml(when)}</div>
+  `;
+  const replyHtml = escapeHtml(data.replyMessage).replace(/\n/g, "<br />");
+
+  const body = `
+    <p style="margin:0 0 16px;text-align:center">
+      <span style="display:inline-block;padding:6px 14px;border-radius:999px;background:#e0f2fe;color:#0369a1;font-family:Segoe UI,system-ui,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.02em">Soporte Telvoice</span>
+    </p>
+    <p style="margin:0 0 12px;font-family:Segoe UI,system-ui,sans-serif;font-size:20px;font-weight:700;line-height:1.35;color:#0f172a;text-align:center">
+      Cliente respondió el ticket ${escapeHtml(data.ticketCode)}
+    </p>
+    <p style="margin:0 0 24px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55;color:#334155;text-align:center;max-width:520px;margin-left:auto;margin-right:auto">
+      Hay una nueva respuesta pendiente de revisión.
+    </p>
+    ${summaryCard(summaryRows)}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:520px;margin:0 auto 24px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px">
+      <tr>
+        <td style="padding:18px 20px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.6;color:#0f172a;text-align:left">
+          <div style="font-size:12px;font-weight:700;color:#c2410c;margin-bottom:8px">${escapeHtml(data.clientName)}</div>
+          <div>${replyHtml}</div>
+        </td>
+      </tr>
+    </table>
+    ${ctaButton(data.panelUrl, "Ver ticket en superadmin")}
+    <p style="margin:16px 0 0;font-family:Segoe UI,system-ui,sans-serif;font-size:12px;line-height:1.5;color:#64748b;text-align:center">
+      Si el botón no funciona, copia este enlace en tu navegador:<br />
+      <a href="${escapeHtml(data.panelUrl)}" style="color:#0052cc;word-break:break-all;text-decoration:none">${escapeHtml(data.panelUrl)}</a>
+    </p>`;
+
+  const text = [
+    subject,
+    "",
+    "Hay una nueva respuesta pendiente de revisión.",
+    "",
+    `Ticket: ${data.ticketCode}`,
+    `Empresa: ${data.companyName}`,
+    `Cliente: ${data.clientName}`,
+    `Correo: ${data.clientEmail}`,
+    `Asunto: ${data.subject}`,
+    `Estado: ${data.statusLabel}`,
+    `Fecha: ${when}`,
+    "",
+    `${data.clientName}:`,
+    data.replyMessage,
+    "",
+    `Ver ticket en superadmin: ${data.panelUrl}`,
   ].join("\n");
 
   return { subject, html: emailShell("Soporte Telvoice", body), text };
