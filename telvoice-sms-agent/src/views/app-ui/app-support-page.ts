@@ -13,6 +13,7 @@ import { renderOrderShortIdCell } from "./app-order-ui.js";
 import {
   clientTicketConversationScriptFragment,
   renderTicketComposerClient,
+  renderTicketDrawerCloseButton,
   supportTicketConversationStyles,
 } from "../support-ticket-conversation-ui.js";
 
@@ -185,10 +186,7 @@ function supportPageStyles(): string {
     }
     .tv-support-drawer__panel {
       position: relative;
-      max-height: 100vh;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
+      width: min(520px, 100%);
       background: var(--tv-surface);
       box-shadow: var(--tv-shadow-lg);
     }
@@ -377,17 +375,17 @@ function renderNewTicketModal(
 function renderDetailDrawer(): string {
   return `<div class="tv-support-drawer" id="tv-support-detail-drawer" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="tv-support-drawer__backdrop" data-tv-support-close tabindex="-1"></div>
-    <div class="tv-support-drawer__panel">
-      <header class="tv-support-drawer__head">
+    <div class="tv-support-drawer__panel tv-ticket-drawer">
+      <header class="tv-support-drawer__head tv-ticket-drawer__header">
         <div>
           <p class="field-hint" style="margin:0" id="tv-support-detail-code">—</p>
           <h2 class="tv-section-head__title" id="tv-support-detail-subject" style="margin:0.25rem 0 0">—</h2>
           <div style="display:flex;flex-wrap:wrap;gap:0.35rem;margin-top:0.5rem" id="tv-support-detail-badges"></div>
         </div>
-        <button type="button" class="btn btn-ghost btn-sm" data-tv-support-close aria-label="Cerrar">✕</button>
+        ${renderTicketDrawerCloseButton({ closeDataAttr: "data-tv-support-close" })}
       </header>
       <p class="tv-support-drawer__meta" id="tv-support-detail-dates">—</p>
-      <div class="tv-support-drawer__body">
+      <div class="tv-support-drawer__body tv-ticket-drawer__body" data-ticket-chat-root>
         <div id="tv-support-detail-conversation"></div>
       </div>
       <footer class="tv-support-drawer__foot">
@@ -732,8 +730,9 @@ function renderSupportScript(
     var convEl = document.getElementById("tv-support-detail-conversation");
     if (convEl) {
       convEl.innerHTML = renderTicketConversation(t);
-      var chat = convEl.querySelector(".tv-ticket-chat");
-      if (chat) chat.scrollTop = chat.scrollHeight;
+      var chatRoot = document.querySelector("[data-ticket-chat-root]");
+      scrollTicketChatToBottom(chatRoot || convEl);
+      setTimeout(function () { scrollTicketChatToBottom(chatRoot || convEl); }, 120);
     }
     document.getElementById("tv-support-reply-input").value = "";
     var sendBtn = document.getElementById("tv-support-send-reply");
@@ -979,6 +978,16 @@ function renderSupportScript(
     }
   }
   renderAll();
+
+  (function openTicketFromUrl() {
+    var params = new URLSearchParams(window.location.search);
+    var ticketParam = params.get("ticket");
+    if (!ticketParam) return;
+    var match = tickets.find(function (t) {
+      return t.code === ticketParam || t.id === ticketParam;
+    });
+    if (match) openDetail(match.id);
+  })();
 })();
 </script>`;
 }

@@ -26,9 +26,10 @@ import {
   getSupportTicketAuditLog,
 } from "../../../services/supportTicketAudit.js";
 import {
-  buildTicketConversationMessages,
   formatTicketStatusForAudience,
+  getTicketChatScrollScript,
   renderTicketConversation,
+  renderTicketDrawerCloseButton,
   statusBadgeClass,
   supportTicketConversationStyles,
 } from "../../support-ticket-conversation-ui.js";
@@ -336,13 +337,7 @@ function renderAuditActivity(ticket: AdminSupportTicketListItem): string {
 }
 
 function renderReplyHistory(ticket: AdminSupportTicketListItem): string {
-  const messages = buildTicketConversationMessages({
-    originalMessage: ticket.message,
-    createdAt: ticket.createdAt,
-    replies: ticket.replies ?? [],
-    includeInternal: true,
-  });
-  return renderTicketConversation(messages, "admin", formatDate);
+  return renderTicketConversation(ticket, "admin");
 }
 
 function renderAdminTicketComposer(ticket: AdminSupportTicketListItem): string {
@@ -393,8 +388,8 @@ function renderDrawer(ticket: AdminSupportTicketListItem): string {
   return `${supportTicketConversationStyles()}
   <div class="tv-support-admin-drawer" id="tv-admin-support-drawer" aria-hidden="false">
     <div class="tv-support-admin-drawer__backdrop" data-admin-support-close></div>
-    <div class="tv-support-admin-drawer__panel">
-      <header class="tv-support-admin-drawer__head">
+    <div class="tv-support-admin-drawer__panel tv-ticket-drawer">
+      <header class="tv-support-admin-drawer__head tv-ticket-drawer__header">
         <div>
           <p class="field-hint" style="margin:0">${escapeHtml(ticket.code)}</p>
           <h2 style="margin:0.25rem 0 0;font-size:1.1rem">${escapeHtml(ticket.subject)}</h2>
@@ -403,7 +398,7 @@ function renderDrawer(ticket: AdminSupportTicketListItem): string {
             <span class="badge badge-muted">${escapeHtml(ticket.category)}</span>
           </div>
         </div>
-        <a href="/admin/support" class="btn btn-ghost btn-sm" aria-label="Cerrar">✕</a>
+        ${renderTicketDrawerCloseButton({ tag: "a", href: "/admin/support" })}
       </header>
       <p class="tv-support-admin-drawer__meta">
         <strong>${escapeHtml(ticket.companyName ?? "—")}</strong>
@@ -411,13 +406,10 @@ function renderDrawer(ticket: AdminSupportTicketListItem): string {
         · Actualizado ${escapeHtml(formatDate(ticket.updatedAt))}
         ${ticket.relatedOrderId ? ` · Orden <a href="/admin/orders/${escapeHtml(ticket.relatedOrderId)}"><code>${escapeHtml(shortId(ticket.relatedOrderId))}</code></a>` : ""}
       </p>
-      ${priorityAlert ? `<div style="padding:0 1.25rem">${priorityAlert}</div>` : ""}
-      <div class="tv-support-admin-drawer__chat">
+      ${priorityAlert ? `<div style="padding:0 1.25rem;flex-shrink:0">${priorityAlert}</div>` : ""}
+      <div class="tv-support-admin-drawer__chat tv-ticket-drawer__body" data-ticket-chat-root>
         ${renderReplyHistory(ticket)}
       </div>
-      <footer class="tv-support-drawer__foot">
-        ${renderAdminTicketComposer(ticket)}
-      </footer>
       <div class="tv-support-admin-drawer__tools">
         <details>
           <summary>Gestión del ticket</summary>
@@ -444,16 +436,19 @@ function renderDrawer(ticket: AdminSupportTicketListItem): string {
           ${renderAuditActivity(ticket)}
         </details>
       </div>
+      <footer class="tv-support-drawer__foot">
+        ${renderAdminTicketComposer(ticket)}
+      </footer>
     </div>
   </div>
   <style>
     .tv-support-admin-drawer { position:fixed;inset:0;z-index:300;display:flex;justify-content:flex-end; }
     .tv-support-admin-drawer__backdrop { position:absolute;inset:0;background:rgba(15,23,42,0.45); }
-    .tv-support-admin-drawer__panel { position:relative;max-height:100vh;overflow:hidden;display:flex;flex-direction:column;background:var(--tv-surface);box-shadow:var(--tv-shadow-lg); }
-    .tv-support-admin-drawer__head { padding:1rem 1.25rem;border-bottom:1px solid var(--tv-border);display:flex;justify-content:space-between;gap:0.75rem;flex-shrink:0; }
+    .tv-support-admin-drawer__panel { position:relative;background:var(--tv-surface);box-shadow:var(--tv-shadow-lg); }
     .tv-support-audit__item { padding:0.5rem 0.65rem;background:var(--tv-bg);border-radius:var(--tv-radius);border:1px solid var(--tv-border); }
   </style>
   <script>
+  ${getTicketChatScrollScript()}
   document.querySelectorAll("[data-copy-target]").forEach(function(btn) {
     btn.addEventListener("click", function() {
       var el = document.getElementById(btn.getAttribute("data-copy-target"));
