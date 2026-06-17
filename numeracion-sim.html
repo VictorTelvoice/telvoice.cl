@@ -40,6 +40,9 @@
   </script>
   <link rel="stylesheet" href="css/numeracion-sim-page.css" />
   <link rel="stylesheet" href="css/telvoice-site-footer.css" />
+  <script src="js/telvoice-floating-agent-pref.js?v=20260617"></script>
+  <link rel="stylesheet" href="css/telvoice-floating-agent-toggle.css?v=20260619" />
+  <link rel="stylesheet" href="css/telvoice-web-agent.css?v=20260615" data-tva-css="1" />
   <style>
     .nsim-eyebrow {
       font-family: Montserrat, sans-serif;
@@ -110,6 +113,10 @@
         <li><a class="text-sm text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="ayuda/">Centro de ayuda</a></li>
       </ul>
       <div class="nav-actions flex items-center gap-2 shrink-0">
+        <button type="button" id="nav-floating-agent-toggle" class="nav-floating-agent-toggle nav-floating-agent-toggle--avatar inline-flex is-agent-live" aria-pressed="true" aria-label="Ocultar agente flotante">
+          <span class="nav-floating-agent-toggle__ring" aria-hidden="true"></span>
+          <img src="assets/telvoice-agent-nav-toggle.png" alt="" class="nav-floating-agent-toggle__avatar" width="44" height="44" decoding="async" />
+        </button>
         <a href="#nsim-planes" id="nav-suscribir-sim" class="nav-sales-btn hidden sm:inline-flex bg-primary text-on-primary px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm no-underline">Suscribir número</a>
         <button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant/60 text-on-background" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
           <span class="material-symbols-outlined" id="menu-icon-open">menu</span>
@@ -285,6 +292,8 @@
   </div>
 
   <script src="js/telvoice-config.js"></script>
+  <script src="js/telvoice-floating-agent-toggle.js?v=20260619"></script>
+  <script src="js/telvoice-web-agent-loader.js" data-root=""></script>
   <script src="js/telvoice-site-footer.js"></script>
   <script src="js/numeracion-sim-page.js"></script>
 </body>
