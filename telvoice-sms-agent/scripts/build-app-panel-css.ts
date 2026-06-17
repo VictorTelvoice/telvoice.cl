@@ -11,6 +11,7 @@ import { getLightPanelThemeStyles } from "../src/views/app-ui/light-theme-styles
 import { getPanelThemeToggleStyles } from "../src/views/app-ui/panel-theme.js";
 import { getSmsMpSubscriptionBannerStyles } from "../src/views/app-ui/app-sms-subscription-ui.js";
 import { getPanelFloatingAgentToggleStyles } from "../src/components/agent/panel-floating-agent-toggle.js";
+import { getSupportTicketConversationStyles } from "../src/views/shared/support-ticket-conversation-ui.js";
 
 const MATERIAL_SYMBOLS_FIX = `
 .material-symbols-outlined {
@@ -22,7 +23,7 @@ const MATERIAL_SYMBOLS_FIX = `
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outPath = path.join(root, "public", "app-panel.css");
-const css = `${MATERIAL_SYMBOLS_FIX}${getAdminStyles()}${getAppPanelStyles()}${getLabPanelThemeStyles()}${getLightPanelThemeStyles()}${getPanelThemeToggleStyles()}${getSmsMpSubscriptionBannerStyles()}${getPanelFloatingAgentToggleStyles()}`;
+const css = `${MATERIAL_SYMBOLS_FIX}${getAdminStyles()}${getAppPanelStyles()}${getLabPanelThemeStyles()}${getLightPanelThemeStyles()}${getPanelThemeToggleStyles()}${getSmsMpSubscriptionBannerStyles()}${getPanelFloatingAgentToggleStyles()}${getSupportTicketConversationStyles()}`;
 
 writeFileSync(outPath, css, "utf8");
 const ver = String(Date.now());
