@@ -16,6 +16,7 @@ import {
 } from "./smsOrderService.js";
 import { resolveSimBundleCheckoutPricing, resolveSimSubscriptionCheckoutPricing, inventorySuffixFromE164 } from "../utils/simTestPricing.js";
 import { getSmsPackageById } from "./smsPackageService.js";
+import { resolveSmsPackageForCalculatorQuantity } from "./clientPanelBagCheckoutService.js";
 import {
   getSimPlan,
   getBundledAgentAddonForSimPlan,
@@ -230,6 +231,36 @@ export async function startPublicLandingCheckout(input: {
     preferenceId: preference.preference_id,
     productType: "sms_bundle",
   };
+}
+
+/** Checkout landing por cantidad SMS (calculadora / tramos) — precio server-side. */
+export async function startPublicLandingCheckoutBySmsQuantity(input: {
+  smsQuantity: number;
+  checkoutEmail: string;
+  payerEmail?: string;
+  payerName?: string;
+  countryCode?: string;
+  source?: string;
+}): Promise<PublicCheckoutStartResult> {
+  const resolved = await resolveSmsPackageForCalculatorQuantity(
+    input.smsQuantity,
+    input.countryCode ?? "CL",
+  );
+
+  console.info("[public-checkout] sms_quantity resolved", {
+    requested_quantity: input.smsQuantity,
+    quoted_quantity: resolved.quotedQuantity,
+    total_with_iva: resolved.totalWithIva,
+    package_id: resolved.packageId,
+    source: input.source ?? "landing",
+  });
+
+  return startPublicLandingCheckout({
+    packageId: resolved.packageId,
+    checkoutEmail: input.checkoutEmail,
+    payerEmail: input.payerEmail,
+    payerName: input.payerName,
+  });
 }
 
 export async function startPublicSimCheckout(input: {
