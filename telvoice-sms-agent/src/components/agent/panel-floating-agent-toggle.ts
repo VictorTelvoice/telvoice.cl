@@ -28,44 +28,62 @@ export function getPanelFloatingAgentToggleStyles(): string {
       flex-shrink: 0;
     }
 
-    .tva-minimize,
-    .tva-close {
+    .tva-window-action {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       width: 2rem;
       height: 2rem;
       padding: 0;
-      border: none;
-      border-radius: 9999px;
+      margin: 0;
+      border: 1px solid rgba(120, 160, 255, 0.16);
+      border-radius: 0.625rem;
       background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: rgba(186, 230, 253, 0.95);
+      color: #eef2ff;
       cursor: pointer;
       line-height: 1;
-      transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+      flex-shrink: 0;
+      box-shadow:
+        0 1px 2px rgba(2, 6, 23, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.15s ease;
     }
 
-    .tva-minimize-icon {
+    .tva-window-action:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(125, 211, 252, 0.35);
+      box-shadow:
+        0 2px 6px rgba(2, 6, 23, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+
+    .tva-window-action:active {
+      transform: scale(0.94);
+    }
+
+    .tva-window-action:focus-visible {
+      outline: 2px solid #0b5cff;
+      outline-offset: 2px;
+    }
+
+    .tva-window-action__icon {
       display: block;
       flex-shrink: 0;
     }
 
-    .tva-minimize:hover,
-    .tva-close:hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: rgba(125, 211, 252, 0.35);
+    .tva-window-action__glyph {
+      font-size: 1.25rem;
+      font-weight: 500;
+      line-height: 1;
     }
 
-    .tva-minimize:active,
-    .tva-close:active {
-      transform: scale(0.94);
-    }
-
-    .tva-minimize:focus-visible,
-    .tva-close:focus-visible {
-      outline: 2px solid #0b5cff;
-      outline-offset: 2px;
+    .tva-header-actions .tva-close,
+    .tva-header-actions .tva-minimize {
+      margin-left: 0;
     }
 
     .nav-floating-agent-toggle--avatar {

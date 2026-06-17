@@ -1854,10 +1854,15 @@
     var root = document.createElement("div");
     root.className = lab ? "tva-root tva-root--lab" : "tva-root";
     root.id = "telvoice-web-agent";
+    var windowActionBtn =
+      'class="tva-window-action';
     var minimizeBtnHtml =
-      '<button type="button" class="tva-minimize" aria-label="Minimizar agente al menú" title="Minimizar al menú">' +
-      '<svg class="tva-minimize-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">' +
-      '<path d="M4 12L12 4M12 4H6M12 4V10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+      '<button type="button" ' + windowActionBtn + ' tva-window-action--minimize tva-minimize" aria-label="Minimizar agente al menú" title="Minimizar al menú">' +
+      '<svg class="tva-window-action__icon" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">' +
+      '<path d="M4 12L12 4M12 4H6M12 4V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+    var closeBtnHtml =
+      '<button type="button" ' + windowActionBtn + ' tva-window-action--close tva-close" aria-label="Cerrar agente" title="Cerrar agente">' +
+      '<span class="tva-window-action__glyph" aria-hidden="true">×</span></button>';
     var headerHtml = lab
       ? '<div class="tva-header tva-header--lab">' +
         '<div class="tva-header-brand">' +
@@ -1867,7 +1872,8 @@
         '<span class="tva-header-status">En línea</span>' +
         '<div class="tva-header-actions">' +
         minimizeBtnHtml +
-        '<button type="button" class="tva-close" aria-label="Cerrar agente"><span aria-hidden="true">×</span></button></div></div>'
+        closeBtnHtml +
+        '</div></div>'
       : '<div class="tva-header">' +
         '<img src="' +
         escHtml(iso) +
@@ -1875,7 +1881,8 @@
         '<div class="tva-header-text"><h2 id="tva-title">Agente comercial Telvoice</h2><p>Cotiza SMS para Chile</p></div>' +
         '<div class="tva-header-actions">' +
         minimizeBtnHtml +
-        '<button type="button" class="tva-close" aria-label="Cerrar agente"><span aria-hidden="true">×</span></button></div></div>';
+        closeBtnHtml +
+        '</div></div>';
     var inputPlaceholder = lab
       ? "Consulta sobre numeración, campañas o validaciones…"
       : "Escribe tu mensaje…";
