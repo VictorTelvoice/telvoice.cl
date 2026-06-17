@@ -26,6 +26,8 @@ import { assertDlrWebhookSafeForLiveTraffic } from "../utils/dlr-callback.js";
 import { recordTpsSend } from "./smsTpsLimiterService.js";
 import { resolveRouteForMessage } from "./smsRoutingService.js";
 import { APP_CLIENT_LIVE_SOURCE, PANEL_PRODUCTION_MODE } from "../constants/panel-sms-mode.js";
+import { assertInternalQaCompanyForTestSend } from "./internalQaCompanyService.js";
+import { APP_VERIFY_TEST_SOURCE } from "./smsLiveTestLimiterService.js";
 import {
   findCampaignByIdempotencyKey,
   isPostgresUniqueViolation,
@@ -119,6 +121,10 @@ export async function sendLiveTestSms(
 ): Promise<MockSmsSendResult> {
   const sendSource = input.sendSource ?? APP_CLIENT_LIVE_SOURCE;
 
+  if (sendSource === APP_VERIFY_TEST_SOURCE) {
+    await assertInternalQaCompanyForTestSend(input.companyId);
+  }
+
   if (input.idempotencyKey?.trim()) {
     const existing = await findCampaignByIdempotencyKey(
       input.companyId,
@@ -152,6 +158,7 @@ export async function sendLiveTestSms(
   const campaignMetadata: Record<string, unknown> = {
     source: sendSource,
     mode: PANEL_PRODUCTION_MODE,
+    ...(sendSource === APP_VERIFY_TEST_SOURCE ? { internal_test: true } : {}),
   };
   if (input.idempotencyKey?.trim()) {
     campaignMetadata.idempotency_key = input.idempotencyKey.trim();
@@ -231,6 +238,7 @@ export async function sendLiveTestSms(
       provider_id: resolved.provider.id,
       route_id: resolved.route.id,
       rate_plan_id: resolved.ratePlan.id,
+      ...(sendSource === APP_VERIFY_TEST_SOURCE ? { internal_test: true } : {}),
     },
   });
 

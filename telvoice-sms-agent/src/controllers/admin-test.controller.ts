@@ -1,6 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
-import { env } from "../config/env.js";
-import { listCompanies } from "../services/companyService.js";
+import {
+  assertInternalQaCompanyForTestSend,
+  resolveInternalQaCompanyId,
+} from "../services/internalQaCompanyService.js";
 import {
   getSendControlPanelView,
   resolveVerifyTestSend,
@@ -19,19 +21,9 @@ import { AppError } from "../utils/errors.js";
 import { renderAdminTestPage } from "../views/admin-ui/sections/test-page.js";
 
 async function resolveAdminTestCompanyId(): Promise<string> {
-  const allowed = env.smsProvider.liveTestAllowedCompanyIds;
-  if (allowed.length > 0) {
-    return allowed[0]!;
-  }
-  const companies = await listCompanies(20);
-  const active = companies.find((c) => c.status === "active");
-  if (!active) {
-    throw new AppError(
-      "No hay empresa activa para pruebas telsim. Configura SMS_LIVE_TEST_ALLOWED_COMPANY_IDS.",
-      503,
-    );
-  }
-  return active.id;
+  const qaCompanyId = resolveInternalQaCompanyId();
+  await assertInternalQaCompanyForTestSend(qaCompanyId);
+  return qaCompanyId;
 }
 
 function wantsJsonResponse(req: Request): boolean {

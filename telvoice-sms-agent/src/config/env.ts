@@ -255,6 +255,10 @@ export const env = {
       optionalEnv("SIM_QA_E2E_INVENTORY_QA_ONLY", "false") === "true" ||
       optionalEnv("PUBLIC_APP_URL", "").includes("agent-qa"),
   },
+  /** Empresa interna Telvoice para VERIFY_TEST / QA admin (UUID). */
+  internalQa: {
+    companyId: optionalEnv("INTERNAL_QA_COMPANY_ID"),
+  },
   /** Orígenes extra para CORS de /api/public/* (QA preview, separados por coma). */
   landingExtraOrigins: parseCsvEnv("LANDING_EXTRA_ORIGINS"),
   mercadopago: {

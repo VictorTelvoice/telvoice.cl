@@ -99,6 +99,7 @@ import {
 import type { SupportTicketPriority, SupportTicket } from "../types/support-tickets.js";
 import { renderAppCampaignNewPage } from "../views/app-ui/app-campaigns-new-page.js";
 import { suggestSenderIdFromCompany } from "../utils/suggestSenderId.js";
+import { resolveInternalQaCompanyId } from "../services/internalQaCompanyService.js";
 import {
   audienceHiddenFields,
   buildCampaignPreviewFromRequest,
@@ -917,8 +918,10 @@ export async function postAppSendSms(
       campaignName = `QA Verify — ${resolved.label}`;
     }
 
+    const verifyTestCompanyId = resolveInternalQaCompanyId();
+
     const result = await sendPanelSms({
-      companyId: ctx.company.id,
+      companyId: isVerifyTest ? verifyTestCompanyId : ctx.company.id,
       senderId: String(
         req.body?.sender_id ??
           suggestSenderIdFromCompany(ctx.company),
