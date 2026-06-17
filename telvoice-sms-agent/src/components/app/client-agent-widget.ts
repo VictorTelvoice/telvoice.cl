@@ -61,6 +61,7 @@ export function getPanelAgentWidgetScript(): string {
   var fab = document.getElementById("${FAB_ID}");
   var panel = document.getElementById("${PANEL_ID}");
   var closeBtn = document.getElementById("${ROOT_ID}-close");
+  var minimizeBtn = document.getElementById("${ROOT_ID}-minimize");
   var log = document.getElementById("${ROOT_ID}-log");
   var form = document.getElementById("${ROOT_ID}-form");
   var input = document.getElementById("${ROOT_ID}-input");
@@ -451,7 +452,21 @@ export function getPanelAgentWidgetScript(): string {
     }
   }
 
+  function agentChrome(action) {
+    try {
+      document.dispatchEvent(new CustomEvent("telvoice:agent-chrome", { detail: { action: action } }));
+    } catch (e) {}
+  }
+
+  document.addEventListener("telvoice:agent-panel-close", function () {
+    setOpen(false);
+  });
+
   fab.addEventListener("click", function () {
+    if (document.body.classList.contains("tva-floating-agent-minimized")) {
+      agentChrome("restore");
+      return;
+    }
     var open = !root.classList.contains("tva-root--chat-open");
     setOpen(open);
     if (open && log && !log.childElementCount) {
@@ -460,7 +475,8 @@ export function getPanelAgentWidgetScript(): string {
     }
   });
 
-  if (closeBtn) closeBtn.addEventListener("click", function () { setOpen(false); });
+  if (closeBtn) closeBtn.addEventListener("click", function () { setOpen(false); agentChrome("hide"); });
+  if (minimizeBtn) minimizeBtn.addEventListener("click", function () { setOpen(false); agentChrome("minimize"); });
   if (form) {
     form.addEventListener("submit", function (ev) {
       ev.preventDefault();

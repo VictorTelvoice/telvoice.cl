@@ -178,7 +178,7 @@ export function renderAppLayout(options: AppLayoutOptions): string {
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
   ${renderPanelStylesheetLink()}
   ${renderTelvoiceAgentStylesheetLink({ lab: true, panelLight: true })}
-  ${renderPanelFloatingAgentToggleBootScript()}
+  ${renderPanelFloatingAgentToggleBootScript("panel")}
 </head>
 <body class="tv-admin${bodyClass}">
   ${renderPanelThemeBootScript()}
@@ -196,7 +196,7 @@ export function renderAppLayout(options: AppLayoutOptions): string {
   ${SIDEBAR_SCRIPT}
   ${renderPanelThemeToggleScript()}
   ${DASH_TABLE_RESIZE_SCRIPT}
-  <script>${getPanelFloatingAgentToggleScript({ buttonIds: ["nav-floating-agent-toggle"], floatingRootId: "tv-panel-agent" })}</script>
+  <script>${getPanelFloatingAgentToggleScript({ buttonIds: ["nav-floating-agent-toggle"], floatingRootId: "tv-panel-agent", surface: "panel" })}</script>
   <script>${getPanelAgentWidgetScript()}</script>
 </body>
 </html>`;

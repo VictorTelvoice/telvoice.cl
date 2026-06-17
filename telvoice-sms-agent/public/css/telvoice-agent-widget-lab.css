@@ -14,6 +14,32 @@
   right: 1rem;
 }
 
+/* Panel /app y superadmin: ~30% más compacto que landing, manteniendo legibilidad */
+#tv-panel-agent.tva-root--lab,
+#tv-admin-agent.tva-root--lab {
+  --tva-launcher-size: 7.09rem;
+  --tva-panel-lift: 1rem;
+}
+
+#tv-panel-agent.tva-root--lab .tva-panel,
+#tv-admin-agent.tva-root--lab .tva-panel {
+  width: min(22.5rem, calc(100vw - 1.5rem));
+  max-height: min(22.4rem, calc(100dvh - var(--tva-launcher-size) - var(--tva-panel-lift) - 1.5rem));
+  font-size: 0.9375rem;
+}
+
+#tv-panel-agent.tva-root--lab .tva-form input,
+#tv-admin-agent.tva-root--lab .tva-form input,
+#tv-panel-agent.tva-root--lab .tva-form button,
+#tv-admin-agent.tva-root--lab .tva-form button {
+  font-size: 0.875rem;
+}
+
+#tv-panel-agent.tva-root--lab .tva-header-text h2,
+#tv-admin-agent.tva-root--lab .tva-header-text h2 {
+  font-size: 0.875rem;
+}
+
 .tva-root--lab .tva-launcher {
   width: var(--tva-launcher-size);
   height: var(--tva-launcher-size);
@@ -82,6 +108,14 @@
   gap: 0.625rem;
   display: flex;
   align-items: center;
+}
+
+.tva-root--lab .tva-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .tva-root--lab .tva-header-brand {
@@ -371,6 +405,12 @@
   .tva-root--lab {
     --tva-launcher-size: 8.75rem;
     --tva-panel-lift: 1.1rem;
+  }
+
+  #tv-panel-agent.tva-root--lab,
+  #tv-admin-agent.tva-root--lab {
+    --tva-launcher-size: max(6.25rem, 7.09rem);
+    --tva-panel-lift: 0.85rem;
   }
 }
 

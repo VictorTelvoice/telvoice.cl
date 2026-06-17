@@ -7006,6 +7006,62 @@
       visibility: hidden !important;
     }
 
+    body.tva-floating-agent-minimized .tva-floating-launcher-root .tva-panel {
+      display: none !important;
+      pointer-events: none !important;
+    }
+
+    .tva-root.tva-root--minimized-chip .tva-launcher-wrap {
+      transform: scale(0.72);
+      transform-origin: bottom right;
+      transition: transform 0.25s ease;
+    }
+
+    .tva-root.tva-root--minimized-chip .tva-launcher,
+    .tva-root.tva-root--minimized-chip .tva-launcher-iso,
+    .tva-root.tva-root--minimized-chip .tva-launcher-iso .telvoice-agent-avatar__img {
+      width: 3.5rem !important;
+      height: 3.5rem !important;
+      min-width: 3.5rem;
+      min-height: 3.5rem;
+    }
+
+    .tva-header-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .tva-minimize,
+    .tva-close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      border: none;
+      border-radius: 0.5rem;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+
+    .tva-minimize:hover,
+    .tva-close:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .tva-minimize:focus-visible,
+    .tva-close:focus-visible {
+      outline: 2px solid #0b5cff;
+      outline-offset: 2px;
+    }
+
     .nav-floating-agent-toggle--avatar {
       position: relative;
       display: inline-flex;
@@ -7080,10 +7136,16 @@
         0 0 28px rgba(72, 255, 220, 0.22);
     }
 
-    .nav-floating-agent-toggle.is-agent-live .nav-floating-agent-toggle__avatar {
+    .nav-floating-agent-toggle.is-agent-live .nav-floating-agent-toggle__avatar,
+    .nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__avatar {
       opacity: 0.42;
       filter: saturate(0.65) brightness(0.88);
       box-shadow: 0 0 0 1px rgba(220, 231, 245, 0.75);
+    }
+
+    .nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__ring {
+      opacity: 0.65;
+      animation: tva-toggle-glow 2.2s ease-in-out infinite;
     }
 
     .tva-floating-agent-traveler {
@@ -7109,9 +7171,18 @@
         0 0 24px rgba(72, 255, 220, 0.35);
     }
 
+    .tva-root--entry-reveal {
+      animation: tva-agent-entry-reveal 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
     @keyframes tva-toggle-glow {
       0%, 100% { transform: scale(0.92); opacity: 0.72; }
       50% { transform: scale(1.08); opacity: 1; }
+    }
+
+    @keyframes tva-agent-entry-reveal {
+      0% { opacity: 0; transform: translateY(12px) scale(0.88); filter: blur(2px); }
+      100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -7122,6 +7193,12 @@
       .nav-floating-agent-toggle--avatar:hover,
       .nav-floating-agent-toggle--avatar:active {
         transform: none;
+      }
+      .tva-root.tva-root--minimized-chip .tva-launcher-wrap {
+        transition: none;
+      }
+      .tva-root--entry-reveal {
+        animation: none;
       }
     }
   

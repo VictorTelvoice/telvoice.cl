@@ -626,3 +626,85 @@ export function renderSimActivationInProgress(
 
   return { subject, html: emailShell("Activación en curso", body), text };
 }
+
+export type SupportTicketReplyToClientTemplateData = {
+  ticketCode: string;
+  subject: string;
+  statusLabel: string;
+  companyName: string;
+  replyMessage: string;
+  authorName: string;
+  panelUrl: string;
+  updatedAt: string;
+};
+
+function fmtSupportDate(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat("es-CL", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "America/Santiago",
+    }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
+}
+
+export function renderSupportTicketReplyToClient(
+  data: SupportTicketReplyToClientTemplateData,
+): { subject: string; html: string; text: string } {
+  const subject = `Nueva respuesta a tu ticket ${data.ticketCode} — Telvoice`;
+  const when = fmtSupportDate(data.updatedAt);
+  const summaryRows = `
+    <div><strong>Ticket:</strong> ${escapeHtml(data.ticketCode)}</div>
+    <div><strong>Asunto:</strong> ${escapeHtml(data.subject)}</div>
+    <div><strong>Estado:</strong> ${escapeHtml(data.statusLabel)}</div>
+    <div><strong>Empresa:</strong> ${escapeHtml(data.companyName)}</div>
+    <div><strong>Actualizado:</strong> ${escapeHtml(when)}</div>
+  `;
+  const replyHtml = escapeHtml(data.replyMessage).replace(/\n/g, "<br />");
+
+  const body = `
+    <p style="margin:0 0 16px;text-align:center">
+      <span style="display:inline-block;padding:6px 14px;border-radius:999px;background:#e0f2fe;color:#0369a1;font-family:Segoe UI,system-ui,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.02em">Soporte Telvoice</span>
+    </p>
+    <p style="margin:0 0 12px;font-family:Segoe UI,system-ui,sans-serif;font-size:20px;font-weight:700;line-height:1.35;color:#0f172a;text-align:center">
+      Nueva respuesta a tu ticket ${escapeHtml(data.ticketCode)}
+    </p>
+    <p style="margin:0 0 24px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55;color:#334155;text-align:center;max-width:520px;margin-left:auto;margin-right:auto">
+      Nuestro equipo respondió tu solicitud de soporte.
+    </p>
+    ${summaryCard(summaryRows)}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:520px;margin:0 auto 24px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px">
+      <tr>
+        <td style="padding:18px 20px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.6;color:#0f172a;text-align:left">
+          <div style="font-size:12px;font-weight:700;color:#0369a1;margin-bottom:8px">${escapeHtml(data.authorName)}</div>
+          <div>${replyHtml}</div>
+        </td>
+      </tr>
+    </table>
+    ${ctaButton(data.panelUrl, "Ver ticket en mi panel")}
+    <p style="margin:16px 0 0;font-family:Segoe UI,system-ui,sans-serif;font-size:12px;line-height:1.5;color:#64748b;text-align:center">
+      Si el botón no funciona, copia este enlace en tu navegador:<br />
+      <a href="${escapeHtml(data.panelUrl)}" style="color:#0052cc;word-break:break-all;text-decoration:none">${escapeHtml(data.panelUrl)}</a>
+    </p>`;
+
+  const text = [
+    subject,
+    "",
+    "Nuestro equipo respondió tu solicitud de soporte.",
+    "",
+    `Ticket: ${data.ticketCode}`,
+    `Asunto: ${data.subject}`,
+    `Estado: ${data.statusLabel}`,
+    `Empresa: ${data.companyName}`,
+    `Actualizado: ${when}`,
+    "",
+    `${data.authorName}:`,
+    data.replyMessage,
+    "",
+    `Ver ticket: ${data.panelUrl}`,
+  ].join("\n");
+
+  return { subject, html: emailShell("Soporte Telvoice", body), text };
+}

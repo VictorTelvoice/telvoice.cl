@@ -422,9 +422,26 @@ async function appendTicketReply(
     wrapSupabaseError(error, "appendTicketReply");
   }
 
+  const updatedRow = data as ClientSupportTicketRow;
+  if (
+    entry.author === "support" &&
+    !entry.internal &&
+    options?.auditAction === "public_reply_sent"
+  ) {
+    const { sendSupportTicketReplyEmailBestEffort } = await import(
+      "./supportTicketReplyEmailService.js"
+    );
+    void sendSupportTicketReplyEmailBestEffort({
+      ticketRow: updatedRow,
+      replyId: entry.id,
+      replyMessage: entry.message,
+      authorName: entry.authorName ?? "Equipo Telvoice",
+    });
+  }
+
   return {
     ok: true,
-    data: rowToAdminSupportTicket(data as ClientSupportTicketRow, null),
+    data: rowToAdminSupportTicket(updatedRow, null),
   };
 }
 

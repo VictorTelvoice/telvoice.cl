@@ -1861,13 +1861,17 @@
         '<div class="tva-header-text"><h2 id="tva-title">Agente Telvoice</h2>' +
         '<p class="tva-header-role">Especialista comercial</p></div></div>' +
         '<span class="tva-header-status">En línea</span>' +
-        '<button type="button" class="tva-close" aria-label="Cerrar chat"><span aria-hidden="true">×</span></button></div>'
+        '<div class="tva-header-actions">' +
+        '<button type="button" class="tva-minimize" aria-label="Minimizar agente"><span aria-hidden="true">−</span></button>' +
+        '<button type="button" class="tva-close" aria-label="Cerrar agente"><span aria-hidden="true">×</span></button></div></div>'
       : '<div class="tva-header">' +
         '<img src="' +
         escHtml(iso) +
         '" alt="" width="40" height="40" decoding="async" data-tva-iso="1" />' +
         '<div class="tva-header-text"><h2 id="tva-title">Agente comercial Telvoice</h2><p>Cotiza SMS para Chile</p></div>' +
-        '<button type="button" class="tva-close" aria-label="Cerrar chat"><span aria-hidden="true">×</span></button></div>';
+        '<div class="tva-header-actions">' +
+        '<button type="button" class="tva-minimize" aria-label="Minimizar agente"><span aria-hidden="true">−</span></button>' +
+        '<button type="button" class="tva-close" aria-label="Cerrar agente"><span aria-hidden="true">×</span></button></div></div>';
     var inputPlaceholder = lab
       ? "Consulta sobre numeración, campañas o validaciones…"
       : "Escribe tu mensaje…";
@@ -1937,9 +1941,21 @@
     els.form = qs("#tva-form", root);
     els.input = qs("#tva-input", root);
     els.close = qs(".tva-close", root);
+    els.minimize = qs(".tva-minimize", root);
 
     els.launcher.addEventListener("click", togglePanel);
-    els.close.addEventListener("click", closePanel);
+    if (els.close) {
+      els.close.addEventListener("click", function () {
+        finishClosePanel();
+        agentChrome("hide");
+      });
+    }
+    if (els.minimize) {
+      els.minimize.addEventListener("click", function () {
+        finishClosePanel();
+        agentChrome("minimize");
+      });
+    }
     if (els.suggestionsToggle) {
       els.suggestionsToggle.addEventListener("click", toggleSuggestions);
     }
@@ -2005,12 +2021,30 @@
   }
 
   function togglePanel() {
+    if (document.body && document.body.classList.contains("tva-floating-agent-minimized")) {
+      agentChrome("restore");
+      return;
+    }
     if (state.open) {
       closePanel();
     } else {
       openPanel();
     }
   }
+
+  function agentChrome(action) {
+    try {
+      document.dispatchEvent(new CustomEvent("telvoice:agent-chrome", { detail: { action: action } }));
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  document.addEventListener("telvoice:agent-panel-close", function () {
+    if (state.open) {
+      finishClosePanel();
+    }
+  });
 
   function setChatOpenLock(on) {
     try {

@@ -232,7 +232,7 @@ export function renderLayout(options: LayoutOptions): string {
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
   ${renderPanelStylesheetLink()}
   ${renderTelvoiceAgentStylesheetLink()}
-  ${renderPanelFloatingAgentToggleBootScript()}
+  ${renderPanelFloatingAgentToggleBootScript("admin")}
 </head>
 <body class="tv-admin">
   <div class="tv-app">
@@ -245,7 +245,7 @@ export function renderLayout(options: LayoutOptions): string {
   </div>
   ${renderAdminAgentWidget()}
   ${SIDEBAR_SCRIPT}
-  <script>${getPanelFloatingAgentToggleScript({ buttonIds: ["nav-floating-agent-toggle"], floatingRootId: "tv-admin-agent" })}</script>
+  <script>${getPanelFloatingAgentToggleScript({ buttonIds: ["nav-floating-agent-toggle"], floatingRootId: "tv-admin-agent", surface: "admin" })}</script>
   ${getAdminAgentWidgetScript()}
 </body>
 </html>`;

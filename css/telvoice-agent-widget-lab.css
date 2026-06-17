@@ -14,6 +14,19 @@
   right: 1rem;
 }
 
+#tv-panel-agent.tva-root--lab,
+#tv-admin-agent.tva-root--lab {
+  --tva-launcher-size: 7.09rem;
+  --tva-panel-lift: 1rem;
+}
+
+#tv-panel-agent.tva-root--lab .tva-panel,
+#tv-admin-agent.tva-root--lab .tva-panel {
+  width: min(22.5rem, calc(100vw - 1.5rem));
+  max-height: min(22.4rem, calc(100dvh - var(--tva-launcher-size) - var(--tva-panel-lift) - 1.5rem));
+  font-size: 0.9375rem;
+}
+
 .tva-root--lab .tva-launcher {
   width: var(--tva-launcher-size);
   height: var(--tva-launcher-size);
@@ -371,6 +384,12 @@
   .tva-root--lab {
     --tva-launcher-size: 8.75rem;
     --tva-panel-lift: 1.1rem;
+  }
+
+  #tv-panel-agent.tva-root--lab,
+  #tv-admin-agent.tva-root--lab {
+    --tva-launcher-size: max(6.25rem, 7.09rem);
+    --tva-panel-lift: 0.85rem;
   }
 }
 

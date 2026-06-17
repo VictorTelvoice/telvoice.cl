@@ -135,7 +135,10 @@ export function renderTelvoiceAgentWidgetShell(options: TelvoiceAgentWidgetShell
         </div>
       </div>
       <span class="tva-header-status">En línea</span>
-      <button type="button" class="tva-close" id="${options.rootId}-close" aria-label="Cerrar chat"><span aria-hidden="true">×</span></button>
+      <div class="tva-header-actions">
+        <button type="button" class="tva-minimize" id="${options.rootId}-minimize" aria-label="Minimizar agente"><span aria-hidden="true">−</span></button>
+        <button type="button" class="tva-close" id="${options.rootId}-close" aria-label="Cerrar agente"><span aria-hidden="true">×</span></button>
+      </div>
     </div>`
     : `<div class="tva-header">
       <img src="${TELVOICE_AGENT_ISOTIPO}" alt="" width="40" height="40" decoding="async" data-tva-iso="1" />
@@ -143,7 +146,10 @@ export function renderTelvoiceAgentWidgetShell(options: TelvoiceAgentWidgetShell
         <h2 id="${options.rootId}-title">${labels.title}</h2>
         <p>${labels.subtitle}</p>
       </div>
-      <button type="button" class="tva-close" id="${options.rootId}-close" aria-label="Cerrar chat"><span aria-hidden="true">×</span></button>
+      <div class="tva-header-actions">
+        <button type="button" class="tva-minimize" id="${options.rootId}-minimize" aria-label="Minimizar agente"><span aria-hidden="true">−</span></button>
+        <button type="button" class="tva-close" id="${options.rootId}-close" aria-label="Cerrar agente"><span aria-hidden="true">×</span></button>
+      </div>
     </div>`;
 
   const launcherOnlineDot = useLab

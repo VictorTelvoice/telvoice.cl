@@ -7,10 +7,49 @@ html.tva-floating-agent-prehidden #telvoice-web-agent {
   visibility: hidden !important;
 }
 
+body.tva-floating-agent-minimized #telvoice-web-agent .tva-panel {
+  display: none !important;
+  pointer-events: none !important;
+}
+
 body.tva-floating-agent-animating #telvoice-web-agent {
   opacity: 0 !important;
   visibility: hidden !important;
   pointer-events: none !important;
+}
+
+#telvoice-web-agent.tva-root--minimized-chip .tva-launcher-wrap {
+  transform: scale(0.72);
+  transform-origin: bottom right;
+  transition: transform 0.25s ease;
+}
+
+#telvoice-web-agent.tva-root--minimized-chip .tva-launcher,
+#telvoice-web-agent.tva-root--minimized-chip .tva-launcher-iso {
+  width: 3.5rem !important;
+  height: 3.5rem !important;
+}
+
+#telvoice-web-agent.tva-root--entry-reveal {
+  animation: tva-agent-entry-reveal 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes tva-agent-entry-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.88);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__ring {
+  opacity: 0.65;
+  animation: tva-toggle-glow 2.2s ease-in-out infinite;
 }
 
 .nav-floating-agent-toggle--avatar {

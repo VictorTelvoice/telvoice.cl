@@ -1,4 +1,4 @@
-/** Toggle avatar + animación para ocultar/mostrar launcher flotante en /app y /admin */
+/** Toggle avatar + animación para ocultar/mostrar/minimizar launcher flotante en /app y /admin */
 
 export const PANEL_FLOATING_AGENT_STORAGE_KEY = "telvoice:floating-agent-visible";
 export const PANEL_FLOATING_AGENT_AVATAR = "/assets/telvoice-agent-nav-toggle.png";
@@ -11,6 +11,62 @@ export function getPanelFloatingAgentToggleStyles(): string {
       display: none !important;
       pointer-events: none !important;
       visibility: hidden !important;
+    }
+
+    body.tva-floating-agent-minimized .tva-floating-launcher-root .tva-panel {
+      display: none !important;
+      pointer-events: none !important;
+    }
+
+    .tva-root.tva-root--minimized-chip .tva-launcher-wrap {
+      transform: scale(0.72);
+      transform-origin: bottom right;
+      transition: transform 0.25s ease;
+    }
+
+    .tva-root.tva-root--minimized-chip .tva-launcher,
+    .tva-root.tva-root--minimized-chip .tva-launcher-iso,
+    .tva-root.tva-root--minimized-chip .tva-launcher-iso .telvoice-agent-avatar__img {
+      width: 3.5rem !important;
+      height: 3.5rem !important;
+      min-width: 3.5rem;
+      min-height: 3.5rem;
+    }
+
+    .tva-header-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .tva-minimize,
+    .tva-close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      border: none;
+      border-radius: 0.5rem;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+
+    .tva-minimize:hover,
+    .tva-close:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .tva-minimize:focus-visible,
+    .tva-close:focus-visible {
+      outline: 2px solid #0b5cff;
+      outline-offset: 2px;
     }
 
     .nav-floating-agent-toggle--avatar {
@@ -87,10 +143,16 @@ export function getPanelFloatingAgentToggleStyles(): string {
         0 0 28px rgba(72, 255, 220, 0.22);
     }
 
-    .nav-floating-agent-toggle.is-agent-live .nav-floating-agent-toggle__avatar {
+    .nav-floating-agent-toggle.is-agent-live .nav-floating-agent-toggle__avatar,
+    .nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__avatar {
       opacity: 0.42;
       filter: saturate(0.65) brightness(0.88);
       box-shadow: 0 0 0 1px rgba(220, 231, 245, 0.75);
+    }
+
+    .nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__ring {
+      opacity: 0.65;
+      animation: tva-toggle-glow 2.2s ease-in-out infinite;
     }
 
     .tva-floating-agent-traveler {
@@ -116,9 +178,18 @@ export function getPanelFloatingAgentToggleStyles(): string {
         0 0 24px rgba(72, 255, 220, 0.35);
     }
 
+    .tva-root--entry-reveal {
+      animation: tva-agent-entry-reveal 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
     @keyframes tva-toggle-glow {
       0%, 100% { transform: scale(0.92); opacity: 0.72; }
       50% { transform: scale(1.08); opacity: 1; }
+    }
+
+    @keyframes tva-agent-entry-reveal {
+      0% { opacity: 0; transform: translateY(12px) scale(0.88); filter: blur(2px); }
+      100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -130,28 +201,44 @@ export function getPanelFloatingAgentToggleStyles(): string {
       .nav-floating-agent-toggle--avatar:active {
         transform: none;
       }
+      .tva-root.tva-root--minimized-chip .tva-launcher-wrap {
+        transition: none;
+      }
+      .tva-root--entry-reveal {
+        animation: none;
+      }
     }
   `;
 }
 
-export function renderPanelFloatingAgentToggleBootScript(): string {
+export function renderPanelFloatingAgentToggleBootScript(surface: "panel" | "admin"): string {
   return `<script>
 (function () {
-  var KEY = ${JSON.stringify(PANEL_FLOATING_AGENT_STORAGE_KEY)};
-  function applyHidden() {
+  var SURFACE = ${JSON.stringify(surface)};
+  var LEGACY_KEY = ${JSON.stringify(PANEL_FLOATING_AGENT_STORAGE_KEY)};
+  function storageKey() { return "telvoice:floating-agent-state:" + SURFACE; }
+  function readState() {
+    try {
+      var stored = localStorage.getItem(storageKey());
+      if (stored === "open" || stored === "minimized" || stored === "hidden") return stored;
+      if (localStorage.getItem(LEGACY_KEY) === "false") return "hidden";
+    } catch (e) {}
+    return "open";
+  }
+  function apply(state) {
     if (!document.body) return;
-    document.body.classList.add("tva-floating-agent-hidden");
+    document.body.classList.toggle("tva-floating-agent-hidden", state === "hidden");
+    document.body.classList.toggle("tva-floating-agent-minimized", state === "minimized");
     document.documentElement.classList.remove("tva-floating-agent-prehidden");
   }
-  try {
-    if (localStorage.getItem(KEY) === "false") {
-      if (document.body) applyHidden();
-      else {
-        document.documentElement.classList.add("tva-floating-agent-prehidden");
-        document.addEventListener("DOMContentLoaded", applyHidden, { once: true });
-      }
+  var state = readState();
+  if (state === "hidden" || state === "minimized") {
+    if (document.body) apply(state);
+    else {
+      document.documentElement.classList.add("tva-floating-agent-prehidden");
+      document.addEventListener("DOMContentLoaded", function () { apply(readState()); }, { once: true });
     }
-  } catch (e) {}
+  }
 })();
 </script>`;
 }
@@ -166,10 +253,13 @@ export function renderPanelFloatingAgentToggleButton(buttonId: string): string {
 export function getPanelFloatingAgentToggleScript(options: {
   buttonIds: string[];
   floatingRootId: string;
+  surface: "panel" | "admin";
 }): string {
   const buttonSelector = options.buttonIds.map((id) => `#${id}`).join(", ");
   return `(function () {
-  var STORAGE_KEY = ${JSON.stringify(PANEL_FLOATING_AGENT_STORAGE_KEY)};
+  var SURFACE = ${JSON.stringify(options.surface)};
+  var STORAGE_KEY = "telvoice:floating-agent-state:" + SURFACE;
+  var LEGACY_KEY = ${JSON.stringify(PANEL_FLOATING_AGENT_STORAGE_KEY)};
   var FLOAT_ROOT_ID = ${JSON.stringify(options.floatingRootId)};
   var BUTTON_SELECTOR = ${JSON.stringify(buttonSelector)};
   var TRAVEL_MS = 580;
@@ -178,80 +268,78 @@ export function getPanelFloatingAgentToggleScript(options: {
   var animating = false;
 
   function prefersReducedMotion() {
+    try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; }
+  }
+
+  function readState() {
     try {
-      return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    } catch (e) {
-      return false;
+      var stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === "open" || stored === "minimized" || stored === "hidden") return stored;
+      if (localStorage.getItem(LEGACY_KEY) === "false") return "hidden";
+    } catch (e) {}
+    return "open";
+  }
+
+  function writeState(state) {
+    try {
+      localStorage.setItem(STORAGE_KEY, state);
+      if (state === "hidden") localStorage.setItem(LEGACY_KEY, "false");
+      else if (state === "open") localStorage.setItem(LEGACY_KEY, "true");
+    } catch (e) {}
+  }
+
+  function floatRoot() { return document.getElementById(FLOAT_ROOT_ID); }
+
+  function applyState(state) {
+    var root = floatRoot();
+    if (!document.body) return;
+    document.body.classList.toggle("tva-floating-agent-hidden", state === "hidden");
+    document.body.classList.toggle("tva-floating-agent-minimized", state === "minimized");
+    document.documentElement.classList.remove("tva-floating-agent-prehidden");
+    if (root) root.classList.toggle("tva-root--minimized-chip", state === "minimized");
+    syncButtons(state);
+    if (state === "minimized" || state === "hidden") {
+      document.dispatchEvent(new CustomEvent("telvoice:agent-panel-close"));
     }
   }
 
-  function readStoredVisible() {
-    try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if (raw === "false") return false;
-      if (raw === "true") return true;
-    } catch (e) {}
-    return true;
-  }
-
-  function writeStoredVisible(visible) {
-    try {
-      localStorage.setItem(STORAGE_KEY, visible ? "true" : "false");
-    } catch (e) {}
-  }
-
-  function applyBodyClass(visible) {
-    if (!document.body) return;
-    document.body.classList.toggle("tva-floating-agent-hidden", !visible);
-    document.documentElement.classList.remove("tva-floating-agent-prehidden");
-  }
-
-  function syncButtonState(btn, visible) {
-    btn.setAttribute("aria-pressed", visible ? "true" : "false");
-    btn.setAttribute("aria-label", visible ? "Ocultar agente flotante" : "Mostrar agente flotante");
-    btn.classList.toggle("is-agent-live", visible);
+  function syncButtonState(btn, state) {
+    var visible = state !== "hidden";
+    var minimized = state === "minimized";
+    btn.setAttribute("aria-pressed", visible && !minimized ? "true" : "false");
+    if (!visible) {
+      btn.setAttribute("aria-label", "Mostrar agente flotante");
+    } else if (minimized) {
+      btn.setAttribute("aria-label", "Expandir agente flotante");
+    } else {
+      btn.setAttribute("aria-label", "Ocultar agente flotante");
+    }
+    btn.classList.toggle("is-agent-live", visible && !minimized);
     btn.classList.toggle("is-agent-dormant", !visible);
+    btn.classList.toggle("is-agent-minimized", minimized);
   }
 
-  function syncButtons(visible) {
-    buttons.forEach(function (btn) {
-      syncButtonState(btn, visible);
-    });
+  function syncButtons(state) {
+    buttons.forEach(function (btn) { syncButtonState(btn, state); });
   }
 
   function getFloatingLauncherRect() {
-    var floatRoot = document.getElementById(FLOAT_ROOT_ID);
-    if (floatRoot) {
-      var launcher =
-        floatRoot.querySelector(".tva-launcher") ||
-        floatRoot.querySelector(".tva-launcher-wrap") ||
-        floatRoot;
+    var root = floatRoot();
+    if (root) {
+      var launcher = root.querySelector(".tva-launcher") || root.querySelector(".tva-launcher-wrap") || root;
       var rect = launcher.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) return rect;
     }
     var rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     var size = rem * 4.25;
     var margin = rem * 1.25;
-    return {
-      left: window.innerWidth - size - margin,
-      top: window.innerHeight - size - margin,
-      width: size,
-      height: size
-    };
+    return { left: window.innerWidth - size - margin, top: window.innerHeight - size - margin, width: size, height: size };
   }
 
-  function rectCenter(rect) {
-    return {
-      x: rect.left + rect.width / 2,
-      y: rect.top + rect.height / 2
-    };
-  }
+  function rectCenter(rect) { return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }; }
 
   function runTravelAnimation(fromRect, toRect, mode, done) {
-    if (prefersReducedMotion()) {
-      if (done) done();
-      return;
-    }
+    if (prefersReducedMotion()) { if (done) done(); return; }
     var fromCenter = rectCenter(fromRect);
     var toCenter = rectCenter(toRect);
     var startSize = Math.max(fromRect.width, fromRect.height, 44);
@@ -274,9 +362,8 @@ export function getPanelFloatingAgentToggleScript(options: {
       traveler.style.height = size + "px";
       traveler.style.transform = "translate3d(" + (cx - size / 2) + "px," + (cy - size / 2) + "px, 0)";
       traveler.style.opacity = String(fade);
-      if (progress < 1) {
-        window.requestAnimationFrame(frame);
-      } else {
+      if (progress < 1) window.requestAnimationFrame(frame);
+      else {
         traveler.remove();
         document.body.classList.remove("tva-floating-agent-animating");
         if (done) done();
@@ -285,40 +372,32 @@ export function getPanelFloatingAgentToggleScript(options: {
     window.requestAnimationFrame(frame);
   }
 
-  function setFloatingAgentVisible(visible, opts) {
+  function setAgentState(nextState, opts) {
     opts = opts || {};
-    var nextVisible = !!visible;
-    var currentlyVisible = !document.body.classList.contains("tva-floating-agent-hidden");
-    if (currentlyVisible === nextVisible) {
-      syncButtons(nextVisible);
-      return nextVisible;
-    }
-    if (animating) return currentlyVisible;
-    writeStoredVisible(nextVisible);
+    var current = readState();
+    if (current === nextState) { applyState(nextState); return nextState; }
+    if (animating) return current;
+    writeState(nextState);
     if (!opts.animate || !opts.sourceButton || prefersReducedMotion()) {
-      applyBodyClass(nextVisible);
-      syncButtons(nextVisible);
-      return nextVisible;
+      applyState(nextState);
+      return nextState;
     }
     animating = true;
     var sourceRect = opts.sourceButton.getBoundingClientRect();
     var launcherRect = getFloatingLauncherRect();
-    if (nextVisible) {
-      syncButtons(false);
-      runTravelAnimation(sourceRect, launcherRect, "show", function () {
-        applyBodyClass(true);
-        syncButtons(true);
+    if (nextState === "hidden") {
+      runTravelAnimation(launcherRect, sourceRect, "hide", function () {
+        applyState("hidden");
         animating = false;
       });
     } else {
-      syncButtons(true);
-      runTravelAnimation(launcherRect, sourceRect, "hide", function () {
-        applyBodyClass(false);
-        syncButtons(false);
+      applyState(nextState === "minimized" ? "minimized" : "open");
+      runTravelAnimation(sourceRect, launcherRect, "show", function () {
+        applyState(nextState);
         animating = false;
       });
     }
-    return nextVisible;
+    return nextState;
   }
 
   function bindButtons() {
@@ -326,22 +405,49 @@ export function getPanelFloatingAgentToggleScript(options: {
     buttons.forEach(function (btn) {
       btn.addEventListener("click", function (e) {
         e.preventDefault();
-        var currentlyVisible = !document.body.classList.contains("tva-floating-agent-hidden");
-        setFloatingAgentVisible(!currentlyVisible, {
-          animate: true,
-          sourceButton: btn
-        });
+        var state = readState();
+        if (state === "hidden") setAgentState("open", { animate: true, sourceButton: btn });
+        else if (state === "minimized") setAgentState("open", { animate: false });
+        else setAgentState("hidden", { animate: true, sourceButton: btn });
       });
     });
   }
 
+  function runEntryAnimation() {
+    var state = readState();
+    if (state !== "open") return;
+    var key = "telvoice:floating-agent-entry:" + SURFACE;
+    try { if (sessionStorage.getItem(key) === "1") return; sessionStorage.setItem(key, "1"); } catch (e) { return; }
+    var navBtn = document.querySelector(BUTTON_SELECTOR.split(",")[0]);
+    var root = floatRoot();
+    if (!navBtn || !root || prefersReducedMotion()) return;
+    document.body.classList.add("tva-floating-agent-animating");
+    runTravelAnimation(navBtn.getBoundingClientRect(), getFloatingLauncherRect(), "show", function () {
+      document.body.classList.remove("tva-floating-agent-animating");
+      root.classList.add("tva-root--entry-reveal");
+      window.setTimeout(function () { root.classList.remove("tva-root--entry-reveal"); }, 700);
+    });
+  }
+
+  document.addEventListener("telvoice:agent-chrome", function (ev) {
+    var action = ev && ev.detail ? ev.detail.action : "";
+    if (action === "hide") setAgentState("hidden", { animate: false });
+    else if (action === "minimize") setAgentState("minimized", { animate: false });
+    else if (action === "restore") setAgentState("open", { animate: false });
+  });
+
   function initToggleUi() {
     if (!document.body) return;
-    var visible = readStoredVisible();
-    applyBodyClass(visible);
+    applyState(readState());
     bindButtons();
-    syncButtons(visible);
+    window.setTimeout(runEntryAnimation, 120);
   }
+
+  window.TelvoicePanelFloatingAgent = {
+    readState: readState,
+    setState: setAgentState,
+    surface: SURFACE
+  };
 
   if (document.body) initToggleUi();
   else document.addEventListener("DOMContentLoaded", initToggleUi, { once: true });
