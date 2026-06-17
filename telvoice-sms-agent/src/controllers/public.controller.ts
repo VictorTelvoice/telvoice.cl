@@ -468,10 +468,14 @@ export async function postPublicCheckout(
     const packageIdRaw = String(body.package_id ?? "").trim();
     const smsQtyRaw =
       body.sms_quantity ?? body.smsQuantity ?? body.calc_sms ?? body.quantity;
-    const smsQuantity =
-      smsQtyRaw != null && smsQtyRaw !== "" ? Number(smsQtyRaw) : NaN;
+    const hasSmsQuantity = smsQtyRaw != null && smsQtyRaw !== "";
+    const smsQuantity = hasSmsQuantity ? Number(smsQtyRaw) : NaN;
 
-    if (Number.isFinite(smsQuantity) && smsQuantity >= 1000) {
+    if (hasSmsQuantity) {
+      if (!Number.isFinite(smsQuantity) || smsQuantity < 1000) {
+        throw new ValidationError("La compra mínima online es 1.000 SMS.");
+      }
+
       const result = await startPublicLandingCheckoutBySmsQuantity({
         smsQuantity: Math.round(smsQuantity),
         checkoutEmail,
