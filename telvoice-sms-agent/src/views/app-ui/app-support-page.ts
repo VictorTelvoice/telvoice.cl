@@ -10,6 +10,11 @@ import { renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
 import { renderOrderShortIdCell } from "./app-order-ui.js";
+import {
+  clientTicketConversationScriptFragment,
+  renderTicketComposerClient,
+  supportTicketConversationStyles,
+} from "../support-ticket-conversation-ui.js";
 
 export type {
   SupportTicket,
@@ -83,7 +88,7 @@ export const DEFAULT_SUPPORT_TICKETS: SupportTicket[] = [
 ];
 
 function supportPageStyles(): string {
-  return `<style>
+  return `${supportTicketConversationStyles()}<style>
     .tv-support-page .tv-support-layout {
       display: flex;
       flex-direction: column;
@@ -155,6 +160,16 @@ function supportPageStyles(): string {
       font-size: 0.85rem;
       background: var(--tv-bg);
     }
+    .tv-support-reply {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--tv-border);
+    }
+    .tv-support-reply:last-child { border-bottom: none; }
+    .tv-support-reply__meta {
+      font-size: 0.75rem;
+      color: var(--tv-muted);
+      margin-bottom: 0.35rem;
+    }
     .tv-support-drawer {
       position: fixed;
       inset: 0;
@@ -170,7 +185,6 @@ function supportPageStyles(): string {
     }
     .tv-support-drawer__panel {
       position: relative;
-      width: min(520px, 100%);
       max-height: 100vh;
       overflow: hidden;
       display: flex;
@@ -363,7 +377,7 @@ function renderNewTicketModal(
 function renderDetailDrawer(): string {
   return `<div class="tv-support-drawer" id="tv-support-detail-drawer" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="tv-support-drawer__backdrop" data-tv-support-close tabindex="-1"></div>
-    <div class="tv-support-drawer__panel tv-support-drawer__panel--chat">
+    <div class="tv-support-drawer__panel">
       <header class="tv-support-drawer__head">
         <div>
           <p class="field-hint" style="margin:0" id="tv-support-detail-code">—</p>
@@ -372,15 +386,12 @@ function renderDetailDrawer(): string {
         </div>
         <button type="button" class="btn btn-ghost btn-sm" data-tv-support-close aria-label="Cerrar">✕</button>
       </header>
-      <div class="tv-support-drawer__meta" id="tv-support-detail-dates">—</div>
-      <div class="tv-support-drawer__conversation" id="tv-support-detail-conversation"></div>
-      <footer class="tv-ticket-composer" id="tv-support-detail-composer">
-        <label class="tv-ticket-composer__label" for="tv-support-reply-input">Tu respuesta</label>
-        <textarea id="tv-support-reply-input" class="tv-input-full" rows="3" placeholder="Escribe tu respuesta…"></textarea>
-        <div class="tv-ticket-composer__actions">
-          <button type="button" class="btn btn-primary btn-sm" id="tv-support-send-reply">Enviar respuesta</button>
-          <button type="button" class="btn btn-secondary btn-sm" id="tv-support-resolve-btn">Marcar como resuelto</button>
-        </div>
+      <p class="tv-support-drawer__meta" id="tv-support-detail-dates">—</p>
+      <div class="tv-support-drawer__body">
+        <div id="tv-support-detail-conversation"></div>
+      </div>
+      <footer class="tv-support-drawer__foot">
+        ${renderTicketComposerClient()}
       </footer>
     </div>
   </div>`;
@@ -481,8 +492,10 @@ function renderSupportScript(
   var HELP = ${helpData};
   var LIST_SUBTITLE = ${JSON.stringify(listSubtitle)};
 
-  var STATUS_LABELS = { open: "Abierto", in_review: "En revisión por Telvoice", waiting: "Esperando respuesta", resolved: "Resuelto" };
+  var STATUS_LABELS = { open: "Abierto", in_review: "En revisión", waiting: "Esperando respuesta", resolved: "Resuelto" };
   var PRIORITY_LABELS = { low: "Baja", medium: "Media", high: "Alta", urgent: "Urgente" };
+
+  ${clientTicketConversationScriptFragment()}
 
   var tickets = [];
   var activeTicketId = null;
@@ -519,99 +532,9 @@ function renderSupportScript(
     } catch (e) { return iso; }
   }
 
-  function fmtCompactTime(iso) {
-    try {
-      return new Intl.DateTimeFormat("es-CL", { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
-    } catch (e) { return iso; }
-  }
-
-  function fmtDayLabel(iso) {
-    try {
-      var d = new Date(iso);
-      var today = new Date();
-      if (d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate()) {
-        return "Hoy";
-      }
-      return new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "short", year: "numeric" }).format(d);
-    } catch (e) { return iso; }
-  }
-
-  function getLastPublicReplyAuthor(ticket) {
-    var replies = (ticket.replies || []).filter(function (r) { return !r.internal; });
-    if (!replies.length) return null;
-    return replies[replies.length - 1].author;
-  }
-
-  function formatTicketStatusForClient(ticket) {
-    var status = ticket.status;
-    if (status === "resolved") return "Resuelto";
-    if (status === "open") return "Abierto";
-    if (status === "in_review") return "En revisión por Telvoice";
-    if (status === "waiting") {
-      var last = getLastPublicReplyAuthor(ticket);
-      if (last === "client") return "Esperando respuesta de Telvoice";
-      if (last === "support") return "Esperando tu respuesta";
-      return "Esperando respuesta";
-    }
-    return STATUS_LABELS[status] || status;
-  }
-
-  function formatTicketMessageRole(item) {
-    if (item.isOriginal || item.author === "client") return "Tú";
-    return item.authorName || "Equipo Telvoice";
-  }
-
-  function renderTicketMessageBubble(item) {
-    var role = formatTicketMessageRole(item);
-    var mod = item.isOriginal
-      ? "tv-ticket-message--original tv-ticket-message--client"
-      : item.author === "support"
-        ? "tv-ticket-message--support"
-        : "tv-ticket-message--client";
-    var badge = item.isOriginal
-      ? '<span class="tv-ticket-message__badge">Mensaje original</span>'
-      : "";
-    var avatar = item.author === "support" && !item.isOriginal
-      ? '<div class="tv-ticket-message__avatar" aria-hidden="true"><img src="/assets/telvoice-agent-isotipo.png" alt="" width="24" height="24" decoding="async" /></div>'
-      : "";
-    return '<article class="tv-ticket-message ' + mod + '">' +
-      avatar +
-      '<div class="tv-ticket-message__content">' +
-      '<div class="tv-ticket-message__meta">' +
-      '<span class="tv-ticket-message__role">' + escapeHtml(role) + "</span>" +
-      badge +
-      '<time class="tv-ticket-message__time">' + escapeHtml(fmtCompactTime(item.createdAt)) + "</time>" +
-      "</div>" +
-      '<div class="tv-ticket-message__bubble">' + escapeHtml(item.message).replace(/\\n/g, "<br />") + "</div>" +
-      "</div></article>";
-  }
-
-  function renderTicketConversation(ticket) {
-    var items = [{ id: "original", author: "client", message: ticket.message, createdAt: ticket.createdAt, isOriginal: true }];
-    (ticket.replies || []).forEach(function (r) {
-      if (!r.internal) items.push(r);
-    });
-    items.sort(function (a, b) { return a.createdAt.localeCompare(b.createdAt); });
-    if (!items.length) {
-      return '<div class="tv-ticket-chat tv-ticket-chat--empty"><p class="field-hint">Sin mensajes en la conversación.</p></div>';
-    }
-    var html = "";
-    var lastDay = "";
-    items.forEach(function (item) {
-      var day = fmtDayLabel(item.createdAt);
-      if (day !== lastDay) {
-        html += '<div class="tv-ticket-chat__day"><span>' + escapeHtml(day) + "</span></div>";
-        lastDay = day;
-      }
-      html += renderTicketMessageBubble(item);
-    });
-    return '<div class="tv-ticket-chat" role="log" aria-live="polite">' + html + "</div>";
-  }
-
-  function statusBadge(s, ticket) {
-    var cls = { open: "badge-warn", in_review: "badge-muted", waiting: "badge-warn", resolved: "badge-ok" }[s] || "badge-muted";
-    var label = ticket ? formatTicketStatusForClient(ticket) : (STATUS_LABELS[s] || s);
-    return '<span class="badge ' + cls + '">' + escapeHtml(label) + "</span>";
+  function statusBadge(s, replies) {
+    if (arguments.length < 2) return statusBadgeClient(s, []);
+    return statusBadgeClient(s, replies);
   }
 
   function priorityBadge(p) {
@@ -749,7 +672,7 @@ function renderSupportScript(
           "<td><strong>" + escapeHtml(t.subject) + "</strong></td>" +
           "<td>" + escapeHtml(t.category) + "</td>" +
           "<td>" + priorityBadge(t.priority) + "</td>" +
-          "<td>" + statusBadge(t.status, t) + "</td>" +
+          "<td>" + statusBadge(t.status, t.replies || []) + "</td>" +
           "<td class=\\"tv-contacts-date\\">" + escapeHtml(fmtDate(t.createdAt)) + "</td>" +
           "<td class=\\"tv-contacts-date\\">" + escapeHtml(fmtDate(t.updatedAt)) + "</td>" +
           '<td><button type="button" class="btn btn-ghost btn-sm" data-view-id="' + escapeHtml(t.id) + '">Ver detalle</button></td>' +
@@ -760,7 +683,7 @@ function renderSupportScript(
     if (cardsRoot) {
       cardsRoot.innerHTML = rows.map(function (t) {
         return '<article class="tv-support-ticket-card">' +
-          '<div class="tv-support-ticket-card__head"><code>' + escapeHtml(t.code) + "</code>" + statusBadge(t.status, t) + "</div>" +
+          '<div class="tv-support-ticket-card__head"><code>' + escapeHtml(t.code) + "</code>" + statusBadge(t.status, t.replies || []) + "</div>" +
           "<strong>" + escapeHtml(t.subject) + "</strong>" +
           '<p class="tv-support-ticket-card__meta">' + escapeHtml(t.category) + " · " + PRIORITY_LABELS[t.priority] + "</p>" +
           '<p class="tv-support-ticket-card__meta">Actualizado: ' + escapeHtml(fmtDate(t.updatedAt)) + "</p>" +
@@ -802,20 +725,21 @@ function renderSupportScript(
     document.getElementById("tv-support-detail-code").textContent = t.code;
     document.getElementById("tv-support-detail-subject").textContent = t.subject;
     document.getElementById("tv-support-detail-badges").innerHTML =
-      statusBadge(t.status, t) + priorityBadge(t.priority) +
+      statusBadge(t.status, t.replies || []) + priorityBadge(t.priority) +
       '<span class="tv-tag tv-tag--muted">' + escapeHtml(t.category) + "</span>";
     document.getElementById("tv-support-detail-dates").textContent =
       "Creado: " + fmtDate(t.createdAt) + " · Actualizado: " + fmtDate(t.updatedAt);
     var convEl = document.getElementById("tv-support-detail-conversation");
     if (convEl) {
       convEl.innerHTML = renderTicketConversation(t);
-      convEl.scrollTop = convEl.scrollHeight;
+      var chat = convEl.querySelector(".tv-ticket-chat");
+      if (chat) chat.scrollTop = chat.scrollHeight;
     }
     document.getElementById("tv-support-reply-input").value = "";
-    var resolveBtn = document.getElementById("tv-support-resolve-btn");
     var sendBtn = document.getElementById("tv-support-send-reply");
-    if (resolveBtn) resolveBtn.disabled = t.status === "resolved";
-    if (sendBtn) sendBtn.disabled = false;
+    var resolveBtn = document.getElementById("tv-support-resolve-btn");
+    if (sendBtn) sendBtn.disabled = t.status === "resolved" || sendingReply;
+    if (resolveBtn) resolveBtn.disabled = t.status === "resolved" || sendingReply;
     openModal("tv-support-detail-drawer");
   }
 
@@ -915,23 +839,21 @@ function renderSupportScript(
   document.getElementById("tv-support-send-reply")?.addEventListener("click", function () {
     if (!activeTicketId || sendingReply) return;
     var t = findTicket(activeTicketId);
-    var input = document.getElementById("tv-support-reply-input");
+    var text = document.getElementById("tv-support-reply-input").value.trim();
+    if (!t || !text || t.status === "resolved") return;
+
     var sendBtn = document.getElementById("tv-support-send-reply");
-    var text = input ? input.value.trim() : "";
-    if (!t || !text) return;
-
-    function releaseSend() {
-      sendingReply = false;
-      if (sendBtn) {
-        sendBtn.disabled = t.status === "resolved";
-        sendBtn.textContent = "Enviar respuesta";
-      }
-    }
-
+    var resolveBtn = document.getElementById("tv-support-resolve-btn");
     sendingReply = true;
-    if (sendBtn) {
-      sendBtn.disabled = true;
-      sendBtn.textContent = "Enviando…";
+    if (sendBtn) sendBtn.disabled = true;
+    if (resolveBtn) resolveBtn.disabled = true;
+
+    function releaseReply() {
+      sendingReply = false;
+      var cur = findTicket(activeTicketId);
+      var resolved = !cur || cur.status === "resolved";
+      if (sendBtn) sendBtn.disabled = resolved;
+      if (resolveBtn) resolveBtn.disabled = resolved;
     }
 
     if (isRemoteTicket(t)) {
@@ -942,7 +864,7 @@ function renderSupportScript(
             openDetail(activeTicketId);
             renderAll();
             showToast("Respuesta enviada.");
-            releaseSend();
+            releaseReply();
             return;
           }
           t.replies = t.replies || [];
@@ -958,7 +880,7 @@ function renderSupportScript(
           openDetail(activeTicketId);
           renderAll();
           showToast("Respuesta guardada localmente.");
-          releaseSend();
+          releaseReply();
         })
         .catch(function () {
           t.replies = t.replies || [];
@@ -974,7 +896,7 @@ function renderSupportScript(
           openDetail(activeTicketId);
           renderAll();
           showToast("Respuesta guardada localmente.");
-          releaseSend();
+          releaseReply();
         });
       return;
     }
@@ -992,7 +914,7 @@ function renderSupportScript(
     openDetail(activeTicketId);
     renderAll();
     showToast("Respuesta enviada.");
-    releaseSend();
+    releaseReply();
   });
 
   document.getElementById("tv-support-resolve-btn")?.addEventListener("click", function () {

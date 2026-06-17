@@ -26,9 +26,12 @@ import {
   getSupportTicketAuditLog,
 } from "../../../services/supportTicketAudit.js";
 import {
+  buildTicketConversationMessages,
   formatTicketStatusForAudience,
   renderTicketConversation,
-} from "../../shared/support-ticket-conversation-ui.js";
+  statusBadgeClass,
+  supportTicketConversationStyles,
+} from "../../support-ticket-conversation-ui.js";
 
 export type AdminSupportPageOpts = {
   admin: AdminSessionUser;
@@ -116,20 +119,12 @@ function shortId(id: string): string {
   return id.replaceAll("-", "").slice(0, 8).toUpperCase();
 }
 
-function statusBadge(
-  status: SupportTicketStatus,
-  ticket?: AdminSupportTicketListItem,
-): string {
-  const cls: Record<SupportTicketStatus, string> = {
-    open: "warn",
-    in_review: "muted",
-    waiting: "warn",
-    resolved: "ok",
-  };
+function statusBadge(status: SupportTicketStatus, ticket?: AdminSupportTicketListItem): string {
   const label = ticket
-    ? formatTicketStatusForAudience(status, "admin", ticket)
+    ? formatTicketStatusForAudience(status, ticket.replies ?? [], "admin")
     : STATUS_LABELS[status];
-  return `<span class="badge badge-${cls[status]}">${escapeHtml(label)}</span>`;
+  const cls = statusBadgeClass(status).replace("badge-", "");
+  return `<span class="badge badge-${cls}">${escapeHtml(label)}</span>`;
 }
 
 function priorityBadge(priority: SupportTicketPriority): string {
@@ -340,17 +335,45 @@ function renderAuditActivity(ticket: AdminSupportTicketListItem): string {
   </section>`;
 }
 
+function renderReplyHistory(ticket: AdminSupportTicketListItem): string {
+  const messages = buildTicketConversationMessages({
+    originalMessage: ticket.message,
+    createdAt: ticket.createdAt,
+    replies: ticket.replies ?? [],
+    includeInternal: true,
+  });
+  return renderTicketConversation(messages, "admin", formatDate);
+}
+
+function renderAdminTicketComposer(ticket: AdminSupportTicketListItem): string {
+  return `<div class="tv-ticket-composer tv-ticket-composer--admin">
+    <div class="tv-ticket-composer__block">
+      <form method="post" action="/admin/support/tickets/${escapeHtml(ticket.id)}/reply">
+        <label class="tv-ticket-composer__label" for="tv-admin-support-public-reply">Respuesta pública al cliente</label>
+        <textarea id="tv-admin-support-public-reply" name="message" class="tv-input-full tv-ticket-composer__input" rows="3" required placeholder="Escribe una respuesta visible para el cliente…"></textarea>
+        <div class="tv-ticket-composer__actions">
+          <button type="submit" class="btn btn-primary btn-sm">Enviar respuesta pública</button>
+        </div>
+      </form>
+    </div>
+    <div class="tv-ticket-composer__block">
+      <form method="post" action="/admin/support/tickets/${escapeHtml(ticket.id)}/internal-note">
+        <label class="tv-ticket-composer__label" for="tv-admin-support-internal-note">Nota interna (solo Telvoice)</label>
+        <textarea id="tv-admin-support-internal-note" name="message" class="tv-input-full tv-ticket-composer__input" rows="2" required placeholder="Nota visible solo para el equipo interno…"></textarea>
+        <div class="tv-ticket-composer__actions">
+          <button type="submit" class="btn btn-ghost btn-sm">Guardar nota interna</button>
+        </div>
+      </form>
+    </div>
+  </div>`;
+}
+
 function renderDrawer(ticket: AdminSupportTicketListItem): string {
   const priorityAlert = isPriorityCase(ticket)
-    ? `<div class="alert alert-warn" style="margin-bottom:0.75rem">
+    ? `<div class="alert alert-warn" style="margin-bottom:1rem">
         <strong>Caso prioritario</strong><br />
         <span class="field-hint">Este ticket puede requerir revisión comercial o técnica especializada.</span>
       </div>`
-    : "";
-
-  const orderBlock = ticket.relatedOrderId
-    ? `<span><strong>Orden:</strong>
-        <a href="/admin/orders/${escapeHtml(ticket.relatedOrderId)}"><code>${escapeHtml(shortId(ticket.relatedOrderId))}</code></a></span>`
     : "";
 
   const statusOpts = (["open", "in_review", "waiting", "resolved"] as const)
@@ -367,16 +390,10 @@ function renderDrawer(ticket: AdminSupportTicketListItem): string {
     )
     .join("");
 
-  const metaParts = [
-    `<strong>Empresa:</strong> ${escapeHtml(ticket.companyName ?? "—")}`,
-    `<span>Creado ${escapeHtml(formatDate(ticket.createdAt))}</span>`,
-    `<span>Actualizado ${escapeHtml(formatDate(ticket.updatedAt))}</span>`,
-    orderBlock,
-  ].filter(Boolean);
-
-  return `<div class="tv-support-admin-drawer" id="tv-admin-support-drawer" aria-hidden="false">
+  return `${supportTicketConversationStyles()}
+  <div class="tv-support-admin-drawer" id="tv-admin-support-drawer" aria-hidden="false">
     <div class="tv-support-admin-drawer__backdrop" data-admin-support-close></div>
-    <div class="tv-support-admin-drawer__panel tv-support-admin-drawer__panel--chat">
+    <div class="tv-support-admin-drawer__panel">
       <header class="tv-support-admin-drawer__head">
         <div>
           <p class="field-hint" style="margin:0">${escapeHtml(ticket.code)}</p>
@@ -388,61 +405,52 @@ function renderDrawer(ticket: AdminSupportTicketListItem): string {
         </div>
         <a href="/admin/support" class="btn btn-ghost btn-sm" aria-label="Cerrar">✕</a>
       </header>
-      <div class="tv-support-admin-drawer__meta">
-        ${metaParts.join(" · ")}
-        · Company ID: <code id="tv-admin-support-company-id">${escapeHtml(ticket.companyId)}</code>
-        <button type="button" class="btn btn-ghost btn-sm" data-copy-target="tv-admin-support-company-id">Copiar ID</button>
-        ${ticket.userId ? ` · Usuario: <code>${escapeHtml(ticket.userId)}</code>` : ""}
+      <p class="tv-support-admin-drawer__meta">
+        <strong>${escapeHtml(ticket.companyName ?? "—")}</strong>
+        · Creado ${escapeHtml(formatDate(ticket.createdAt))}
+        · Actualizado ${escapeHtml(formatDate(ticket.updatedAt))}
+        ${ticket.relatedOrderId ? ` · Orden <a href="/admin/orders/${escapeHtml(ticket.relatedOrderId)}"><code>${escapeHtml(shortId(ticket.relatedOrderId))}</code></a>` : ""}
+      </p>
+      ${priorityAlert ? `<div style="padding:0 1.25rem">${priorityAlert}</div>` : ""}
+      <div class="tv-support-admin-drawer__chat">
+        ${renderReplyHistory(ticket)}
       </div>
-      <div class="tv-support-admin-drawer__conversation">
-        ${priorityAlert}
-        ${renderTicketConversation(ticket, "admin")}
-      </div>
-      <div class="tv-ticket-composer tv-ticket-composer--admin-public">
-        <form method="post" action="/admin/support/tickets/${escapeHtml(ticket.id)}/reply">
-          <label class="tv-ticket-composer__label" for="tv-admin-support-public-reply">Respuesta pública al cliente</label>
-          <textarea id="tv-admin-support-public-reply" name="message" class="tv-input-full" rows="3" required placeholder="Escribe una respuesta visible para el cliente…"></textarea>
-          <div class="tv-ticket-composer__actions" style="margin-top:0.65rem">
-            <button type="submit" class="btn btn-primary btn-sm">Enviar respuesta</button>
+      <footer class="tv-support-drawer__foot">
+        ${renderAdminTicketComposer(ticket)}
+      </footer>
+      <div class="tv-support-admin-drawer__tools">
+        <details>
+          <summary>Gestión del ticket</summary>
+          <p class="field-hint" style="margin:0 0 0.75rem">Company ID: <code id="tv-admin-support-company-id">${escapeHtml(ticket.companyId)}</code>
+            <button type="button" class="btn btn-ghost btn-sm" data-copy-target="tv-admin-support-company-id">Copiar ID</button>
+          </p>
+          ${ticket.userId ? `<p class="field-hint" style="margin:0 0 0.75rem">Usuario: <code>${escapeHtml(ticket.userId)}</code></p>` : ""}
+          <form method="post" action="/admin/support/tickets/${escapeHtml(ticket.id)}/update" style="margin-bottom:1rem">
+            <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+              <label class="tv-filter-field"><span class="tv-filter-field__label">Estado</span>
+                <select name="status" class="tv-filter-input">${statusOpts}</select></label>
+              <label class="tv-filter-field"><span class="tv-filter-field__label">Prioridad</span>
+                <select name="priority" class="tv-filter-input">${priorityOpts}</select></label>
+            </div>
+            <button type="submit" class="btn btn-secondary btn-sm" style="margin-top:0.5rem">Guardar cambios</button>
+          </form>
+          <div style="display:flex;flex-wrap:wrap;gap:0.35rem;margin-bottom:0.75rem">
+            <form method="post" action="/admin/support/tickets/${escapeHtml(ticket.id)}/quick-action" style="display:inline"><input type="hidden" name="action" value="in_review" /><button type="submit" class="btn btn-ghost btn-sm">En revisión</button></form>
+            <form method="post" action="/admin/support/tickets/${escapeHtml(ticket.id)}/quick-action" style="display:inline"><input type="hidden" name="action" value="waiting" /><button type="submit" class="btn btn-ghost btn-sm">Esperando cliente</button></form>
+            <form method="post" action="/admin/support/tickets/${escapeHtml(ticket.id)}/quick-action" style="display:inline"><input type="hidden" name="action" value="resolved" /><button type="submit" class="btn btn-secondary btn-sm">Marcar resuelto</button></form>
+            <form method="post" action="/admin/support/tickets/${escapeHtml(ticket.id)}/quick-action" style="display:inline"><input type="hidden" name="action" value="urgent" /><button type="submit" class="btn btn-ghost btn-sm">Subir a urgente</button></form>
+            <button type="button" class="btn btn-ghost btn-sm" data-copy-text="${escapeHtml(ticket.code)}">Copiar código</button>
           </div>
-        </form>
-      </div>
-      <div class="tv-ticket-composer tv-ticket-composer--admin-internal">
-        <form method="post" action="/admin/support/tickets/${escapeHtml(ticket.id)}/internal-note">
-          <label class="tv-ticket-composer__label" for="tv-admin-support-internal-note">Nota interna (solo Telvoice)</label>
-          <textarea id="tv-admin-support-internal-note" name="message" class="tv-input-full" rows="2" required placeholder="Nota visible solo para el equipo interno…"></textarea>
-          <div class="tv-ticket-composer__actions" style="margin-top:0.65rem">
-            <button type="submit" class="btn btn-ghost btn-sm">Guardar nota interna</button>
-          </div>
-        </form>
-      </div>
-      <div class="tv-support-admin-drawer__manage">
-        <form method="post" action="/admin/support/tickets/${escapeHtml(ticket.id)}/update" style="margin-bottom:0.85rem">
-          <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
-            <label class="tv-filter-field"><span class="tv-filter-field__label">Estado</span>
-              <select name="status" class="tv-filter-input">${statusOpts}</select></label>
-            <label class="tv-filter-field"><span class="tv-filter-field__label">Prioridad</span>
-              <select name="priority" class="tv-filter-input">${priorityOpts}</select></label>
-          </div>
-          <button type="submit" class="btn btn-secondary btn-sm" style="margin-top:0.5rem">Guardar cambios</button>
-        </form>
-        <div style="display:flex;flex-wrap:wrap;gap:0.35rem;margin-bottom:0.75rem">
-          <form method="post" action="/admin/support/tickets/${escapeHtml(ticket.id)}/quick-action" style="display:inline"><input type="hidden" name="action" value="in_review" /><button type="submit" class="btn btn-ghost btn-sm">En revisión</button></form>
-          <form method="post" action="/admin/support/tickets/${escapeHtml(ticket.id)}/quick-action" style="display:inline"><input type="hidden" name="action" value="waiting" /><button type="submit" class="btn btn-ghost btn-sm">Esperando cliente</button></form>
-          <form method="post" action="/admin/support/tickets/${escapeHtml(ticket.id)}/quick-action" style="display:inline"><input type="hidden" name="action" value="resolved" /><button type="submit" class="btn btn-secondary btn-sm">Marcar resuelto</button></form>
-          <form method="post" action="/admin/support/tickets/${escapeHtml(ticket.id)}/quick-action" style="display:inline"><input type="hidden" name="action" value="urgent" /><button type="submit" class="btn btn-ghost btn-sm">Subir a urgente</button></form>
-          <button type="button" class="btn btn-ghost btn-sm" data-copy-text="${escapeHtml(ticket.code)}">Copiar código</button>
-        </div>
-        ${renderAuditActivity(ticket)}
+          ${renderAuditActivity(ticket)}
+        </details>
       </div>
     </div>
   </div>
   <style>
     .tv-support-admin-drawer { position:fixed;inset:0;z-index:300;display:flex;justify-content:flex-end; }
     .tv-support-admin-drawer__backdrop { position:absolute;inset:0;background:rgba(15,23,42,0.45); }
-    .tv-support-admin-drawer__panel { position:relative;width:min(560px,100%);max-height:100vh;background:var(--tv-surface);box-shadow:var(--tv-shadow-lg); }
+    .tv-support-admin-drawer__panel { position:relative;max-height:100vh;overflow:hidden;display:flex;flex-direction:column;background:var(--tv-surface);box-shadow:var(--tv-shadow-lg); }
     .tv-support-admin-drawer__head { padding:1rem 1.25rem;border-bottom:1px solid var(--tv-border);display:flex;justify-content:space-between;gap:0.75rem;flex-shrink:0; }
-    .tv-support-admin-drawer__manage { max-height:42vh; overflow-y:auto; }
     .tv-support-audit__item { padding:0.5rem 0.65rem;background:var(--tv-bg);border-radius:var(--tv-radius);border:1px solid var(--tv-border); }
   </style>
   <script>
@@ -460,10 +468,6 @@ function renderDrawer(ticket: AdminSupportTicketListItem): string {
   document.querySelector("[data-admin-support-close]")?.addEventListener("click", function() {
     window.location.href = "/admin/support";
   });
-  (function () {
-    var conv = document.querySelector(".tv-support-admin-drawer__conversation");
-    if (conv) conv.scrollTop = conv.scrollHeight;
-  })();
   </script>`;
 }
 
