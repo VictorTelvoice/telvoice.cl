@@ -634,7 +634,6 @@
     setCompraLoading(true);
 
     var agentOrigin = "https://agent.telvoice.cl";
-    var agentProductsEndpoint = agentOrigin + "/api/public/products";
     var agentCheckoutEndpoint = agentOrigin + "/api/public/checkout";
     var legacyCheckoutEndpoint = apiUrl("/api/mercadopago/create-preference");
     var abortController = typeof AbortController !== "undefined" ? new AbortController() : null;
@@ -689,32 +688,7 @@
         });
     }
 
-    function resolveAgentPackage(products, planId) {
-      var hint = planId && PLAN_PACKAGE_HINTS[planId] ? PLAN_PACKAGE_HINTS[planId] : "";
-      var candidates = products.filter(function (p) {
-        return (
-          p &&
-          p.package_id &&
-          +p.sms_quantity === +compraState.sms &&
-          +p.price_amount === +compraState.total &&
-          String(p.currency || "CLP").toUpperCase() === "CLP"
-        );
-      });
-      if (!candidates.length) return null;
-      if (hint) {
-        var hinted = candidates.find(function (p) {
-          return String(p.product_name || "")
-            .toLowerCase()
-            .includes(hint);
-        });
-        if (hinted) return hinted;
-      }
-      return candidates[0];
-    }
-
     function startAgentCheckout() {
-      // El agent checkout requiere package_id (uuid).
-      // Para no hardcodear IDs acá, usamos /api/public/products y tomamos package_id que matchea el total/sms.
       var debugCtx = {
         planId: planId,
         smsQuantity: compraState.sms,
@@ -724,43 +698,28 @@
         endpoint: agentCheckoutEndpoint,
       };
 
-      return fetch(agentProductsEndpoint, {
-        method: "GET",
-        headers: { Accept: "application/json" },
+      if (!compraState.sms || compraState.sms < 1000) {
+        logCheckoutDebug(debugCtx, new Error("invalid_sms_quantity"));
+        throw new Error("Cantidad de SMS no válida para compra online.");
+      }
+
+      return fetch(agentCheckoutEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
         signal: abortController ? abortController.signal : undefined,
+        body: JSON.stringify({
+          sms_quantity: compraState.sms,
+          product_type: "sms_bundle",
+          checkout_email: email,
+          payer_email: email,
+          payer_name: nombre,
+          source: compraState.source || "landing",
+        }),
       })
         .then(parseJsonSafe)
-        .then(function (r) {
-          var data = r.data || {};
-          var products = (data && data.products) || [];
-          if (!r.httpOk || data.success !== true || !products || !products.length) {
-            throw new Error("agent_products_unavailable");
-          }
-
-          var match = resolveAgentPackage(products, planId);
-          debugCtx.packageId = match && match.package_id ? match.package_id : null;
-
-          if (!match || !match.package_id) {
-            logCheckoutDebug(debugCtx, new Error("agent_package_not_found"));
-            throw new Error("agent_package_not_found");
-          }
-
-          return fetch(agentCheckoutEndpoint, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            signal: abortController ? abortController.signal : undefined,
-            body: JSON.stringify({
-              package_id: match.package_id,
-              checkout_email: email,
-              payer_email: email,
-              payer_name: nombre,
-              source: "landing",
-            }),
-          }).then(parseJsonSafe);
-        })
         .then(function (r) {
           var data = r.data || {};
           var checkoutUrl = data.checkout_url;
@@ -796,7 +755,7 @@
           return startLegacyCheckout();
         }
         var code = err && err.message ? String(err.message) : "";
-        if (code === "agent_package_not_found") {
+        if (code === "agent_package_not_found" || code === "invalid_sms_quantity") {
           throw new Error(
             "Este plan no está disponible para pago online en este momento. Por favor intenta con otra bolsa o contacta a soporte."
           );
