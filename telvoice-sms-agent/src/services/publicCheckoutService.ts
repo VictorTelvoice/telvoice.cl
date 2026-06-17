@@ -38,6 +38,7 @@ import {
   resolvePublicInventoryId,
   inventoryPublicId,
   getInventoryById,
+  passesPublicInventoryListingFilter,
 } from "./realNumberInventoryService.js";
 import { getSupabase } from "../database/supabaseClient.js";
 import { isSimAgentBundleOrder, isSimSubscriptionOrder } from "../utils/order-display.js";
@@ -302,6 +303,14 @@ export async function startPublicSimCheckout(input: {
   if (!inventoryRow) {
     throw new AppError(
       "Esta numeración ya no está disponible. Elige otra numeración.",
+      409,
+      "NUMBER_UNAVAILABLE",
+    );
+  }
+
+  if (!passesPublicInventoryListingFilter(inventoryRow.metadata)) {
+    throw new AppError(
+      "Esta numeración no está disponible para suscripción pública.",
       409,
       "NUMBER_UNAVAILABLE",
     );

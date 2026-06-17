@@ -283,17 +283,37 @@ function isInventoryPubliclySellable(row: {
   return passesPublicInventoryListingFilter(row.metadata);
 }
 
+function inventoryMetadataRecord(metadata: unknown): Record<string, unknown> | null {
+  if (!metadata || typeof metadata !== "object") return null;
+  return metadata as Record<string, unknown>;
+}
+
 function inventoryMetadataQaOnly(metadata: unknown): boolean {
-  if (!metadata || typeof metadata !== "object") return false;
-  const qa = (metadata as Record<string, unknown>).qa_only;
+  const meta = inventoryMetadataRecord(metadata);
+  if (!meta) return false;
+  const qa = meta.qa_only;
   return qa === true || qa === "true";
 }
 
-/** Producción: excluye qa_only. agent-qa: solo qa_only. */
+/** Inventario marcado QA/test — nunca vendible en producción pública. */
+function inventoryMetadataIsQaOrTest(metadata: unknown): boolean {
+  const meta = inventoryMetadataRecord(metadata);
+  if (!meta) return false;
+  if (inventoryMetadataQaOnly(metadata)) return true;
+  const purpose = String(meta.purpose ?? "").trim().toLowerCase();
+  if (purpose === "sim_subscription_sandbox_e2e") return true;
+  if (purpose === "qa" || purpose === "test" || purpose === "sandbox") return true;
+  const envTag = String(meta.environment ?? meta.env ?? "").trim().toLowerCase();
+  if (envTag === "qa" || envTag === "test" || envTag === "sandbox") return true;
+  return meta.non_production === true || meta.non_production === "true";
+}
+
+/** Producción: excluye QA/test. agent-qa: solo qa_only. */
 export function passesPublicInventoryListingFilter(metadata: unknown): boolean {
   const qaOnly = inventoryMetadataQaOnly(metadata);
+  const qaOrTest = inventoryMetadataIsQaOrTest(metadata);
   if (env.simQaE2e.inventoryQaOnlyListing) return qaOnly;
-  return !qaOnly;
+  return !qaOrTest;
 }
 
 /** Restaura reserva si una orden pending perdió el hold por expiración automática. */

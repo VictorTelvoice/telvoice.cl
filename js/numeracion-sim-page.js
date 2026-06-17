@@ -572,11 +572,15 @@
         var data = result.data || {};
         var url = data.checkout_url || data.init_point || data.payment_url;
         if (!result.ok || data.success !== true || !url) {
-          if (result.status === 409 && data.code === "NUMBER_UNAVAILABLE") {
+          var errCode =
+            (data.error && data.error.code) ||
+            data.code ||
+            "";
+          if (result.status === 409 && errCode === "NUMBER_UNAVAILABLE") {
             refreshCheckoutContext(v.email);
             throw new Error(NUMBER_TAKEN);
           }
-          if (result.status === 409 && data.code === "PENDING_ORDER_EXISTS") {
+          if (result.status === 409 && errCode === "PENDING_ORDER_EXISTS") {
             refreshCheckoutContext(v.email);
             throw new Error("Ya tienes una suscripción pendiente. Usa Continuar suscripción.");
           }
