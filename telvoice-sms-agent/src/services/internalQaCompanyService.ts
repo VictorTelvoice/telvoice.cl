@@ -1,7 +1,24 @@
 import { env } from "../config/env.js";
+import { getSupabase } from "../database/supabaseClient.js";
 import { AppError } from "../utils/errors.js";
 import { findCompanyById } from "./companyService.js";
 import { APP_VERIFY_TEST_SOURCE } from "./smsLiveTestLimiterService.js";
+
+export type InternalQaContextView = {
+  companyId: string;
+  companyIdShort: string;
+  companyName: string;
+  alias: string;
+  availableSms: number | null;
+};
+
+export function formatShortCompanyId(id: string): string {
+  const trimmed = id.trim();
+  if (trimmed.length <= 13) {
+    return trimmed;
+  }
+  return `${trimmed.slice(0, 8)}…${trimmed.slice(-4)}`;
+}
 
 /** Empresa demo Telvoice usada históricamente en scripts QA. */
 export const DEFAULT_INTERNAL_QA_COMPANY_ID =
@@ -71,4 +88,34 @@ export function resolveAdminMessageCompanyLabel(
     return "Telvoice QA";
   }
   return companyName?.trim() || "—";
+}
+
+/** Datos de solo lectura para la tarjeta QA en /admin/test (superadmin). */
+export async function getInternalQaContextView(): Promise<InternalQaContextView> {
+  const companyId = resolveInternalQaCompanyId();
+  const company = await findCompanyById(companyId);
+  const companyName =
+    company?.name?.trim() ||
+    company?.legal_name?.trim() ||
+    "Empresa Demo Telvoice";
+
+  let availableSms: number | null = null;
+  const { data, error } = await getSupabase()
+    .from("company_sms_wallets")
+    .select("available_sms")
+    .eq("company_id", companyId)
+    .eq("country", "CL")
+    .maybeSingle();
+
+  if (!error && data) {
+    availableSms = Number(data.available_sms);
+  }
+
+  return {
+    companyId,
+    companyIdShort: formatShortCompanyId(companyId),
+    companyName,
+    alias: "Telvoice QA",
+    availableSms,
+  };
 }

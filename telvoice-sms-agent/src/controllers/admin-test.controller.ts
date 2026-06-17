@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import {
   assertInternalQaCompanyForTestSend,
+  getInternalQaContextView,
   resolveInternalQaCompanyId,
 } from "../services/internalQaCompanyService.js";
 import {
@@ -71,9 +72,10 @@ export async function getAdminTestPage(
       }
     }
 
-    const [providers, routes] = await Promise.all([
+    const [providers, routes, qaContext] = await Promise.all([
       listSmsProviders(),
       listSmsRoutes(),
+      getInternalQaContextView(),
     ]);
 
     res.type("html").send(
@@ -82,6 +84,7 @@ export async function getAdminTestPage(
         panel,
         sendEnabled,
         lineFeeds,
+        qaContext,
         providers: providers.map((p) => ({
           id: p.id,
           name: p.name,
