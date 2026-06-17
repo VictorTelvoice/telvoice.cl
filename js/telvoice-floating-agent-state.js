@@ -1,6 +1,7 @@
 /**
  * Estado del agente flotante por superficie: public | panel | admin
- * Valores: open | minimized | hidden
+ * Valores persistidos: open | minimized | hidden
+ * Panel cerrado con launcher visible = open (estado UI local, no persisted como hidden).
  */
 (function (global) {
   var LEGACY_KEY = "telvoice:floating-agent-visible";

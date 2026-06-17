@@ -47,7 +47,7 @@ export function renderTelvoiceAgentMinimizeButton(id?: string): string {
 export function renderTelvoiceAgentCloseButton(id?: string): string {
   const idAttr = id ? ` id="${id}"` : "";
   return (
-    `<button type="button" class="${TELVOICE_AGENT_WINDOW_ACTION_CLASS} ${TELVOICE_AGENT_WINDOW_ACTION_CLASS}--close tva-close"${idAttr} aria-label="Cerrar agente" title="Cerrar agente">` +
+    `<button type="button" class="${TELVOICE_AGENT_WINDOW_ACTION_CLASS} ${TELVOICE_AGENT_WINDOW_ACTION_CLASS}--close tva-close"${idAttr} aria-label="Cerrar conversación" title="Cerrar conversación">` +
     '<span class="tva-window-action__glyph" aria-hidden="true">×</span></button>'
   );
 }

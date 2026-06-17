@@ -125,7 +125,7 @@ export function getAdminAgentWidgetScript(): string {
     }
   });
 
-  if (closeBtn) closeBtn.addEventListener("click", function () { setOpen(false); agentChrome("hide"); });
+  if (closeBtn) closeBtn.addEventListener("click", function () { setOpen(false); });
   if (minimizeBtn) minimizeBtn.addEventListener("click", function () { setOpen(false); agentChrome("minimize"); });
   if (form) {
     form.addEventListener("submit", function (ev) {
