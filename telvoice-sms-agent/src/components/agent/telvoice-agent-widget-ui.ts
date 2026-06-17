@@ -26,6 +26,13 @@ export const TELVOICE_AGENT_PROFILE_WEBP = "/assets/telvoice-agent-profile.webp"
 export const TELVOICE_AGENT_WIDGET_LAB_CSS_HREF = "/css/telvoice-agent-widget-lab.css";
 export const TELVOICE_AGENT_WIDGET_LIGHT_CSS_HREF = "/css/telvoice-agent-widget-light.css";
 
+/** Botón minimizar: dock al toggle del menú superior (no burbuja inferior). */
+export const TELVOICE_AGENT_MINIMIZE_BUTTON =
+  '<button type="button" class="tva-minimize" aria-label="Minimizar agente al menú" title="Minimizar al menú">' +
+  '<svg class="tva-minimize-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">' +
+  '<path d="M4 12L12 4M12 4H6M12 4V10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>' +
+  "</svg></button>";
+
 function agentWidgetCssHref(path: string): string {
   try {
     const ver = readFileSync(
@@ -136,7 +143,7 @@ export function renderTelvoiceAgentWidgetShell(options: TelvoiceAgentWidgetShell
       </div>
       <span class="tva-header-status">En línea</span>
       <div class="tva-header-actions">
-        <button type="button" class="tva-minimize" id="${options.rootId}-minimize" aria-label="Minimizar agente"><span aria-hidden="true">−</span></button>
+        ${TELVOICE_AGENT_MINIMIZE_BUTTON.replace('class="tva-minimize"', `class="tva-minimize" id="${options.rootId}-minimize"`)}
         <button type="button" class="tva-close" id="${options.rootId}-close" aria-label="Cerrar agente"><span aria-hidden="true">×</span></button>
       </div>
     </div>`
@@ -147,7 +154,7 @@ export function renderTelvoiceAgentWidgetShell(options: TelvoiceAgentWidgetShell
         <p>${labels.subtitle}</p>
       </div>
       <div class="tva-header-actions">
-        <button type="button" class="tva-minimize" id="${options.rootId}-minimize" aria-label="Minimizar agente"><span aria-hidden="true">−</span></button>
+        ${TELVOICE_AGENT_MINIMIZE_BUTTON.replace('class="tva-minimize"', `class="tva-minimize" id="${options.rootId}-minimize"`)}
         <button type="button" class="tva-close" id="${options.rootId}-close" aria-label="Cerrar agente"><span aria-hidden="true">×</span></button>
       </div>
     </div>`;

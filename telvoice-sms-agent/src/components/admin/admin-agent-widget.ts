@@ -115,10 +115,6 @@ export function getAdminAgentWidgetScript(): string {
   });
 
   fab.addEventListener("click", function () {
-    if (document.body.classList.contains("tva-floating-agent-minimized")) {
-      agentChrome("restore");
-      return;
-    }
     var open = !root.classList.contains("tva-root--chat-open");
     setOpen(open);
     if (open && log && !log.childElementCount) {

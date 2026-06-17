@@ -28,10 +28,6 @@
     document.body.classList.toggle("tva-floating-agent-hidden", state === "hidden");
     document.body.classList.toggle("tva-floating-agent-minimized", state === "minimized");
     document.documentElement.classList.remove("tva-floating-agent-prehidden");
-    var root = document.getElementById("telvoice-web-agent");
-    if (root) {
-      root.classList.toggle("tva-root--minimized-chip", state === "minimized");
-    }
   }
 
   var state = readState();

@@ -51,16 +51,12 @@
   }
 
   function applyState(state) {
-    var root = floatRoot();
     if (window.TelvoiceFloatingAgentState) {
-      window.TelvoiceFloatingAgentState.applyDomState(state, root);
+      window.TelvoiceFloatingAgentState.applyDomState(state, floatRoot());
     } else if (document.body) {
       document.body.classList.toggle("tva-floating-agent-hidden", state === "hidden");
       document.body.classList.toggle("tva-floating-agent-minimized", state === "minimized");
       document.documentElement.classList.remove("tva-floating-agent-prehidden");
-      if (root) {
-        root.classList.toggle("tva-root--minimized-chip", state === "minimized");
-      }
     }
     syncButtons(state);
     if (state === "minimized" || state === "hidden") {
@@ -75,16 +71,23 @@
     }
   }
 
+  function getNavButton() {
+    return buttons[0] || document.querySelector("#nav-floating-agent-toggle");
+  }
+
   function syncButtonState(btn, state) {
     var visible = state !== "hidden";
     var minimized = state === "minimized";
     btn.setAttribute("aria-pressed", visible && !minimized ? "true" : "false");
     if (!visible) {
-      btn.setAttribute("aria-label", "Mostrar agente flotante");
+      btn.setAttribute("aria-label", "Mostrar agente");
+      btn.setAttribute("title", "Mostrar agente");
     } else if (minimized) {
-      btn.setAttribute("aria-label", "Expandir agente flotante");
+      btn.setAttribute("aria-label", "Abrir agente Telvoice");
+      btn.setAttribute("title", "Abrir agente Telvoice");
     } else {
-      btn.setAttribute("aria-label", "Ocultar agente flotante");
+      btn.setAttribute("aria-label", "Minimizar agente al menú");
+      btn.setAttribute("title", "Minimizar al menú");
     }
     btn.classList.toggle("is-agent-live", visible && !minimized);
     btn.classList.toggle("is-agent-dormant", !visible);
@@ -119,6 +122,28 @@
       width: size,
       height: size,
     };
+  }
+
+  function getAgentVisibleRect() {
+    var root = floatRoot();
+    if (root) {
+      var panel = root.querySelector(".tva-panel");
+      if (panel) {
+        var panelRect = panel.getBoundingClientRect();
+        if (panelRect.width > 0 && panelRect.height > 0) {
+          return panelRect;
+        }
+      }
+      var launcher =
+        root.querySelector(".tva-launcher") ||
+        root.querySelector(".tva-launcher-wrap") ||
+        root;
+      var launcherRect = launcher.getBoundingClientRect();
+      if (launcherRect.width > 0 && launcherRect.height > 0) {
+        return launcherRect;
+      }
+    }
+    return getFloatingLauncherRect();
   }
 
   function rectCenter(rect) {
@@ -182,6 +207,31 @@
     window.requestAnimationFrame(frame);
   }
 
+  function dockMinimizeToMenu() {
+    if (animating) {
+      return;
+    }
+    if (readState() === "minimized") {
+      applyState("minimized");
+      return;
+    }
+    var navBtn = getNavButton();
+    writeState("minimized");
+    if (!navBtn || prefersReducedMotion()) {
+      applyState("minimized");
+      return;
+    }
+    animating = true;
+    var fromRect = getAgentVisibleRect();
+    var toRect = navBtn.getBoundingClientRect();
+    document.body.classList.add("tva-floating-agent-animating");
+    runTravelAnimation(fromRect, toRect, "hide", function () {
+      applyState("minimized");
+      document.body.classList.remove("tva-floating-agent-animating");
+      animating = false;
+    });
+  }
+
   function setAgentState(nextState, options) {
     var opts = options || {};
     var current = readState();
@@ -191,6 +241,11 @@
     }
     if (animating) {
       return current;
+    }
+
+    if (nextState === "minimized") {
+      dockMinimizeToMenu();
+      return "minimized";
     }
 
     writeState(nextState);
@@ -210,9 +265,9 @@
         animating = false;
       });
     } else {
-      applyState(nextState === "minimized" ? "minimized" : "open");
+      applyState("open");
       runTravelAnimation(sourceRect, launcherRect, "show", function () {
-        applyState(nextState);
+        applyState("open");
         animating = false;
       });
     }
@@ -228,12 +283,10 @@
       btn.addEventListener("click", function (e) {
         e.preventDefault();
         var state = readState();
-        if (state === "hidden") {
+        if (state === "hidden" || state === "minimized") {
           setAgentState("open", { animate: true, sourceButton: btn });
-        } else if (state === "minimized") {
-          setAgentState("open", { animate: false });
         } else {
-          setAgentState("hidden", { animate: true, sourceButton: btn });
+          dockMinimizeToMenu();
         }
       });
     });
@@ -253,7 +306,7 @@
     } catch (e) {
       return;
     }
-    var navBtn = document.querySelector("#nav-floating-agent-toggle");
+    var navBtn = getNavButton();
     var root = floatRoot();
     if (!navBtn || !root || prefersReducedMotion()) {
       return;
@@ -273,7 +326,7 @@
     if (action === "hide") {
       setAgentState("hidden", { animate: false });
     } else if (action === "minimize") {
-      setAgentState("minimized", { animate: false });
+      dockMinimizeToMenu();
     } else if (action === "restore") {
       setAgentState("open", { animate: false });
     }

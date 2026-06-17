@@ -58,9 +58,6 @@
     body.classList.toggle("tva-floating-agent-hidden", state === "hidden");
     body.classList.toggle("tva-floating-agent-minimized", state === "minimized");
     root.classList.remove("tva-floating-agent-prehidden");
-    if (rootEl) {
-      rootEl.classList.toggle("tva-root--minimized-chip", state === "minimized");
-    }
   }
 
   function hasEntryAnimated(surface) {

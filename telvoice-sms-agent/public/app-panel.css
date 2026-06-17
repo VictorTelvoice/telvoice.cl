@@ -7006,24 +7006,11 @@
       visibility: hidden !important;
     }
 
-    body.tva-floating-agent-minimized .tva-floating-launcher-root .tva-panel {
+    body.tva-floating-agent-minimized .tva-floating-launcher-root,
+    body.tva-floating-agent-minimized #telvoice-web-agent {
       display: none !important;
       pointer-events: none !important;
-    }
-
-    .tva-root.tva-root--minimized-chip .tva-launcher-wrap {
-      transform: scale(0.72);
-      transform-origin: bottom right;
-      transition: transform 0.25s ease;
-    }
-
-    .tva-root.tva-root--minimized-chip .tva-launcher,
-    .tva-root.tva-root--minimized-chip .tva-launcher-iso,
-    .tva-root.tva-root--minimized-chip .tva-launcher-iso .telvoice-agent-avatar__img {
-      width: 3.5rem !important;
-      height: 3.5rem !important;
-      min-width: 3.5rem;
-      min-height: 3.5rem;
+      visibility: hidden !important;
     }
 
     .tva-header-actions {
@@ -7043,17 +7030,29 @@
       height: 2rem;
       padding: 0;
       border: none;
-      border-radius: 0.5rem;
-      background: transparent;
-      color: inherit;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(186, 230, 253, 0.95);
       cursor: pointer;
-      font-size: 1.25rem;
       line-height: 1;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    }
+
+    .tva-minimize-icon {
+      display: block;
+      flex-shrink: 0;
     }
 
     .tva-minimize:hover,
     .tva-close:hover {
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(125, 211, 252, 0.35);
+    }
+
+    .tva-minimize:active,
+    .tva-close:active {
+      transform: scale(0.94);
     }
 
     .tva-minimize:focus-visible,
@@ -7136,16 +7135,24 @@
         0 0 28px rgba(72, 255, 220, 0.22);
     }
 
-    .nav-floating-agent-toggle.is-agent-live .nav-floating-agent-toggle__avatar,
-    .nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__avatar {
+    .nav-floating-agent-toggle.is-agent-live .nav-floating-agent-toggle__avatar {
       opacity: 0.42;
       filter: saturate(0.65) brightness(0.88);
       box-shadow: 0 0 0 1px rgba(220, 231, 245, 0.75);
     }
 
     .nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__ring {
-      opacity: 0.65;
+      opacity: 1;
       animation: tva-toggle-glow 2.2s ease-in-out infinite;
+    }
+
+    .nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__avatar {
+      opacity: 1;
+      filter: saturate(1.08) brightness(1.06);
+      box-shadow:
+        0 0 0 1px rgba(220, 231, 245, 0.95),
+        0 0 18px rgba(11, 92, 255, 0.35),
+        0 0 28px rgba(72, 255, 220, 0.22);
     }
 
     .tva-floating-agent-traveler {
@@ -7193,9 +7200,6 @@
       .nav-floating-agent-toggle--avatar:hover,
       .nav-floating-agent-toggle--avatar:active {
         transform: none;
-      }
-      .tva-root.tva-root--minimized-chip .tva-launcher-wrap {
-        transition: none;
       }
       .tva-root--entry-reveal {
         animation: none;

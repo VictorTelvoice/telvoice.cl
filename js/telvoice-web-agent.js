@@ -1854,6 +1854,10 @@
     var root = document.createElement("div");
     root.className = lab ? "tva-root tva-root--lab" : "tva-root";
     root.id = "telvoice-web-agent";
+    var minimizeBtnHtml =
+      '<button type="button" class="tva-minimize" aria-label="Minimizar agente al menú" title="Minimizar al menú">' +
+      '<svg class="tva-minimize-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">' +
+      '<path d="M4 12L12 4M12 4H6M12 4V10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
     var headerHtml = lab
       ? '<div class="tva-header tva-header--lab">' +
         '<div class="tva-header-brand">' +
@@ -1862,7 +1866,7 @@
         '<p class="tva-header-role">Especialista comercial</p></div></div>' +
         '<span class="tva-header-status">En línea</span>' +
         '<div class="tva-header-actions">' +
-        '<button type="button" class="tva-minimize" aria-label="Minimizar agente"><span aria-hidden="true">−</span></button>' +
+        minimizeBtnHtml +
         '<button type="button" class="tva-close" aria-label="Cerrar agente"><span aria-hidden="true">×</span></button></div></div>'
       : '<div class="tva-header">' +
         '<img src="' +
@@ -1870,7 +1874,7 @@
         '" alt="" width="40" height="40" decoding="async" data-tva-iso="1" />' +
         '<div class="tva-header-text"><h2 id="tva-title">Agente comercial Telvoice</h2><p>Cotiza SMS para Chile</p></div>' +
         '<div class="tva-header-actions">' +
-        '<button type="button" class="tva-minimize" aria-label="Minimizar agente"><span aria-hidden="true">−</span></button>' +
+        minimizeBtnHtml +
         '<button type="button" class="tva-close" aria-label="Cerrar agente"><span aria-hidden="true">×</span></button></div></div>';
     var inputPlaceholder = lab
       ? "Consulta sobre numeración, campañas o validaciones…"
@@ -2021,10 +2025,6 @@
   }
 
   function togglePanel() {
-    if (document.body && document.body.classList.contains("tva-floating-agent-minimized")) {
-      agentChrome("restore");
-      return;
-    }
     if (state.open) {
       closePanel();
     } else {

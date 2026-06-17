@@ -13,24 +13,11 @@ export function getPanelFloatingAgentToggleStyles(): string {
       visibility: hidden !important;
     }
 
-    body.tva-floating-agent-minimized .tva-floating-launcher-root .tva-panel {
+    body.tva-floating-agent-minimized .tva-floating-launcher-root,
+    body.tva-floating-agent-minimized #telvoice-web-agent {
       display: none !important;
       pointer-events: none !important;
-    }
-
-    .tva-root.tva-root--minimized-chip .tva-launcher-wrap {
-      transform: scale(0.72);
-      transform-origin: bottom right;
-      transition: transform 0.25s ease;
-    }
-
-    .tva-root.tva-root--minimized-chip .tva-launcher,
-    .tva-root.tva-root--minimized-chip .tva-launcher-iso,
-    .tva-root.tva-root--minimized-chip .tva-launcher-iso .telvoice-agent-avatar__img {
-      width: 3.5rem !important;
-      height: 3.5rem !important;
-      min-width: 3.5rem;
-      min-height: 3.5rem;
+      visibility: hidden !important;
     }
 
     .tva-header-actions {
@@ -50,17 +37,29 @@ export function getPanelFloatingAgentToggleStyles(): string {
       height: 2rem;
       padding: 0;
       border: none;
-      border-radius: 0.5rem;
-      background: transparent;
-      color: inherit;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(186, 230, 253, 0.95);
       cursor: pointer;
-      font-size: 1.25rem;
       line-height: 1;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    }
+
+    .tva-minimize-icon {
+      display: block;
+      flex-shrink: 0;
     }
 
     .tva-minimize:hover,
     .tva-close:hover {
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(125, 211, 252, 0.35);
+    }
+
+    .tva-minimize:active,
+    .tva-close:active {
+      transform: scale(0.94);
     }
 
     .tva-minimize:focus-visible,
@@ -143,16 +142,24 @@ export function getPanelFloatingAgentToggleStyles(): string {
         0 0 28px rgba(72, 255, 220, 0.22);
     }
 
-    .nav-floating-agent-toggle.is-agent-live .nav-floating-agent-toggle__avatar,
-    .nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__avatar {
+    .nav-floating-agent-toggle.is-agent-live .nav-floating-agent-toggle__avatar {
       opacity: 0.42;
       filter: saturate(0.65) brightness(0.88);
       box-shadow: 0 0 0 1px rgba(220, 231, 245, 0.75);
     }
 
     .nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__ring {
-      opacity: 0.65;
+      opacity: 1;
       animation: tva-toggle-glow 2.2s ease-in-out infinite;
+    }
+
+    .nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__avatar {
+      opacity: 1;
+      filter: saturate(1.08) brightness(1.06);
+      box-shadow:
+        0 0 0 1px rgba(220, 231, 245, 0.95),
+        0 0 18px rgba(11, 92, 255, 0.35),
+        0 0 28px rgba(72, 255, 220, 0.22);
     }
 
     .tva-floating-agent-traveler {
@@ -200,9 +207,6 @@ export function getPanelFloatingAgentToggleStyles(): string {
       .nav-floating-agent-toggle--avatar:hover,
       .nav-floating-agent-toggle--avatar:active {
         transform: none;
-      }
-      .tva-root.tva-root--minimized-chip .tva-launcher-wrap {
-        transition: none;
       }
       .tva-root--entry-reveal {
         animation: none;
@@ -296,11 +300,29 @@ export function getPanelFloatingAgentToggleScript(options: {
     document.body.classList.toggle("tva-floating-agent-hidden", state === "hidden");
     document.body.classList.toggle("tva-floating-agent-minimized", state === "minimized");
     document.documentElement.classList.remove("tva-floating-agent-prehidden");
-    if (root) root.classList.toggle("tva-root--minimized-chip", state === "minimized");
     syncButtons(state);
     if (state === "minimized" || state === "hidden") {
       document.dispatchEvent(new CustomEvent("telvoice:agent-panel-close"));
     }
+  }
+
+  function getNavButton() {
+    return buttons[0] || document.querySelector(BUTTON_SELECTOR.split(",")[0]);
+  }
+
+  function getAgentVisibleRect() {
+    var root = floatRoot();
+    if (root) {
+      var panel = root.querySelector(".tva-panel");
+      if (panel) {
+        var panelRect = panel.getBoundingClientRect();
+        if (panelRect.width > 0 && panelRect.height > 0) return panelRect;
+      }
+      var launcher = root.querySelector(".tva-launcher") || root.querySelector(".tva-launcher-wrap") || root;
+      var launcherRect = launcher.getBoundingClientRect();
+      if (launcherRect.width > 0 && launcherRect.height > 0) return launcherRect;
+    }
+    return getFloatingLauncherRect();
   }
 
   function syncButtonState(btn, state) {
@@ -308,11 +330,14 @@ export function getPanelFloatingAgentToggleScript(options: {
     var minimized = state === "minimized";
     btn.setAttribute("aria-pressed", visible && !minimized ? "true" : "false");
     if (!visible) {
-      btn.setAttribute("aria-label", "Mostrar agente flotante");
+      btn.setAttribute("aria-label", "Mostrar agente");
+      btn.setAttribute("title", "Mostrar agente");
     } else if (minimized) {
-      btn.setAttribute("aria-label", "Expandir agente flotante");
+      btn.setAttribute("aria-label", "Abrir agente Telvoice");
+      btn.setAttribute("title", "Abrir agente Telvoice");
     } else {
-      btn.setAttribute("aria-label", "Ocultar agente flotante");
+      btn.setAttribute("aria-label", "Minimizar agente al menú");
+      btn.setAttribute("title", "Minimizar al menú");
     }
     btn.classList.toggle("is-agent-live", visible && !minimized);
     btn.classList.toggle("is-agent-dormant", !visible);
@@ -372,11 +397,38 @@ export function getPanelFloatingAgentToggleScript(options: {
     window.requestAnimationFrame(frame);
   }
 
+  function dockMinimizeToMenu() {
+    if (animating) return;
+    if (readState() === "minimized") {
+      applyState("minimized");
+      return;
+    }
+    var navBtn = getNavButton();
+    writeState("minimized");
+    if (!navBtn || prefersReducedMotion()) {
+      applyState("minimized");
+      return;
+    }
+    animating = true;
+    var fromRect = getAgentVisibleRect();
+    var toRect = navBtn.getBoundingClientRect();
+    document.body.classList.add("tva-floating-agent-animating");
+    runTravelAnimation(fromRect, toRect, "hide", function () {
+      applyState("minimized");
+      document.body.classList.remove("tva-floating-agent-animating");
+      animating = false;
+    });
+  }
+
   function setAgentState(nextState, opts) {
     opts = opts || {};
     var current = readState();
     if (current === nextState) { applyState(nextState); return nextState; }
     if (animating) return current;
+    if (nextState === "minimized") {
+      dockMinimizeToMenu();
+      return "minimized";
+    }
     writeState(nextState);
     if (!opts.animate || !opts.sourceButton || prefersReducedMotion()) {
       applyState(nextState);
@@ -391,9 +443,9 @@ export function getPanelFloatingAgentToggleScript(options: {
         animating = false;
       });
     } else {
-      applyState(nextState === "minimized" ? "minimized" : "open");
+      applyState("open");
       runTravelAnimation(sourceRect, launcherRect, "show", function () {
-        applyState(nextState);
+        applyState("open");
         animating = false;
       });
     }
@@ -406,9 +458,11 @@ export function getPanelFloatingAgentToggleScript(options: {
       btn.addEventListener("click", function (e) {
         e.preventDefault();
         var state = readState();
-        if (state === "hidden") setAgentState("open", { animate: true, sourceButton: btn });
-        else if (state === "minimized") setAgentState("open", { animate: false });
-        else setAgentState("hidden", { animate: true, sourceButton: btn });
+        if (state === "hidden" || state === "minimized") {
+          setAgentState("open", { animate: true, sourceButton: btn });
+        } else {
+          dockMinimizeToMenu();
+        }
       });
     });
   }
@@ -432,7 +486,7 @@ export function getPanelFloatingAgentToggleScript(options: {
   document.addEventListener("telvoice:agent-chrome", function (ev) {
     var action = ev && ev.detail ? ev.detail.action : "";
     if (action === "hide") setAgentState("hidden", { animate: false });
-    else if (action === "minimize") setAgentState("minimized", { animate: false });
+    else if (action === "minimize") dockMinimizeToMenu();
     else if (action === "restore") setAgentState("open", { animate: false });
   });
 
