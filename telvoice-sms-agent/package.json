@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc && npm run build:app-css",
+    "build": "tsc && node scripts/embed-git-sha.mjs && npm run build:app-css",
     "build:app-css": "tsx scripts/build-app-panel-css.ts",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",

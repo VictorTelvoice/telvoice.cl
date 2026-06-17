@@ -246,6 +246,15 @@ export const env = {
     /\/$/,
     "",
   ),
+  /**
+   * agent-qa / sim-qa: listar solo inventario metadata.qa_only=true.
+   * Producción: oculta inventario qa_only.
+   */
+  simQaE2e: {
+    inventoryQaOnlyListing:
+      optionalEnv("SIM_QA_E2E_INVENTORY_QA_ONLY", "false") === "true" ||
+      optionalEnv("PUBLIC_APP_URL", "").includes("agent-qa"),
+  },
   /** Orígenes extra para CORS de /api/public/* (QA preview, separados por coma). */
   landingExtraOrigins: parseCsvEnv("LANDING_EXTRA_ORIGINS"),
   mercadopago: {
@@ -341,10 +350,23 @@ export const env = {
   /** Rollout controlado Fase 3: en producción solo correos en esta lista pueden comprar sim_agent_bundle. */
   simCheckout: {
     productionAllowlist: parseCsvEnv("SIM_CHECKOUT_PRODUCTION_ALLOWLIST"),
-    /** Precio CLP de prueba para sim_starter (solo emails en starterTestPriceEmails). */
+    /** Precio CLP de prueba para sim_starter bundle (solo emails en starterTestPriceEmails). */
     starterTestPriceClp: parseOptionalPositiveIntEnv("SIM_STARTER_TEST_PRICE_CLP"),
     starterTestPriceEmails: parseCsvEnv("SIM_STARTER_TEST_PRICE_EMAILS").map((e) =>
       e.trim().toLowerCase(),
+    ),
+  },
+  /** Suscripción mensual SIM: precio mensual controlado en producción (allowlist + sufijo). */
+  simSubscriptionQaReal: {
+    enabled: optionalEnv("SIM_SUBSCRIPTION_QA_REAL_ENABLED", "false") === "true",
+    emails: parseCsvEnv("SIM_SUBSCRIPTION_QA_REAL_EMAILS").map((e) =>
+      e.trim().toLowerCase(),
+    ),
+    allowedSuffixes: parseCsvEnv("SIM_SUBSCRIPTION_QA_REAL_ALLOWED_SUFFIXES").map((s) =>
+      s.trim().slice(-3),
+    ),
+    monthlyAmountClp: parseOptionalPositiveIntEnv(
+      "SIM_SUBSCRIPTION_QA_REAL_MONTHLY_AMOUNT_CLP",
     ),
   },
   /** Webhook POST /api/webhooks/numeraciones/inbound (opcional en dev). */

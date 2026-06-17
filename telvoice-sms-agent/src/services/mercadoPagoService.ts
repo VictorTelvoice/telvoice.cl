@@ -511,6 +511,41 @@ export async function createPublicSimCheckoutPreference(input: {
   };
 }
 
+/** Suscripción mensual recurrente — numeración SIM landing pública. */
+export async function createPublicSimSubscriptionPreapproval(input: {
+  orderId: string;
+  plan: SimPlanDefinition;
+  monthlyAmount: number;
+  payer: MercadoPagoPayerInput;
+  publicCheckoutReference: string;
+}): Promise<{
+  checkout_url: string;
+  preapproval_id: string | null;
+}> {
+  const preapproval = await createMercadoPagoPreapproval({
+    externalReference: input.orderId,
+    reason: simCheckoutItemTitle(input.plan),
+    monthlyAmount: input.monthlyAmount,
+    payerEmail: input.payer.email,
+    backUrl: `${env.publicSiteUrl}/pago-exitoso?ref=${encodeURIComponent(input.publicCheckoutReference)}&type=sim_subscription`,
+    metadata: {
+      source: "landing_sim_checkout",
+      checkout_mode: "mercadopago_subscription",
+      product_type: "sim_subscription",
+      order_id: input.orderId,
+      plan_id: input.plan.plan_id,
+      public_checkout_reference: input.publicCheckoutReference,
+      billing_mode: "subscription",
+      recurring: "true",
+    },
+  });
+
+  return {
+    checkout_url: preapproval.checkout_url,
+    preapproval_id: preapproval.preapproval_id,
+  };
+}
+
 export async function createPublicSimAgentBundlePreference(input: {
   orderId: string;
   plan: SimPlanDefinition;

@@ -25,6 +25,7 @@ import { hasPurchaseCreditForOrder } from "./walletTransactionService.js";
 import {
   isSimAgentBundleOrder,
   isSimCheckoutOrder,
+  isSimSubscriptionOrder,
   isWalletSmsCreditOrder,
 } from "../utils/order-display.js";
 import {
@@ -48,6 +49,13 @@ import {
   recordSubscriptionPayment,
   updateSmsMpSubscriptionStatus,
 } from "./smsMpSubscriptionService.js";
+import {
+  applySimSubscriptionPreapprovalWebhook,
+  getSimSubscriptionByOrderId,
+  getSimSubscriptionByPreapprovalId,
+  processSimSubscriptionMercadoPagoPayment,
+  syncSimSubscriptionAfterOrderFirstPayment,
+} from "./simSubscriptionService.js";
 import { runBillingSyncBestEffort } from "./billingSyncService.js";
 import { runClientPanelPostCreditBestEffort } from "./clientPanelPostPurchaseService.js";
 import type { MercadoPagoPaymentRecord } from "./mercadoPagoService.js";
@@ -306,7 +314,10 @@ export async function processPublicCheckoutMercadoPagoWebhook(
       return { handled: true, orderId, result: "landing_payment_already_processed" };
     }
 
-    if (latestBefore?.payment_status !== "paid") {
+    // Seguridad: si la orden fue cancelada, no debemos marcarla como pagada
+    // aunque MercadoPago envíe un webhook "approved".
+    // Esto evita activaciones/provisioning sobre órdenes QA canceladas.
+    if (latestBefore?.payment_status === "pending") {
       await markOrderPaid(orderId, null);
     }
 
@@ -470,6 +481,86 @@ export async function processPublicCheckoutMercadoPagoWebhook(
         return { handled: true, orderId, result: "sim_agent_bundle_paid_pending_activation" };
       }
 
+      if (
+        refreshed &&
+        isSimSubscriptionOrder(refreshed) &&
+        inventoryNumberId
+      ) {
+        const checkoutEmail =
+          refreshed.checkout_email ??
+          String(refreshed.metadata?.checkout_email ?? "");
+        const bundledAgentId = plan
+          ? getBundledAgentAddonForSimPlan(plan.plan_id)
+          : String(refreshed.metadata?.agent_addon_id ?? "agent_start");
+
+        const provision = await provisionCompanyFromCheckout({
+          order: refreshed,
+          checkoutEmail,
+          payerName:
+            typeof refreshed.metadata?.payer_name === "string"
+              ? refreshed.metadata.payer_name
+              : undefined,
+          companyName:
+            typeof refreshed.metadata?.company_name === "string"
+              ? refreshed.metadata.company_name
+              : undefined,
+          phone:
+            typeof refreshed.metadata?.phone === "string"
+              ? refreshed.metadata.phone
+              : undefined,
+          taxId:
+            typeof refreshed.metadata?.tax_id === "string"
+              ? refreshed.metadata.tax_id
+              : undefined,
+        });
+
+        const addon = getAgentAddon(bundledAgentId);
+        if (addon?.planCode) {
+          await createAgentPlanRequestFromCheckout({
+            companyId: provision.companyId,
+            orderId,
+            planCode: addon.planCode,
+            checkoutEmail,
+          });
+        }
+
+        const afterProvision = await getOrderById(orderId);
+        if (afterProvision?.company_id) {
+          try {
+            const paymentId = String(payment.id ?? metaPatch.mercadopago_payment_id ?? "");
+            await syncSimSubscriptionAfterOrderFirstPayment(orderId, paymentId);
+            console.log("[mp-webhook] sim subscription month-1 credit", orderId);
+          } catch (err) {
+            console.error(
+              "[mp-webhook] sim subscription month-1 credit failed",
+              orderId,
+              err,
+            );
+          }
+        }
+
+        try {
+          await sendSimAgentBundlePaymentEmails(orderId);
+          if (provision.isNewCompany) {
+            await sendCheckoutPanelAccessEmail(orderId, checkoutEmail);
+          }
+          const postPay = await processSimPostPaymentActivation(orderId);
+          console.log(
+            "[mp-webhook] sim subscription post-payment",
+            orderId,
+            postPay.autoActivated ? "auto_activated" : postPay.reason ?? "pending",
+          );
+        } catch (err) {
+          console.error("[mp-webhook] sim subscription email failed", orderId, err);
+        }
+
+        return {
+          handled: true,
+          orderId,
+          result: "sim_subscription_paid_pending_activation",
+        };
+      }
+
       try {
         await sendSimPaymentReceivedEmails(orderId);
       } catch (err) {
@@ -539,17 +630,28 @@ function subscriptionRefFromPayment(
 
 export async function processMercadoPagoPreapprovalWebhook(
   preapprovalId: string,
-): Promise<{ ok: boolean; result?: string; subscriptionId?: string }> {
+): Promise<{ ok: boolean; result?: string; subscriptionId?: string; orderId?: string }> {
   const pre = await getMercadoPagoPreapproval(preapprovalId);
   const ref = pre.external_reference?.trim();
   if (!ref) {
     return { ok: true, result: "no_external_reference" };
   }
 
+  const simOrder = await getOrderById(ref);
+  if (simOrder && isSimSubscriptionOrder(simOrder)) {
+    await applyPublicSimSubscriptionPreapprovalStatus(simOrder, pre);
+    return { ok: true, orderId: simOrder.id, result: pre.status };
+  }
+
   const found = await findSubscriptionByExternalReference(ref);
   if (!found) {
     const byMp = await findSubscriptionByPreapprovalId(preapprovalId);
     if (!byMp) {
+      const byOrderPreapproval = await findSimSubscriptionOrderByPreapprovalId(preapprovalId);
+      if (byOrderPreapproval) {
+        await applyPublicSimSubscriptionPreapprovalStatus(byOrderPreapproval, pre);
+        return { ok: true, orderId: byOrderPreapproval.id, result: pre.status };
+      }
       return { ok: true, result: "subscription_not_found" };
     }
     await applyPreapprovalStatus(byMp.companyId, byMp.subscription.id, pre);
@@ -558,6 +660,72 @@ export async function processMercadoPagoPreapprovalWebhook(
 
   await applyPreapprovalStatus(found.companyId, found.subscription.id, pre);
   return { ok: true, subscriptionId: found.subscription.id, result: pre.status };
+}
+
+async function findSimSubscriptionOrderByPreapprovalId(
+  preapprovalId: string,
+): Promise<Awaited<ReturnType<typeof getOrderById>>> {
+  const { data, error } = await getSupabase()
+    .from("sms_orders")
+    .select("*")
+    .eq("payment_reference", preapprovalId)
+    .maybeSingle();
+  if (error || !data) {
+    return null;
+  }
+  const order = data as NonNullable<Awaited<ReturnType<typeof getOrderById>>>;
+  return isSimSubscriptionOrder(order) ? order : null;
+}
+
+async function applyPublicSimSubscriptionPreapprovalStatus(
+  order: NonNullable<Awaited<ReturnType<typeof getOrderById>>>,
+  pre: { status?: string; id?: string },
+): Promise<void> {
+  const status = (pre.status ?? "").toLowerCase();
+  const subscription =
+    (await getSimSubscriptionByOrderId(order.id)) ??
+    (pre.id ? await getSimSubscriptionByPreapprovalId(pre.id) : null);
+
+  if (subscription) {
+    await applySimSubscriptionPreapprovalWebhook({
+      subscription,
+      preapprovalStatus: status,
+      preapprovalId: pre.id ?? null,
+    });
+  }
+
+  const metaPatch = {
+    ...(order.metadata ?? {}),
+    mercadopago_preapproval_id: pre.id ?? order.metadata?.mercadopago_preapproval_id ?? null,
+    subscription_status: status || "pending",
+    mercadopago_preapproval_webhook_at: new Date().toISOString(),
+  };
+
+  if (status === "cancelled") {
+    await patchOrderFields(order.id, {
+      payment_status: "cancelled",
+      metadata: {
+        ...metaPatch,
+        checkout_cancel_reason: "mp_preapproval_cancelled",
+      },
+    });
+    await releaseReservationForOrder(order.id);
+    return;
+  }
+
+  if (status === "paused") {
+    await patchOrderFields(order.id, { metadata: metaPatch });
+    return;
+  }
+
+  if (status === "authorized") {
+    await patchOrderFields(order.id, {
+      metadata: {
+        ...metaPatch,
+        subscription_status: "authorized",
+      },
+    });
+  }
 }
 
 async function applyPreapprovalStatus(
@@ -684,8 +852,36 @@ export async function routeMercadoPagoWebhook(
   paymentId: string,
 ): Promise<{ ok: boolean; skipped?: string; orderId?: string; result?: string }> {
   const payment = await getMercadoPagoPayment(paymentId);
+  const preapprovalId =
+    (payment as { preapproval_id?: string }).preapproval_id?.trim() ?? "";
+
+  if (preapprovalId) {
+    const simSub = await processSimSubscriptionMercadoPagoPayment({
+      paymentId: String(payment.id ?? paymentId),
+      paymentStatus: String(payment.status ?? ""),
+      transactionAmount: Number(payment.transaction_amount ?? 0),
+      preapprovalId,
+      externalReference: payment.external_reference,
+    });
+    if (simSub.handled && simSub.result !== "delegate_first_payment_to_order_webhook") {
+      return {
+        ok: true,
+        orderId: simSub.orderId,
+        result: simSub.result,
+      };
+    }
+  }
+
   const orderId = payment.external_reference?.trim();
   if (!orderId) {
+    const sub = await processSubscriptionMercadoPagoPayment(paymentId);
+    if (sub.handled) {
+      return {
+        ok: true,
+        orderId: sub.orderId,
+        result: sub.result ?? "subscription_payment",
+      };
+    }
     return { ok: true, skipped: "no_external_reference" };
   }
 
