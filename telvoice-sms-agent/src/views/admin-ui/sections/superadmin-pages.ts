@@ -18,6 +18,7 @@ import {
 import { renderKpiCard } from "../components.js";
 import { renderBtn, renderFilterBar, renderPageHeader } from "../page-kit.js";
 import { renderAdminPanelModeBadge, renderPanelMessageSourceBadge } from "../../app-ui/app-sms-ui.js";
+import { resolveAdminMessageCompanyLabel } from "../../../services/internalQaCompanyService.js";
 import { renderSuperadminBanner, statusBadgeSa } from "../superadmin-kit.js";
 import { interpretCampaignTpsMetadata } from "../../../utils/campaignTpsMetadata.js";
 
@@ -187,8 +188,12 @@ export function renderSaMessagesPage(opts: PageOpts): string {
             const msgClass = msg.empty
               ? "tv-messages-text tv-messages-text--empty"
               : "tv-messages-text";
+            const clientLabel = resolveAdminMessageCompanyLabel(
+              m.company_name,
+              m.metadata as Record<string, unknown> | null | undefined,
+            );
             return `<tr>
-      <td class="tv-cell-truncate" title="${escapeHtml(m.company_name ?? "")}">${escapeHtml(m.company_name ?? "—")}</td>
+      <td class="tv-cell-truncate" title="${escapeHtml(clientLabel)}">${escapeHtml(clientLabel)}</td>
       <td><code class="tv-code-sm">${escapeHtml(m.recipient_number)}</code></td>
       <td class="${msgClass}" title="${escapeHtml(msg.full)}">${escapeHtml(msg.preview)}</td>
       <td>${escapeHtml(m.provider)}</td>

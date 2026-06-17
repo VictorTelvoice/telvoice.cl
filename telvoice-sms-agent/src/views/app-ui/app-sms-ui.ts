@@ -58,7 +58,7 @@ export function renderPanelMessageSourceBadge(
     return badge("muted", "app_send_sms_mock");
   }
   if (source === "app_send_sms_verify_test") {
-    return badge("ok", "verify_test");
+    return badge("ok", "VERIFY TEST");
   }
   if (source === "app_send_sms_live" || source === "app_send_sms_live_test") {
     return badge("ok", "envío real");
