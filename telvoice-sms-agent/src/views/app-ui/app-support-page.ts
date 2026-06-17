@@ -771,8 +771,13 @@ function renderSupportScript(
     if (e.key === "Escape") closeModals();
   });
 
+  var creatingTicket = false;
+
   document.getElementById("tv-support-new-form")?.addEventListener("submit", function (e) {
     e.preventDefault();
+    if (creatingTicket) return;
+
+    var form = e.target;
     var subject = document.getElementById("tv-support-subject").value.trim();
     var category = document.getElementById("tv-support-category").value;
     var priority = document.getElementById("tv-support-priority").value;
@@ -781,6 +786,7 @@ function renderSupportScript(
     var relatedOrderId = orderEl ? orderEl.value.trim() : "";
     if (!subject || !message) return;
 
+    var submitBtn = form.querySelector('button[type="submit"]');
     var payload = {
       subject: subject,
       category: category,
@@ -789,36 +795,48 @@ function renderSupportScript(
       relatedOrderId: relatedOrderId || null,
     };
 
+    function releaseSubmit() {
+      creatingTicket = false;
+      if (submitBtn) submitBtn.disabled = false;
+    }
+
+    creatingTicket = true;
+    if (submitBtn) submitBtn.disabled = true;
+
     if (DB_AVAILABLE) {
       postJson("/app/support/tickets", payload).then(function (res) {
         if (res.ok && res.body && res.body.ok && res.body.ticket) {
           tickets.unshift(res.body.ticket);
           closeModals();
-          e.target.reset();
+          form.reset();
           renderAll();
           showToast("Ticket creado correctamente. El equipo Telvoice revisará tu solicitud.");
+          releaseSubmit();
           return;
         }
         createLocalTicket(payload);
         closeModals();
-        e.target.reset();
+        form.reset();
         renderAll();
         showToast("Ticket guardado localmente. Se sincronizará cuando la conexión esté disponible.");
+        releaseSubmit();
       }).catch(function () {
         createLocalTicket(payload);
         closeModals();
-        e.target.reset();
+        form.reset();
         renderAll();
         showToast("Ticket guardado localmente. Se sincronizará cuando la conexión esté disponible.");
+        releaseSubmit();
       });
       return;
     }
 
     createLocalTicket(payload);
     closeModals();
-    e.target.reset();
+    form.reset();
     renderAll();
     showToast("Ticket creado correctamente. El equipo Telvoice revisará tu solicitud.");
+    releaseSubmit();
   });
 
   function bindViewButtons(root) {

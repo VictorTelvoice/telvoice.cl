@@ -529,27 +529,45 @@ export async function listSupportTickets(
   }
 }
 
-async function nextTicketCode(companyId: string): Promise<string> {
-  const { data, error } = await getSupabase()
-    .from("client_support_tickets")
-    .select("ticket_code")
-    .eq("company_id", companyId)
-    .order("created_at", { ascending: false })
-    .limit(50);
+function isUniqueViolation(error: unknown): boolean {
+  return !!(
+    error &&
+    typeof error === "object" &&
+    (error as { code?: string }).code === "23505"
+  );
+}
 
-  if (error && !isMissingTableError(error)) {
-    wrapSupabaseError(error, "nextTicketCode");
+function isMissingRpcError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
   }
+  const code = String((error as { code?: string }).code ?? "");
+  const message = String((error as { message?: string }).message ?? "").toLowerCase();
+  return (
+    code === "PGRST202" ||
+    message.includes("next_support_ticket_code") ||
+    message.includes("could not find the function")
+  );
+}
 
-  let max = 1000;
-  for (const row of data ?? []) {
-    const code = String((row as { ticket_code?: string }).ticket_code ?? "");
-    const m = /^TLV-(\d+)$/.exec(code);
-    if (m) {
-      max = Math.max(max, parseInt(m[1]!, 10));
+async function nextTicketCodeFromDb(): Promise<string> {
+  const { data, error } = await getSupabase().rpc("next_support_ticket_code");
+
+  if (error) {
+    if (isMissingRpcError(error)) {
+      throw new AppError(
+        "Generación de código de ticket no disponible. Aplicar migración 063.",
+        503,
+      );
     }
+    wrapSupabaseError(error, "nextTicketCodeFromDb");
   }
-  return `TLV-${max + 1}`;
+
+  const code = typeof data === "string" ? data.trim() : "";
+  if (!/^TLV-\d+$/.test(code)) {
+    throw new AppError("No se pudo generar el código de ticket.", 500);
+  }
+  return code;
 }
 
 function assertCategory(category: string): void {
@@ -569,42 +587,57 @@ export async function createSupportTicket(
     }
     assertCategory(input.category);
 
-    const ticketCode = await nextTicketCode(input.companyId);
-    const row = {
-      company_id: input.companyId,
-      user_id: input.userId ?? null,
-      ticket_code: ticketCode,
-      subject,
-      category: input.category,
-      priority: PRIORITY_TO_DB[input.priority] ?? "Media",
-      status: STATUS_TO_DB.open,
-      message,
-      replies: [] as SupportTicketReply[],
-      related_order_id: input.relatedOrderId ?? null,
-      source: "client_panel",
-    };
+    const maxAttempts = 3;
+    let data: ClientSupportTicketRow | null = null;
 
-    const { data, error } = await getSupabase()
-      .from("client_support_tickets")
-      .insert(row)
-      .select("*")
-      .single();
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const ticketCode = await nextTicketCodeFromDb();
+      const row = {
+        company_id: input.companyId,
+        user_id: input.userId ?? null,
+        ticket_code: ticketCode,
+        subject,
+        category: input.category,
+        priority: PRIORITY_TO_DB[input.priority] ?? "Media",
+        status: STATUS_TO_DB.open,
+        message,
+        replies: [] as SupportTicketReply[],
+        related_order_id: input.relatedOrderId ?? null,
+        source: "client_panel",
+      };
 
-    if (error) {
-      if (isMissingTableError(error)) {
+      const result = await getSupabase()
+        .from("client_support_tickets")
+        .insert(row)
+        .select("*")
+        .single();
+
+      if (!result.error) {
+        data = result.data as ClientSupportTicketRow;
+        break;
+      }
+
+      if (isMissingTableError(result.error)) {
         return { ok: false, error: "Tabla de tickets no disponible.", missingTable: true };
       }
-      wrapSupabaseError(error, "createSupportTicket");
+      if (isUniqueViolation(result.error) && attempt < maxAttempts - 1) {
+        continue;
+      }
+      wrapSupabaseError(result.error, "createSupportTicket");
     }
 
-    const ticket = rowToSupportTicket(data as ClientSupportTicketRow);
+    if (!data) {
+      throw new AppError("No se pudo crear el ticket. Intente nuevamente.", 500);
+    }
+
+    const ticket = rowToSupportTicket(data);
     const { notifyInternalSupportTicketCreatedBestEffort } = await import(
       "./supportTicketNotificationService.js"
     );
     void notifyInternalSupportTicketCreatedBestEffort(
       ticket,
       input.companyId,
-      row.source,
+      data.source ?? "client_panel",
     );
 
     return { ok: true, data: ticket };
