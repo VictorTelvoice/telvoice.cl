@@ -1,0 +1,120 @@
+/* Sección Numeración Telvoice — tema claro landing (section-bg-sky) */
+
+.tv-numeracion-section {
+  position: relative;
+  color: inherit;
+}
+
+.tv-numeracion-section .lab-section-inner {
+  position: relative;
+  z-index: 1;
+}
+
+.tv-numeracion-section .lab-eyebrow {
+  color: #0052cc;
+}
+
+.tv-numeracion-section .lab-section-title {
+  color: #131b2e;
+}
+
+.tv-numeracion-section .lab-section-intro {
+  color: #525f7a;
+}
+
+.tv-numeracion-section .lab-glass-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 82, 204, 0.1);
+  box-shadow: 0 4px 24px rgba(0, 82, 204, 0.06);
+}
+
+.tv-numeracion-section .lab-glass-card:hover {
+  border-color: rgba(0, 82, 204, 0.22);
+  box-shadow: 0 8px 32px rgba(0, 82, 204, 0.1);
+}
+
+.tv-numeracion-section .lab-glass-card--glow {
+  box-shadow:
+    0 4px 24px rgba(0, 82, 204, 0.08),
+    0 0 0 1px rgba(0, 82, 204, 0.06) inset;
+}
+
+.tv-numeracion-section .lab-num-card__visual {
+  padding: 0;
+  overflow: hidden;
+  display: block;
+  aspect-ratio: 360 / 200;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  flex: 0 0 auto;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 82, 204, 0.06) 0%,
+    rgba(237, 243, 250, 0.95) 100%
+  );
+  border-bottom: 1px solid rgba(0, 82, 204, 0.08);
+}
+
+.tv-numeracion-section .lab-num-card__visual::after {
+  display: none;
+}
+
+.tv-numeracion-section .lab-num-scene {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+  vertical-align: top;
+}
+
+.tv-numeracion-section .lab-num-card {
+  min-height: 0;
+}
+
+@media (min-width: 1024px) {
+  .tv-numeracion-section .lab-num-card__visual {
+    min-height: 0;
+    max-height: none;
+    padding: 0;
+  }
+
+  .tv-numeracion-section .lab-num-scene {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 429px) {
+  .tv-numeracion-section .lab-num-card__visual {
+    min-height: 0;
+    max-height: none;
+    padding: 0;
+  }
+}
+
+.tv-numeracion-section .lab-num-card__title {
+  color: #131b2e;
+}
+
+.tv-numeracion-section .lab-num-card__text {
+  color: #525f7a;
+}
+
+.tv-numeracion-section .lab-num-band {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(0, 82, 204, 0.12);
+  border-left: 3px solid rgba(0, 82, 204, 0.55);
+}
+
+.tv-numeracion-section .lab-num-band .lab-eyebrow {
+  color: #525f7a;
+}
+
+.tv-numeracion-section .text-lab-cyan {
+  color: #0052cc;
+}
+
+.tv-numeracion-section .text-lab-cyan:hover {
+  color: #0066ff;
+}

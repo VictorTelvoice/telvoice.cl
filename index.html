@@ -843,13 +843,12 @@
       border: 1px solid rgba(0, 82, 204, 0.12);
       background: linear-gradient(180deg, #faf8ff 0%, #f5f7fc 100%);
       border-radius: 1.25rem;
-      padding: 1.25rem 1.5rem;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
+      padding: 1rem 0.85rem;
+      overflow: hidden;
     }
     @media (min-width: 768px) {
       .pack-includes {
-        padding: 1.5rem 2rem;
+        padding: 1.15rem 1.25rem;
       }
     }
     .pack-includes-title {
@@ -874,26 +873,30 @@
       flex-wrap: nowrap;
       justify-content: center;
       align-items: center;
-      gap: 0.75rem 1.5rem;
+      gap: clamp(0.35rem, 1.1vw, 0.85rem);
       margin-top: 0;
+      max-width: 100%;
     }
     @media (min-width: 768px) {
       .pack-includes-list {
-        gap: 1rem 2rem;
+        gap: clamp(0.5rem, 1.4vw, 1.15rem);
       }
     }
     .pack-includes-item {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      font-size: 0.8125rem;
-      line-height: 1.35;
+      gap: 0.28rem;
+      font-size: clamp(0.625rem, 1.75vw, 0.75rem);
+      line-height: 1.25;
       color: #43474e;
       white-space: nowrap;
+      flex: 0 1 auto;
+      min-width: 0;
     }
     .pack-includes-item .material-symbols-outlined {
-      font-size: 1.125rem;
+      font-size: clamp(0.75rem, 2vw, 0.9375rem);
       color: #0052cc;
+      flex-shrink: 0;
     }
 
     .precios-footnote {
@@ -1833,11 +1836,17 @@
       }
       main .pack-includes-list {
         justify-content: center;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        gap: clamp(0.3rem, 1vw, 0.65rem);
       }
       main .pack-includes-item {
         justify-content: center;
         text-align: center;
+        font-size: clamp(0.6rem, 2.8vw, 0.6875rem);
+        gap: 0.22rem;
+      }
+      main .pack-includes-item .material-symbols-outlined {
+        font-size: clamp(0.6875rem, 3vw, 0.8125rem);
       }
       #compliance ul li {
         justify-content: flex-start;
@@ -2676,14 +2685,20 @@
     }
 
     /* Tipografía Lab — overrides finales (después de Tailwind e inline) */
-    .tv-type-lab .tv-hero-title {
+    .tv-type-lab .tv-hero-title,
+    .tv-type-lab h2.tv-hero-title,
+    .tv-type-lab .tv-hero-slide-title {
       font-family: Montserrat, sans-serif;
-      font-size: clamp(2.6rem, 5.9vw, 3.85rem);
+      font-size: clamp(2.15rem, 4.2vw, 3.45rem);
       font-weight: 800;
-      line-height: 1.12;
+      line-height: 1.08;
       letter-spacing: -0.025em;
-      max-width: 28ch;
+      max-width: 100%;
       text-wrap: balance;
+    }
+    .tv-type-lab h2.tv-hero-title,
+    .tv-type-lab .tv-hero-slide-title {
+      margin: 0;
     }
     .tv-type-lab .tv-hero-word--ink { color: #131b2e; }
     .tv-type-lab .tv-hero-word--blue {
@@ -2738,10 +2753,25 @@
       line-height: 1.55;
       color: #525f7a;
     }
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .tv-type-lab .hero-copy .tv-hero-title,
+      .tv-type-lab .hero-copy .tv-hero-slide-title {
+        font-size: clamp(1.95rem, 3.6vw, 2.55rem);
+        line-height: 1.1;
+      }
+    }
     @media (max-width: 767px) {
-      .tv-type-lab .hero-copy .tv-hero-title {
-        font-size: clamp(2.6rem, 5.9vw, 3.85rem);
-        line-height: 1.12;
+      .tv-type-lab .hero-copy .tv-hero-title,
+      .tv-type-lab .hero-copy .tv-hero-slide-title {
+        font-size: clamp(2.22rem, 7.44vw, 2.7rem);
+        line-height: 1.08;
+      }
+    }
+    @media (max-width: 380px) {
+      .tv-type-lab .hero-copy .tv-hero-title,
+      .tv-type-lab .hero-copy .tv-hero-slide-title {
+        font-size: clamp(1.8rem, 5.76vw, 2.22rem);
+        line-height: 1.08;
       }
     }
   </style>
@@ -2750,6 +2780,7 @@
     #telvoice-web-agent.tva-root--ready{visibility:visible;pointer-events:auto}
     #telvoice-web-agent .tva-panel:not(.is-open){display:none!important}
     #telvoice-web-agent .tva-launcher-iso,#telvoice-web-agent .tva-launcher img{width:calc(10.13rem * 0.85);height:calc(10.13rem * 0.85);max-width:calc(10.13rem * 0.85);max-height:calc(10.13rem * 0.85)}
+    #telvoice-web-agent.tva-root--lab .telvoice-agent-avatar--launcher .telvoice-agent-antenna-glow{display:none!important}
     .hero-phone-slot--agent{display:flex;flex:1;align-items:center;justify-content:center;width:100%;min-width:0}
     .hero-phone-float--agent{position:relative;display:flex;flex-direction:column;width:min(320px,90vw);height:min(640px,85svh,85vh);max-width:100%;border-radius:48px;border:12px solid #dae2fd;background:#131b2e;overflow:hidden;box-sizing:border-box}
     .hero-phone-screen{position:relative;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;padding:3.75rem 0 0}
@@ -2759,9 +2790,17 @@
     .hero-phone-agent-embed{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
     #telvoice-web-agent-embed:not(.tva-root--ready){visibility:hidden}
     #telvoice-web-agent-embed.tva-root--ready{visibility:visible}
+    body.tva-floating-agent-hidden #telvoice-web-agent,html.tva-floating-agent-prehidden #telvoice-web-agent{display:none!important;pointer-events:none!important;visibility:hidden!important}
   </style>
-  <link rel="stylesheet" href="css/telvoice-type-lab.css?v=20260614a" />
-  <link rel="stylesheet" href="css/telvoice-web-agent.css?v=20260718" data-tva-css="1" />
+  <script src="js/telvoice-floating-agent-pref.js?v=20260617"></script>
+  <link rel="stylesheet" href="css/telvoice-floating-agent-toggle.css?v=20260619" />
+  <link rel="stylesheet" href="css/telvoice-scroll-reveal.css?v=20260619" />
+  <link rel="stylesheet" href="css/telvoice-type-lab.css?v=20260615" />
+  <link rel="stylesheet" href="css/telvoice-casos-carousel.css?v=20260616" />
+  <link rel="stylesheet" href="css/telvoice-hero-slider.css?v=20260616" />
+  <link rel="stylesheet" href="css/landing-agent-lab.css?v=20260619" />
+  <link rel="stylesheet" href="css/telvoice-numeracion-section.css?v=20260529b" />
+  <link rel="stylesheet" href="css/telvoice-web-agent.css?v=20260615" data-tva-css="1" />
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -2996,6 +3035,7 @@
           <button type="button" class="site-nav-dropdown-toggle font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" id="nav-precios-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-precios-menu">Precios</button>
           <ul class="site-nav-dropdown-menu" id="nav-precios-menu" role="menu" aria-labelledby="nav-precios-toggle" hidden>
             <li role="none"><a class="site-nav-dropdown-link" href="#calculadora" role="menuitem" data-precios-nav="bolsas" data-track="click_nav_bolsas_sms">Bolsas SMS</a></li>
+            <li role="none"><a class="site-nav-dropdown-link" href="/numeracion-sim.html" role="menuitem" data-track="click_nav_numeracion_sim">Numeración SIM</a></li>
           </ul>
         </li>
         <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="#casos-uso">Casos de uso</a></li>
@@ -3004,7 +3044,11 @@
         <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="ayuda/">Centro de ayuda</a></li>
       </ul>
       <div class="nav-actions flex items-center gap-2 shrink-0">
-        <button type="button" id="nav-demo" class="nav-sales-btn hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm" data-track="click_agente_ventas">Agente IA de Ventas</button>
+        <button type="button" id="nav-floating-agent-toggle" class="nav-floating-agent-toggle nav-floating-agent-toggle--avatar inline-flex is-agent-live" aria-pressed="true" aria-label="Ocultar agente flotante">
+          <span class="nav-floating-agent-toggle__ring" aria-hidden="true"></span>
+          <img src="assets/telvoice-agent-nav-toggle.png" alt="" class="nav-floating-agent-toggle__avatar" width="44" height="44" decoding="async" />
+        </button>
+        <a href="#calculadora" id="nav-comprar-sms" class="nav-sales-btn hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm no-underline" data-track="click_comprar_sms_nav">Comprar SMS</a>
         <button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant/60 text-on-background" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
           <span class="material-symbols-outlined" id="menu-icon-open">menu</span>
           <span class="material-symbols-outlined hidden" id="menu-icon-close">close</span>
@@ -3017,6 +3061,7 @@
           <button type="button" class="site-nav-dropdown-toggle block font-body-md w-full text-left py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" id="nav-precios-toggle-mobile" aria-expanded="false" aria-controls="nav-precios-menu-mobile">Precios</button>
           <ul class="site-nav-dropdown-menu site-nav-dropdown-menu--mobile" id="nav-precios-menu-mobile" hidden>
             <li><a class="site-nav-dropdown-link" href="#calculadora" data-precios-nav="bolsas" data-track="click_nav_bolsas_sms_mobile">Bolsas SMS</a></li>
+            <li><a class="site-nav-dropdown-link" href="/numeracion-sim.html" data-track="click_nav_numeracion_sim_mobile">Numeración SIM</a></li>
           </ul>
         </li>
         <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#casos-uso">Casos de uso</a></li>
@@ -3024,13 +3069,15 @@
         <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#contacto">Contacto</a></li>
         <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="ayuda/">Centro de ayuda</a></li>
       </ul>
-      <button type="button" id="nav-demo-mobile" class="mt-2 w-full bg-primary text-on-primary font-body-md py-3 rounded-full hover:bg-surface-tint transition-colors" data-track="click_agente_ventas">Agente IA de Ventas</button>
+      <div class="mt-4 sm:hidden">
+        <a href="#calculadora" id="nav-comprar-sms-mobile" class="block w-full text-center bg-primary text-on-primary font-body-md py-3 rounded-full hover:bg-surface-tint transition-colors no-underline" data-track="click_comprar_sms_nav">Comprar SMS</a>
+      </div>
     </div>
   </nav>
 
   <main>
     <!-- Hero Section -->
-    <section class="section-hero-wrap relative w-full bg-white" id="inicio">
+    <section class="section-hero-wrap relative w-full bg-white" id="inicio" aria-labelledby="hero-title">
       <div class="hero-atmosphere" aria-hidden="true">
         <div class="hero-bg-base"></div>
         <div class="hero-bg-skywash"></div>
@@ -3068,52 +3115,178 @@
       <div class="relative z-10 mx-auto max-w-container-max px-4 sm:px-margin-page">
       <div class="hero-main-row flex flex-col md:flex-row items-start justify-between gap-8 md:gap-16">
         <div class="hero-copy flex flex-1 flex-col px-4 md:px-0 md:pl-20 lg:pl-28 xl:pl-36">
-          <div class="flex w-full flex-col items-center gap-stack-md md:items-start tv-hero-copy-stack">
-              <div class="tv-hero-eyebrow">
-                <span class="tv-hero-pill-dot" aria-hidden="true"></span>
-                <span>SMS masivos · Chile</span>
-              </div>
-              <h1 class="tv-hero-title font-h1 text-h1 text-on-background">
-                <span class="tv-hero-word tv-hero-word--ink">SMS masivos en Chile con </span><span class="tv-hero-word tv-hero-word--blue">gestión asistida para empresas</span>
-              </h1>
-              <p class="tv-hero-subtitle hero-intro">
-                Envía campañas, notificaciones, validaciones y alertas empresariales con rutas SMS directas.
-              </p>
-              <div class="tv-hero-capabilities" aria-label="Capacidades del servicio SMS">
-                <div class="tv-hero-capabilities-grid">
-                  <article class="tv-hero-capability-item">
-                    <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">description</span>
-                    <div class="tv-hero-capability__body">
-                      <strong class="tv-hero-capability__title">Campañas CSV</strong>
-                      <p class="tv-hero-capability__text">Carga tu base, valida contactos y prepara campañas en minutos.</p>
-                    </div>
-                  </article>
-                  <article class="tv-hero-capability-item">
-                    <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">shopping_cart</span>
-                    <div class="tv-hero-capability__body">
-                      <strong class="tv-hero-capability__title">Compra online</strong>
-                      <p class="tv-hero-capability__text">Compra bolsas SMS desde el panel y activa saldo para tus envíos.</p>
-                    </div>
-                  </article>
-                  <article class="tv-hero-capability-item">
-                    <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">task_alt</span>
-                    <div class="tv-hero-capability__body">
-                      <strong class="tv-hero-capability__title">Control antes de enviar</strong>
-                      <p class="tv-hero-capability__text">Revisa consumo, destinatarios y confirmación antes de ejecutar.</p>
-                    </div>
-                  </article>
-                  <article class="tv-hero-capability-item">
-                    <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">bar_chart</span>
-                    <div class="tv-hero-capability__body">
-                      <strong class="tv-hero-capability__title">Estados de entrega</strong>
-                      <p class="tv-hero-capability__text">Consulta reportes y estados DLR para entender el resultado de tus mensajes.</p>
-                    </div>
-                  </article>
+          <div class="tv-hero-slider" id="hero-copy-slider" data-autoplay="7000">
+            <div class="tv-hero-slider-copy">
+              <article class="tv-hero-slide is-active" data-slide="0" aria-hidden="false">
+                <div class="tv-hero-eyebrow">
+                  <span class="tv-hero-pill-dot" aria-hidden="true"></span>
+                  <span>SMS masivos · Chile</span>
+                </div>
+                <h1 id="hero-title" class="tv-hero-title font-h1 text-h1 text-on-background">
+                  <span class="tv-hero-word tv-hero-word--ink">SMS masivos en Chile con </span><span class="tv-hero-word tv-hero-word--blue">gestión asistida para empresas</span>
+                </h1>
+                <p class="tv-hero-subtitle hero-intro">
+                  Envía campañas, notificaciones, validaciones y alertas empresariales con rutas SMS directas.
+                </p>
+              </article>
+
+              <article class="tv-hero-slide" data-slide="1" aria-hidden="true">
+                <div class="tv-hero-eyebrow">
+                  <span class="tv-hero-pill-dot" aria-hidden="true"></span>
+                  <span>Números móviles reales</span>
+                </div>
+                <h2 class="tv-hero-title tv-hero-slide-title font-h1 text-h1 text-on-background">
+                  <span class="tv-hero-word tv-hero-word--ink">Números SIM reales para cuentas digitales de </span><span class="tv-hero-word tv-hero-word--blue">empresa</span>
+                </h2>
+                <p class="tv-hero-subtitle hero-intro">
+                  Centraliza recepción SMS, registros, códigos y validaciones autorizadas con numeración móvil real
+                </p>
+              </article>
+
+              <article class="tv-hero-slide" data-slide="2" aria-hidden="true">
+                <div class="tv-hero-eyebrow">
+                  <span class="tv-hero-pill-dot" aria-hidden="true"></span>
+                  <span>Agentes con números reales</span>
+                </div>
+                <h2 class="tv-hero-title tv-hero-slide-title font-h1 text-h1 text-on-background">
+                  <span class="tv-hero-word tv-hero-word--ink">Dale Autonomía a tus Agentes de IA con un </span><span class="tv-hero-word tv-hero-word--blue">Número Móvil</span>
+                </h2>
+                <p class="tv-hero-subtitle hero-intro">
+                  Recibe SMS, códigos, alertas y eventos operativos en agentes autorizados, automatizaciones y equipos
+                </p>
+              </article>
+            </div>
+
+            <div class="tv-hero-cap-stack">
+              <div class="tv-hero-cap-slide is-active" data-slide="0" aria-hidden="false">
+                <div class="tv-hero-capabilities" aria-label="Beneficios SMS masivos">
+                  <div class="tv-hero-capabilities-grid">
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">campaign</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Campañas SMS</strong>
+                        <p class="tv-hero-capability__text">Prepara envíos desde un panel simple.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">shopping_cart</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Compra online</strong>
+                        <p class="tv-hero-capability__text">Elige volumen, paga online y activa saldo.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">support_agent</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Gestión asistida</strong>
+                        <p class="tv-hero-capability__text">Tu agente te ayuda a preparar campañas y revisar datos.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">bar_chart</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Reportes de entrega</strong>
+                        <p class="tv-hero-capability__text">Consulta estados, resultados y trazabilidad.</p>
+                      </div>
+                    </article>
+                  </div>
                 </div>
               </div>
-          </div>
-          <div class="hero-cta-row pt-stack-sm">
-            <a href="#calculadora" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_compra_bolsa">Comprar bolsa SMS</a>
+              <div class="tv-hero-cap-slide" data-slide="1" aria-hidden="true">
+                <div class="tv-hero-capabilities" aria-label="Beneficios números SIM reales">
+                  <div class="tv-hero-capabilities-grid">
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">sim_card</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">SIM real única</strong>
+                        <p class="tv-hero-capability__text">Usa numeración móvil real para cuentas propias.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">sms</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Recepción SMS</strong>
+                        <p class="tv-hero-capability__text">Centraliza mensajes, códigos y alertas en un solo canal.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">verified_user</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Validación autorizada</strong>
+                        <p class="tv-hero-capability__text">Opera registros, accesos y verificaciones.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">work</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Separación operativa</strong>
+                        <p class="tv-hero-capability__text">Evita depender del teléfono personal.</p>
+                      </div>
+                    </article>
+                  </div>
+                </div>
+              </div>
+              <div class="tv-hero-cap-slide" data-slide="2" aria-hidden="true">
+                <div class="tv-hero-capabilities" aria-label="Beneficios agentes y automatización">
+                  <div class="tv-hero-capabilities-grid">
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">shield</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Validaciones autorizadas</strong>
+                        <p class="tv-hero-capability__text">Recibe OTP y verificaciones en tus procesos.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">smart_toy</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Agentes conectados</strong>
+                        <p class="tv-hero-capability__text">Conecta bots, agentes y flujos automatizados.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">groups</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Operación por equipos</strong>
+                        <p class="tv-hero-capability__text">Permite operaciones sin depender de un móvil personal.</p>
+                      </div>
+                    </article>
+                    <article class="tv-hero-capability-item">
+                      <span class="tv-hero-capability__icon material-symbols-outlined" aria-hidden="true">hub</span>
+                      <div class="tv-hero-capability__body">
+                        <strong class="tv-hero-capability__title">Recepción centralizada</strong>
+                        <p class="tv-hero-capability__text">Gestiona mensajes, alertas y eventos críticos.</p>
+                      </div>
+                    </article>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="tv-hero-cta-stack">
+              <div class="tv-hero-cta-slide is-active" data-slide="0" aria-hidden="false">
+                <div class="hero-cta-row pt-stack-sm">
+                  <a href="#calculadora" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_comprar_sms_hero">Comprar SMS</a>
+                  <a href="#hero-phone-slot" class="hero-cta-secondary inline-flex items-center justify-center rounded-full font-body-md font-semibold shadow-sm transition" data-track="click_hablar_agente_hero">Hablar con el agente</a>
+                </div>
+              </div>
+              <div class="tv-hero-cta-slide" data-slide="1" aria-hidden="true">
+                <div class="hero-cta-row pt-stack-sm">
+                  <a href="/numeracion-sim.html" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_solicitar_numero_hero">Solicitar número real</a>
+                  <a href="#casos-uso" class="hero-cta-secondary inline-flex items-center justify-center rounded-full font-body-md font-semibold shadow-sm transition" data-track="click_ver_casos_uso_hero">Ver casos de uso</a>
+                </div>
+              </div>
+              <div class="tv-hero-cta-slide" data-slide="2" aria-hidden="true">
+                <div class="hero-cta-row pt-stack-sm">
+                  <a href="/numeracion-sim.html" class="hero-cta-primary inline-flex items-center justify-center rounded-full bg-primary font-body-md font-semibold text-on-primary shadow-md transition hover:bg-surface-tint" data-track="click_activar_agente_numero_hero">Activar Numero</a>
+                  <a href="#casos-uso" class="hero-cta-secondary inline-flex items-center justify-center rounded-full font-body-md font-semibold shadow-sm transition" data-track="click_ver_soluciones_empresariales_hero">Ver Soluciones</a>
+                </div>
+              </div>
+            </div>
+            <nav class="tv-hero-dots tv-hero-dots--below-cta" aria-label="Servicios destacados Telvoice">
+              <button type="button" class="tv-hero-dot is-active" data-slide-to="0" aria-label="Ver SMS masivos" aria-current="true"></button>
+              <button type="button" class="tv-hero-dot" data-slide-to="1" aria-label="Ver números SIM reales"></button>
+              <button type="button" class="tv-hero-dot" data-slide-to="2" aria-label="Ver agentes y automatización"></button>
+            </nav>
           </div>
           <div class="hero-tags-below hero-tags-mobile relative z-10 flex w-full flex-col items-center md:hidden">
             <ul class="hero-use-tags hero-tags-row" role="list" aria-label="Usos del servicio SMS">
@@ -3125,7 +3298,7 @@
           </div>
 
         </div>
-        <div class="hero-phone-slot hero-phone-slot--agent">
+        <div class="hero-phone-slot hero-phone-slot--agent" id="hero-phone-slot">
           <div class="hero-phone-float hero-phone-float--agent" aria-label="Agente comercial Telvoice en teléfono demo">
             <div class="hero-phone-notch" aria-hidden="true"></div>
             <div class="hero-phone-screen tv-light-theme">
@@ -3142,6 +3315,11 @@
           </div>
         </div>
       </div>
+      <nav class="tv-hero-dots tv-hero-dots--below-columns" id="hero-slider-dots" aria-label="Servicios destacados Telvoice">
+        <button type="button" class="tv-hero-dot is-active" data-slide-to="0" aria-label="Ver SMS masivos" aria-current="true"></button>
+        <button type="button" class="tv-hero-dot" data-slide-to="1" aria-label="Ver números SIM reales"></button>
+        <button type="button" class="tv-hero-dot" data-slide-to="2" aria-label="Ver agentes y automatización"></button>
+      </nav>
       <div class="hero-tags-below hero-tags-desktop relative z-10 hidden flex-col items-center md:flex">
         <ul class="hero-use-tags hero-tags-row flex w-full max-w-5xl flex-nowrap justify-center gap-2 overflow-x-auto py-1 sm:justify-center" role="list" aria-label="Usos del servicio SMS">
           <li class="shrink-0">
@@ -3187,29 +3365,29 @@
         <h2 id="como-funciona-titulo" class="mt-4 font-h2 text-h2 text-on-background leading-tight">Operación SMS con asistencia guiada</h2>
         <p class="section-intro mt-4 text-on-surface-variant leading-relaxed">Prepara tu campaña, valida tu base, revisa el consumo estimado y confirma antes de enviar. El agente te guía paso a paso para reducir errores y mantener control sobre cada envío.</p>
       </header>
-      <div class="como-funciona-grid grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-4 lg:gap-8">
-        <article class="ui-card ui-card-benefit flex h-full flex-col gap-4">
+      <div class="como-funciona-grid tv-scroll-reveal-stack grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-4 lg:gap-8">
+        <article class="ui-card ui-card-benefit tv-scroll-reveal-item flex h-full flex-col gap-4">
           <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <span class="material-symbols-outlined fill-icon text-3xl" aria-hidden="true">edit_note</span>
           </div>
           <h3 class="font-h3 text-h3 text-on-background">Define tu mensaje</h3>
           <p class="text-subtitle text-on-surface-variant leading-relaxed">Escribe tu mensaje, ya sea una promoción, alerta, recordatorio o notificación a tus clientes.</p>
         </article>
-        <article class="ui-card ui-card-benefit flex h-full flex-col gap-4">
+        <article class="ui-card ui-card-benefit tv-scroll-reveal-item flex h-full flex-col gap-4">
           <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <span class="material-symbols-outlined fill-icon text-3xl" aria-hidden="true">upload_file</span>
           </div>
           <h3 class="font-h3 text-h3 text-on-background">Prepara destinatarios</h3>
           <p class="text-subtitle text-on-surface-variant leading-relaxed">Carga un CSV o usa una plantilla guardada. El agente revisa formato, duplicados y números válidos.</p>
         </article>
-        <article class="ui-card ui-card-benefit flex h-full flex-col gap-4">
+        <article class="ui-card ui-card-benefit tv-scroll-reveal-item flex h-full flex-col gap-4">
           <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <span class="material-symbols-outlined fill-icon text-3xl" aria-hidden="true">account_balance_wallet</span>
           </div>
           <h3 class="font-h3 text-h3 text-on-background">Revisa consumo y saldo</h3>
           <p class="text-subtitle text-on-surface-variant leading-relaxed">Visualiza SMS estimados, segmentos, costo y saldo requerido antes de ejecutar.</p>
         </article>
-        <article class="ui-card ui-card-benefit flex h-full flex-col gap-4">
+        <article class="ui-card ui-card-benefit tv-scroll-reveal-item flex h-full flex-col gap-4">
           <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <span class="material-symbols-outlined fill-icon text-3xl" aria-hidden="true">verified</span>
           </div>
@@ -3220,16 +3398,194 @@
       </div>
     </section>
 
-    <!-- Por qué el canal SMS -->
-    <section id="canal-sms" class="section-bg-sky py-14 md:py-20" aria-labelledby="canal-sms-titulo">
-      <div class="section-inner mx-auto max-w-3xl text-center">
-        <div class="mx-auto mb-5 h-[3px] w-14 rounded-full bg-gradient-to-r from-[#5b21b6] via-primary to-secondary opacity-90" aria-hidden="true"></div>
-        <p id="canal-sms-titulo" class="font-label-caps text-label-caps uppercase tracking-[0.14em] text-primary">El canal SMS hoy</p>
-        <p class="section-intro mt-5 text-on-surface-variant leading-relaxed">
-          El SMS sigue siendo uno de los canales más directos para llegar al teléfono del cliente, sin depender de aplicaciones, datos móviles ni bandejas de correo saturadas.
-        </p>
-      </div>
-    </section>
+    <!-- Numeración Telvoice -->
+    <section class="tv-numeracion-section section-bg-sky py-14 md:py-20" id="numeracion" aria-labelledby="numeracion-titulo" tabindex="-1">
+            <div class="lab-section-inner lab-section-inner--numeracion">
+              <header class="lab-header-center">
+                <span class="lab-eyebrow">Numeración Telvoice</span>
+                <h2 id="numeracion-titulo" class="lab-section-title mt-4">Deja de depender de un celular físico para gestionar los SMS de tu empresa</h2>
+                <p class="lab-section-intro">
+                  Recibe SMS, códigos 2FA autorizados y respuestas de clientes. Centraliza la gestión en tu panel, Telegram o flujos conectados por API, sin que el número crítico de tu empresa dependa del teléfono personal de un gerente.
+                </p>
+              </header>
+              <div class="lab-num-grid mt-10">
+                <article class="lab-num-card lab-glass-card">
+                  <div class="lab-num-card__visual" aria-hidden="true">
+                    <svg class="lab-num-scene" viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+                      <defs>
+                        <linearGradient id="lab-num-g1" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stop-color="#0a1628"/>
+                          <stop offset="100%" stop-color="#0f2347"/>
+                        </linearGradient>
+                        <linearGradient id="lab-num-accent" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stop-color="#0052cc"/>
+                          <stop offset="100%" stop-color="#38bdf8"/>
+                        </linearGradient>
+                        <filter id="lab-num-glow" x="-20%" y="-20%" width="140%" height="140%">
+                          <feGaussianBlur stdDeviation="3" result="b"/>
+                          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                        </filter>
+                        <linearGradient id="simPlastic" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stop-color="#f8fafc"/>
+                          <stop offset="55%" stop-color="#e2e8f0"/>
+                          <stop offset="100%" stop-color="#cbd5e1"/>
+                        </linearGradient>
+                        <linearGradient id="simGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stop-color="#fef3c7"/>
+                          <stop offset="28%" stop-color="#eab308"/>
+                          <stop offset="62%" stop-color="#ca8a04"/>
+                          <stop offset="100%" stop-color="#fde68a"/>
+                        </linearGradient>
+                      </defs>
+                      <rect width="360" height="200" fill="url(#lab-num-g1)" rx="12"/>
+                      <ellipse cx="180" cy="112" rx="38" ry="6" fill="rgba(0,0,0,0.28)"/>
+                      <g transform="translate(180 96)">
+                        <path d="M-28 -20 H10 L28 -2 V20 H-28 Z" fill="url(#simPlastic)" stroke="rgba(148,163,184,0.55)" stroke-width="0.75"/>
+                        <path d="M-26 -18 H9 L26 -1 V18 H-26 Z" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="0.45"/>
+                        <path d="M-28 -20 H10 L28 -2 V20 H-28 Z" fill="none" stroke="rgba(56,189,248,0.22)" stroke-width="1.2" filter="url(#lab-num-glow)"/>
+                        <g transform="translate(0 2)">
+                          <rect x="-18" y="-2" width="22" height="14" rx="1.5" fill="url(#simGold)" stroke="#92400e" stroke-width="0.35"/>
+                          <rect x="-14" y="2" width="14" height="6" rx="0.8" fill="#fcd34d" opacity="0.45"/>
+                          <rect x="6" y="-2" width="10" height="9" rx="1" fill="url(#simGold)" stroke="#92400e" stroke-width="0.35"/>
+                          <rect x="6" y="9" width="10" height="7" rx="1" fill="url(#simGold)" stroke="#92400e" stroke-width="0.35"/>
+                          <rect x="-8" y="9" width="12" height="7" rx="1" fill="url(#simGold)" stroke="#92400e" stroke-width="0.35"/>
+                          <rect x="-18" y="9" width="8" height="7" rx="1" fill="url(#simGold)" stroke="#92400e" stroke-width="0.35"/>
+                          <line x1="-18" y1="5" x2="16" y2="5" stroke="rgba(180,83,9,0.25)" stroke-width="0.5"/>
+                        </g>
+                      </g>
+                      <path d="M72 88 L152 92" stroke="rgba(56,189,248,0.35)" stroke-width="1.5" stroke-dasharray="4 3"/>
+                      <path d="M208 92 L288 88" stroke="rgba(56,189,248,0.35)" stroke-width="1.5" stroke-dasharray="4 3"/>
+                      <path d="M180 74 L180 36" stroke="rgba(56,189,248,0.35)" stroke-width="1.5" stroke-dasharray="4 3"/>
+                      <rect x="36" y="64" width="72" height="48" rx="8" fill="rgba(14,22,48,0.9)" stroke="rgba(120,160,255,0.25)"/>
+                      <rect x="44" y="72" width="40" height="4" rx="2" fill="rgba(56,189,248,0.7)"/>
+                      <rect x="44" y="80" width="56" height="3" rx="1.5" fill="rgba(148,163,184,0.35)"/>
+                      <rect x="44" y="87" width="48" height="3" rx="1.5" fill="rgba(148,163,184,0.25)"/>
+                      <text x="72" y="118" text-anchor="middle" fill="#94a3b8" font-family="Inter,sans-serif" font-size="8" font-weight="600">Panel</text>
+                      <circle cx="180" cy="22" r="15" fill="#229ED9" stroke="rgba(125,211,252,0.45)" stroke-width="1"/>
+                      <path fill="#fff" d="M173.5 22.2 L185.8 17.1 C186.4 16.8 186.9 17.2 186.7 17.9 L184.9 26.4 C184.7 27.2 184.1 27.4 183.4 27 L179.8 24.5 L177.4 27.4 C177.1 27.7 176.8 27.8 176.5 27.6 L176.7 24.1 L182.1 19.4 C182.4 19.1 182 18.9 181.6 19.2 L175.8 23.2 L172.4 22.2 C171.7 22 171.7 21.5 172.5 21.2 L173.5 22.2 Z"/>
+                      <text x="180" y="48" text-anchor="middle" fill="#94a3b8" font-family="Inter,sans-serif" font-size="8" font-weight="600">Telegram</text>
+                      <rect x="252" y="64" width="72" height="48" rx="8" fill="rgba(14,22,48,0.9)" stroke="rgba(120,160,255,0.25)"/>
+                      <text x="268" y="84" fill="#38bdf8" font-family="monospace" font-size="9">&lt;/&gt;</text>
+                      <rect x="268" y="90" width="44" height="3" rx="1.5" fill="rgba(148,163,184,0.35)"/>
+                      <rect x="268" y="97" width="36" height="3" rx="1.5" fill="rgba(148,163,184,0.25)"/>
+                      <text x="288" y="118" text-anchor="middle" fill="#94a3b8" font-family="Inter,sans-serif" font-size="8" font-weight="600">API</text>
+                      <rect x="118" y="148" width="124" height="36" rx="8" fill="rgba(8,14,36,0.6)" stroke="rgba(148,163,184,0.15)" stroke-dasharray="3 3"/>
+                      <line x1="132" y1="166" x2="228" y2="166" stroke="rgba(248,113,113,0.5)" stroke-width="1.5"/>
+                      <text x="180" y="162" text-anchor="middle" fill="rgba(148,163,184,0.55)" font-family="Inter,sans-serif" font-size="7">Sin teléfono físico</text>
+                    </svg>
+                  </div>
+                  <div class="lab-num-card__body">
+                    <h3 class="lab-num-card__title">Número real, gestión digital</h3>
+                    <p class="lab-num-card__text">Tu línea puede estar disponible desde el panel, Telegram o integraciones, sin tener que manipular un teléfono físico cada vez que llega un SMS.</p>
+                  </div>
+                </article>
+                <article class="lab-num-card lab-glass-card">
+                  <div class="lab-num-card__visual" aria-hidden="true">
+                    <svg class="lab-num-scene" viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+                      <defs>
+                        <marker id="lab-num-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                          <path d="M0,0 L6,3 L0,6 Z" fill="#38bdf8"/>
+                        </marker>
+                      </defs>
+                      <rect width="360" height="200" fill="url(#lab-num-g1)" rx="12"/>
+                      <rect x="108" y="28" width="144" height="144" rx="18" fill="rgba(8,14,36,0.75)" stroke="rgba(120,160,255,0.22)" stroke-width="1.5"/>
+                      <rect x="124" y="48" width="112" height="32" rx="8" fill="rgba(0,82,204,0.22)" stroke="rgba(56,189,248,0.3)"/>
+                      <circle cx="140" cy="64" r="8" fill="rgba(34,197,94,0.25)" stroke="rgba(34,197,94,0.5)"/>
+                      <path d="M136 64 L139 67 L145 61" stroke="#86efac" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                      <text x="156" y="60" fill="#e2e8f0" font-family="Inter,sans-serif" font-size="8" font-weight="600">2FA autorizado</text>
+                      <text x="156" y="72" fill="#38bdf8" font-family="monospace" font-size="11" font-weight="700">482 901</text>
+                      <rect x="124" y="88" width="112" height="28" rx="8" fill="rgba(14,22,48,0.85)" stroke="rgba(120,160,255,0.15)"/>
+                      <text x="136" y="106" fill="#94a3b8" font-family="Inter,sans-serif" font-size="8">SMS entrante</text>
+                      <text x="220" y="106" text-anchor="end" fill="#64748b" font-family="Inter,sans-serif" font-size="7">09:41</text>
+                      <rect x="124" y="122" width="112" height="28" rx="8" fill="rgba(14,22,48,0.85)" stroke="rgba(120,160,255,0.15)"/>
+                      <text x="136" y="140" fill="#94a3b8" font-family="Inter,sans-serif" font-size="8">Respuesta cliente</text>
+                      <circle cx="228" cy="136" r="5" fill="#38bdf8" filter="url(#lab-num-glow)"/>
+                      <rect x="28" y="72" width="56" height="56" rx="28" fill="rgba(0,82,204,0.15)" stroke="rgba(56,189,248,0.25)"/>
+                      <text x="56" y="104" text-anchor="middle" fill="#38bdf8" font-family="Inter,sans-serif" font-size="9" font-weight="700">SMS</text>
+                      <path d="M84 100 L108 88" stroke="rgba(56,189,248,0.4)" stroke-width="1.5" marker-end="url(#lab-num-arrow)"/>
+                    </svg>
+                  </div>
+                  <div class="lab-num-card__body">
+                    <h3 class="lab-num-card__title">SMS y 2FA autorizados</h3>
+                    <p class="lab-num-card__text">Recibe códigos, verificaciones y mensajes de servicios compatibles usando una numeración real controlada por tu empresa.</p>
+                  </div>
+                </article>
+                <article class="lab-num-card lab-glass-card">
+                  <div class="lab-num-card__visual" aria-hidden="true">
+                    <svg class="lab-num-scene" viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+                      <rect width="360" height="200" fill="url(#lab-num-g1)" rx="12"/>
+                      <rect x="118" y="56" width="124" height="88" rx="12" fill="rgba(0,82,204,0.2)" stroke="rgba(56,189,248,0.35)" stroke-width="1.5" filter="url(#lab-num-glow)"/>
+                      <rect x="134" y="72" width="92" height="8" rx="4" fill="rgba(56,189,248,0.55)"/>
+                      <rect x="134" y="86" width="72" height="4" rx="2" fill="rgba(148,163,184,0.3)"/>
+                      <rect x="134" y="94" width="80" height="4" rx="2" fill="rgba(148,163,184,0.22)"/>
+                      <rect x="134" y="102" width="64" height="4" rx="2" fill="rgba(148,163,184,0.18)"/>
+                      <text x="180" y="128" text-anchor="middle" fill="#94a3b8" font-family="Inter,sans-serif" font-size="8" font-weight="600">Buzón empresarial</text>
+                      <circle cx="56" cy="72" r="22" fill="rgba(14,22,48,0.9)" stroke="rgba(120,160,255,0.3)"/>
+                      <circle cx="56" cy="66" r="8" fill="rgba(56,189,248,0.35)"/>
+                      <path d="M44 88 Q56 78 68 88" stroke="rgba(148,163,184,0.4)" fill="none"/>
+                      <text x="56" y="104" text-anchor="middle" fill="#64748b" font-family="Inter,sans-serif" font-size="7">Gerencia</text>
+                      <path d="M78 80 L118 76" stroke="rgba(56,189,248,0.3)" stroke-width="1.2" stroke-dasharray="3 2"/>
+                      <circle cx="304" cy="72" r="22" fill="rgba(14,22,48,0.9)" stroke="rgba(120,160,255,0.3)"/>
+                      <circle cx="304" cy="66" r="8" fill="rgba(129,140,248,0.4)"/>
+                      <path d="M292 88 Q304 78 316 88" stroke="rgba(148,163,184,0.4)" fill="none"/>
+                      <text x="304" y="104" text-anchor="middle" fill="#64748b" font-family="Inter,sans-serif" font-size="7">Ventas</text>
+                      <path d="M282 80 L242 76" stroke="rgba(56,189,248,0.3)" stroke-width="1.2" stroke-dasharray="3 2"/>
+                      <circle cx="56" cy="148" r="18" fill="rgba(14,22,48,0.9)" stroke="rgba(120,160,255,0.25)"/>
+                      <circle cx="56" cy="143" r="6" fill="rgba(34,211,238,0.4)"/>
+                      <text x="56" y="174" text-anchor="middle" fill="#64748b" font-family="Inter,sans-serif" font-size="7">Soporte</text>
+                      <path d="M74 140 L118 128" stroke="rgba(56,189,248,0.25)" stroke-width="1.2" stroke-dasharray="3 2"/>
+                      <circle cx="304" cy="148" r="18" fill="rgba(14,22,48,0.9)" stroke="rgba(120,160,255,0.25)"/>
+                      <circle cx="304" cy="143" r="6" fill="rgba(59,130,246,0.45)"/>
+                      <text x="304" y="174" text-anchor="middle" fill="#64748b" font-family="Inter,sans-serif" font-size="7">Ops</text>
+                      <path d="M286 140 L242 128" stroke="rgba(56,189,248,0.25)" stroke-width="1.2" stroke-dasharray="3 2"/>
+                    </svg>
+                  </div>
+                  <div class="lab-num-card__body">
+                    <h3 class="lab-num-card__title">Acceso para tu equipo</h3>
+                    <p class="lab-num-card__text">Gerencia, soporte, ventas u operaciones pueden consultar mensajes sin depender de una sola persona o de un equipo físico guardado en la oficina.</p>
+                  </div>
+                </article>
+                <article class="lab-num-card lab-glass-card lab-glass-card--glow">
+                  <div class="lab-num-card__visual" aria-hidden="true">
+                    <svg class="lab-num-scene" viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+                      <rect width="360" height="200" fill="url(#lab-num-g1)" rx="12"/>
+                      <rect x="88" y="32" width="184" height="136" rx="12" fill="rgba(8,14,36,0.82)" stroke="rgba(120,160,255,0.2)"/>
+                      <rect x="104" y="48" width="72" height="6" rx="3" fill="rgba(56,189,248,0.55)"/>
+                      <text x="104" y="68" fill="#64748b" font-family="Inter,sans-serif" font-size="7">Historial de mensajes</text>
+                      <line x1="112" y1="88" x2="112" y2="152" stroke="rgba(56,189,248,0.25)" stroke-width="2"/>
+                      <circle cx="112" cy="88" r="4" fill="#38bdf8" filter="url(#lab-num-glow)"/>
+                      <rect x="124" y="80" width="132" height="18" rx="6" fill="rgba(14,22,48,0.95)" stroke="rgba(120,160,255,0.12)"/>
+                      <text x="132" y="92" fill="#e2e8f0" font-family="Inter,sans-serif" font-size="7">SMS recibido · +56 9…</text>
+                      <text x="248" y="92" fill="#64748b" font-family="Inter,sans-serif" font-size="6">Hoy 10:24</text>
+                      <circle cx="112" cy="112" r="4" fill="rgba(56,189,248,0.6)"/>
+                      <rect x="124" y="104" width="132" height="18" rx="6" fill="rgba(14,22,48,0.95)" stroke="rgba(120,160,255,0.12)"/>
+                      <text x="132" y="116" fill="#cbd5e1" font-family="Inter,sans-serif" font-size="7">2FA · código verificado</text>
+                      <text x="248" y="116" fill="#64748b" font-family="Inter,sans-serif" font-size="6">Ayer 18:02</text>
+                      <circle cx="112" cy="136" r="4" fill="rgba(56,189,248,0.45)"/>
+                      <rect x="124" y="128" width="132" height="18" rx="6" fill="rgba(14,22,48,0.95)" stroke="rgba(120,160,255,0.12)"/>
+                      <text x="132" y="140" fill="#cbd5e1" font-family="Inter,sans-serif" font-size="7">Respuesta cliente · entregado</text>
+                      <text x="248" y="140" fill="#64748b" font-family="Inter,sans-serif" font-size="6">12 mar</text>
+                      <rect x="280" y="48" width="48" height="20" rx="6" fill="rgba(34,197,94,0.12)" stroke="rgba(34,197,94,0.3)"/>
+                      <text x="304" y="61" text-anchor="middle" fill="#86efac" font-family="Inter,sans-serif" font-size="7" font-weight="600">Audit</text>
+                    </svg>
+                  </div>
+                  <div class="lab-num-card__body">
+                    <h3 class="lab-num-card__title">Historial y trazabilidad</h3>
+                    <p class="lab-num-card__text">Mantén registro de mensajes recibidos, fechas, números y eventos importantes para controlar comunicaciones sensibles.</p>
+                  </div>
+                </article>
+              </div>
+              <div class="lab-num-band lab-num-band--compact mt-10">
+                <p class="text-on-surface-variant leading-relaxed text-center max-w-2xl mx-auto">
+                  ¿Necesitas números reales para agentes, OTP autorizado o webhooks? Revisa la sección
+                  <a href="/numeracion-sim.html" class="text-lab-cyan hover:underline font-medium">planes SIM reales</a>.
+                </p>
+              </div>
+              <div class="lab-num-cta mt-6 flex justify-center">
+                <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_solicitar_numero_numeracion">Solicitar número Telvoice</a>
+              </div>
+            </div>
+          </section>
 
     <!-- Casos de Uso -->
     <section id="casos-uso" class="section-block section-bg-white" aria-labelledby="casos-titulo" tabindex="-1">
@@ -3239,7 +3595,9 @@
         <h2 id="casos-titulo" class="mt-4 font-h2 text-h2 text-on-background leading-tight">Cómo el SMS ayuda a tu empresa a comunicar con más seguridad y control</h2>
         <p class="section-intro mt-4 text-on-surface-variant leading-relaxed">Utiliza SMS para confirmar acciones, enviar alertas, validar usuarios, recordar citas y mantener informados a tus clientes con una comunicación directa, confiable y oportuna.</p>
       </header>
-      <div class="casos-grid mx-auto mt-10 grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
+      <div class="casos-carousel mt-10" id="casos-carousel">
+        <div class="casos-carousel-viewport">
+          <div class="casos-carousel-track casos-grid">
         <article id="caso-promociones" class="caso-card scroll-mt-[4.75rem]" tabindex="-1">
           <figure class="caso-visual">
             <img src="assets/casos-uso/casos-uso-retail.png" alt="Retail: promociones y seguimiento de compra por SMS" width="640" height="480" loading="lazy" decoding="async" />
@@ -3300,6 +3658,9 @@
             <p class="caso-desc">Notifica movimientos, pagos, validaciones y eventos importantes de forma directa.</p>
           </div>
         </article>
+          </div>
+        </div>
+        <nav class="casos-carousel-dots" aria-label="Paginación casos de uso"></nav>
       </div>
       </div>
     </section>
@@ -3359,24 +3720,24 @@
       <header class="section-header mx-auto max-w-3xl">
         <span class="section-eyebrow">Cómo empezar</span>
         <h2 id="camino-comercial-titulo" class="mt-3 font-h2 text-h2 text-on-background">Escoge cómo quieres trabajar</h2>
-        <p class="section-intro mt-4 text-on-surface-variant leading-relaxed">Puedes comprar una bolsa directamente, cotizar alto volumen o solicitar integración API según la necesidad de tu empresa. Si ya tienes cuenta, consulta el <a href="ayuda/" class="font-semibold text-primary hover:underline">centro de ayuda</a> del portal.</p>
+        <p class="section-intro mt-4 text-on-surface-variant leading-relaxed">Puedes comprar una bolsa SMS, contratar una <a href="/numeracion-sim.html" class="font-semibold text-primary hover:underline">numeración SIM real</a> (con agente Telvoice incluido), cotizar alto volumen o solicitar integración API según la necesidad de tu empresa. Si ya tienes cuenta, consulta el <a href="ayuda/" class="font-semibold text-primary hover:underline">centro de ayuda</a> del portal.</p>
       </header>
-      <div class="comercial-grid mx-auto mt-10 grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
-        <article class="comercial-card ui-card flex flex-col rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-6">
+      <div class="comercial-grid tv-scroll-reveal-stack mx-auto mt-10 grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
+        <article class="comercial-card ui-card tv-scroll-reveal-item flex flex-col rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-6">
           <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary" aria-hidden="true">
             <span class="material-symbols-outlined text-[1.5rem]">shopping_bag</span>
           </div>
           <h3 class="font-h3 text-h3 text-on-background">Comprar una bolsa SMS</h3>
           <p class="mt-3 text-subtitle text-on-surface-variant leading-relaxed">Para empresas que necesitan comenzar rápido con una cantidad definida de mensajes y pago online.</p>
         </article>
-        <article class="comercial-card ui-card flex flex-col rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-6">
+        <article class="comercial-card ui-card tv-scroll-reveal-item flex flex-col rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-6">
           <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary" aria-hidden="true">
             <span class="material-symbols-outlined text-[1.5rem]">trending_up</span>
           </div>
           <h3 class="font-h3 text-h3 text-on-background">Cotizar alto volumen</h3>
           <p class="mt-3 text-subtitle text-on-surface-variant leading-relaxed">Para empresas con más de 100.000 SMS, campañas recurrentes o necesidades comerciales especiales.</p>
         </article>
-        <article class="comercial-card ui-card flex flex-col rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-6">
+        <article class="comercial-card ui-card tv-scroll-reveal-item flex flex-col rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-6">
           <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary" aria-hidden="true">
             <span class="material-symbols-outlined text-[1.5rem]">api</span>
           </div>
@@ -3721,6 +4082,7 @@
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#inicio">SMS masivos Chile</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#precios">Precios</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#calculadora">Bolsas SMS</a></li>
+              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="/numeracion-sim.html">Numeración SIM</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#api">API SMS</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#contacto">Contacto</a></li>
             </ul>
@@ -3729,6 +4091,7 @@
             <p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Recursos</p>
             <ul class="mt-4 space-y-3">
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#precios">Precios y bolsas SMS</a></li>
+              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="/numeracion-sim.html">Numeración SIM</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#casos-uso">Casos de uso</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="ayuda/">Centro de ayuda</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="https://agent.telvoice.cl/app/dashboard" target="_blank" rel="noopener noreferrer">Portal cliente</a></li>
@@ -3798,7 +4161,12 @@
   </div>
 
   <script src="js/telvoice-config.js"></script>
+  <script src="js/telvoice-scroll-reveal.js?v=20260619"></script>
+  <script src="js/telvoice-floating-agent-toggle.js?v=20260619"></script>
   <script src="js/telvoice-app.js"></script>
+  <script src="js/telvoice-touch-swipe.js?v=20260616"></script>
+  <script src="js/telvoice-casos-carousel.js?v=20260616"></script>
+  <script src="js/telvoice-hero-slider.js?v=20260616"></script>
   <script src="js/telvoice-web-agent-loader.js" data-root="" data-embed-target="#hero-agent-embed"></script>
 </body>
 </html>

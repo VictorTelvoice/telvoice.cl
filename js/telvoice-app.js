@@ -143,14 +143,22 @@
     if (trackId) trackEvent(trackId);
   }
 
-  function bindNavSalesAgentButtons() {
-    ["nav-demo", "nav-demo-mobile"].forEach(function (sel) {
-      var btn = qs(sel);
-      if (!btn) return;
-      btn.addEventListener("click", function (e) {
+  function bindNavComprarSmsButtons() {
+    ["nav-comprar-sms", "nav-comprar-sms-mobile"].forEach(function (sel) {
+      var link = qs(sel);
+      if (!link) {
+        return;
+      }
+      link.addEventListener("click", function (e) {
         e.preventDefault();
         closeMobileMenu();
-        openSalesAgent("click_agente_ventas");
+        var el = qs("calculadora");
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          window.location.hash = "calculadora";
+        }
+        trackEvent("click_comprar_sms_nav");
       });
     });
   }
@@ -949,7 +957,7 @@
     });
   }
   bindDemoButtons();
-  bindNavSalesAgentButtons();
+  bindNavComprarSmsButtons();
 
   var calcQuoteLink = qs("calc-quote-link");
   if (calcQuoteLink) {

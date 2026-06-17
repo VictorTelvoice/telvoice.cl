@@ -1,0 +1,80 @@
+/* Casos de uso — carrusel responsive (3 en desktop, 1 en móvil) */
+
+#casos-uso .casos-carousel {
+  position: relative;
+  width: 100%;
+  max-width: 64rem;
+  margin-inline: auto;
+}
+
+#casos-uso .casos-carousel-viewport {
+  overflow: hidden;
+  width: 100%;
+  touch-action: pan-y;
+}
+
+#casos-uso .casos-carousel-track {
+  display: flex;
+  gap: 1.5rem;
+  width: 100%;
+  will-change: transform;
+  transition: transform 0.48s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+#casos-uso .casos-carousel-track .caso-card {
+  flex: 0 0 100%;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  #casos-uso .casos-carousel-track {
+    gap: 2rem;
+  }
+
+  #casos-uso .casos-carousel-track .caso-card {
+    flex-basis: calc((100% - 4rem) / 3);
+  }
+}
+
+#casos-uso .casos-carousel-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  margin-top: 1.35rem;
+  padding: 0;
+  list-style: none;
+}
+
+#casos-uso .casos-carousel-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(0, 82, 204, 0.22);
+  cursor: pointer;
+  transition:
+    width 0.28s ease,
+    background 0.28s ease,
+    box-shadow 0.28s ease;
+}
+
+#casos-uso .casos-carousel-dot.is-active {
+  width: 1.35rem;
+  background: linear-gradient(90deg, #0052cc, #0ea5e9);
+  box-shadow: 0 0 10px rgba(0, 82, 204, 0.24);
+}
+
+#casos-uso .casos-carousel-dot:focus-visible {
+  outline: 2px solid #0052cc;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #casos-uso .casos-carousel-track {
+    transition: none;
+  }
+}

@@ -41,6 +41,11 @@
   display: none;
 }
 
+/* floating-clean.webp ya trae la antena; el overlay CSS duplica el punto verde */
+#telvoice-web-agent.tva-root--lab .telvoice-agent-avatar--launcher .telvoice-agent-antenna-glow {
+  display: none !important;
+}
+
 #telvoice-web-agent.tva-root--lab .tva-msg--user {
   align-self: flex-end;
   max-width: 92%;
