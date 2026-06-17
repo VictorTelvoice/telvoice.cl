@@ -1,5 +1,3 @@
-import { isClientPanelAgentLineEnabled } from "../../config/env.js";
-
 export type AppNavItem = {
   id: string;
   label: string;
@@ -24,14 +22,9 @@ export const APP_NAV_PRIMARY: AppNavItem[] = [
   { id: "campaigns", label: "Campañas", href: "/app/campaigns", icon: "campaign" },
 ];
 
-/** Agente Telvoice y planes — solo con CLIENT_PANEL_AGENT_LINE_ENABLED. */
-const APP_NAV_AGENT_LINE_ITEMS: AppNavItem[] = [
-  { id: "agente", label: "Agente Telvoice", href: "/app/agente", icon: "smart_toy" },
-  { id: "agent-plans", label: "Planes de numeración SIM", href: "/app/planes-agente", icon: "workspace_premium" },
-];
-
+/** Reservado: ítems de línea agente no se muestran en menú cliente. */
 export function getAppNavAgentLine(): AppNavItem[] {
-  return isClientPanelAgentLineEnabled() ? APP_NAV_AGENT_LINE_ITEMS : [];
+  return [];
 }
 
 export const APP_ORDERS_NAV: AppNavItem = {

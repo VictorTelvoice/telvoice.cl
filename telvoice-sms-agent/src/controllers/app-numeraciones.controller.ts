@@ -15,6 +15,7 @@ import {
   getInboundSmsById,
   listInboundSmsByCompany,
   markInboundSmsReadForClientNumber,
+  countUnreadInboundByClientNumber,
   updateInboundSmsStatus,
 } from "../services/inboundSmsService.js";
 import { getSupabase } from "../database/supabaseClient.js";
@@ -117,12 +118,14 @@ export async function getAppSmsInbox(
     if (filters.numberId) {
       await markInboundSmsReadForClientNumber(ctx.company.id, filters.numberId);
     }
+    const unreadByNumber = await countUnreadInboundByClientNumber(ctx.company.id);
 
     return renderAppSmsInboxPage(ctx, {
       numbers,
       messages,
       filters,
       selectedMessage,
+      unreadByNumber,
     });
   });
 }
