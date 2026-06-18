@@ -7,6 +7,10 @@ import {
   getCachedPublicSimAvailability,
 } from "../services/publicCatalogCacheService.js";
 import { ValidationError } from "../utils/errors.js";
+import {
+  assertAllowedPublicSmsCheckoutQuantity,
+  PUBLIC_SMS_QUANTITY_ERROR,
+} from "../utils/publicSmsCheckoutQuantity.js";
 import { createHash } from "node:crypto";
 import { getSupabase } from "../database/supabaseClient.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
@@ -472,12 +476,13 @@ export async function postPublicCheckout(
     const smsQuantity = hasSmsQuantity ? Number(smsQtyRaw) : NaN;
 
     if (hasSmsQuantity) {
-      if (!Number.isFinite(smsQuantity) || smsQuantity < 1000) {
-        throw new ValidationError("La compra mínima online es 1.000 SMS.");
+      if (!Number.isFinite(smsQuantity)) {
+        throw new ValidationError(PUBLIC_SMS_QUANTITY_ERROR);
       }
+      const validatedQuantity = assertAllowedPublicSmsCheckoutQuantity(smsQuantity);
 
       const result = await startPublicLandingCheckoutBySmsQuantity({
-        smsQuantity: Math.round(smsQuantity),
+        smsQuantity: validatedQuantity,
         checkoutEmail,
         payerEmail,
         payerName,

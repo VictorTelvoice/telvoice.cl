@@ -698,7 +698,7 @@
         endpoint: agentCheckoutEndpoint,
       };
 
-      if (!compraState.sms || compraState.sms < 1000) {
+      if (!compraState.sms || (compraState.sms !== 200 && compraState.sms < 1000)) {
         logCheckoutDebug(debugCtx, new Error("invalid_sms_quantity"));
         throw new Error("Cantidad de SMS no válida para compra online.");
       }
