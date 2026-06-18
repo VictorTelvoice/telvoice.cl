@@ -415,6 +415,7 @@ body.nsim-modal-open { overflow: hidden; }
 .nsim-number-option__number { font-weight: 800; font-size: 0.9375rem; color: var(--nsim-text); }
 .nsim-number-option__note { display: block; font-size: 0.75rem; color: var(--nsim-muted); margin-top: 0.15rem; }
 .nsim-number-show-more { margin-top: 0.55rem; padding: 0; border: none; background: none; color: var(--nsim-primary); font-size: 0.8125rem; font-weight: 700; cursor: pointer; text-decoration: underline; }
+.nsim-number-limit-hint { margin: 0.55rem 0 0; font-size: 0.8125rem; color: var(--nsim-muted, #64748b); line-height: 1.45; }
 .nsim-submit { width: 100%; margin-top: 1rem; }
 .nsim-submit[disabled] { opacity: 0.65; cursor: not-allowed; }
 

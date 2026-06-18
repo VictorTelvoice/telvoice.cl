@@ -34,6 +34,8 @@ import {
   ensureSimInventoryHeldForPendingOrder,
   listPublicAvailableNumbers,
   maskE164ChileMobile,
+  PUBLIC_SIM_NUMBER_LIST_LIMIT,
+  releaseExpiredSimCheckoutHoldsBestEffort,
   releaseReservationForOrder,
   reserveAvailableNumberForCheckout,
   resolvePublicInventoryId,
@@ -167,12 +169,8 @@ export async function getPublicPendingSimCheckoutForEmail(
   };
 }
 
-export async function listPublicSimAvailableNumbers(limit = 10) {
-  const numbers = await listPublicAvailableNumbers(limit);
-  return {
-    available: numbers.length,
-    numbers,
-  };
+export async function listPublicSimAvailableNumbers() {
+  return listPublicAvailableNumbers(PUBLIC_SIM_NUMBER_LIST_LIMIT);
 }
 
 export async function startPublicLandingCheckout(input: {
@@ -310,6 +308,8 @@ export async function startPublicSimCheckout(input: {
   if (!isSimPlanId(input.planId)) {
     throw new AppError("plan_id SIM no válido.", 400, "INVALID_SIM_PLAN");
   }
+
+  await releaseExpiredSimCheckoutHoldsBestEffort();
 
   const plan = getSimPlan(input.planId);
   if (!plan) {

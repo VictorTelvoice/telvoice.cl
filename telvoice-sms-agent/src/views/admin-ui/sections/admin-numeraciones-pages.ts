@@ -277,7 +277,16 @@ function renderPublicStockSummary(summary: PublicStockSummary): string {
   const cards = [
     ["Stock público vendible", summary.publicSellable, "public_sellable"],
     ["Pendientes conexión", summary.pendingConnection, "pending_connection"],
-    ["Retenidos por checkout", summary.heldByCheckout, "held_by_checkout"],
+    [
+      "Retenidos por checkout vigente",
+      summary.heldByCheckoutActive,
+      "held_by_checkout",
+    ],
+    [
+      "Reservas expiradas",
+      summary.heldByCheckoutExpired,
+      "held_by_checkout",
+    ],
     [
       "Vendidos pendiente activación",
       summary.soldPendingActivation,
@@ -412,11 +421,18 @@ function renderInventoryTable(
 
       const heldDetail = e.heldOrder
         ? `<div class="tv-inv-held-detail">
-            <span class="badge badge-warn">Retenido por checkout pendiente</span>
+            <span class="badge ${e.heldOrder.reservationExpired ? "badge-muted" : "badge-warn"}">${e.heldOrder.reservationExpired ? "Expirada" : "Retenido por checkout pendiente"}</span>
             <div><a href="/admin/orders/${escapeHtml(e.heldOrder.orderId)}"><code>${escapeHtml(e.heldOrder.orderCode)}</code></a></div>
             ${e.heldOrder.email ? `<div><small>${escapeHtml(e.heldOrder.email)}</small></div>` : ""}
             ${e.heldOrder.planId ? `<div><small>Plan: ${escapeHtml(e.heldOrder.planId)}</small></div>` : ""}
             <div><small>Hace ${escapeHtml(e.heldOrder.ageHours.toFixed(1))} h</small></div>
+            ${
+              e.heldOrder.reservationExpired
+                ? `<div><span class="badge badge-muted">Expirada</span></div>`
+                : e.heldOrder.remainingMinutes != null
+                  ? `<div><span class="badge badge-warn">Expira en ${escapeHtml(String(e.heldOrder.remainingMinutes))} min</span></div>`
+                  : ""
+            }
           </div>`
         : "";
 
@@ -546,8 +562,8 @@ function renderInventorySection(ctx: AdminNumeracionesPageContext): string {
     ${ctx.publicStockSummary ? renderPublicStockSummary(ctx.publicStockSummary) : ""}
     ${renderInventoryFilterTabs(ctx.inventoryFilter)}
     ${ctx.inventorySummary ? renderInventoryLegacySummary(ctx.inventorySummary) : ""}
-    <form method="post" action="/admin/numeraciones/inventory/release-expired" style="margin:0.75rem 0">
-      <button type="submit" class="btn btn-ghost btn-sm">Liberar reservas DB expiradas (batch)</button>
+    <form method="post" action="/admin/numeraciones/inventory/release-expired" style="margin:0.75rem 0" onsubmit="return confirm('¿Liberar todas las reservas expiradas (&gt;30 min)? No cancela órdenes ni pagos en MercadoPago.');">
+      <button type="submit" class="btn btn-ghost btn-sm">Liberar expiradas</button>
     </form>
     ${renderPanel("Agregar número al inventario", renderInventoryAddForm())}
     ${renderInventoryTable(filteredRows, ctx.companies, ctx.simActivations, ctx.inventoryFilter)}`;

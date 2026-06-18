@@ -60,16 +60,12 @@ export async function getPublicSimAvailability(
 }
 
 export async function getPublicSimAvailableNumbers(
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
   try {
-    const limitRaw = Number(req.query.limit ?? 10);
-    const limit = Number.isFinite(limitRaw)
-      ? Math.max(1, Math.min(50, Math.round(limitRaw)))
-      : 10;
-    const result = await listPublicSimAvailableNumbers(limit);
+    const result = await listPublicSimAvailableNumbers();
     res.json({ success: true, ...result });
   } catch (error) {
     next(error);

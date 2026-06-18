@@ -37,6 +37,7 @@ import {
 import { getSimPlan, getBundledAgentAddonForSimPlan } from "../utils/simPlans.js";
 import { getAgentAddon } from "../utils/agentAddons.js";
 import {
+  canOrderClaimInventoryOnPayment,
   markNumberPaymentApproved,
   releaseReservationForOrder,
 } from "./realNumberInventoryService.js";
@@ -338,7 +339,7 @@ export async function processPublicCheckoutMercadoPagoWebhook(
       return { handled: true, orderId, result: "sim_already_pending_activation" };
     }
 
-    const simMetaPatch = {
+    const simMetaPatch: Record<string, unknown> = {
       ...metaPatch,
       activation_status: "paid_pending_activation",
     };
@@ -360,6 +361,22 @@ export async function processPublicCheckoutMercadoPagoWebhook(
         refreshed?.metadata?.inventory_number_id != null
           ? String(refreshed.metadata.inventory_number_id)
           : null;
+
+      let inventoryClaimable = false;
+      let inventoryClaimBlockedReason: string | undefined;
+      if (inventoryNumberId) {
+        const claim = await canOrderClaimInventoryOnPayment({
+          orderId,
+          inventoryNumberId,
+        });
+        inventoryClaimable = claim.claimable;
+        inventoryClaimBlockedReason = claim.reason;
+        if (!claim.claimable) {
+          simMetaPatch.requires_manual_inventory_assignment = true;
+          simMetaPatch.inventory_claim_blocked_reason = claim.reason ?? "unknown";
+          await patchOrderFields(orderId, { metadata: simMetaPatch });
+        }
+      }
 
       if (plan) {
         const activation = await createSimActivationRequest({
@@ -388,19 +405,38 @@ export async function processPublicCheckoutMercadoPagoWebhook(
             typeof refreshed?.metadata?.use_case === "string"
               ? refreshed.metadata.use_case
               : undefined,
-          activationStatus: "paid_pending_activation",
-          inventoryNumberId: inventoryNumberId ?? undefined,
+          activationStatus: inventoryClaimable
+            ? "paid_pending_activation"
+            : "activation_review",
+          inventoryNumberId:
+            inventoryClaimable && inventoryNumberId
+              ? inventoryNumberId
+              : undefined,
         });
 
-        if (inventoryNumberId) {
+        if (inventoryNumberId && inventoryClaimable) {
           await markNumberPaymentApproved({
             orderId,
             simActivationRequestId: activation.id,
           });
           await linkSimActivationInventory(orderId, inventoryNumberId);
+        } else if (inventoryNumberId && !inventoryClaimable) {
+          console.warn(
+            "[mp-webhook] SIM inventory claim blocked — manual assignment required",
+            orderId,
+            inventoryNumberId,
+            inventoryClaimBlockedReason,
+          );
         }
-      } else if (inventoryNumberId) {
+      } else if (inventoryNumberId && inventoryClaimable) {
         await markNumberPaymentApproved({ orderId });
+      } else if (inventoryNumberId && !inventoryClaimable) {
+        console.warn(
+          "[mp-webhook] SIM inventory claim blocked — manual assignment required",
+          orderId,
+          inventoryNumberId,
+          inventoryClaimBlockedReason,
+        );
       }
       await markSimActivationPaidPending(orderId);
 

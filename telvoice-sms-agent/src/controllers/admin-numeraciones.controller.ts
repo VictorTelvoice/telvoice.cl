@@ -26,7 +26,7 @@ import { getInventoryById, assignInventoryNumberManual,
   markWebhookConnected,
   markWebhookConnectedBatch,
   releaseExpiredInventoryHold,
-  releaseExpiredReservation,
+  releaseExpiredSimCheckoutHoldsBestEffort,
   releaseReservationById,
 } from "../services/realNumberInventoryService.js";
 import type { ClientNumberStatus, ClientNumberType } from "../types/client-numbers.js";
@@ -94,6 +94,9 @@ export async function getAdminNumeracionesPage(
       ? await getInventorySummary()
       : null;
     const inventory = inventoryModule.available ? await listInventory() : [];
+    if (inventoryModule.available) {
+      await releaseExpiredSimCheckoutHoldsBestEffort();
+    }
     const companyNames = new Map(companies.map((c) => [c.id, c.name]));
     const inventoryDashboardResult = inventoryModule.available
       ? await buildInventoryPublicDashboard(inventory, companyNames)
@@ -389,11 +392,12 @@ export async function postAdminInventoryReleaseExpired(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const released = await releaseExpiredReservation();
+    const result = await releaseExpiredSimCheckoutHoldsBestEffort();
+    const total = result.releasedInventoryCount + result.clearedMetadataHolds;
     redirectNumeraciones(res, {
       ok:
-        released > 0
-          ? `${released} reserva(s) expirada(s) liberada(s).`
+        total > 0
+          ? `${result.releasedInventoryCount} inventario(s) liberado(s) · ${result.clearedMetadataHolds} hold(s) de metadata limpiado(s).`
           : "No había reservas expiradas.",
     });
   } catch (error) {

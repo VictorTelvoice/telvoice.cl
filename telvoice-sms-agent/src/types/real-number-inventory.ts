@@ -80,6 +80,8 @@ export type PendingInventoryHold = {
   createdAt: string;
   ageHours: number;
   reservationExpired: boolean;
+  /** Minutos restantes de retención vigente; null si expirada. */
+  remainingMinutes: number | null;
 };
 
 export type PublicInventoryEligibility = {
@@ -99,7 +101,10 @@ export type PublicInventoryEligibility = {
 export type PublicStockSummary = {
   publicSellable: number;
   pendingConnection: number;
-  heldByCheckout: number;
+  /** Retenciones vigentes (< 30 min, checkout pending). */
+  heldByCheckoutActive: number;
+  /** Retenciones expiradas pendientes de liberación. */
+  heldByCheckoutExpired: number;
   soldPendingActivation: number;
   activeAssigned: number;
   qaNotSellable: number;

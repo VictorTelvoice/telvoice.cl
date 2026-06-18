@@ -27,7 +27,6 @@
     "La membresía anual estará disponible pronto. Por ahora elige modalidad mensual.";
   var NUMBER_TAKEN =
     "Esta numeración ya no está disponible. Elige otra numeración.";
-  var NUMBERS_PAGE_SIZE = 10;
 
   var state = {
     planId: "sim_starter",
@@ -37,7 +36,8 @@
     numbersLoading: false,
     inventoryEmpty: false,
     numbers: [],
-    numbersLimit: NUMBERS_PAGE_SIZE,
+    availableTotal: 0,
+    shownCount: 0,
     selectedNumber: null,
     assignmentMode: "auto",
     pendingOrder: null,
@@ -398,7 +398,7 @@
   function renderNumbers(numbers) {
     var picker = $("nsim-number-picker");
     var list = $("nsim-number-list");
-    var moreBtn = $("nsim-number-show-more");
+    var limitHint = $("nsim-number-limit-hint");
     var autoOption = $("nsim-auto-option");
     if (!picker || !list || state.planId === "custom") return;
 
@@ -423,15 +423,27 @@
     renderNumberEmpty(false);
     picker.hidden = false;
 
-    var visible = state.numbers.slice(0, state.numbersLimit);
+    if (limitHint) {
+      if (state.availableTotal > state.shownCount) {
+        limitHint.textContent =
+          "Mostramos " +
+          state.shownCount +
+          " numeraciones disponibles. También puedes usar asignación automática.";
+        limitHint.hidden = false;
+      } else {
+        limitHint.hidden = true;
+        limitHint.textContent = "";
+      }
+    }
+
     if (
       state.assignmentMode === "selected" &&
       (!state.selectedNumber ||
-        !visible.some(function (n) {
+        !state.numbers.some(function (n) {
           return n.inventory_public_id === state.selectedNumber;
         }))
     ) {
-      state.selectedNumber = visible[0].inventory_public_id;
+      state.selectedNumber = state.numbers[0].inventory_public_id;
     }
 
     if (autoOption) {
@@ -440,7 +452,7 @@
       if (autoInput) autoInput.checked = state.assignmentMode === "auto";
     }
 
-    list.innerHTML = visible
+    list.innerHTML = state.numbers
       .map(function (n) {
         var selected =
           state.assignmentMode === "selected" &&
@@ -472,7 +484,6 @@
       });
     });
 
-    if (moreBtn) moreBtn.hidden = !(state.numbers.length > state.numbersLimit);
     updateSubmitState();
   }
 
@@ -506,7 +517,7 @@
           })
       : Promise.resolve({ has_pending_order: false });
 
-    var numbersPromise = fetch(origin() + "/api/public/sim-available-numbers?limit=50", {
+    var numbersPromise = fetch(origin() + "/api/public/sim-available-numbers", {
       headers: { Accept: "application/json" },
     })
       .then(function (res) {
@@ -522,7 +533,12 @@
       var pending = results[0] || { has_pending_order: false };
       state.pendingOrder = pending.has_pending_order ? pending : null;
       renderPendingOrder(pending);
-      renderNumbers((results[1] && results[1].numbers) || []);
+      var numbersPayload = results[1] || { numbers: [] };
+      state.availableTotal = Number(numbersPayload.available) || 0;
+      state.shownCount =
+        Number(numbersPayload.shown) ||
+        (numbersPayload.numbers ? numbersPayload.numbers.length : 0);
+      renderNumbers(numbersPayload.numbers || []);
     });
   }
 
@@ -531,7 +547,8 @@
     state.open = true;
     state.busy = false;
     state.pendingOrder = null;
-    state.numbersLimit = NUMBERS_PAGE_SIZE;
+    state.availableTotal = 0;
+    state.shownCount = 0;
     state.selectedNumber = null;
     state.assignmentMode = "auto";
     state.numbers = [];
@@ -769,14 +786,6 @@
       emailInput.addEventListener("blur", function () {
         if (!state.open || state.planId === "custom") return;
         refreshCheckoutContext(emailInput.value.trim());
-      });
-    }
-
-    var showMoreBtn = $("nsim-number-show-more");
-    if (showMoreBtn) {
-      showMoreBtn.addEventListener("click", function () {
-        state.numbersLimit += NUMBERS_PAGE_SIZE;
-        renderNumbers(state.numbers);
       });
     }
 

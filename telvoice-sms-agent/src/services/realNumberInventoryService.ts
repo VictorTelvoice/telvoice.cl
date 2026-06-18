@@ -24,7 +24,36 @@ import {
 
 const RESERVATION_MINUTES = 30;
 
+export const SIM_CHECKOUT_HOLD_TTL_MINUTES = RESERVATION_MINUTES;
+export const PUBLIC_SIM_NUMBER_LIST_LIMIT = 3;
+
 export { RESERVATION_MINUTES };
+
+function simHoldRemainingMinutes(
+  createdAt: string,
+  reservationExpired: boolean,
+  reservedUntil?: string | null,
+): number | null {
+  if (reservationExpired) return null;
+  const now = Date.now();
+  const expiryMs =
+    reservedUntil != null
+      ? new Date(reservedUntil).getTime()
+      : new Date(createdAt).getTime() + SIM_CHECKOUT_HOLD_TTL_MINUTES * 60 * 1000;
+  if (expiryMs <= now) return null;
+  return Math.max(1, Math.ceil((expiryMs - now) / 60_000));
+}
+
+function isSimCheckoutHoldExpired(
+  createdAt: string,
+  reservedUntil?: string | null,
+): boolean {
+  const now = Date.now();
+  if (reservedUntil != null) {
+    return new Date(reservedUntil).getTime() < now;
+  }
+  return now - new Date(createdAt).getTime() > SIM_CHECKOUT_HOLD_TTL_MINUTES * 60 * 1000;
+}
 
 function orderShortCode(orderId: string, publicRef?: string | null): string {
   if (publicRef && String(publicRef).trim()) return String(publicRef).trim();
@@ -244,22 +273,26 @@ const PUBLIC_PLAN_ELIGIBLE = ["sim_starter", "sim_pro"] as const;
 
 /** Inventario retenido por órdenes SIM bundle pendientes — no vendible públicamente. */
 export async function getPendingSimBundleHeldInventoryIds(): Promise<Set<string>> {
-  const details = await getPendingSimBundleHeldInventoryDetails();
+  const details = await getPendingSimBundleHeldInventoryDetails({
+    includeExpired: false,
+  });
   return new Set(details.keys());
 }
 
 /** Detalle de retención por checkout SIM pending (metadata.inventory_number_id). */
-export async function getPendingSimBundleHeldInventoryDetails(): Promise<
-  Map<string, PendingInventoryHold>
-> {
+export async function getPendingSimBundleHeldInventoryDetails(options?: {
+  /** Si false, omite holds expirados (solo bloquean checkout público los vigentes). */
+  includeExpired?: boolean;
+}): Promise<Map<string, PendingInventoryHold>> {
+  const includeExpired = options?.includeExpired !== false;
   const sb = getSupabase();
   const held = new Map<string, PendingInventoryHold>();
   const now = Date.now();
-  const reservationMs = RESERVATION_MINUTES * 60 * 1000;
+  const ttlMs = SIM_CHECKOUT_HOLD_TTL_MINUTES * 60 * 1000;
 
   const { data: reservedRows, error: reservedError } = await sb
     .from("real_number_inventory")
-    .select("id, current_order_id, reserved_until")
+    .select("id, current_order_id, reserved_until, updated_at")
     .eq("sales_status", "reserved_pending_payment");
 
   if (reservedError) {
@@ -267,21 +300,77 @@ export async function getPendingSimBundleHeldInventoryDetails(): Promise<
     throw wrapSupabaseError(reservedError, "getPendingSimBundleHeldInventoryDetails");
   }
 
+  const reservedOrderIds = [
+    ...new Set(
+      (reservedRows ?? [])
+        .map((row) =>
+          row.current_order_id != null ? String(row.current_order_id) : null,
+        )
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+
+  const reservedOrderById = new Map<
+    string,
+    { checkout_email: string | null; created_at: string; metadata: unknown }
+  >();
+  if (reservedOrderIds.length > 0) {
+    const { data: reservedOrders, error: reservedOrdersError } = await sb
+      .from("sms_orders")
+      .select("id, checkout_email, created_at, metadata")
+      .in("id", reservedOrderIds);
+    if (reservedOrdersError) {
+      throw wrapSupabaseError(
+        reservedOrdersError,
+        "getPendingSimBundleHeldInventoryDetails",
+      );
+    }
+    for (const order of reservedOrders ?? []) {
+      reservedOrderById.set(String(order.id), order);
+    }
+  }
+
   for (const row of reservedRows ?? []) {
     const inventoryId = String(row.id);
     const orderId =
       row.current_order_id != null ? String(row.current_order_id) : null;
     if (!orderId) continue;
+
+    const order = reservedOrderById.get(orderId);
+    const createdAt = String(order?.created_at ?? row.updated_at ?? new Date().toISOString());
     const reservedUntil =
-      row.reserved_until != null ? new Date(String(row.reserved_until)).getTime() : 0;
+      row.reserved_until != null ? String(row.reserved_until) : null;
+    const reservationExpired = isSimCheckoutHoldExpired(createdAt, reservedUntil);
+    if (!includeExpired && reservationExpired) continue;
+
+    const meta =
+      order?.metadata && typeof order.metadata === "object"
+        ? (order.metadata as Record<string, unknown>)
+        : {};
+    const publicRef =
+      typeof meta.public_checkout_reference === "string"
+        ? meta.public_checkout_reference
+        : null;
+    const planId =
+      typeof meta.plan_id === "string" ? meta.plan_id : null;
+    const ageHours = (now - new Date(createdAt).getTime()) / (3600 * 1000);
+
     held.set(inventoryId, {
       orderId,
-      orderCode: orderShortCode(orderId),
-      email: null,
-      planId: null,
-      createdAt: new Date(now).toISOString(),
-      ageHours: 0,
-      reservationExpired: reservedUntil > 0 && reservedUntil < now,
+      orderCode: orderShortCode(orderId, publicRef),
+      email:
+        typeof order?.checkout_email === "string"
+          ? order.checkout_email
+          : null,
+      planId,
+      createdAt,
+      ageHours,
+      reservationExpired,
+      remainingMinutes: simHoldRemainingMinutes(
+        createdAt,
+        reservationExpired,
+        reservedUntil,
+      ),
     });
   }
 
@@ -305,12 +394,18 @@ export async function getPendingSimBundleHeldInventoryDetails(): Promise<
     ) {
       continue;
     }
+    if (meta.inventory_hold_released_at || meta.reservation_released_at) {
+      continue;
+    }
     const inventoryId = meta.inventory_number_id;
     if (typeof inventoryId !== "string" || !inventoryId.trim()) continue;
 
     const orderId = String(order.id);
     const createdAt = String(order.created_at ?? new Date().toISOString());
     const ageHours = (now - new Date(createdAt).getTime()) / (3600 * 1000);
+    const reservationExpired = now - new Date(createdAt).getTime() > ttlMs;
+    if (!includeExpired && reservationExpired) continue;
+
     const publicRef =
       typeof meta.public_checkout_reference === "string"
         ? meta.public_checkout_reference
@@ -328,7 +423,12 @@ export async function getPendingSimBundleHeldInventoryDetails(): Promise<
       planId,
       createdAt,
       ageHours,
-      reservationExpired: now - new Date(createdAt).getTime() > reservationMs,
+      reservationExpired,
+      remainingMinutes: simHoldRemainingMinutes(
+        createdAt,
+        reservationExpired,
+        null,
+      ),
     });
   }
 
@@ -390,6 +490,7 @@ export function getPublicInventoryEligibility(
             createdAt: row.updated_at,
             ageHours: 0,
             reservationExpired: false,
+            remainingMinutes: null,
           }
         : undefined,
       ...noSaleActions,
@@ -419,9 +520,10 @@ export function getPublicInventoryEligibility(
   }
 
   if (row.sales_status === "reserved_pending_payment") {
-    const expired =
-      row.reserved_until != null &&
-      new Date(row.reserved_until).getTime() < Date.now();
+    const expired = isSimCheckoutHoldExpired(
+      heldByOrder?.createdAt ?? row.updated_at,
+      row.reserved_until,
+    );
     const orderCode = row.current_order_id
       ? orderShortCode(row.current_order_id)
       : "—";
@@ -429,11 +531,16 @@ export function getPublicInventoryEligibility(
       ? {
           orderId: row.current_order_id,
           orderCode,
-          email: null,
-          planId: null,
-          createdAt: row.updated_at,
-          ageHours: 0,
+          email: heldByOrder?.email ?? null,
+          planId: heldByOrder?.planId ?? null,
+          createdAt: heldByOrder?.createdAt ?? row.updated_at,
+          ageHours: heldByOrder?.ageHours ?? 0,
           reservationExpired: expired,
+          remainingMinutes: simHoldRemainingMinutes(
+            heldByOrder?.createdAt ?? row.updated_at,
+            expired,
+            row.reserved_until,
+          ),
         }
       : undefined;
     return {
@@ -558,7 +665,8 @@ export function summarizePublicStock(
   const summary: PublicStockSummary = {
     publicSellable: 0,
     pendingConnection: 0,
-    heldByCheckout: 0,
+    heldByCheckoutActive: 0,
+    heldByCheckoutExpired: 0,
     soldPendingActivation: 0,
     activeAssigned: 0,
     qaNotSellable: 0,
@@ -573,7 +681,14 @@ export function summarizePublicStock(
         summary.pendingConnection += 1;
         break;
       case "held_by_checkout":
-        summary.heldByCheckout += 1;
+        if (
+          eligibility.heldOrder?.reservationExpired ||
+          eligibility.canReleaseExpiredHold
+        ) {
+          summary.heldByCheckoutExpired += 1;
+        } else {
+          summary.heldByCheckoutActive += 1;
+        }
         break;
       case "sold":
         summary.soldPendingActivation += 1;
@@ -752,9 +867,13 @@ export async function ensureSimInventoryHeldForPendingOrder(input: {
 }
 
 export async function listPublicAvailableNumbers(
-  limit = 10,
-): Promise<PublicAvailableNumberItem[]> {
-  await releaseExpiredReservation();
+  displayLimit = PUBLIC_SIM_NUMBER_LIST_LIMIT,
+): Promise<{
+  available: number;
+  shown: number;
+  numbers: PublicAvailableNumberItem[];
+}> {
+  await releaseExpiredSimCheckoutHoldsBestEffort();
   const heldIds = await getPendingSimBundleHeldInventoryIds();
   const sb = getSupabase();
   const { data, error } = await sb
@@ -764,20 +883,21 @@ export async function listPublicAvailableNumbers(
     .eq("connection_status", "connected")
     .eq("webhook_connected", true)
     .order("updated_at", { ascending: true })
-    .limit(Math.max(limit, 50));
+    .limit(200);
 
   if (error) {
-    if (isMissingTableError(error)) return [];
+    if (isMissingTableError(error)) {
+      return { available: 0, shown: 0, numbers: [] };
+    }
     throw wrapSupabaseError(error, "listPublicAvailableNumbers");
   }
 
-  return (data ?? [])
+  const eligible = (data ?? [])
     .filter(
       (row) =>
         isInventoryPubliclySellable(row as { id: string; sales_status?: string; connection_status?: string; webhook_connected?: boolean }) &&
         !heldIds.has(String(row.id)),
     )
-    .slice(0, limit)
     .map((row) => {
       const e164 = String(row.e164_number);
       const digits = e164.replace(/\D/g, "");
@@ -788,18 +908,27 @@ export async function listPublicAvailableNumbers(
         plan_eligible: [...PUBLIC_PLAN_ELIGIBLE],
       };
     });
+
+  const shown = Math.min(displayLimit, eligible.length);
+  return {
+    available: eligible.length,
+    shown,
+    numbers: eligible.slice(0, displayLimit),
+  };
 }
 
 export async function getPublicAvailability(): Promise<PublicRealNumberAvailability> {
-  await releaseExpiredReservation();
-  const numbers = await listPublicAvailableNumbers(50);
+  const { available } = await listPublicAvailableNumbers(
+    PUBLIC_SIM_NUMBER_LIST_LIMIT,
+  );
   return {
-    available: numbers.length,
-    in_stock: numbers.length > 0,
+    available,
+    in_stock: available > 0,
   };
 }
 
 async function pickConnectedAvailableId(): Promise<string | null> {
+  await releaseExpiredSimCheckoutHoldsBestEffort();
   const heldIds = await getPendingSimBundleHeldInventoryIds();
   const sb = getSupabase();
   const { data, error } = await sb
@@ -809,7 +938,7 @@ async function pickConnectedAvailableId(): Promise<string | null> {
     .eq("connection_status", "connected")
     .eq("webhook_connected", true)
     .order("updated_at", { ascending: true })
-    .limit(50);
+    .limit(200);
 
   if (error) {
     if (isMissingTableError(error)) return null;
@@ -837,7 +966,7 @@ export async function reserveInventoryNumberForCheckout(input: {
   simActivationRequestId?: string;
   inventoryId?: string;
 }): Promise<RealNumberInventoryRow> {
-  await releaseExpiredReservation();
+  await releaseExpiredSimCheckoutHoldsBestEffort();
 
   let inventoryId = input.inventoryId ?? (await pickConnectedAvailableId());
   if (!inventoryId) {
@@ -888,7 +1017,7 @@ export async function reserveInventoryNumberForCheckout(input: {
 export async function resolvePublicInventoryId(
   publicId: string,
 ): Promise<string | null> {
-  await releaseExpiredReservation();
+  await releaseExpiredSimCheckoutHoldsBestEffort();
   const sb = getSupabase();
   const { data, error } = await sb
     .from("real_number_inventory")
@@ -985,7 +1114,75 @@ export async function markNumberPaymentApproved(input: {
   return data ? mapRow(data as Record<string, unknown>) : null;
 }
 
-export async function releaseExpiredReservation(): Promise<number> {
+export type SimCheckoutHoldReleaseResult = {
+  releasedInventoryCount: number;
+  clearedMetadataHolds: number;
+};
+
+async function clearOrderInventoryHoldMetadata(
+  orderId: string,
+  reason: string,
+): Promise<boolean> {
+  const sb = getSupabase();
+  const { data: order, error: fetchError } = await sb
+    .from("sms_orders")
+    .select("id, metadata, payment_status, credit_status")
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (fetchError) {
+    if (isMissingTableError(fetchError)) return false;
+    throw wrapSupabaseError(fetchError, "clearOrderInventoryHoldMetadata");
+  }
+  if (!order || order.payment_status !== "pending") return false;
+  if (String(order.credit_status ?? "") === "credited") return false;
+
+  const meta =
+    order.metadata && typeof order.metadata === "object"
+      ? { ...(order.metadata as Record<string, unknown>) }
+      : {};
+
+  const activationStatus = String(meta.activation_status ?? "");
+  if (
+    activationStatus === "paid_pending_activation" ||
+    activationStatus === "active"
+  ) {
+    return false;
+  }
+
+  if (meta.inventory_hold_released_at || meta.reservation_released_at) {
+    return false;
+  }
+
+  const inventoryId = meta.inventory_number_id;
+  if (typeof inventoryId !== "string" || !inventoryId.trim()) {
+    return false;
+  }
+
+  const releasedAt = new Date().toISOString();
+  delete meta.inventory_number_id;
+  delete meta.inventory_public_id;
+  delete meta.selected_number_masked;
+  delete meta.number_suffix;
+  delete meta.selected_by_customer;
+  meta.inventory_hold_released_at = releasedAt;
+  meta.reservation_released_at = releasedAt;
+  meta.inventory_hold_release_reason = reason;
+
+  const { error: updateError } = await sb
+    .from("sms_orders")
+    .update({ metadata: meta })
+    .eq("id", orderId)
+    .eq("payment_status", "pending");
+
+  if (updateError) {
+    throw wrapSupabaseError(updateError, "clearOrderInventoryHoldMetadata");
+  }
+
+  return true;
+}
+
+async function releaseExpiredDbReservationsBestEffort(): Promise<number> {
   const sb = getSupabase();
   const now = new Date().toISOString();
   const { data: expiredRows, error: fetchError } = await sb
@@ -996,7 +1193,7 @@ export async function releaseExpiredReservation(): Promise<number> {
 
   if (fetchError) {
     if (isMissingTableError(fetchError)) return 0;
-    throw wrapSupabaseError(fetchError, "releaseExpiredReservation");
+    throw wrapSupabaseError(fetchError, "releaseExpiredDbReservationsBestEffort");
   }
 
   let released = 0;
@@ -1007,27 +1204,23 @@ export async function releaseExpiredReservation(): Promise<number> {
     if (orderId) {
       const { data: order } = await sb
         .from("sms_orders")
-        .select("payment_status, metadata")
+        .select("payment_status, credit_status, metadata")
         .eq("id", orderId)
         .maybeSingle();
 
-      if (order?.payment_status === "pending") {
-        const meta =
-          order.metadata && typeof order.metadata === "object"
-            ? (order.metadata as Record<string, unknown>)
-            : {};
-        if (meta.product_type === "sim_agent_bundle") {
-          const reservedUntil = new Date(
-            Date.now() + RESERVATION_MINUTES * 60 * 1000,
-          );
-          await sb
-            .from("real_number_inventory")
-            .update({ reserved_until: reservedUntil.toISOString() })
-            .eq("id", String(row.id))
-            .eq("sales_status", "reserved_pending_payment")
-            .eq("current_order_id", orderId);
-          continue;
-        }
+      if (order?.payment_status !== "pending") continue;
+      if (String(order.credit_status ?? "") === "credited") continue;
+
+      const meta =
+        order.metadata && typeof order.metadata === "object"
+          ? (order.metadata as Record<string, unknown>)
+          : {};
+      const activationStatus = String(meta.activation_status ?? "");
+      if (
+        activationStatus === "paid_pending_activation" ||
+        activationStatus === "active"
+      ) {
+        continue;
       }
     }
 
@@ -1043,12 +1236,236 @@ export async function releaseExpiredReservation(): Promise<number> {
       .eq("sales_status", "reserved_pending_payment");
 
     if (releaseError) {
-      throw wrapSupabaseError(releaseError, "releaseExpiredReservation");
+      throw wrapSupabaseError(releaseError, "releaseExpiredDbReservationsBestEffort");
     }
     released += 1;
+    if (orderId) {
+      await clearOrderInventoryHoldMetadata(
+        orderId,
+        "auto_expired_checkout_hold",
+      ).catch(() => undefined);
+    }
   }
 
   return released;
+}
+
+/**
+ * Libera holds SIM de checkout pending con más de SIM_CHECKOUT_HOLD_TTL_MINUTES.
+ * No cancela órdenes ni modifica pagos en MercadoPago.
+ */
+export async function releaseExpiredSimCheckoutHoldsBestEffort(): Promise<SimCheckoutHoldReleaseResult> {
+  let releasedInventoryCount = 0;
+  let clearedMetadataHolds = 0;
+  const sb = getSupabase();
+  const now = Date.now();
+  const ttlMs = SIM_CHECKOUT_HOLD_TTL_MINUTES * 60 * 1000;
+
+  releasedInventoryCount += await releaseExpiredDbReservationsBestEffort();
+
+  const { data: reservedRows, error: reservedFetchError } = await sb
+    .from("real_number_inventory")
+    .select("id, current_order_id, reserved_until")
+    .eq("sales_status", "reserved_pending_payment");
+
+  if (reservedFetchError) {
+    if (!isMissingTableError(reservedFetchError)) {
+      throw wrapSupabaseError(
+        reservedFetchError,
+        "releaseExpiredSimCheckoutHoldsBestEffort",
+      );
+    }
+  } else {
+    for (const row of reservedRows ?? []) {
+      const orderId =
+        row.current_order_id != null ? String(row.current_order_id) : null;
+      if (!orderId) continue;
+
+      const { data: order } = await sb
+        .from("sms_orders")
+        .select("payment_status, credit_status, created_at, metadata")
+        .eq("id", orderId)
+        .maybeSingle();
+
+      if (!order || order.payment_status !== "pending") continue;
+      if (String(order.credit_status ?? "") === "credited") continue;
+
+      const meta =
+        order.metadata && typeof order.metadata === "object"
+          ? (order.metadata as Record<string, unknown>)
+          : {};
+      const activationStatus = String(meta.activation_status ?? "");
+      if (
+        activationStatus === "paid_pending_activation" ||
+        activationStatus === "active"
+      ) {
+        continue;
+      }
+
+      const createdAt = String(order.created_at ?? new Date().toISOString());
+      const reservedUntil =
+        row.reserved_until != null ? String(row.reserved_until) : null;
+      const expired = isSimCheckoutHoldExpired(createdAt, reservedUntil);
+      if (!expired) continue;
+
+      try {
+        await releaseReservationById(String(row.id));
+        releasedInventoryCount += 1;
+        if (
+          await clearOrderInventoryHoldMetadata(
+            orderId,
+            "auto_expired_checkout_hold",
+          )
+        ) {
+          clearedMetadataHolds += 1;
+        }
+      } catch {
+        // best-effort: otro proceso pudo liberar la fila
+      }
+    }
+  }
+
+  const { data: pendingOrders, error: ordersError } = await sb
+    .from("sms_orders")
+    .select("id, payment_status, credit_status, created_at, metadata")
+    .eq("payment_status", "pending");
+
+  if (ordersError) {
+    throw wrapSupabaseError(ordersError, "releaseExpiredSimCheckoutHoldsBestEffort");
+  }
+
+  for (const order of pendingOrders ?? []) {
+    const meta =
+      order.metadata && typeof order.metadata === "object"
+        ? (order.metadata as Record<string, unknown>)
+        : {};
+    if (
+      meta.product_type !== "sim_agent_bundle" &&
+      meta.product_type !== "sim_subscription"
+    ) {
+      continue;
+    }
+    if (meta.inventory_hold_released_at || meta.reservation_released_at) {
+      continue;
+    }
+
+    const inventoryId = meta.inventory_number_id;
+    if (typeof inventoryId !== "string" || !inventoryId.trim()) continue;
+
+    const createdAt = String(order.created_at ?? new Date().toISOString());
+    if (now - new Date(createdAt).getTime() <= ttlMs) continue;
+
+    const activationStatus = String(meta.activation_status ?? "");
+    if (
+      activationStatus === "paid_pending_activation" ||
+      activationStatus === "active"
+    ) {
+      continue;
+    }
+    if (String(order.credit_status ?? "") === "credited") continue;
+
+    if (
+      await clearOrderInventoryHoldMetadata(
+        String(order.id),
+        "auto_expired_checkout_hold",
+      )
+    ) {
+      clearedMetadataHolds += 1;
+    }
+
+    const inv = await getInventoryById(inventoryId.trim());
+    if (
+      inv &&
+      inv.sales_status === "reserved_pending_payment" &&
+      inv.current_order_id === String(order.id)
+    ) {
+      try {
+        await releaseReservationById(inv.id);
+        releasedInventoryCount += 1;
+      } catch {
+        // best-effort
+      }
+    }
+  }
+
+  return { releasedInventoryCount, clearedMetadataHolds };
+}
+
+/** @deprecated Usar releaseExpiredSimCheckoutHoldsBestEffort */
+export async function releaseExpiredReservation(): Promise<number> {
+  const result = await releaseExpiredSimCheckoutHoldsBestEffort();
+  return result.releasedInventoryCount;
+}
+
+/** Evita activar automáticamente un número liberado o reasignado tras pago tardío. */
+export async function canOrderClaimInventoryOnPayment(input: {
+  orderId: string;
+  inventoryNumberId: string;
+}): Promise<{ claimable: boolean; reason?: string }> {
+  const sb = getSupabase();
+  const { data: order } = await sb
+    .from("sms_orders")
+    .select("metadata")
+    .eq("id", input.orderId)
+    .maybeSingle();
+
+  const meta =
+    order?.metadata && typeof order.metadata === "object"
+      ? (order.metadata as Record<string, unknown>)
+      : {};
+
+  if (meta.inventory_hold_released_at || meta.reservation_released_at) {
+    return { claimable: false, reason: "reservation_released" };
+  }
+
+  const inventory = await getInventoryById(input.inventoryNumberId);
+  if (!inventory) {
+    return { claimable: false, reason: "inventory_missing" };
+  }
+
+  if (
+    inventory.current_company_id ||
+    inventory.sales_status === "active_assigned"
+  ) {
+    return { claimable: false, reason: "inventory_assigned" };
+  }
+
+  if (
+    inventory.current_order_id &&
+    inventory.current_order_id !== input.orderId &&
+    ["reserved_pending_payment", "sold_pending_activation"].includes(
+      inventory.sales_status,
+    )
+  ) {
+    return { claimable: false, reason: "inventory_claimed_by_other_order" };
+  }
+
+  if (
+    inventory.sales_status === "connected_available" &&
+    inventory.current_order_id !== input.orderId
+  ) {
+    return { claimable: false, reason: "reservation_released" };
+  }
+
+  if (
+    inventory.sales_status === "reserved_pending_payment" &&
+    inventory.current_order_id === input.orderId
+  ) {
+    return { claimable: true };
+  }
+
+  if (
+    inventory.sales_status === "sold_pending_activation" &&
+    inventory.current_order_id === input.orderId
+  ) {
+    return { claimable: true };
+  }
+
+  if (inventory.current_order_id === input.orderId) {
+    return { claimable: true };
+  }
+
+  return { claimable: false, reason: "inventory_not_reserved_for_order" };
 }
 
 export async function markWebhookConnected(
