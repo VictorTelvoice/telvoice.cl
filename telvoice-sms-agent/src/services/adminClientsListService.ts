@@ -681,6 +681,13 @@ function matchesScope(
   }
 }
 
+/** Huérfanas de carrera checkout (blocked) — no deben aparecer en Clientes. */
+function isHiddenCheckoutDuplicateOrphan(company: CompanyRow): boolean {
+  if (company.status !== "blocked") return false;
+  const meta = company.metadata ?? {};
+  return meta.duplicate_orphan === true;
+}
+
 function matchesSearch(company: CompanyRow, search: string): boolean {
   const q = search.trim().toLowerCase();
   if (!q) return true;
@@ -860,7 +867,9 @@ export async function listAdminClientsForScope(input: {
     return { company, audit, operational };
   });
 
-  const notArchived = all.filter((item) => !item.audit.archivedAt);
+  const notArchived = all.filter(
+    (item) => !item.audit.archivedAt && !isHiddenCheckoutDuplicateOrphan(item.company),
+  );
 
   const scoped = notArchived.filter((item) =>
     matchesScope(item.company, item.audit, scope, signals),

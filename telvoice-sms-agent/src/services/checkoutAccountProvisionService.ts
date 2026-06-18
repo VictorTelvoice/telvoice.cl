@@ -176,7 +176,18 @@ function applyIdentityReviewFlags(
   return false;
 }
 
-/** Archiva empresas activas duplicadas sin órdenes ni saldo (best-effort). */
+async function countProfilesForCompany(companyId: string): Promise<number> {
+  const { count, error } = await getSupabase()
+    .from("user_profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", companyId);
+  if (error) {
+    wrapSupabaseError(error, "provision.countProfilesForCompany");
+  }
+  return count ?? 0;
+}
+
+/** Elimina empresas checkout duplicadas sin órdenes, saldo ni perfiles (best-effort). */
 export async function archiveCheckoutDuplicateOrphans(
   email: string,
   keepCompanyId: string,
@@ -185,56 +196,37 @@ export async function archiveCheckoutDuplicateOrphans(
   const sb = getSupabase();
   const { data: companies, error } = await sb
     .from("companies")
-    .select("id")
+    .select("id, status")
     .ilike("billing_email", normalized)
-    .eq("status", "active")
-    .eq("metadata->>account_creation_mode", "post_payment_auto")
     .neq("id", keepCompanyId);
   if (error) {
     wrapSupabaseError(error, "provision.archiveDuplicates.select");
   }
 
-  let archived = 0;
-  const nowIso = new Date().toISOString();
+  let removed = 0;
   for (const row of companies ?? []) {
     const companyId = String(row.id);
     const orderCount = await countCompanyOrders(companyId);
     if (orderCount > 0) continue;
     const walletScore = await companyWalletActivityScore(companyId);
     if (walletScore > 0) continue;
+    const profileCount = await countProfilesForCompany(companyId);
+    if (profileCount > 0) continue;
 
-    const { data: existing } = await sb
-      .from("companies")
-      .select("metadata")
-      .eq("id", companyId)
-      .maybeSingle();
-
-    const { error: upErr } = await sb
-      .from("companies")
-      .update({
-        status: "blocked",
-        metadata: {
-          ...((existing?.metadata as Record<string, unknown> | null) ?? {}),
-          duplicate_orphan: true,
-          blocked_reason: "checkout_provision_duplicate",
-          merged_into_company_id: keepCompanyId,
-          blocked_at: nowIso,
-        },
-      })
-      .eq("id", companyId)
-      .eq("status", "active");
-    if (upErr) {
-      console.warn("[provision] archive duplicate orphan failed", companyId, upErr.message);
+    const { error: delErr } = await sb.from("companies").delete().eq("id", companyId);
+    if (delErr) {
+      console.warn("[provision] delete duplicate orphan failed", companyId, delErr.message);
       continue;
     }
-    archived += 1;
-    console.info("[provision] archived duplicate orphan company", {
+    removed += 1;
+    console.info("[provision] deleted duplicate orphan company", {
       email: normalized,
       orphanId: companyId,
       keepCompanyId,
+      previousStatus: row.status,
     });
   }
-  return archived;
+  return removed;
 }
 
 async function provisionCompanyFromCheckoutUnlocked(

@@ -90,10 +90,27 @@ const { rows } = await client.query(
   WHERE cs.rn > 1
     AND cs.order_count = 0
     AND cs.wallet_score = 0
+    AND NOT EXISTS (
+      SELECT 1 FROM user_profiles p WHERE p.company_id = cs.id
+    )
   ORDER BY cs.email_norm, cs.created_at
   `,
   filterEmail ? [filterEmail] : [],
 );
+
+const blockedOrphans = (
+  await client.query(
+    `
+    SELECT c.id, c.name, lower(trim(c.billing_email)) AS email_norm, c.status, c.created_at
+    FROM companies c
+    WHERE c.status = 'blocked'
+      AND COALESCE(c.metadata->>'duplicate_orphan', 'false') = 'true'
+      ${filterEmail ? "AND lower(trim(c.billing_email)) = $1" : ""}
+    ORDER BY c.created_at
+    `,
+    filterEmail ? [filterEmail] : [],
+  )
+).rows;
 
 console.log(
   JSON.stringify(
@@ -102,54 +119,47 @@ console.log(
       filterEmail,
       orphanCount: rows.length,
       orphans: rows,
+      blockedOrphanCount: blockedOrphans.length,
+      blockedOrphans,
     },
     null,
     2,
   ),
 );
 
-if (!apply || rows.length === 0) {
+const toRemove = [...rows, ...blockedOrphans];
+
+if (!apply || toRemove.length === 0) {
   await client.end();
   process.exit(0);
 }
 
-let archived = 0;
-for (const row of rows) {
+let removed = 0;
+for (const row of toRemove) {
+  const emailNorm = row.email_norm;
   const keep = await client.query(
     `
     SELECT id FROM companies c
     WHERE lower(trim(c.billing_email)) = $1
-      AND c.status = 'active'
       AND c.id <> $2
     ORDER BY
       (SELECT COUNT(*) FROM sms_orders o WHERE o.company_id = c.id) DESC,
+      COALESCE(
+        (SELECT COALESCE(w.available_sms,0)+COALESCE(w.total_purchased_sms,0)
+         FROM company_sms_wallets w WHERE w.company_id = c.id LIMIT 1),
+        0
+      ) DESC,
       c.created_at ASC
     LIMIT 1
     `,
-    [row.email_norm, row.id],
+    [emailNorm, row.id],
   );
   const keepId = keep.rows[0]?.id ?? null;
 
-  await client.query(
-    `
-    UPDATE companies
-    SET
-      status = 'blocked',
-      metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
-        'duplicate_orphan', true,
-        'blocked_reason', 'checkout_provision_duplicate',
-        'merged_into_company_id', $2::text,
-        'blocked_at', to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
-        'blocked_by', 'dedupe_script'
-      ),
-      updated_at = now()
-    WHERE id = $1 AND status = 'active'
-    `,
-    [row.id, keepId],
-  );
-  archived += 1;
-  console.log(`archived orphan ${row.id} (${row.email_norm}) → keep ${keepId}`);
+  await client.query(`DELETE FROM companies WHERE id = $1`, [row.id]);
+  removed += 1;
+  console.log(`deleted orphan ${row.id} (${emailNorm}) → keep ${keepId}`);
 }
 
-console.log(JSON.stringify({ archived }, null, 2));
+console.log(JSON.stringify({ removed }, null, 2));
 await client.end();
