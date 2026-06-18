@@ -583,6 +583,7 @@ export function getAdminStyles(): string {
       border-radius: 10px;
       box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
     }
+    .tv-client-actions__menu--fixed { z-index: 1200; }
     .tv-client-actions__item {
       display: block;
       padding: 0.45rem 0.6rem;

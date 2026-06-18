@@ -564,6 +564,27 @@ function inferClassificationWithoutFlag(company: CompanyRow): AuditClassificatio
   return "REVIEW_REQUIRED";
 }
 
+function refineAuditWithRealSignals(
+  company: CompanyRow,
+  audit: AdminClientAuditInfo,
+  signals: CompanyRealSignals,
+): AdminClientAuditInfo {
+  if (audit.archivedAt) return audit;
+  if (audit.classification === "QA_TEST" || audit.classification === "DEMO_SEED") {
+    return audit;
+  }
+  if (!companyHasStrongRealSignals(company, audit, signals)) return audit;
+  if (audit.classification === "PROD_REAL" && audit.hasFlag) return audit;
+  return {
+    ...audit,
+    classification: "PROD_REAL",
+    reason:
+      audit.reason && audit.hasFlag
+        ? audit.reason
+        : "Empresa con compra pagada o saldo acreditado",
+  };
+}
+
 function buildAuditInfo(
   company: CompanyRow,
   flag: {
@@ -572,6 +593,7 @@ function buildAuditInfo(
     reason: string | null;
     archivedAt?: string | null;
   } | null,
+  signals?: CompanyRealSignals,
 ): AdminClientAuditInfo {
   const billingEmail = normalizeAuditEmail(company.billing_email);
   const protectedFlag =
@@ -579,23 +601,25 @@ function buildAuditInfo(
   const archivedAt = flag?.archivedAt ?? null;
 
   if (flag?.classification) {
-    return {
+    const audit: AdminClientAuditInfo = {
       classification: flag.classification as AuditClassification,
       protected: protectedFlag,
       reason: flag.reason,
       hasFlag: true,
       archivedAt,
     };
+    return signals ? refineAuditWithRealSignals(company, audit, signals) : audit;
   }
 
   const inferred = inferClassificationWithoutFlag(company);
-  return {
+  const audit: AdminClientAuditInfo = {
     classification: protectedFlag ? "PROD_REAL" : inferred,
     protected: protectedFlag,
     reason: flag?.reason ?? "Sin flag de auditoría",
     hasFlag: false,
     archivedAt,
   };
+  return signals ? refineAuditWithRealSignals(company, audit, signals) : audit;
 }
 
 function companyLooksExcludedFromReal(
@@ -831,7 +855,7 @@ export async function listAdminClientsForScope(input: {
               archivedAt: String(row.audit_archived_at),
             }
           : null;
-    const audit = buildAuditInfo(company, flag);
+    const audit = buildAuditInfo(company, flag, signals);
     const operational = buildOperationalItem(company, audit, opMaps);
     return { company, audit, operational };
   });
@@ -914,8 +938,6 @@ export async function getAdminClientOperationalDetail(
               archivedAt: String(row.audit_archived_at),
             }
           : null;
-    const audit = buildAuditInfo(company, flag);
-
     const tz = APP_SCHEDULE_TIMEZONE;
     const [signals, opMaps, ordersRes, pendingOrdersRes, invoicesRes, messagesRes, failedRes, emailsRes, walletTxRes, apiKeysRes, webhookRes, usageStatsRes] =
       await Promise.all([
@@ -1036,7 +1058,7 @@ export async function getAdminClientOperationalDetail(
         ),
       ]);
 
-    void signals;
+    const audit = buildAuditInfo(company, flag, signals);
     const operational = buildOperationalItem(company, audit, opMaps);
     const rp = opMaps.ratePlans.get(companyId);
 

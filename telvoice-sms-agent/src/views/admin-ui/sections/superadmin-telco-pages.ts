@@ -1063,26 +1063,67 @@ function renderClientsPageScript(): string {
 (function () {
   var openMenu = null;
 
+  function resetClientActionsMenu(details) {
+    var menu = details.querySelector(".tv-client-actions__menu");
+    if (!menu) return;
+    menu.style.position = "";
+    menu.style.top = "";
+    menu.style.right = "";
+    menu.style.left = "";
+    menu.style.bottom = "";
+    menu.classList.remove("tv-client-actions__menu--fixed");
+  }
+
+  function positionClientActionsMenu(details) {
+    var menu = details.querySelector(".tv-client-actions__menu");
+    var trigger = details.querySelector(".tv-client-actions__trigger");
+    if (!menu || !trigger) return;
+    var rect = trigger.getBoundingClientRect();
+    menu.classList.add("tv-client-actions__menu--fixed");
+    menu.style.position = "fixed";
+    menu.style.left = "auto";
+    menu.style.right = Math.max(8, window.innerWidth - rect.right) + "px";
+    var spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceBelow < 220 && rect.top > spaceBelow) {
+      menu.style.top = "auto";
+      menu.style.bottom = Math.max(8, window.innerHeight - rect.top + 4) + "px";
+    } else {
+      menu.style.bottom = "auto";
+      menu.style.top = Math.min(window.innerHeight - 8, rect.bottom + 4) + "px";
+    }
+  }
+
   document.querySelectorAll(".tv-client-actions").forEach(function (details) {
     details.addEventListener("toggle", function () {
       if (!details.open) {
+        resetClientActionsMenu(details);
         if (openMenu === details) openMenu = null;
         return;
       }
-      if (openMenu && openMenu !== details) openMenu.open = false;
+      if (openMenu && openMenu !== details) {
+        openMenu.open = false;
+        resetClientActionsMenu(openMenu);
+      }
       openMenu = details;
+      positionClientActionsMenu(details);
     });
+  });
+
+  window.addEventListener("resize", function () {
+    if (openMenu && openMenu.open) positionClientActionsMenu(openMenu);
   });
 
   document.addEventListener("click", function (e) {
     if (!openMenu) return;
     if (e.target.closest(".tv-client-actions")) return;
+    resetClientActionsMenu(openMenu);
     openMenu.open = false;
     openMenu = null;
   });
 
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && openMenu) {
+      resetClientActionsMenu(openMenu);
       openMenu.open = false;
       openMenu = null;
     }
@@ -1091,6 +1132,7 @@ function renderClientsPageScript(): string {
   document.querySelectorAll(".tv-client-actions__item").forEach(function (link) {
     link.addEventListener("click", function () {
       if (openMenu) {
+        resetClientActionsMenu(openMenu);
         openMenu.open = false;
         openMenu = null;
       }

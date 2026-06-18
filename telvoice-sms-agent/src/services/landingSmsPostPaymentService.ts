@@ -1,3 +1,4 @@
+import { markEntityAsProdReal } from "./adminDataAuditService.js";
 import { runBillingSyncBestEffort } from "./billingSyncService.js";
 import { provisionCompanyFromCheckout } from "./checkoutAccountProvisionService.js";
 import { confirmOrderCredit, getOrderById } from "./smsOrderService.js";
@@ -75,6 +76,23 @@ export async function processLandingSmsBagAutoCredit(
   }
 
   await runBillingSyncBestEffort(orderId, { source: "mercadopago_webhook" });
+
+  try {
+    await markEntityAsProdReal({
+      entityType: "company",
+      entityId: companyId,
+      reason: "Compra landing SMS acreditada (Mercado Pago)",
+      protected: false,
+    });
+    await markEntityAsProdReal({
+      entityType: "sms_order",
+      entityId: orderId,
+      reason: "Orden landing SMS pagada y acreditada",
+      protected: false,
+    });
+  } catch (err) {
+    console.error("[landing-sms-post-pay] prod_real mark failed", orderId, err);
+  }
 
   try {
     await sendPostClaimEmailsBestEffort(orderId);
