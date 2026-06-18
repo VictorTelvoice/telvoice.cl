@@ -6,6 +6,7 @@ import {
 import { markEntityAsProdReal } from "./adminDataAuditService.js";
 import { isExplicitTestPurchaseEmail } from "./adminProductionScopeService.js";
 import { isClientPanelMercadoPagoOrder } from "./mercadoPagoClientPanelService.js";
+import { relinkEmptyProfilesToPurchasedCompany } from "./postPurchaseAccountLinkService.js";
 import { getOrderById, patchOrderFields } from "./smsOrderService.js";
 import {
   resolveTransactionalRecipient,
@@ -166,6 +167,18 @@ export async function runClientPanelPostCreditSideEffects(
     console.error("[client-panel-post-credit] prod_real mark failed", orderId, err);
   }
 
+  let profilesRelinked = 0;
+  if (order.company_id) {
+    try {
+      profilesRelinked = await relinkEmptyProfilesToPurchasedCompany(
+        email,
+        order.company_id,
+      );
+    } catch (err) {
+      console.error("[client-panel-post-credit] profile relink failed", orderId, err);
+    }
+  }
+
   logPostCredit("completed", {
     orderId,
     companyId: order.company_id,
@@ -175,6 +188,7 @@ export async function runClientPanelPostCreditSideEffects(
     welcomeSkipped,
     welcomeError: welcomeError ?? null,
     prodRealMarked,
+    profilesRelinked,
     orderEmailsBackfilled,
     source,
   });

@@ -72,6 +72,24 @@ Dos órdenes mismo `company_id`: una `pending`, una `paid/credited`.
 
 ---
 
+### Caso F — Cliente nuevo compra desde landing (www.telvoice.cl)
+
+**Precondición:** correo nuevo, sin cuenta previa en Telvoice.
+
+| Verificación | Esperado |
+|---|---|
+| Pago MP approved | Webhook acredita sin intervención admin |
+| Empresa | Creada `active` con `billing_email` del checkout |
+| Wallet | SMS acreditados al instante |
+| Rate plan | Plan retail asignado |
+| Auditoría | `PROD_REAL` en company + order |
+| Login Google (mismo email) | Saldo visible; sin empresa duplicada vacía |
+| Panel | Puede enviar campañas con saldo (API retail puede seguir inactiva) |
+
+**Logs esperados:** `landing_post_credit.completed` con `prodRealMarked: true`, `profilesRelinked` ≥ 0.
+
+---
+
 ## Acción manual post-deploy — cliente pre-fix
 
 Para compras panel acreditadas **antes** del deploy (sin bienvenida automática):

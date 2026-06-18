@@ -1,0 +1,41 @@
+---
+description: Compras SMS/SIM deben activar la cuenta automáticamente al pagar (sin intervención admin)
+globs: telvoice-sms-agent/src/services/**/*{checkout,landing,Purchase,PostPayment,mercadoPago,Provision,bootstrap}*
+alwaysApply: false
+---
+
+# Activación automática post-compra (self-service)
+
+Toda compra real (landing o panel) debe dejar al cliente **listo para usar** al aprobarse el pago en Mercado Pago. **No requiere acción manual del equipo Telvoice.**
+
+## Invariantes obligatorios (webhook MP `approved`)
+
+1. **Empresa** — crear o reutilizar por `checkout_email`; `status: active`.
+2. **Wallet** — acreditar SMS una sola vez (`purchase_credit` idempotente).
+3. **Rate plan** — asignar plan retail por defecto vía `confirmOrderCredit`.
+4. **Auditoría** — marcar company + order como `PROD_REAL` (`markEntityAsProdReal`).
+5. **Emails** — comprobante + bienvenida con saldo (`sendPostClaimEmailsBestEffort` / billing sync).
+6. **Vínculo cuenta** — perfiles/login con el mismo email deben apuntar a la empresa que recibió el crédito (`relinkEmptyProfilesToPurchasedCompany` + bootstrap Google).
+
+## Qué NO bloquea al cliente
+
+- `REVIEW_REQUIRED` en admin (solo etiqueta operativa; no debe impedir panel ni envíos).
+- API productiva inactiva en retail (envío por **panel/campañas** sí debe funcionar con saldo).
+
+## Qué SÍ requiere intervención (excepciones)
+
+- Compras QA/test (`isExplicitTestPurchaseEmail`, emails demo).
+- Conflictos de identidad (`identity_review_required`) — no bloquean saldo ni login.
+- Fallos de webhook/email — reintentar reconcile; no tocar wallet manualmente salvo incidente.
+
+## Archivos clave
+
+- Landing: `landingSmsPostPaymentService.ts`, `checkoutAccountProvisionService.ts`
+- Panel: `clientPanelPostPurchaseService.ts`, `mercadoPagoWebhookService.ts`
+- Login: `googleClientBootstrapService.ts`, `postPurchaseAccountLinkService.ts`
+
+## Al cambiar el flujo
+
+- Mantener idempotencia en webhooks duplicados.
+- Añadir logs estructurados `*.completed` con `orderId`, `companyId`, flags de email/PROD_REAL/relink.
+- Probar: compra landing → login Google mismo email → saldo visible → envío campaña posible.

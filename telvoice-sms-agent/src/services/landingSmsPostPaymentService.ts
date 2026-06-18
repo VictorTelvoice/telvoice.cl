@@ -1,6 +1,7 @@
 import { markEntityAsProdReal } from "./adminDataAuditService.js";
 import { runBillingSyncBestEffort } from "./billingSyncService.js";
 import { provisionCompanyFromCheckout } from "./checkoutAccountProvisionService.js";
+import { relinkEmptyProfilesToPurchasedCompany } from "./postPurchaseAccountLinkService.js";
 import { confirmOrderCredit, getOrderById } from "./smsOrderService.js";
 import {
   sendCheckoutPanelAccessEmail,
@@ -77,6 +78,7 @@ export async function processLandingSmsBagAutoCredit(
 
   await runBillingSyncBestEffort(orderId, { source: "mercadopago_webhook" });
 
+  let prodRealMarked = false;
   try {
     await markEntityAsProdReal({
       entityType: "company",
@@ -90,19 +92,45 @@ export async function processLandingSmsBagAutoCredit(
       reason: "Orden landing SMS pagada y acreditada",
       protected: false,
     });
+    prodRealMarked = true;
   } catch (err) {
     console.error("[landing-sms-post-pay] prod_real mark failed", orderId, err);
   }
 
+  let profilesRelinked = 0;
+  try {
+    profilesRelinked = await relinkEmptyProfilesToPurchasedCompany(
+      checkoutEmail,
+      companyId,
+    );
+  } catch (err) {
+    console.error("[landing-sms-post-pay] profile relink failed", orderId, err);
+  }
+
+  let emailsSent = false;
   try {
     await sendPostClaimEmailsBestEffort(orderId);
     if (isNewCompany) {
       await sendCheckoutPanelAccessEmail(orderId, checkoutEmail);
     }
+    emailsSent = true;
   } catch (err) {
     console.error("[landing-sms-post-pay] emails failed", orderId, err);
   }
 
+  console.log(
+    JSON.stringify({
+      event: "landing_post_credit.completed",
+      at: new Date().toISOString(),
+      orderId,
+      companyId,
+      checkoutEmail,
+      isNewCompany,
+      prodRealMarked,
+      profilesRelinked,
+      emailsSent,
+    }),
+  );
   console.log("[landing-sms-post-pay] auto credited", orderId, companyId);
   return { result: "paid_auto_credited", companyId };
 }
