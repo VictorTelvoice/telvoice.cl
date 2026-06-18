@@ -7,8 +7,11 @@ export type PanelAccessLinkResult = {
   magicLinkUrl: string | null;
 };
 
-function buildFallbackPanelUrl(email?: string): string {
-  const base = `${env.publicAppUrl.replace(/\/$/, "")}/login?next=${encodeURIComponent("/app/numeraciones")}`;
+/** Destino tras login/magic link en compras landing SMS (no SIM). */
+export const CHECKOUT_SMS_PANEL_LOGIN_NEXT = "/app/dashboard?welcome=1";
+
+function buildFallbackPanelUrl(email?: string, nextPath = CHECKOUT_SMS_PANEL_LOGIN_NEXT): string {
+  const base = `${env.publicAppUrl.replace(/\/$/, "")}/login?next=${encodeURIComponent(nextPath)}`;
   if (email?.includes("@")) {
     return `${base}&email=${encodeURIComponent(email.trim().toLowerCase())}`;
   }
@@ -17,16 +20,18 @@ function buildFallbackPanelUrl(email?: string): string {
 
 export async function resolvePanelAccessLink(
   checkoutEmail: string,
+  options?: { nextPath?: string },
 ): Promise<PanelAccessLinkResult> {
   const email = checkoutEmail.trim().toLowerCase();
-  const redirectTo = `${env.publicAppUrl.replace(/\/$/, "")}/auth/callback?next=${encodeURIComponent("/app/numeraciones")}`;
+  const nextPath = options?.nextPath ?? CHECKOUT_SMS_PANEL_LOGIN_NEXT;
+  const redirectTo = `${env.publicAppUrl.replace(/\/$/, "")}/auth/callback?next=${encodeURIComponent(nextPath)}`;
 
   const url = env.supabase.url;
   const serviceKey = env.supabase.serviceRoleKey;
 
   if (!url || !serviceKey) {
     return {
-      panelUrl: buildFallbackPanelUrl(email),
+      panelUrl: buildFallbackPanelUrl(email, nextPath),
       magicLinkSent: false,
       magicLinkUrl: null,
     };
@@ -46,7 +51,7 @@ export async function resolvePanelAccessLink(
     if (error || !data?.properties?.action_link) {
       console.warn("[checkout-access] magic link unavailable", error?.message);
       return {
-        panelUrl: buildFallbackPanelUrl(email),
+        panelUrl: buildFallbackPanelUrl(email, nextPath),
         magicLinkSent: false,
         magicLinkUrl: null,
       };
@@ -60,7 +65,7 @@ export async function resolvePanelAccessLink(
   } catch (err) {
     console.warn("[checkout-access] magic link failed", err);
     return {
-      panelUrl: buildFallbackPanelUrl(email),
+      panelUrl: buildFallbackPanelUrl(email, nextPath),
       magicLinkSent: false,
       magicLinkUrl: null,
     };

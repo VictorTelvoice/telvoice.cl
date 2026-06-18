@@ -176,6 +176,21 @@ export function renderCheckoutSuccessPage(
       ? renderActivationBox(data)
       : "";
 
+  const showPanelLoginInActivation =
+    data.activationHint === "panel" &&
+    Boolean(headline.confirmLayout || data.summary || data.confirmingPayment);
+
+  const footerActionsHtml = showPanelLoginInActivation
+    ? `<div class="payment-actions">
+        <a class="payment-btn payment-btn--secondary" href="${escapeHtml(data.publicSiteUrl)}/ayuda/">Centro de ayuda</a>
+        <a class="payment-btn payment-btn--secondary" href="${escapeHtml(data.publicSiteUrl)}/">Volver al inicio</a>
+      </div>`
+    : `<div class="payment-actions">
+        <a class="payment-btn payment-btn--primary" href="${escapeHtml(data.panelLoginUrl)}">Ir al panel</a>
+        <a class="payment-btn payment-btn--secondary" href="${escapeHtml(data.publicSiteUrl)}/ayuda/">Centro de ayuda</a>
+        <a class="payment-btn payment-btn--secondary" href="${escapeHtml(data.publicSiteUrl)}/">Volver al inicio</a>
+      </div>`;
+
   const metaParts: string[] = [];
   if (data.summary?.orderRef) {
     metaParts.push(`Orden: ${data.summary.orderRef}`);
@@ -219,11 +234,7 @@ export function renderCheckoutSuccessPage(
       ${summaryHtml}
       ${metaHtml}
       ${activationHtml}
-      <div class="payment-actions">
-        <a class="payment-btn payment-btn--primary" href="${escapeHtml(data.appUrl)}/login">Ir al panel / Iniciar sesión</a>
-        <a class="payment-btn payment-btn--secondary" href="${escapeHtml(data.publicSiteUrl)}/ayuda/">Centro de ayuda</a>
-        <a class="payment-btn payment-btn--secondary" href="${escapeHtml(data.publicSiteUrl)}/">Volver al inicio</a>
-      </div>
+      ${footerActionsHtml}
     </div>
   </main>
 </body>
