@@ -394,13 +394,21 @@ export async function postPublicCheckout(
         if (!payerName || payerName.length < 2) {
           throw new ValidationError("payer_name es obligatorio.");
         }
+        const assignmentModeRaw =
+          typeof body.assignment_mode === "string"
+            ? body.assignment_mode.trim().toLowerCase()
+            : "";
+        const assignmentMode: "selected" | "auto" =
+          assignmentModeRaw === "auto" ? "auto" : "selected";
         const inventoryPublicId =
           typeof body.inventory_public_id === "string"
             ? body.inventory_public_id.trim()
-            : "";
-        if (!inventoryPublicId) {
+            : typeof body.number_id === "string"
+              ? body.number_id.trim()
+              : "";
+        if (assignmentMode === "selected" && !inventoryPublicId) {
           throw new ValidationError(
-            "inventory_public_id es obligatorio para suscripción SIM.",
+            "inventory_public_id es obligatorio cuando assignment_mode es selected.",
           );
         }
 
@@ -421,7 +429,8 @@ export async function postPublicCheckout(
               : typeof body.rut === "string"
                 ? body.rut.trim()
                 : undefined,
-          inventoryPublicId,
+          inventoryPublicId: inventoryPublicId || undefined,
+          assignmentMode,
         });
 
         res.status(201).json({

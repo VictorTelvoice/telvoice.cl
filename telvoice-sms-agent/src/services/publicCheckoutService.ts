@@ -271,7 +271,8 @@ export async function startPublicSimCheckout(input: {
   companyName?: string;
   phone?: string;
   taxId?: string;
-  inventoryPublicId: string;
+  inventoryPublicId?: string;
+  assignmentMode?: "selected" | "auto";
 }): Promise<PublicCheckoutStartResult> {
   if (!isMercadoPagoConfigured()) {
     throw new AppError(
@@ -285,7 +286,11 @@ export async function startPublicSimCheckout(input: {
     throw new AppError("payer_name es obligatorio.", 400, "VALIDATION_ERROR");
   }
 
-  if (!input.inventoryPublicId?.trim()) {
+  const assignmentMode: "selected" | "auto" =
+    input.assignmentMode === "auto" ? "auto" : "selected";
+  const requestedInventoryPublicId = input.inventoryPublicId?.trim() ?? "";
+
+  if (assignmentMode === "selected" && !requestedInventoryPublicId) {
     throw new AppError(
       "Elige una numeración disponible para continuar.",
       400,
@@ -320,34 +325,41 @@ export async function startPublicSimCheckout(input: {
     );
   }
 
-  const resolvedInventoryId =
-    (await resolvePublicInventoryId(input.inventoryPublicId.trim())) ?? null;
-  if (!resolvedInventoryId) {
-    throw new AppError(
-      "Esta numeración ya no está disponible. Elige otra numeración.",
-      409,
-      "NUMBER_UNAVAILABLE",
-    );
+  let resolvedInventoryId: string | null = null;
+  let inventoryRow: Awaited<ReturnType<typeof getInventoryById>> = null;
+
+  if (assignmentMode === "selected") {
+    resolvedInventoryId =
+      (await resolvePublicInventoryId(requestedInventoryPublicId)) ?? null;
+    if (!resolvedInventoryId) {
+      throw new AppError(
+        "Esta numeración ya no está disponible. Elige otra numeración.",
+        409,
+        "NUMBER_UNAVAILABLE",
+      );
+    }
+
+    inventoryRow = await getInventoryById(resolvedInventoryId);
+    if (!inventoryRow) {
+      throw new AppError(
+        "Esta numeración ya no está disponible. Elige otra numeración.",
+        409,
+        "NUMBER_UNAVAILABLE",
+      );
+    }
+
+    if (!passesPublicInventoryListingFilter(inventoryRow.metadata)) {
+      throw new AppError(
+        "Esta numeración no está disponible para suscripción pública.",
+        409,
+        "NUMBER_UNAVAILABLE",
+      );
+    }
   }
 
-  const inventoryRow = await getInventoryById(resolvedInventoryId);
-  if (!inventoryRow) {
-    throw new AppError(
-      "Esta numeración ya no está disponible. Elige otra numeración.",
-      409,
-      "NUMBER_UNAVAILABLE",
-    );
-  }
-
-  if (!passesPublicInventoryListingFilter(inventoryRow.metadata)) {
-    throw new AppError(
-      "Esta numeración no está disponible para suscripción pública.",
-      409,
-      "NUMBER_UNAVAILABLE",
-    );
-  }
-
-  const inventorySuffix = inventorySuffixFromE164(inventoryRow.e164_number);
+  const inventorySuffix = inventoryRow
+    ? inventorySuffixFromE164(inventoryRow.e164_number)
+    : "";
   const pricing = resolveSimSubscriptionCheckoutPricing(
     plan,
     input.checkoutEmail,
@@ -379,7 +391,8 @@ export async function startPublicSimCheckout(input: {
   try {
     const reserved = await reserveAvailableNumberForCheckout({
       orderId: order.id,
-      inventoryId: resolvedInventoryId,
+      inventoryId:
+        assignmentMode === "selected" ? resolvedInventoryId ?? undefined : undefined,
     });
     inventoryNumberId = reserved.id;
     await linkSimActivationInventory(order.id, inventoryNumberId);
@@ -392,7 +405,8 @@ export async function startPublicSimCheckout(input: {
         inventory_public_id: inventoryPublicId(inventoryNumberId),
         selected_number_masked: maskE164ChileMobile(reserved.e164_number),
         number_suffix: digits.slice(-3),
-        selected_by_customer: true,
+        selected_by_customer: assignmentMode === "selected",
+        assignment_mode: assignmentMode,
         reservation_reason: "sim_subscription",
       },
     });

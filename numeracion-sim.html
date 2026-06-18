@@ -277,6 +277,31 @@
         </ol>
         <aside id="nsim-modal-summary" class="nsim-modal-summary" aria-live="polite"></aside>
         <div id="nsim-modal-status" class="nsim-modal-status" hidden></div>
+        <div id="nsim-pending-order" class="nsim-pending-order" hidden aria-live="polite"></div>
+        <section id="nsim-number-section" class="nsim-number-section nsim-field--checkout-only" hidden aria-live="polite">
+          <div id="nsim-number-loading" class="nsim-number-loading" hidden>
+            <span class="nsim-number-loading__spinner" aria-hidden="true"></span>
+            <p>Buscando numeraciones disponibles…</p>
+          </div>
+          <div id="nsim-number-empty" class="nsim-number-empty" hidden>
+            <p class="nsim-number-empty__title">No hay numeraciones disponibles para este plan en este momento.</p>
+            <p class="nsim-number-empty__text">Solicita activación manual con el equipo Telvoice y te contactaremos cuando haya stock.</p>
+            <a href="index.html#contacto" class="nsim-btn-secondary nsim-number-empty__cta">Contactar a Telvoice</a>
+          </div>
+          <div id="nsim-number-picker" class="nsim-number-picker" hidden>
+            <p class="nsim-number-picker__title">Elige tu numeración SIM</p>
+            <label class="nsim-number-option nsim-number-option--auto" id="nsim-auto-option">
+              <input type="radio" name="nsim-assignment" value="auto" checked />
+              <span class="nsim-number-option__body">
+                <span class="nsim-number-option__number">Asignar automáticamente</span>
+                <span class="nsim-number-option__note">Te asignamos la primera numeración disponible al confirmar la suscripción.</span>
+              </span>
+            </label>
+            <p class="nsim-number-picker__subtitle">O elige una numeración específica</p>
+            <div id="nsim-number-list" class="nsim-number-list" role="radiogroup" aria-label="Numeraciones disponibles"></div>
+            <button type="button" id="nsim-number-show-more" class="nsim-number-show-more" hidden>Ver más numeraciones</button>
+          </div>
+        </section>
         <form id="nsim-purchase-form" class="nsim-modal-form" novalidate>
           <div class="nsim-form-grid">
             <div class="nsim-field"><label for="nsim-nombre">Nombre</label><input id="nsim-nombre" name="nombre" type="text" autocomplete="off" autocapitalize="words" required /></div>
@@ -287,15 +312,8 @@
             <div class="nsim-field nsim-field--full nsim-field--custom-only" hidden><label for="nsim-use-case">Caso de uso</label><textarea id="nsim-use-case" name="use_case" rows="2" placeholder="Ej.: validaciones internas, alertas operativas…"></textarea></div>
             <div class="nsim-field nsim-field--full nsim-field--custom-only" hidden><label for="nsim-volume">Volumen estimado mensual <span class="nsim-field-optional">(opcional)</span></label><input id="nsim-volume" name="volume" type="text" placeholder="Ej.: 5.000 SMS / mes" /></div>
           </div>
-          <div id="nsim-pending-order" class="nsim-pending-order" hidden aria-live="polite"></div>
-          <div id="nsim-number-picker" class="nsim-number-picker nsim-field--checkout-only" hidden>
-            <p class="nsim-number-picker__title">Elige tu numeración disponible</p>
-            <div id="nsim-number-list" class="nsim-number-list" role="radiogroup" aria-label="Numeraciones disponibles"></div>
-            <button type="button" id="nsim-number-show-more" class="nsim-number-show-more" hidden>Ver más numeraciones</button>
-          </div>
           <p id="nsim-form-error" class="nsim-form-error" hidden role="alert"></p>
-          <p id="nsim-stock-hint" class="nsim-form-hint" hidden></p>
-          <button type="submit" id="nsim-submit" class="nsim-btn-primary nsim-submit">Activar suscripción Starter</button>
+          <button type="submit" id="nsim-submit" class="nsim-btn-primary nsim-submit" disabled>Activar suscripción Starter</button>
           <p id="nsim-modal-footnote" class="nsim-modal-footnote">La numeración se cobra como membresía recurrente. Luego del pago, Telvoice coordina la activación de tu número.</p>
         </form>
       </div>

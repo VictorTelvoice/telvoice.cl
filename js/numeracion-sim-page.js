@@ -34,9 +34,12 @@
     billing: "monthly",
     open: false,
     busy: false,
+    numbersLoading: false,
+    inventoryEmpty: false,
     numbers: [],
     numbersLimit: NUMBERS_PAGE_SIZE,
     selectedNumber: null,
+    assignmentMode: "auto",
     pendingOrder: null,
   };
 
@@ -151,10 +154,33 @@
 
   function setBusy(busy) {
     state.busy = busy;
+    updateSubmitState();
     var btn = $("nsim-submit");
     if (!btn) return;
-    btn.disabled = busy;
     btn.textContent = busy ? "Redirigiendo a MercadoPago…" : submitLabel();
+  }
+
+  function canSubmitCheckout() {
+    if (state.planId === "custom") return true;
+    if (state.busy || state.numbersLoading) return false;
+    if (
+      state.pendingOrder &&
+      state.pendingOrder.has_pending_order &&
+      !state.pendingOrder.reservation_expired &&
+      state.pendingOrder.payment_url
+    ) {
+      return true;
+    }
+    if (state.inventoryEmpty) return false;
+    if (!state.numbers.length) return false;
+    if (state.assignmentMode === "auto") return true;
+    return Boolean(state.selectedNumber);
+  }
+
+  function updateSubmitState() {
+    var btn = $("nsim-submit");
+    if (!btn || state.planId === "custom") return;
+    btn.disabled = state.busy || !canSubmitCheckout();
   }
 
   function submitLabel() {
@@ -285,6 +311,7 @@
         window.location.href = pending.payment_url;
       });
     }
+    updateSubmitState();
   }
 
   function updateModal() {
@@ -321,45 +348,107 @@
     document.querySelectorAll(".nsim-field--custom-only").forEach(function (el) {
       el.hidden = !custom;
     });
+    if (custom) {
+      var section = $("nsim-number-section");
+      if (section) section.hidden = true;
+    }
     renderSummary();
+    updateSubmitState();
   }
 
-  function renderNumbers(numbers) {
+  function renderNumberSectionLoading(loading) {
+    var section = $("nsim-number-section");
+    var loadingNode = $("nsim-number-loading");
+    var emptyNode = $("nsim-number-empty");
     var picker = $("nsim-number-picker");
-    var list = $("nsim-number-list");
-    var moreBtn = $("nsim-number-show-more");
-    if (!picker || !list || state.planId === "custom") return;
-
-    state.numbers = Array.isArray(numbers) ? numbers : [];
+    if (!section) return;
+    if (state.planId === "custom") {
+      section.hidden = true;
+      return;
+    }
     if (
       state.pendingOrder &&
       state.pendingOrder.has_pending_order &&
       !state.pendingOrder.reservation_expired &&
       state.pendingOrder.payment_url
     ) {
-      picker.hidden = true;
+      section.hidden = true;
       return;
     }
+    section.hidden = false;
+    if (loadingNode) loadingNode.hidden = !loading;
+    if (loading) {
+      if (emptyNode) emptyNode.hidden = true;
+      if (picker) picker.hidden = true;
+      updateSubmitState();
+      return;
+    }
+    if (loadingNode) loadingNode.hidden = true;
+  }
+
+  function renderNumberEmpty(empty) {
+    var emptyNode = $("nsim-number-empty");
+    var picker = $("nsim-number-picker");
+    state.inventoryEmpty = empty;
+    if (emptyNode) emptyNode.hidden = !empty;
+    if (picker) picker.hidden = empty;
+    updateSubmitState();
+  }
+
+  function renderNumbers(numbers) {
+    var picker = $("nsim-number-picker");
+    var list = $("nsim-number-list");
+    var moreBtn = $("nsim-number-show-more");
+    var autoOption = $("nsim-auto-option");
+    if (!picker || !list || state.planId === "custom") return;
+
+    state.numbers = Array.isArray(numbers) ? numbers : [];
+    renderNumberSectionLoading(false);
+
+    if (
+      state.pendingOrder &&
+      state.pendingOrder.has_pending_order &&
+      !state.pendingOrder.reservation_expired &&
+      state.pendingOrder.payment_url
+    ) {
+      $("nsim-number-section").hidden = true;
+      return;
+    }
+
+    if (!state.numbers.length) {
+      renderNumberEmpty(true);
+      return;
+    }
+
+    renderNumberEmpty(false);
+    picker.hidden = false;
 
     var visible = state.numbers.slice(0, state.numbersLimit);
-    if (!visible.length) {
-      picker.hidden = true;
-      return;
+    if (
+      state.assignmentMode === "selected" &&
+      (!state.selectedNumber ||
+        !visible.some(function (n) {
+          return n.inventory_public_id === state.selectedNumber;
+        }))
+    ) {
+      state.selectedNumber = visible[0].inventory_public_id;
     }
 
-    if (!state.selectedNumber || !visible.some(function (n) {
-      return n.inventory_public_id === state.selectedNumber;
-    })) {
-      state.selectedNumber = visible[0].inventory_public_id;
+    if (autoOption) {
+      autoOption.classList.toggle("is-selected", state.assignmentMode === "auto");
+      var autoInput = autoOption.querySelector('input[name="nsim-assignment"]');
+      if (autoInput) autoInput.checked = state.assignmentMode === "auto";
     }
 
     list.innerHTML = visible
       .map(function (n) {
-        var selected = state.selectedNumber === n.inventory_public_id;
+        var selected =
+          state.assignmentMode === "selected" &&
+          state.selectedNumber === n.inventory_public_id;
         return (
           '<label class="nsim-number-option' +
           (selected ? " is-selected" : "") +
-          '"><input type="radio" name="nsim-number" value="' +
+          '"><input type="radio" name="nsim-assignment" value="' +
           n.inventory_public_id +
           '"' +
           (selected ? " checked" : "") +
@@ -370,31 +459,40 @@
       })
       .join("");
 
-    picker.hidden = false;
-    list.querySelectorAll('input[name="nsim-number"]').forEach(function (input) {
+    list.querySelectorAll('input[name="nsim-assignment"]').forEach(function (input) {
       input.addEventListener("change", function () {
-        state.selectedNumber = String(input.value || "").trim();
-        list.querySelectorAll(".nsim-number-option").forEach(function (el) {
-          el.classList.toggle(
-            "is-selected",
-            el.querySelector('input[name="nsim-number"]').value === input.value
-          );
-        });
+        var value = String(input.value || "").trim();
+        if (value === "auto") {
+          state.assignmentMode = "auto";
+        } else {
+          state.assignmentMode = "selected";
+          state.selectedNumber = value;
+        }
+        renderNumbers(state.numbers);
       });
     });
 
     if (moreBtn) moreBtn.hidden = !(state.numbers.length > state.numbersLimit);
+    updateSubmitState();
   }
 
   function refreshCheckoutContext(emailOverride) {
     if (!state.open || state.planId === "custom") return;
 
     if (demo()) {
+      state.numbersLoading = false;
+      state.inventoryEmpty = false;
+      renderNumberSectionLoading(false);
       renderNumbers([{ inventory_public_id: "demo_001", display_number: "+56 9 *** *** 513" }]);
       return;
     }
 
     var email = (emailOverride || ($("nsim-email") && $("nsim-email").value) || "").trim();
+    state.numbersLoading = true;
+    state.inventoryEmpty = false;
+    renderNumberSectionLoading(true);
+    updateSubmitState();
+
     var pendingPromise = email
       ? fetch(
           origin() + "/api/public/pending-sim-checkout?email=" + encodeURIComponent(email),
@@ -420,6 +518,7 @@
 
     Promise.all([pendingPromise, numbersPromise]).then(function (results) {
       if (!state.open) return;
+      state.numbersLoading = false;
       var pending = results[0] || { has_pending_order: false };
       state.pendingOrder = pending.has_pending_order ? pending : null;
       renderPendingOrder(pending);
@@ -434,12 +533,20 @@
     state.pendingOrder = null;
     state.numbersLimit = NUMBERS_PAGE_SIZE;
     state.selectedNumber = null;
+    state.assignmentMode = "auto";
+    state.numbers = [];
+    state.numbersLoading = planId !== "custom";
+    state.inventoryEmpty = false;
     clearPersonalFormFields();
     setError("");
     updateModal();
     var modal = $("nsim-purchase-modal");
     if (modal) modal.removeAttribute("hidden");
     document.body.classList.add("nsim-modal-open");
+    if (planId !== "custom") {
+      renderNumberSectionLoading(true);
+    }
+    updateSubmitState();
     refreshCheckoutContext();
     var first = $("nsim-nombre");
     if (first) setTimeout(function () { first.focus(); }, 100);
@@ -533,12 +640,25 @@
       return;
     }
 
-    var inventoryId = state.selectedNumber;
-    if (!inventoryId && state.numbers[0]) {
-      inventoryId = state.numbers[0].inventory_public_id;
+    if (state.numbersLoading) {
+      return setError("Espera mientras cargamos las numeraciones disponibles.");
     }
-    if (typeof inventoryId !== "string" || !inventoryId.trim()) {
-      return setError("Elige una numeración disponible para continuar.");
+
+    if (state.inventoryEmpty || !state.numbers.length) {
+      return setError(
+        "No hay numeraciones disponibles para este plan en este momento. Contacta a Telvoice."
+      );
+    }
+
+    var assignmentMode = state.assignmentMode === "auto" ? "auto" : "selected";
+    var inventoryId = state.selectedNumber;
+    if (assignmentMode === "selected") {
+      if (!inventoryId && state.numbers[0]) {
+        inventoryId = state.numbers[0].inventory_public_id;
+      }
+      if (typeof inventoryId !== "string" || !inventoryId.trim()) {
+        return setError("Elige una numeración disponible para continuar.");
+      }
     }
 
     setError("");
@@ -549,14 +669,17 @@
       plan_id: state.planId,
       billing_mode: "subscription",
       recurring: true,
+      assignment_mode: assignmentMode,
       checkout_email: v.email,
       payer_name: v.nombre,
       company_name: v.empresa || undefined,
       phone: v.telefono || undefined,
       tax_id: v.rut || undefined,
       use_case: v.useCase || undefined,
-      inventory_public_id: inventoryId.trim(),
     };
+    if (assignmentMode === "selected") {
+      payload.inventory_public_id = inventoryId.trim();
+    }
 
     fetch(origin() + "/api/public/checkout", {
       method: "POST",
@@ -579,6 +702,15 @@
           if (result.status === 409 && errCode === "NUMBER_UNAVAILABLE") {
             refreshCheckoutContext(v.email);
             throw new Error(NUMBER_TAKEN);
+          }
+          if (
+            result.status === 409 &&
+            (errCode === "NO_STOCK" || errCode === "no_stock")
+          ) {
+            refreshCheckoutContext(v.email);
+            throw new Error(
+              "No hay numeraciones disponibles para este plan en este momento."
+            );
           }
           if (result.status === 409 && errCode === "PENDING_ORDER_EXISTS") {
             refreshCheckoutContext(v.email);
@@ -646,6 +778,18 @@
         state.numbersLimit += NUMBERS_PAGE_SIZE;
         renderNumbers(state.numbers);
       });
+    }
+
+    var autoOption = $("nsim-auto-option");
+    if (autoOption) {
+      var autoInput = autoOption.querySelector('input[name="nsim-assignment"]');
+      if (autoInput) {
+        autoInput.addEventListener("change", function () {
+          if (!autoInput.checked) return;
+          state.assignmentMode = "auto";
+          renderNumbers(state.numbers);
+        });
+      }
     }
 
     document.addEventListener("keydown", function (e) {

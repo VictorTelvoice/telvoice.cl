@@ -347,8 +347,65 @@ body.nsim-modal-open { overflow: hidden; }
 .nsim-pending-order__meta { font-size: 0.8125rem; color: var(--nsim-muted); line-height: 1.55; margin: 0 0 0.85rem; }
 .nsim-pending-order__meta strong { color: var(--nsim-text); }
 .nsim-pending-order__cta { width: 100%; }
-.nsim-number-picker { margin-top: 1rem; }
-.nsim-number-picker__title { font-weight: 700; font-size: 0.875rem; margin: 0 0 0.65rem; }
+.nsim-number-picker { margin-top: 0; }
+.nsim-number-section { margin: 1rem 0 1.15rem; }
+.nsim-number-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px dashed var(--nsim-border);
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--nsim-muted);
+  font-size: 0.875rem;
+}
+.nsim-number-loading__spinner {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 82, 204, 0.18);
+  border-top-color: var(--nsim-primary);
+  animation: nsim-spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes nsim-spin { to { transform: rotate(360deg); } }
+.nsim-number-empty {
+  padding: 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: #fffbeb;
+}
+.nsim-number-empty__title {
+  margin: 0 0 0.45rem;
+  font-weight: 800;
+  font-size: 0.9375rem;
+  color: #92400e;
+}
+.nsim-number-empty__text {
+  margin: 0 0 0.85rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #78350f;
+}
+.nsim-number-empty__cta { width: 100%; }
+.nsim-number-picker__title { font-weight: 800; font-size: 0.9375rem; margin: 0 0 0.75rem; }
+.nsim-number-picker__subtitle {
+  margin: 0.85rem 0 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--nsim-muted);
+}
+.nsim-number-option--auto { margin-bottom: 0.15rem; }
+.nsim-btn-primary:disabled,
+.nsim-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
 .nsim-number-list { display: flex; flex-direction: column; gap: 0.55rem; max-height: 14rem; overflow-y: auto; padding-right: 0.15rem; }
 .nsim-number-option { display: flex; align-items: flex-start; gap: 0.65rem; padding: 0.75rem 0.85rem; border-radius: 0.85rem; border: 1.5px solid var(--nsim-border); background: #fff; cursor: pointer; text-align: left; transition: border-color 0.15s, box-shadow 0.15s; }
 .nsim-number-option:hover { border-color: rgba(0, 82, 204, 0.35); }
