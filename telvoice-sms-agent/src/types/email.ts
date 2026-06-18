@@ -4,7 +4,8 @@ export type TransactionalTemplateKey =
   | "payment_received_pending_claim"
   | "welcome_sms_credited"
   | "invoice_receipt"
-  | "purchase_activation_notice";
+  | "purchase_activation_notice"
+  | "new_customer_purchase_internal_alert";
 
 export interface EmailLogRow {
   id: string;

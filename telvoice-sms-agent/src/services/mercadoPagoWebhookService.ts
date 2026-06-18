@@ -58,6 +58,7 @@ import {
 } from "./simSubscriptionService.js";
 import { runBillingSyncBestEffort } from "./billingSyncService.js";
 import { runClientPanelPostCreditBestEffort } from "./clientPanelPostPurchaseService.js";
+import { sendNewCustomerPurchaseAlertEmailBestEffort } from "./newCustomerPurchaseAlertEmailService.js";
 import type { MercadoPagoPaymentRecord } from "./mercadoPagoService.js";
 import type { SmsOrderRow } from "../types/wallet.js";
 
@@ -164,6 +165,7 @@ async function creditApprovedOrder(
 
   await runBillingSyncBestEffort(orderId, { source: "mercadopago_webhook" });
   await runClientPanelPostCreditBestEffort(orderId);
+  await sendNewCustomerPurchaseAlertEmailBestEffort(orderId);
 
   return { handled: true, orderId, result };
 }

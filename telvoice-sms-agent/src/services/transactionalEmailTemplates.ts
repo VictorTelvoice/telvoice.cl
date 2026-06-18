@@ -788,3 +788,112 @@ export function renderSupportTicketClientReplyToAdmin(
 
   return { subject, html: emailShell("Soporte Telvoice", body), text };
 }
+
+export type NewCustomerPurchaseInternalAlertData = {
+  companyName: string;
+  buyerEmail: string;
+  whatsapp: string;
+  taxId: string;
+  legalName: string;
+  packageName: string;
+  smsQuantity: number;
+  netAmount: number;
+  taxAmount: number;
+  totalAmount: number;
+  currency: string;
+  orderStatusLabel: string;
+  walletStatusLabel: string;
+  orderRef: string;
+  orderId: string;
+  mercadoPagoPaymentId: string | null;
+  purchasedAt: string;
+  isConfirmedNewCustomer: boolean;
+  probableNewCustomer: boolean;
+  adminClientUrl: string;
+  adminOrderUrl: string;
+};
+
+function emailBadge(label: string, bg: string): string {
+  return `<span style="display:inline-block;margin:0 6px 6px 0;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.02em;background:${bg};color:#fff">${escapeHtml(label)}</span>`;
+}
+
+export function renderNewCustomerPurchaseInternalAlert(
+  data: NewCustomerPurchaseInternalAlertData,
+): { subject: string; html: string; text: string } {
+  const subject = `Nuevo cliente compró SMS en Telvoice — ${data.companyName}`;
+  const smsLabel = fmtSms(data.smsQuantity);
+  const net = fmtMoney(data.netAmount, data.currency);
+  const tax = fmtMoney(data.taxAmount, data.currency);
+  const total = fmtMoney(data.totalAmount, data.currency);
+  let when = data.purchasedAt;
+  try {
+    when = new Date(data.purchasedAt).toLocaleString("es-CL", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    /* keep raw */
+  }
+
+  const badges = [
+    emailBadge("Nueva compra online", "#0052cc"),
+    data.isConfirmedNewCustomer
+      ? emailBadge("Cliente nuevo", "#059669")
+      : emailBadge("Cliente nuevo probable", "#d97706"),
+    emailBadge("Solo superadmin", "#64748b"),
+  ].join("");
+
+  const rowPairs: [string, string][] = [
+    ["Empresa / comprador", data.companyName],
+    ["Razón social", data.legalName],
+    ["Email", data.buyerEmail],
+    ["WhatsApp", data.whatsapp],
+    ["RUT", data.taxId],
+    ["Bolsa comprada", `${data.packageName} (${smsLabel} SMS)`],
+    ["Monto neto", net],
+    ["IVA", tax],
+    ["Total pagado", total],
+    ["Estado orden", data.orderStatusLabel],
+    ["Wallet / acreditación", data.walletStatusLabel],
+    ["Order code", data.orderRef],
+    ["Order ID", data.orderId],
+    ["MercadoPago payment id", data.mercadoPagoPaymentId ?? "—"],
+    ["Fecha / hora", when],
+  ];
+
+  const rowsHtml = rowPairs
+    .map(
+      ([label, value]) =>
+        `<div style="margin-bottom:6px"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(String(value))}</div>`,
+    )
+    .join("");
+
+  const body = `
+    <div style="text-align:center;margin-bottom:16px">${badges}</div>
+    <h2 style="margin:0 0 12px;font-family:Segoe UI,system-ui,sans-serif;font-size:18px;line-height:1.35;color:#0f172a;text-align:center">
+      Nuevo cliente registrado con compra SMS
+    </h2>
+    <p style="margin:0 0 16px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55;color:#334155;text-align:center">
+      Se acreditó una bolsa SMS tras pago aprobado en checkout Telvoice.
+    </p>
+    ${summaryCard(rowsHtml)}
+    ${ctaButton(data.adminClientUrl, "Ver cliente en superadmin")}
+    ${ctaButton(data.adminOrderUrl, "Ver orden en superadmin")}`;
+
+  const text = [
+    subject,
+    "",
+    "Nuevo cliente registrado con compra SMS",
+    "",
+    ...rowPairs.map(([label, value]) => `${label}: ${value}`),
+    "",
+    `Ver cliente: ${data.adminClientUrl}`,
+    `Ver orden: ${data.adminOrderUrl}`,
+  ].join("\n");
+
+  return {
+    subject,
+    html: emailShell("Alerta compra cliente nuevo", body),
+    text,
+  };
+}

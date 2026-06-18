@@ -7,6 +7,7 @@ import {
   sendCheckoutPanelAccessEmail,
   sendPostClaimEmailsBestEffort,
 } from "./transactionalEmailService.js";
+import { sendNewCustomerPurchaseAlertEmailBestEffort } from "./newCustomerPurchaseAlertEmailService.js";
 
 export type LandingSmsAutoCreditResult = {
   result: string;
@@ -117,6 +118,8 @@ export async function processLandingSmsBagAutoCredit(
   } catch (err) {
     console.error("[landing-sms-post-pay] emails failed", orderId, err);
   }
+
+  await sendNewCustomerPurchaseAlertEmailBestEffort(orderId);
 
   console.log(
     JSON.stringify({

@@ -18,6 +18,7 @@ import {
 } from "./smsOrderService.js";
 import { getOrCreateCompanyWallet } from "./smsWalletService.js";
 import { hasPurchaseCreditForOrder } from "./walletTransactionService.js";
+import { sendNewCustomerPurchaseAlertEmailBestEffort } from "./newCustomerPurchaseAlertEmailService.js";
 
 const QA_NAME_PREFIX_RE = /^qa\s/i;
 const QA_BLOCKED_CLASSIFICATIONS = new Set<AuditClassification>([
@@ -602,6 +603,12 @@ export async function reconcilePaidPurchase(
       };
     }
     companyId = await createCompanyForPaidPurchase(email, order);
+    await patchOrderFields(orderId, {
+      metadata: {
+        reconcile_created_company: true,
+        reconcile_company_created_at: new Date().toISOString(),
+      },
+    });
   }
 
   if (!companyId) {
@@ -649,6 +656,8 @@ export async function reconcilePaidPurchase(
       companyId,
       alreadyCredited: credit.alreadyCredited,
     });
+
+    await sendNewCustomerPurchaseAlertEmailBestEffort(orderId);
 
     return {
       orderId,
