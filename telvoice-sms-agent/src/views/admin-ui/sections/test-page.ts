@@ -1,5 +1,7 @@
 import type { AdminSessionUser } from "../../../types/admin.js";
+import { isSuperadminRole } from "../../../types/roles.js";
 import { formatVerifyLineDisplay } from "../../../config/verifyNumbers.js";
+import type { InternalQaContextView } from "../../../services/internalQaCompanyService.js";
 import type { TelsimInboundFeedItem } from "../../../services/telsimWebhookService.js";
 import { isDailySendLimitEnforced } from "../../../services/smsLiveTestLimiterService.js";
 import {
@@ -41,6 +43,55 @@ function formatInboundTime(iso: string): string {
   } catch {
     return iso;
   }
+}
+
+function formatQaSmsBalance(availableSms: number | null): string {
+  if (availableSms == null || !Number.isFinite(availableSms)) {
+    return "—";
+  }
+  return `${availableSms.toLocaleString("es-CL")} SMS`;
+}
+
+function renderQaContextCard(qa: InternalQaContextView): string {
+  return `<aside class="tv-qa-context-card" aria-labelledby="tv-qa-context-title">
+    <div class="tv-qa-context-card__head">
+      <h2 class="tv-qa-context-card__title" id="tv-qa-context-title">Contexto QA interno</h2>
+      <div class="tv-qa-context-card__badges">
+        <span class="badge badge-primary">QA interno</span>
+        <span class="badge badge-muted">No cliente real</span>
+        <span class="badge badge-warn">Solo superadmin</span>
+      </div>
+    </div>
+    <dl class="tv-qa-context-card__grid">
+      <div class="tv-qa-context-card__row">
+        <dt>Empresa</dt>
+        <dd>${escapeHtml(qa.companyName)}</dd>
+      </div>
+      <div class="tv-qa-context-card__row">
+        <dt>Alias</dt>
+        <dd>${escapeHtml(qa.alias)}</dd>
+      </div>
+      <div class="tv-qa-context-card__row tv-qa-context-card__row--id">
+        <dt>Company ID</dt>
+        <dd class="tv-qa-context-card__id-row">
+          <code class="tv-qa-context-card__id" title="${escapeHtml(qa.companyId)}">${escapeHtml(qa.companyIdShort)}</code>
+          <button type="button" class="btn btn-secondary btn-sm" id="tv-qa-copy-company-id" data-copy-id="${escapeHtml(qa.companyId)}">Copiar ID</button>
+        </dd>
+      </div>
+      <div class="tv-qa-context-card__row">
+        <dt>Saldo QA</dt>
+        <dd>${escapeHtml(formatQaSmsBalance(qa.availableSms))}</dd>
+      </div>
+      <div class="tv-qa-context-card__row">
+        <dt>Origen</dt>
+        <dd><span class="badge badge-ok">VERIFY TEST</span></dd>
+      </div>
+      <div class="tv-qa-context-card__row">
+        <dt>Modo</dt>
+        <dd>Ruta automática de prueba</dd>
+      </div>
+    </dl>
+  </aside>`;
 }
 
 function renderChecklistItem(ok: boolean, label: string, hint?: string): string {
@@ -322,6 +373,7 @@ export function renderAdminTestPage(options: {
   panel: SendControlPanelView | null;
   sendEnabled: boolean;
   lineFeeds?: Record<string, TelsimInboundFeedItem[]>;
+  qaContext?: InternalQaContextView | null;
   providers?: TestProviderOption[];
   routes?: TestRouteOption[];
 }): string {
@@ -396,12 +448,18 @@ export function renderAdminTestPage(options: {
       })
     : "";
 
+  const qaContextCard =
+    options.qaContext && isSuperadminRole(options.admin.role)
+      ? renderQaContextCard(options.qaContext)
+      : "";
+
   const body = `
     ${renderPageHeader({
       title: "Test",
       subtitle: "Envío SMS, rutas de proveedor y bandeja entrante telsim.",
     })}
     ${opsChips}
+    ${qaContextCard}
     ${workspace}
     <script>
     (function(){
@@ -592,6 +650,21 @@ export function renderAdminTestPage(options: {
           telsimWebhookUrl.select();
           if(navigator.clipboard && navigator.clipboard.writeText){
             navigator.clipboard.writeText(telsimWebhookUrl.value||'').catch(function(){});
+          }
+        });
+      }
+
+      var qaCopyBtn = document.getElementById('tv-qa-copy-company-id');
+      if(qaCopyBtn){
+        qaCopyBtn.addEventListener('click', function(){
+          var id = qaCopyBtn.getAttribute('data-copy-id') || '';
+          if(!id) return;
+          if(navigator.clipboard && navigator.clipboard.writeText){
+            navigator.clipboard.writeText(id).then(function(){
+              var prev = qaCopyBtn.textContent;
+              qaCopyBtn.textContent = 'Copiado';
+              setTimeout(function(){ qaCopyBtn.textContent = prev || 'Copiar ID'; }, 2000);
+            }).catch(function(){});
           }
         });
       }

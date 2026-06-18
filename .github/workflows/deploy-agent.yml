@@ -213,6 +213,7 @@ jobs:
             set_env_key SMS_QUEUE_SCHEDULER_INTERVAL_SECONDS 60
             set_env_key SMS_QUEUE_SCHEDULER_BATCH_SIZE 15
             set_env_key TELVOICE_VERIFY_NUMBERS '+56974713166:Linea QA 1 telsim:—|+56977109623:Linea QA 2 telsim:—|+56934449937:Linea QA 3 telsim:—'
+            set_env_key INTERNAL_QA_COMPANY_ID '6cd1db92-d5c7-45e0-8548-df8907843350'
             if ! grep -q '^PUBLIC_WEBHOOK_BASE_URL=' "$APP_PATH/.env" 2>/dev/null; then
               set_env_key PUBLIC_WEBHOOK_BASE_URL 'https://agent.telvoice.cl'
             fi
