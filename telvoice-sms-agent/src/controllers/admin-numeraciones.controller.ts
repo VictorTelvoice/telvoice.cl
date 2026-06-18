@@ -17,12 +17,15 @@ import {
   sendSimNumberActiveEmail,
 } from "../services/transactionalEmailService.js";
 import { getInventoryById, assignInventoryNumberManual,
+  buildInventoryPublicDashboard,
   createInventoryNumber,
   getInventorySummary,
   getRealNumberInventoryModuleState,
   listInventory,
   markInventoryNotForSale,
   markWebhookConnected,
+  markWebhookConnectedBatch,
+  releaseExpiredInventoryHold,
   releaseExpiredReservation,
   releaseReservationById,
 } from "../services/realNumberInventoryService.js";
@@ -31,6 +34,7 @@ import { AppError } from "../utils/errors.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
   parseAdminNumeracionesFilters,
+  parseInventoryPublicFilter,
   renderAdminNumeracionesPage,
 } from "../views/admin-ui/sections/admin-numeraciones-pages.js";
 
@@ -44,14 +48,25 @@ function pageOpts(req: Request) {
 
 function redirectNumeraciones(
   res: Response,
-  params: { ok?: string; error?: string; company_id?: string },
+  params: {
+    ok?: string;
+    error?: string;
+    company_id?: string;
+    inventory_filter?: string;
+  },
 ): void {
   const q = new URLSearchParams();
   if (params.company_id) q.set("company_id", params.company_id);
+  if (params.inventory_filter) q.set("inventory_filter", params.inventory_filter);
   if (params.ok) q.set("ok", params.ok);
   if (params.error) q.set("error", params.error);
   const qs = q.toString();
   res.redirect(303, `/admin/numeraciones${qs ? `?${qs}` : ""}`);
+}
+
+function inventoryFilterFromRequest(req: Request): string | undefined {
+  const raw = req.query.inventory_filter;
+  return typeof raw === "string" && raw.trim() ? raw.trim() : undefined;
 }
 
 export async function getAdminNumeracionesPage(
@@ -61,6 +76,9 @@ export async function getAdminNumeracionesPage(
 ): Promise<void> {
   try {
     const filters = parseAdminNumeracionesFilters(
+      req.query as Record<string, string | string[] | undefined>,
+    );
+    const inventoryFilter = parseInventoryPublicFilter(
       req.query as Record<string, string | string[] | undefined>,
     );
     const [numbers, companies, simModule, inventoryModule] = await Promise.all([
@@ -76,6 +94,10 @@ export async function getAdminNumeracionesPage(
       ? await getInventorySummary()
       : null;
     const inventory = inventoryModule.available ? await listInventory() : [];
+    const companyNames = new Map(companies.map((c) => [c.id, c.name]));
+    const inventoryDashboardResult = inventoryModule.available
+      ? await buildInventoryPublicDashboard(inventory, companyNames)
+      : { summary: null, rows: [] };
     const prefillCompanyId =
       typeof req.query.company_id === "string"
         ? req.query.company_id.trim()
@@ -84,12 +106,15 @@ export async function getAdminNumeracionesPage(
     res.type("html").send(
       renderAdminNumeracionesPage(pageOpts(req), {
         filters,
+        inventoryFilter,
         numbers,
         companies,
         prefillCompanyId,
         simActivations,
         simModulePending: simModule.migrationPending,
         inventory,
+        inventoryDashboard: inventoryDashboardResult.rows,
+        publicStockSummary: inventoryDashboardResult.summary,
         inventorySummary,
         inventoryModulePending: inventoryModule.migrationPending,
       }),
@@ -327,7 +352,10 @@ export async function postAdminInventoryMarkConnected(
       gatewayId: String(req.body?.gateway_id ?? "") || undefined,
       simSlot: String(req.body?.sim_slot ?? "") || undefined,
     });
-    redirectNumeraciones(res, { ok: "Número marcado como conectado y disponible para venta." });
+    redirectNumeraciones(res, {
+      ok: "Número marcado como conectado y disponible para venta.",
+      inventory_filter: inventoryFilterFromRequest(req),
+    });
   } catch (error) {
     if (error instanceof AppError) {
       redirectNumeraciones(res, { error: error.message });
@@ -457,6 +485,91 @@ export async function postAdminInventoryAssign(
   } catch (error) {
     if (error instanceof AppError) {
       redirectNumeraciones(res, { error: error.message });
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function postAdminInventoryBulkMarkConnected(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    if (String(req.body?.confirm ?? "") !== "1") {
+      redirectNumeraciones(res, {
+        error: "Confirmación requerida.",
+        inventory_filter: inventoryFilterFromRequest(req),
+      });
+      return;
+    }
+
+    const rawIds = req.body?.inventory_ids;
+    const ids = (Array.isArray(rawIds) ? rawIds : rawIds ? [rawIds] : [])
+      .map((id) => String(id).trim())
+      .filter(Boolean);
+
+    if (!ids.length) {
+      redirectNumeraciones(res, {
+        error: "Selecciona al menos una numeración preconfigurada.",
+        inventory_filter: inventoryFilterFromRequest(req),
+      });
+      return;
+    }
+
+    const validated = ids.map((id) => validateUuidParam(id, "inventario"));
+    const result = await markWebhookConnectedBatch(validated);
+
+    redirectNumeraciones(res, {
+      ok:
+        result.updated > 0
+          ? `${result.updated} numeración(es) marcada(s) como conectada(s) y disponibles para venta pública.${result.skipped ? ` ${result.skipped} omitida(s).` : ""}`
+          : "Ninguna numeración elegible para marcar conectada.",
+      inventory_filter: "public_sellable",
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      redirectNumeraciones(res, {
+        error: error.message,
+        inventory_filter: inventoryFilterFromRequest(req),
+      });
+      return;
+    }
+    next(error);
+  }
+}
+
+export async function postAdminInventoryReleaseExpiredHold(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    if (String(req.body?.confirm ?? "") !== "1") {
+      redirectNumeraciones(res, {
+        error: "Confirmación requerida.",
+        inventory_filter: inventoryFilterFromRequest(req),
+      });
+      return;
+    }
+
+    const id = validateUuidParam(String(req.params.id ?? ""), "inventario");
+    await releaseExpiredInventoryHold(id, {
+      adminUserId: req.adminUser!.id,
+      adminRole: req.adminUser!.role ?? null,
+      ipAddress: req.ip ?? null,
+    });
+    redirectNumeraciones(res, {
+      ok: "Retención expirada liberada. El número puede volver a aparecer en checkout público.",
+      inventory_filter: inventoryFilterFromRequest(req),
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      redirectNumeraciones(res, {
+        error: error.message,
+        inventory_filter: inventoryFilterFromRequest(req),
+      });
       return;
     }
     next(error);

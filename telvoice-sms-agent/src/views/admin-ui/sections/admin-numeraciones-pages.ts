@@ -1,6 +1,6 @@
 import type { AdminSessionUser } from "../../../types/admin.js";
 import type { SimActivationRequestListItem } from "../../../types/sim-activation.js";
-import type { RealNumberInventoryRow, RealNumberInventorySummary } from "../../../types/real-number-inventory.js";
+import type { RealNumberInventoryRow, RealNumberInventorySummary, PublicInventoryFilterCategory, PublicStockSummary, InventoryPublicDashboardRow } from "../../../types/real-number-inventory.js";
 import { simActivationStatusLabel } from "../../../services/simActivationService.js";
 import {
   maskE164,
@@ -40,6 +40,7 @@ export type AdminNumeracionesPageOpts = {
 
 export type AdminNumeracionesPageContext = {
   filters: AdminNumeracionesFilters;
+  inventoryFilter: PublicInventoryFilterCategory;
   numbers: AdminClientNumberItem[];
   companies: CompanyRow[];
   prefillCompanyId?: string;
@@ -47,9 +48,30 @@ export type AdminNumeracionesPageContext = {
   simActivations: SimActivationRequestListItem[];
   simModulePending?: boolean;
   inventory: RealNumberInventoryRow[];
+  inventoryDashboard: InventoryPublicDashboardRow[];
+  publicStockSummary: PublicStockSummary | null;
   inventorySummary: RealNumberInventorySummary | null;
   inventoryModulePending?: boolean;
 };
+
+const INVENTORY_FILTER_OPTIONS: Array<{ value: PublicInventoryFilterCategory; label: string }> = [
+  { value: "all", label: "Todos" },
+  { value: "public_sellable", label: "Listos para venta" },
+  { value: "pending_connection", label: "Pendientes conexión" },
+  { value: "held_by_checkout", label: "Retenidos por checkout" },
+  { value: "sold", label: "Vendidos" },
+  { value: "assigned", label: "Asignados" },
+  { value: "qa_not_sellable", label: "QA / no vendibles" },
+];
+
+export function parseInventoryPublicFilter(
+  query: Record<string, string | string[] | undefined>,
+): PublicInventoryFilterCategory {
+  const raw = pickQuery(query, "inventory_filter");
+  return INVENTORY_FILTER_OPTIONS.some((o) => o.value === raw)
+    ? (raw as PublicInventoryFilterCategory)
+    : "all";
+}
 
 function pickQuery(
   query: Record<string, string | string[] | undefined>,
@@ -239,27 +261,75 @@ function renderSimActivationsTable(items: SimActivationRequestListItem[]): strin
   </tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
-function renderInventorySummary(summary: RealNumberInventorySummary): string {
+function eligibilityBadgeClass(code: string): string {
+  if (code === "public_sellable") return "ok";
+  if (
+    code === "held_by_pending_order" ||
+    code === "reserved" ||
+    code === "sold_pending_activation"
+  ) {
+    return "warn";
+  }
+  return "muted";
+}
+
+function renderPublicStockSummary(summary: PublicStockSummary): string {
   const cards = [
-    ["Total inventario", summary.total],
-    ["Disponibles conectados", summary.connected_available],
-    ["Preconfigurados pendientes", summary.preconfigured_pending],
-    ["Reservados", summary.reserved],
-    ["Vendidos pendientes activación", summary.sold_pending_activation],
-    ["Activos asignados", summary.active_assigned],
-    ["No vendibles", summary.not_for_sale],
-    ["Suspendidos", summary.suspended],
+    ["Stock público vendible", summary.publicSellable, "public_sellable"],
+    ["Pendientes conexión", summary.pendingConnection, "pending_connection"],
+    ["Retenidos por checkout", summary.heldByCheckout, "held_by_checkout"],
+    [
+      "Vendidos pendiente activación",
+      summary.soldPendingActivation,
+      "sold",
+    ],
+    ["Activos asignados", summary.activeAssigned, "assigned"],
+    ["QA / no vendibles", summary.qaNotSellable, "qa_not_sellable"],
   ]
     .map(
-      ([label, value]) =>
-        `<div class="tv-stat-card"><span class="tv-stat-label">${escapeHtml(String(label))}</span><strong class="tv-stat-value">${escapeHtml(String(value))}</strong></div>`,
+      ([label, value, filter]) =>
+        `<a href="/admin/numeraciones?inventory_filter=${escapeHtml(String(filter))}" class="tv-stat-card tv-stat-card--link${Number(value) > 0 ? " tv-stat-card--active" : ""}">
+          <span class="tv-stat-label">${escapeHtml(String(label))}</span>
+          <strong class="tv-stat-value">${escapeHtml(String(value))}</strong>
+        </a>`,
     )
     .join("");
 
-  return `<div class="tv-stat-grid">${cards}</div>
-    <form method="post" action="/admin/numeraciones/inventory/release-expired" style="margin-top:0.75rem">
-      <button type="submit" class="btn btn-ghost btn-sm">Liberar reservas expiradas</button>
-    </form>`;
+  return `<div class="tv-inventory-public-stock">
+    <h4 class="tv-inventory-public-stock__title">Estado del stock público</h4>
+    <div class="tv-stat-grid tv-stat-grid--public">${cards}</div>
+  </div>`;
+}
+
+function renderInventoryFilterTabs(active: PublicInventoryFilterCategory): string {
+  const tabs = INVENTORY_FILTER_OPTIONS.map(
+    (opt) =>
+      `<a href="/admin/numeraciones?inventory_filter=${escapeHtml(opt.value)}" class="tv-inv-filter-tab${active === opt.value ? " is-active" : ""}">${escapeHtml(opt.label)}</a>`,
+  ).join("");
+  return `<nav class="tv-inv-filter-tabs" aria-label="Filtros inventario">${tabs}</nav>`;
+}
+
+function renderInventoryLegacySummary(summary: RealNumberInventorySummary): string {
+  return `<details class="tv-inventory-legacy-summary">
+    <summary class="btn btn-ghost btn-sm">Ver contadores técnicos (sales_status)</summary>
+    <div class="tv-stat-grid" style="margin-top:0.75rem">
+      ${[
+        ["Total inventario", summary.total],
+        ["Disponibles conectados", summary.connected_available],
+        ["Preconfigurados pendientes", summary.preconfigured_pending],
+        ["Reservados", summary.reserved],
+        ["Vendidos pendientes activación", summary.sold_pending_activation],
+        ["Activos asignados", summary.active_assigned],
+        ["No vendibles", summary.not_for_sale],
+        ["Suspendidos", summary.suspended],
+      ]
+        .map(
+          ([label, value]) =>
+            `<div class="tv-stat-card"><span class="tv-stat-label">${escapeHtml(String(label))}</span><strong class="tv-stat-value">${escapeHtml(String(value))}</strong></div>`,
+        )
+        .join("")}
+    </div>
+  </details>`;
 }
 
 function renderInventoryAddForm(): string {
@@ -293,23 +363,17 @@ function lookupCompanyName(
   return match ? match.name : companyId.slice(0, 8) + "…";
 }
 
-function lookupClientNumber(
-  numbers: AdminClientNumberItem[],
-  clientNumberId: string | null,
-): string {
-  if (!clientNumberId) return "—";
-  const match = numbers.find((n) => n.id === clientNumberId);
-  return match ? maskE164(match.number) : clientNumberId.slice(0, 8) + "…";
-}
-
 function renderInventoryTable(
-  items: RealNumberInventoryRow[],
+  items: InventoryPublicDashboardRow[],
   companies: CompanyRow[],
-  numbers: AdminClientNumberItem[],
   simActivations: SimActivationRequestListItem[],
+  inventoryFilter: PublicInventoryFilterCategory,
 ): string {
   if (!items.length) {
-    return `<p class="field-hint">Sin registros en inventario. Agrega números demo con el formulario superior o el script <code>seed-demo-real-number-inventory.mjs</code>.</p>`;
+    const filterLabel =
+      INVENTORY_FILTER_OPTIONS.find((o) => o.value === inventoryFilter)?.label ??
+      "este filtro";
+    return `<p class="field-hint">Sin registros para ${escapeHtml(filterLabel)}.</p>`;
   }
 
   const companyOpts = companies
@@ -326,52 +390,72 @@ function renderInventoryTable(
     )
     .join("");
 
+  const bulkCandidates = items.filter(
+    (item) => item.eligibility.canBulkMarkConnected,
+  ).length;
+
   const rows = items
-    .map((n) => {
+    .map(({ row: n, eligibility: e }) => {
       const salesCls =
         n.sales_status === "connected_available"
           ? "ok"
           : n.sales_status === "reserved_pending_payment"
             ? "warn"
             : "muted";
+      const eligCls = eligibilityBadgeClass(e.code);
       const orderRef = n.current_order_id
         ? n.current_order_id.slice(0, 8).toUpperCase()
-        : "—";
-      const canRelease = n.sales_status === "reserved_pending_payment";
-      const canAssign = !["active_assigned", "not_for_sale", "suspended"].includes(
-        n.sales_status,
-      );
+        : e.heldOrder?.orderCode ?? "—";
       const linkedActivation = n.current_agent_request_id
         ? simActivations.find((a) => a.id === n.current_agent_request_id)
         : null;
 
-      return `<tr>
-        <td><strong title="ID ${escapeHtml(n.id)}">${escapeHtml(maskE164(n.e164_number))}</strong></td>
-        <td><span class="badge badge-${salesCls}">${escapeHtml(realNumberSalesStatusLabel(n.sales_status))}</span></td>
-        <td>${escapeHtml(realNumberConnectionStatusLabel(n.connection_status))}</td>
-        <td>${escapeHtml(lookupCompanyName(companies, n.current_company_id))}</td>
-        <td><code>${escapeHtml(orderRef)}</code></td>
-        <td>${escapeHtml(lookupClientNumber(numbers, n.current_client_number_id))}</td>
-        <td>${n.reserved_until ? formatDate(n.reserved_until) : "—"}</td>
-        <td>${formatDate(n.updated_at)}</td>
-        <td style="white-space:nowrap">
-          <form method="post" action="/admin/numeraciones/inventory/${escapeHtml(n.id)}/mark-connected" style="display:inline">
-            <button type="submit" class="btn btn-ghost btn-sm">Marcar conectado</button>
-          </form>
-          <form method="post" action="/admin/numeraciones/inventory/${escapeHtml(n.id)}/not-for-sale" style="display:inline">
+      const heldDetail = e.heldOrder
+        ? `<div class="tv-inv-held-detail">
+            <span class="badge badge-warn">Retenido por checkout pendiente</span>
+            <div><a href="/admin/orders/${escapeHtml(e.heldOrder.orderId)}"><code>${escapeHtml(e.heldOrder.orderCode)}</code></a></div>
+            ${e.heldOrder.email ? `<div><small>${escapeHtml(e.heldOrder.email)}</small></div>` : ""}
+            ${e.heldOrder.planId ? `<div><small>Plan: ${escapeHtml(e.heldOrder.planId)}</small></div>` : ""}
+            <div><small>Hace ${escapeHtml(e.heldOrder.ageHours.toFixed(1))} h</small></div>
+          </div>`
+        : "";
+
+      const actions: string[] = [];
+
+      if (e.canMarkConnected) {
+        actions.push(`<form method="post" action="/admin/numeraciones/inventory/${escapeHtml(n.id)}/mark-connected" style="display:inline">
+            <button type="submit" class="btn btn-primary btn-sm">Marcar conectado</button>
+          </form>`);
+      }
+
+      if (e.canReleaseExpiredHold) {
+        actions.push(`<form method="post" action="/admin/numeraciones/inventory/${escapeHtml(n.id)}/release-expired-hold" style="display:inline" onsubmit="return confirm('¿Liberar retención expirada (mín. 30 min)? Solo superadmin. No cancela la orden ni acredita SMS. Para venta real, preferir órdenes antiguas evidentes (ej. QA &gt;36 h).');">
+            <input type="hidden" name="confirm" value="1" />
+            <button type="submit" class="btn btn-ghost btn-sm">Liberar reserva expirada</button>
+          </form>`);
+      }
+
+      if (e.heldOrder) {
+        actions.push(
+          `<a href="/admin/orders/${escapeHtml(e.heldOrder.orderId)}" class="btn btn-ghost btn-sm">Ver orden</a>`,
+        );
+      }
+
+      if (e.canMarkNotForSale) {
+        actions.push(`<form method="post" action="/admin/numeraciones/inventory/${escapeHtml(n.id)}/not-for-sale" style="display:inline" onsubmit="return confirm('¿Marcar como no vendible?');">
             <button type="submit" class="btn btn-ghost btn-sm">No vendible</button>
-          </form>
-          ${
-            canRelease
-              ? `<form method="post" action="/admin/numeraciones/inventory/${escapeHtml(n.id)}/release" style="display:inline">
-            <button type="submit" class="btn btn-ghost btn-sm">Liberar reserva</button>
-          </form>`
-              : ""
-          }
-          ${
-            canAssign
-              ? `<details class="tv-inventory-assign">
-            <summary class="btn btn-primary btn-sm">Asignar</summary>
+          </form>`);
+      }
+
+      if (n.sales_status === "reserved_pending_payment" && !e.canReleaseExpiredHold) {
+        actions.push(
+          `<span class="field-hint">Reserva activa</span>`,
+        );
+      }
+
+      if (e.canAssign) {
+        actions.push(`<details class="tv-inventory-assign">
+            <summary class="btn btn-ghost btn-sm">Asignar</summary>
             <form method="post" action="/admin/numeraciones/inventory/${escapeHtml(n.id)}/assign" class="tv-inventory-assign-form">
               <label>Empresa<select name="company_id" class="tv-filter-input" required>${companyOpts}</select></label>
               <label>Plan<select name="plan_code" class="tv-filter-input">
@@ -386,21 +470,59 @@ function renderInventoryTable(
               }
               <button type="submit" class="btn btn-primary btn-sm">Confirmar asignación</button>
             </form>
-          </details>`
-              : ""
-          }
-          ${
-            linkedActivation
-              ? `<a class="btn btn-ghost btn-sm" href="#sim-activation-${escapeHtml(linkedActivation.id)}">Ver activación</a>`
-              : ""
-          }
-        </td>
+          </details>`);
+      }
+
+      if (linkedActivation) {
+        actions.push(
+          `<a class="btn btn-ghost btn-sm" href="#sim-activation-${escapeHtml(linkedActivation.id)}">Ver activación</a>`,
+        );
+      }
+
+      if (e.code === "active_assigned" && n.current_company_id) {
+        actions.push(
+          `<span class="field-hint">Cliente: ${escapeHtml(lookupCompanyName(companies, n.current_company_id))}</span>`,
+        );
+      }
+
+      if (e.code === "sold_pending_activation" && n.current_order_id) {
+        actions.push(
+          `<a href="/admin/orders/${escapeHtml(n.current_order_id)}" class="btn btn-ghost btn-sm">Ver orden</a>`,
+        );
+      }
+
+      const checkbox = e.canBulkMarkConnected
+        ? `<input type="checkbox" name="inventory_ids" value="${escapeHtml(n.id)}" form="tv-inv-bulk-form" class="tv-inv-bulk-check" />`
+        : "";
+
+      return `<tr class="tv-inv-row tv-inv-row--${escapeHtml(e.code)}">
+        <td>${checkbox}</td>
+        <td><strong title="ID ${escapeHtml(n.id)}">${escapeHtml(maskE164(n.e164_number))}</strong></td>
+        <td><span class="badge badge-${eligCls}">${escapeHtml(e.label)}</span></td>
+        <td><small>${escapeHtml(e.reason)}</small>${heldDetail}</td>
+        <td><span class="badge badge-${salesCls}">${escapeHtml(realNumberSalesStatusLabel(n.sales_status))}</span></td>
+        <td>${escapeHtml(realNumberConnectionStatusLabel(n.connection_status))}${n.webhook_connected ? " · webhook" : ""}</td>
+        <td>${escapeHtml(lookupCompanyName(companies, n.current_company_id))}</td>
+        <td><code>${escapeHtml(orderRef)}</code></td>
+        <td>${n.reserved_until ? formatDate(n.reserved_until) : "—"}</td>
+        <td style="white-space:nowrap">${actions.join(" ")}</td>
       </tr>`;
     })
     .join("");
 
-  return `<div class="table-wrap tv-panel"><table class="tv-table"><thead><tr>
-    <th>Número</th><th>Estado comercial</th><th>Conexión</th><th>Empresa</th><th>Orden</th><th>Cliente/número</th><th>Reservado hasta</th><th>Actualizado</th><th>Acciones</th>
+  const bulkBar =
+    bulkCandidates > 0
+      ? `<form id="tv-inv-bulk-form" method="post" action="/admin/numeraciones/inventory/bulk-mark-connected" class="tv-inv-bulk-bar" onsubmit="return confirm('Vas a marcar las numeraciones seleccionadas como conectadas y disponibles para venta pública. Esta acción no asigna clientes ni activa líneas. ¿Continuar?');">
+          <input type="hidden" name="confirm" value="1" />
+          <span class="field-hint">${bulkCandidates} candidato(s) para marcar conectado</span>
+          <button type="submit" class="btn btn-primary btn-sm">Marcar seleccionados como conectados</button>
+        </form>`
+      : "";
+
+  return `${bulkBar}
+    <div class="table-wrap tv-panel"><table class="tv-table tv-inventory-table"><thead><tr>
+    <th style="width:2rem"></th>
+    <th>Número</th><th>Elegibilidad pública</th><th>Motivo</th><th>Estado comercial</th><th>Conexión</th><th>Empresa</th><th>Orden</th><th>Reservado hasta</th><th>Acciones</th>
   </tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
@@ -409,14 +531,26 @@ function renderInventorySection(ctx: AdminNumeracionesPageContext): string {
     return `<p class="field-hint">Requiere migración 057 (real_number_inventory) en Supabase.</p>`;
   }
 
+  const filteredRows =
+    ctx.inventoryFilter === "all"
+      ? ctx.inventoryDashboard
+      : ctx.inventoryDashboard.filter(
+          (item) => item.eligibility.filterCategory === ctx.inventoryFilter,
+        );
+
   return `
     <div class="tv-inventory-header">
       <h3 class="tv-inventory-title">Inventario de números SIM reales</h3>
-      <p class="field-hint tv-inventory-subtitle">Administra las numeraciones disponibles para venta, activación y asignación a clientes Telvoice.</p>
+      <p class="field-hint tv-inventory-subtitle">Operación de stock para checkout público en <a href="/numeracion-sim.html" target="_blank" rel="noopener">numeracion-sim.html</a>. Los contadores usan la misma lógica que <code>/api/public/sim-available-numbers</code>.</p>
     </div>
-    ${ctx.inventorySummary ? renderInventorySummary(ctx.inventorySummary) : ""}
+    ${ctx.publicStockSummary ? renderPublicStockSummary(ctx.publicStockSummary) : ""}
+    ${renderInventoryFilterTabs(ctx.inventoryFilter)}
+    ${ctx.inventorySummary ? renderInventoryLegacySummary(ctx.inventorySummary) : ""}
+    <form method="post" action="/admin/numeraciones/inventory/release-expired" style="margin:0.75rem 0">
+      <button type="submit" class="btn btn-ghost btn-sm">Liberar reservas DB expiradas (batch)</button>
+    </form>
     ${renderPanel("Agregar número al inventario", renderInventoryAddForm())}
-    ${renderInventoryTable(ctx.inventory, ctx.companies, ctx.numbers, ctx.simActivations)}`;
+    ${renderInventoryTable(filteredRows, ctx.companies, ctx.simActivations, ctx.inventoryFilter)}`;
 }
 
 export function renderAdminNumeracionesPage(
@@ -468,9 +602,23 @@ export function renderAdminNumeracionesPage(
     <style>
       .tv-row-qa { background: rgba(245,158,11,0.04); }
       .tv-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: 0.75rem; }
+      .tv-stat-grid--public { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
       .tv-stat-card { border: 1px solid rgba(0,0,0,0.08); border-radius: 0.75rem; padding: 0.75rem; }
+      .tv-stat-card--link { text-decoration: none; color: inherit; display: block; transition: border-color 0.15s, box-shadow 0.15s; }
+      .tv-stat-card--link:hover { border-color: rgba(0,82,204,0.35); box-shadow: 0 0 0 1px rgba(0,82,204,0.08); }
+      .tv-stat-card--active { border-color: rgba(0,82,204,0.45); background: rgba(0,82,204,0.03); }
       .tv-stat-label { display: block; font-size: 0.75rem; color: #64748b; }
       .tv-stat-value { font-size: 1.25rem; }
+      .tv-inventory-public-stock { margin-bottom: 1rem; }
+      .tv-inventory-public-stock__title { margin: 0 0 0.5rem; font-size: 0.95rem; font-weight: 600; }
+      .tv-inv-filter-tabs { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.75rem 0 1rem; }
+      .tv-inv-filter-tab { font-size: 0.8rem; padding: 0.35rem 0.65rem; border-radius: 999px; border: 1px solid rgba(0,0,0,0.1); text-decoration: none; color: inherit; }
+      .tv-inv-filter-tab.is-active { background: #0052cc; color: #fff; border-color: #0052cc; }
+      .tv-inv-held-detail { margin-top: 0.35rem; font-size: 0.8rem; }
+      .tv-inv-bulk-bar { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-bottom: 0.75rem; padding: 0.65rem 0.75rem; border: 1px dashed rgba(0,0,0,0.12); border-radius: 0.75rem; }
+      .tv-inv-row--public_sellable { background: rgba(34,197,94,0.04); }
+      .tv-inv-row--held_by_pending_order { background: rgba(245,158,11,0.04); }
+      .tv-inventory-legacy-summary { margin: 0.5rem 0 0.75rem; }
       .tv-inventory-title { margin: 0 0 0.35rem; font-size: 1.15rem; }
       .tv-inventory-subtitle { margin: 0 0 1rem; }
       .tv-inventory-add-form { margin-top: 0.5rem; }

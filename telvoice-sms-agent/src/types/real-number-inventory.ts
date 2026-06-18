@@ -50,3 +50,62 @@ export type PublicRealNumberAvailability = {
   available: number;
   in_stock: boolean;
 };
+
+export type PublicInventoryEligibilityCode =
+  | "public_sellable"
+  | "pending_connection"
+  | "webhook_missing"
+  | "qa_only"
+  | "held_by_pending_order"
+  | "sold_pending_activation"
+  | "active_assigned"
+  | "reserved"
+  | "not_sellable"
+  | "suspended";
+
+export type PublicInventoryFilterCategory =
+  | "all"
+  | "public_sellable"
+  | "pending_connection"
+  | "held_by_checkout"
+  | "sold"
+  | "assigned"
+  | "qa_not_sellable";
+
+export type PendingInventoryHold = {
+  orderId: string;
+  orderCode: string;
+  email: string | null;
+  planId: string | null;
+  createdAt: string;
+  ageHours: number;
+  reservationExpired: boolean;
+};
+
+export type PublicInventoryEligibility = {
+  eligible: boolean;
+  code: PublicInventoryEligibilityCode;
+  label: string;
+  reason: string;
+  filterCategory: Exclude<PublicInventoryFilterCategory, "all">;
+  heldOrder?: PendingInventoryHold;
+  canMarkConnected: boolean;
+  canBulkMarkConnected: boolean;
+  canReleaseExpiredHold: boolean;
+  canMarkNotForSale: boolean;
+  canAssign: boolean;
+};
+
+export type PublicStockSummary = {
+  publicSellable: number;
+  pendingConnection: number;
+  heldByCheckout: number;
+  soldPendingActivation: number;
+  activeAssigned: number;
+  qaNotSellable: number;
+};
+
+export type InventoryPublicDashboardRow = {
+  row: RealNumberInventoryRow;
+  eligibility: PublicInventoryEligibility;
+};

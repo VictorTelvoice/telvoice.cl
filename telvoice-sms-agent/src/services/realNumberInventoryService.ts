@@ -1,8 +1,14 @@
 import { getSupabase } from "../database/supabaseClient.js";
+import { insertAuditLog } from "./auditLogService.js";
 import { env } from "../config/env.js";
 import { createAdminClientNumber } from "./adminClientNumberService.js";
 import type {
   PublicRealNumberAvailability,
+  PublicInventoryEligibility,
+  PublicInventoryFilterCategory,
+  PublicStockSummary,
+  InventoryPublicDashboardRow,
+  PendingInventoryHold,
   RealNumberConnectionStatus,
   RealNumberInventoryRow,
   RealNumberInventorySummary,
@@ -17,6 +23,19 @@ import {
 } from "../utils/inventory-public-id.js";
 
 const RESERVATION_MINUTES = 30;
+
+export { RESERVATION_MINUTES };
+
+function orderShortCode(orderId: string, publicRef?: string | null): string {
+  if (publicRef && String(publicRef).trim()) return String(publicRef).trim();
+  return orderId.slice(0, 8).toUpperCase();
+}
+
+function formatAgeHours(ageHours: number): string {
+  if (ageHours < 1) return `${Math.max(1, Math.round(ageHours * 60))} min`;
+  if (ageHours < 48) return `${ageHours.toFixed(1)} h`;
+  return `${(ageHours / 24).toFixed(1)} d`;
+}
 
 export type RealNumberInventoryModuleState = {
   available: boolean;
@@ -225,30 +244,54 @@ const PUBLIC_PLAN_ELIGIBLE = ["sim_starter", "sim_pro"] as const;
 
 /** Inventario retenido por órdenes SIM bundle pendientes — no vendible públicamente. */
 export async function getPendingSimBundleHeldInventoryIds(): Promise<Set<string>> {
+  const details = await getPendingSimBundleHeldInventoryDetails();
+  return new Set(details.keys());
+}
+
+/** Detalle de retención por checkout SIM pending (metadata.inventory_number_id). */
+export async function getPendingSimBundleHeldInventoryDetails(): Promise<
+  Map<string, PendingInventoryHold>
+> {
   const sb = getSupabase();
-  const held = new Set<string>();
+  const held = new Map<string, PendingInventoryHold>();
+  const now = Date.now();
+  const reservationMs = RESERVATION_MINUTES * 60 * 1000;
 
   const { data: reservedRows, error: reservedError } = await sb
     .from("real_number_inventory")
-    .select("id")
+    .select("id, current_order_id, reserved_until")
     .eq("sales_status", "reserved_pending_payment");
 
   if (reservedError) {
     if (isMissingTableError(reservedError)) return held;
-    throw wrapSupabaseError(reservedError, "getPendingSimBundleHeldInventoryIds");
+    throw wrapSupabaseError(reservedError, "getPendingSimBundleHeldInventoryDetails");
   }
 
   for (const row of reservedRows ?? []) {
-    held.add(String(row.id));
+    const inventoryId = String(row.id);
+    const orderId =
+      row.current_order_id != null ? String(row.current_order_id) : null;
+    if (!orderId) continue;
+    const reservedUntil =
+      row.reserved_until != null ? new Date(String(row.reserved_until)).getTime() : 0;
+    held.set(inventoryId, {
+      orderId,
+      orderCode: orderShortCode(orderId),
+      email: null,
+      planId: null,
+      createdAt: new Date(now).toISOString(),
+      ageHours: 0,
+      reservationExpired: reservedUntil > 0 && reservedUntil < now,
+    });
   }
 
   const { data: pendingOrders, error: ordersError } = await sb
     .from("sms_orders")
-    .select("id, metadata")
+    .select("id, checkout_email, created_at, metadata")
     .eq("payment_status", "pending");
 
   if (ordersError) {
-    throw wrapSupabaseError(ordersError, "getPendingSimBundleHeldInventoryIds");
+    throw wrapSupabaseError(ordersError, "getPendingSimBundleHeldInventoryDetails");
   }
 
   for (const order of pendingOrders ?? []) {
@@ -256,31 +299,350 @@ export async function getPendingSimBundleHeldInventoryIds(): Promise<Set<string>
       order.metadata && typeof order.metadata === "object"
         ? (order.metadata as Record<string, unknown>)
         : {};
-    if (meta.product_type !== "sim_agent_bundle" && meta.product_type !== "sim_subscription") {
+    if (
+      meta.product_type !== "sim_agent_bundle" &&
+      meta.product_type !== "sim_subscription"
+    ) {
       continue;
     }
     const inventoryId = meta.inventory_number_id;
-    if (typeof inventoryId === "string" && inventoryId.trim()) {
-      held.add(inventoryId.trim());
-    }
+    if (typeof inventoryId !== "string" || !inventoryId.trim()) continue;
+
+    const orderId = String(order.id);
+    const createdAt = String(order.created_at ?? new Date().toISOString());
+    const ageHours = (now - new Date(createdAt).getTime()) / (3600 * 1000);
+    const publicRef =
+      typeof meta.public_checkout_reference === "string"
+        ? meta.public_checkout_reference
+        : null;
+    const planId =
+      typeof meta.plan_id === "string" ? meta.plan_id : null;
+
+    held.set(inventoryId.trim(), {
+      orderId,
+      orderCode: orderShortCode(orderId, publicRef),
+      email:
+        typeof order.checkout_email === "string"
+          ? order.checkout_email
+          : null,
+      planId,
+      createdAt,
+      ageHours,
+      reservationExpired: now - new Date(createdAt).getTime() > reservationMs,
+    });
   }
 
   return held;
 }
 
-function isInventoryPubliclySellable(row: {
-  id: string;
-  sales_status?: string;
-  connection_status?: string;
-  webhook_connected?: boolean;
-  metadata?: Record<string, unknown> | null;
-}): boolean {
-  const base =
-    row.sales_status === "connected_available" &&
-    row.connection_status === "connected" &&
-    row.webhook_connected === true;
-  if (!base) return false;
-  return passesPublicInventoryListingFilter(row.metadata);
+function qaExclusionReason(metadata: unknown): string | null {
+  if (inventoryMetadataQaOnly(metadata)) return "metadata.qa_only";
+  if (inventoryMetadataIsQaOrTest(metadata)) return "metadata QA/test";
+  return null;
+}
+
+/** Diagnóstico compartido entre checkout público y admin numeraciones. */
+export function getPublicInventoryEligibility(
+  row: RealNumberInventoryRow,
+  ctx: {
+    heldByOrder?: PendingInventoryHold | null;
+    companyName?: string | null;
+  } = {},
+): PublicInventoryEligibility {
+  const heldByOrder = ctx.heldByOrder ?? null;
+  const qaReason = qaExclusionReason(row.metadata);
+  const noSaleActions = {
+    canMarkConnected: false,
+    canBulkMarkConnected: false,
+    canReleaseExpiredHold: false,
+    canMarkNotForSale: false,
+    canAssign: false,
+  };
+
+  if (row.sales_status === "active_assigned" || row.current_company_id) {
+    const companyLabel = ctx.companyName?.trim() || "cliente";
+    return {
+      eligible: false,
+      code: "active_assigned",
+      label: "Asignado a cliente",
+      reason: `Asignado a ${companyLabel}`,
+      filterCategory: "assigned",
+      ...noSaleActions,
+    };
+  }
+
+  if (row.sales_status === "sold_pending_activation") {
+    const orderCode = row.current_order_id
+      ? orderShortCode(row.current_order_id)
+      : "—";
+    return {
+      eligible: false,
+      code: "sold_pending_activation",
+      label: "Vendido pendiente activación",
+      reason: `Orden ${orderCode}`,
+      filterCategory: "sold",
+      heldOrder: row.current_order_id
+        ? {
+            orderId: row.current_order_id,
+            orderCode,
+            email: null,
+            planId: null,
+            createdAt: row.updated_at,
+            ageHours: 0,
+            reservationExpired: false,
+          }
+        : undefined,
+      ...noSaleActions,
+    };
+  }
+
+  if (row.sales_status === "suspended") {
+    return {
+      eligible: false,
+      code: "suspended",
+      label: "Suspendido",
+      reason: "Numeración suspendida",
+      filterCategory: "qa_not_sellable",
+      ...noSaleActions,
+    };
+  }
+
+  if (row.sales_status === "not_for_sale") {
+    return {
+      eligible: false,
+      code: "not_sellable",
+      label: "No vendible",
+      reason: "Marcado como no vendible en admin",
+      filterCategory: "qa_not_sellable",
+      ...noSaleActions,
+    };
+  }
+
+  if (row.sales_status === "reserved_pending_payment") {
+    const expired =
+      row.reserved_until != null &&
+      new Date(row.reserved_until).getTime() < Date.now();
+    const orderCode = row.current_order_id
+      ? orderShortCode(row.current_order_id)
+      : "—";
+    const hold: PendingInventoryHold | undefined = row.current_order_id
+      ? {
+          orderId: row.current_order_id,
+          orderCode,
+          email: null,
+          planId: null,
+          createdAt: row.updated_at,
+          ageHours: 0,
+          reservationExpired: expired,
+        }
+      : undefined;
+    return {
+      eligible: false,
+      code: "reserved",
+      label: expired ? "Reserva expirada" : "Reservado (checkout)",
+      reason: expired
+        ? `Reserva expirada · orden ${orderCode}`
+        : `Reservado por checkout · orden ${orderCode}`,
+      filterCategory: "held_by_checkout",
+      heldOrder: hold,
+      canMarkConnected: false,
+      canBulkMarkConnected: false,
+      canReleaseExpiredHold: expired,
+      canMarkNotForSale: false,
+      canAssign: false,
+    };
+  }
+
+  if (qaReason) {
+    return {
+      eligible: false,
+      code: "qa_only",
+      label: "QA / no público",
+      reason: qaReason,
+      filterCategory: "qa_not_sellable",
+      canMarkConnected: false,
+      canBulkMarkConnected: false,
+      canReleaseExpiredHold: false,
+      canMarkNotForSale: false,
+      canAssign: false,
+    };
+  }
+
+  if (heldByOrder) {
+    return {
+      eligible: false,
+      code: "held_by_pending_order",
+      label: "Retenido por checkout pendiente",
+      reason: `Orden ${heldByOrder.orderCode} hace ${formatAgeHours(heldByOrder.ageHours)}${heldByOrder.email ? ` · ${heldByOrder.email}` : ""}`,
+      filterCategory: "held_by_checkout",
+      heldOrder: heldByOrder,
+      canMarkConnected: false,
+      canBulkMarkConnected: false,
+      canReleaseExpiredHold: heldByOrder.reservationExpired,
+      canMarkNotForSale: false,
+      canAssign: false,
+    };
+  }
+
+  const pendingConnection =
+    row.sales_status === "preconfigured_pending" ||
+    row.sales_status === "released" ||
+    row.connection_status !== "connected" ||
+    !row.webhook_connected;
+
+  if (pendingConnection) {
+    const reasons: string[] = [];
+    if (
+      row.sales_status === "preconfigured_pending" ||
+      row.sales_status === "released"
+    ) {
+      reasons.push("Falta marcar conectado");
+    }
+    if (!row.webhook_connected) reasons.push("Webhook no conectado");
+    if (row.connection_status !== "connected") {
+      reasons.push(`Conexión: ${realNumberConnectionStatusLabel(row.connection_status)}`);
+    }
+    const canMark =
+      row.sales_status === "preconfigured_pending" ||
+      row.sales_status === "released";
+    return {
+      eligible: false,
+      code:
+        row.sales_status === "preconfigured_pending" ||
+        row.sales_status === "released"
+          ? "pending_connection"
+          : "webhook_missing",
+      label: "Pendiente conexión",
+      reason: reasons.join(" · "),
+      filterCategory: "pending_connection",
+      canMarkConnected: canMark,
+      canBulkMarkConnected: row.sales_status === "preconfigured_pending",
+      canReleaseExpiredHold: false,
+      canMarkNotForSale: true,
+      canAssign: true,
+    };
+  }
+
+  if (row.sales_status === "connected_available") {
+    return {
+      eligible: true,
+      code: "public_sellable",
+      label: "Vendible en landing",
+      reason: "Listo para checkout público",
+      filterCategory: "public_sellable",
+      canMarkConnected: false,
+      canBulkMarkConnected: false,
+      canReleaseExpiredHold: false,
+      canMarkNotForSale: true,
+      canAssign: true,
+    };
+  }
+
+  return {
+    eligible: false,
+    code: "not_sellable",
+    label: "No vendible",
+    reason: `Estado comercial: ${realNumberSalesStatusLabel(row.sales_status)}`,
+    filterCategory: "qa_not_sellable",
+    canMarkConnected: false,
+    canBulkMarkConnected: false,
+    canReleaseExpiredHold: false,
+    canMarkNotForSale: false,
+    canAssign: false,
+  };
+}
+
+export function summarizePublicStock(
+  rows: InventoryPublicDashboardRow[],
+): PublicStockSummary {
+  const summary: PublicStockSummary = {
+    publicSellable: 0,
+    pendingConnection: 0,
+    heldByCheckout: 0,
+    soldPendingActivation: 0,
+    activeAssigned: 0,
+    qaNotSellable: 0,
+  };
+
+  for (const { eligibility } of rows) {
+    switch (eligibility.filterCategory) {
+      case "public_sellable":
+        summary.publicSellable += 1;
+        break;
+      case "pending_connection":
+        summary.pendingConnection += 1;
+        break;
+      case "held_by_checkout":
+        summary.heldByCheckout += 1;
+        break;
+      case "sold":
+        summary.soldPendingActivation += 1;
+        break;
+      case "assigned":
+        summary.activeAssigned += 1;
+        break;
+      case "qa_not_sellable":
+        summary.qaNotSellable += 1;
+        break;
+      default:
+        break;
+    }
+  }
+
+  return summary;
+}
+
+export async function buildInventoryPublicDashboard(
+  inventory: RealNumberInventoryRow[],
+  companyNames: Map<string, string>,
+): Promise<{
+  summary: PublicStockSummary;
+  rows: InventoryPublicDashboardRow[];
+}> {
+  const heldDetails = await getPendingSimBundleHeldInventoryDetails();
+  const rows = inventory.map((row) => ({
+    row,
+    eligibility: getPublicInventoryEligibility(row, {
+      heldByOrder: heldDetails.get(row.id) ?? null,
+      companyName: row.current_company_id
+        ? companyNames.get(row.current_company_id) ?? null
+        : null,
+    }),
+  }));
+  return {
+    summary: summarizePublicStock(rows),
+    rows,
+  };
+}
+
+export function filterInventoryDashboardRows(
+  rows: InventoryPublicDashboardRow[],
+  filter: PublicInventoryFilterCategory,
+): InventoryPublicDashboardRow[] {
+  if (filter === "all") return rows;
+  return rows.filter((item) => item.eligibility.filterCategory === filter);
+}
+
+function isInventoryPubliclySellable(
+  row: {
+    id: string;
+    sales_status?: string;
+    connection_status?: string;
+    webhook_connected?: boolean;
+    metadata?: Record<string, unknown> | null;
+    current_company_id?: string | null;
+    current_order_id?: string | null;
+    reserved_until?: string | null;
+    updated_at?: string;
+  },
+  heldIds?: Set<string>,
+): boolean {
+  if (heldIds?.has(row.id)) return false;
+  const eligibility = getPublicInventoryEligibility(
+    row as RealNumberInventoryRow,
+    { heldByOrder: null },
+  );
+  return eligibility.eligible;
 }
 
 function inventoryMetadataRecord(metadata: unknown): Record<string, unknown> | null {
@@ -725,6 +1087,193 @@ export async function markWebhookConnected(
 
   if (error) throw wrapSupabaseError(error, "markWebhookConnected");
   return mapRow(data as Record<string, unknown>);
+}
+
+export async function markWebhookConnectedBatch(
+  inventoryIds: string[],
+): Promise<{ updated: number; skipped: number }> {
+  let updated = 0;
+  let skipped = 0;
+  for (const inventoryId of inventoryIds) {
+    const row = await getInventoryById(inventoryId);
+    if (!row || row.sales_status !== "preconfigured_pending") {
+      skipped += 1;
+      continue;
+    }
+    await markWebhookConnected(inventoryId);
+    updated += 1;
+  }
+  return { updated, skipped };
+}
+
+/**
+ * Libera retención expirada: reserva DB o hold lógico por orden SIM pending.
+ * No cancela la orden ni modifica payment_status. Solo superadmin (controlador).
+ */
+export async function releaseExpiredInventoryHold(
+  inventoryId: string,
+  audit?: {
+    adminUserId: string;
+    adminRole?: string | null;
+    ipAddress?: string | null;
+  },
+): Promise<RealNumberInventoryRow> {
+  const row = await getInventoryById(inventoryId);
+  if (!row) {
+    throw new AppError("Número de inventario no encontrado.", 404);
+  }
+
+  if (
+    row.current_company_id ||
+    row.sales_status === "active_assigned" ||
+    row.sales_status === "sold_pending_activation"
+  ) {
+    throw new AppError(
+      "No se puede liberar: numeración asignada, activa o vendida.",
+      400,
+    );
+  }
+
+  const heldDetails = await getPendingSimBundleHeldInventoryDetails();
+  const eligibility = getPublicInventoryEligibility(row, {
+    heldByOrder: heldDetails.get(inventoryId) ?? null,
+  });
+
+  if (!eligibility.canReleaseExpiredHold) {
+    throw new AppError(
+      "Solo se puede liberar manualmente una retención expirada (mínimo 30 min).",
+      400,
+    );
+  }
+
+  const releaseReason = "manual_expired_hold_release";
+  const releasedAt = new Date().toISOString();
+
+  if (row.sales_status === "reserved_pending_payment") {
+    const expired =
+      row.reserved_until != null &&
+      new Date(row.reserved_until).getTime() < Date.now();
+    if (!expired) {
+      throw new AppError("La reserva aún está activa.", 400);
+    }
+    if (row.current_order_id) {
+      const sb = getSupabase();
+      const { data: order } = await sb
+        .from("sms_orders")
+        .select("id, payment_status, credit_status")
+        .eq("id", row.current_order_id)
+        .maybeSingle();
+      if (!order || order.payment_status !== "pending") {
+        throw new AppError(
+          "La orden asociada ya no está pending; no se libera.",
+          409,
+        );
+      }
+      if (String(order.credit_status ?? "") === "credited") {
+        throw new AppError("La orden ya fue acreditada; no se libera.", 409);
+      }
+    }
+    const released = await releaseReservationById(inventoryId);
+    if (audit?.adminUserId) {
+      await insertAuditLog({
+        actorUserId: audit.adminUserId,
+        actorRole: audit.adminRole ?? null,
+        action: releaseReason,
+        entityType: "real_number_inventory",
+        entityId: inventoryId,
+        metadata: {
+          order_id: row.current_order_id,
+          inventory_number_id: inventoryId,
+          timestamp: releasedAt,
+          reason: releaseReason,
+        },
+        ipAddress: audit.ipAddress ?? null,
+      });
+    }
+    return released;
+  }
+
+  const hold = heldDetails.get(inventoryId);
+  if (!hold?.reservationExpired) {
+    throw new AppError("El checkout pendiente aún retiene este número.", 400);
+  }
+
+  const sb = getSupabase();
+  const { data: order, error: fetchError } = await sb
+    .from("sms_orders")
+    .select("id, metadata, payment_status, credit_status")
+    .eq("id", hold.orderId)
+    .maybeSingle();
+
+  if (fetchError) {
+    throw wrapSupabaseError(fetchError, "releaseExpiredInventoryHold");
+  }
+  if (!order || order.payment_status !== "pending") {
+    throw new AppError("La orden pending asociada ya no retiene este número.", 409);
+  }
+  if (String(order.credit_status ?? "") === "credited") {
+    throw new AppError("La orden ya fue acreditada; no se libera.", 409);
+  }
+
+  const meta =
+    order.metadata && typeof order.metadata === "object"
+      ? { ...(order.metadata as Record<string, unknown>) }
+      : {};
+
+  const activationStatus = String(meta.activation_status ?? "");
+  if (
+    activationStatus === "paid_pending_activation" ||
+    activationStatus === "active"
+  ) {
+    throw new AppError(
+      "La orden SIM ya avanzó en activación/pago; no se libera el hold.",
+      409,
+    );
+  }
+
+  delete meta.inventory_number_id;
+  delete meta.inventory_public_id;
+  delete meta.selected_number_masked;
+  delete meta.number_suffix;
+  delete meta.selected_by_customer;
+  meta.inventory_hold_released_at = releasedAt;
+  meta.inventory_hold_release_reason = releaseReason;
+  if (audit?.adminUserId) {
+    meta.inventory_hold_released_by_admin_user_id = audit.adminUserId;
+  }
+
+  const { error: updateError } = await sb
+    .from("sms_orders")
+    .update({ metadata: meta })
+    .eq("id", hold.orderId)
+    .eq("payment_status", "pending");
+
+  if (updateError) {
+    throw wrapSupabaseError(updateError, "releaseExpiredInventoryHold");
+  }
+
+  if (audit?.adminUserId) {
+    await insertAuditLog({
+      actorUserId: audit.adminUserId,
+      actorRole: audit.adminRole ?? null,
+      action: releaseReason,
+      entityType: "real_number_inventory",
+      entityId: inventoryId,
+      metadata: {
+        order_id: hold.orderId,
+        inventory_number_id: inventoryId,
+        timestamp: releasedAt,
+        reason: releaseReason,
+      },
+      ipAddress: audit.ipAddress ?? null,
+    });
+  }
+
+  const refreshed = await getInventoryById(inventoryId);
+  if (!refreshed) {
+    throw new AppError("Inventario no encontrado tras liberar hold.", 500);
+  }
+  return refreshed;
 }
 
 export async function markInventoryNotForSale(

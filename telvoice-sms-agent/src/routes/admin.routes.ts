@@ -89,10 +89,12 @@ import {
   getAdminNumeracionesPage,
   postAdminInventoryAdd,
   postAdminInventoryAssign,
+  postAdminInventoryBulkMarkConnected,
   postAdminInventoryMarkConnected,
   postAdminInventoryNotForSale,
   postAdminInventoryRelease,
   postAdminInventoryReleaseExpired,
+  postAdminInventoryReleaseExpiredHold,
   postAdminNumeracionesCreate,
   postAdminNumeracionesStatus,
   postAdminSimActivationActivate,
@@ -559,6 +561,16 @@ adminRouter.post(
   "/numeraciones/sim-activations/:id/resend-active",
   requireAdminPage,
   postAdminSimActivationResendActive,
+);
+adminRouter.post(
+  "/numeraciones/inventory/bulk-mark-connected",
+  requireAdminPage,
+  postAdminInventoryBulkMarkConnected,
+);
+adminRouter.post(
+  "/numeraciones/inventory/:id/release-expired-hold",
+  requireSuperAdminPage,
+  postAdminInventoryReleaseExpiredHold,
 );
 adminRouter.post(
   "/numeraciones/inventory/release-expired",
