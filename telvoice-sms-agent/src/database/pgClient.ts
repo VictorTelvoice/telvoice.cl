@@ -43,3 +43,23 @@ export async function withPgTransaction<T>(
     await client.end();
   }
 }
+
+/** Bloqueo de sesión Postgres (liberado al cerrar conexión). Serializa flujos críticos entre requests. */
+export async function withPgAdvisoryLock<T>(
+  lockKey: string,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const client = createPgClient();
+  await client.connect();
+  try {
+    await client.query("SELECT pg_advisory_lock(hashtext($1))", [lockKey]);
+    return await fn();
+  } finally {
+    try {
+      await client.query("SELECT pg_advisory_unlock(hashtext($1))", [lockKey]);
+    } catch {
+      /* ignore unlock errors */
+    }
+    await client.end();
+  }
+}

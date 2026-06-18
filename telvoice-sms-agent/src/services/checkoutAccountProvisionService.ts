@@ -1,8 +1,12 @@
+import { withPgAdvisoryLock } from "../database/pgClient.js";
 import { getSupabase } from "../database/supabaseClient.js";
 import type { SmsOrderRow } from "../types/wallet.js";
 import { getOrCreateCompanyWallet } from "./smsWalletService.js";
-import { wrapSupabaseError } from "../utils/supabase-errors.js";
-import { patchOrderFields } from "./smsOrderService.js";
+import {
+  isDuplicateKeyError,
+  wrapSupabaseError,
+} from "../utils/supabase-errors.js";
+import { getOrderById, patchOrderFields } from "./smsOrderService.js";
 import { linkSimActivationToCompany } from "./simActivationService.js";
 
 export type CheckoutProvisionInput = {
@@ -20,6 +24,13 @@ export type CheckoutProvisionResult = {
   companyId: string;
   isNewCompany: boolean;
   identityReviewRequired: boolean;
+};
+
+type CompanyRow = {
+  id: string;
+  name: string;
+  rut: string | null;
+  billing_email: string | null;
 };
 
 function normalizeEmail(email: string): string {
@@ -42,24 +53,82 @@ function companyNameDiffers(
   return a !== b;
 }
 
-async function findCompanyByEmail(email: string): Promise<{
-  id: string;
-  name: string;
-  rut: string | null;
-  billing_email: string | null;
-} | null> {
-  const sb = getSupabase();
-  const { data, error } = await sb
-    .from("companies")
-    .select("id, name, rut, billing_email")
-    .ilike("billing_email", email)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+function checkoutProvisionLockKey(orderId: string): string {
+  return `checkout-provision:${orderId}`;
+}
+
+async function companyWalletActivityScore(companyId: string): Promise<number> {
+  const wallet = await getOrCreateCompanyWallet(companyId, "CL");
+  return (
+    Number(wallet.available_sms ?? 0) +
+    Number(wallet.total_purchased_sms ?? 0) +
+    Number(wallet.consumed_sms ?? 0)
+  );
+}
+
+async function countCompanyOrders(companyId: string): Promise<number> {
+  const { count, error } = await getSupabase()
+    .from("sms_orders")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", companyId);
   if (error) {
-    wrapSupabaseError(error, "provision.findCompanyByEmail");
+    wrapSupabaseError(error, "provision.countCompanyOrders");
   }
-  return data as typeof data;
+  return count ?? 0;
+}
+
+async function orderLinkedToCompany(
+  orderId: string,
+  companyId: string,
+): Promise<boolean> {
+  const { count, error } = await getSupabase()
+    .from("sms_orders")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", companyId)
+    .eq("id", orderId);
+  if (error) {
+    wrapSupabaseError(error, "provision.orderLinkedToCompany");
+  }
+  return (count ?? 0) > 0;
+}
+
+/** Elige la empresa con compras/saldo; evita enlazar a la huérfana creada primero en carrera MP. */
+async function resolveBestCompanyForBillingEmail(
+  email: string,
+  orderId: string,
+): Promise<CompanyRow | null> {
+  const sb = getSupabase();
+  const { data: companies, error } = await sb
+    .from("companies")
+    .select("id, name, rut, billing_email, created_at")
+    .ilike("billing_email", email)
+    .eq("status", "active")
+    .order("created_at", { ascending: true });
+  if (error) {
+    wrapSupabaseError(error, "provision.findCompaniesByEmail");
+  }
+  if (!companies?.length) {
+    return null;
+  }
+  if (companies.length === 1) {
+    return companies[0] as CompanyRow;
+  }
+
+  let best = companies[0] as CompanyRow;
+  let bestScore = -1;
+  for (const company of companies) {
+    let score = 0;
+    if (await orderLinkedToCompany(orderId, company.id)) {
+      score += 10_000;
+    }
+    score += (await countCompanyOrders(company.id)) * 100;
+    score += await companyWalletActivityScore(company.id);
+    if (score > bestScore) {
+      bestScore = score;
+      best = company as CompanyRow;
+    }
+  }
+  return best;
 }
 
 async function findCompanyByProfileEmail(email: string): Promise<string | null> {
@@ -92,15 +161,96 @@ async function loadCompany(
   return data as typeof data;
 }
 
-export async function provisionCompanyFromCheckout(
+function applyIdentityReviewFlags(
+  existing: { name: string; rut: string | null },
+  submittedRut: string | null,
+  submittedCompanyName: string | null,
+): boolean {
+  const existingRut = normalizeRut(existing.rut);
+  if (submittedRut && existingRut && submittedRut !== existingRut) {
+    return true;
+  }
+  if (companyNameDiffers(existing.name, submittedCompanyName)) {
+    return true;
+  }
+  return false;
+}
+
+/** Archiva empresas activas duplicadas sin órdenes ni saldo (best-effort). */
+export async function archiveCheckoutDuplicateOrphans(
+  email: string,
+  keepCompanyId: string,
+): Promise<number> {
+  const normalized = normalizeEmail(email);
+  const sb = getSupabase();
+  const { data: companies, error } = await sb
+    .from("companies")
+    .select("id")
+    .ilike("billing_email", normalized)
+    .eq("status", "active")
+    .eq("metadata->>account_creation_mode", "post_payment_auto")
+    .neq("id", keepCompanyId);
+  if (error) {
+    wrapSupabaseError(error, "provision.archiveDuplicates.select");
+  }
+
+  let archived = 0;
+  const nowIso = new Date().toISOString();
+  for (const row of companies ?? []) {
+    const companyId = String(row.id);
+    const orderCount = await countCompanyOrders(companyId);
+    if (orderCount > 0) continue;
+    const walletScore = await companyWalletActivityScore(companyId);
+    if (walletScore > 0) continue;
+
+    const { data: existing } = await sb
+      .from("companies")
+      .select("metadata")
+      .eq("id", companyId)
+      .maybeSingle();
+
+    const { error: upErr } = await sb
+      .from("companies")
+      .update({
+        status: "blocked",
+        metadata: {
+          ...((existing?.metadata as Record<string, unknown> | null) ?? {}),
+          duplicate_orphan: true,
+          blocked_reason: "checkout_provision_duplicate",
+          merged_into_company_id: keepCompanyId,
+          blocked_at: nowIso,
+        },
+      })
+      .eq("id", companyId)
+      .eq("status", "active");
+    if (upErr) {
+      console.warn("[provision] archive duplicate orphan failed", companyId, upErr.message);
+      continue;
+    }
+    archived += 1;
+    console.info("[provision] archived duplicate orphan company", {
+      email: normalized,
+      orphanId: companyId,
+      keepCompanyId,
+    });
+  }
+  return archived;
+}
+
+async function provisionCompanyFromCheckoutUnlocked(
   input: CheckoutProvisionInput,
 ): Promise<CheckoutProvisionResult> {
-  if (input.order.company_id) {
-    await linkSimActivationToCompany(input.order.id, input.order.company_id);
+  const freshOrder = await getOrderById(input.order.id);
+  if (!freshOrder) {
+    throw new Error("provision_order_not_found");
+  }
+  if (freshOrder.company_id) {
+    await linkSimActivationToCompany(freshOrder.id, freshOrder.company_id);
     return {
-      companyId: input.order.company_id,
+      companyId: freshOrder.company_id,
       isNewCompany: false,
-      identityReviewRequired: input.order.metadata?.identity_review_required === true,
+      identityReviewRequired:
+        freshOrder.metadata?.identity_review_required === true,
     };
   }
 
@@ -113,30 +263,28 @@ export async function provisionCompanyFromCheckout(
   let isNewCompany = false;
   let identityReviewRequired = false;
 
+  const bestByEmail = await resolveBestCompanyForBillingEmail(
+    email,
+    input.order.id,
+  );
   const profileCompanyId = await findCompanyByProfileEmail(email);
-  if (profileCompanyId) {
+
+  if (bestByEmail?.id) {
+    companyId = bestByEmail.id;
+    identityReviewRequired = applyIdentityReviewFlags(
+      bestByEmail,
+      submittedRut,
+      submittedCompanyName,
+    );
+  } else if (profileCompanyId) {
     companyId = profileCompanyId;
     const existing = await loadCompany(profileCompanyId);
     if (existing) {
-      const existingRut = normalizeRut(existing.rut);
-      if (submittedRut && existingRut && submittedRut !== existingRut) {
-        identityReviewRequired = true;
-      }
-      if (companyNameDiffers(existing.name, submittedCompanyName)) {
-        identityReviewRequired = true;
-      }
-    }
-  }
-
-  const byEmail = companyId ? null : await findCompanyByEmail(email);
-  if (byEmail?.id) {
-    companyId = byEmail.id;
-    const existingRut = normalizeRut(byEmail.rut);
-    if (submittedRut && existingRut && submittedRut !== existingRut) {
-      identityReviewRequired = true;
-    }
-    if (companyNameDiffers(byEmail.name, submittedCompanyName)) {
-      identityReviewRequired = true;
+      identityReviewRequired = applyIdentityReviewFlags(
+        existing,
+        submittedRut,
+        submittedCompanyName,
+      );
     }
   }
 
@@ -144,7 +292,10 @@ export async function provisionCompanyFromCheckout(
 
   if (!companyId) {
     const displayName =
-      submittedCompanyName || input.payerName?.trim() || email.split("@")[0] || "Cliente Telvoice";
+      submittedCompanyName ||
+      input.payerName?.trim() ||
+      email.split("@")[0] ||
+      "Cliente Telvoice";
     const { data: company, error: compErr } = await sb
       .from("companies")
       .insert({
@@ -164,11 +315,30 @@ export async function provisionCompanyFromCheckout(
       })
       .select("id")
       .single();
+
     if (compErr) {
-      wrapSupabaseError(compErr, "provision.company.insert");
+      if (isDuplicateKeyError(compErr)) {
+        const resolved = await resolveBestCompanyForBillingEmail(
+          email,
+          input.order.id,
+        );
+        if (!resolved?.id) {
+          wrapSupabaseError(compErr, "provision.company.insert");
+        }
+        companyId = resolved!.id;
+        isNewCompany = false;
+        identityReviewRequired = applyIdentityReviewFlags(
+          resolved!,
+          submittedRut,
+          submittedCompanyName,
+        );
+      } else {
+        wrapSupabaseError(compErr, "provision.company.insert");
+      }
+    } else {
+      companyId = company?.id ?? null;
+      isNewCompany = true;
     }
-    companyId = company?.id ?? null;
-    isNewCompany = true;
   }
 
   if (!companyId) {
@@ -178,9 +348,9 @@ export async function provisionCompanyFromCheckout(
   await getOrCreateCompanyWallet(companyId, "CL");
 
   const nowIso = new Date().toISOString();
-  const orderMeta = input.order.metadata ?? {};
+  const orderMeta = freshOrder.metadata ?? {};
 
-  await patchOrderFields(input.order.id, {
+  await patchOrderFields(freshOrder.id, {
     company_id: companyId,
     credit_status: "pending",
     claim_status: "claimed",
@@ -193,7 +363,30 @@ export async function provisionCompanyFromCheckout(
     },
   });
 
-  await linkSimActivationToCompany(input.order.id, companyId);
+  await linkSimActivationToCompany(freshOrder.id, companyId);
+
+  try {
+    await archiveCheckoutDuplicateOrphans(email, companyId);
+  } catch (archiveErr) {
+    console.warn("[provision] archive duplicates best-effort failed", archiveErr);
+  }
 
   return { companyId, isNewCompany, identityReviewRequired };
+}
+
+export async function provisionCompanyFromCheckout(
+  input: CheckoutProvisionInput,
+): Promise<CheckoutProvisionResult> {
+  if (input.order.company_id) {
+    await linkSimActivationToCompany(input.order.id, input.order.company_id);
+    return {
+      companyId: input.order.company_id,
+      isNewCompany: false,
+      identityReviewRequired: input.order.metadata?.identity_review_required === true,
+    };
+  }
+
+  return withPgAdvisoryLock(checkoutProvisionLockKey(input.order.id), () =>
+    provisionCompanyFromCheckoutUnlocked(input),
+  );
 }
