@@ -681,7 +681,58 @@ function matchesScope(
   }
 }
 
-/** Huérfanas de carrera checkout (blocked) — no deben aparecer en Clientes. */
+/** Si hay varias empresas con el mismo billing_email, muestra solo la canónica. */
+function companyCanonicalScore(
+  item: AdminClientListItem,
+  profileCount: number,
+): number {
+  const op = item.operational;
+  return (
+    profileCount * 100_000 +
+    op.purchases.paidOrdersCount * 1_000 +
+    op.purchases.ordersCount * 100 +
+    (op.wallet.availableSms +
+      op.wallet.totalPurchasedSms +
+      op.wallet.consumedSms) *
+      10 +
+    (item.audit.protected && item.audit.classification === "PROD_REAL" ? 5_000 : 0)
+  );
+}
+
+function dedupeClientsByBillingEmail(
+  items: AdminClientListItem[],
+  profileCounts: Map<string, number>,
+): AdminClientListItem[] {
+  const bestByEmail = new Map<string, AdminClientListItem>();
+  const withoutEmail: AdminClientListItem[] = [];
+
+  for (const item of items) {
+    const email = normalizeAuditEmail(item.company.billing_email);
+    if (!email) {
+      withoutEmail.push(item);
+      continue;
+    }
+    const current = bestByEmail.get(email);
+    if (!current) {
+      bestByEmail.set(email, item);
+      continue;
+    }
+    const scoreItem = companyCanonicalScore(
+      item,
+      profileCounts.get(item.company.id) ?? 0,
+    );
+    const scoreCurrent = companyCanonicalScore(
+      current,
+      profileCounts.get(current.company.id) ?? 0,
+    );
+    if (scoreItem > scoreCurrent) {
+      bestByEmail.set(email, item);
+    }
+  }
+
+  return [...withoutEmail, ...bestByEmail.values()];
+}
+
 function isHiddenCheckoutDuplicateOrphan(company: CompanyRow): boolean {
   if (company.status !== "blocked") return false;
   const meta = company.metadata ?? {};
@@ -825,6 +876,10 @@ export async function listAdminClientsForScope(input: {
       SELECT
         c.id, c.name, c.legal_name, c.rut, c.billing_email, c.contact_name,
         c.contact_phone, c.country, c.status, c.metadata, c.created_at, c.updated_at,
+        COALESCE(
+          (SELECT COUNT(*)::int FROM user_profiles up WHERE up.company_id = c.id),
+          0
+        ) AS profile_count,
         f.classification AS audit_classification,
         f.protected AS audit_protected,
         f.reason AS audit_reason,
@@ -843,7 +898,9 @@ export async function listAdminClientsForScope(input: {
     await client.end();
   }
 
+  const profileCounts = new Map<string, number>();
   const all: AdminClientListItem[] = rows.map((row) => {
+    profileCounts.set(String(row.id), Number(row.profile_count ?? 0));
     const company = rowToCompany(row);
     const flag =
       row.audit_classification != null
@@ -867,8 +924,12 @@ export async function listAdminClientsForScope(input: {
     return { company, audit, operational };
   });
 
-  const notArchived = all.filter(
-    (item) => !item.audit.archivedAt && !isHiddenCheckoutDuplicateOrphan(item.company),
+  const notArchived = dedupeClientsByBillingEmail(
+    all.filter(
+      (item) =>
+        !item.audit.archivedAt && !isHiddenCheckoutDuplicateOrphan(item.company),
+    ),
+    profileCounts,
   );
 
   const scoped = notArchived.filter((item) =>
