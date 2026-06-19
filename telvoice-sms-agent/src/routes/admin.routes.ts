@@ -104,6 +104,11 @@ import {
   postAdminSimActivationReview,
 } from "../controllers/admin-numeraciones.controller.js";
 import {
+  getAdminSimPlanEditPage,
+  getAdminSimPlansPage,
+  postAdminSimPlanEdit,
+} from "../controllers/admin-sim-plans.controller.js";
+import {
   getAdminApiUsagePage,
   postAdminApiUsageKeyActivate,
   postAdminApiUsageKeyPause,
@@ -601,6 +606,17 @@ adminRouter.post(
   "/numeraciones/inventory/:id/not-for-sale",
   requireAdminPage,
   postAdminInventoryNotForSale,
+);
+adminRouter.get("/sim-plans", requireSuperAdminPage, getAdminSimPlansPage);
+adminRouter.get(
+  "/sim-plans/:planId/edit",
+  requireSuperAdminPage,
+  getAdminSimPlanEditPage,
+);
+adminRouter.post(
+  "/sim-plans/:planId/edit",
+  requireSuperAdminPage,
+  postAdminSimPlanEdit,
 );
 adminRouter.get("/email-logs", requireAdminPage, getAdminEmailLogsPage);
 adminRouter.post(

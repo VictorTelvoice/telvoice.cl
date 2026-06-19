@@ -4,7 +4,7 @@ export function renderAppSimSubscriptionCheckoutModal(): string {
   <div class="tv-sim-checkout-modal__panel">
     <header class="tv-sim-checkout-modal__head">
       <div>
-        <p class="tv-sim-checkout-modal__eyebrow">Suscripción mensual SIM</p>
+        <p class="tv-sim-checkout-modal__eyebrow" id="tv-sim-checkout-eyebrow">Suscripción SIM</p>
         <h2 class="tv-sim-checkout-modal__title" id="tv-sim-checkout-title">Contratar numeración SIM</h2>
       </div>
       <button type="button" class="tv-sim-checkout-modal__close" data-tv-sim-checkout-close aria-label="Cerrar">
@@ -123,12 +123,18 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       return document.documentElement.getAttribute("data-tv-sim-billing") === "annual" ? "annual" : "monthly";
     }
 
-    function annualTotal(monthly) {
-      return Math.round(Number(monthly) * 12 * 0.8);
+    function annualTotalFromPlan(plan) {
+      if (!plan) return 0;
+      if (plan.annual_price_clp) return Number(plan.annual_price_clp);
+      var discount = Number(plan.annual_discount_percent) || 20;
+      return Math.round(Number(plan.monthly_price_clp || plan.total_amount) * 12 * (1 - discount / 100));
     }
 
-    function annualEq(monthly) {
-      return Math.round(Number(monthly) * 0.8);
+    function annualEqFromPlan(plan) {
+      if (!plan) return 0;
+      if (plan.monthly_equiv_annual_clp) return Number(plan.monthly_equiv_annual_clp);
+      var discount = Number(plan.annual_discount_percent) || 20;
+      return Math.round(Number(plan.monthly_price_clp || plan.total_amount) * (1 - discount / 100));
     }
 
     function setError(msg) {
@@ -165,9 +171,9 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       if (!plan) return 0;
       var promo = state.profile && state.profile.starter_promo;
       if (promo && plan.plan_id === "sim_starter" && getBillingCycle() === "monthly") {
-        return Number(promo.monthly_clp) || plan.total_amount;
+        return Number(promo.monthly_clp) || plan.monthly_price_clp || plan.total_amount;
       }
-      return plan.total_amount;
+      return plan.monthly_price_clp || plan.total_amount;
     }
 
     function canSubmitCheckout() {
@@ -201,21 +207,25 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       if (summaryPlan) summaryPlan.textContent = plan.sim_label;
       var monthly = planMonthlyAmount(plan);
       if (price) {
+        var cycle = getBillingCycle();
         price.textContent =
-          getBillingCycle() === "annual"
-            ? fmtMoney(annualEq(monthly)) + " / mes eq."
-            : fmtMoney(monthly) + " / mes";
+          cycle === "annual"
+            ? fmtMoney(annualEqFromPlan(plan)) + " / mes eq."
+            : fmtMoney(planMonthlyAmount(plan)) + " / mes";
       }
       if (meta) {
         var promo = state.profile && state.profile.starter_promo;
+        var cycle = getBillingCycle();
+        var discount = Number(plan.annual_discount_percent) || 20;
         var promoNote =
-          promo && plan.plan_id === "sim_starter" && getBillingCycle() === "monthly"
+          promo && plan.plan_id === "sim_starter" && cycle === "monthly"
             ? "Promoción 50% por " + promo.duration_months + " meses (regular " + fmtMoney(promo.original_monthly_clp) + "/mes). · "
             : "";
+        var smsQty = plan.included_sms || plan.sms_quantity || 0;
         meta.textContent =
-          getBillingCycle() === "annual"
-            ? "Pago anual: " + fmtMoney(annualTotal(monthly)) + "/año · 20% de descuento. · " + new Intl.NumberFormat("es-CL").format(plan.sms_quantity) + " SMS incluidos / mes"
-            : promoNote + plan.description + " · " + new Intl.NumberFormat("es-CL").format(plan.sms_quantity) + " SMS incluidos / mes";
+          cycle === "annual"
+            ? "Pago anual: " + fmtMoney(annualTotalFromPlan(plan)) + "/año · " + discount + "% de descuento. · " + new Intl.NumberFormat("es-CL").format(smsQty) + " SMS incluidos / mes"
+            : promoNote + plan.description + " · " + new Intl.NumberFormat("es-CL").format(smsQty) + " SMS incluidos / mes";
       }
       if (features) {
         features.innerHTML = (plan.features || []).map(function (f) {
@@ -426,14 +436,17 @@ export function getAppSimSubscriptionCheckoutScript(): string {
     if (submitBtn) {
       submitBtn.addEventListener("click", function () {
         if (state.busy || !state.planId) return;
-        if (getBillingCycle() === "annual") {
-          setError("La membresía anual estará disponible pronto. Por ahora elige modalidad mensual.");
+        var plan = planById(state.planId);
+        var cycle = getBillingCycle();
+        if (cycle === "annual" && plan && plan.annual_enabled === false) {
+          setError("El ciclo anual no está habilitado para este plan.");
           return;
         }
         setError("");
         setBusy(true);
         var payload = {
           plan_id: state.planId,
+          billing_cycle: cycle,
           assignment_mode: state.assignmentMode,
         };
         if (state.assignmentMode === "selected" && state.selectedPublicId) {

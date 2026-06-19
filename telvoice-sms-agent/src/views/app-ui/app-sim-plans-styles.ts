@@ -33,8 +33,9 @@ export function getAppSimPlansStyles(): string {
       }
     }
 
-    .tv-sim-plans-page .nsim-section--lead {
-      padding-top: 0;
+    .tv-sim-plans-page .nsim-section--lead,
+    .tv-sim-plans-page .nsim-plans-hero {
+      padding-top: 2rem;
       padding-bottom: 1rem;
     }
 

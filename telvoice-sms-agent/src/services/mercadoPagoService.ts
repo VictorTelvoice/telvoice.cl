@@ -525,9 +525,13 @@ export async function createPublicSimSubscriptionPreapproval(input: {
   const preapproval = await createMercadoPagoPreapproval({
     externalReference: input.orderId,
     reason: simCheckoutItemTitle(input.plan),
-    monthlyAmount: input.monthlyAmount,
     payerEmail: input.payer.email,
     backUrl: `${env.publicSiteUrl}/pago-exitoso?ref=${encodeURIComponent(input.publicCheckoutReference)}&type=sim_subscription`,
+    recurring: {
+      frequency: 1,
+      frequency_type: "months",
+      transaction_amount: input.monthlyAmount,
+    },
     metadata: {
       source: "landing_sim_checkout",
       checkout_mode: "mercadopago_subscription",
@@ -546,23 +550,31 @@ export async function createPublicSimSubscriptionPreapproval(input: {
   };
 }
 
-/** Suscripción mensual recurrente — numeración SIM panel cliente autenticado. */
+/** Suscripción recurrente — numeración SIM panel cliente autenticado (mensual o anual). */
 export async function createClientPanelSimSubscriptionPreapproval(input: {
   orderId: string;
   companyId: string;
   plan: SimPlanDefinition;
-  monthlyAmount: number;
+  billingCycle: "monthly" | "annual";
+  chargeAmount: number;
+  pricingMetadata: Record<string, string | number>;
   payer: MercadoPagoPayerInput;
 }): Promise<{
   checkout_url: string;
   preapproval_id: string | null;
 }> {
+  const isAnnual = input.billingCycle === "annual";
+  const reasonSuffix = isAnnual ? " (anual)" : "";
   const preapproval = await createMercadoPagoPreapproval({
     externalReference: input.orderId,
-    reason: simCheckoutItemTitle(input.plan),
-    monthlyAmount: input.monthlyAmount,
+    reason: `${simCheckoutItemTitle(input.plan)}${reasonSuffix}`.slice(0, 256),
     payerEmail: input.payer.email,
     backUrl: `${env.publicAppUrl}/app/payments/mercadopago/pending?sim=1`,
+    recurring: {
+      frequency: isAnnual ? 12 : 1,
+      frequency_type: "months",
+      transaction_amount: input.chargeAmount,
+    },
     metadata: {
       source: "client_panel_sim_subscription",
       checkout_mode: "mercadopago_subscription",
@@ -570,8 +582,15 @@ export async function createClientPanelSimSubscriptionPreapproval(input: {
       order_id: input.orderId,
       company_id: input.companyId,
       plan_id: input.plan.plan_id,
+      billing_cycle: input.billingCycle,
       billing_mode: "subscription",
       recurring: "true",
+      ...Object.fromEntries(
+        Object.entries(input.pricingMetadata).map(([key, value]) => [
+          key,
+          String(value),
+        ]),
+      ),
     },
   });
 
@@ -733,10 +752,14 @@ export type MercadoPagoPreapprovalRecord = {
 export async function createMercadoPagoPreapproval(input: {
   externalReference: string;
   reason: string;
-  monthlyAmount: number;
   payerEmail: string;
   backUrl: string;
   metadata?: Record<string, string>;
+  recurring: {
+    frequency: number;
+    frequency_type: "months";
+    transaction_amount: number;
+  };
 }): Promise<{
   preapproval_id: string | null;
   checkout_url: string;
@@ -758,9 +781,9 @@ export async function createMercadoPagoPreapproval(input: {
     external_reference: input.externalReference,
     payer_email: payerEmail,
     auto_recurring: {
-      frequency: 1,
-      frequency_type: "months",
-      transaction_amount: Math.round(input.monthlyAmount),
+      frequency: input.recurring.frequency,
+      frequency_type: input.recurring.frequency_type,
+      transaction_amount: Math.round(input.recurring.transaction_amount),
       currency_id: "CLP",
     },
     back_url: input.backUrl,

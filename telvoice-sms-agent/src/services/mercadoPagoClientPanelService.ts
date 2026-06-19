@@ -258,9 +258,13 @@ export async function startClientPanelMercadoPagoSubscription(input: {
   const preapproval = await createMercadoPagoPreapproval({
     externalReference: subscription.id,
     reason: `Suscripción mensual — ${pkg.name}`,
-    monthlyAmount: expected,
     payerEmail: input.payer.email,
     backUrl: `${env.publicAppUrl}/app/payments/mercadopago/success?subscription=1`,
+    recurring: {
+      frequency: 1,
+      frequency_type: "months",
+      transaction_amount: expected,
+    },
     metadata: {
       source: "client_panel",
       checkout_mode: "mercadopago_subscription",

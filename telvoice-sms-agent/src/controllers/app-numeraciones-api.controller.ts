@@ -447,10 +447,14 @@ export async function postApiSimSubscriptionCheckout(
       req.body?.assignment_mode === "auto" ? "auto" : "selected";
     const inventoryPublicId = String(req.body?.inventory_public_id ?? "").trim();
 
+    const billingCycleRaw = String(req.body?.billing_cycle ?? "monthly").trim();
+    const billingCycle = billingCycleRaw === "annual" ? "annual" : "monthly";
+
     const result = await startClientPanelSimSubscriptionCheckout({
       company: ctx.company,
       profile: ctx.profile,
       planId,
+      billingCycle,
       assignmentMode,
       inventoryPublicId: inventoryPublicId || undefined,
     });

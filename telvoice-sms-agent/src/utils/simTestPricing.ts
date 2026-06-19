@@ -1,4 +1,5 @@
 import { env } from "../config/env.js";
+import type { SimBillingCycle } from "../services/simPlanSettingsService.js";
 import type { SimPlanDefinition } from "./simPlans.js";
 
 export type SimCheckoutPricing = {
@@ -60,15 +61,43 @@ export function resolveSimSubscriptionCheckoutPricing(
   plan: SimPlanDefinition,
   checkoutEmail: string,
   inventorySuffix: string,
+  options?: {
+    billingCycle?: SimBillingCycle;
+    configuredMonthlyClp?: number;
+    annualDiscountPercent?: number;
+  },
 ): SimCheckoutPricing {
-  const originalTotalAmount = plan.total_amount;
-  const email = normalizedEmail(checkoutEmail);
+  const billingCycle = options?.billingCycle ?? "monthly";
+  const baseMonthly = options?.configuredMonthlyClp ?? plan.total_amount;
+  const discount = options?.annualDiscountPercent ?? 20;
 
-  const promo50 = resolveStarterPromo50Pricing(plan, email);
+  if (billingCycle === "annual") {
+    const annualPrice = Math.round(baseMonthly * 12 * (1 - discount / 100));
+    return {
+      totalAmount: annualPrice,
+      originalTotalAmount: Math.round(baseMonthly * 12),
+      priceMetadata: {
+        product_type: "sim_subscription",
+        billing_cycle: "annual",
+        monthly_price_clp: baseMonthly,
+        annual_discount_percent: discount,
+        annual_price_clp: annualPrice,
+      },
+    };
+  }
+
+  const planForPromo: SimPlanDefinition = {
+    ...plan,
+    total_amount: baseMonthly,
+  };
+
+  const promo50 = resolveStarterPromo50Pricing(planForPromo, checkoutEmail);
   if (promo50) return promo50;
 
   const cfg = env.simSubscriptionQaReal;
   const suffix = inventorySuffix.slice(-3);
+  const email = normalizedEmail(checkoutEmail);
+  const originalTotalAmount = baseMonthly;
 
   if (
     !cfg.enabled ||
@@ -79,7 +108,11 @@ export function resolveSimSubscriptionCheckoutPricing(
     return {
       totalAmount: originalTotalAmount,
       originalTotalAmount,
-      priceMetadata: { product_type: "sim_subscription" },
+      priceMetadata: {
+        product_type: "sim_subscription",
+        billing_cycle: "monthly",
+        monthly_price_clp: baseMonthly,
+      },
     };
   }
 
@@ -87,7 +120,11 @@ export function resolveSimSubscriptionCheckoutPricing(
     return {
       totalAmount: originalTotalAmount,
       originalTotalAmount,
-      priceMetadata: { product_type: "sim_subscription" },
+      priceMetadata: {
+        product_type: "sim_subscription",
+        billing_cycle: "monthly",
+        monthly_price_clp: baseMonthly,
+      },
     };
   }
 
@@ -96,7 +133,11 @@ export function resolveSimSubscriptionCheckoutPricing(
     return {
       totalAmount: originalTotalAmount,
       originalTotalAmount,
-      priceMetadata: { product_type: "sim_subscription" },
+      priceMetadata: {
+        product_type: "sim_subscription",
+        billing_cycle: "monthly",
+        monthly_price_clp: baseMonthly,
+      },
     };
   }
 
@@ -105,6 +146,8 @@ export function resolveSimSubscriptionCheckoutPricing(
     originalTotalAmount,
     priceMetadata: {
       product_type: "sim_subscription",
+      billing_cycle: "monthly",
+      monthly_price_clp: baseMonthly,
       sim_subscription_qa_real_override: true,
       original_monthly_clp: originalTotalAmount,
       applied_monthly_clp: monthly,

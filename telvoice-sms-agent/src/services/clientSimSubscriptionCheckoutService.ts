@@ -4,6 +4,12 @@ import type { UserProfileContext } from "../types/tenant.js";
 import type { SmsOrderRow } from "../types/wallet.js";
 import { AppError } from "../utils/errors.js";
 import { isSimSubscriptionOrder } from "../utils/order-display.js";
+import {
+  buildSimPlanDefinitionFromSettings,
+  calculateSimPlanPrice,
+  getSimPlanById,
+  type SimBillingCycle,
+} from "./simPlanSettingsService.js";
 import { getSimPlan, isSimPlanId } from "../utils/simPlans.js";
 import { resolveSimSubscriptionCheckoutPricing, inventorySuffixFromE164 } from "../utils/simTestPricing.js";
 import { inventoryPublicId } from "../utils/inventory-public-id.js";
@@ -175,6 +181,7 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
   company: CompanyRow;
   profile: UserProfileContext;
   planId: string;
+  billingCycle?: SimBillingCycle;
   assignmentMode?: "selected" | "auto";
   inventoryPublicId?: string;
 }): Promise<ClientSimSubscriptionCheckoutResult> {
@@ -218,12 +225,38 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
     throw new AppError("plan_id SIM no válido.", 400, "INVALID_SIM_PLAN");
   }
 
+  const billingCycle: SimBillingCycle =
+    input.billingCycle === "annual" ? "annual" : "monthly";
+
+  const planSettings = await getSimPlanById(input.planId);
+  if (!planSettings) {
+    throw new AppError("Plan SIM no encontrado.", 404);
+  }
+
+  if (planSettings.plan_id === "custom") {
+    throw new AppError(
+      "El plan a medida requiere cotización comercial.",
+      400,
+      "CUSTOM_PLAN_NO_CHECKOUT",
+    );
+  }
+
+  if (billingCycle === "annual" && !planSettings.annual_enabled) {
+    throw new AppError(
+      "El ciclo anual no está habilitado para este plan.",
+      400,
+      "ANNUAL_NOT_ENABLED",
+    );
+  }
+
   await releaseExpiredSimCheckoutHoldsBestEffort();
 
-  const plan = getSimPlan(input.planId);
+  const plan = buildSimPlanDefinitionFromSettings(planSettings);
   if (!plan) {
     throw new AppError("Plan SIM no encontrado.", 404);
   }
+
+  const configuredPricing = calculateSimPlanPrice(planSettings, billingCycle);
 
   const availability = await getPublicAvailability();
   if (!availability.in_stock) {
@@ -273,6 +306,11 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
     plan,
     checkoutEmail,
     inventorySuffix,
+    {
+      billingCycle,
+      configuredMonthlyClp: configuredPricing.monthly_price_clp,
+      annualDiscountPercent: configuredPricing.annual_discount_percent,
+    },
   );
 
   const order = await createClientPanelSimOrder({
@@ -288,10 +326,15 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
     checkoutTotalAmount: pricing.totalAmount,
     priceMetadata: {
       ...pricing.priceMetadata,
+      billing_cycle: billingCycle,
       billing_mode: "subscription",
       recurring: true,
       checkout_mode: "mercadopago_subscription",
       subscription_status: "pending",
+      included_sms: planSettings.included_sms,
+      monthly_price_clp: configuredPricing.monthly_price_clp,
+      annual_discount_percent: configuredPricing.annual_discount_percent,
+      annual_price_clp: configuredPricing.annual_price_clp,
     },
   });
 
@@ -338,10 +381,15 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
       plan,
       checkoutEmail,
       inventoryNumberId,
-      monthlyAmount: pricing.totalAmount,
+      monthlyAmount:
+        billingCycle === "annual"
+          ? configuredPricing.monthly_equiv_annual_clp
+          : pricing.totalAmount,
       metadata: {
         source: "client_panel_sim_subscription",
         company_id: input.company.id,
+        billing_cycle: billingCycle,
+        charge_amount_clp: pricing.totalAmount,
       },
     });
   } catch (err) {
@@ -362,7 +410,14 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
       orderId: order.id,
       companyId: input.company.id,
       plan,
-      monthlyAmount: pricing.totalAmount,
+      billingCycle,
+      chargeAmount: pricing.totalAmount,
+      pricingMetadata: {
+        monthly_price_clp: configuredPricing.monthly_price_clp,
+        annual_discount_percent: configuredPricing.annual_discount_percent,
+        annual_price_clp: configuredPricing.annual_price_clp,
+        included_sms: planSettings.included_sms,
+      },
       payer: {
         email: checkoutEmail,
         name: payerName,

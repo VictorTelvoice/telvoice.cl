@@ -12,12 +12,9 @@ import {
   agentPlanDisplayName,
   parseSimSubscriptionPlanId,
 } from "../../utils/agent-plan-intent.js";
+import type { PublicSimPlanCatalogItem } from "../../services/simPlanSettingsService.js";
 import { escapeHtml, formatDate, embedJsonInScriptTag } from "../../utils/html.js";
-import {
-  getPublicSimSubscriptionCatalog,
-  type PublicSimSubscriptionPlanId,
-  type SimSubscriptionPlanCatalogEntry,
-} from "../../utils/simPlans.js";
+import type { PublicSimSubscriptionPlanId } from "../../utils/simPlans.js";
 import {
   getAppSimSubscriptionCheckoutScript,
   renderAppSimSubscriptionCheckoutModal,
@@ -42,7 +39,7 @@ function renderFeatureItem(text: string): string {
   return `<li><span class="material-symbols-outlined" aria-hidden="true">check</span>${escapeHtml(text)}</li>`;
 }
 
-function renderPlanCard(plan: SimSubscriptionPlanCatalogEntry): string {
+function renderPlanCard(plan: PublicSimPlanCatalogItem): string {
   const cardClass = [
     "nsim-plan-card",
     plan.featured ? "is-featured" : "",
@@ -50,15 +47,24 @@ function renderPlanCard(plan: SimSubscriptionPlanCatalogEntry): string {
     .filter(Boolean)
     .join(" ");
 
-  const ribbon = plan.featured
-    ? `<span class="nsim-plan-ribbon">Popular</span>`
-    : "";
+  const ribbon = plan.ribbon
+    ? `<span class="nsim-plan-ribbon">${escapeHtml(plan.ribbon)}</span>`
+    : plan.featured
+      ? `<span class="nsim-plan-ribbon">Popular</span>`
+      : "";
 
-  return `<article class="${cardClass}">
+  const discountLabel = Math.round(plan.annual_discount_percent);
+
+  return `<article class="${cardClass}" data-nsim-plan-card="${escapeHtml(plan.plan_id)}">
     ${ribbon}
     <span class="nsim-plan-billing-badge" data-nsim-billing-label="${escapeHtml(plan.plan_id)}">Suscripción mensual</span>
     <h3 class="nsim-plan-name">${escapeHtml(plan.sim_label)}</h3>
-    <p class="nsim-plan-price" data-nsim-price="${escapeHtml(plan.plan_id)}" data-nsim-monthly="${plan.total_amount}">${escapeHtml(fmtMoney(plan.total_amount))} <span>/ mes</span></p>
+    <p class="nsim-plan-price" data-nsim-price="${escapeHtml(plan.plan_id)}"
+      data-nsim-monthly="${plan.monthly_price_clp}"
+      data-nsim-annual-price="${plan.annual_price_clp}"
+      data-nsim-annual-eq="${plan.monthly_equiv_annual_clp}"
+      data-nsim-annual-discount="${discountLabel}"
+      data-nsim-annual-enabled="${plan.annual_enabled ? "1" : "0"}">${escapeHtml(fmtMoney(plan.total_amount))} <span>/ mes</span></p>
     <p class="nsim-plan-price-subnote" data-nsim-price-note="${escapeHtml(plan.plan_id)}">Pago recurrente mensual.</p>
     <p class="nsim-plan-desc">${escapeHtml(plan.description)}</p>
     <ul class="nsim-plan-features">
@@ -81,11 +87,12 @@ function renderCustomPlanCard(): string {
   </article>`;
 }
 
-function renderBillingSwitch(): string {
+function renderBillingSwitch(defaultDiscount: number): string {
+  const discountLabel = Math.round(defaultDiscount);
   return `<div class="nsim-billing-card nsim-billing-card--switch-only" aria-label="Modalidad de pago">
     <div class="nsim-billing-switch" role="group" aria-label="Seleccionar modalidad de pago">
       <button type="button" class="nsim-billing-switch__button is-active" data-billing-cycle="monthly" aria-pressed="true">Mensual</button>
-      <button type="button" class="nsim-billing-switch__button" data-billing-cycle="annual" aria-pressed="false">Anual <span>-20%</span></button>
+      <button type="button" class="nsim-billing-switch__button" data-billing-cycle="annual" aria-pressed="false">Anual <span data-nsim-switch-discount>-${discountLabel}%</span></button>
     </div>
   </div>`;
 }
@@ -98,12 +105,24 @@ export function getAppSimPlansBillingScript(): string {
     return new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(Number(n) || 0);
   }
 
-  function annualTotal(monthly) {
-    return Math.round(Number(monthly) * 12 * 0.8);
+  function annualTotalFromNode(node) {
+    var annual = node.getAttribute("data-nsim-annual-price");
+    if (annual) return Number(annual);
+    var monthly = node.getAttribute("data-nsim-monthly");
+    var discount = Number(node.getAttribute("data-nsim-annual-discount")) || 20;
+    return Math.round(Number(monthly) * 12 * (1 - discount / 100));
   }
 
-  function annualEq(monthly) {
-    return Math.round(Number(monthly) * 0.8);
+  function annualEqFromNode(node) {
+    var eq = node.getAttribute("data-nsim-annual-eq");
+    if (eq) return Number(eq);
+    var monthly = node.getAttribute("data-nsim-monthly");
+    var discount = Number(node.getAttribute("data-nsim-annual-discount")) || 20;
+    return Math.round(Number(monthly) * (1 - discount / 100));
+  }
+
+  function discountFromNode(node) {
+    return Number(node.getAttribute("data-nsim-annual-discount")) || 20;
   }
 
   function setBilling(billing) {
@@ -114,31 +133,44 @@ export function getAppSimPlansBillingScript(): string {
   }
 
   function updatePricing() {
+    var switchDiscount = 20;
     document.querySelectorAll("[data-nsim-price]").forEach(function (node) {
-      var monthly = node.getAttribute("data-nsim-monthly");
-      if (!monthly) return;
+      var planId = node.getAttribute("data-nsim-price");
+      var annualEnabled = node.getAttribute("data-nsim-annual-enabled") !== "0";
+      switchDiscount = discountFromNode(node);
+      if (state.billing === "annual" && !annualEnabled) return;
       node.innerHTML =
         state.billing === "annual"
-          ? fmtMoney(annualEq(monthly)) + " <span>/ mes eq.</span>"
-          : fmtMoney(monthly) + " <span>/ mes</span>";
+          ? fmtMoney(annualEqFromNode(node)) + " <span>/ mes eq.</span>"
+          : fmtMoney(node.getAttribute("data-nsim-monthly")) + " <span>/ mes</span>";
     });
+
+    var switchDiscountEl = document.querySelector("[data-nsim-switch-discount]");
+    if (switchDiscountEl) switchDiscountEl.textContent = "-" + Math.round(switchDiscount) + "%";
 
     document.querySelectorAll("[data-nsim-price-note]").forEach(function (node) {
       var planId = node.getAttribute("data-nsim-price-note");
       var monthlyNode = document.querySelector('[data-nsim-price="' + planId + '"]');
-      var monthly = monthlyNode && monthlyNode.getAttribute("data-nsim-monthly");
-      if (!monthly) return;
-      node.textContent =
-        state.billing === "annual"
-          ? "Pago anual: " + fmtMoney(annualTotal(monthly)) + "/año · 20% de descuento."
-          : "Pago recurrente mensual.";
+      if (!monthlyNode) return;
+      var discount = discountFromNode(monthlyNode);
+      var annualEnabled = monthlyNode.getAttribute("data-nsim-annual-enabled") !== "0";
+      if (state.billing === "annual" && annualEnabled) {
+        node.textContent =
+          "Pago anual: " + fmtMoney(annualTotalFromNode(monthlyNode)) + "/año · " + discount + "% de descuento.";
+      } else {
+        node.textContent = "Pago recurrente mensual.";
+      }
     });
 
     document.querySelectorAll("[data-nsim-billing-label]").forEach(function (node) {
       var monthlyNode = document.querySelector('[data-nsim-price="' + node.getAttribute("data-nsim-billing-label") + '"]');
       if (!monthlyNode) return;
+      var discount = discountFromNode(monthlyNode);
+      var annualEnabled = monthlyNode.getAttribute("data-nsim-annual-enabled") !== "0";
       node.textContent =
-        state.billing === "annual" ? "Membresía anual -20%" : "Suscripción mensual";
+        state.billing === "annual" && annualEnabled
+          ? "Membresía anual -" + discount + "%"
+          : "Suscripción mensual";
     });
 
     document.querySelectorAll("[data-billing-cycle]").forEach(function (button) {
@@ -166,8 +198,13 @@ export function getAppSimPlansBillingScript(): string {
 })();`;
 }
 
-function renderPlansSection(catalog: SimSubscriptionPlanCatalogEntry[]): string {
-  return `<section class="nsim-section nsim-section--lead" aria-labelledby="nsim-planes-title">
+function renderPlansSection(catalog: PublicSimPlanCatalogItem[]): string {
+  const defaultDiscount =
+    catalog.find((p) => p.plan_id === "sim_starter")?.annual_discount_percent ??
+    catalog[0]?.annual_discount_percent ??
+    20;
+
+  return `<section class="nsim-section nsim-section--lead nsim-plans-hero" aria-labelledby="nsim-planes-title">
     <div class="nsim-section-inner">
       <div class="nsim-section-toolbar">
         ${renderBtn("Mis números", {
@@ -179,7 +216,7 @@ function renderPlansSection(catalog: SimSubscriptionPlanCatalogEntry[]): string 
       </div>
       <h1 id="nsim-planes-title" class="nsim-section-title nsim-section-title--lead">Numeración SIM real</h1>
       <p class="nsim-section-intro">Activa una numeración SIM para recibir SMS, validar procesos y comunicarte con clientes, agentes o equipos críticos.</p>
-      ${renderBillingSwitch()}
+      ${renderBillingSwitch(defaultDiscount)}
       <div class="nsim-plans-grid">
         ${catalog.map((p) => renderPlanCard(p)).join("")}
         ${renderCustomPlanCard()}
@@ -260,6 +297,7 @@ export type AppAgentPlansPageData = {
   selectedPlan?: PublicSimSubscriptionPlanId;
   showIntentBanner?: boolean;
   highlightRequest?: AgentPlanRequestRow | null;
+  catalog: PublicSimPlanCatalogItem[];
 };
 
 export function renderAppAgentPlansPage(
@@ -268,7 +306,7 @@ export function renderAppAgentPlansPage(
 ): string {
   const selectedPlan = data.selectedPlan;
   const hasActiveNumbers = data.activeNumbers.some((n) => n.status === "active");
-  const catalog = getPublicSimSubscriptionCatalog();
+  const catalog = data.catalog;
 
   const intentBanner =
     data.showIntentBanner && selectedPlan

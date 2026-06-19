@@ -39,6 +39,7 @@ import {
   renderAppSmsInboxPage,
 } from "../views/app-ui/app-sms-inbox-page.js";
 import { renderAppAgentePage } from "../views/app-ui/app-agente-page.js";
+import { getPublicSimPlanCatalog } from "../services/simPlanSettingsService.js";
 import { renderAppAgentPlansPage } from "../views/app-ui/app-agent-plans-page.js";
 import { renderAppNumberIntegrationsPage } from "../views/app-ui/app-number-integrations-page.js";
 
@@ -228,9 +229,10 @@ export async function getAppAgentPlans(
   await withAppContext(req, res, next, async (ctx) => {
     const query = req.query as Record<string, string | string[] | undefined>;
     const selectedPlan = parseSimSubscriptionPlanId(query.plan);
-    const [statusPayload, activeNumbers] = await Promise.all([
+    const [statusPayload, activeNumbers, catalog] = await Promise.all([
       getAgentPlanStatusPayload(ctx.company.id),
       listClientNumbersByCompany(ctx.company.id),
+      getPublicSimPlanCatalog(),
     ]);
     const highlightRequest =
       statusPayload.pendingRequests.find((r) =>
@@ -244,6 +246,7 @@ export async function getAppAgentPlans(
       selectedPlan,
       showIntentBanner: isSimSubscriptionIntentQuery(query) || isAgentPlanIntentQuery(query),
       highlightRequest,
+      catalog,
     });
   });
 }
