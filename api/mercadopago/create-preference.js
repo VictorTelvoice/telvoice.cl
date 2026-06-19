@@ -82,7 +82,7 @@ export default async function handler(req, res) {
 
   try {
     const body = parseRequestBody(req);
-    const resolved = resolveCheckoutPlan(body);
+    const resolved = await resolveCheckoutPlan(body);
     if (!resolved.ok) {
       return json(req, res, 400, { ok: false, error: resolved.error });
     }

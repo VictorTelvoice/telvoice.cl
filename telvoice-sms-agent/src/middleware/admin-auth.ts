@@ -206,6 +206,34 @@ async function enforceAdminPanelAccess(
   next();
 }
 
+/** API JSON — requiere sesión superadmin. */
+export async function requireSuperAdminApi(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  if (!req.adminUser) {
+    res.status(401).json({ success: false, error: "No autenticado." });
+    return;
+  }
+
+  const profile =
+    req.userProfile ?? (await getCurrentUserProfile(req.adminUser));
+  const subject = subjectFromAdmin(req.adminUser, profile);
+
+  if (!canAccessAdmin(subject)) {
+    res.status(401).json({ success: false, error: "No autenticado." });
+    return;
+  }
+
+  if (!requireSuperadmin(subject)) {
+    res.status(403).json({ success: false, error: "Solo superadmin." });
+    return;
+  }
+
+  next();
+}
+
 /** Solo para /admin/login y /admin/register: nunca redirige a /app. */
 export function redirectIfAuthenticated(
   req: Request,

@@ -10,7 +10,7 @@ import {
   getPricingTiersForQuote,
   SMS_MIN_QUANTITY,
   SMS_QUANTITY_STEP,
-} from "./smsPricingTierService.js";
+} from "./pricing/smsPricingService.js";
 import { listActiveSmsProducts } from "./smsProductService.js";
 import { normalizeCommercialText } from "./agent/agentCommercialText.js";
 
@@ -20,7 +20,7 @@ const BUNDLE_INCLUDES = [
   "Acceso API sujeto a solicitud",
 ];
 
-export { getUnitPriceForQuantity, normalizeQuoteQuantity } from "./smsPricingTierService.js";
+export { getUnitPriceForQuantity, normalizeQuoteQuantity } from "./pricing/smsPricingService.js";
 
 export function extractSmsQuantityFromText(text: string): number | null {
   const normalized = normalizeCommercialText(text);

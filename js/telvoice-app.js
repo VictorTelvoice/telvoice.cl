@@ -9,6 +9,7 @@
   }
   var CALC_TIERS = CFG.volumeTiers || [];
   var CALC_MAX_VOL = CFG.calcMaxVolume != null ? CFG.calcMaxVolume : 120000;
+  var PRICING_API = (CFG.pricingApiOrigin || "https://agent.telvoice.cl").replace(/\/$/, "");
   var retail200QaFromApi = false;
   var retail200ChipEl = null;
 
@@ -385,11 +386,87 @@
 
   function findCalcTier(vol) {
     var v = snapCalcVolume(vol);
-    return (
-      CALC_TIERS.find(function (t) {
-        return v >= t.min && v <= t.max;
-      }) || null
-    );
+    if (!CALC_TIERS.length) return null;
+    var sorted = CALC_TIERS.slice().sort(function (a, b) {
+      return (b.min_sms != null ? b.min_sms : b.min) - (a.min_sms != null ? a.min_sms : a.min);
+    });
+    for (var i = 0; i < sorted.length; i++) {
+      var min = sorted[i].min_sms != null ? sorted[i].min_sms : sorted[i].min;
+      if (v >= min) return sorted[i];
+    }
+    return sorted[sorted.length - 1] || null;
+  }
+
+  function tiersFromApiResponse(tiers) {
+    var sorted = tiers.slice().sort(function (a, b) {
+      return (a.min_sms || a.min_quantity) - (b.min_sms || b.min_quantity);
+    });
+    return sorted.map(function (t, i) {
+      var minSms = t.min_sms != null ? t.min_sms : t.min_quantity;
+      var nextMin = sorted[i + 1] ? (sorted[i + 1].min_sms || sorted[i + 1].min_quantity) : null;
+      var max = nextMin ? nextMin - 1 : CALC_MAX_VOL;
+      var px = t.unit_price_clp != null ? t.unit_price_clp : t.unit_price;
+      return { min: minSms, max: max, min_sms: minSms, pxSMS: px, label: t.label };
+    });
+  }
+
+  function applyBagsFromTiers(tiers) {
+    var featured = [
+      { id: "1k", sms: 1000, featured: false },
+      { id: "15k", sms: 15000, featured: true },
+      { id: "100k", sms: 100000, featured: false },
+    ];
+    var names = {
+      "1k": "Plan Starter",
+      "15k": "Plan Business",
+      "100k": "Plan Corporativo",
+    };
+    BAGS.length = 0;
+    if (CFG.showRetail200PurchaseChip === true && CFG.retail200Bag) {
+      BAGS.push(CFG.retail200Bag);
+    }
+    featured.forEach(function (f) {
+      var tier = findCalcTier(f.sms);
+      if (!tier) return;
+      var net = f.sms * tier.pxSMS;
+      BAGS.push({
+        id: f.id,
+        planName: names[f.id],
+        label: names[f.id] + " — " + fmt(f.sms) + " SMS",
+        sms: f.sms,
+        priceNet: net,
+        pxSms: tier.pxSMS,
+        maxNeed: f.sms,
+        featured: f.featured,
+      });
+    });
+    var hero = CFG.hero || {};
+    var corp = findCalcTier(100000);
+    if (corp && hero.fromPriceSms != null) {
+      hero.fromPriceSms = corp.pxSMS;
+    }
+  }
+
+  function loadRemotePricingTiers(done) {
+    fetch(PRICING_API + "/api/public/sms-pricing-tiers", {
+      headers: { Accept: "application/json" },
+    })
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (data) {
+        if (data && data.success && data.tiers && data.tiers.length) {
+          CALC_TIERS = tiersFromApiResponse(data.tiers);
+          CFG.volumeTiers = CALC_TIERS;
+          applyBagsFromTiers(data.tiers);
+        }
+      })
+      .catch(function (err) {
+        console.warn("[telvoice] pricing tiers API", err);
+      })
+      .finally(function () {
+        if (typeof done === "function") done();
+      });
   }
 
   function planFromCalcVolume(vol) {
@@ -993,10 +1070,11 @@
     var noteEl = qs("hero-price-note");
     if (bagsLabel && hero.bagsFromLabel) bagsLabel.textContent = hero.bagsFromLabel;
     if (priceDetail && hero.fromPriceDetail) priceDetail.textContent = hero.fromPriceDetail;
-    if (priceEl && hero.fromPriceSms != null) priceEl.textContent = "$" + hero.fromPriceSms;
+    var corpTier = findCalcTier(100000);
+    var fromPx = corpTier ? corpTier.pxSMS : hero.fromPriceSms;
+    if (priceEl && fromPx != null) priceEl.textContent = "$" + fromPx;
     if (noteEl && hero.fromPriceNote) noteEl.textContent = hero.fromPriceNote;
   }
-  initHeroPricing();
 
   var setCalcVolume = null;
 
@@ -1228,7 +1306,11 @@
     slider.value = String(volumeToSliderIndex(1000));
     updateCalc();
   }
-  initCalculadora();
+
+  loadRemotePricingTiers(function () {
+    initHeroPricing();
+    initCalculadora();
+  });
 
   var compraEmailEl = qs("compra-email");
   if (compraEmailEl && !compraEmailEl.dataset.retail200Bound) {

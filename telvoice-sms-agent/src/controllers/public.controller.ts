@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { quoteSmsQuantity } from "../services/commercialQuoteService.js";
+import { getPublicSmsPricingTiers } from "../services/pricing/smsPricingService.js";
 import { createPublicLead } from "../services/publicLeadService.js";
 import {
   getCachedActiveSmsProducts,
@@ -217,6 +218,23 @@ export async function getPublicProducts(
         };
       }),
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getPublicSmsPricingTiersHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const countryCode =
+      typeof req.query.country_code === "string"
+        ? req.query.country_code.trim().toUpperCase()
+        : "CL";
+    const tiers = await getPublicSmsPricingTiers(countryCode);
+    res.json({ success: true, tiers });
   } catch (error) {
     next(error);
   }

@@ -11,6 +11,7 @@ import { mercadoPagoWebhookHandler } from "../controllers/mercadopago.controller
 import { appAgentRouter } from "./app-agent.routes.js";
 import { appNumeracionesApiRouter } from "./app-numeraciones-api.routes.js";
 import { webAgentRouter } from "./web-agent.routes.js";
+import { adminApiRouter } from "./admin-api.routes.js";
 
 export const apiRouter = Router();
 
@@ -18,6 +19,7 @@ apiRouter.post("/mercadopago/webhook", mercadoPagoWebhookHandler);
 apiRouter.get("/mercadopago/webhook", mercadoPagoWebhookHandler);
 
 apiRouter.use("/public", publicRouter);
+apiRouter.use("/admin", adminApiRouter);
 apiRouter.use("/v1", v1Router);
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/sms", smsRouter);
