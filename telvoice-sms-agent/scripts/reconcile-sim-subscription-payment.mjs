@@ -14,8 +14,13 @@
 import "dotenv/config";
 
 function arg(name) {
-  const p = process.argv.find((a) => a.startsWith(`--${name}=`));
-  return p ? p.slice(name.length + 3) : null;
+  const eq = process.argv.find((a) => a.startsWith(`--${name}=`));
+  if (eq) return eq.slice(name.length + 3);
+  const idx = process.argv.indexOf(`--${name}`);
+  if (idx >= 0 && process.argv[idx + 1] && !process.argv[idx + 1].startsWith("--")) {
+    return process.argv[idx + 1];
+  }
+  return null;
 }
 
 const apply = process.argv.includes("--apply");
