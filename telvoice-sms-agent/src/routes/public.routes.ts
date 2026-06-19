@@ -15,6 +15,7 @@ export const publicRouter = Router();
 
 publicRouter.get("/products", getPublicProducts);
 publicRouter.get("/sim-availability", getPublicSimAvailability);
+/** Catálogo comercial SIM de solo lectura (landing pública). */
 publicRouter.get("/sim-plans", getPublicSimPlans);
 publicRouter.get("/sim-available-numbers", getPublicSimAvailableNumbers);
 publicRouter.get("/pending-sim-checkout", getPublicPendingSimCheckout);
