@@ -804,6 +804,21 @@
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && state.open) closeModal();
     });
+
+    try {
+      var planParam = new URLSearchParams(window.location.search).get("plan");
+      if (planParam && (PLANS[planParam] || planParam === "custom")) {
+        var target = document.querySelector('[data-nsim-plan="' + planParam + '"]');
+        if (target && target.scrollIntoView) {
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        if (planParam !== "custom") {
+          setTimeout(function () {
+            openModal(planParam);
+          }, 350);
+        }
+      }
+    } catch (e) {}
   }
 
   if (document.readyState === "loading") {

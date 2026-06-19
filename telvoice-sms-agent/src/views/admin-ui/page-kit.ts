@@ -33,6 +33,8 @@ export function renderBtn(
     title?: string;
     icon?: string;
     size?: "sm";
+    target?: string;
+    rel?: string;
   },
 ): string {
   const variant = opts?.variant ?? "secondary";
@@ -47,8 +49,10 @@ export function renderBtn(
   const inner = `${icon}${escapeHtml(label)}`;
   const dis = opts?.disabled ? " disabled" : "";
   const title = opts?.title ? ` title="${escapeHtml(opts.title)}"` : "";
+  const target = opts?.target ? ` target="${escapeHtml(opts.target)}"` : "";
+  const rel = opts?.rel ? ` rel="${escapeHtml(opts.rel)}"` : "";
   if (opts?.href && !opts.disabled) {
-    return `<a href="${escapeHtml(opts.href)}" class="${cls}"${title}>${inner}</a>`;
+    return `<a href="${escapeHtml(opts.href)}" class="${cls}"${title}${target}${rel}>${inner}</a>`;
   }
   return `<button type="${opts?.type ?? "button"}" class="${cls}"${dis}${title}>${inner}</button>`;
 }

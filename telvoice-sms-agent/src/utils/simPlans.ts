@@ -78,6 +78,70 @@ export const SIM_PLANS: Record<SimPlanId, SimPlanDefinition> = {
 
 export const SIM_PLAN_IDS = Object.keys(SIM_PLANS) as SimPlanId[];
 
+/** Planes públicos visibles en landing y panel cliente (sin Power legacy en UI pública). */
+export const PUBLIC_SIM_SUBSCRIPTION_PLAN_IDS = [
+  "sim_starter",
+  "sim_pro",
+] as const satisfies readonly SimPlanId[];
+
+export type PublicSimSubscriptionPlanId =
+  (typeof PUBLIC_SIM_SUBSCRIPTION_PLAN_IDS)[number];
+
+export type SimSubscriptionPlanCatalogEntry = SimPlanDefinition & {
+  description: string;
+  features: string[];
+  ctaLabel: string;
+  featured?: boolean;
+};
+
+/** Catálogo comercial alineado con numeracion-sim.html (nombres, precios, SMS, beneficios, CTA). */
+export const SIM_SUBSCRIPTION_PLAN_CATALOG: Record<
+  PublicSimSubscriptionPlanId,
+  SimSubscriptionPlanCatalogEntry
+> = {
+  sim_starter: {
+    ...SIM_PLANS.sim_starter,
+    description: "Activa tu primer número SIM real con recepción SMS.",
+    features: [
+      "1 número SIM real",
+      "1.000 SMS salientes incluidos cada mes",
+      "Recepción SMS",
+      "Panel web Telvoice",
+      "Agente Telvoice incluido",
+      "Activación asistida",
+    ],
+    ctaLabel: "Suscribirme Starter",
+  },
+  sim_pro: {
+    ...SIM_PLANS.sim_pro,
+    description:
+      "Mayor capacidad operativa, notificaciones por Telegram, webhooks e integraciones.",
+    features: [
+      "Todo lo que incluye Starter",
+      "2.000 SMS salientes incluidos cada mes",
+      "Bot de Telegram para alertas y operación",
+      "Automatizaciones iniciales",
+      "Webhooks/API para integración",
+    ],
+    ctaLabel: "Suscribirme Pro",
+    featured: true,
+  },
+};
+
+export function getPublicSimSubscriptionCatalog(): SimSubscriptionPlanCatalogEntry[] {
+  return PUBLIC_SIM_SUBSCRIPTION_PLAN_IDS.map(
+    (id) => SIM_SUBSCRIPTION_PLAN_CATALOG[id],
+  );
+}
+
+export function buildPublicSimNumeracionUrl(
+  planId: PublicSimSubscriptionPlanId,
+  publicSiteUrl: string,
+): string {
+  const base = publicSiteUrl.replace(/\/$/, "");
+  return `${base}/numeracion-sim.html?plan=${encodeURIComponent(planId)}`;
+}
+
 export function isSimPlanId(planId: string | null | undefined): planId is SimPlanId {
   if (!planId || typeof planId !== "string") return false;
   return SIM_PLAN_IDS.includes(planId.trim().toLowerCase() as SimPlanId);

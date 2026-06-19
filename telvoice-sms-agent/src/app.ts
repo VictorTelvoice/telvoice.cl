@@ -26,8 +26,8 @@ import {
 import {
   buildAgentPlanDashboardPath,
   isAgentPlanIntentQuery,
-  parseAgentPlanCode,
   parseSafeAppNextPath,
+  resolveAgentPlanDashboardSelection,
 } from "./utils/agent-plan-intent.js";
 import { env } from "./config/env.js";
 import { isAdminPanelHost } from "./utils/panel-host.js";
@@ -116,7 +116,7 @@ export function createApp() {
       : null;
     if (subject && canAccessClient(subject)) {
       const query = req.query as Record<string, string | string[] | undefined>;
-      const selectedPlan = parseAgentPlanCode(query.plan);
+      const selectedPlan = resolveAgentPlanDashboardSelection(query.plan);
       if (isAgentPlanIntentQuery(query) && selectedPlan) {
         res.redirect(buildAgentPlanDashboardPath(selectedPlan));
         return;

@@ -19,10 +19,12 @@ import {
   updateInboundSmsStatus,
 } from "../services/inboundSmsService.js";
 import { getSupabase } from "../database/supabaseClient.js";
+import { env } from "../config/env.js";
 import type { AgentPlanCode } from "../types/client-numbers.js";
 import {
   isAgentPlanIntentQuery,
-  parseAgentPlanCode,
+  isSimSubscriptionIntentQuery,
+  parseSimSubscriptionPlanId,
 } from "../utils/agent-plan-intent.js";
 import type { NumberIntegrationType } from "../types/client-numbers.js";
 import { AppError } from "../utils/errors.js";
@@ -225,23 +227,22 @@ export async function getAppAgentPlans(
 ): Promise<void> {
   await withAppContext(req, res, next, async (ctx) => {
     const query = req.query as Record<string, string | string[] | undefined>;
-    const selectedPlan = parseAgentPlanCode(query.plan);
-    const statusPayload = await getAgentPlanStatusPayload(ctx.company.id);
-    const showRequestSuccess = query.requested === "1";
-    const highlightRequest = selectedPlan
-      ? statusPayload.pendingRequests.find((r) => r.plan_code === selectedPlan) ??
-        statusPayload.requests.find((r) => r.plan_code === selectedPlan) ??
-        null
-      : statusPayload.pendingRequests[0] ?? null;
+    const selectedPlan = parseSimSubscriptionPlanId(query.plan);
+    const [statusPayload, activeNumbers] = await Promise.all([
+      getAgentPlanStatusPayload(ctx.company.id),
+      listClientNumbersByCompany(ctx.company.id),
+    ]);
+    const highlightRequest =
+      statusPayload.pendingRequests.find((r) =>
+        ["pending", "reviewing", "approved", "paid_pending_setup"].includes(r.status),
+      ) ?? null;
 
     return renderAppAgentPlansPage(ctx, {
-      pendingRequests: statusPayload.pendingRequests.filter((r) =>
-        ["pending", "reviewing", "approved"].includes(r.status),
-      ),
+      publicSiteUrl: env.publicSiteUrl,
+      activeNumbers: filterClientPanelNumbers(activeNumbers),
       activeSubscription: statusPayload.subscription,
       selectedPlan,
-      showIntentBanner: isAgentPlanIntentQuery(query),
-      showRequestSuccess,
+      showIntentBanner: isSimSubscriptionIntentQuery(query) || isAgentPlanIntentQuery(query),
       highlightRequest,
     });
   });

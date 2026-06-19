@@ -96,11 +96,23 @@ export function renderSupabaseBrowserClientInit(
       if (
         TV_AGENT_LINE_ENABLED &&
         intent === "agent_plan" &&
-        (plan === "start" || plan === "pro" || plan === "business")
+        (plan === "sim_starter" ||
+          plan === "sim_pro" ||
+          plan === "start" ||
+          plan === "pro" ||
+          plan === "business")
       ) {
+        const mapped =
+          plan === "start"
+            ? "sim_starter"
+            : plan === "pro"
+              ? "sim_pro"
+              : plan === "business"
+                ? "sim_pro"
+                : plan;
         localStorage.setItem(
           "telvoice_agent_plan_intent",
-          JSON.stringify({ intent: "agent_plan", plan }),
+          JSON.stringify({ intent: "agent_plan", plan: mapped }),
         );
       }
       const nextPath = params.get("next");
@@ -125,9 +137,9 @@ export function renderSupabaseBrowserClientInit(
         if (
           TV_AGENT_LINE_ENABLED &&
           data?.intent === "agent_plan" &&
-          (plan === "start" || plan === "pro" || plan === "business")
+          (plan === "sim_starter" || plan === "sim_pro")
         ) {
-          return "/app/planes-agente?plan=" + encodeURIComponent(plan) + "&intent=agent_plan";
+          return "/app/planes-agente?plan=" + encodeURIComponent(plan);
         }
       }
       const nextStored = localStorage.getItem("telvoice_login_next");
