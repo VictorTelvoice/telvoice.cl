@@ -5912,8 +5912,11 @@
     }
 
     .tv-sim-checkout-modal__numbers--hidden,
-    .tv-sim-checkout-modal__empty--hidden {
-      display: none;
+    .tv-sim-checkout-modal__empty--hidden,
+    [data-tv-sim-no-stock][hidden],
+    [data-tv-sim-no-stock].is-hidden,
+    .tv-sim-checkout-modal__empty.is-hidden {
+      display: none !important;
     }
 
     .tv-sim-checkout-modal__numbers-grid {

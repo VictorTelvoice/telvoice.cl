@@ -47,7 +47,7 @@ export function renderAppSimSubscriptionCheckoutModal(): string {
           <p class="field-hint" id="tv-sim-checkout-numbers-hint">Cargando numeraciones disponibles…</p>
           <div class="tv-sim-checkout-modal__numbers-grid" id="tv-sim-checkout-numbers"></div>
         </div>
-        <div class="tv-sim-checkout-modal__empty tv-sim-checkout-modal__empty--hidden" id="tv-sim-checkout-no-stock">
+        <div class="tv-sim-checkout-modal__empty tv-sim-checkout-modal__empty--hidden is-hidden" id="tv-sim-checkout-no-stock" data-tv-sim-no-stock hidden aria-hidden="true">
           <span class="material-symbols-outlined" aria-hidden="true">inventory_2</span>
           <p id="tv-sim-checkout-no-stock-title">No hay numeraciones disponibles en este momento.</p>
           <p class="field-hint" id="tv-sim-checkout-no-stock-hint">Puedes solicitar activación asistida con Telvoice.</p>
@@ -333,21 +333,25 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       );
     }
 
-    function setNoStockBanner(mode) {
-      var empty = $("tv-sim-checkout-no-stock");
+    function hideNoStockBanner() {
+      var banner = document.querySelector("[data-tv-sim-no-stock]");
+      if (!banner) return;
+      banner.hidden = true;
+      banner.setAttribute("aria-hidden", "true");
+      banner.style.display = "none";
+      banner.classList.add("is-hidden", "tv-sim-checkout-modal__empty--hidden");
+    }
+
+    function showNoStockBanner(mode) {
+      var banner = document.querySelector("[data-tv-sim-no-stock]");
+      if (!banner) return;
       var title = $("tv-sim-checkout-no-stock-title");
       var hint = $("tv-sim-checkout-no-stock-hint");
       var cta = $("tv-sim-checkout-no-stock-cta");
-      if (!empty) return;
-      if (!mode) {
-        empty.classList.add("tv-sim-checkout-modal__empty--hidden");
-        empty.setAttribute("hidden", "hidden");
-        empty.setAttribute("aria-hidden", "true");
-        return;
-      }
-      empty.classList.remove("tv-sim-checkout-modal__empty--hidden");
-      empty.removeAttribute("hidden");
-      empty.setAttribute("aria-hidden", "false");
+      banner.hidden = false;
+      banner.setAttribute("aria-hidden", "false");
+      banner.style.display = "";
+      banner.classList.remove("is-hidden", "tv-sim-checkout-modal__empty--hidden");
       if (mode === "manual") {
         if (title) title.textContent = "No hay numeraciones visibles para selección manual en este momento.";
         if (hint) hint.textContent = "Puedes usar auto-asignación para continuar.";
@@ -359,14 +363,73 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       if (cta) cta.style.display = "";
     }
 
-    function renderNumbers() {
+    function hideManualEmptyBanner() {
+      var hint = $("tv-sim-checkout-numbers-hint");
+      if (hint) hint.removeAttribute("data-tv-sim-manual-empty");
+    }
+
+    function clearNumberContainer() {
+      var grid = $("tv-sim-checkout-numbers");
+      if (grid) grid.innerHTML = "";
+    }
+
+    function hasVisibleNumbers() {
+      return Array.isArray(state.numbers) && state.numbers.length > 0;
+    }
+
+    function renderNumbersList() {
       var wrap = $("tv-sim-checkout-numbers-wrap");
       var grid = $("tv-sim-checkout-numbers");
       var hint = $("tv-sim-checkout-numbers-hint");
       if (!wrap || !grid) return;
+      wrap.classList.remove("tv-sim-checkout-modal__numbers--hidden");
+      if (
+        state.assignmentMode === "selected" &&
+        (!state.selectedPublicId ||
+          !state.numbers.some(function (n) {
+            var id = n.inventory_public_id || n.public_id;
+            return id === state.selectedPublicId;
+          }))
+      ) {
+        var firstVisible = state.numbers[0];
+        state.selectedPublicId =
+          firstVisible.inventory_public_id || firstVisible.public_id || null;
+      }
+      if (hint) {
+        hint.textContent =
+          "Elige una numeración (máximo " + state.numbers.length + " visibles):";
+      }
+      grid.innerHTML = state.numbers
+        .map(function (n) {
+          var publicId = n.inventory_public_id || n.public_id;
+          var selected = state.selectedPublicId === publicId;
+          var label = n.display_number || n.masked_number || n.label || "Numeración";
+          return (
+            '<button type="button" class="tv-sim-checkout-number' +
+            (selected ? " tv-sim-checkout-number--selected" : "") +
+            '" data-public-id="' +
+            publicId +
+            '">' +
+            '<span class="tv-sim-checkout-number__label">' +
+            label +
+            "</span>" +
+            (n.suffix
+              ? '<span class="tv-sim-checkout-number__suffix">···' + n.suffix + "</span>"
+              : "") +
+            "</button>"
+          );
+        })
+        .join("");
+    }
 
-      setNoStockBanner(null);
-      grid.innerHTML = "";
+    function renderNumbers() {
+      var wrap = $("tv-sim-checkout-numbers-wrap");
+      var hint = $("tv-sim-checkout-numbers-hint");
+      if (!wrap) return;
+
+      hideNoStockBanner();
+      hideManualEmptyBanner();
+      clearNumberContainer();
 
       if (state.numbersLoading) {
         wrap.classList.add("tv-sim-checkout-modal__numbers--hidden");
@@ -374,67 +437,37 @@ export function getAppSimSubscriptionCheckoutScript(): string {
         return;
       }
 
-      if (
-        state.assignmentMode === "auto" &&
-        (state.canAutoAssign || state.available > 0 || state.numbers.length > 0)
-      ) {
-        wrap.classList.add("tv-sim-checkout-modal__numbers--hidden");
+      if (hasVisibleNumbers()) {
+        hideNoStockBanner();
+        hideManualEmptyBanner();
+        if (state.assignmentMode === "auto") {
+          wrap.classList.add("tv-sim-checkout-modal__numbers--hidden");
+        } else {
+          renderNumbersList();
+        }
         updateSubmitState();
         return;
       }
 
-      if (state.numbers.length > 0) {
-        setNoStockBanner(null);
-        wrap.classList.remove("tv-sim-checkout-modal__numbers--hidden");
-        if (
-          state.assignmentMode === "selected" &&
-          (!state.selectedPublicId ||
-            !state.numbers.some(function (n) {
-              var id = n.inventory_public_id || n.public_id;
-              return id === state.selectedPublicId;
-            }))
-        ) {
-          var firstVisible = state.numbers[0];
-          state.selectedPublicId =
-            firstVisible.inventory_public_id || firstVisible.public_id || null;
-        }
-        if (hint) {
-          hint.textContent =
-            "Elige una numeración (máximo " + state.numbers.length + " visibles):";
-        }
-        grid.innerHTML = state.numbers
-          .map(function (n) {
-            var publicId = n.inventory_public_id || n.public_id;
-            var selected = state.selectedPublicId === publicId;
-            var label = n.display_number || n.masked_number || n.label || "Numeración";
-            return (
-              '<button type="button" class="tv-sim-checkout-number' +
-              (selected ? " tv-sim-checkout-number--selected" : "") +
-              '" data-public-id="' +
-              publicId +
-              '">' +
-              '<span class="tv-sim-checkout-number__label">' +
-              label +
-              "</span>" +
-              (n.suffix
-                ? '<span class="tv-sim-checkout-number__suffix">···' + n.suffix + "</span>"
-                : "") +
-              "</button>"
-            );
-          })
-          .join("");
+      if (
+        state.assignmentMode === "auto" &&
+        (state.canAutoAssign === true || Number(state.available || 0) > 0)
+      ) {
+        hideNoStockBanner();
+        wrap.classList.add("tv-sim-checkout-modal__numbers--hidden");
         updateSubmitState();
         return;
       }
 
       if (hasRealZeroStock()) {
         wrap.classList.add("tv-sim-checkout-modal__numbers--hidden");
-        setNoStockBanner("real");
+        showNoStockBanner("real");
         updateSubmitState();
         return;
       }
 
       if (state.assignmentMode !== "selected") {
+        hideNoStockBanner();
         wrap.classList.add("tv-sim-checkout-modal__numbers--hidden");
         updateSubmitState();
         return;
@@ -443,15 +476,17 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       wrap.classList.remove("tv-sim-checkout-modal__numbers--hidden");
 
       if (shouldShowManualEmptyHint()) {
-        setNoStockBanner("manual");
+        showNoStockBanner("manual");
         if (hint) {
           hint.textContent =
             "No hay numeraciones visibles para selección manual. Usa auto-asignación para continuar.";
+          hint.setAttribute("data-tv-sim-manual-empty", "true");
         }
         updateSubmitState();
         return;
       }
 
+      hideNoStockBanner();
       if (hint) hint.textContent = "No hay numeraciones visibles. Usa asignación automática.";
       updateSubmitState();
     }
@@ -481,7 +516,7 @@ export function getAppSimSubscriptionCheckoutScript(): string {
             state.canAutoAssign = false;
             state.available = 0;
             state.numbers = [];
-            setNoStockBanner(null);
+            hideNoStockBanner();
             renderNumbers();
             updateSubmitState();
             return;
@@ -503,7 +538,7 @@ export function getAppSimSubscriptionCheckoutScript(): string {
           state.available = 0;
           state.numbers = [];
           setError("No pudimos cargar las numeraciones. Intenta nuevamente.");
-          setNoStockBanner(null);
+          hideNoStockBanner();
           renderNumbers();
           updateSubmitState();
         })
@@ -549,7 +584,7 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       state.profile = null;
       state.pending = null;
       setError("");
-      setNoStockBanner(null);
+      hideNoStockBanner();
       renderNumbers();
       renderPlanSummary();
       modal.setAttribute("aria-hidden", "false");
@@ -566,7 +601,7 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       modal.setAttribute("aria-hidden", "true");
       document.body.classList.remove("tv-sim-checkout-modal-open");
       setError("");
-      setNoStockBanner(null);
+      hideNoStockBanner();
       setBusy(false);
     }
 
@@ -595,7 +630,7 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       radio.addEventListener("change", function () {
         state.assignmentMode = radio.value === "auto" ? "auto" : "selected";
         if (state.assignmentMode === "auto") state.selectedPublicId = null;
-        setNoStockBanner(null);
+        hideNoStockBanner();
         renderNumbers();
         updateSubmitState();
       });
@@ -925,8 +960,11 @@ export function getAppSimSubscriptionCheckoutModalStyles(): string {
     }
 
     .tv-sim-checkout-modal__numbers--hidden,
-    .tv-sim-checkout-modal__empty--hidden {
-      display: none;
+    .tv-sim-checkout-modal__empty--hidden,
+    [data-tv-sim-no-stock][hidden],
+    [data-tv-sim-no-stock].is-hidden,
+    .tv-sim-checkout-modal__empty.is-hidden {
+      display: none !important;
     }
 
     .tv-sim-checkout-modal__numbers-grid {
