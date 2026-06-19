@@ -40,62 +40,43 @@
 }
 
 .tv-numeracion-section .lab-num-card {
-  min-height: 0;
-  height: auto;
+  min-height: 0 !important;
+  height: auto !important;
 }
 
 .tv-numeracion-section .lab-num-card__visual {
   position: relative;
-  padding: 0;
-  overflow: hidden;
+  flex: 0 0 auto !important;
   display: block;
-  aspect-ratio: 360 / 200;
   width: 100%;
+  min-height: 9.5rem !important;
   height: auto !important;
-  min-height: 0 !important;
   max-height: none !important;
-  flex: 0 0 auto;
-  background-color: #f2f3ff;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: cover;
+  padding: 0 !important;
+  overflow: hidden;
+  aspect-ratio: 360 / 200;
+  background: #f2f3ff !important;
   border-bottom: 1px solid rgba(0, 82, 204, 0.08);
 }
 
-.tv-numeracion-section .lab-num-card__visual--sim {
-  background-image: url("/assets/numeracion/card-sim-real.svg");
-}
-
-.tv-numeracion-section .lab-num-card__visual--2fa {
-  background-image: url("/assets/numeracion/card-2fa.svg");
-}
-
-.tv-numeracion-section .lab-num-card__visual--equipo {
-  background-image: url("/assets/numeracion/card-equipo.svg");
-}
-
-.tv-numeracion-section .lab-num-card__visual--historial {
-  background-image: url("/assets/numeracion/card-historial.svg");
-}
-
 .tv-numeracion-section .lab-num-card__visual::after {
-  display: none;
+  display: none !important;
+  content: none !important;
 }
 
-@media (min-width: 1024px) {
-  .tv-numeracion-section .lab-num-card__visual {
-    min-height: 0;
-    max-height: none;
-    padding: 0;
-  }
-}
-
-@media (max-width: 429px) {
-  .tv-numeracion-section .lab-num-card__visual {
-    min-height: 0;
-    max-height: none;
-    padding: 0;
-  }
+.tv-numeracion-section .lab-num-scene {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  aspect-ratio: 360 / 200;
+  object-fit: cover;
+  border-radius: 0;
+  overflow: visible;
+  pointer-events: none;
 }
 
 .tv-numeracion-section .lab-num-grid {
@@ -133,4 +114,10 @@
 
 .tv-numeracion-section .text-lab-cyan:hover {
   color: #0066ff;
+}
+
+@media (min-width: 1024px) {
+  .tv-numeracion-section .lab-num-card__visual {
+    min-height: 8.75rem !important;
+  }
 }
