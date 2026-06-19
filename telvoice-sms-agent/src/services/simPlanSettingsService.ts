@@ -9,6 +9,9 @@ import {
   type SimPlanDefinition,
   type SimPlanId,
   getSimPlan,
+  effectiveSimIncludedSms,
+  planIncludesOutboundSms,
+  normalizeSimPlanFeatures,
 } from "../utils/simPlans.js";
 
 export type SimBillingCycle = "monthly" | "annual";
@@ -21,6 +24,7 @@ export type SimPlanSettingsRow = {
   annual_discount_percent: number;
   annual_enabled: boolean;
   included_sms: number;
+  includes_outbound_sms: boolean;
   is_visible: boolean;
   is_featured: boolean;
   sort_order: number;
@@ -54,6 +58,7 @@ export type PublicSimPlanCatalogItem = {
   total_amount: number;
   sms_quantity: number;
   included_sms: number;
+  includes_outbound_sms: boolean;
   annual_enabled: boolean;
   annual_discount_percent: number;
   annual_price_clp: number;
@@ -85,6 +90,7 @@ export type UpdateSimPlanSettingsInput = {
   annual_discount_percent: number;
   annual_enabled: boolean;
   included_sms: number;
+  includes_outbound_sms: boolean;
   is_visible: boolean;
   is_featured: boolean;
   badge?: string | null;
@@ -118,6 +124,12 @@ function rowFromDb(raw: Record<string, unknown>): SimPlanSettingsRow {
     annual_discount_percent: Number(raw.annual_discount_percent) || 0,
     annual_enabled: raw.annual_enabled !== false,
     included_sms: Number(raw.included_sms) || 0,
+    includes_outbound_sms:
+      raw.includes_outbound_sms === false
+        ? false
+        : raw.includes_outbound_sms === true
+          ? true
+          : (Number(raw.included_sms) || 0) > 0,
     is_visible: raw.is_visible !== false,
     is_featured: raw.is_featured === true,
     sort_order: Number(raw.sort_order) || 100,
@@ -158,6 +170,7 @@ function fallbackRowsFromCatalog(): SimPlanSettingsRow[] {
       annual_discount_percent: 20,
       annual_enabled: true,
       included_sms: entry.sms_quantity,
+      includes_outbound_sms: entry.sms_quantity > 0,
       is_visible: true,
       is_featured: entry.featured === true,
       sort_order: (index + 1) * 10,
@@ -185,6 +198,7 @@ function fallbackRowsFromCatalog(): SimPlanSettingsRow[] {
     annual_discount_percent: 0,
     annual_enabled: false,
     included_sms: 0,
+    includes_outbound_sms: false,
     is_visible: true,
     is_featured: false,
     sort_order: 30,
@@ -371,6 +385,12 @@ export function mapSettingsToPublicCatalogItem(
   const annualPricing = calculateSimPlanPrice(row, "annual");
   const introPromo = calculatePlanIntroPromo(row);
   const hardcoded = getSimPlan(planId);
+  const includesOutbound = planIncludesOutboundSms(row);
+  const effectiveSms = effectiveSimIncludedSms(row);
+  const rawFeatures = row.feature_list.length
+    ? row.feature_list
+    : SIM_SUBSCRIPTION_PLAN_CATALOG[planId]?.features ?? [];
+  const features = normalizeSimPlanFeatures(rawFeatures, includesOutbound, effectiveSms);
 
   return {
     plan_id: planId,
@@ -378,17 +398,16 @@ export function mapSettingsToPublicCatalogItem(
     sim_label: row.label,
     name: hardcoded?.name ?? `Número Real ${row.label}`,
     description: row.short_description?.trim() || hardcoded?.name || row.label,
-    features: row.feature_list.length
-      ? row.feature_list
-      : SIM_SUBSCRIPTION_PLAN_CATALOG[planId]?.features ?? [],
+    features,
     ctaLabel: ctaLabelForPlan(planId, row.label, introPromo),
     featured: row.is_featured,
     badge: row.badge,
     ribbon: row.ribbon,
     monthly_price_clp: pricing.monthly_price_clp,
     total_amount: pricing.monthly_price_clp,
-    sms_quantity: row.included_sms,
-    included_sms: row.included_sms,
+    sms_quantity: effectiveSms,
+    included_sms: effectiveSms,
+    includes_outbound_sms: includesOutbound,
     annual_enabled: row.annual_enabled,
     annual_discount_percent: pricing.annual_discount_percent,
     annual_price_clp: annualPricing.annual_price_clp,
@@ -424,6 +443,7 @@ export type PublicSimPlanApiItem = {
   annual_price_clp: number;
   monthly_equiv_annual_clp: number;
   included_sms: number;
+  includes_outbound_sms: boolean;
   has_intro_promo: boolean;
   promo_discount_percent: number;
   promo_duration_months: number;
@@ -458,6 +478,7 @@ export function mapCatalogItemToPublicApi(
     annual_price_clp: plan.annual_price_clp,
     monthly_equiv_annual_clp: plan.monthly_equiv_annual_clp,
     included_sms: plan.included_sms,
+    includes_outbound_sms: plan.includes_outbound_sms,
     has_intro_promo: plan.has_intro_promo,
     promo_discount_percent: plan.promo_discount_percent,
     promo_duration_months: plan.promo_duration_months,
@@ -492,11 +513,14 @@ export function buildSimPlanDefinitionFromSettings(
   const ratio = hardcoded.total_amount > 0 ? gross / hardcoded.total_amount : 1;
   const net = Math.round(hardcoded.net_amount * ratio);
   const tax = gross - net;
+  const effectiveSms = effectiveSimIncludedSms(row);
+  const includesOutbound = planIncludesOutboundSms(row);
 
   return {
     ...hardcoded,
     sim_label: row.label,
-    sms_quantity: row.included_sms > 0 ? row.included_sms : hardcoded.sms_quantity,
+    sms_quantity: effectiveSms,
+    includes_outbound_sms: includesOutbound,
     net_amount: net,
     tax_amount: tax,
     total_amount: gross,
@@ -519,6 +543,15 @@ function validateUpdateInput(input: UpdateSimPlanSettingsInput): void {
   }
   if (!Number.isFinite(input.included_sms) || input.included_sms < 0) {
     throw new AppError("SMS incluidos inválido.", 400, "VALIDATION_ERROR");
+  }
+  if (input.includes_outbound_sms) {
+    if (!Number.isFinite(input.included_sms) || input.included_sms < 1) {
+      throw new AppError(
+        "Si incluye SMS salientes, la cantidad debe ser al menos 1.",
+        400,
+        "VALIDATION_ERROR",
+      );
+    }
   }
   if (input.plan_id === "custom" && input.annual_enabled) {
     throw new AppError("El plan a medida no admite ciclo anual.", 400, "VALIDATION_ERROR");
@@ -549,11 +582,15 @@ export async function updateSimPlanSettings(
 ): Promise<SimPlanSettingsRow> {
   validateUpdateInput(input);
 
+  const includesOutbound = input.includes_outbound_sms === true;
+  const includedSms = includesOutbound ? Math.round(input.included_sms) : 0;
+
   const payload = {
     monthly_price_clp: Math.round(input.monthly_price_clp),
     annual_discount_percent: input.annual_discount_percent,
     annual_enabled: input.annual_enabled,
-    included_sms: Math.round(input.included_sms),
+    included_sms: includedSms,
+    includes_outbound_sms: includesOutbound,
     is_visible: input.is_visible,
     is_featured: input.is_featured,
     badge: input.badge?.trim() || null,

@@ -797,6 +797,7 @@ export async function sendSimSubscriptionPaymentConfirmedEmails(
       planName,
       assignedNumber: options?.assignedNumber ?? null,
       includedSmsMonthly: order.sms_quantity,
+      includesOutboundSms: meta.includes_outbound_sms !== false && Number(order.sms_quantity) > 0,
       amount: Number(order.amount),
       currency: order.currency,
       billingCycle,

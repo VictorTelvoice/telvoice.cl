@@ -19,11 +19,68 @@ export type SimPlanDefinition = {
   product_type: "sim_subscription";
   billing_period: "monthly";
   sms_quantity: number;
+  includes_outbound_sms?: boolean;
   currency: "CLP";
   net_amount: number;
   tax_amount: number;
   total_amount: number;
 };
+
+export type SimOutboundSmsSettings = {
+  includes_outbound_sms?: boolean;
+  included_sms?: number;
+};
+
+export const SIM_NO_OUTBOUND_SMS_FEATURE = "Sin SMS salientes incluidos";
+
+/** Si el plan incluye bolsa mensual de SMS salientes según BD/admin. */
+export function planIncludesOutboundSms(settings: SimOutboundSmsSettings): boolean {
+  if (settings.includes_outbound_sms === false) return false;
+  return Math.max(0, Math.round(Number(settings.included_sms) || 0)) > 0;
+}
+
+/** SMS incluidos efectivos — nunca usa fallback hardcodeado del catálogo. */
+export function effectiveSimIncludedSms(settings: SimOutboundSmsSettings): number {
+  if (!planIncludesOutboundSms(settings)) return 0;
+  return Math.max(0, Math.round(Number(settings.included_sms) || 0));
+}
+
+export function isOutboundSmsFeatureLine(text: string): boolean {
+  const lower = text.trim().toLowerCase();
+  return (
+    lower.includes("sms saliente") ||
+    lower.includes("sms/mes") ||
+    /\d[\d.]*\s*sms\s*(salientes|incluidos|mensual)/i.test(text)
+  );
+}
+
+export function formatOutboundSmsFeatureLine(includedSms: number): string {
+  const fmt = new Intl.NumberFormat("es-CL").format(Math.max(0, includedSms));
+  return `${fmt} SMS salientes incluidos cada mes`;
+}
+
+/** Filtra líneas de SMS salientes y agrega copy cuando el plan no los incluye. */
+export function normalizeSimPlanFeatures(
+  features: string[],
+  includesOutbound: boolean,
+  includedSms: number,
+): string[] {
+  const filtered = features.filter((line) => !isOutboundSmsFeatureLine(line));
+  if (!includesOutbound || includedSms <= 0) {
+    if (!filtered.some((line) => line.toLowerCase().includes("sin sms saliente"))) {
+      return [...filtered, SIM_NO_OUTBOUND_SMS_FEATURE];
+    }
+    return filtered;
+  }
+  const smsLine = formatOutboundSmsFeatureLine(includedSms);
+  if (filtered.some(isOutboundSmsFeatureLine)) {
+    return filtered;
+  }
+  const result = [...filtered];
+  const insertAt = result.length > 0 ? 1 : 0;
+  result.splice(insertAt, 0, smsLine);
+  return result;
+}
 
 export type SimPlanId = "sim_starter" | "sim_pro" | "sim_power";
 
@@ -157,11 +214,26 @@ export function simMpSmsQuantityLabel(quantity: number): string {
   return `${Math.round(quantity)} SMS/mes`;
 }
 
-export function simCheckoutItemTitle(plan: SimPlanDefinition): string {
+export function simCheckoutItemTitle(plan: Pick<SimPlanDefinition, "name" | "sms_quantity" | "includes_outbound_sms">): string {
+  const includes =
+    plan.includes_outbound_sms !== false && Math.round(Number(plan.sms_quantity) || 0) > 0;
+  if (!includes) {
+    return `Telvoice.cl — ${plan.name} (recepción SMS)`;
+  }
   return `Telvoice.cl — ${plan.name} (${simMpSmsQuantityLabel(plan.sms_quantity)})`;
 }
 
-export function simCheckoutItemDescription(plan: SimPlanDefinition): string {
+export function simCheckoutItemDescription(
+  plan: Pick<SimPlanDefinition, "name" | "sms_quantity" | "includes_outbound_sms">,
+): string {
+  const includes =
+    plan.includes_outbound_sms !== false && Math.round(Number(plan.sms_quantity) || 0) > 0;
+  const base =
+    `Suscripción mensual: ${plan.name} — numeración SIM real con recepción SMS. ` +
+    `Agente Telvoice incluido sin costo adicional. IVA incluido. Activación tras confirmar el pago.`;
+  if (!includes) {
+    return `${base} Esta suscripción no incluye SMS salientes mensuales.`;
+  }
   const qty = new Intl.NumberFormat("es-CL").format(plan.sms_quantity);
   return (
     `Suscripción mensual: ${plan.name} con ${qty} SMS salientes incluidos por mes. ` +

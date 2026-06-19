@@ -3,6 +3,7 @@ import { fmtMoney } from "../../app-ui/app-page-wrap.js";
 import type { AdminSessionUser } from "../../../types/admin.js";
 import {
   calculatePlanIntroPromo,
+  calculateSimPlanPrice,
   type SimPlanSettingsRow,
 } from "../../../services/simPlanSettingsService.js";
 import { renderLayout } from "../shell.js";
@@ -69,7 +70,7 @@ function renderPlanTable(plans: SimPlanSettingsRow[]): string {
         <td>${escapeHtml(fmtMoney(plan.monthly_price_clp))}</td>
         <td>${escapeHtml(String(plan.annual_discount_percent))}%</td>
         <td>${escapeHtml(promoSummary(plan))}</td>
-        <td>${escapeHtml(String(plan.included_sms))}</td>
+        <td>${plan.includes_outbound_sms ? escapeHtml(String(plan.included_sms)) : "—"}</td>
         <td>${formatDate(plan.updated_at)}</td>
         <td><a class="btn btn-secondary btn-sm" href="/admin/sim-plans/${escapeHtml(plan.plan_id)}/edit">Editar</a></td>
       </tr>`,
@@ -138,6 +139,30 @@ function renderPromoPreview(plan: SimPlanSettingsRow): string {
   </div>`;
 }
 
+function renderAnnualPreview(plan: SimPlanSettingsRow): string {
+  const monthly = Math.max(0, Math.round(plan.monthly_price_clp));
+  const pricing = calculateSimPlanPrice(plan, "annual");
+  if (!plan.annual_enabled) {
+    return `<div class="tv-sim-plan-admin-preview"><p>La suscripción anual no estará disponible para este plan.</p></div>`;
+  }
+  const undiscounted = monthly * 12;
+  return `<div class="tv-sim-plan-admin-preview">
+    <p><strong>Precio mensual:</strong> ${escapeHtml(fmtMoney(monthly))} / mes</p>
+    <p><strong>Pago anual sin descuento:</strong> ${escapeHtml(fmtMoney(undiscounted))} / año</p>
+    <p><strong>Descuento anual:</strong> ${Math.round(plan.annual_discount_percent)}%</p>
+    <p><strong>Precio anual final:</strong> ${escapeHtml(fmtMoney(pricing.annual_price_clp))} / año</p>
+    <p><strong>Equivalente mensual:</strong> ${escapeHtml(fmtMoney(pricing.monthly_equiv_annual_clp))} / mes</p>
+  </div>`;
+}
+
+function renderOutboundSmsPreview(plan: SimPlanSettingsRow): string {
+  if (!plan.includes_outbound_sms || plan.included_sms <= 0) {
+    return `<div class="tv-sim-plan-admin-preview" id="tv-sim-outbound-preview"><p>Este plan no incluye SMS salientes mensuales.</p></div>`;
+  }
+  const fmt = new Intl.NumberFormat("es-CL").format(plan.included_sms);
+  return `<div class="tv-sim-plan-admin-preview" id="tv-sim-outbound-preview"><p>Incluye ${escapeHtml(fmt)} SMS salientes cada mes.</p></div>`;
+}
+
 export function renderAdminSimPlanEditPage(options: {
   admin: AdminSessionUser;
   plan: SimPlanSettingsRow;
@@ -158,22 +183,37 @@ export function renderAdminSimPlanEditPage(options: {
     ${errorBlock}
     <form method="post" action="/admin/sim-plans/${escapeHtml(plan.plan_id)}/edit" class="tv-sim-plan-admin-form tv-admin-num-form">
       <section class="tv-sim-plan-admin-card">
-        <h2>Precio y descuentos</h2>
+        <h2>Precio mensual</h2>
         <div class="tv-sim-plan-admin-grid">
           <label>Precio mensual (CLP)
-            <input name="monthly_price_clp" type="number" min="0" step="1" required value="${plan.monthly_price_clp}" />
-          </label>
-          <label>SMS incluidos
-            <input name="included_sms" type="number" min="0" step="1" required value="${plan.included_sms}" />
-          </label>
-          <label>Descuento anual (%)
-            <input name="annual_discount_percent" type="number" min="0" max="80" step="0.01" required value="${plan.annual_discount_percent}" ${isCustom ? "disabled" : ""} />
+            <input name="monthly_price_clp" id="tv-sim-monthly-price" type="number" min="0" step="1" required value="${plan.monthly_price_clp}" />
           </label>
         </div>
-        <label class="actions-row" style="margin-top:0.75rem">
-          <input type="checkbox" name="annual_enabled" value="1" ${plan.annual_enabled ? "checked" : ""} ${isCustom ? "disabled" : ""} />
-          Anual habilitado
+      </section>
+
+      <section class="tv-sim-plan-admin-card">
+        <h2>SMS salientes incluidos</h2>
+        <p class="field-hint">Controla si la suscripción incluye bolsa mensual de SMS salientes o solo numeración con recepción SMS.</p>
+        <label class="actions-row">
+          <input type="checkbox" name="includes_outbound_sms" value="1" id="tv-sim-includes-outbound" ${plan.includes_outbound_sms ? "checked" : ""} ${isCustom ? "disabled" : ""} />
+          Incluir SMS salientes mensuales
         </label>
+        <label style="margin-top:0.75rem">Cantidad de SMS incluidos
+          <input name="included_sms" id="tv-sim-included-sms" type="number" min="0" step="1" value="${plan.includes_outbound_sms ? plan.included_sms : 0}" ${!plan.includes_outbound_sms || isCustom ? "disabled" : ""} />
+        </label>
+        ${renderOutboundSmsPreview(plan)}
+      </section>
+
+      <section class="tv-sim-plan-admin-card">
+        <h2>Descuento anual</h2>
+        <label class="actions-row">
+          <input type="checkbox" name="annual_enabled" value="1" id="tv-sim-annual-enabled" ${plan.annual_enabled ? "checked" : ""} ${isCustom ? "disabled" : ""} />
+          Habilitar suscripción anual
+        </label>
+        <label style="margin-top:0.75rem">Descuento anual (%)
+          <input name="annual_discount_percent" id="tv-sim-annual-discount" type="number" min="0" max="80" step="0.01" required value="${plan.annual_discount_percent}" ${isCustom || !plan.annual_enabled ? "disabled" : ""} />
+        </label>
+        <div id="tv-sim-annual-preview">${renderAnnualPreview(plan)}</div>
       </section>
 
       <section class="tv-sim-plan-admin-card">
@@ -199,7 +239,63 @@ export function renderAdminSimPlanEditPage(options: {
         </div>
         ${renderPromoPreview(plan)}
       </section>
-      ${isCustom ? "" : `<script>(function(){var cb=document.getElementById("tv-sim-promo-enabled");var warn=document.getElementById("tv-sim-promo-warn");if(!cb||!warn)return;function sync(){warn.classList.toggle("is-visible",cb.checked);}cb.addEventListener("change",sync);sync();})();</script>`}
+      ${isCustom ? "" : `<script>(function(){
+  var outboundCb=document.getElementById("tv-sim-includes-outbound");
+  var outboundQty=document.getElementById("tv-sim-included-sms");
+  var outboundPreview=document.getElementById("tv-sim-outbound-preview");
+  var monthlyInput=document.getElementById("tv-sim-monthly-price");
+  var annualCb=document.getElementById("tv-sim-annual-enabled");
+  var annualDiscount=document.getElementById("tv-sim-annual-discount");
+  var annualPreview=document.getElementById("tv-sim-annual-preview");
+  var promoCb=document.getElementById("tv-sim-promo-enabled");
+  var promoWarn=document.getElementById("tv-sim-promo-warn");
+  function fmt(n){return new Intl.NumberFormat("es-CL",{style:"currency",currency:"CLP",maximumFractionDigits:0}).format(Number(n)||0);}
+  function syncOutbound(){
+    if(!outboundCb||!outboundQty)return;
+    var on=outboundCb.checked;
+    outboundQty.disabled=!on;
+    if(!on){outboundQty.value="0";}
+    if(outboundPreview){
+      if(!on||Number(outboundQty.value)<=0){
+        outboundPreview.innerHTML="<p>Este plan no incluye SMS salientes mensuales.</p>";
+      }else{
+        outboundPreview.innerHTML="<p>Incluye "+new Intl.NumberFormat("es-CL").format(Number(outboundQty.value))+" SMS salientes cada mes.</p>";
+      }
+    }
+  }
+  function syncAnnual(){
+    if(!annualCb||!annualDiscount||!annualPreview||!monthlyInput)return;
+    var enabled=annualCb.checked;
+    annualDiscount.disabled=!enabled;
+    if(!enabled){
+      annualPreview.innerHTML="<p>La suscripción anual no estará disponible para este plan.</p>";
+      return;
+    }
+    var monthly=Math.max(0,Math.round(Number(monthlyInput.value)||0));
+    var discount=Math.min(80,Math.max(0,Number(annualDiscount.value)||0));
+    var annualFinal=Math.round(monthly*12*(1-discount/100));
+    var monthlyEq=monthly>0?Math.round(annualFinal/12):0;
+    annualPreview.innerHTML=
+      "<p><strong>Precio mensual:</strong> "+fmt(monthly)+" / mes</p>"+
+      "<p><strong>Pago anual sin descuento:</strong> "+fmt(monthly*12)+" / año</p>"+
+      "<p><strong>Descuento anual:</strong> "+Math.round(discount)+"%</p>"+
+      "<p><strong>Precio anual final:</strong> "+fmt(annualFinal)+" / año</p>"+
+      "<p><strong>Equivalente mensual:</strong> "+fmt(monthlyEq)+" / mes</p>";
+  }
+  function syncPromo(){
+    if(!promoCb||!promoWarn)return;
+    promoWarn.classList.toggle("is-visible",promoCb.checked);
+  }
+  if(outboundCb){outboundCb.addEventListener("change",syncOutbound);outboundQty&&outboundQty.addEventListener("input",syncOutbound);}
+  if(annualCb){annualCb.addEventListener("change",syncAnnual);annualDiscount&&annualDiscount.addEventListener("input",syncAnnual);monthlyInput&&monthlyInput.addEventListener("input",syncAnnual);}
+  if(promoCb){promoCb.addEventListener("change",syncPromo);}
+  var form=document.querySelector(".tv-sim-plan-admin-form");
+  if(form){form.addEventListener("submit",function(){
+    if(outboundQty){outboundQty.disabled=false;if(outboundCb&&!outboundCb.checked)outboundQty.value="0";}
+    if(annualDiscount)annualDiscount.disabled=false;
+  });}
+  syncOutbound();syncAnnual();syncPromo();
+})();</script>`}
 
       <section class="tv-sim-plan-admin-card">
         <h2>Contenido comercial</h2>

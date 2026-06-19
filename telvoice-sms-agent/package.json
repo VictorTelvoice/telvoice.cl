@@ -49,6 +49,7 @@
     "migrate:062": "node scripts/apply-migration-062.mjs",
     "migrate:065": "node scripts/apply-migration-065.mjs",
     "migrate:066": "node scripts/apply-migration-066.mjs",
+    "migrate:067": "node scripts/apply-migration-067.mjs",
     "validate:migration-062-inbox-poll": "npm run build && node scripts/validate-migration-062-inbox-poll.mjs",
     "audit:admin-data": "node scripts/admin-data-audit-report.mjs",
     "audit:admin-data:arturo": "node scripts/admin-data-audit-report.mjs --client=arturo.aguilar@talkchile.cl",

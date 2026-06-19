@@ -440,6 +440,7 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
       checkout_mode: "mercadopago_subscription",
       subscription_status: "pending",
       included_sms: planSettings.included_sms,
+      includes_outbound_sms: planSettings.includes_outbound_sms,
       monthly_price_clp: configuredPricing.monthly_price_clp,
       regular_monthly_price_clp: configuredPricing.monthly_price_clp,
       annual_discount_percent: configuredPricing.annual_discount_percent,
@@ -528,6 +529,7 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
         annual_discount_percent: configuredPricing.annual_discount_percent,
         annual_price_clp: configuredPricing.annual_price_clp,
         included_sms: planSettings.included_sms,
+        includes_outbound_sms: planSettings.includes_outbound_sms ? 1 : 0,
       },
       payer: {
         email: checkoutEmail,

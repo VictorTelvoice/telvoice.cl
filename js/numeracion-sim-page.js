@@ -613,11 +613,13 @@
       detailLines.push("1 número SIM real (suscripción mensual)");
     }
 
-    if (plan && plan.included_sms) {
+    if (plan && plan.includes_outbound_sms !== false && plan.included_sms) {
       detailLines.push(
         new Intl.NumberFormat("es-CL").format(plan.included_sms) +
           " SMS salientes incluidos cada mes"
       );
+    } else if (plan) {
+      detailLines.push("Sin SMS salientes incluidos");
     }
     detailLines.push("Agente Telvoice incluido");
     detailLines.push(

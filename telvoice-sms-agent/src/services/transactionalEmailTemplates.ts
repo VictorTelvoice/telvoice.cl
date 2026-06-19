@@ -592,6 +592,7 @@ export type SimSubscriptionPaymentConfirmedTemplateData = {
   planName: string;
   assignedNumber: string | null;
   includedSmsMonthly: number;
+  includesOutboundSms?: boolean;
   amount: number;
   currency: string;
   billingCycle: string;
@@ -603,7 +604,15 @@ export function renderSimSubscriptionPaymentConfirmed(
   data: SimSubscriptionPaymentConfirmedTemplateData,
 ): { subject: string; html: string; text: string } {
   const subject = "Tu numeración SIM Telvoice fue activada";
+  const includesSms =
+    data.includesOutboundSms !== false && Math.round(Number(data.includedSmsMonthly) || 0) > 0;
   const sms = fmtSms(data.includedSmsMonthly);
+  const smsHtml = includesSms
+    ? `<div><strong>SMS incluidos:</strong> ${escapeHtml(sms)} / mes</div>`
+    : `<div><strong>SMS salientes:</strong> esta suscripción no incluye bolsa mensual de SMS salientes.</div>`;
+  const smsText = includesSms
+    ? `SMS incluidos: ${sms} / mes`
+    : "SMS salientes: esta suscripción no incluye bolsa mensual de SMS salientes.";
   const total = fmtMoney(data.amount, data.currency);
   const numberLine = data.assignedNumber
     ? `<div><strong>Numeración asignada:</strong> ${escapeHtml(data.assignedNumber)}</div>`
@@ -619,7 +628,7 @@ export function renderSimSubscriptionPaymentConfirmed(
     ${summaryCard(`
       <div><strong>Plan:</strong> ${escapeHtml(data.planName)}</div>
       ${numberLine}
-      <div><strong>SMS incluidos:</strong> ${escapeHtml(sms)} / mes</div>
+      ${smsHtml}
       <div><strong>Monto:</strong> ${escapeHtml(total)}</div>
       <div><strong>Ciclo:</strong> ${escapeHtml(data.billingCycle)}</div>
       ${data.nextRenewal ? `<div><strong>Próxima renovación:</strong> ${escapeHtml(data.nextRenewal)}</div>` : ""}
@@ -636,7 +645,7 @@ export function renderSimSubscriptionPaymentConfirmed(
     "",
     `Plan: ${data.planName}`,
     data.assignedNumber ? `Numeración asignada: ${data.assignedNumber}` : "Numeración: en activación",
-    `SMS incluidos: ${sms} / mes`,
+    smsText,
     `Monto: ${total}`,
     `Ciclo: ${data.billingCycle}`,
     data.nextRenewal ? `Próxima renovación: ${data.nextRenewal}` : "",

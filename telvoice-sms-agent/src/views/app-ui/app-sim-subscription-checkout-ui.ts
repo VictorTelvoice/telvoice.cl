@@ -301,11 +301,14 @@ export function getAppSimSubscriptionCheckoutScript(): string {
         var cycle = getBillingCycle();
         var discount = Number(plan.annual_discount_percent) || 20;
         var introNote = planIntroPromoNote(plan);
-        var smsQty = plan.included_sms || plan.sms_quantity || 0;
+        var smsQty = (plan.includes_outbound_sms !== false && (plan.included_sms || plan.sms_quantity)) ? (plan.included_sms || plan.sms_quantity || 0) : 0;
+        var smsNote = smsQty > 0
+          ? new Intl.NumberFormat("es-CL").format(smsQty) + " SMS incluidos / mes"
+          : "Sin SMS salientes incluidos";
         meta.textContent =
           cycle === "annual"
-            ? "Pago anual: " + fmtMoney(annualTotalFromPlan(plan)) + "/año · " + discount + "% de descuento. · " + new Intl.NumberFormat("es-CL").format(smsQty) + " SMS incluidos / mes"
-            : (introNote ? introNote + " · " : "") + plan.description + " · " + new Intl.NumberFormat("es-CL").format(smsQty) + " SMS incluidos / mes";
+            ? "Pago anual: " + fmtMoney(annualTotalFromPlan(plan)) + "/año · " + discount + "% de descuento. · " + smsNote
+            : (introNote ? introNote + " · " : "") + plan.description + " · " + smsNote;
       }
       if (features) {
         features.innerHTML = (plan.features || []).map(function (f) {

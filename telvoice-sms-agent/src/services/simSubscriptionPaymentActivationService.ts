@@ -277,8 +277,13 @@ export async function applySimSubscriptionApprovedPayment(input: {
     await markOrderPaid(order.id, null);
   }
 
+  const orderMeta = order.metadata ?? {};
+  const includesOutboundSms =
+    orderMeta.includes_outbound_sms !== false &&
+    Math.round(Number(order.sms_quantity) || 0) > 0;
+
   await patchOrderFields(order.id, {
-    credit_status: "pending_claim",
+    credit_status: includesOutboundSms ? "pending_claim" : "credited",
     metadata: metaPatch,
   });
 

@@ -538,6 +538,7 @@ export async function startPublicSimCheckout(input: {
       agent_addon_id: bundledAgentId,
       account_creation_mode: "post_payment_auto",
       included_sms: planSettings.included_sms,
+      includes_outbound_sms: planSettings.includes_outbound_sms,
       monthly_price_clp: configuredPricing.monthly_price_clp,
       regular_monthly_price_clp: configuredPricing.monthly_price_clp,
       annual_discount_percent: configuredPricing.annual_discount_percent,
@@ -622,6 +623,7 @@ export async function startPublicSimCheckout(input: {
         annual_discount_percent: configuredPricing.annual_discount_percent,
         annual_price_clp: configuredPricing.annual_price_clp,
         included_sms: planSettings.included_sms,
+        includes_outbound_sms: planSettings.includes_outbound_sms ? 1 : 0,
       },
       payer: {
         email: input.checkoutEmail,
