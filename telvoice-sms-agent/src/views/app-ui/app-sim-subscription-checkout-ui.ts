@@ -119,6 +119,18 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       return new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(Number(n) || 0);
     }
 
+    function getBillingCycle() {
+      return document.documentElement.getAttribute("data-tv-sim-billing") === "annual" ? "annual" : "monthly";
+    }
+
+    function annualTotal(monthly) {
+      return Math.round(Number(monthly) * 12 * 0.8);
+    }
+
+    function annualEq(monthly) {
+      return Math.round(Number(monthly) * 0.8);
+    }
+
     function setError(msg) {
       var el = $("tv-sim-checkout-error");
       if (!el) return;
@@ -168,8 +180,18 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       if (!plan) return;
       if (title) title.textContent = "Contratar numeración SIM " + plan.sim_label;
       if (summaryPlan) summaryPlan.textContent = plan.sim_label;
-      if (price) price.textContent = fmtMoney(plan.total_amount) + " / mes";
-      if (meta) meta.textContent = plan.description + " · " + new Intl.NumberFormat("es-CL").format(plan.sms_quantity) + " SMS incluidos / mes";
+      if (price) {
+        price.textContent =
+          getBillingCycle() === "annual"
+            ? fmtMoney(annualEq(plan.total_amount)) + " / mes eq."
+            : fmtMoney(plan.total_amount) + " / mes";
+      }
+      if (meta) {
+        meta.textContent =
+          getBillingCycle() === "annual"
+            ? "Pago anual: " + fmtMoney(annualTotal(plan.total_amount)) + "/año · 20% de descuento. · " + new Intl.NumberFormat("es-CL").format(plan.sms_quantity) + " SMS incluidos / mes"
+            : plan.description + " · " + new Intl.NumberFormat("es-CL").format(plan.sms_quantity) + " SMS incluidos / mes";
+      }
       if (features) {
         features.innerHTML = (plan.features || []).map(function (f) {
           return "<li>" + String(f).replace(/</g, "&lt;") + "</li>";
@@ -342,10 +364,18 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       updateSubmitState();
     });
 
+    document.addEventListener("tv-sim-billing-change", function () {
+      if (state.open) renderPlanSummary();
+    });
+
     var submitBtn = $("tv-sim-checkout-submit");
     if (submitBtn) {
       submitBtn.addEventListener("click", function () {
         if (state.busy || !state.planId) return;
+        if (getBillingCycle() === "annual") {
+          setError("La membresía anual estará disponible pronto. Por ahora elige modalidad mensual.");
+          return;
+        }
         setError("");
         setBusy(true);
         var payload = {

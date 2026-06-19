@@ -2,6 +2,16 @@
 
 export function getAppSimPlansStyles(): string {
   return `
+    .tv-app-client--agent-plans .tv-content {
+      padding: 0.5rem 1.25rem 1rem;
+    }
+
+    @media (min-width: 768px) {
+      .tv-app-client--agent-plans .tv-content {
+        padding: 0.65rem 1.5rem 1.25rem;
+      }
+    }
+
     .tv-sim-plans-page {
       --nsim-primary: #0052cc;
       --nsim-text: #131b2e;
@@ -11,6 +21,7 @@ export function getAppSimPlansStyles(): string {
     }
 
     .tv-sim-plans-page .nsim-section-inner {
+      position: relative;
       max-width: 1100px;
       margin: 0 auto;
       padding: 0 1.25rem;
@@ -23,37 +34,22 @@ export function getAppSimPlansStyles(): string {
     }
 
     .tv-sim-plans-page .nsim-section--lead {
-      padding-top: 0.5rem;
-      padding-bottom: 2.5rem;
-    }
-
-    @media (min-width: 768px) {
-      .tv-sim-plans-page .nsim-section--lead {
-        padding-top: 0.75rem;
-        padding-bottom: 3rem;
-      }
+      padding-top: 0;
+      padding-bottom: 1rem;
     }
 
     .tv-sim-plans-page .nsim-section-toolbar {
-      display: flex;
-      justify-content: flex-end;
-      margin-bottom: 0.75rem;
+      position: absolute;
+      top: 0;
+      right: 1.25rem;
+      z-index: 1;
+      margin: 0;
     }
 
-    .tv-sim-plans-page .nsim-eyebrow {
-      display: inline-block;
-      font-size: 0.75rem;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--nsim-primary);
-      margin-bottom: 0.75rem;
-    }
-
-    .tv-sim-plans-page .nsim-eyebrow--center {
-      display: block;
-      text-align: center;
-      margin-bottom: 0.5rem;
+    @media (min-width: 768px) {
+      .tv-sim-plans-page .nsim-section-toolbar {
+        right: 2rem;
+      }
     }
 
     .tv-sim-plans-page .nsim-section-title {
@@ -63,19 +59,20 @@ export function getAppSimPlansStyles(): string {
       letter-spacing: -0.02em;
       text-align: center;
       margin: 0;
+      padding-top: 0.15rem;
     }
 
     .tv-sim-plans-page .nsim-section-title--lead {
-      font-size: clamp(1.75rem, 4vw, 2.65rem);
+      font-size: clamp(1.45rem, 2.4vw, 1.95rem);
     }
 
     .tv-sim-plans-page .nsim-section-intro {
       text-align: center;
       max-width: 44rem;
-      margin: 0.75rem auto 0;
+      margin: 0.4rem auto 0;
       color: var(--nsim-muted);
-      line-height: 1.65;
-      font-size: 1.0625rem;
+      line-height: 1.5;
+      font-size: 0.9375rem;
     }
 
     .tv-sim-plans-page .nsim-billing-card {
@@ -90,9 +87,9 @@ export function getAppSimPlansStyles(): string {
       flex-direction: row;
       justify-content: center;
       align-items: center;
-      max-width: 12.5rem;
-      margin: 1.75rem auto 0;
-      padding: 0.2rem;
+      max-width: 9.25rem;
+      margin: 0.65rem auto 0;
+      padding: 0.15rem;
       border: none;
       background: transparent;
       box-shadow: none;
@@ -102,8 +99,8 @@ export function getAppSimPlansStyles(): string {
     .tv-sim-plans-page .nsim-billing-switch {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.2rem;
-      padding: 0.2rem;
+      gap: 0.15rem;
+      padding: 0.15rem;
       border-radius: 9999px;
       background: #eef3ff;
       border: 1px solid rgba(0, 82, 204, 0.12);
@@ -115,8 +112,8 @@ export function getAppSimPlansStyles(): string {
       border-radius: 9999px;
       background: transparent;
       color: var(--nsim-muted);
-      padding: 0.45rem 0.55rem;
-      font-size: 0.75rem;
+      padding: 0.32rem 0.4rem;
+      font-size: 0.6875rem;
       font-weight: 800;
       cursor: pointer;
       white-space: nowrap;
@@ -124,25 +121,21 @@ export function getAppSimPlansStyles(): string {
     }
 
     .tv-sim-plans-page .nsim-billing-switch__button span {
-      margin-left: 0.25rem;
+      margin-left: 0.15rem;
       color: #047857;
+      font-size: 0.625rem;
     }
 
     .tv-sim-plans-page .nsim-billing-switch__button.is-active {
       color: var(--nsim-primary);
       background: #fff;
-      box-shadow: 0 8px 20px -14px rgba(0, 82, 204, 0.55);
-    }
-
-    .tv-sim-plans-page .nsim-billing-switch__button--panel-only {
-      opacity: 0.55;
-      cursor: default;
+      box-shadow: 0 6px 16px -12px rgba(0, 82, 204, 0.55);
     }
 
     .tv-sim-plans-page .nsim-plans-grid {
       display: grid;
-      gap: 1.25rem;
-      margin-top: 2rem;
+      gap: 1rem;
+      margin-top: 1rem;
     }
 
     @media (min-width: 900px) {
@@ -155,7 +148,7 @@ export function getAppSimPlansStyles(): string {
       position: relative;
       display: flex;
       flex-direction: column;
-      padding: 1.75rem 1.5rem;
+      padding: 1.35rem 1.25rem 1.25rem;
       border-radius: 1.35rem;
       border: 1px solid var(--nsim-border);
       background: #fff;
@@ -196,7 +189,7 @@ export function getAppSimPlansStyles(): string {
 
     .tv-sim-plans-page .nsim-plan-billing-badge {
       align-self: flex-start;
-      margin-bottom: 0.9rem;
+      margin-bottom: 0.65rem;
       padding: 0.3rem 0.7rem;
       border-radius: 9999px;
       background: rgba(0, 82, 204, 0.08);
@@ -239,22 +232,22 @@ export function getAppSimPlansStyles(): string {
     }
 
     .tv-sim-plans-page .nsim-plan-price-subnote {
-      min-height: 2.2rem;
-      margin: 0.45rem 0 0;
+      min-height: 1.35rem;
+      margin: 0.35rem 0 0;
       font-size: 0.78rem;
       line-height: 1.45;
       color: var(--nsim-muted);
     }
 
     .tv-sim-plans-page .nsim-plan-desc {
-      margin: 0.75rem 0 0;
+      margin: 0.5rem 0 0;
       font-size: 0.8125rem;
       line-height: 1.55;
       color: var(--nsim-muted);
     }
 
     .tv-sim-plans-page .nsim-plan-features {
-      margin: 1.25rem 0 0;
+      margin: 0.85rem 0 0;
       padding: 0;
       list-style: none;
       flex: 1;
@@ -264,9 +257,10 @@ export function getAppSimPlansStyles(): string {
       display: flex;
       gap: 0.5rem;
       align-items: flex-start;
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       color: var(--nsim-muted);
-      padding: 0.35rem 0;
+      padding: 0.2rem 0;
+      line-height: 1.4;
     }
 
     .tv-sim-plans-page .nsim-plan-features .material-symbols-outlined {
@@ -280,8 +274,8 @@ export function getAppSimPlansStyles(): string {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 2.9rem;
-      padding: 0.9rem 1.75rem;
+      min-height: 2.65rem;
+      padding: 0.75rem 1.5rem;
       border-radius: 9999px;
       font-weight: 700;
       font-size: 0.9375rem;
@@ -314,15 +308,15 @@ export function getAppSimPlansStyles(): string {
     }
 
     .tv-sim-plans-page .nsim-plan-cta {
-      margin-top: 1.25rem;
+      margin-top: 0.85rem;
       width: 100%;
     }
 
     .tv-sim-plans-page .nsim-panel-preface {
       display: flex;
       flex-direction: column;
-      gap: 1.25rem;
-      margin-bottom: 0.5rem;
+      gap: 0.75rem;
+      margin-bottom: 0.25rem;
     }
 
     .tv-agent-plan-status__meta {
