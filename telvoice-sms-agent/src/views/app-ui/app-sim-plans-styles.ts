@@ -41,6 +41,10 @@ export function getAppSimPlansStyles(): string {
       padding-bottom: 1rem;
     }
 
+    .tv-sim-plans-page--purchase-request .nsim-plans-hero {
+      padding-top: 1.25rem;
+    }
+
     .tv-sim-plans-page .nsim-section-toolbar {
       position: absolute;
       top: 0;

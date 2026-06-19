@@ -350,6 +350,8 @@ export type AppAgentPlansPageData = {
   showIntentBanner?: boolean;
   highlightRequest?: AgentPlanRequestRow | null;
   catalog: PublicSimPlanCatalogItem[];
+  /** Vista compra directa (?action=request): oculta bloques de líneas ya adquiridas. */
+  isPurchaseRequest?: boolean;
 };
 
 export function renderAppAgentPlansPage(
@@ -357,11 +359,12 @@ export function renderAppAgentPlansPage(
   data: AppAgentPlansPageData,
 ): string {
   const selectedPlan = data.selectedPlan;
+  const isPurchaseRequest = data.isPurchaseRequest === true;
   const hasActiveNumbers = data.activeNumbers.some((n) => n.status === "active");
   const catalog = data.catalog;
 
   const intentBanner =
-    data.showIntentBanner && selectedPlan
+    !isPurchaseRequest && data.showIntentBanner && selectedPlan
       ? renderNotice(
           `Seleccionaste ${catalog.find((p) => p.plan_id === selectedPlan)?.sim_label ?? selectedPlan}. Continúa con el checkout del panel.`,
           "info",
@@ -369,16 +372,22 @@ export function renderAppAgentPlansPage(
       : "";
 
   const extraLineNotice =
-    hasActiveNumbers
+    !isPurchaseRequest && hasActiveNumbers
       ? renderNotice(
           "Puedes contratar otra línea con el mismo flujo de checkout del panel.",
           "info",
         )
       : "";
 
-  const body = `
-    <section class="tv-sim-plans-page">
-      <div class="nsim-panel-preface">
+  const ownedSummary =
+    isPurchaseRequest
+      ? ctx.flash || ctx.error
+        ? `<div class="nsim-panel-preface">
+        ${ctx.flash ? renderNotice(ctx.flash, "info") : ""}
+        ${ctx.error ? `<div class="alert alert-err">${escapeHtml(ctx.error)}</div>` : ""}
+      </div>`
+        : ""
+      : `<div class="nsim-panel-preface">
         ${intentBanner}
         ${ctx.flash ? renderNotice(ctx.flash, "info") : ""}
         ${ctx.error ? `<div class="alert alert-err">${escapeHtml(ctx.error)}</div>` : ""}
@@ -391,7 +400,11 @@ export function renderAppAgentPlansPage(
               ? renderRequestStatusPanel(data.highlightRequest)
               : ""
         }
-      </div>
+      </div>`;
+
+  const body = `
+    <section class="tv-sim-plans-page${isPurchaseRequest ? " tv-sim-plans-page--purchase-request" : ""}">
+      ${ownedSummary}
       ${renderPlansSection(catalog)}
     </section>
     ${renderAppSimSubscriptionCheckoutModal()}

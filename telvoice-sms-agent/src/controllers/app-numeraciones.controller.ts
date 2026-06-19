@@ -239,6 +239,8 @@ export async function getAppAgentPlans(
         ["pending", "reviewing", "approved", "paid_pending_setup"].includes(r.status),
       ) ?? null;
 
+    const isPurchaseRequest = String(query.action ?? "").trim() === "request";
+
     return renderAppAgentPlansPage(ctx, {
       publicSiteUrl: env.publicSiteUrl,
       activeNumbers: filterClientPanelNumbers(activeNumbers),
@@ -247,6 +249,7 @@ export async function getAppAgentPlans(
       showIntentBanner: isSimSubscriptionIntentQuery(query) || isAgentPlanIntentQuery(query),
       highlightRequest,
       catalog,
+      isPurchaseRequest,
     });
   });
 }
