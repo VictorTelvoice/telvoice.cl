@@ -68,11 +68,13 @@
 .nsim-section { padding: 4rem 0; }
 .nsim-section--lead { padding-top: 3rem; padding-bottom: 3.75rem; }
 .nsim-section--spaced { padding-top: 3rem; }
-.nsim-section-inner { max-width: 1100px; margin: 0 auto; padding: 0 1.25rem; }
+.nsim-section-inner { max-width: 1100px; margin: 0 auto; padding: 0 1rem; }
+@media (min-width: 640px) {
+  .nsim-section-inner { padding: 0 2.5rem; }
+}
 @media (min-width: 768px) {
   .nsim-section--lead { padding-top: 4rem; padding-bottom: 5rem; }
   .nsim-section--spaced { padding-top: 5.5rem; }
-  .nsim-section-inner { padding: 0 2rem; }
 }
 
 .nsim-section-title {

@@ -38,6 +38,7 @@
     var r = opts.root;
     var mode = opts.mode;
     var active = opts.active;
+    var B = window.TELVOICE_PUBLIC_BRAND;
     var homeHref = mode === "home" ? "#" : r + "index.html";
     var homeAttrs =
       mode === "home"
@@ -54,14 +55,18 @@
 
     return (
       '<nav class="bg-surface/90 backdrop-blur-md sticky top-0 z-50 border-b border-outline-variant/30 w-full">' +
-      '<div class="flex justify-between items-center gap-4 py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 lg:pl-28 lg:pr-10 max-w-container-max mx-auto">' +
-      '<a' +
-      homeAttrs +
-      ' class="flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" aria-label="Telvoice, ir al inicio">' +
-      '<img src="' +
-      esc(r) +
-      'assets/telvoice-isotipo.png" alt="Telvoice Chile — SMS masivos" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" />' +
-      '<span class="font-h3 text-h3 font-bold tracking-tight lowercase text-black">telvoice</span></a>' +
+      '<div class="' +
+      (B ? B.navInnerClass : "flex justify-between items-center gap-4 py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 lg:pl-28 lg:pr-10 max-w-container-max mx-auto") +
+      '">' +
+      (B
+        ? B.renderNavBrandLink(r, { extraAttrs: homeAttrs + ' class="flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" aria-label="Telvoice, ir al inicio"' })
+        : '<a' +
+          homeAttrs +
+          ' class="flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" aria-label="Telvoice, ir al inicio">' +
+          '<img src="' +
+          esc(r) +
+          'assets/telvoice-isotipo.png" alt="Telvoice Chile — SMS masivos" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" />' +
+          '<span class="font-h3 text-h3 font-bold tracking-tight lowercase text-black">telvoice</span></a>') +
       '<ul class="hidden lg:flex gap-1 items-center">' +
       '<li class="site-nav-dropdown">' +
       '<button type="button" class="site-nav-dropdown-toggle font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" id="nav-precios-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="nav-precios-menu">Precios</button>' +
@@ -102,7 +107,9 @@
       '<span class="material-symbols-outlined" id="menu-icon-open">menu</span>' +
       '<span class="material-symbols-outlined hidden" id="menu-icon-close">close</span>' +
       "</button></div></div>" +
-      '<div id="mobile-panel" class="hidden lg:hidden border-t border-outline-variant/30 bg-surface/95 backdrop-blur-md py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 max-w-container-max mx-auto">' +
+      '<div id="mobile-panel" class="' +
+      (B ? B.navMobilePanelClass : "hidden lg:hidden border-t border-outline-variant/30 bg-surface/95 backdrop-blur-md py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 max-w-container-max mx-auto") +
+      '">' +
       '<ul class="flex flex-col gap-1">' +
       '<li class="site-nav-dropdown site-nav-dropdown--mobile">' +
       '<button type="button" class="site-nav-dropdown-toggle block font-body-md w-full text-left py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" id="nav-precios-toggle-mobile" aria-expanded="false" aria-controls="nav-precios-menu-mobile">Precios</button>' +

@@ -47,6 +47,56 @@
   var HC_GRID_TWO =
     "mx-auto mt-8 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 md:gap-8";
 
+  function brandModule() {
+    return window.TELVOICE_PUBLIC_BRAND;
+  }
+
+  function navInnerClass() {
+    var B = brandModule();
+    return B
+      ? B.navInnerClass
+      : "flex justify-between items-center gap-4 py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 lg:pl-28 lg:pr-10 max-w-container-max mx-auto";
+  }
+
+  function navMobilePanelClass() {
+    var B = brandModule();
+    return B
+      ? B.navMobilePanelClass
+      : "hidden lg:hidden border-t border-outline-variant/30 bg-surface/95 backdrop-blur-md py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 max-w-container-max mx-auto";
+  }
+
+  function renderNavBrand(r) {
+    var B = brandModule();
+    if (B) {
+      return B.renderNavBrandLink(r, { href: r });
+    }
+    return (
+      '<a href="' +
+      r +
+      '" class="flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" aria-label="Telvoice, ir al inicio">' +
+      '<img src="' +
+      r +
+      'assets/telvoice-isotipo.png" alt="Telvoice Chile — SMS masivos" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" />' +
+      '<span class="font-h3 text-h3 font-bold tracking-tight lowercase text-black">telvoice</span></a>'
+    );
+  }
+
+  function renderFooterBrand(r) {
+    var B = brandModule();
+    if (B) {
+      return B.renderFooterBrandLink(r, { href: r });
+    }
+    return (
+      '<a href="' +
+      r +
+      '" class="inline-flex items-center gap-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary" aria-label="Telvoice, ir al inicio">' +
+      '<img src="' +
+      r +
+      'assets/telvoice-isotipo.png" alt="" width="40" height="40" class="h-10 w-10 object-contain" aria-hidden="true" decoding="async" />' +
+      '<span class="font-h3 text-h3 font-bold tracking-tight lowercase text-on-primary">telvoice</span></a>'
+    );
+  }
+
   function renderNavAgentToggle(r) {
     return (
       '<button type="button" id="nav-floating-agent-toggle" class="nav-floating-agent-toggle nav-floating-agent-toggle--avatar inline-flex is-agent-live" aria-pressed="true" aria-label="Ocultar agente flotante">' +
@@ -62,15 +112,10 @@
     var r = root();
     return (
       '<nav class="bg-surface/90 backdrop-blur-md sticky top-0 z-50 border-b border-outline-variant/30 w-full">' +
-      '<div class="flex justify-between items-center gap-4 py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 lg:pl-28 lg:pr-10 max-w-container-max mx-auto">' +
-      '<a href="' +
-      r +
-      '" class="flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" aria-label="telvoice.cl, ir al inicio">' +
-      '<img src="' +
-      r +
-      'assets/telvoice-isotipo.png" alt="" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" aria-hidden="true" />' +
-      '<span class="font-h3 text-h3 font-bold tracking-tight lowercase inline-flex items-baseline">' +
-      '<span class="text-black">telvoice</span><span class="font-h3 text-body-lg font-bold tracking-tight hero-grad-text">.cl</span></span></a>' +
+      '<div class="' +
+      navInnerClass() +
+      '">' +
+      renderNavBrand(r) +
       '<ul class="hidden lg:flex gap-1 items-center">' +
       '<li><a class="font-body-md text-body-md rounded-full px-4 py-2 transition-colors ' +
       (active === "home"
@@ -98,7 +143,9 @@
       '<span class="material-symbols-outlined" id="hc-menu-open">menu</span>' +
       '<span class="material-symbols-outlined hidden" id="hc-menu-close">close</span></button>' +
       "</div></div>" +
-      '<div id="hc-mobile-panel" class="hidden lg:hidden border-t border-outline-variant/30 bg-surface/95 backdrop-blur-md py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 max-w-container-max mx-auto">' +
+      '<div id="hc-mobile-panel" class="' +
+      navMobilePanelClass() +
+      '">' +
       '<ul class="flex flex-col gap-1">' +
       '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
       r +
@@ -124,14 +171,7 @@
       '<div class="max-w-container-max mx-auto px-4 sm:px-margin-page pt-14 pb-6">' +
       '<div class="grid grid-cols-1 gap-12 border-b border-on-primary/20 pb-12 md:grid-cols-2 lg:grid-cols-12 lg:gap-10">' +
       '<div class="lg:col-span-4">' +
-      '<a href="' +
-      r +
-      '" class="inline-flex items-center gap-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary" aria-label="telvoice.cl, ir al inicio">' +
-      '<img src="' +
-      r +
-      'assets/telvoice-isotipo.png" alt="" width="40" height="40" class="h-10 w-10 object-contain" aria-hidden="true" decoding="async" />' +
-      '<span class="font-h3 text-h3 font-bold tracking-tight lowercase inline-flex items-baseline text-on-primary">' +
-      '<span>telvoice</span><span class="font-h3 text-body-lg font-bold leading-none">.cl</span></span></a>' +
+      renderFooterBrand(r) +
       '<p class="mt-4 max-w-sm font-body-md text-body-md leading-relaxed text-on-primary/85">SMS masivos para empresas en Chile: bolsas prepago, precios por volumen, pago online y API.</p>' +
       '<div class="mt-6 flex flex-wrap gap-3">' +
       '<a href="' +
@@ -142,7 +182,7 @@
       '" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-full border-2 border-on-primary/50 bg-transparent px-5 py-2.5 font-body-md text-body-md font-semibold text-on-primary transition hover:border-on-primary hover:bg-on-primary/10">Ir al portal</a>' +
       "</div></div>" +
       '<div class="grid grid-cols-2 gap-10 sm:grid-cols-3 md:col-span-2 lg:col-span-8 lg:grid-cols-3">' +
-      '<div><p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Telvoice.cl</p><ul class="mt-4 space-y-3">' +
+      '<div><p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Telvoice</p><ul class="mt-4 space-y-3">' +
       '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       r +
       '#inicio">SMS masivos Chile</a></li>' +
