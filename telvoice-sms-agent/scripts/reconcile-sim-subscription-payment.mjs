@@ -102,7 +102,7 @@ if (operationId) {
     mpExternalReference = payment.external_reference?.trim() ?? mpExternalReference;
     mpPayerEmail = payment.payer?.email ?? null;
     mpPreapprovalFromPayment =
-      (payment as { preapproval_id?: string }).preapproval_id?.trim() ??
+      payment.preapproval_id?.trim() ??
       mpPreapprovalFromPayment;
     console.log("\n--- MP payment (operation as payment_id) ---");
     console.log(
@@ -131,7 +131,7 @@ if (operationId) {
         mpExternalReference = payment.external_reference?.trim() ?? mpExternalReference;
         mpPayerEmail = payment.payer?.email ?? null;
         mpPreapprovalFromPayment =
-          (payment as { preapproval_id?: string }).preapproval_id?.trim() ??
+          payment.preapproval_id?.trim() ??
           mpPreapprovalFromPayment;
       }
       console.log("\n--- MP authorized_payment ---");
