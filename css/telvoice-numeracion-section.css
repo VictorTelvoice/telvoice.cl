@@ -50,33 +50,36 @@
   overflow: hidden;
   display: block;
   aspect-ratio: 360 / 200;
+  width: 100%;
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
   flex: 0 0 auto;
-  background: linear-gradient(
-    180deg,
-    rgba(238, 244, 255, 0.95) 0%,
-    rgba(250, 248, 255, 1) 100%
-  );
+  background-color: #f2f3ff;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
   border-bottom: 1px solid rgba(0, 82, 204, 0.08);
+}
+
+.tv-numeracion-section .lab-num-card__visual--sim {
+  background-image: url("/assets/numeracion/card-sim-real.svg");
+}
+
+.tv-numeracion-section .lab-num-card__visual--2fa {
+  background-image: url("/assets/numeracion/card-2fa.svg");
+}
+
+.tv-numeracion-section .lab-num-card__visual--equipo {
+  background-image: url("/assets/numeracion/card-equipo.svg");
+}
+
+.tv-numeracion-section .lab-num-card__visual--historial {
+  background-image: url("/assets/numeracion/card-historial.svg");
 }
 
 .tv-numeracion-section .lab-num-card__visual::after {
   display: none;
-}
-
-.tv-numeracion-section .lab-num-scene {
-  display: block;
-  width: 100%;
-  height: auto !important;
-  aspect-ratio: 360 / 200;
-  min-height: 0 !important;
-  max-height: none;
-  border-radius: 0;
-  vertical-align: top;
-  object-fit: cover;
-  object-position: center;
 }
 
 @media (min-width: 1024px) {
@@ -84,10 +87,6 @@
     min-height: 0;
     max-height: none;
     padding: 0;
-  }
-
-  .tv-numeracion-section .lab-num-scene {
-    min-height: 0;
   }
 }
 
