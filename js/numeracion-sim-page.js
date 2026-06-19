@@ -188,6 +188,7 @@
       state.pendingOrder &&
       state.pendingOrder.has_pending_order &&
       !state.pendingOrder.reservation_expired &&
+      !state.pendingOrder.pricing_stale &&
       state.pendingOrder.payment_url
     ) {
       return true;
@@ -597,31 +598,41 @@
     var amount = pending.amount != null ? money(pending.amount) : "—";
     var number = pending.selected_number || "Numeración reservada";
     var expired = pending.reservation_expired === true;
+    var stale = pending.pricing_stale === true;
 
     block.innerHTML =
       '<p class="nsim-pending-order__title">' +
-      (expired
-        ? "Tienes una suscripción pendiente con reserva expirada."
-        : "Ya tienes una suscripción pendiente para esta numeración.") +
+      (stale
+        ? "Tienes un checkout pendiente con precio anterior."
+        : expired
+          ? "Tienes una suscripción pendiente con reserva expirada."
+          : "Ya tienes una suscripción pendiente para esta numeración.") +
       "</p>" +
       '<div class="nsim-pending-order__meta">' +
+      (stale && pending.expected_amount != null
+        ? "<p><strong>Precio vigente:</strong> " + money(pending.expected_amount) + "</p>"
+        : "") +
       "<p><strong>Referencia:</strong> " +
       ref +
       "</p>" +
-      "<p><strong>Monto:</strong> " +
+      "<p><strong>Monto pendiente:</strong> " +
       amount +
       "</p>" +
       "<p><strong>Numeración:</strong> " +
       number +
       "</p>" +
-      (expired ? "<p>La reserva expiró. Contacta a Telvoice si necesitas reactivarla.</p>" : "") +
+      (stale
+        ? "<p>Al continuar crearemos un checkout nuevo con el precio vigente.</p>"
+        : expired
+          ? "<p>La reserva expiró. Contacta a Telvoice si necesitas reactivarla.</p>"
+          : "") +
       "</div>" +
-      (pending.payment_url && !expired
+      (pending.payment_url && !expired && !stale
         ? '<button type="button" class="nsim-btn-primary nsim-pending-order__cta" id="nsim-continue-payment">Continuar suscripción</button>'
         : "");
 
     block.hidden = false;
-    if (submitBtn) submitBtn.hidden = !!(pending.payment_url && !expired);
+    if (submitBtn) submitBtn.hidden = !!(pending.payment_url && !expired && !stale);
 
     var continueBtn = $("nsim-continue-payment");
     if (continueBtn && pending.payment_url) {
@@ -870,7 +881,13 @@
 
     var pendingPromise = email
       ? fetch(
-          origin() + "/api/public/pending-sim-checkout?email=" + encodeURIComponent(email),
+          origin() +
+            "/api/public/pending-sim-checkout?email=" +
+            encodeURIComponent(email) +
+            "&plan_id=" +
+            encodeURIComponent(state.planId || "") +
+            "&billing_cycle=" +
+            encodeURIComponent(state.billing || "monthly"),
           { headers: { Accept: "application/json" } }
         )
           .then(function (res) {
@@ -1024,6 +1041,7 @@
       state.pendingOrder &&
       state.pendingOrder.has_pending_order &&
       !state.pendingOrder.reservation_expired &&
+      !state.pendingOrder.pricing_stale &&
       state.pendingOrder.payment_url
     ) {
       window.location.href = state.pendingOrder.payment_url;

@@ -418,7 +418,21 @@ export async function getApiSimSubscriptionPending(
     const ctx = await requireApiContext(req, res);
     if (!ctx) return;
 
-    const pending = await getClientPendingSimCheckoutForCompany(ctx.company.id);
+    const planIdRaw = String(req.query.plan_id ?? "").trim();
+    const billingCycleRaw = String(req.query.billing_cycle ?? "monthly").trim();
+    const billingCycle =
+      billingCycleRaw === "annual" ? ("annual" as const) : ("monthly" as const);
+    const profile = buildClientSimCheckoutProfilePayload(ctx.company, ctx.profile);
+    const pending = await getClientPendingSimCheckoutForCompany(
+      ctx.company.id,
+      planIdRaw && isSimPlanId(planIdRaw)
+        ? {
+            planId: planIdRaw,
+            billingCycle,
+            checkoutEmail: profile.email,
+          }
+        : undefined,
+    );
     res.json({ ok: true, ...pending });
   } catch (error) {
     res.status(500).json({ ok: false, error: "Error al consultar checkout pendiente." });

@@ -222,6 +222,11 @@ function resolveStarterPromo50Pricing(
     originalTotalAmount: plan.total_amount,
     priceMetadata: {
       product_type: "sim_subscription",
+      billing_cycle: "monthly",
+      regular_monthly_price_clp: plan.total_amount,
+      promo_enabled: true,
+      promo_monthly_price_clp: monthly,
+      transaction_amount_clp: monthly,
       starter_promo_50_6m: true,
       promo_original_monthly_clp: plan.total_amount,
       promo_applied_monthly_clp: monthly,

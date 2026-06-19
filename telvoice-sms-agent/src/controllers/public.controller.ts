@@ -36,6 +36,7 @@ import {
 } from "../services/supabaseAuthVerifyService.js";
 import { validateUuidParam } from "../utils/validation.js";
 import { getPublicSimPlansApiCatalog } from "../services/simPlanSettingsService.js";
+import type { SimBillingCycle } from "../services/simPlanSettingsService.js";
 
 function respondPublicSimCheckoutError(res: Response, err: AppError): void {
   res.status(err.statusCode).json({
@@ -102,7 +103,19 @@ export async function getPublicPendingSimCheckout(
     if (!email.includes("@")) {
       throw new ValidationError("email inválido.");
     }
-    const result = await getPublicPendingSimCheckoutForEmail(email);
+    const planId = String(req.query.plan_id ?? "").trim();
+    const billingCycleRaw = String(req.query.billing_cycle ?? "monthly").trim();
+    const billingCycle: SimBillingCycle =
+      billingCycleRaw === "annual" ? "annual" : "monthly";
+    const pricingContext =
+      planId && isSimPlanId(planId)
+        ? {
+            planId,
+            billingCycle,
+            checkoutEmail: email,
+          }
+        : undefined;
+    const result = await getPublicPendingSimCheckoutForEmail(email, pricingContext);
     res.json({ success: true, ...result });
   } catch (error) {
     next(error);

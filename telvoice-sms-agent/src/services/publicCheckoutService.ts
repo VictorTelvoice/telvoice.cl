@@ -51,6 +51,13 @@ import {
   getInventoryById,
   passesPublicInventoryListingFilter,
 } from "./realNumberInventoryService.js";
+import {
+  computeSimCheckoutPricingForContext,
+  inventorySuffixForPendingOrder,
+  isSimPendingOrderPricingStale,
+  resolveSimPendingCheckoutBeforeStart,
+  type SimPendingPricingContext,
+} from "./simPendingCheckoutPricingService.js";
 import { getSupabase } from "../database/supabaseClient.js";
 import { isSimAgentBundleOrder, isSimSubscriptionOrder } from "../utils/order-display.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
@@ -67,6 +74,7 @@ export type PublicCheckoutStartResult = {
 
 export type PublicPendingSimCheckoutResult = {
   has_pending_order: boolean;
+  order_id?: string;
   public_reference?: string;
   amount?: number;
   payment_url?: string;
@@ -74,6 +82,9 @@ export type PublicPendingSimCheckoutResult = {
   expires_at?: string;
   reservation_expired?: boolean;
   plan_id?: string;
+  billing_cycle?: SimBillingCycle;
+  pricing_stale?: boolean;
+  expected_amount?: number;
 };
 
 function normalizeCheckoutEmail(email: string): string {
@@ -91,6 +102,7 @@ function orderPaymentUrl(order: SmsOrderRow): string | null {
 
 export async function getPublicPendingSimCheckoutForEmail(
   email: string,
+  pricingContext?: SimPendingPricingContext,
 ): Promise<PublicPendingSimCheckoutResult> {
   const normalized = normalizeCheckoutEmail(email);
   if (!normalized.includes("@")) {
@@ -163,17 +175,40 @@ export async function getPublicPendingSimCheckoutForEmail(
   }
 
   const paymentUrl = orderPaymentUrl(order);
+  const billingCycle: SimBillingCycle =
+    meta.billing_cycle === "annual" ? "annual" : "monthly";
+
+  let pricingStale = false;
+  let expectedAmount: number | undefined;
+  if (pricingContext) {
+    const suffix = await inventorySuffixForPendingOrder(order);
+    const pricing = await computeSimCheckoutPricingForContext({
+      ...pricingContext,
+      inventorySuffix: pricingContext.inventorySuffix ?? suffix,
+    });
+    if (pricing) {
+      expectedAmount = pricing.totalAmount;
+      pricingStale = isSimPendingOrderPricingStale(order, {
+        planId: pricingContext.planId,
+        billingCycle: pricingContext.billingCycle,
+        totalAmount: pricing.totalAmount,
+      });
+    }
+  }
 
   return {
     has_pending_order: true,
+    order_id: order.id,
     public_reference: order.public_checkout_reference ?? order.id,
     amount: Math.round(Number(order.amount)),
     payment_url: paymentUrl ?? undefined,
     selected_number: selectedNumber,
     expires_at: expiresAt,
     reservation_expired: reservationExpired,
-    plan_id:
-      typeof meta.plan_id === "string" ? meta.plan_id : undefined,
+    plan_id: typeof meta.plan_id === "string" ? meta.plan_id : undefined,
+    billing_cycle: billingCycle,
+    pricing_stale: pricingStale,
+    expected_amount: expectedAmount,
   };
 }
 
@@ -305,15 +340,6 @@ export async function startPublicSimCheckout(input: {
     );
   }
 
-  const pending = await getPublicPendingSimCheckoutForEmail(input.checkoutEmail);
-  if (pending.has_pending_order && !pending.reservation_expired && pending.payment_url) {
-    throw new AppError(
-      "Ya existe una orden pendiente para este correo.",
-      409,
-      "PENDING_ORDER_EXISTS",
-    );
-  }
-
   if (!isSimPlanId(input.planId)) {
     throw new AppError("plan_id SIM no válido.", 400, "INVALID_SIM_PLAN");
   }
@@ -342,8 +368,6 @@ export async function startPublicSimCheckout(input: {
     );
   }
 
-  await releaseExpiredSimCheckoutHoldsBestEffort();
-
   const plan = buildSimPlanDefinitionFromSettings(planSettings);
   if (!plan) {
     throw new AppError("Plan SIM no encontrado.", 404);
@@ -352,6 +376,49 @@ export async function startPublicSimCheckout(input: {
   const configuredPricing = calculateSimPlanPrice(planSettings, billingCycle);
   const introPromo =
     billingCycle === "monthly" ? calculatePlanIntroPromo(planSettings) : null;
+
+  const pending = await getPublicPendingSimCheckoutForEmail(input.checkoutEmail, {
+    planId: input.planId,
+    billingCycle,
+    checkoutEmail: input.checkoutEmail,
+  });
+
+  const pricingPreview = resolveSimSubscriptionCheckoutPricing(
+    plan,
+    input.checkoutEmail,
+    "",
+    {
+      billingCycle,
+      configuredMonthlyClp: configuredPricing.monthly_price_clp,
+      annualDiscountPercent: configuredPricing.annual_discount_percent,
+      planIntroPromo: introPromo?.hasIntroPromo ? introPromo : undefined,
+    },
+  );
+
+  const pendingResolution = await resolveSimPendingCheckoutBeforeStart({
+    pendingOrderId: pending.order_id,
+    reservationExpired: pending.reservation_expired,
+    paymentUrl: pending.payment_url,
+    expected: {
+      planId: input.planId,
+      billingCycle,
+      totalAmount: pricingPreview.totalAmount,
+    },
+  });
+
+  if (pendingResolution.reuseExisting) {
+    throw new AppError(
+      "Ya existe una orden pendiente para este correo.",
+      409,
+      "PENDING_ORDER_EXISTS",
+      {
+        payment_url: pendingResolution.paymentUrl,
+        order_id: pendingResolution.orderId,
+      },
+    );
+  }
+
+  await releaseExpiredSimCheckoutHoldsBestEffort();
 
   const availability = await getPublicAvailability();
   if (!availability.in_stock) {
@@ -435,6 +502,8 @@ export async function startPublicSimCheckout(input: {
       regular_monthly_price_clp: configuredPricing.monthly_price_clp,
       annual_discount_percent: configuredPricing.annual_discount_percent,
       annual_price_clp: configuredPricing.annual_price_clp,
+      charge_amount_clp: pricing.totalAmount,
+      transaction_amount_clp: pricing.totalAmount,
     },
   });
 

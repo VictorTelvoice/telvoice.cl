@@ -43,6 +43,13 @@ import {
 } from "./simSubscriptionService.js";
 import { scheduleSimSubscriptionPriceChange } from "./simSubscriptionScheduledPriceService.js";
 import {
+  computeSimCheckoutPricingForContext,
+  inventorySuffixForPendingOrder,
+  isSimPendingOrderPricingStale,
+  resolveSimPendingCheckoutBeforeStart,
+  type SimPendingPricingContext,
+} from "./simPendingCheckoutPricingService.js";
+import {
   linkSimActivationInventory,
   linkSimActivationToCompany,
 } from "./simActivationService.js";
@@ -63,6 +70,9 @@ export type ClientPendingSimCheckoutResult = {
   expires_at?: string;
   reservation_expired?: boolean;
   plan_id?: string;
+  billing_cycle?: SimBillingCycle;
+  pricing_stale?: boolean;
+  expected_amount?: number;
 };
 
 function orderPaymentUrl(order: SmsOrderRow): string | null {
@@ -97,6 +107,7 @@ function resolvePayerName(profile: UserProfileContext, company: CompanyRow): str
 
 export async function getClientPendingSimCheckoutForCompany(
   companyId: string,
+  pricingContext?: SimPendingPricingContext,
 ): Promise<ClientPendingSimCheckoutResult> {
   const sb = getSupabase();
   const { data, error } = await sb
@@ -162,6 +173,26 @@ export async function getClientPendingSimCheckoutForCompany(
   }
 
   const paymentUrl = orderPaymentUrl(order);
+  const billingCycle: SimBillingCycle =
+    meta.billing_cycle === "annual" ? "annual" : "monthly";
+
+  let pricingStale = false;
+  let expectedAmount: number | undefined;
+  if (pricingContext) {
+    const suffix = await inventorySuffixForPendingOrder(order);
+    const pricing = await computeSimCheckoutPricingForContext({
+      ...pricingContext,
+      inventorySuffix: pricingContext.inventorySuffix ?? suffix,
+    });
+    if (pricing) {
+      expectedAmount = pricing.totalAmount;
+      pricingStale = isSimPendingOrderPricingStale(order, {
+        planId: pricingContext.planId,
+        billingCycle: pricingContext.billingCycle,
+        totalAmount: pricing.totalAmount,
+      });
+    }
+  }
 
   return {
     has_pending_order: true,
@@ -172,6 +203,9 @@ export async function getClientPendingSimCheckoutForCompany(
     expires_at: expiresAt,
     reservation_expired: reservationExpired,
     plan_id: typeof meta.plan_id === "string" ? meta.plan_id : undefined,
+    billing_cycle: billingCycle,
+    pricing_stale: pricingStale,
+    expected_amount: expectedAmount,
   };
 }
 
@@ -210,19 +244,6 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
   const checkoutEmail = resolveCheckoutEmail(input.profile, input.company);
   const payerName = resolvePayerName(input.profile, input.company);
 
-  const pending = await getClientPendingSimCheckoutForCompany(input.company.id);
-  if (pending.has_pending_order && !pending.reservation_expired && pending.payment_url) {
-    throw new AppError(
-      "Ya tienes una suscripción SIM pendiente de pago. Continúa el pago existente o espera a que expire la reserva.",
-      409,
-      "PENDING_ORDER_EXISTS",
-      {
-        payment_url: pending.payment_url,
-        order_id: pending.order_id,
-      },
-    );
-  }
-
   if (!isSimPlanId(input.planId)) {
     throw new AppError("plan_id SIM no válido.", 400, "INVALID_SIM_PLAN");
   }
@@ -251,8 +272,6 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
     );
   }
 
-  await releaseExpiredSimCheckoutHoldsBestEffort();
-
   const plan = buildSimPlanDefinitionFromSettings(planSettings);
   if (!plan) {
     throw new AppError("Plan SIM no encontrado.", 404);
@@ -261,6 +280,49 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
   const configuredPricing = calculateSimPlanPrice(planSettings, billingCycle);
   const introPromo =
     billingCycle === "monthly" ? calculatePlanIntroPromo(planSettings) : null;
+
+  const pending = await getClientPendingSimCheckoutForCompany(input.company.id, {
+    planId: input.planId,
+    billingCycle,
+    checkoutEmail,
+  });
+
+  const pricingPreview = resolveSimSubscriptionCheckoutPricing(
+    plan,
+    checkoutEmail,
+    "",
+    {
+      billingCycle,
+      configuredMonthlyClp: configuredPricing.monthly_price_clp,
+      annualDiscountPercent: configuredPricing.annual_discount_percent,
+      planIntroPromo: introPromo?.hasIntroPromo ? introPromo : undefined,
+    },
+  );
+
+  const pendingResolution = await resolveSimPendingCheckoutBeforeStart({
+    pendingOrderId: pending.order_id,
+    reservationExpired: pending.reservation_expired,
+    paymentUrl: pending.payment_url,
+    expected: {
+      planId: input.planId,
+      billingCycle,
+      totalAmount: pricingPreview.totalAmount,
+    },
+  });
+
+  if (pendingResolution.reuseExisting) {
+    throw new AppError(
+      "Ya tienes una suscripción SIM pendiente de pago. Continúa el pago existente o espera a que expire la reserva.",
+      409,
+      "PENDING_ORDER_EXISTS",
+      {
+        payment_url: pendingResolution.paymentUrl,
+        order_id: pendingResolution.orderId,
+      },
+    );
+  }
+
+  await releaseExpiredSimCheckoutHoldsBestEffort();
 
   const availability = await getPublicAvailability();
   if (!availability.in_stock) {
@@ -343,6 +405,8 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
       regular_monthly_price_clp: configuredPricing.monthly_price_clp,
       annual_discount_percent: configuredPricing.annual_discount_percent,
       annual_price_clp: configuredPricing.annual_price_clp,
+      charge_amount_clp: pricing.totalAmount,
+      transaction_amount_clp: pricing.totalAmount,
     },
   });
 

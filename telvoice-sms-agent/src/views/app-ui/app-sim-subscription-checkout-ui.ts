@@ -159,6 +159,12 @@ export function getAppSimSubscriptionCheckoutScript(): string {
         el.classList.add("tv-sim-checkout-modal__alert--hidden");
         return;
       }
+      if (pending.pricing_stale) {
+        el.textContent =
+          "Tienes un checkout pendiente con precio anterior. Al continuar crearemos uno nuevo con el precio vigente.";
+        el.classList.remove("tv-sim-checkout-modal__alert--hidden");
+        return;
+      }
       var parts = ["Tienes una suscripción pendiente de pago."];
       if (pending.selected_number) parts.push("Numeración reservada: " + pending.selected_number + ".");
       var html = parts.join(" ");
@@ -205,7 +211,7 @@ export function getAppSimSubscriptionCheckoutScript(): string {
 
     function canSubmitCheckout() {
       if (state.busy || !state.planId) return false;
-      if (state.pending && state.pending.has_pending_order && !state.pending.reservation_expired) {
+      if (state.pending && state.pending.has_pending_order && !state.pending.reservation_expired && !state.pending.pricing_stale) {
         return false;
       }
       if (state.numbersLoading) return false;
@@ -408,7 +414,13 @@ export function getAppSimSubscriptionCheckoutScript(): string {
           updateSubmitState();
         })
         .then(function () {
-          return fetch("/api/app/sim-subscription/pending", { headers: { Accept: "application/json" } })
+          return fetch(
+            "/api/app/sim-subscription/pending?plan_id=" +
+              encodeURIComponent(state.planId || "") +
+              "&billing_cycle=" +
+              encodeURIComponent(getBillingCycle()),
+            { headers: { Accept: "application/json" } }
+          )
             .then(function (res) { return res.json(); })
             .then(function (pending) {
               if (!state.open) return;
