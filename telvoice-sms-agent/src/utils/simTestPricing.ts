@@ -94,9 +94,6 @@ export function resolveSimSubscriptionCheckoutPricing(
     total_amount: baseMonthly,
   };
 
-  const emailPromo = resolveStarterPromo50Pricing(planForPromo, checkoutEmail);
-  if (emailPromo) return emailPromo;
-
   const introPromo = options?.planIntroPromo;
   if (introPromo?.hasIntroPromo) {
     const startedAt = new Date();
@@ -115,13 +112,18 @@ export function resolveSimSubscriptionCheckoutPricing(
         promo_duration_months: introPromo.promoDurationMonths,
         promo_monthly_price_clp: introPromo.promoMonthlyPriceClp,
         post_promo_monthly_price_clp: introPromo.regularMonthlyPriceClp,
+        transaction_amount_clp: introPromo.promoMonthlyPriceClp,
+        charge_amount_clp: introPromo.promoMonthlyPriceClp,
         promo_label: introPromo.promoLabel,
         promo_started_at: startedAt.toISOString(),
         promo_expires_at: expiresAt.toISOString(),
-        promo_source: "plan_admin_intro",
+        promo_source: "admin_plan",
       },
     };
   }
+
+  const emailPromo = resolveStarterPromo50Pricing(planForPromo, checkoutEmail);
+  if (emailPromo) return emailPromo;
 
   const cfg = env.simSubscriptionQaReal;
   const suffix = inventorySuffix.slice(-3);
@@ -227,6 +229,7 @@ function resolveStarterPromo50Pricing(
       promo_enabled: true,
       promo_monthly_price_clp: monthly,
       transaction_amount_clp: monthly,
+      charge_amount_clp: monthly,
       starter_promo_50_6m: true,
       promo_original_monthly_clp: plan.total_amount,
       promo_applied_monthly_clp: monthly,
@@ -234,6 +237,7 @@ function resolveStarterPromo50Pricing(
       promo_duration_months: cfg.durationMonths,
       promo_started_at: startedAt.toISOString(),
       promo_expires_at: expiresAt.toISOString(),
+      promo_source: "env_email",
       promo_reason: "client_panel_starter_50_6m",
     },
   };

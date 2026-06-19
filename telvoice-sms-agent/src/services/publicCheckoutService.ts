@@ -192,6 +192,7 @@ export async function getPublicPendingSimCheckoutForEmail(
         planId: pricingContext.planId,
         billingCycle: pricingContext.billingCycle,
         totalAmount: pricing.totalAmount,
+        priceMetadata: pricing.priceMetadata,
       });
     }
   }
@@ -403,6 +404,7 @@ export async function startPublicSimCheckout(input: {
       planId: input.planId,
       billingCycle,
       totalAmount: pricingPreview.totalAmount,
+      priceMetadata: pricingPreview.priceMetadata,
     },
   });
 

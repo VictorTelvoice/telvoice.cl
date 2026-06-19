@@ -11,7 +11,7 @@ import {
   getSimPlanById,
   type SimBillingCycle,
 } from "./simPlanSettingsService.js";
-import { getSimPlan, isSimPlanId } from "../utils/simPlans.js";
+import { isSimPlanId } from "../utils/simPlans.js";
 import { resolveSimSubscriptionCheckoutPricing, inventorySuffixFromE164 } from "../utils/simTestPricing.js";
 import { inventoryPublicId } from "../utils/inventory-public-id.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
@@ -190,6 +190,7 @@ export async function getClientPendingSimCheckoutForCompany(
         planId: pricingContext.planId,
         billingCycle: pricingContext.billingCycle,
         totalAmount: pricing.totalAmount,
+        priceMetadata: pricing.priceMetadata,
       });
     }
   }
@@ -307,6 +308,7 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
       planId: input.planId,
       billingCycle,
       totalAmount: pricingPreview.totalAmount,
+      priceMetadata: pricingPreview.priceMetadata,
     },
   });
 
@@ -568,10 +570,10 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
   };
 }
 
-export function buildClientSimCheckoutProfilePayload(
+export async function buildClientSimCheckoutProfilePayload(
   company: CompanyRow,
   profile: UserProfileContext,
-): {
+): Promise<{
   company_name: string;
   email: string;
   contact_name: string | null;
@@ -584,29 +586,26 @@ export function buildClientSimCheckoutProfilePayload(
     duration_months: number;
     expires_at: string;
   };
-} {
+}> {
   const email = resolveCheckoutEmail(profile, company);
-  const starterPlan = getSimPlan("sim_starter");
-  let starterPromo: ReturnType<typeof buildClientSimCheckoutProfilePayload>["starter_promo"];
-  if (starterPlan) {
-    const pricing = resolveSimSubscriptionCheckoutPricing(starterPlan, email, "", {
-      billingCycle: "monthly",
-      configuredMonthlyClp: starterPlan.total_amount,
-    });
+  let starterPromo: Awaited<
+    ReturnType<typeof buildClientSimCheckoutProfilePayload>
+  >["starter_promo"];
+
+  const pricing = await computeSimCheckoutPricingForContext({
+    planId: "sim_starter",
+    billingCycle: "monthly",
+    checkoutEmail: email,
+  });
+
+  if (pricing && pricing.totalAmount < pricing.originalTotalAmount) {
     const meta = pricing.priceMetadata;
-    const isEmailPromo = meta.starter_promo_50_6m === true;
-    const isPlanPromo = meta.promo_enabled === true && meta.promo_source === "plan_admin_intro";
-    if (
-      (isEmailPromo || isPlanPromo) &&
-      pricing.totalAmount < pricing.originalTotalAmount
-    ) {
-      starterPromo = {
-        monthly_clp: pricing.totalAmount,
-        original_monthly_clp: pricing.originalTotalAmount,
-        duration_months: Number(meta.promo_duration_months) || 6,
-        expires_at: String(meta.promo_expires_at ?? ""),
-      };
-    }
+    starterPromo = {
+      monthly_clp: pricing.totalAmount,
+      original_monthly_clp: pricing.originalTotalAmount,
+      duration_months: Number(meta.promo_duration_months) || 6,
+      expires_at: String(meta.promo_expires_at ?? ""),
+    };
   }
 
   return {

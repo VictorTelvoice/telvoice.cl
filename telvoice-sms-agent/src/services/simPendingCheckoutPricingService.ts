@@ -28,7 +28,27 @@ export type SimPendingPricingExpectation = {
   planId: string;
   billingCycle: SimBillingCycle;
   totalAmount: number;
+  priceMetadata?: Record<string, unknown>;
 };
+
+function metaNumber(meta: Record<string, unknown>, key: string): number | null {
+  const raw = meta[key];
+  if (raw == null || !Number.isFinite(Number(raw))) return null;
+  return Math.round(Number(raw));
+}
+
+function metaString(meta: Record<string, unknown>, key: string): string | null {
+  const raw = meta[key];
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  return trimmed || null;
+}
+
+function metaBool(meta: Record<string, unknown>, key: string): boolean | null {
+  if (meta[key] === true) return true;
+  if (meta[key] === false) return false;
+  return null;
+}
 
 export async function computeSimCheckoutPricingForContext(
   context: SimPendingPricingContext,
@@ -80,6 +100,44 @@ export function isSimPendingOrderPricingStale(
   if (orderBilling !== expected.billingCycle) return true;
   if (orderAmount !== expected.totalAmount) return true;
   if (chargeAmount !== expected.totalAmount) return true;
+
+  const expectedMeta = expected.priceMetadata ?? {};
+  const expectedTxn = metaNumber(expectedMeta, "transaction_amount_clp");
+  if (expectedTxn != null && expectedTxn !== expected.totalAmount) return true;
+  if (expectedTxn != null && chargeAmount !== expectedTxn) return true;
+
+  const compareKeys = [
+    "promo_source",
+    "promo_discount_percent",
+    "promo_duration_months",
+    "promo_monthly_price_clp",
+    "regular_monthly_price_clp",
+    "annual_price_clp",
+  ] as const;
+
+  for (const key of compareKeys) {
+    if (expectedMeta[key] == null) continue;
+    if (key === "promo_source") {
+      const expectedSource = metaString(expectedMeta, key);
+      const orderSource = metaString(meta, key);
+      if (expectedSource && orderSource && expectedSource !== orderSource) return true;
+      continue;
+    }
+    const expectedNum = metaNumber(expectedMeta, key);
+    const orderNum = metaNumber(meta, key);
+    if (expectedNum != null && orderNum != null && expectedNum !== orderNum) return true;
+  }
+
+  const expectedPromoEnabled = metaBool(expectedMeta, "promo_enabled");
+  const orderPromoEnabled = metaBool(meta, "promo_enabled");
+  if (
+    expectedPromoEnabled != null &&
+    orderPromoEnabled != null &&
+    expectedPromoEnabled !== orderPromoEnabled
+  ) {
+    return true;
+  }
+
   return false;
 }
 

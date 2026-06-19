@@ -225,14 +225,35 @@ export function getAppSimSubscriptionCheckoutScript(): string {
     }
 
     function syncInventoryFromApi(data) {
-      state.numbers = data.numbers || [];
-      state.available = Number(data.available) || 0;
+      var payload = data || {};
+      state.numbers = Array.isArray(payload.numbers) ? payload.numbers : [];
+      state.available = Number(
+        payload.available != null
+          ? payload.available
+          : payload.inventory && payload.inventory.available != null
+            ? payload.inventory.available
+            : 0,
+      ) || 0;
+      var apiCanAutoAssign =
+        payload.can_auto_assign != null
+          ? payload.can_auto_assign
+          : payload.inventory && payload.inventory.can_auto_assign != null
+            ? payload.inventory.can_auto_assign
+            : null;
       state.canAutoAssign =
-        data.can_auto_assign === true ||
+        apiCanAutoAssign === true ||
         state.available > 0 ||
         state.numbers.length > 0 ||
-        data.in_stock === true;
+        payload.in_stock === true;
       state.inStock = state.canAutoAssign;
+    }
+
+    function hideNoStockBannerIfEligible() {
+      if (hasEligibleStock()) {
+        setNoStockBanner(null);
+        return true;
+      }
+      return false;
     }
 
     function canSubmitCheckout() {
@@ -341,6 +362,29 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       var grid = $("tv-sim-checkout-numbers");
       var hint = $("tv-sim-checkout-numbers-hint");
       if (!wrap || !grid) return;
+
+      if (state.numbersLoading) {
+        setNoStockBanner(null);
+        wrap.classList.add("tv-sim-checkout-modal__numbers--hidden");
+        return;
+      }
+
+      if (
+        state.assignmentMode === "auto" &&
+        (state.canAutoAssign || state.available > 0 || state.numbers.length > 0)
+      ) {
+        setNoStockBanner(null);
+        wrap.classList.add("tv-sim-checkout-modal__numbers--hidden");
+        updateSubmitState();
+        return;
+      }
+
+      if (hideNoStockBannerIfEligible() && !hasRealZeroStock()) {
+        if (state.assignmentMode !== "selected") {
+          wrap.classList.add("tv-sim-checkout-modal__numbers--hidden");
+          return;
+        }
+      }
 
       if (shouldShowRealNoStockBanner()) {
         wrap.classList.add("tv-sim-checkout-modal__numbers--hidden");
@@ -483,6 +527,7 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       state.pending = null;
       setError("");
       setNoStockBanner(null);
+      renderNumbers();
       renderPlanSummary();
       modal.setAttribute("aria-hidden", "false");
       document.body.classList.add("tv-sim-checkout-modal-open");
@@ -586,6 +631,11 @@ export function getAppSimSubscriptionCheckoutScript(): string {
               return;
             }
             if (result.body && result.body.code === "PENDING_ORDER_EXISTS" && result.body.details && result.body.details.payment_url) {
+              if (state.pending && state.pending.pricing_stale) {
+                setError("Tu checkout pendiente tiene un precio anterior. Intenta nuevamente para generar uno nuevo.");
+                setBusy(false);
+                return;
+              }
               window.location.href = result.body.details.payment_url;
               return;
             }

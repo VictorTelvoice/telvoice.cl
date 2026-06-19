@@ -403,7 +403,7 @@ export async function getApiSimSubscriptionAvailableNumbers(
       ...result,
       in_stock: availability.in_stock,
       can_auto_assign: availability.can_auto_assign,
-      profile: buildClientSimCheckoutProfilePayload(ctx.company, ctx.profile),
+      profile: await buildClientSimCheckoutProfilePayload(ctx.company, ctx.profile),
     });
   } catch (error) {
     res.status(500).json({ ok: false, error: "Error al listar numeraciones." });
@@ -422,7 +422,7 @@ export async function getApiSimSubscriptionPending(
     const billingCycleRaw = String(req.query.billing_cycle ?? "monthly").trim();
     const billingCycle =
       billingCycleRaw === "annual" ? ("annual" as const) : ("monthly" as const);
-    const profile = buildClientSimCheckoutProfilePayload(ctx.company, ctx.profile);
+    const profile = await buildClientSimCheckoutProfilePayload(ctx.company, ctx.profile);
     const pending = await getClientPendingSimCheckoutForCompany(
       ctx.company.id,
       planIdRaw && isSimPlanId(planIdRaw)

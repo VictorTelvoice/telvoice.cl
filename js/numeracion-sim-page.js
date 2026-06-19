@@ -197,12 +197,25 @@
   function syncInventoryState(numbersPayload) {
     var payload = numbersPayload || {};
     state.numbers = Array.isArray(payload.numbers) ? payload.numbers : [];
-    state.availableTotal = Number(payload.available) || 0;
+    state.availableTotal =
+      Number(
+        payload.available != null
+          ? payload.available
+          : payload.inventory && payload.inventory.available != null
+            ? payload.inventory.available
+            : 0,
+      ) || 0;
     state.shownCount =
       Number(payload.shown) ||
       (payload.numbers ? payload.numbers.length : 0);
+    var apiCanAutoAssign =
+      payload.can_auto_assign != null
+        ? payload.can_auto_assign
+        : payload.inventory && payload.inventory.can_auto_assign != null
+          ? payload.inventory.can_auto_assign
+          : null;
     state.canAutoAssign =
-      payload.can_auto_assign === true ||
+      apiCanAutoAssign === true ||
       state.availableTotal > 0 ||
       state.numbers.length > 0;
   }
@@ -799,6 +812,16 @@
 
     if (state.numbersLoading) {
       renderNumberEmpty(false);
+      return;
+    }
+
+    if (
+      state.assignmentMode === "auto" &&
+      (state.canAutoAssign || state.availableTotal > 0 || state.numbers.length > 0)
+    ) {
+      renderNumberEmpty(false);
+      if (picker) picker.hidden = true;
+      updateSubmitState();
       return;
     }
 
