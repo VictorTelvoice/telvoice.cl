@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <svg width="360" height="200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 200" role="img" aria-hidden="true">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
@@ -9,8 +10,6 @@
     </filter>
   </defs>
   <rect width="360" height="200" fill="url(#bg)"/>
-
-  <!-- Hub central -->
   <g filter="url(#shadow)" transform="translate(118 48)">
     <rect width="124" height="88" rx="14" fill="#fff" stroke="#0052cc" stroke-width="1.5"/>
     <rect x="16" y="14" width="56" height="6" rx="3" fill="#0052cc" opacity="0.75"/>
@@ -18,37 +17,28 @@
     <rect x="16" y="36" width="80" height="4" rx="2" fill="#e8eef8"/>
     <rect x="16" y="44" width="68" height="4" rx="2" fill="#e8eef8"/>
     <rect x="16" y="56" width="92" height="22" rx="8" fill="#f2f3ff" stroke="#c3d4f0" stroke-width="1"/>
-    <text x="62" y="70" text-anchor="middle" fill="#0052cc" font-family="Inter,sans-serif" font-size="7.5" font-weight="600">Buzón compartido</text>
+    <text x="62" y="70" text-anchor="middle" fill="#0052cc" font-family="Inter,sans-serif" font-size="7.5" font-weight="600">Buz&#243;n compartido</text>
   </g>
-
-  <!-- Roles -->
   <g filter="url(#shadow)">
     <circle cx="56" cy="72" r="22" fill="#fff" stroke="#c3d4f0" stroke-width="1.2"/>
     <circle cx="56" cy="66" r="8" fill="#0052cc" opacity="0.15"/>
     <path d="M44 88 Q56 78 68 88" stroke="#94a3b8" fill="none"/>
     <text x="56" y="104" text-anchor="middle" fill="#525f7a" font-family="Inter,sans-serif" font-size="7" font-weight="600">Gerencia</text>
-
     <circle cx="304" cy="72" r="22" fill="#fff" stroke="#c3d4f0" stroke-width="1.2"/>
     <circle cx="304" cy="66" r="8" fill="#0c56d0" opacity="0.18"/>
     <path d="M292 88 Q304 78 316 88" stroke="#94a3b8" fill="none"/>
     <text x="304" y="104" text-anchor="middle" fill="#525f7a" font-family="Inter,sans-serif" font-size="7" font-weight="600">Ventas</text>
-
     <circle cx="56" cy="148" r="18" fill="#fff" stroke="#c3d4f0" stroke-width="1.2"/>
     <circle cx="56" cy="143" r="6" fill="#38bdf8" opacity="0.35"/>
     <text x="56" y="174" text-anchor="middle" fill="#525f7a" font-family="Inter,sans-serif" font-size="7" font-weight="600">Soporte</text>
-
     <circle cx="304" cy="148" r="18" fill="#fff" stroke="#c3d4f0" stroke-width="1.2"/>
     <circle cx="304" cy="143" r="6" fill="#6366f1" opacity="0.35"/>
     <text x="304" y="174" text-anchor="middle" fill="#525f7a" font-family="Inter,sans-serif" font-size="7" font-weight="600">Ops</text>
   </g>
-
-  <!-- Líneas -->
   <path d="M78 80 L118 76" stroke="#0052cc" stroke-width="1.2" stroke-dasharray="3 2" opacity="0.4"/>
   <path d="M282 80 L242 76" stroke="#0052cc" stroke-width="1.2" stroke-dasharray="3 2" opacity="0.4"/>
   <path d="M74 140 L118 128" stroke="#0052cc" stroke-width="1.2" stroke-dasharray="3 2" opacity="0.35"/>
   <path d="M286 140 L242 128" stroke="#0052cc" stroke-width="1.2" stroke-dasharray="3 2" opacity="0.35"/>
-
-  <!-- Celular tachado -->
   <g transform="translate(148 148)" opacity="0.85">
     <rect x="0" y="0" width="64" height="36" rx="8" fill="#fff" stroke="#fca5a5" stroke-width="1"/>
     <rect x="22" y="4" width="20" height="4" rx="2" fill="#dbe4f5"/>
