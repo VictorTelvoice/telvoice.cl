@@ -35,6 +35,18 @@ const ADMIN_SIM_PLAN_FORM_STYLES = `
     line-height: 1.55;
   }
   .tv-sim-plan-admin-preview p { margin: 0.25rem 0; }
+  .tv-sim-plan-admin-promo-warn {
+    display: none;
+    margin-top: 0.85rem;
+    padding: 0.85rem 1rem;
+    border-radius: 0.85rem;
+    background: #fffbeb;
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    color: #78350f;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .tv-sim-plan-admin-promo-warn.is-visible { display: block; }
 `;
 
 
@@ -168,9 +180,12 @@ export function renderAdminSimPlanEditPage(options: {
         <h2>Promoción inicial</h2>
         <p class="field-hint">Aplica solo al ciclo mensual del panel cliente. No se combina con el descuento anual.</p>
         <label class="actions-row">
-          <input type="checkbox" name="promo_enabled" value="1" ${plan.promo_enabled ? "checked" : ""} ${isCustom ? "disabled" : ""} />
+          <input type="checkbox" name="promo_enabled" value="1" id="tv-sim-promo-enabled" ${plan.promo_enabled ? "checked" : ""} ${isCustom ? "disabled" : ""} />
           Activar promoción inicial
         </label>
+        <div class="tv-sim-plan-admin-promo-warn${plan.promo_enabled && !isCustom ? " is-visible" : ""}" id="tv-sim-promo-warn" role="status">
+          <strong>Importante:</strong> el cambio automático al precio normal después de la promoción aún requiere proceso manual o job programado.
+        </div>
         <div class="tv-sim-plan-admin-grid" style="margin-top:0.75rem">
           <label>Descuento promocional (%)
             <input name="promo_discount_percent" type="number" min="0" max="100" step="0.01" value="${plan.promo_discount_percent}" ${isCustom ? "disabled" : ""} />
@@ -184,6 +199,7 @@ export function renderAdminSimPlanEditPage(options: {
         </div>
         ${renderPromoPreview(plan)}
       </section>
+      ${isCustom ? "" : `<script>(function(){var cb=document.getElementById("tv-sim-promo-enabled");var warn=document.getElementById("tv-sim-promo-warn");if(!cb||!warn)return;function sync(){warn.classList.toggle("is-visible",cb.checked);}cb.addEventListener("change",sync);sync();})();</script>`}
 
       <section class="tv-sim-plan-admin-card">
         <h2>Contenido comercial</h2>
