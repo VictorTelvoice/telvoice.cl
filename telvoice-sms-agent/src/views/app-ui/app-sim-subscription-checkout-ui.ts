@@ -103,7 +103,9 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       numbersLoading: false,
       available: 0,
       canAutoAssign: false,
-      inStock: true,
+      inStock: false,
+      inventoryFetchFailed: false,
+      resolvedPricing: null,
       pending: null,
       profile: null,
     };
@@ -177,6 +179,13 @@ export function getAppSimSubscriptionCheckoutScript(): string {
 
     function planMonthlyAmount(plan) {
       if (!plan) return 0;
+      if (
+        state.resolvedPricing &&
+        state.resolvedPricing.plan_id === plan.plan_id &&
+        state.resolvedPricing.billing_cycle === getBillingCycle()
+      ) {
+        return Number(state.resolvedPricing.transaction_amount_clp) || 0;
+      }
       if (getBillingCycle() === "annual") {
         return plan.monthly_price_clp || plan.total_amount;
       }
@@ -217,6 +226,7 @@ export function getAppSimSubscriptionCheckoutScript(): string {
     function hasRealZeroStock() {
       return (
         !state.numbersLoading &&
+        !state.inventoryFetchFailed &&
         state.numbers.length === 0 &&
         state.available === 0 &&
         !state.canAutoAssign &&
@@ -363,8 +373,9 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       var hint = $("tv-sim-checkout-numbers-hint");
       if (!wrap || !grid) return;
 
+      setNoStockBanner(null);
+
       if (state.numbersLoading) {
-        setNoStockBanner(null);
         wrap.classList.add("tv-sim-checkout-modal__numbers--hidden");
         return;
       }
@@ -373,7 +384,6 @@ export function getAppSimSubscriptionCheckoutScript(): string {
         state.assignmentMode === "auto" &&
         (state.canAutoAssign || state.available > 0 || state.numbers.length > 0)
       ) {
-        setNoStockBanner(null);
         wrap.classList.add("tv-sim-checkout-modal__numbers--hidden");
         updateSubmitState();
         return;
@@ -452,6 +462,7 @@ export function getAppSimSubscriptionCheckoutScript(): string {
 
     function loadContext() {
       state.numbersLoading = true;
+      state.inventoryFetchFailed = false;
       renderNumbers();
       return fetch("/api/app/sim-subscription/available-numbers", { headers: { Accept: "application/json" } })
         .then(function (res) {
@@ -482,10 +493,12 @@ export function getAppSimSubscriptionCheckoutScript(): string {
         .catch(function () {
           if (!state.open) return;
           state.numbersLoading = false;
+          state.inventoryFetchFailed = true;
           state.inStock = false;
           state.canAutoAssign = false;
           state.available = 0;
           setError("No pudimos cargar las numeraciones. Intenta nuevamente.");
+          setNoStockBanner(null);
           renderNumbers();
           updateSubmitState();
         })
@@ -501,7 +514,10 @@ export function getAppSimSubscriptionCheckoutScript(): string {
             .then(function (pending) {
               if (!state.open) return;
               state.pending = pending;
+              state.resolvedPricing = pending.resolved_pricing || state.resolvedPricing;
               setPendingBanner(pending);
+              renderPlanSummary();
+              renderNumbers();
               updateSubmitState();
             })
             .catch(function () {});
@@ -523,6 +539,8 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       state.available = 0;
       state.canAutoAssign = false;
       state.inStock = false;
+      state.inventoryFetchFailed = false;
+      state.resolvedPricing = null;
       state.profile = null;
       state.pending = null;
       setError("");
@@ -630,13 +648,10 @@ export function getAppSimSubscriptionCheckoutScript(): string {
               window.location.href = result.body.checkout_url;
               return;
             }
-            if (result.body && result.body.code === "PENDING_ORDER_EXISTS" && result.body.details && result.body.details.payment_url) {
-              if (state.pending && state.pending.pricing_stale) {
-                setError("Tu checkout pendiente tiene un precio anterior. Intenta nuevamente para generar uno nuevo.");
-                setBusy(false);
-                return;
-              }
-              window.location.href = result.body.details.payment_url;
+            if (result.body && result.body.code === "PENDING_ORDER_EXISTS") {
+              setError("Tienes un checkout pendiente con precio anterior. Recarga el modal e intenta nuevamente.");
+              loadContext();
+              setBusy(false);
               return;
             }
             setError((result.body && result.body.error) || "No pudimos iniciar el checkout.");

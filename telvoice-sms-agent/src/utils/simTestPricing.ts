@@ -122,7 +122,10 @@ export function resolveSimSubscriptionCheckoutPricing(
     };
   }
 
-  const emailPromo = resolveStarterPromo50Pricing(planForPromo, checkoutEmail);
+  // Admin plan promo (above) wins over env email promo — never stack both.
+  const emailPromo = introPromo?.hasIntroPromo
+    ? null
+    : resolveStarterPromo50Pricing(planForPromo, checkoutEmail);
   if (emailPromo) return emailPromo;
 
   const cfg = env.simSubscriptionQaReal;

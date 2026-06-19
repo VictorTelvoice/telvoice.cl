@@ -31,6 +31,21 @@ export type SimPendingPricingExpectation = {
   priceMetadata?: Record<string, unknown>;
 };
 
+export type SimResolvedPricingApi = {
+  plan_id: string;
+  billing_cycle: SimBillingCycle;
+  transaction_amount_clp: number;
+  regular_monthly_price_clp?: number;
+  promo_enabled?: boolean;
+  promo_source?: string;
+  promo_discount_percent?: number;
+  promo_duration_months?: number;
+  promo_monthly_price_clp?: number;
+  post_promo_monthly_price_clp?: number;
+  annual_price_clp?: number;
+  charge_amount_clp?: number;
+};
+
 function metaNumber(meta: Record<string, unknown>, key: string): number | null {
   const raw = meta[key];
   if (raw == null || !Number.isFinite(Number(raw))) return null;
@@ -48,6 +63,38 @@ function metaBool(meta: Record<string, unknown>, key: string): boolean | null {
   if (meta[key] === true) return true;
   if (meta[key] === false) return false;
   return null;
+}
+
+export function formatResolvedPricingForApi(
+  planId: string,
+  billingCycle: SimBillingCycle,
+  pricing: SimCheckoutPricing,
+): SimResolvedPricingApi {
+  const meta = pricing.priceMetadata;
+  return {
+    plan_id: planId,
+    billing_cycle: billingCycle,
+    transaction_amount_clp: pricing.totalAmount,
+    charge_amount_clp: pricing.totalAmount,
+    regular_monthly_price_clp:
+      metaNumber(meta, "regular_monthly_price_clp") ?? pricing.originalTotalAmount,
+    promo_enabled: metaBool(meta, "promo_enabled") ?? undefined,
+    promo_source: metaString(meta, "promo_source") ?? undefined,
+    promo_discount_percent: metaNumber(meta, "promo_discount_percent") ?? undefined,
+    promo_duration_months: metaNumber(meta, "promo_duration_months") ?? undefined,
+    promo_monthly_price_clp: metaNumber(meta, "promo_monthly_price_clp") ?? undefined,
+    post_promo_monthly_price_clp:
+      metaNumber(meta, "post_promo_monthly_price_clp") ?? undefined,
+    annual_price_clp: metaNumber(meta, "annual_price_clp") ?? undefined,
+  };
+}
+
+export async function resolveSimCheckoutPricingApi(
+  context: SimPendingPricingContext,
+): Promise<SimResolvedPricingApi | null> {
+  const pricing = await computeSimCheckoutPricingForContext(context);
+  if (!pricing) return null;
+  return formatResolvedPricingForApi(context.planId, context.billingCycle, pricing);
 }
 
 export async function computeSimCheckoutPricingForContext(

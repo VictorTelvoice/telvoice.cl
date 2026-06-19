@@ -27,6 +27,8 @@
     selectedNumber: null,
     assignmentMode: "auto",
     pendingOrder: null,
+    resolvedPricing: null,
+    inventoryFetchFailed: false,
   };
 
   function $(id) {
@@ -188,6 +190,7 @@
   function hasRealZeroStock() {
     return (
       !state.numbersLoading &&
+      !state.inventoryFetchFailed &&
       state.numbers.length === 0 &&
       state.availableTotal === 0 &&
       !state.canAutoAssign
@@ -548,6 +551,12 @@
     var planName = plan ? planLabel(plan) : state.planId;
     var priceHtml = "";
     var detailLines = [];
+    var resolved =
+      state.resolvedPricing &&
+      state.resolvedPricing.plan_id === state.planId &&
+      state.resolvedPricing.billing_cycle === state.billing
+        ? state.resolvedPricing
+        : null;
 
     if (state.billing === "annual" && priceNode) {
       var discount = discountFromNode(priceNode);
@@ -560,6 +569,21 @@
         "% de descuento anual</p>";
       detailLines.push("Modalidad: membresía anual");
       detailLines.push("1 número SIM real (suscripción anual)");
+    } else if (resolved && resolved.promo_enabled && resolved.promo_monthly_price_clp) {
+      priceHtml =
+        '<p class="nsim-modal-summary__price-before">Antes ' +
+        money(resolved.regular_monthly_price_clp || resolved.transaction_amount_clp) +
+        " / mes</p>" +
+        '<p class="nsim-modal-summary__price nsim-modal-summary__price--promo">' +
+        money(resolved.transaction_amount_clp) +
+        " / mes por " +
+        (resolved.promo_duration_months || 6) +
+        " meses</p>" +
+        '<p class="nsim-modal-summary__note">Luego ' +
+        money(resolved.post_promo_monthly_price_clp || resolved.regular_monthly_price_clp) +
+        " / mes</p>";
+      detailLines.push("Modalidad: pago mensual con promoción inicial");
+      detailLines.push("1 número SIM real (suscripción mensual)");
     } else if (priceNode && hasPromo(priceNode)) {
       priceHtml =
         '<p class="nsim-modal-summary__price-before">Antes ' +
@@ -576,11 +600,13 @@
       detailLines.push("Modalidad: pago mensual con promoción inicial");
       detailLines.push("1 número SIM real (suscripción mensual)");
     } else {
-      var monthlyAmount = plan
-        ? plan.monthly_price_clp
-        : priceNode
-          ? Number(priceNode.getAttribute("data-nsim-monthly"))
-          : 0;
+      var monthlyAmount = resolved
+        ? resolved.transaction_amount_clp
+        : plan
+          ? plan.monthly_price_clp
+          : priceNode
+            ? Number(priceNode.getAttribute("data-nsim-monthly"))
+            : 0;
       priceHtml =
         '<p class="nsim-modal-summary__price">' + money(monthlyAmount) + " / mes</p>";
       detailLines.push("Modalidad: pago mensual");
@@ -638,6 +664,14 @@
     var number = pending.selected_number || "Numeración reservada";
     var expired = pending.reservation_expired === true;
     var stale = pending.pricing_stale === true;
+    if (
+      !stale &&
+      pending.expected_amount != null &&
+      pending.amount != null &&
+      Math.round(Number(pending.amount)) !== Math.round(Number(pending.expected_amount))
+    ) {
+      stale = true;
+    }
 
     block.innerHTML =
       '<p class="nsim-pending-order__title">' +
@@ -961,11 +995,14 @@
       if (!state.open) return;
       state.numbersLoading = false;
       var pending = results[0] || { has_pending_order: false };
+      state.resolvedPricing = pending.resolved_pricing || null;
       state.pendingOrder = pending.has_pending_order ? pending : null;
       renderPendingOrder(pending);
+      renderSummary();
       var numbersPayload = results[1] || { numbers: [] };
       if (numbersPayload._fetchError) {
         setError("No pudimos cargar las numeraciones. Recarga e inténtalo de nuevo.");
+        state.inventoryFetchFailed = true;
         state.canAutoAssign = false;
         state.availableTotal = 0;
         state.shownCount = 0;
@@ -993,6 +1030,8 @@
     state.numbers = [];
     state.numbersLoading = planId !== "custom";
     state.inventoryEmpty = false;
+    state.inventoryFetchFailed = false;
+    state.resolvedPricing = null;
     clearPersonalFormFields();
     setError("");
     renderNumberEmpty(false);
@@ -1084,17 +1123,6 @@
 
     if (demo()) return showDemo(v, plan);
 
-    if (
-      state.pendingOrder &&
-      state.pendingOrder.has_pending_order &&
-      !state.pendingOrder.reservation_expired &&
-      !state.pendingOrder.pricing_stale &&
-      state.pendingOrder.payment_url
-    ) {
-      window.location.href = state.pendingOrder.payment_url;
-      return;
-    }
-
     if (state.numbersLoading) {
       return setError("Espera mientras cargamos las numeraciones disponibles.");
     }
@@ -1176,7 +1204,9 @@
           }
           if (result.status === 409 && errCode === "PENDING_ORDER_EXISTS") {
             refreshCheckoutContext(v.email);
-            throw new Error("Ya tienes una suscripción pendiente. Usa Continuar suscripción.");
+            throw new Error(
+              "Tienes un checkout pendiente con precio anterior. Intenta nuevamente para generar uno nuevo."
+            );
           }
           throw new Error(getHumanErrorMessage(data));
         }

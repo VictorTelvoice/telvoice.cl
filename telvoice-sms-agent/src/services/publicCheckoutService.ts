@@ -53,10 +53,13 @@ import {
 } from "./realNumberInventoryService.js";
 import {
   computeSimCheckoutPricingForContext,
+  formatResolvedPricingForApi,
   inventorySuffixForPendingOrder,
   isSimPendingOrderPricingStale,
   resolveSimPendingCheckoutBeforeStart,
+  supersedeSimPendingCheckoutOrder,
   type SimPendingPricingContext,
+  type SimResolvedPricingApi,
 } from "./simPendingCheckoutPricingService.js";
 import { getSupabase } from "../database/supabaseClient.js";
 import { isSimAgentBundleOrder, isSimSubscriptionOrder } from "../utils/order-display.js";
@@ -85,6 +88,7 @@ export type PublicPendingSimCheckoutResult = {
   billing_cycle?: SimBillingCycle;
   pricing_stale?: boolean;
   expected_amount?: number;
+  resolved_pricing?: SimResolvedPricingApi;
 };
 
 function normalizeCheckoutEmail(email: string): string {
@@ -124,10 +128,30 @@ export async function getPublicPendingSimCheckoutForEmail(
 
   const order = (data ?? [])
     .map((row) => row as SmsOrderRow)
-    .find((row) => isSimSubscriptionOrder(row) || isSimAgentBundleOrder(row));
+    .find((row) => {
+      const isSimOrder = isSimSubscriptionOrder(row) || isSimAgentBundleOrder(row);
+      if (!isSimOrder) return false;
+      if (!pricingContext?.planId) return true;
+      const rowMeta = row.metadata ?? {};
+      const orderPlanId =
+        typeof rowMeta.plan_id === "string" ? rowMeta.plan_id.trim() : "";
+      return !orderPlanId || orderPlanId === pricingContext.planId;
+    });
+
+  let resolvedPricing: SimResolvedPricingApi | undefined;
+  if (pricingContext) {
+    const pricing = await computeSimCheckoutPricingForContext(pricingContext);
+    if (pricing) {
+      resolvedPricing = formatResolvedPricingForApi(
+        pricingContext.planId,
+        pricingContext.billingCycle,
+        pricing,
+      );
+    }
+  }
 
   if (!order) {
-    return { has_pending_order: false };
+    return { has_pending_order: false, resolved_pricing: resolvedPricing };
   }
 
   const meta = order.metadata ?? {};
@@ -188,6 +212,11 @@ export async function getPublicPendingSimCheckoutForEmail(
     });
     if (pricing) {
       expectedAmount = pricing.totalAmount;
+      resolvedPricing = formatResolvedPricingForApi(
+        pricingContext.planId,
+        pricingContext.billingCycle,
+        pricing,
+      );
       pricingStale = isSimPendingOrderPricingStale(order, {
         planId: pricingContext.planId,
         billingCycle: pricingContext.billingCycle,
@@ -195,6 +224,14 @@ export async function getPublicPendingSimCheckoutForEmail(
         priceMetadata: pricing.priceMetadata,
       });
     }
+  }
+
+  if (pricingStale) {
+    await supersedeSimPendingCheckoutOrder(order.id, "pricing_mismatch");
+    return {
+      has_pending_order: false,
+      resolved_pricing: resolvedPricing,
+    };
   }
 
   return {
@@ -208,8 +245,9 @@ export async function getPublicPendingSimCheckoutForEmail(
     reservation_expired: reservationExpired,
     plan_id: typeof meta.plan_id === "string" ? meta.plan_id : undefined,
     billing_cycle: billingCycle,
-    pricing_stale: pricingStale,
+    pricing_stale: false,
     expected_amount: expectedAmount,
+    resolved_pricing: resolvedPricing,
   };
 }
 
