@@ -414,6 +414,14 @@
       transform-origin: 50% 88%;
     }
 
+    #api .api-section-header {
+      margin-bottom: 2.5rem;
+    }
+    @media (min-width: 768px) {
+      #api .api-section-header {
+        margin-bottom: 3rem;
+      }
+    }
     #api .api-content {
       display: flex;
       flex-direction: column;
@@ -1634,9 +1642,15 @@
     }
     #como-funciona .como-funciona-grid {
       align-items: stretch;
+      max-width: 72rem;
+      margin-left: auto;
+      margin-right: auto;
+      justify-content: center;
     }
     #como-funciona .ui-card-benefit {
       height: 100%;
+      text-align: center;
+      align-items: center;
     }
     #como-funciona .ui-card-benefit p {
       flex: 1;
@@ -2694,7 +2708,7 @@
   <link rel="stylesheet" href="css/telvoice-casos-carousel.css?v=20260616" />
   <link rel="stylesheet" href="css/telvoice-hero-slider.css?v=20260616" />
   <link rel="stylesheet" href="css/landing-agent-lab.css?v=20260619" />
-  <link rel="stylesheet" href="css/telvoice-numeracion-section.css?v=20260529b" />
+  <link rel="stylesheet" href="css/telvoice-numeracion-section.css?v=20260530" />
   <link rel="stylesheet" href="css/telvoice-web-agent.css?v=20260615" data-tva-css="1" />
   <script type="application/ld+json">
     {
@@ -2934,6 +2948,7 @@
           </ul>
         </li>
         <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="#casos-uso">Casos de uso</a></li>
+        <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="#numeracion">Numeración</a></li>
         <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="#api">API</a></li>
         <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="#contacto">Contacto</a></li>
         <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="ayuda/">Centro de ayuda</a></li>
@@ -2960,6 +2975,7 @@
           </ul>
         </li>
         <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#casos-uso">Casos de uso</a></li>
+        <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#numeracion">Numeración</a></li>
         <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#api">API</a></li>
         <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="#contacto">Contacto</a></li>
         <li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="ayuda/">Centro de ayuda</a></li>
@@ -3299,9 +3315,9 @@
             <div class="lab-section-inner lab-section-inner--numeracion">
               <header class="lab-header-center">
                 <span class="lab-eyebrow">Numeración Telvoice</span>
-                <h2 id="numeracion-titulo" class="lab-section-title mt-4">Deja de depender de un celular físico para gestionar los SMS de tu empresa</h2>
+                <h2 id="numeracion-titulo" class="lab-section-title mt-4">Deja de depender de un celular y una persona para gestionar los SMS de tu empresa</h2>
                 <p class="lab-section-intro">
-                  Recibe SMS, códigos 2FA autorizados y respuestas de clientes. Centraliza la gestión en tu panel, Telegram o flujos conectados por API, sin que el número crítico de tu empresa dependa del teléfono personal de un gerente.
+                  Recibe SMS, códigos 2FA y respuestas de clientes desde un número empresarial, gestionado en tu panel, Telegram o vía API, sin depender del teléfono personal de un gerente.
                 </p>
               </header>
               <div class="lab-num-grid mt-10">
@@ -3371,8 +3387,8 @@
                     </svg>
                   </div>
                   <div class="lab-num-card__body">
-                    <h3 class="lab-num-card__title">Número real, gestión digital</h3>
-                    <p class="lab-num-card__text">Tu línea puede estar disponible desde el panel, Telegram o integraciones, sin tener que manipular un teléfono físico cada vez que llega un SMS.</p>
+                    <h3 class="lab-num-card__title">Número SIM real</h3>
+                    <p class="lab-num-card__text">Gestiona tu línea desde el panel, Telegram o integraciones, sin depender de un teléfono para recibir SMS.</p>
                   </div>
                 </article>
                 <article class="lab-num-card lab-glass-card">
@@ -3403,7 +3419,7 @@
                   </div>
                   <div class="lab-num-card__body">
                     <h3 class="lab-num-card__title">SMS y 2FA autorizados</h3>
-                    <p class="lab-num-card__text">Recibe códigos, verificaciones y mensajes de servicios compatibles usando una numeración real controlada por tu empresa.</p>
+                    <p class="lab-num-card__text">Recibe códigos, verificaciones y mensajes compatibles desde una numeración real controlada por tu empresa.</p>
                   </div>
                 </article>
                 <article class="lab-num-card lab-glass-card">
@@ -3438,7 +3454,7 @@
                   </div>
                   <div class="lab-num-card__body">
                     <h3 class="lab-num-card__title">Acceso para tu equipo</h3>
-                    <p class="lab-num-card__text">Gerencia, soporte, ventas u operaciones pueden consultar mensajes sin depender de una sola persona o de un equipo físico guardado en la oficina.</p>
+                    <p class="lab-num-card__text">Gerencia, soporte, ventas u operaciones pueden consultar mensajes sin depender de una persona o llegue solo a un Celular.</p>
                   </div>
                 </article>
                 <article class="lab-num-card lab-glass-card lab-glass-card--glow">
@@ -3471,14 +3487,8 @@
                   </div>
                 </article>
               </div>
-              <div class="lab-num-band lab-num-band--compact mt-10">
-                <p class="text-on-surface-variant leading-relaxed text-center max-w-2xl mx-auto">
-                  ¿Necesitas números reales para agentes, OTP autorizado o webhooks? Revisa la sección
-                  <a href="/numeracion-sim.html" class="text-lab-cyan hover:underline font-medium">planes SIM reales</a>.
-                </p>
-              </div>
-              <div class="lab-num-cta mt-6 flex justify-center">
-                <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_solicitar_numero_numeracion">Solicitar número Telvoice</a>
+              <div class="lab-num-cta mt-10 flex justify-center">
+                <a href="/numeracion-sim.html" class="lab-btn-primary" data-track="click_solicitar_numero_numeracion">Solicitar número Telvoice</a>
               </div>
             </div>
           </section>
@@ -3563,12 +3573,13 @@
 
     <!-- API / Integración -->
     <section id="api" class="section-block section-bg-sky" aria-labelledby="api-titulo" tabindex="-1">
-      <div class="section-inner mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16 lg:items-center">
+      <div class="section-inner mx-auto max-w-6xl">
+        <header class="api-section-header section-header mx-auto max-w-3xl text-center">
+          <span class="section-eyebrow">API SMS</span>
+          <h2 id="api-titulo" class="mt-4 font-h2 text-h2 text-on-background leading-tight">Integra el envío de SMS en tu sistema, CRM o plataforma</h2>
+        </header>
+        <div class="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16 lg:items-center">
         <div class="api-content order-1">
-          <div class="api-header-block">
-            <span class="section-eyebrow">API SMS</span>
-            <h2 id="api-titulo" class="mt-4 font-h2 text-h2 text-on-background leading-tight">Integra el envío de SMS en tu sistema, CRM o plataforma</h2>
-          </div>
           <p class="api-body-text text-on-surface-variant leading-relaxed">Automatiza notificaciones, validaciones y mensajes transaccionales desde tu propio sistema. La API de Telvoice.cl permite enviar SMS en Chile de forma programática, con acceso sujeto a validación técnica y comercial.</p>
           <ul class="mt-5 space-y-2 font-body-sm text-body-sm text-on-surface-variant">
             <li class="flex gap-2"><span class="material-symbols-outlined shrink-0 text-[18px] text-primary">check</span>API disponible para automatizar envíos</li>
@@ -3606,6 +3617,7 @@
               Panel de gestión para envíos, monitoreo y administración de tráfico SMS
             </figcaption>
           </figure>
+        </div>
         </div>
       </div>
     </section>
@@ -3978,6 +3990,7 @@
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#inicio">SMS masivos Chile</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#precios">Precios</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#calculadora">Bolsas SMS</a></li>
+              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#numeracion">Numeración</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="/numeracion-sim.html">Numeración SIM</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#api">API SMS</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#contacto">Contacto</a></li>
@@ -3987,6 +4000,7 @@
             <p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Recursos</p>
             <ul class="mt-4 space-y-3">
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#precios">Precios y bolsas SMS</a></li>
+              <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#numeracion">Numeración</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="/numeracion-sim.html">Numeración SIM</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="#casos-uso">Casos de uso</a></li>
               <li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded-sm" href="ayuda/">Centro de ayuda</a></li>

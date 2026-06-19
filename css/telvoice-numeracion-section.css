@@ -93,6 +93,17 @@
   }
 }
 
+.tv-numeracion-section .lab-num-grid {
+  max-width: 76rem;
+  margin-left: auto;
+  margin-right: auto;
+  justify-content: center;
+}
+
+.tv-numeracion-section .lab-num-card__body {
+  text-align: center;
+}
+
 .tv-numeracion-section .lab-num-card__title {
   color: #131b2e;
 }

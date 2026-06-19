@@ -48,6 +48,7 @@
     var simCurrent = active === "numeracion-sim" ? ' aria-current="page"' : "";
     var calcHref = anchor("#calculadora", mode, r);
     var casosHref = anchor("#casos-uso", mode, r);
+    var numeracionHref = anchor("#numeracion", mode, r);
     var apiHref = anchor("#api", mode, r);
     var contactoHref = anchor("#contacto", mode, r);
     var ayudaHref = r + "ayuda/";
@@ -83,6 +84,9 @@
       '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
       esc(casosHref) +
       '">Casos de uso</a></li>' +
+      '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
+      esc(numeracionHref) +
+      '">Numeración</a></li>' +
       '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
       esc(apiHref) +
       '">API</a></li>' +
@@ -126,6 +130,9 @@
       '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
       esc(casosHref) +
       '">Casos de uso</a></li>' +
+      '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
+      esc(numeracionHref) +
+      '">Numeración</a></li>' +
       '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
       esc(apiHref) +
       '">API</a></li>' +

@@ -63,6 +63,7 @@
         { href: r + "index.html#inicio", label: "SMS masivos Chile" },
         { href: r + "index.html#precios", label: "Precios" },
         { href: r + "index.html#calculadora", label: "Bolsas SMS" },
+        { href: r + "index.html#numeracion", label: "Numeración" },
         { href: r + "numeracion-sim.html", label: "Numeración SIM" },
         { href: r + "index.html#api", label: "API SMS" },
         { href: r + "index.html#contacto", label: "Contacto" },
@@ -71,6 +72,7 @@
       "<div><p class=\"tv-site-footer__heading\">Recursos</p><ul class=\"tv-site-footer__links\">" +
       linkList([
         { href: r + "index.html#precios", label: "Precios y bolsas SMS" },
+        { href: r + "index.html#numeracion", label: "Numeración" },
         { href: r + "numeracion-sim.html", label: "Numeración SIM" },
         { href: r + "index.html#casos-uso", label: "Casos de uso" },
         { href: r + "ayuda/", label: "Centro de ayuda" },

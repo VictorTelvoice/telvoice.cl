@@ -132,6 +132,9 @@
       '#casos-uso">Casos de uso</a></li>' +
       '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
       r +
+      'index.html#numeracion">Numeración</a></li>' +
+      '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
+      r +
       '#contacto">Contacto</a></li>' +
       "</ul>" +
       '<div class="nav-actions flex items-center gap-2 shrink-0">' +
@@ -153,6 +156,9 @@
       '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
       r +
       '#precios">Precios</a></li>' +
+      '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
+      r +
+      'index.html#numeracion">Numeración</a></li>' +
       '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
       r +
       '#contacto">Contacto</a></li>' +
@@ -191,6 +197,12 @@
       '#precios">Bolsas SMS</a></li>' +
       '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       r +
+      'index.html#numeracion">Numeración</a></li>' +
+      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
+      r +
+      'numeracion-sim.html">Numeración SIM</a></li>' +
+      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
+      r +
       '#api">API SMS</a></li>' +
       '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       r +
@@ -199,6 +211,9 @@
       '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       r +
       '#calculadora">Calculadora</a></li>' +
+      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
+      r +
+      'index.html#numeracion">Numeración</a></li>' +
       '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
       r +
       '#casos-uso">Casos de uso</a></li>' +
