@@ -1,5 +1,5 @@
 import { env } from "../config/env.js";
-import type { SimBillingCycle } from "../services/simPlanSettingsService.js";
+import type { PlanIntroPromoPricing, SimBillingCycle } from "../services/simPlanSettingsService.js";
 import type { SimPlanDefinition } from "./simPlans.js";
 
 export type SimCheckoutPricing = {
@@ -65,6 +65,7 @@ export function resolveSimSubscriptionCheckoutPricing(
     billingCycle?: SimBillingCycle;
     configuredMonthlyClp?: number;
     annualDiscountPercent?: number;
+    planIntroPromo?: PlanIntroPromoPricing;
   },
 ): SimCheckoutPricing {
   const billingCycle = options?.billingCycle ?? "monthly";
@@ -80,8 +81,10 @@ export function resolveSimSubscriptionCheckoutPricing(
         product_type: "sim_subscription",
         billing_cycle: "annual",
         monthly_price_clp: baseMonthly,
+        regular_monthly_price_clp: baseMonthly,
         annual_discount_percent: discount,
         annual_price_clp: annualPrice,
+        promo_enabled: false,
       },
     };
   }
@@ -91,8 +94,34 @@ export function resolveSimSubscriptionCheckoutPricing(
     total_amount: baseMonthly,
   };
 
-  const promo50 = resolveStarterPromo50Pricing(planForPromo, checkoutEmail);
-  if (promo50) return promo50;
+  const emailPromo = resolveStarterPromo50Pricing(planForPromo, checkoutEmail);
+  if (emailPromo) return emailPromo;
+
+  const introPromo = options?.planIntroPromo;
+  if (introPromo?.hasIntroPromo) {
+    const startedAt = new Date();
+    const expiresAt = new Date(startedAt);
+    expiresAt.setMonth(expiresAt.getMonth() + introPromo.promoDurationMonths);
+
+    return {
+      totalAmount: introPromo.promoMonthlyPriceClp,
+      originalTotalAmount: introPromo.regularMonthlyPriceClp,
+      priceMetadata: {
+        product_type: "sim_subscription",
+        billing_cycle: "monthly",
+        regular_monthly_price_clp: introPromo.regularMonthlyPriceClp,
+        promo_enabled: true,
+        promo_discount_percent: introPromo.promoDiscountPercent,
+        promo_duration_months: introPromo.promoDurationMonths,
+        promo_monthly_price_clp: introPromo.promoMonthlyPriceClp,
+        post_promo_monthly_price_clp: introPromo.regularMonthlyPriceClp,
+        promo_label: introPromo.promoLabel,
+        promo_started_at: startedAt.toISOString(),
+        promo_expires_at: expiresAt.toISOString(),
+        promo_source: "plan_admin_intro",
+      },
+    };
+  }
 
   const cfg = env.simSubscriptionQaReal;
   const suffix = inventorySuffix.slice(-3);
@@ -112,6 +141,8 @@ export function resolveSimSubscriptionCheckoutPricing(
         product_type: "sim_subscription",
         billing_cycle: "monthly",
         monthly_price_clp: baseMonthly,
+        regular_monthly_price_clp: baseMonthly,
+        promo_enabled: false,
       },
     };
   }
@@ -124,6 +155,8 @@ export function resolveSimSubscriptionCheckoutPricing(
         product_type: "sim_subscription",
         billing_cycle: "monthly",
         monthly_price_clp: baseMonthly,
+        regular_monthly_price_clp: baseMonthly,
+        promo_enabled: false,
       },
     };
   }
@@ -137,6 +170,8 @@ export function resolveSimSubscriptionCheckoutPricing(
         product_type: "sim_subscription",
         billing_cycle: "monthly",
         monthly_price_clp: baseMonthly,
+        regular_monthly_price_clp: baseMonthly,
+        promo_enabled: false,
       },
     };
   }
@@ -148,6 +183,8 @@ export function resolveSimSubscriptionCheckoutPricing(
       product_type: "sim_subscription",
       billing_cycle: "monthly",
       monthly_price_clp: baseMonthly,
+      regular_monthly_price_clp: baseMonthly,
+      promo_enabled: false,
       sim_subscription_qa_real_override: true,
       original_monthly_clp: originalTotalAmount,
       applied_monthly_clp: monthly,

@@ -29,6 +29,11 @@ export type SimPlanSettingsRow = {
   short_description: string | null;
   feature_list: string[];
   metadata: Record<string, unknown>;
+  promo_enabled: boolean;
+  promo_discount_percent: number;
+  promo_duration_months: number;
+  promo_label: string | null;
+  promo_metadata: Record<string, unknown>;
   updated_by: string | null;
   created_at: string;
   updated_at: string;
@@ -55,6 +60,23 @@ export type PublicSimPlanCatalogItem = {
   monthly_equiv_annual_clp: number;
   currency: "CLP";
   product_type: "sim_subscription";
+  has_intro_promo: boolean;
+  regular_monthly_price_clp: number;
+  promo_monthly_price_clp: number;
+  promo_savings_clp: number;
+  promo_duration_months: number;
+  promo_discount_percent: number;
+  promo_label: string | null;
+};
+
+export type PlanIntroPromoPricing = {
+  hasIntroPromo: boolean;
+  regularMonthlyPriceClp: number;
+  promoMonthlyPriceClp: number;
+  promoSavingsClp: number;
+  promoDurationMonths: number;
+  promoDiscountPercent: number;
+  promoLabel: string | null;
 };
 
 export type UpdateSimPlanSettingsInput = {
@@ -69,6 +91,10 @@ export type UpdateSimPlanSettingsInput = {
   ribbon?: string | null;
   short_description?: string | null;
   feature_list: string[];
+  promo_enabled: boolean;
+  promo_discount_percent: number;
+  promo_duration_months: number;
+  promo_label?: string | null;
 };
 
 const CACHE_TTL_MS = 60_000;
@@ -104,6 +130,16 @@ function rowFromDb(raw: Record<string, unknown>): SimPlanSettingsRow {
       raw.metadata && typeof raw.metadata === "object" && !Array.isArray(raw.metadata)
         ? (raw.metadata as Record<string, unknown>)
         : {},
+    promo_enabled: raw.promo_enabled === true,
+    promo_discount_percent: Number(raw.promo_discount_percent) || 0,
+    promo_duration_months: Number(raw.promo_duration_months) || 0,
+    promo_label: typeof raw.promo_label === "string" ? raw.promo_label : null,
+    promo_metadata:
+      raw.promo_metadata &&
+      typeof raw.promo_metadata === "object" &&
+      !Array.isArray(raw.promo_metadata)
+        ? (raw.promo_metadata as Record<string, unknown>)
+        : {},
     updated_by: typeof raw.updated_by === "string" ? raw.updated_by : null,
     created_at: String(raw.created_at ?? ""),
     updated_at: String(raw.updated_at ?? ""),
@@ -130,6 +166,11 @@ function fallbackRowsFromCatalog(): SimPlanSettingsRow[] {
       short_description: entry.description,
       feature_list: [...entry.features],
       metadata: {},
+      promo_enabled: false,
+      promo_discount_percent: 0,
+      promo_duration_months: 0,
+      promo_label: null,
+      promo_metadata: {},
       updated_by: null,
       created_at: now,
       updated_at: now,
@@ -160,6 +201,11 @@ function fallbackRowsFromCatalog(): SimPlanSettingsRow[] {
       "Diseño de flujo a medida",
     ],
     metadata: {},
+    promo_enabled: false,
+    promo_discount_percent: 0,
+    promo_duration_months: 0,
+    promo_label: null,
+    promo_metadata: {},
     updated_by: null,
     created_at: now,
     updated_at: now,
@@ -250,10 +296,68 @@ export function calculateSimPlanPrice(
   };
 }
 
-function ctaLabelForPlan(planId: string, label: string): string {
+function ctaLabelForPlan(
+  planId: string,
+  label: string,
+  introPromo: PlanIntroPromoPricing,
+): string {
+  if (introPromo.hasIntroPromo) {
+    const pct = Math.round(introPromo.promoDiscountPercent);
+    if (planId === "sim_starter") return `Suscribirme Starter con ${pct}% dto.`;
+    if (planId === "sim_pro") return `Suscribirme Pro con ${pct}% dto.`;
+    return `Suscribirme ${label} con ${pct}% dto.`;
+  }
   if (planId === "sim_starter") return "Suscribirme Starter";
   if (planId === "sim_pro") return "Suscribirme Pro";
   return `Suscribirme ${label}`;
+}
+
+export function calculatePlanIntroPromo(
+  settings: Pick<
+    SimPlanSettingsRow,
+    | "monthly_price_clp"
+    | "promo_enabled"
+    | "promo_discount_percent"
+    | "promo_duration_months"
+    | "promo_label"
+  >,
+): PlanIntroPromoPricing {
+  const regularMonthlyPriceClp = Math.max(0, Math.round(settings.monthly_price_clp));
+  const promoDiscountPercent = Math.min(
+    100,
+    Math.max(0, Number(settings.promo_discount_percent) || 0),
+  );
+  const promoDurationMonths = Math.max(
+    0,
+    Math.round(Number(settings.promo_duration_months) || 0),
+  );
+  const hasIntroPromo =
+    settings.promo_enabled === true &&
+    promoDiscountPercent > 0 &&
+    promoDurationMonths > 0 &&
+    regularMonthlyPriceClp > 0;
+
+  const promoMonthlyPriceClp = hasIntroPromo
+    ? Math.round(regularMonthlyPriceClp * (1 - promoDiscountPercent / 100))
+    : regularMonthlyPriceClp;
+  const promoSavingsClp = hasIntroPromo
+    ? regularMonthlyPriceClp - promoMonthlyPriceClp
+    : 0;
+
+  let promoLabel = settings.promo_label?.trim() || null;
+  if (hasIntroPromo && !promoLabel) {
+    promoLabel = `${Math.round(promoDiscountPercent)}% por ${promoDurationMonths} meses`;
+  }
+
+  return {
+    hasIntroPromo,
+    regularMonthlyPriceClp,
+    promoMonthlyPriceClp,
+    promoSavingsClp,
+    promoDurationMonths,
+    promoDiscountPercent,
+    promoLabel,
+  };
 }
 
 export function mapSettingsToPublicCatalogItem(
@@ -265,6 +369,7 @@ export function mapSettingsToPublicCatalogItem(
   const planId = row.plan_id as PublicSimSubscriptionPlanId;
   const pricing = calculateSimPlanPrice(row, "monthly");
   const annualPricing = calculateSimPlanPrice(row, "annual");
+  const introPromo = calculatePlanIntroPromo(row);
   const hardcoded = getSimPlan(planId);
 
   return {
@@ -276,7 +381,7 @@ export function mapSettingsToPublicCatalogItem(
     features: row.feature_list.length
       ? row.feature_list
       : SIM_SUBSCRIPTION_PLAN_CATALOG[planId]?.features ?? [],
-    ctaLabel: ctaLabelForPlan(planId, row.label),
+    ctaLabel: ctaLabelForPlan(planId, row.label, introPromo),
     featured: row.is_featured,
     badge: row.badge,
     ribbon: row.ribbon,
@@ -290,6 +395,13 @@ export function mapSettingsToPublicCatalogItem(
     monthly_equiv_annual_clp: annualPricing.monthly_equiv_annual_clp,
     currency: "CLP",
     product_type: "sim_subscription",
+    has_intro_promo: introPromo.hasIntroPromo,
+    regular_monthly_price_clp: introPromo.regularMonthlyPriceClp,
+    promo_monthly_price_clp: introPromo.promoMonthlyPriceClp,
+    promo_savings_clp: introPromo.promoSavingsClp,
+    promo_duration_months: introPromo.promoDurationMonths,
+    promo_discount_percent: introPromo.promoDiscountPercent,
+    promo_label: introPromo.promoLabel,
   };
 }
 
@@ -345,6 +457,24 @@ function validateUpdateInput(input: UpdateSimPlanSettingsInput): void {
   if (input.plan_id === "custom" && input.annual_enabled) {
     throw new AppError("El plan a medida no admite ciclo anual.", 400, "VALIDATION_ERROR");
   }
+  if (
+    !Number.isFinite(input.promo_discount_percent) ||
+    input.promo_discount_percent < 0 ||
+    input.promo_discount_percent > 100
+  ) {
+    throw new AppError("Descuento promocional debe estar entre 0 y 100.", 400, "VALIDATION_ERROR");
+  }
+  if (!Number.isFinite(input.promo_duration_months) || input.promo_duration_months < 0) {
+    throw new AppError("Duración promocional inválida.", 400, "VALIDATION_ERROR");
+  }
+  if (input.promo_enabled) {
+    if (input.promo_discount_percent <= 0) {
+      throw new AppError("Activa un descuento promocional mayor a 0.", 400, "VALIDATION_ERROR");
+    }
+    if (input.promo_duration_months <= 0) {
+      throw new AppError("Activa una duración promocional mayor a 0 meses.", 400, "VALIDATION_ERROR");
+    }
+  }
 }
 
 export async function updateSimPlanSettings(
@@ -364,6 +494,10 @@ export async function updateSimPlanSettings(
     ribbon: input.ribbon?.trim() || null,
     short_description: input.short_description?.trim() || null,
     feature_list: input.feature_list,
+    promo_enabled: input.promo_enabled,
+    promo_discount_percent: input.promo_enabled ? input.promo_discount_percent : 0,
+    promo_duration_months: input.promo_enabled ? Math.round(input.promo_duration_months) : 0,
+    promo_label: input.promo_label?.trim() || null,
     updated_by: adminUserId,
   };
 

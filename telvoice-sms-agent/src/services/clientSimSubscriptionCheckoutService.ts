@@ -6,6 +6,7 @@ import { AppError } from "../utils/errors.js";
 import { isSimSubscriptionOrder } from "../utils/order-display.js";
 import {
   buildSimPlanDefinitionFromSettings,
+  calculatePlanIntroPromo,
   calculateSimPlanPrice,
   getSimPlanById,
   type SimBillingCycle,
@@ -40,6 +41,7 @@ import {
   createPendingSimSubscription,
   updateSimSubscriptionStatus,
 } from "./simSubscriptionService.js";
+import { scheduleSimSubscriptionPriceChange } from "./simSubscriptionScheduledPriceService.js";
 import {
   linkSimActivationInventory,
   linkSimActivationToCompany,
@@ -257,6 +259,8 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
   }
 
   const configuredPricing = calculateSimPlanPrice(planSettings, billingCycle);
+  const introPromo =
+    billingCycle === "monthly" ? calculatePlanIntroPromo(planSettings) : null;
 
   const availability = await getPublicAvailability();
   if (!availability.in_stock) {
@@ -310,6 +314,7 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
       billingCycle,
       configuredMonthlyClp: configuredPricing.monthly_price_clp,
       annualDiscountPercent: configuredPricing.annual_discount_percent,
+      planIntroPromo: introPromo?.hasIntroPromo ? introPromo : undefined,
     },
   );
 
@@ -326,6 +331,8 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
     checkoutTotalAmount: pricing.totalAmount,
     priceMetadata: {
       ...pricing.priceMetadata,
+      source: "client_panel_sim_subscription",
+      plan_id: input.planId,
       billing_cycle: billingCycle,
       billing_mode: "subscription",
       recurring: true,
@@ -333,6 +340,7 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
       subscription_status: "pending",
       included_sms: planSettings.included_sms,
       monthly_price_clp: configuredPricing.monthly_price_clp,
+      regular_monthly_price_clp: configuredPricing.monthly_price_clp,
       annual_discount_percent: configuredPricing.annual_discount_percent,
       annual_price_clp: configuredPricing.annual_price_clp,
     },
@@ -453,6 +461,28 @@ export async function startClientPanelSimSubscriptionCheckout(input: {
     preapprovalId: preapproval.preapproval_id ?? "",
   });
 
+  if (
+    billingCycle === "monthly" &&
+    pricing.priceMetadata.promo_enabled === true &&
+    Number(pricing.priceMetadata.promo_duration_months) > 0
+  ) {
+    const postPromoAmount = Number(pricing.priceMetadata.post_promo_monthly_price_clp);
+    await scheduleSimSubscriptionPriceChange({
+      orderId: order.id,
+      companyId: input.company.id,
+      preapprovalId: preapproval.preapproval_id,
+      planId: input.planId,
+      currentAmountClp: pricing.totalAmount,
+      nextAmountClp:
+        postPromoAmount > 0 ? postPromoAmount : configuredPricing.monthly_price_clp,
+      changeAfterMonths: Number(pricing.priceMetadata.promo_duration_months),
+      metadata: {
+        promo_source: pricing.priceMetadata.promo_source,
+        promo_label: pricing.priceMetadata.promo_label,
+      },
+    }).catch(() => undefined);
+  }
+
   await patchOrderFields(order.id, {
     payment_reference: preapproval.preapproval_id ?? order.payment_reference,
     metadata: {
@@ -495,10 +525,15 @@ export function buildClientSimCheckoutProfilePayload(
   const starterPlan = getSimPlan("sim_starter");
   let starterPromo: ReturnType<typeof buildClientSimCheckoutProfilePayload>["starter_promo"];
   if (starterPlan) {
-    const pricing = resolveSimSubscriptionCheckoutPricing(starterPlan, email, "");
+    const pricing = resolveSimSubscriptionCheckoutPricing(starterPlan, email, "", {
+      billingCycle: "monthly",
+      configuredMonthlyClp: starterPlan.total_amount,
+    });
     const meta = pricing.priceMetadata;
+    const isEmailPromo = meta.starter_promo_50_6m === true;
+    const isPlanPromo = meta.promo_enabled === true && meta.promo_source === "plan_admin_intro";
     if (
-      meta.starter_promo_50_6m === true &&
+      (isEmailPromo || isPlanPromo) &&
       pricing.totalAmount < pricing.originalTotalAmount
     ) {
       starterPromo = {

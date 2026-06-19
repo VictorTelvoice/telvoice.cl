@@ -43,6 +43,7 @@ function renderPlanCard(plan: PublicSimPlanCatalogItem): string {
   const cardClass = [
     "nsim-plan-card",
     plan.featured ? "is-featured" : "",
+    plan.has_intro_promo ? "has-intro-promo" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -54,23 +55,39 @@ function renderPlanCard(plan: PublicSimPlanCatalogItem): string {
       : "";
 
   const discountLabel = Math.round(plan.annual_discount_percent);
+  const promoBlock = plan.has_intro_promo
+    ? `<p class="nsim-plan-price-before" data-nsim-price-before="${escapeHtml(plan.plan_id)}">Antes ${escapeHtml(fmtMoney(plan.regular_monthly_price_clp))} / mes</p>`
+    : "";
+
+  const ctaRegular =
+    plan.plan_id === "sim_starter"
+      ? "Suscribirme Starter"
+      : plan.plan_id === "sim_pro"
+        ? "Suscribirme Pro"
+        : `Suscribirme ${plan.sim_label}`;
 
   return `<article class="${cardClass}" data-nsim-plan-card="${escapeHtml(plan.plan_id)}">
     ${ribbon}
     <span class="nsim-plan-billing-badge" data-nsim-billing-label="${escapeHtml(plan.plan_id)}">Suscripción mensual</span>
     <h3 class="nsim-plan-name">${escapeHtml(plan.sim_label)}</h3>
+    ${promoBlock}
     <p class="nsim-plan-price" data-nsim-price="${escapeHtml(plan.plan_id)}"
       data-nsim-monthly="${plan.monthly_price_clp}"
+      data-nsim-promo-monthly="${plan.has_intro_promo ? plan.promo_monthly_price_clp : plan.monthly_price_clp}"
+      data-nsim-regular-monthly="${plan.regular_monthly_price_clp}"
+      data-nsim-has-promo="${plan.has_intro_promo ? "1" : "0"}"
+      data-nsim-promo-discount="${plan.has_intro_promo ? Math.round(plan.promo_discount_percent) : 0}"
+      data-nsim-promo-months="${plan.has_intro_promo ? plan.promo_duration_months : 0}"
       data-nsim-annual-price="${plan.annual_price_clp}"
       data-nsim-annual-eq="${plan.monthly_equiv_annual_clp}"
       data-nsim-annual-discount="${discountLabel}"
-      data-nsim-annual-enabled="${plan.annual_enabled ? "1" : "0"}">${escapeHtml(fmtMoney(plan.total_amount))} <span>/ mes</span></p>
-    <p class="nsim-plan-price-subnote" data-nsim-price-note="${escapeHtml(plan.plan_id)}">Pago recurrente mensual.</p>
+      data-nsim-annual-enabled="${plan.annual_enabled ? "1" : "0"}">${escapeHtml(fmtMoney(plan.has_intro_promo ? plan.promo_monthly_price_clp : plan.total_amount))} <span>/ mes</span></p>
+    <p class="nsim-plan-price-subnote" data-nsim-price-note="${escapeHtml(plan.plan_id)}">${plan.has_intro_promo ? escapeHtml(`${Math.round(plan.promo_discount_percent)}% de descuento por ${plan.promo_duration_months} meses. Luego ${fmtMoney(plan.regular_monthly_price_clp)} / mes.`) : "Pago recurrente mensual."}</p>
     <p class="nsim-plan-desc">${escapeHtml(plan.description)}</p>
     <ul class="nsim-plan-features">
       ${plan.features.map((f) => renderFeatureItem(f)).join("")}
     </ul>
-    <button type="button" class="nsim-btn-primary nsim-plan-cta" data-tv-sim-plan-open="${escapeHtml(plan.plan_id)}">${escapeHtml(plan.ctaLabel)}</button>
+    <button type="button" class="nsim-btn-primary nsim-plan-cta" data-tv-sim-plan-open="${escapeHtml(plan.plan_id)}" data-nsim-cta-promo="${escapeHtml(plan.ctaLabel)}" data-nsim-cta-regular="${escapeHtml(ctaRegular)}">${escapeHtml(plan.has_intro_promo ? plan.ctaLabel : ctaRegular)}</button>
   </article>`;
 }
 
@@ -132,17 +149,47 @@ export function getAppSimPlansBillingScript(): string {
     document.dispatchEvent(new CustomEvent("tv-sim-billing-change", { detail: { billing: state.billing } }));
   }
 
+  function hasPromo(node) {
+    return node.getAttribute("data-nsim-has-promo") === "1";
+  }
+
+  function promoMonthlyFromNode(node) {
+    return Number(node.getAttribute("data-nsim-promo-monthly")) || Number(node.getAttribute("data-nsim-monthly"));
+  }
+
+  function regularMonthlyFromNode(node) {
+    return Number(node.getAttribute("data-nsim-regular-monthly")) || Number(node.getAttribute("data-nsim-monthly"));
+  }
+
   function updatePricing() {
     var switchDiscount = 20;
     document.querySelectorAll("[data-nsim-price]").forEach(function (node) {
-      var planId = node.getAttribute("data-nsim-price");
       var annualEnabled = node.getAttribute("data-nsim-annual-enabled") !== "0";
       switchDiscount = discountFromNode(node);
       if (state.billing === "annual" && !annualEnabled) return;
       node.innerHTML =
         state.billing === "annual"
           ? fmtMoney(annualEqFromNode(node)) + " <span>/ mes eq.</span>"
-          : fmtMoney(node.getAttribute("data-nsim-monthly")) + " <span>/ mes</span>";
+          : hasPromo(node)
+            ? fmtMoney(promoMonthlyFromNode(node)) + " <span>/ mes</span>"
+            : fmtMoney(node.getAttribute("data-nsim-monthly")) + " <span>/ mes</span>";
+    });
+
+    document.querySelectorAll("[data-nsim-price-before]").forEach(function (node) {
+      var planId = node.getAttribute("data-nsim-price-before");
+      var priceNode = document.querySelector('[data-nsim-price="' + planId + '"]');
+      if (!priceNode) return;
+      node.style.display = state.billing === "monthly" && hasPromo(priceNode) ? "" : "none";
+    });
+
+    document.querySelectorAll(".nsim-plan-card .nsim-plan-cta").forEach(function (btn) {
+      var planId = btn.getAttribute("data-tv-sim-plan-open");
+      var priceNode = document.querySelector('[data-nsim-price="' + planId + '"]');
+      if (!priceNode) return;
+      var promoCta = btn.getAttribute("data-nsim-cta-promo") || "";
+      var regularCta = btn.getAttribute("data-nsim-cta-regular") || promoCta;
+      btn.textContent =
+        state.billing === "monthly" && hasPromo(priceNode) ? promoCta : regularCta;
     });
 
     var switchDiscountEl = document.querySelector("[data-nsim-switch-discount]");
@@ -157,6 +204,11 @@ export function getAppSimPlansBillingScript(): string {
       if (state.billing === "annual" && annualEnabled) {
         node.textContent =
           "Pago anual: " + fmtMoney(annualTotalFromNode(monthlyNode)) + "/año · " + discount + "% de descuento.";
+      } else if (state.billing === "monthly" && hasPromo(monthlyNode)) {
+        var promoDisc = monthlyNode.getAttribute("data-nsim-promo-discount");
+        var promoMonths = monthlyNode.getAttribute("data-nsim-promo-months");
+        node.textContent =
+          promoDisc + "% de descuento por " + promoMonths + " meses. Luego " + fmtMoney(regularMonthlyFromNode(monthlyNode)) + " / mes.";
       } else {
         node.textContent = "Pago recurrente mensual.";
       }

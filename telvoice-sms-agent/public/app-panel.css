@@ -5533,6 +5533,17 @@
       color: var(--nsim-muted);
     }
 
+    .tv-sim-plans-page .nsim-plan-price-before {
+      margin: 0.35rem 0 0;
+      font-size: 0.8125rem;
+      color: var(--nsim-muted);
+      text-decoration: line-through;
+    }
+
+    .tv-sim-plans-page .nsim-plan-card.has-intro-promo .nsim-plan-price {
+      color: #047857;
+    }
+
     .tv-sim-plans-page .nsim-plan-price-subnote {
       min-height: 1.35rem;
       margin: 0.35rem 0 0;

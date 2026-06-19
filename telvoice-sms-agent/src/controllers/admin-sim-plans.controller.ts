@@ -85,6 +85,10 @@ export async function postAdminSimPlanEdit(
     const included_sms = Number(req.body?.included_sms);
     const isCustom = planId === "custom";
 
+    const promo_enabled = isCustom ? false : parseCheckbox(req.body?.promo_enabled);
+    const promo_discount_percent = Number(req.body?.promo_discount_percent);
+    const promo_duration_months = Number(req.body?.promo_duration_months);
+
     await updateSimPlanSettings(
       {
         plan_id: planId,
@@ -98,6 +102,10 @@ export async function postAdminSimPlanEdit(
         ribbon: String(req.body?.ribbon ?? ""),
         short_description: String(req.body?.short_description ?? ""),
         feature_list: parseFeatureList(req.body?.feature_list),
+        promo_enabled,
+        promo_discount_percent: promo_enabled ? promo_discount_percent : 0,
+        promo_duration_months: promo_enabled ? promo_duration_months : 0,
+        promo_label: String(req.body?.promo_label ?? ""),
       },
       req.adminUser!.id,
     );

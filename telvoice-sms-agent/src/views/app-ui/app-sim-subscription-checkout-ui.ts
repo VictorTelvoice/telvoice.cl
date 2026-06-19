@@ -169,11 +169,32 @@ export function getAppSimSubscriptionCheckoutScript(): string {
 
     function planMonthlyAmount(plan) {
       if (!plan) return 0;
+      if (getBillingCycle() === "annual") {
+        return plan.monthly_price_clp || plan.total_amount;
+      }
+      if (plan.has_intro_promo) {
+        return Number(plan.promo_monthly_price_clp) || plan.monthly_price_clp || plan.total_amount;
+      }
       var promo = state.profile && state.profile.starter_promo;
-      if (promo && plan.plan_id === "sim_starter" && getBillingCycle() === "monthly") {
+      if (promo && plan.plan_id === "sim_starter") {
         return Number(promo.monthly_clp) || plan.monthly_price_clp || plan.total_amount;
       }
       return plan.monthly_price_clp || plan.total_amount;
+    }
+
+    function planIntroPromoNote(plan) {
+      if (!plan || getBillingCycle() !== "monthly") return "";
+      if (plan.has_intro_promo) {
+        var pct = Math.round(Number(plan.promo_discount_percent) || 0);
+        var months = Number(plan.promo_duration_months) || 0;
+        var regular = plan.regular_monthly_price_clp || plan.monthly_price_clp || plan.total_amount;
+        return pct + "% por " + months + " meses · Luego " + fmtMoney(regular) + "/mes. La promoción se aplicará durante los primeros " + months + " meses de la suscripción.";
+      }
+      var promo = state.profile && state.profile.starter_promo;
+      if (promo && plan.plan_id === "sim_starter") {
+        return "Promoción " + Math.round((1 - promo.monthly_clp / promo.original_monthly_clp) * 100) + "% por " + promo.duration_months + " meses (regular " + fmtMoney(promo.original_monthly_clp) + "/mes).";
+      }
+      return "";
     }
 
     function canSubmitCheckout() {
@@ -214,18 +235,14 @@ export function getAppSimSubscriptionCheckoutScript(): string {
             : fmtMoney(planMonthlyAmount(plan)) + " / mes";
       }
       if (meta) {
-        var promo = state.profile && state.profile.starter_promo;
         var cycle = getBillingCycle();
         var discount = Number(plan.annual_discount_percent) || 20;
-        var promoNote =
-          promo && plan.plan_id === "sim_starter" && cycle === "monthly"
-            ? "Promoción 50% por " + promo.duration_months + " meses (regular " + fmtMoney(promo.original_monthly_clp) + "/mes). · "
-            : "";
+        var introNote = planIntroPromoNote(plan);
         var smsQty = plan.included_sms || plan.sms_quantity || 0;
         meta.textContent =
           cycle === "annual"
             ? "Pago anual: " + fmtMoney(annualTotalFromPlan(plan)) + "/año · " + discount + "% de descuento. · " + new Intl.NumberFormat("es-CL").format(smsQty) + " SMS incluidos / mes"
-            : promoNote + plan.description + " · " + new Intl.NumberFormat("es-CL").format(smsQty) + " SMS incluidos / mes";
+            : (introNote ? introNote + " · " : "") + plan.description + " · " + new Intl.NumberFormat("es-CL").format(smsQty) + " SMS incluidos / mes";
       }
       if (features) {
         features.innerHTML = (plan.features || []).map(function (f) {
