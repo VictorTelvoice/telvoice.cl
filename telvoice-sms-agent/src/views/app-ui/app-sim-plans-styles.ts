@@ -53,9 +53,47 @@ export function getAppSimPlansStyles(): string {
       margin: 0;
     }
 
+    .tv-sim-plans-page .nsim-section-toolbar--desktop {
+      display: block;
+    }
+
+    .tv-sim-plans-page .nsim-section-toolbar--mobile {
+      display: none;
+      position: static;
+      justify-content: center;
+      margin: 0.75rem 0 0.15rem;
+    }
+
     @media (min-width: 768px) {
       .tv-sim-plans-page .nsim-section-toolbar {
         right: 2rem;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .tv-sim-plans-page .nsim-section-toolbar--desktop {
+        display: none !important;
+      }
+
+      .tv-sim-plans-page .nsim-section--lead,
+      .tv-sim-plans-page .nsim-plans-hero {
+        padding-top: 1.25rem;
+      }
+
+      .tv-sim-plans-page .nsim-section-title {
+        padding-top: 0;
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
+      }
+
+      .tv-sim-plans-page--purchase-request .nsim-section-toolbar--mobile {
+        display: flex;
+      }
+
+      .tv-sim-plans-page--purchase-request .nsim-section-toolbar--mobile .btn {
+        width: 100%;
+        max-width: 14rem;
+        justify-content: center;
       }
     }
 

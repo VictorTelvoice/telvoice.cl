@@ -250,24 +250,31 @@ export function getAppSimPlansBillingScript(): string {
 })();`;
 }
 
-function renderPlansSection(catalog: PublicSimPlanCatalogItem[]): string {
+function renderPlansSection(catalog: PublicSimPlanCatalogItem[], isPurchaseRequest = false): string {
   const defaultDiscount =
     catalog.find((p) => p.plan_id === "sim_starter")?.annual_discount_percent ??
     catalog[0]?.annual_discount_percent ??
     20;
 
+  const misNumerosBtn = renderBtn("Mis números", {
+    href: "/app/numeraciones",
+    variant: "secondary",
+    size: "sm",
+    icon: "sim_card",
+  });
+
+  const toolbarMobile = isPurchaseRequest
+    ? `<div class="nsim-section-toolbar nsim-section-toolbar--mobile">${misNumerosBtn}</div>`
+    : "";
+
   return `<section class="nsim-section nsim-section--lead nsim-plans-hero" aria-labelledby="nsim-planes-title">
     <div class="nsim-section-inner">
-      <div class="nsim-section-toolbar">
-        ${renderBtn("Mis números", {
-          href: "/app/numeraciones",
-          variant: "secondary",
-          size: "sm",
-          icon: "sim_card",
-        })}
+      <div class="nsim-section-toolbar nsim-section-toolbar--desktop">
+        ${misNumerosBtn}
       </div>
       <h1 id="nsim-planes-title" class="nsim-section-title nsim-section-title--lead">Numeración SIM real</h1>
       <p class="nsim-section-intro">Activa una numeración SIM para recibir SMS, validar procesos y comunicarte con clientes, agentes o equipos críticos.</p>
+      ${toolbarMobile}
       ${renderBillingSwitch(defaultDiscount)}
       <div class="nsim-plans-grid">
         ${catalog.map((p) => renderPlanCard(p)).join("")}
@@ -405,7 +412,7 @@ export function renderAppAgentPlansPage(
   const body = `
     <section class="tv-sim-plans-page${isPurchaseRequest ? " tv-sim-plans-page--purchase-request" : ""}">
       ${ownedSummary}
-      ${renderPlansSection(catalog)}
+      ${renderPlansSection(catalog, isPurchaseRequest)}
     </section>
     ${renderAppSimSubscriptionCheckoutModal()}
     ${embedJsonInScriptTag("tv-sim-plan-catalog", catalog)}

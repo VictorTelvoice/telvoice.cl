@@ -50,6 +50,7 @@
     var apiHref = anchor("#api", mode, r);
     var contactoHref = anchor("#contacto", mode, r);
     var ayudaHref = r + "ayuda/";
+    var portalHref = "https://agent.telvoice.cl/login";
 
     return (
       '<nav class="bg-surface/90 backdrop-blur-md sticky top-0 z-50 border-b border-outline-variant/30 w-full">' +
@@ -128,7 +129,10 @@
       esc(ayudaHref) +
       '">Centro de ayuda</a></li>' +
       "</ul>" +
-      '<div class="mt-4 sm:hidden">' +
+      '<div class="mt-4 flex flex-col gap-3 sm:hidden">' +
+      '<a href="' +
+      esc(portalHref) +
+      '" class="block w-full text-center border-2 border-primary/25 text-primary font-body-md py-3 rounded-full hover:bg-primary/5 transition-colors no-underline" data-track="click_ir_al_portal_mobile">Ir al Portal</a>' +
       '<a href="' +
       esc(calcHref) +
       '" id="nav-comprar-sms-mobile" class="block w-full text-center bg-primary text-on-primary font-body-md py-3 rounded-full hover:bg-surface-tint transition-colors no-underline" data-track="click_comprar_sms_nav">Comprar SMS</a>' +

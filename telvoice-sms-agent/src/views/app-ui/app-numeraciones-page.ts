@@ -42,8 +42,8 @@ function renderEmptyState(): string {
       y operar comunicaciones empresariales sin depender de un teléfono físico.
     </p>
     <div class="tv-numeraciones-empty__actions">
-      ${renderBtn("Ver planes de numeración", { href: "/app/planes-agente", variant: "primary", icon: "sim_card" })}
-      ${renderBtn("Solicitar numeración", { href: "/app/planes-agente?action=request", variant: "secondary", icon: "add_call" })}
+      ${renderBtn("Ver planes", { href: "/app/planes-agente", variant: "primary", icon: "sim_card" })}
+      ${renderBtn("Solicitar Número", { href: "/app/planes-agente?action=request", variant: "secondary", icon: "add_call" })}
     </div>
   </section>`;
 }
@@ -74,7 +74,7 @@ function renderNumbersTable(numbers: ClientNumberListItem[]): string {
     })
     .join("");
 
-  return `<div class="tv-table-wrap">
+  return `<div class="tv-numeraciones-table-wrap tv-table-wrap">
     <table class="tv-table tv-numeraciones-table">
       <thead>
         <tr>
@@ -113,9 +113,10 @@ export function renderAppNumeracionesPage(
     ${renderPageHeader({
       title: "Mis números",
       subtitle: "Numeraciones Telvoice contratadas por tu empresa.",
+      headClass: "tv-page-head--numeraciones",
       actions: `
-        ${renderBtn("Solicitar nueva numeración", { href: "/app/planes-agente?action=request", variant: "primary", icon: "add_call" })}
-        ${renderBtn("Ver planes de numeración", { href: "/app/planes-agente", variant: "secondary", icon: "sim_card" })}
+        ${renderBtn("Solicitar Número", { href: "/app/planes-agente?action=request", variant: "primary", icon: "add_call" })}
+        ${renderBtn("Ver planes", { href: "/app/planes-agente", variant: "secondary", icon: "sim_card" })}
       `,
     })}
     ${migrationNotice}
@@ -130,6 +131,42 @@ export function renderAppNumeracionesPage(
       .tv-numeraciones-empty__actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
       .tv-numeraciones-caps { font-size: 0.85rem; }
       .tv-table-actions { white-space: nowrap; }
+      .tv-numeraciones-table-wrap {
+        overflow-x: auto;
+        max-width: 100%;
+        -webkit-overflow-scrolling: touch;
+      }
+      .tv-numeraciones-table { min-width: 52rem; }
+      @media (max-width: 640px) {
+        .tv-page-head--numeraciones.tv-page-head--row {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 0.65rem;
+        }
+        .tv-page-head--numeraciones .tv-page-actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.5rem;
+          width: 100%;
+        }
+        .tv-page-head--numeraciones .tv-page-actions .btn {
+          flex: 1 1 auto;
+          min-width: 0;
+          justify-content: center;
+          padding-left: 0.45rem;
+          padding-right: 0.45rem;
+          font-size: 0.8125rem;
+          white-space: nowrap;
+        }
+        .tv-numeraciones-empty__actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.5rem;
+          width: 100%;
+          max-width: 22rem;
+          margin: 0 auto;
+        }
+      }
     </style>`;
 
   return wrapAppPage(ctx, "numeraciones", "Mis números", body);

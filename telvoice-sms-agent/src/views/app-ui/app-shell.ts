@@ -129,8 +129,16 @@ function renderTopbar(tb: AppLayoutTopbar): string {
       <button type="button" class="tv-topbar__icon-btn" aria-label="Notificaciones" title="Notificaciones">
         <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
       </button>
-      <div class="tv-user tv-user--avatar-only">
-        <span class="tv-user__avatar" title="${escapeHtml(tb.userName)}" aria-label="Cuenta de ${escapeHtml(tb.userName)}">${escapeHtml(userInitials(tb.userName))}</span>
+      <div class="tv-user tv-user--avatar-only" id="tv-user-menu-wrap">
+        <button type="button" class="tv-user__avatar-btn" id="tv-user-menu-toggle" aria-expanded="false" aria-haspopup="menu" aria-controls="tv-user-menu" title="${escapeHtml(tb.userName)}" aria-label="Menú de cuenta de ${escapeHtml(tb.userName)}">
+          <span class="tv-user__avatar" aria-hidden="true">${escapeHtml(userInitials(tb.userName))}</span>
+        </button>
+        <div class="tv-user-menu" id="tv-user-menu" role="menu" hidden>
+          <a href="/app/settings" class="tv-user-menu__item" role="menuitem">Perfil</a>
+          <form method="post" action="/app/logout" class="logout-form tv-user-menu__logout">
+            <button type="submit" class="tv-user-menu__item tv-user-menu__item--button" role="menuitem">Cerrar sesión</button>
+          </form>
+        </div>
       </div>
     </div>
   </header>`;
@@ -154,6 +162,35 @@ const SIDEBAR_SCRIPT = `<script>
   }
   window.addEventListener("resize", function () {
     if (window.innerWidth > 900) setOpen(false);
+  });
+})();
+</script>`;
+
+const USER_MENU_SCRIPT = `<script>
+(function () {
+  var wrap = document.getElementById("tv-user-menu-wrap");
+  var toggle = document.getElementById("tv-user-menu-toggle");
+  var menu = document.getElementById("tv-user-menu");
+  if (!wrap || !toggle || !menu) return;
+
+  function setOpen(open) {
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) menu.removeAttribute("hidden");
+    else menu.setAttribute("hidden", "");
+    wrap.classList.toggle("is-open", open);
+  }
+
+  toggle.addEventListener("click", function (event) {
+    event.stopPropagation();
+    setOpen(toggle.getAttribute("aria-expanded") !== "true");
+  });
+
+  document.addEventListener("click", function (event) {
+    if (!wrap.contains(event.target)) setOpen(false);
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") setOpen(false);
   });
 })();
 </script>`;
@@ -194,6 +231,7 @@ export function renderAppLayout(options: AppLayoutOptions): string {
   </div>
   ${renderPanelAgentWidget()}
   ${SIDEBAR_SCRIPT}
+  ${USER_MENU_SCRIPT}
   ${renderPanelThemeToggleScript()}
   ${DASH_TABLE_RESIZE_SCRIPT}
   <script>${getPanelFloatingAgentToggleScript({ buttonIds: ["nav-floating-agent-toggle"], floatingRootId: "tv-panel-agent", surface: "panel" })}</script>

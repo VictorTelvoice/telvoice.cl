@@ -82,6 +82,66 @@ export function getAppPanelStyles(): string {
       white-space: nowrap;
     }
     .tv-app-client .tv-btn-buy-sms:hover { filter: brightness(1.05); text-decoration: none; }
+    .tv-app-client .tv-user--avatar-only {
+      position: relative;
+    }
+    .tv-app-client .tv-user__avatar-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 999px;
+    }
+    .tv-app-client .tv-user__avatar-btn:focus-visible {
+      outline: 2px solid var(--tv-primary);
+      outline-offset: 2px;
+    }
+    .tv-app-client .tv-user-menu {
+      position: absolute;
+      top: calc(100% + 0.45rem);
+      right: 0;
+      z-index: 120;
+      min-width: 11.5rem;
+      padding: 0.35rem;
+      border-radius: 0.85rem;
+      border: 1px solid var(--tv-border);
+      background: var(--tv-surface);
+      box-shadow: var(--tv-shadow-lg);
+    }
+    .tv-app-client .tv-user-menu[hidden] {
+      display: none !important;
+    }
+    .tv-app-client .tv-user-menu__item {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: none;
+      border-radius: 0.55rem;
+      background: transparent;
+      color: var(--tv-text);
+      font: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: none;
+      text-align: left;
+      cursor: pointer;
+    }
+    .tv-app-client .tv-user-menu__item:hover,
+    .tv-app-client .tv-user-menu__item:focus-visible {
+      background: var(--tv-bg);
+      outline: none;
+    }
+    .tv-app-client .tv-user-menu__item--button {
+      color: #b91c1c;
+    }
+    .tv-app-client .tv-user-menu__logout {
+      margin: 0;
+      display: block;
+    }
     @media (max-width: 900px) {
       .tv-app-client .tv-topbar__pills .tv-pill--account-status {
         display: none !important;
