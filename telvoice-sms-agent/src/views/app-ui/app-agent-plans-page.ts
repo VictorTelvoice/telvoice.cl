@@ -22,92 +22,95 @@ import {
   getAppSimSubscriptionCheckoutScript,
   renderAppSimSubscriptionCheckoutModal,
 } from "./app-sim-subscription-checkout-ui.js";
-import { renderBtn, renderPageHeader, renderNotice } from "../admin-ui/page-kit.js";
+import { renderBtn, renderNotice } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtMoney, wrapAppPage } from "./app-page-wrap.js";
 
+const CUSTOM_PLAN_SUBNOTE =
+  "Para múltiples números, volumen o integraciones especiales.";
+
+const CUSTOM_PLAN_FEATURES = [
+  "Múltiples números SIM reales",
+  "Volumen SMS personalizado",
+  "Automatizaciones e integraciones avanzadas",
+  "Integración API/Webhooks",
+  "Soporte operativo Telvoice",
+  "Diseño de flujo a medida",
+] as const;
+
 function renderFeatureItem(text: string): string {
-  return `<li><span class="material-symbols-outlined" aria-hidden="true">check</span><span>${escapeHtml(text)}</span></li>`;
+  return `<li><span class="material-symbols-outlined" aria-hidden="true">check</span>${escapeHtml(text)}</li>`;
 }
 
-function renderPlanCard(
-  plan: SimSubscriptionPlanCatalogEntry,
-  options: {
-    selectedPlan?: PublicSimSubscriptionPlanId;
-    hasActiveNumbers: boolean;
-  },
-): string {
-  const isSelected = options.selectedPlan === plan.plan_id;
+function renderPlanCard(plan: SimSubscriptionPlanCatalogEntry): string {
   const cardClass = [
-    "tv-sim-plan-card",
-    plan.featured ? "tv-sim-plan-card--featured" : "",
-    isSelected ? "tv-sim-plan-card--selected" : "",
+    "nsim-plan-card",
+    plan.featured ? "is-featured" : "",
   ]
     .filter(Boolean)
-    .join("");
-
-  const badges = plan.featured
-    ? ""
-    : `<span class="tv-sim-plan-card__billing-badge">Suscripción mensual</span>`;
+    .join(" ");
 
   const ribbon = plan.featured
-    ? `<span class="tv-sim-plan-card__ribbon">Popular</span><span class="tv-sim-plan-card__billing-badge">Suscripción mensual</span>`
+    ? `<span class="nsim-plan-ribbon">Popular</span>`
     : "";
 
-  const ctaClass =
-    plan.featured || isSelected
-      ? "tv-sim-plan-card__cta-btn tv-sim-plan-card__cta-btn--primary"
-      : "tv-sim-plan-card__cta-btn tv-sim-plan-card__cta-btn--secondary";
-
-  const ctaButton = `<button type="button" class="${ctaClass}" data-tv-sim-plan-open="${escapeHtml(plan.plan_id)}">
-      <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">shopping_cart</span>${escapeHtml(plan.ctaLabel)}
-    </button>`;
-
   return `<article class="${cardClass}">
-    ${ribbon || badges}
-    <h3 class="tv-sim-plan-card__title">${escapeHtml(plan.sim_label)}</h3>
-    <p class="tv-sim-plan-card__price">${escapeHtml(fmtMoney(plan.total_amount))}<span> / mes</span></p>
-    <p class="tv-sim-plan-card__price-note">Pago recurrente mensual.</p>
-    <p class="tv-sim-plan-card__description">${escapeHtml(plan.description)}</p>
-    <ul class="tv-sim-plan-card__features">
+    ${ribbon}
+    <span class="nsim-plan-billing-badge">Suscripción mensual</span>
+    <h3 class="nsim-plan-name">${escapeHtml(plan.sim_label)}</h3>
+    <p class="nsim-plan-price">${escapeHtml(fmtMoney(plan.total_amount))} <span>/ mes</span></p>
+    <p class="nsim-plan-price-subnote">Pago recurrente mensual.</p>
+    <p class="nsim-plan-desc">${escapeHtml(plan.description)}</p>
+    <ul class="nsim-plan-features">
       ${plan.features.map((f) => renderFeatureItem(f)).join("")}
     </ul>
-    ${
-      options.hasActiveNumbers
-        ? `<p class="tv-sim-plan-card__pending">Puedes contratar otra línea con el mismo flujo de checkout del panel.</p>`
-        : ""
-    }
-    <div class="tv-sim-plan-card__cta">
-      ${ctaButton}
-    </div>
+    <button type="button" class="nsim-btn-primary nsim-plan-cta" data-tv-sim-plan-open="${escapeHtml(plan.plan_id)}">${escapeHtml(plan.ctaLabel)}</button>
   </article>`;
 }
 
 function renderCustomPlanCard(): string {
-  const features = [
-    "Múltiples números SIM reales",
-    "Volumen SMS personalizado",
-    "Automatizaciones e integraciones avanzadas",
-    "Integración API/Webhooks",
-    "Soporte operativo Telvoice",
-    "Diseño de flujo a medida",
-  ];
-
-  return `<article class="tv-sim-plan-card tv-sim-plan-card--custom">
-    <span class="tv-sim-plan-card__billing-badge tv-sim-plan-card__billing-badge--custom">Contrato comercial</span>
-    <h3 class="tv-sim-plan-card__title">A medida</h3>
-    <p class="tv-sim-plan-card__price tv-sim-plan-card__price--custom">Cotización personalizada</p>
-    <p class="tv-sim-plan-card__description">Para empresas que necesitan más volumen, múltiples números, integraciones especiales, flujos de respuesta o automatizaciones avanzadas.</p>
-    <ul class="tv-sim-plan-card__features">
-      ${features.map((f) => renderFeatureItem(f)).join("")}
+  return `<article class="nsim-plan-card nsim-plan-card--custom">
+    <span class="nsim-plan-billing-badge nsim-plan-billing-badge--custom">Contrato comercial</span>
+    <h3 class="nsim-plan-name">A medida</h3>
+    <p class="nsim-plan-price nsim-plan-price--custom">Cotización personalizada</p>
+    <p class="nsim-plan-price-subnote">${escapeHtml(CUSTOM_PLAN_SUBNOTE)}</p>
+    <ul class="nsim-plan-features">
+      ${CUSTOM_PLAN_FEATURES.map((f) => renderFeatureItem(f)).join("")}
     </ul>
-    <div class="tv-sim-plan-card__cta">
-      <a href="/app/support" class="tv-sim-plan-card__cta-btn tv-sim-plan-card__cta-btn--secondary">
-        <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">support_agent</span>
-        Solicitar plan a medida
-      </a>
-    </div>
+    <a href="/app/support" class="nsim-btn-secondary nsim-plan-cta">Solicitar plan a medida</a>
   </article>`;
+}
+
+function renderBillingSwitch(): string {
+  return `<div class="nsim-billing-card nsim-billing-card--switch-only" aria-label="Modalidad de pago">
+    <div class="nsim-billing-switch" role="group" aria-label="Seleccionar modalidad de pago">
+      <button type="button" class="nsim-billing-switch__button is-active" aria-pressed="true">Mensual</button>
+      <button type="button" class="nsim-billing-switch__button nsim-billing-switch__button--panel-only" aria-pressed="false" disabled title="Checkout mensual en el panel">Anual <span>-20%</span></button>
+    </div>
+  </div>`;
+}
+
+function renderPlansSection(catalog: SimSubscriptionPlanCatalogEntry[]): string {
+  return `<section class="nsim-section nsim-section--lead" aria-labelledby="nsim-planes-title">
+    <div class="nsim-section-inner">
+      <div class="nsim-section-toolbar">
+        ${renderBtn("Mis números", {
+          href: "/app/numeraciones",
+          variant: "secondary",
+          size: "sm",
+          icon: "sim_card",
+        })}
+      </div>
+      <p class="nsim-eyebrow nsim-eyebrow--center">Número Mobile real</p>
+      <h1 id="nsim-planes-title" class="nsim-section-title nsim-section-title--lead">Numeración SIM real</h1>
+      <p class="nsim-section-intro">Activa una numeración SIM para recibir SMS, validar procesos y comunicarte con clientes, agentes o equipos críticos.</p>
+      ${renderBillingSwitch()}
+      <div class="nsim-plans-grid">
+        ${catalog.map((p) => renderPlanCard(p)).join("")}
+        ${renderCustomPlanCard()}
+      </div>
+    </div>
+  </section>`;
 }
 
 function renderRequestStatusPanel(request: AgentPlanRequestRow): string {
@@ -200,50 +203,37 @@ export function renderAppAgentPlansPage(
         )
       : "";
 
+  const extraLineNotice =
+    hasActiveNumbers
+      ? renderNotice(
+          "Puedes contratar otra línea con el mismo flujo de checkout del panel.",
+          "info",
+        )
+      : "";
+
   const body = `
-    ${renderPageHeader({
-      title: "Planes de numeración SIM",
-      subtitle:
-        "Contrata una numeración SIM Telvoice con SMS incluidos y agente Telvoice.",
-      actions: renderBtn("Mis números", {
-        href: "/app/numeraciones",
-        variant: "secondary",
-        icon: "sim_card",
-      }),
-    })}
     <section class="tv-sim-plans-page">
-      ${intentBanner}
-      ${ctx.flash ? renderNotice(ctx.flash, "info") : ""}
-      ${ctx.error ? `<div class="alert alert-err">${escapeHtml(ctx.error)}</div>` : ""}
-      ${renderActiveNumbersPanel(data.activeNumbers)}
-      ${
-        data.activeSubscription?.status === "active"
-          ? renderActiveSubscriptionPanel(data.activeSubscription)
-          : data.highlightRequest
-            ? renderRequestStatusPanel(data.highlightRequest)
-            : ""
-      }
-      <div class="tv-sim-plans-grid">
-        ${catalog
-          .map((p) =>
-            renderPlanCard(p, {
-              selectedPlan,
-              hasActiveNumbers,
-            }),
-          )
-          .join("")}
-        ${renderCustomPlanCard()}
+      <div class="nsim-panel-preface">
+        ${intentBanner}
+        ${ctx.flash ? renderNotice(ctx.flash, "info") : ""}
+        ${ctx.error ? `<div class="alert alert-err">${escapeHtml(ctx.error)}</div>` : ""}
+        ${extraLineNotice}
+        ${renderActiveNumbersPanel(data.activeNumbers)}
+        ${
+          data.activeSubscription?.status === "active"
+            ? renderActiveSubscriptionPanel(data.activeSubscription)
+            : data.highlightRequest
+              ? renderRequestStatusPanel(data.highlightRequest)
+              : ""
+        }
       </div>
-      <aside class="tv-sim-plans-note" aria-label="Información de checkout">
-        <span class="material-symbols-outlined" aria-hidden="true">info</span>
-        <p>Contrata numeración SIM desde este panel con tus datos precargados. Las bolsas SMS para campañas masivas se compran aparte en Comprar SMS.</p>
-      </aside>
+      ${renderPlansSection(catalog)}
     </section>
     ${renderAppSimSubscriptionCheckoutModal()}
     ${embedJsonInScriptTag("tv-sim-plan-catalog", catalog)}
     <script>${getAppSimSubscriptionCheckoutScript()}</script>`;
 
-  return wrapAppPage(ctx, "agent-plans", "Planes de numeración SIM", body);
+  return wrapAppPage(ctx, "agent-plans", "Numeración SIM real", body);
 }
 
 export { parseSimSubscriptionPlanId };
