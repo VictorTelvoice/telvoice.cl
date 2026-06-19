@@ -152,9 +152,13 @@ export function getSimPlan(planId: string): SimPlanDefinition | null {
   return SIM_PLANS[planId.trim().toLowerCase() as SimPlanId];
 }
 
+/** Etiqueta SMS para reason/título MP — sin separador de miles (evita "1.000" → "1.00" en emails MP). */
+export function simMpSmsQuantityLabel(quantity: number): string {
+  return `${Math.round(quantity)} SMS/mes`;
+}
+
 export function simCheckoutItemTitle(plan: SimPlanDefinition): string {
-  const qty = new Intl.NumberFormat("es-CL").format(plan.sms_quantity);
-  return `Telvoice.cl — ${plan.name} (${qty} SMS/mes)`;
+  return `Telvoice.cl — ${plan.name} (${simMpSmsQuantityLabel(plan.sms_quantity)})`;
 }
 
 export function simCheckoutItemDescription(plan: SimPlanDefinition): string {

@@ -18,6 +18,7 @@ import {
 import {
   sendSimAgentBundlePaymentEmails,
   sendSimPaymentReceivedEmails,
+  sendSimSubscriptionPaymentConfirmedEmails,
   sendCheckoutPanelAccessEmail,
 } from "./transactionalEmailService.js";
 import { processLandingSmsBagAutoCredit } from "./landingSmsPostPaymentService.js";
@@ -60,6 +61,10 @@ import {
 import { runBillingSyncBestEffort } from "./billingSyncService.js";
 import { runClientPanelPostCreditBestEffort } from "./clientPanelPostPurchaseService.js";
 import { sendNewCustomerPurchaseAlertEmailBestEffort } from "./newCustomerPurchaseAlertEmailService.js";
+import {
+  applySimSubscriptionApprovedPayment,
+  tryReconcileSimSubscriptionFirstPaymentFromPreapproval,
+} from "./simSubscriptionPaymentActivationService.js";
 import type { MercadoPagoPaymentRecord } from "./mercadoPagoService.js";
 import type { SmsOrderRow } from "../types/wallet.js";
 
@@ -578,7 +583,12 @@ export async function processPublicCheckoutMercadoPagoWebhook(
         }
 
         try {
-          await sendSimAgentBundlePaymentEmails(orderId);
+          await sendSimSubscriptionPaymentConfirmedEmails(orderId, {
+            preapprovalId:
+              typeof refreshed.metadata?.mercadopago_preapproval_id === "string"
+                ? refreshed.metadata.mercadopago_preapproval_id
+                : refreshed.payment_reference,
+          });
           if (provision.isNewCompany) {
             await sendCheckoutPanelAccessEmail(orderId, checkoutEmail);
           }
@@ -763,8 +773,30 @@ async function applyPublicSimSubscriptionPreapprovalStatus(
         subscription_status: "authorized",
       },
     });
+
+    const preId = pre.id ?? order.payment_reference ?? null;
+    if (preId) {
+      try {
+        const reconciled = await tryReconcileSimSubscriptionFirstPaymentFromPreapproval(preId);
+        if (reconciled?.ok) {
+          console.log(
+            "[mp-webhook] sim subscription first payment reconciled from preapproval",
+            order.id,
+            reconciled.result,
+          );
+        }
+      } catch (err) {
+        console.error(
+          "[mp-webhook] sim subscription preapproval reconcile failed",
+          order.id,
+          err,
+        );
+      }
+    }
   }
 }
+
+export { processMercadoPagoAuthorizedPaymentWebhook } from "./simSubscriptionPaymentActivationService.js";
 
 async function applyPreapprovalStatus(
   companyId: string,
@@ -907,6 +939,30 @@ export async function routeMercadoPagoWebhook(
         orderId: simSub.orderId,
         result: simSub.result,
       };
+    }
+
+    const orderRef = payment.external_reference?.trim();
+    if (
+      orderRef &&
+      payment.status === "approved" &&
+      simSub.result === "delegate_first_payment_to_order_webhook"
+    ) {
+      const orderForSim = await getOrderById(orderRef);
+      if (orderForSim && isSimSubscriptionOrder(orderForSim)) {
+        const activated = await applySimSubscriptionApprovedPayment({
+          orderId: orderRef,
+          paymentId: String(payment.id ?? paymentId),
+          paymentStatus: String(payment.status ?? ""),
+          transactionAmount: Number(payment.transaction_amount ?? 0),
+          preapprovalId,
+          source: "payment_webhook_sim_subscription",
+        });
+        return {
+          ok: activated.ok,
+          orderId: activated.orderId,
+          result: activated.result,
+        };
+      }
     }
   }
 

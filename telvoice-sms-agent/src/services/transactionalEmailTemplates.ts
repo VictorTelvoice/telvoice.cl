@@ -587,6 +587,126 @@ export function renderSimNumberActive(
   return { subject, html: emailShell("Numeración activa", body), text };
 }
 
+export type SimSubscriptionPaymentConfirmedTemplateData = {
+  contactName: string;
+  planName: string;
+  assignedNumber: string | null;
+  includedSmsMonthly: number;
+  amount: number;
+  currency: string;
+  billingCycle: string;
+  nextRenewal: string | null;
+  numeracionesUrl: string;
+};
+
+export function renderSimSubscriptionPaymentConfirmed(
+  data: SimSubscriptionPaymentConfirmedTemplateData,
+): { subject: string; html: string; text: string } {
+  const subject = "Tu numeración SIM Telvoice fue activada";
+  const sms = fmtSms(data.includedSmsMonthly);
+  const total = fmtMoney(data.amount, data.currency);
+  const numberLine = data.assignedNumber
+    ? `<div><strong>Numeración asignada:</strong> ${escapeHtml(data.assignedNumber)}</div>`
+    : `<div><strong>Numeración:</strong> en activación — revisa el panel en unos minutos</div>`;
+
+  const body = `
+    <p style="margin:0 0 12px;font-family:Segoe UI,system-ui,sans-serif;font-size:20px;font-weight:700;line-height:1.35;color:#0f172a;text-align:center">
+      Hola ${escapeHtml(data.contactName)},
+    </p>
+    <p style="margin:0 0 24px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55;color:#334155;text-align:center;max-width:520px;margin-left:auto;margin-right:auto">
+      Tu suscripción <strong>${escapeHtml(data.planName)}</strong> fue confirmada.
+    </p>
+    ${summaryCard(`
+      <div><strong>Plan:</strong> ${escapeHtml(data.planName)}</div>
+      ${numberLine}
+      <div><strong>SMS incluidos:</strong> ${escapeHtml(sms)} / mes</div>
+      <div><strong>Monto:</strong> ${escapeHtml(total)}</div>
+      <div><strong>Ciclo:</strong> ${escapeHtml(data.billingCycle)}</div>
+      ${data.nextRenewal ? `<div><strong>Próxima renovación:</strong> ${escapeHtml(data.nextRenewal)}</div>` : ""}
+    `)}
+    ${ctaButton(data.numeracionesUrl, "Ir a Mis numeraciones")}
+    <p style="margin:16px 0 0;font-family:Segoe UI,system-ui,sans-serif;font-size:13px;line-height:1.5;color:#64748b;text-align:center">
+      Si necesitas ayuda, responde este correo o contacta soporte.
+    </p>`;
+
+  const text = [
+    `Hola ${data.contactName},`,
+    "",
+    `Tu suscripción ${data.planName} fue confirmada.`,
+    "",
+    `Plan: ${data.planName}`,
+    data.assignedNumber ? `Numeración asignada: ${data.assignedNumber}` : "Numeración: en activación",
+    `SMS incluidos: ${sms} / mes`,
+    `Monto: ${total}`,
+    `Ciclo: ${data.billingCycle}`,
+    data.nextRenewal ? `Próxima renovación: ${data.nextRenewal}` : "",
+    "",
+    `Panel: ${data.numeracionesUrl}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return { subject, html: emailShell("Numeración SIM activada", body), text };
+}
+
+export type SimSubscriptionInternalAlertTemplateData = {
+  companyName: string | null;
+  checkoutEmail: string;
+  planName: string;
+  assignedNumber: string | null;
+  amount: number;
+  currency: string;
+  preapprovalId: string | null;
+  orderId: string;
+  adminUrl: string;
+};
+
+export function renderSimSubscriptionInternalAlert(
+  data: SimSubscriptionInternalAlertTemplateData,
+): { subject: string; html: string; text: string } {
+  const subject = `[Telvoice] Suscripción SIM activada — ${data.checkoutEmail}`;
+  const total = fmtMoney(data.amount, data.currency);
+  const rowsHtml = [
+    ["Empresa", data.companyName ?? "—"],
+    ["Email", data.checkoutEmail],
+    ["Plan", data.planName],
+    ["Número", data.assignedNumber ?? "pendiente"],
+    ["Monto", total],
+    ["MP preapproval", data.preapprovalId ?? "—"],
+    ["Order ID", data.orderId],
+  ]
+    .map(
+      ([label, value]) =>
+        `<div><strong>${escapeHtml(label)}:</strong> ${escapeHtml(String(value))}</div>`,
+    )
+    .join("");
+
+  const body = `
+    <p style="margin:0 0 16px;font-family:Segoe UI,system-ui,sans-serif;font-size:15px;line-height:1.55;color:#334155">
+      Se confirmó y activó una suscripción de numeración SIM (panel cliente).
+    </p>
+    ${summaryCard(rowsHtml)}
+    ${ctaButton(data.adminUrl, "Ver en admin")}`;
+
+  const text = [
+    "Suscripción SIM activada",
+    "",
+    ...[
+      ["Empresa", data.companyName ?? "—"],
+      ["Email", data.checkoutEmail],
+      ["Plan", data.planName],
+      ["Número", data.assignedNumber ?? "pendiente"],
+      ["Monto", total],
+      ["MP preapproval", data.preapprovalId ?? "—"],
+      ["Order ID", data.orderId],
+    ].map(([k, v]) => `${k}: ${v}`),
+    "",
+    data.adminUrl,
+  ].join("\n");
+
+  return { subject, html: emailShell("Alerta suscripción SIM", body), text };
+}
+
 export type SimActivationInProgressTemplateData = {
   recipientName: string;
   planName: string;

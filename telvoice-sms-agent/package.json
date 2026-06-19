@@ -56,6 +56,7 @@
     "reconcile:paid-unclaimed-purchases": "tsx scripts/reconcile-paid-unclaimed-purchases.mjs",
     "audit:review-required-paid-purchases": "tsx scripts/audit-review-required-paid-purchases.mjs",
     "reconcile:review-required-paid-purchases": "tsx scripts/reconcile-review-required-paid-purchases.mjs",
+    "reconcile:sim-subscription-payment": "npm run build && node scripts/reconcile-sim-subscription-payment.mjs",
     "notify:purchase-activation": "tsx scripts/notify-purchase-activation.mjs",
     "audit:wallet-ledger": "tsx scripts/audit-wallet-ledger.mjs",
     "correct:wallet-orphan-balance": "tsx scripts/correct-wallet-orphan-balance.mjs",

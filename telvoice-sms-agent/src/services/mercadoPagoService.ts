@@ -833,6 +833,75 @@ export async function createMercadoPagoPreapproval(input: {
   };
 }
 
+export type MercadoPagoAuthorizedPaymentRecord = {
+  id?: number | string;
+  preapproval_id?: string;
+  payment?: {
+    id?: number | string;
+    status?: string;
+    transaction_amount?: number;
+  };
+  status?: string;
+};
+
+export async function getMercadoPagoAuthorizedPayment(
+  authorizedPaymentId: string,
+): Promise<MercadoPagoAuthorizedPaymentRecord> {
+  const token = env.mercadopago.accessToken;
+  if (!token) {
+    throw new AppError("MercadoPago no configurado.", 503, "MP_NOT_CONFIGURED");
+  }
+
+  const res = await fetch(`${MP_API}/authorized_payments/${authorizedPaymentId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const data = (await res.json().catch(() => ({}))) as MercadoPagoAuthorizedPaymentRecord & {
+    message?: string;
+  };
+
+  if (!res.ok) {
+    console.error("[mercadoPagoService] get authorized_payment error", res.status);
+    throw new AppError(
+      data.message ?? "No se pudo consultar el cobro autorizado en MercadoPago.",
+      502,
+      "MP_AUTHORIZED_PAYMENT_FETCH_FAILED",
+    );
+  }
+
+  return data;
+}
+
+export async function searchMercadoPagoAuthorizedPaymentsByPreapproval(
+  preapprovalId: string,
+): Promise<MercadoPagoAuthorizedPaymentRecord[]> {
+  const token = env.mercadopago.accessToken;
+  if (!token) {
+    throw new AppError("MercadoPago no configurado.", 503, "MP_NOT_CONFIGURED");
+  }
+
+  const res = await fetch(
+    `${MP_API}/authorized_payments/search?preapproval_id=${encodeURIComponent(preapprovalId.trim())}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+
+  const data = (await res.json().catch(() => ({}))) as {
+    results?: MercadoPagoAuthorizedPaymentRecord[];
+    message?: string;
+  };
+
+  if (!res.ok) {
+    console.error("[mercadoPagoService] search authorized_payments error", res.status);
+    throw new AppError(
+      data.message ?? "No se pudo buscar cobros autorizados en MercadoPago.",
+      502,
+      "MP_AUTHORIZED_PAYMENT_SEARCH_FAILED",
+    );
+  }
+
+  return data.results ?? [];
+}
+
 export async function getMercadoPagoPreapproval(
   preapprovalId: string,
 ): Promise<MercadoPagoPreapprovalRecord> {

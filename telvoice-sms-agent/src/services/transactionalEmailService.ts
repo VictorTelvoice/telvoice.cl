@@ -27,6 +27,8 @@ import {
   renderCheckoutPanelAccess,
   renderSimNumberActive,
   renderSimActivationInProgress,
+  renderSimSubscriptionPaymentConfirmed,
+  renderSimSubscriptionInternalAlert,
   renderWelcomeSmsCredited,
 } from "./transactionalEmailTemplates.js";
 import { buildPanelLoginUrl, resolvePanelAccessLink } from "./checkoutAccessEmailService.js";
@@ -41,6 +43,7 @@ import {
 } from "./billingInvoiceService.js";
 import { patchOrderFields } from "./smsOrderService.js";
 import { findCompanyById } from "./companyService.js";
+import { getSimSubscriptionByOrderId } from "./simSubscriptionService.js";
 
 export type LogEmailAttemptInput = {
   templateKey: string;
@@ -715,6 +718,148 @@ export async function sendCheckoutPanelAccessEmail(
     metadata: { panel_url: access.panelUrl, magic_link: true },
     skipIdempotency: options?.skipIdempotency,
   });
+}
+
+function simSubscriptionNotifyEmails(): string[] {
+  const raw =
+    process.env.SUPERADMIN_EMAIL?.trim() ||
+    process.env.ORDER_NOTIFY_EMAIL?.trim() ||
+    process.env.BILLING_NOTIFY_EMAIL?.trim() ||
+    "victor@telvoice.net";
+  return raw
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+}
+
+function formatBillingCycleLabel(raw: unknown): string {
+  const v = String(raw ?? "monthly").toLowerCase();
+  if (v === "annual" || v === "yearly") return "anual";
+  return "mensual";
+}
+
+function formatNextRenewal(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat("es-CL", {
+    dateStyle: "long",
+    timeZone: "America/Santiago",
+  }).format(d);
+}
+
+export async function sendSimSubscriptionPaymentConfirmedEmails(
+  orderId: string,
+  options?: {
+    assignedNumber?: string | null;
+    preapprovalId?: string | null;
+    skipIdempotency?: boolean;
+  },
+): Promise<{ ok: boolean; customer?: { ok: boolean }; ops?: { ok: boolean }; error?: string }> {
+  const order = await getOrderWithDetails(orderId);
+  if (!order) {
+    return { ok: false, error: "order_not_found" };
+  }
+  if (order.payment_status !== "paid") {
+    return { ok: false, error: "order_not_paid" };
+  }
+
+  const meta = order.metadata ?? {};
+  const planName =
+    typeof meta.plan_name === "string" ? meta.plan_name : "Numeración SIM Telvoice";
+  const billingCycle = formatBillingCycleLabel(meta.billing_cycle ?? meta.billing_period);
+  const subscription = orderId ? await getSimSubscriptionByOrderId(orderId) : null;
+  const { email: recipient } = await resolveTransactionalRecipient(order);
+  const base = env.publicAppUrl.replace(/\/$/, "");
+  const numeracionesUrl = `${base}/app/numeraciones`;
+  const adminUrl = `${base}/admin/numeraciones?sim_pending=1`;
+
+  let companyName: string | null =
+    typeof meta.company_name === "string" ? meta.company_name : null;
+  if (order.company_id) {
+    const company = await findCompanyById(order.company_id);
+    companyName = company?.name ?? companyName;
+  }
+
+  let customerResult: { ok: boolean; skipped?: boolean; error?: string } = {
+    ok: false,
+    error: "missing_recipient",
+  };
+
+  if (recipient) {
+    const contactName =
+      typeof meta.payer_name === "string" && meta.payer_name.trim()
+        ? meta.payer_name.trim()
+        : recipient.split("@")[0] ?? "Cliente";
+
+    const rendered = renderSimSubscriptionPaymentConfirmed({
+      contactName,
+      planName,
+      assignedNumber: options?.assignedNumber ?? null,
+      includedSmsMonthly: order.sms_quantity,
+      amount: Number(order.amount),
+      currency: order.currency,
+      billingCycle,
+      nextRenewal: formatNextRenewal(subscription?.next_billing_date ?? null),
+      numeracionesUrl,
+    });
+
+    customerResult = await sendTransactionalEmail({
+      templateKey: "sim_subscription_payment_confirmed",
+      subject: rendered.subject,
+      recipientEmail: recipient,
+      html: rendered.html,
+      text: rendered.text,
+      orderId,
+      companyId: order.company_id,
+      metadata: {
+        idempotency_key: `sim-subscription-confirmed:${orderId}:${recipient}`,
+        plan_id: meta.plan_id ?? null,
+        preapproval_id: options?.preapprovalId ?? null,
+      },
+      skipIdempotency: options?.skipIdempotency,
+    });
+  }
+
+  const opsRendered = renderSimSubscriptionInternalAlert({
+    companyName,
+    checkoutEmail: recipient ?? order.checkout_email ?? "—",
+    planName,
+    assignedNumber: options?.assignedNumber ?? null,
+    amount: Number(order.amount),
+    currency: order.currency,
+    preapprovalId:
+      options?.preapprovalId ??
+      (typeof meta.mercadopago_preapproval_id === "string"
+        ? meta.mercadopago_preapproval_id
+        : order.payment_reference),
+    orderId: order.id,
+    adminUrl,
+  });
+
+  let anyOpsOk = false;
+  for (const to of simSubscriptionNotifyEmails()) {
+    const r = await sendTransactionalEmail({
+      templateKey: "sim_subscription_internal_alert",
+      subject: opsRendered.subject,
+      recipientEmail: to,
+      html: opsRendered.html,
+      text: opsRendered.text,
+      orderId,
+      metadata: {
+        idempotency_key: `sim-subscription-internal:${orderId}:${to}`,
+        admin_url: adminUrl,
+      },
+      skipIdempotency: options?.skipIdempotency,
+    });
+    if (r.ok) anyOpsOk = true;
+  }
+
+  return {
+    ok: customerResult.ok || anyOpsOk,
+    customer: customerResult,
+    ops: { ok: anyOpsOk },
+  };
 }
 
 export async function sendSimNumberActiveEmail(

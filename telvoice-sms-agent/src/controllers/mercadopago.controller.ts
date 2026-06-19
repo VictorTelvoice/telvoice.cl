@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import {
   processMercadoPagoPreapprovalWebhook,
+  processMercadoPagoAuthorizedPaymentWebhook,
   routeMercadoPagoWebhook,
 } from "../services/mercadoPagoWebhookService.js";
 
@@ -47,12 +48,50 @@ function extractPreapprovalId(req: Request): string | null {
   return null;
 }
 
+function extractAuthorizedPaymentId(req: Request): string | null {
+  const q = req.query as Record<string, string | undefined>;
+  if (
+    (q.topic === "subscription_authorized_payment" ||
+      q.type === "subscription_authorized_payment") &&
+    q.id
+  ) {
+    return String(q.id);
+  }
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  if (
+    body.type === "subscription_authorized_payment" &&
+    body.data &&
+    typeof body.data === "object"
+  ) {
+    const id = (body.data as { id?: string | number }).id;
+    if (id != null) {
+      return String(id);
+    }
+  }
+  if (body.topic === "subscription_authorized_payment" && body.id) {
+    return String(body.id);
+  }
+  return null;
+}
+
 export async function mercadoPagoWebhookHandler(
   req: Request,
   res: Response,
 ): Promise<void> {
   if (req.method !== "POST" && req.method !== "GET") {
     res.status(405).json({ error: "Método no permitido." });
+    return;
+  }
+
+  const authorizedPaymentId = extractAuthorizedPaymentId(req);
+  if (authorizedPaymentId) {
+    try {
+      const outcome = await processMercadoPagoAuthorizedPaymentWebhook(authorizedPaymentId);
+      res.status(200).json(outcome);
+    } catch (error) {
+      console.error("[mp-webhook] authorized_payment error", error);
+      res.status(200).json({ ok: true, error: "logged" });
+    }
     return;
   }
 
