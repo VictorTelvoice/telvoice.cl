@@ -62,6 +62,11 @@ export function resolveSimSubscriptionCheckoutPricing(
   inventorySuffix: string,
 ): SimCheckoutPricing {
   const originalTotalAmount = plan.total_amount;
+  const email = normalizedEmail(checkoutEmail);
+
+  const promo50 = resolveStarterPromo50Pricing(plan, email);
+  if (promo50) return promo50;
+
   const cfg = env.simSubscriptionQaReal;
   const suffix = inventorySuffix.slice(-3);
 
@@ -78,7 +83,6 @@ export function resolveSimSubscriptionCheckoutPricing(
     };
   }
 
-  const email = normalizedEmail(checkoutEmail);
   if (!cfg.emails.includes(email) || !cfg.allowedSuffixes.includes(suffix)) {
     return {
       totalAmount: originalTotalAmount,
@@ -106,6 +110,46 @@ export function resolveSimSubscriptionCheckoutPricing(
       applied_monthly_clp: monthly,
       qa_real_allowed_suffix: suffix,
       qa_real_reason: "controlled_sim_subscription_real",
+    },
+  };
+}
+
+function resolveStarterPromo50Pricing(
+  plan: SimPlanDefinition,
+  checkoutEmail: string,
+): SimCheckoutPricing | null {
+  const cfg = env.simStarterPromo50;
+  if (!cfg.enabled || plan.plan_id !== "sim_starter" || cfg.emails.length === 0) {
+    return null;
+  }
+
+  const email = normalizedEmail(checkoutEmail);
+  if (!cfg.emails.includes(email)) {
+    return null;
+  }
+
+  const monthly = cfg.monthlyAmountClp;
+  if (monthly == null || monthly <= 0 || monthly >= plan.total_amount) {
+    return null;
+  }
+
+  const startedAt = new Date();
+  const expiresAt = new Date(startedAt);
+  expiresAt.setMonth(expiresAt.getMonth() + cfg.durationMonths);
+
+  return {
+    totalAmount: monthly,
+    originalTotalAmount: plan.total_amount,
+    priceMetadata: {
+      product_type: "sim_subscription",
+      starter_promo_50_6m: true,
+      promo_original_monthly_clp: plan.total_amount,
+      promo_applied_monthly_clp: monthly,
+      promo_discount_percent: 50,
+      promo_duration_months: cfg.durationMonths,
+      promo_started_at: startedAt.toISOString(),
+      promo_expires_at: expiresAt.toISOString(),
+      promo_reason: "client_panel_starter_50_6m",
     },
   };
 }

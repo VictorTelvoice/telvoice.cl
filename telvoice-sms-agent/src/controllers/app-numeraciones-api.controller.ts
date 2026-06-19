@@ -32,6 +32,7 @@ import {
   listClientSimAvailableNumbers,
   startClientPanelSimSubscriptionCheckout,
 } from "../services/clientSimSubscriptionCheckoutService.js";
+import { getPublicAvailability } from "../services/realNumberInventoryService.js";
 import { isSimPlanId } from "../utils/simPlans.js";
 
 async function requireApiContext(req: Request, res: Response) {
@@ -396,9 +397,11 @@ export async function getApiSimSubscriptionAvailableNumbers(
     if (!ctx) return;
 
     const result = await listClientSimAvailableNumbers();
+    const availability = await getPublicAvailability();
     res.json({
       ok: true,
       ...result,
+      in_stock: availability.in_stock,
       profile: buildClientSimCheckoutProfilePayload(ctx.company, ctx.profile),
     });
   } catch (error) {

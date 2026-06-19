@@ -373,6 +373,18 @@ export const env = {
       "SIM_SUBSCRIPTION_QA_REAL_MONTHLY_AMOUNT_CLP",
     ),
   },
+  /** Starter 50% x N meses — panel cliente (allowlist por email). */
+  simStarterPromo50: {
+    enabled: optionalEnv("SIM_STARTER_PROMO_50_ENABLED", "true") === "true",
+    emails: (
+      parseCsvEnv("SIM_STARTER_PROMO_50_EMAILS").length > 0
+        ? parseCsvEnv("SIM_STARTER_PROMO_50_EMAILS")
+        : ["goclubai@gmail.com"]
+    ).map((e) => e.trim().toLowerCase()),
+    monthlyAmountClp:
+      parseOptionalPositiveIntEnv("SIM_STARTER_PROMO_50_MONTHLY_CLP") ?? 14995,
+    durationMonths: parsePositiveIntEnv("SIM_STARTER_PROMO_50_MONTHS", 6),
+  },
   /** Webhook POST /api/webhooks/numeraciones/inbound (opcional en dev). */
   numeracionesInbound: {
     webhookSecret: optionalEnv("NUMERACIONES_INBOUND_WEBHOOK_SECRET"),

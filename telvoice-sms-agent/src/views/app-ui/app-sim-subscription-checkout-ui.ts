@@ -161,11 +161,30 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       el.classList.remove("tv-sim-checkout-modal__alert--hidden");
     }
 
+    function planMonthlyAmount(plan) {
+      if (!plan) return 0;
+      var promo = state.profile && state.profile.starter_promo;
+      if (promo && plan.plan_id === "sim_starter" && getBillingCycle() === "monthly") {
+        return Number(promo.monthly_clp) || plan.total_amount;
+      }
+      return plan.total_amount;
+    }
+
+    function canSubmitCheckout() {
+      if (state.busy || !state.planId) return false;
+      if (state.pending && state.pending.has_pending_order && !state.pending.reservation_expired) {
+        return false;
+      }
+      if (state.assignmentMode === "selected" && !state.selectedPublicId) return false;
+      if (state.assignmentMode === "auto") return true;
+      return state.inStock;
+    }
+
     function setBusy(on) {
       state.busy = !!on;
       var btn = $("tv-sim-checkout-submit");
       if (btn) {
-        btn.disabled = on || !state.inStock || (state.pending && state.pending.has_pending_order && !state.pending.reservation_expired);
+        btn.disabled = !canSubmitCheckout();
         btn.classList.toggle("is-loading", on);
       }
     }
@@ -180,17 +199,23 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       if (!plan) return;
       if (title) title.textContent = "Contratar numeración SIM " + plan.sim_label;
       if (summaryPlan) summaryPlan.textContent = plan.sim_label;
+      var monthly = planMonthlyAmount(plan);
       if (price) {
         price.textContent =
           getBillingCycle() === "annual"
-            ? fmtMoney(annualEq(plan.total_amount)) + " / mes eq."
-            : fmtMoney(plan.total_amount) + " / mes";
+            ? fmtMoney(annualEq(monthly)) + " / mes eq."
+            : fmtMoney(monthly) + " / mes";
       }
       if (meta) {
+        var promo = state.profile && state.profile.starter_promo;
+        var promoNote =
+          promo && plan.plan_id === "sim_starter" && getBillingCycle() === "monthly"
+            ? "Promoción 50% por " + promo.duration_months + " meses (regular " + fmtMoney(promo.original_monthly_clp) + "/mes). · "
+            : "";
         meta.textContent =
           getBillingCycle() === "annual"
-            ? "Pago anual: " + fmtMoney(annualTotal(plan.total_amount)) + "/año · 20% de descuento. · " + new Intl.NumberFormat("es-CL").format(plan.sms_quantity) + " SMS incluidos / mes"
-            : plan.description + " · " + new Intl.NumberFormat("es-CL").format(plan.sms_quantity) + " SMS incluidos / mes";
+            ? "Pago anual: " + fmtMoney(annualTotal(monthly)) + "/año · 20% de descuento. · " + new Intl.NumberFormat("es-CL").format(plan.sms_quantity) + " SMS incluidos / mes"
+            : promoNote + plan.description + " · " + new Intl.NumberFormat("es-CL").format(plan.sms_quantity) + " SMS incluidos / mes";
       }
       if (features) {
         features.innerHTML = (plan.features || []).map(function (f) {
@@ -209,6 +234,14 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       if ($("tv-sim-profile-tax")) $("tv-sim-profile-tax").textContent = p.tax_id || "—";
     }
 
+    function shouldShowNoStockBanner() {
+      return (
+        !state.inStock &&
+        state.assignmentMode === "selected" &&
+        !state.numbersLoading
+      );
+    }
+
     function renderNumbers() {
       var wrap = $("tv-sim-checkout-numbers-wrap");
       var grid = $("tv-sim-checkout-numbers");
@@ -216,7 +249,7 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       var empty = $("tv-sim-checkout-no-stock");
       if (!wrap || !grid) return;
 
-      if (!state.inStock) {
+      if (shouldShowNoStockBanner()) {
         wrap.classList.add("tv-sim-checkout-modal__numbers--hidden");
         if (empty) empty.classList.remove("tv-sim-checkout-modal__empty--hidden");
         return;
@@ -254,31 +287,47 @@ export function getAppSimSubscriptionCheckoutScript(): string {
     }
 
     function updateSubmitState() {
-      var blockedPending = state.pending && state.pending.has_pending_order && !state.pending.reservation_expired;
-      var needsSelection = state.assignmentMode === "selected" && !state.selectedPublicId;
       var btn = $("tv-sim-checkout-submit");
-      if (btn) btn.disabled = state.busy || !state.inStock || blockedPending || needsSelection;
+      if (btn) btn.disabled = !canSubmitCheckout();
     }
 
     function loadContext() {
       state.numbersLoading = true;
       renderNumbers();
       return fetch("/api/app/sim-subscription/available-numbers", { headers: { Accept: "application/json" } })
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
+        .then(function (res) {
+          return res.json().then(function (body) {
+            return { ok: res.ok, body: body };
+          });
+        })
+        .then(function (result) {
           if (!state.open) return;
+          var data = result.body || {};
+          if (!result.ok || data.ok === false) {
+            state.numbersLoading = false;
+            state.inStock = state.assignmentMode === "auto";
+            renderNumbers();
+            updateSubmitState();
+            return;
+          }
           state.profile = data.profile || null;
           state.numbers = data.numbers || [];
-          state.inStock = (Number(data.available) || 0) > 0 || state.numbers.length > 0;
+          state.inStock =
+            data.in_stock !== false &&
+            ((Number(data.available) || 0) > 0 || state.numbers.length > 0);
+          if (state.assignmentMode === "auto" && data.in_stock !== false) {
+            state.inStock = true;
+          }
           state.numbersLoading = false;
           renderProfile();
+          renderPlanSummary();
           renderNumbers();
           updateSubmitState();
         })
         .catch(function () {
           if (!state.open) return;
           state.numbersLoading = false;
-          state.inStock = false;
+          state.inStock = state.assignmentMode === "auto";
           renderNumbers();
           updateSubmitState();
         })
@@ -305,6 +354,11 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       state.busy = false;
       state.assignmentMode = "auto";
       state.selectedPublicId = null;
+      state.numbers = [];
+      state.numbersLoading = false;
+      state.inStock = true;
+      state.profile = null;
+      state.pending = null;
       setError("");
       renderPlanSummary();
       modal.setAttribute("aria-hidden", "false");

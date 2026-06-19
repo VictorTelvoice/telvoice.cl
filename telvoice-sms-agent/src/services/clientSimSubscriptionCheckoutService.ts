@@ -429,13 +429,39 @@ export function buildClientSimCheckoutProfilePayload(
   phone: string | null;
   tax_id: string | null;
   support_url: string;
+  starter_promo?: {
+    monthly_clp: number;
+    original_monthly_clp: number;
+    duration_months: number;
+    expires_at: string;
+  };
 } {
+  const email = resolveCheckoutEmail(profile, company);
+  const starterPlan = getSimPlan("sim_starter");
+  let starterPromo: ReturnType<typeof buildClientSimCheckoutProfilePayload>["starter_promo"];
+  if (starterPlan) {
+    const pricing = resolveSimSubscriptionCheckoutPricing(starterPlan, email, "");
+    const meta = pricing.priceMetadata;
+    if (
+      meta.starter_promo_50_6m === true &&
+      pricing.totalAmount < pricing.originalTotalAmount
+    ) {
+      starterPromo = {
+        monthly_clp: pricing.totalAmount,
+        original_monthly_clp: pricing.originalTotalAmount,
+        duration_months: Number(meta.promo_duration_months) || 6,
+        expires_at: String(meta.promo_expires_at ?? ""),
+      };
+    }
+  }
+
   return {
     company_name: company.name,
-    email: resolveCheckoutEmail(profile, company),
+    email,
     contact_name: profile.fullName.trim() || company.contact_name,
     phone: company.contact_phone,
     tax_id: company.rut,
     support_url: `${env.publicAppUrl}/app/support`,
+    ...(starterPromo ? { starter_promo: starterPromo } : {}),
   };
 }
