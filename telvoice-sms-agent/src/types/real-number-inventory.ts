@@ -49,6 +49,7 @@ export type RealNumberInventorySummary = {
 export type PublicRealNumberAvailability = {
   available: number;
   in_stock: boolean;
+  can_auto_assign: boolean;
 };
 
 export type PublicInventoryEligibilityCode =

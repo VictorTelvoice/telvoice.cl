@@ -402,6 +402,7 @@ export async function getApiSimSubscriptionAvailableNumbers(
       ok: true,
       ...result,
       in_stock: availability.in_stock,
+      can_auto_assign: availability.can_auto_assign,
       profile: buildClientSimCheckoutProfilePayload(ctx.company, ctx.profile),
     });
   } catch (error) {

@@ -871,6 +871,7 @@ export async function listPublicAvailableNumbers(
 ): Promise<{
   available: number;
   shown: number;
+  can_auto_assign: boolean;
   numbers: PublicAvailableNumberItem[];
 }> {
   await releaseExpiredSimCheckoutHoldsBestEffort();
@@ -887,7 +888,7 @@ export async function listPublicAvailableNumbers(
 
   if (error) {
     if (isMissingTableError(error)) {
-      return { available: 0, shown: 0, numbers: [] };
+      return { available: 0, shown: 0, can_auto_assign: false, numbers: [] };
     }
     throw wrapSupabaseError(error, "listPublicAvailableNumbers");
   }
@@ -910,9 +911,11 @@ export async function listPublicAvailableNumbers(
     });
 
   const shown = Math.min(displayLimit, eligible.length);
+  const available = eligible.length;
   return {
-    available: eligible.length,
+    available,
     shown,
+    can_auto_assign: available > 0,
     numbers: eligible.slice(0, displayLimit),
   };
 }
@@ -924,6 +927,7 @@ export async function getPublicAvailability(): Promise<PublicRealNumberAvailabil
   return {
     available,
     in_stock: available > 0,
+    can_auto_assign: available > 0,
   };
 }
 

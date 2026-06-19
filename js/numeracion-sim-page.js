@@ -20,6 +20,7 @@
     busy: false,
     numbersLoading: false,
     inventoryEmpty: false,
+    canAutoAssign: false,
     numbers: [],
     availableTotal: 0,
     shownCount: 0,
@@ -176,6 +177,10 @@
     btn.textContent = busy ? "Redirigiendo a MercadoPago…" : submitLabel();
   }
 
+  function hasEligibleStock() {
+    return state.canAutoAssign || state.availableTotal > 0;
+  }
+
   function canSubmitCheckout() {
     if (state.planId === "custom") return true;
     if (state.busy || state.numbersLoading) return false;
@@ -187,8 +192,7 @@
     ) {
       return true;
     }
-    if (state.inventoryEmpty) return false;
-    if (!state.numbers.length) return false;
+    if (!hasEligibleStock()) return false;
     if (state.assignmentMode === "auto") return true;
     return Boolean(state.selectedNumber);
   }
@@ -702,13 +706,38 @@
     if (loadingNode) loadingNode.hidden = true;
   }
 
-  function renderNumberEmpty(empty) {
+  function renderNumberEmpty(kind) {
     var emptyNode = $("nsim-number-empty");
     var picker = $("nsim-number-picker");
-    state.inventoryEmpty = empty;
-    if (emptyNode) emptyNode.hidden = !empty;
-    if (picker) picker.hidden = empty;
-    updateSubmitState();
+    var title = emptyNode && emptyNode.querySelector(".nsim-number-empty__title");
+    var text = emptyNode && emptyNode.querySelector(".nsim-number-empty__text");
+    var cta = emptyNode && emptyNode.querySelector(".nsim-number-empty__cta");
+    state.inventoryEmpty = kind === "real";
+    if (!kind) {
+      if (emptyNode) emptyNode.hidden = true;
+      return;
+    }
+    if (emptyNode) emptyNode.hidden = false;
+    if (picker) picker.hidden = true;
+    if (kind === "manual") {
+      if (title) {
+        title.textContent =
+          "No hay numeraciones visibles para selección manual en este momento.";
+      }
+      if (text) {
+        text.textContent = "Puedes usar auto-asignación para continuar.";
+      }
+      if (cta) cta.hidden = true;
+      return;
+    }
+    if (title) {
+      title.textContent = "No hay numeraciones disponibles en este momento.";
+    }
+    if (text) {
+      text.textContent =
+        "Puedes solicitar activación asistida con Telvoice.";
+    }
+    if (cta) cta.hidden = false;
   }
 
   function renderNumbers(numbers) {
@@ -731,13 +760,32 @@
       return;
     }
 
-    if (!state.numbers.length) {
-      renderNumberEmpty(true);
+    if (state.numbersLoading) {
+      renderNumberEmpty(false);
+      return;
+    }
+
+    if (!hasEligibleStock()) {
+      renderNumberEmpty("real");
+      updateSubmitState();
       return;
     }
 
     renderNumberEmpty(false);
-    picker.hidden = false;
+
+    if (state.assignmentMode === "auto") {
+      if (picker) picker.hidden = true;
+      updateSubmitState();
+      return;
+    }
+
+    if (!state.numbers.length) {
+      renderNumberEmpty("manual");
+      updateSubmitState();
+      return;
+    }
+
+    if (picker) picker.hidden = false;
 
     if (limitHint) {
       if (state.availableTotal > state.shownCount) {
@@ -840,7 +888,7 @@
         return res.json();
       })
       .catch(function () {
-        return { numbers: [] };
+        return { numbers: [], available: 0, can_auto_assign: false, _fetchError: true };
       });
 
     Promise.all([pendingPromise, numbersPromise]).then(function (results) {
@@ -850,7 +898,19 @@
       state.pendingOrder = pending.has_pending_order ? pending : null;
       renderPendingOrder(pending);
       var numbersPayload = results[1] || { numbers: [] };
+      if (numbersPayload._fetchError) {
+        setError("No pudimos cargar las numeraciones. Recarga e inténtalo de nuevo.");
+        state.canAutoAssign = false;
+        state.availableTotal = 0;
+        state.shownCount = 0;
+        renderNumberSectionLoading(false);
+        renderNumberEmpty(false);
+        updateSubmitState();
+        return;
+      }
       state.availableTotal = Number(numbersPayload.available) || 0;
+      state.canAutoAssign =
+        numbersPayload.can_auto_assign === true || state.availableTotal > 0;
       state.shownCount =
         Number(numbersPayload.shown) ||
         (numbersPayload.numbers ? numbersPayload.numbers.length : 0);
@@ -865,6 +925,7 @@
     state.pendingOrder = null;
     state.availableTotal = 0;
     state.shownCount = 0;
+    state.canAutoAssign = false;
     state.selectedNumber = null;
     state.assignmentMode = "auto";
     state.numbers = [];
@@ -973,9 +1034,15 @@
       return setError("Espera mientras cargamos las numeraciones disponibles.");
     }
 
-    if (state.inventoryEmpty || !state.numbers.length) {
+    if (!hasEligibleStock()) {
       return setError(
-        "No hay numeraciones disponibles para este plan en este momento. Contacta a Telvoice."
+        "No hay numeraciones disponibles en este momento. Contacta a Telvoice."
+      );
+    }
+
+    if (state.assignmentMode === "selected" && !state.numbers.length) {
+      return setError(
+        "No hay numeraciones visibles para selección manual. Usa auto-asignación o contacta a Telvoice."
       );
     }
 
