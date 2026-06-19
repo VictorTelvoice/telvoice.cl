@@ -35,6 +35,7 @@ import {
   verifySupabaseAccessToken,
 } from "../services/supabaseAuthVerifyService.js";
 import { validateUuidParam } from "../utils/validation.js";
+import { getPublicSimPlansApiCatalog } from "../services/simPlanSettingsService.js";
 
 function respondPublicSimCheckoutError(res: Response, err: AppError): void {
   res.status(err.statusCode).json({
@@ -54,6 +55,25 @@ export async function getPublicSimAvailability(
   try {
     const availability = await getCachedPublicSimAvailability();
     res.json({ success: true, ...availability });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getPublicSimPlans(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const plans = await getPublicSimPlansApiCatalog();
+    const defaultAnnualDiscount =
+      plans.find((plan) => plan.annual_discount_percent > 0)?.annual_discount_percent ?? 20;
+    res.json({
+      success: true,
+      plans,
+      annual_discount_default: defaultAnnualDiscount,
+    });
   } catch (error) {
     next(error);
   }
@@ -408,6 +428,12 @@ export async function postPublicCheckout(
           );
         }
 
+        const billingCycleRaw = String(body.billing_cycle ?? "monthly")
+          .trim()
+          .toLowerCase();
+        const billingCycle =
+          billingCycleRaw === "annual" ? ("annual" as const) : ("monthly" as const);
+
         const result = await startPublicSimCheckout({
           planId: planIdRaw,
           checkoutEmail,
@@ -427,6 +453,7 @@ export async function postPublicCheckout(
                 : undefined,
           inventoryPublicId: inventoryPublicId || undefined,
           assignmentMode,
+          billingCycle,
         });
 
         res.status(201).json({

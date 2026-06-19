@@ -4,6 +4,7 @@ import {
   getPublicProducts,
   getPublicSimAvailability,
   getPublicSimAvailableNumbers,
+  getPublicSimPlans,
   postPublicCheckout,
   postPublicClaim,
   postPublicLead,
@@ -14,6 +15,7 @@ export const publicRouter = Router();
 
 publicRouter.get("/products", getPublicProducts);
 publicRouter.get("/sim-availability", getPublicSimAvailability);
+publicRouter.get("/sim-plans", getPublicSimPlans);
 publicRouter.get("/sim-available-numbers", getPublicSimAvailableNumbers);
 publicRouter.get("/pending-sim-checkout", getPublicPendingSimCheckout);
 publicRouter.post("/quote", postPublicQuote);

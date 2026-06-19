@@ -22,6 +22,14 @@ import {
   getBundledAgentAddonForSimPlan,
   isSimPlanId,
 } from "../utils/simPlans.js";
+import {
+  buildSimPlanDefinitionFromSettings,
+  calculatePlanIntroPromo,
+  calculateSimPlanPrice,
+  getSimPlanById,
+  type SimBillingCycle,
+} from "./simPlanSettingsService.js";
+import { scheduleSimSubscriptionPriceChange } from "./simSubscriptionScheduledPriceService.js";
 import { type AgentAddonId, getAgentAddon } from "../utils/agentAddons.js";
 import { linkSimActivationInventory } from "./simActivationService.js";
 import {
@@ -271,6 +279,7 @@ export async function startPublicSimCheckout(input: {
   taxId?: string;
   inventoryPublicId?: string;
   assignmentMode?: "selected" | "auto";
+  billingCycle?: SimBillingCycle;
 }): Promise<PublicCheckoutStartResult> {
   if (!isMercadoPagoConfigured()) {
     throw new AppError(
@@ -309,12 +318,40 @@ export async function startPublicSimCheckout(input: {
     throw new AppError("plan_id SIM no válido.", 400, "INVALID_SIM_PLAN");
   }
 
+  const billingCycle: SimBillingCycle =
+    input.billingCycle === "annual" ? "annual" : "monthly";
+
+  const planSettings = await getSimPlanById(input.planId);
+  if (!planSettings) {
+    throw new AppError("Plan SIM no encontrado.", 404);
+  }
+
+  if (planSettings.plan_id === "custom") {
+    throw new AppError(
+      "El plan a medida requiere cotización comercial.",
+      400,
+      "CUSTOM_PLAN_NO_CHECKOUT",
+    );
+  }
+
+  if (billingCycle === "annual" && !planSettings.annual_enabled) {
+    throw new AppError(
+      "El ciclo anual no está habilitado para este plan.",
+      400,
+      "ANNUAL_NOT_ENABLED",
+    );
+  }
+
   await releaseExpiredSimCheckoutHoldsBestEffort();
 
-  const plan = getSimPlan(input.planId);
+  const plan = buildSimPlanDefinitionFromSettings(planSettings);
   if (!plan) {
     throw new AppError("Plan SIM no encontrado.", 404);
   }
+
+  const configuredPricing = calculateSimPlanPrice(planSettings, billingCycle);
+  const introPromo =
+    billingCycle === "monthly" ? calculatePlanIntroPromo(planSettings) : null;
 
   const availability = await getPublicAvailability();
   if (!availability.in_stock) {
@@ -364,6 +401,12 @@ export async function startPublicSimCheckout(input: {
     plan,
     input.checkoutEmail,
     inventorySuffix,
+    {
+      billingCycle,
+      configuredMonthlyClp: configuredPricing.monthly_price_clp,
+      annualDiscountPercent: configuredPricing.annual_discount_percent,
+      planIntroPromo: introPromo?.hasIntroPromo ? introPromo : undefined,
+    },
   );
   const bundledAgentId = getBundledAgentAddonForSimPlan(plan.plan_id);
 
@@ -378,12 +421,20 @@ export async function startPublicSimCheckout(input: {
     checkoutTotalAmount: pricing.totalAmount,
     priceMetadata: {
       ...pricing.priceMetadata,
+      source: "landing_sim_checkout",
+      plan_id: input.planId,
+      billing_cycle: billingCycle,
       billing_mode: "subscription",
       recurring: true,
       checkout_mode: "mercadopago_subscription",
       subscription_status: "pending",
       agent_addon_id: bundledAgentId,
       account_creation_mode: "post_payment_auto",
+      included_sms: planSettings.included_sms,
+      monthly_price_clp: configuredPricing.monthly_price_clp,
+      regular_monthly_price_clp: configuredPricing.monthly_price_clp,
+      annual_discount_percent: configuredPricing.annual_discount_percent,
+      annual_price_clp: configuredPricing.annual_price_clp,
     },
   });
 
@@ -428,7 +479,15 @@ export async function startPublicSimCheckout(input: {
       plan,
       checkoutEmail: input.checkoutEmail,
       inventoryNumberId,
-      monthlyAmount: pricing.totalAmount,
+      monthlyAmount:
+        billingCycle === "annual"
+          ? configuredPricing.monthly_equiv_annual_clp
+          : pricing.totalAmount,
+      metadata: {
+        source: "landing_sim_checkout",
+        billing_cycle: billingCycle,
+        charge_amount_clp: pricing.totalAmount,
+      },
     });
   } catch (err) {
     await releaseReservationForOrder(order.id);
@@ -447,7 +506,14 @@ export async function startPublicSimCheckout(input: {
     preapproval = await createPublicSimSubscriptionPreapproval({
       orderId: order.id,
       plan,
-      monthlyAmount: pricing.totalAmount,
+      billingCycle,
+      chargeAmount: pricing.totalAmount,
+      pricingMetadata: {
+        monthly_price_clp: configuredPricing.monthly_price_clp,
+        annual_discount_percent: configuredPricing.annual_discount_percent,
+        annual_price_clp: configuredPricing.annual_price_clp,
+        included_sms: planSettings.included_sms,
+      },
       payer: {
         email: input.checkoutEmail,
         name: input.payerName.trim() || "Cliente Telvoice",
@@ -483,6 +549,28 @@ export async function startPublicSimCheckout(input: {
     subscriptionId: simSubscription.id,
     preapprovalId: preapproval.preapproval_id ?? "",
   });
+
+  if (
+    billingCycle === "monthly" &&
+    pricing.priceMetadata.promo_enabled === true &&
+    Number(pricing.priceMetadata.promo_duration_months) > 0
+  ) {
+    const postPromoAmount = Number(pricing.priceMetadata.post_promo_monthly_price_clp);
+    await scheduleSimSubscriptionPriceChange({
+      orderId: order.id,
+      companyId: null,
+      preapprovalId: preapproval.preapproval_id,
+      planId: input.planId,
+      currentAmountClp: pricing.totalAmount,
+      nextAmountClp:
+        postPromoAmount > 0 ? postPromoAmount : configuredPricing.monthly_price_clp,
+      changeAfterMonths: Number(pricing.priceMetadata.promo_duration_months),
+      metadata: {
+        promo_source: pricing.priceMetadata.promo_source,
+        promo_label: pricing.priceMetadata.promo_label,
+      },
+    }).catch(() => undefined);
+  }
 
   await patchOrderFields(order.id, {
     payment_reference: preapproval.preapproval_id ?? order.payment_reference,

@@ -511,26 +511,30 @@ export async function createPublicSimCheckoutPreference(input: {
   };
 }
 
-/** Suscripción mensual recurrente — numeración SIM landing pública. */
+/** Suscripción recurrente — numeración SIM landing pública (mensual o anual). */
 export async function createPublicSimSubscriptionPreapproval(input: {
   orderId: string;
   plan: SimPlanDefinition;
-  monthlyAmount: number;
+  billingCycle: "monthly" | "annual";
+  chargeAmount: number;
+  pricingMetadata: Record<string, string | number>;
   payer: MercadoPagoPayerInput;
   publicCheckoutReference: string;
 }): Promise<{
   checkout_url: string;
   preapproval_id: string | null;
 }> {
+  const isAnnual = input.billingCycle === "annual";
+  const reasonSuffix = isAnnual ? " (anual)" : "";
   const preapproval = await createMercadoPagoPreapproval({
     externalReference: input.orderId,
-    reason: simCheckoutItemTitle(input.plan),
+    reason: `${simCheckoutItemTitle(input.plan)}${reasonSuffix}`.slice(0, 256),
     payerEmail: input.payer.email,
     backUrl: `${env.publicSiteUrl}/pago-exitoso?ref=${encodeURIComponent(input.publicCheckoutReference)}&type=sim_subscription`,
     recurring: {
-      frequency: 1,
+      frequency: isAnnual ? 12 : 1,
       frequency_type: "months",
-      transaction_amount: input.monthlyAmount,
+      transaction_amount: input.chargeAmount,
     },
     metadata: {
       source: "landing_sim_checkout",
@@ -539,8 +543,15 @@ export async function createPublicSimSubscriptionPreapproval(input: {
       order_id: input.orderId,
       plan_id: input.plan.plan_id,
       public_checkout_reference: input.publicCheckoutReference,
+      billing_cycle: input.billingCycle,
       billing_mode: "subscription",
       recurring: "true",
+      ...Object.fromEntries(
+        Object.entries(input.pricingMetadata).map(([key, value]) => [
+          key,
+          String(value),
+        ]),
+      ),
     },
   });
 

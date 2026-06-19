@@ -3,6 +3,7 @@
   --nsim-primary: #0052cc;
   --nsim-cyan: #00daf3;
   --nsim-purple: #6366f1;
+  --nsim-promo-accent: #22c55e;
   --nsim-text: #131b2e;
   --nsim-muted: #5c6478;
   --nsim-border: rgba(195, 198, 214, 0.75);
@@ -168,7 +169,7 @@
 }
 .nsim-billing-switch__button span {
   margin-left: 0.25rem;
-  color: #047857;
+  color: var(--nsim-promo-accent);
 }
 .nsim-billing-switch__button.is-active {
   color: var(--nsim-primary);
@@ -237,6 +238,29 @@
 }
 .nsim-plan-price span { font-size: 0.875rem; font-weight: 600; color: var(--nsim-muted); }
 .nsim-plan-price--custom { font-size: 1.125rem; font-weight: 700; color: var(--nsim-muted); }
+.nsim-plan-price-before {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--nsim-muted);
+  text-decoration: line-through;
+}
+.nsim-plan-card.has-intro-promo .nsim-plan-price {
+  color: var(--nsim-promo-accent);
+}
+.nsim-modal-summary__price--promo { color: var(--nsim-promo-accent); font-weight: 800; }
+.nsim-modal-summary__price-before {
+  margin: 0 0 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--nsim-muted);
+  text-decoration: line-through;
+}
+.nsim-plans-loading {
+  grid-column: 1 / -1;
+  margin: 0;
+  text-align: center;
+  color: var(--nsim-muted);
+  font-size: 0.875rem;
+}
 .nsim-plan-price-subnote { min-height: 2.2rem; margin: 0.45rem 0 0; font-size: 0.78rem; line-height: 1.45; color: var(--nsim-muted); }
 .nsim-plan-desc { margin: 0.75rem 0 0; font-size: 0.8125rem; line-height: 1.55; color: var(--nsim-muted); }
 .nsim-plan-features { margin: 1.25rem 0 0; padding: 0; list-style: none; flex: 1; }
@@ -320,6 +344,7 @@ body.nsim-modal-open { overflow: hidden; }
 .nsim-modal-summary { margin-bottom: 1.25rem; padding: 1rem 1.125rem; border-radius: 1rem; border: 1px solid rgba(0, 82, 204, 0.15); background: linear-gradient(180deg, #f8f9ff 0%, #fff 100%); }
 .nsim-modal-summary__plan { font-family: Montserrat, sans-serif; font-size: 1.125rem; font-weight: 800; margin: 0; }
 .nsim-modal-summary__price { font-family: Montserrat, sans-serif; font-size: 1.2rem; font-weight: 800; color: var(--nsim-primary); margin: 0.35rem 0 0.75rem; }
+.nsim-modal-summary__note { margin: 0 0 0.75rem; font-size: 0.8125rem; line-height: 1.45; color: var(--nsim-muted); }
 .nsim-modal-summary__list { margin: 0; padding: 0; list-style: none; }
 .nsim-modal-summary__list li { position: relative; padding: 0.3rem 0 0.3rem 1.25rem; font-size: 0.875rem; color: var(--nsim-muted); }
 .nsim-modal-summary__list li::before { content: "✓"; position: absolute; left: 0; color: var(--nsim-primary); font-weight: 800; }

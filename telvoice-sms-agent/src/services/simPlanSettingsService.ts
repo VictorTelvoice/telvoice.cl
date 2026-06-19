@@ -413,6 +413,72 @@ export async function getPublicSimPlanCatalog(): Promise<PublicSimPlanCatalogIte
     .filter((item): item is PublicSimPlanCatalogItem => item != null);
 }
 
+/** Respuesta pública de catálogo SIM (landing / API sin auth). */
+export type PublicSimPlanApiItem = {
+  plan_id: string;
+  label: string;
+  description: string;
+  monthly_price_clp: number;
+  annual_discount_percent: number;
+  annual_enabled: boolean;
+  annual_price_clp: number;
+  monthly_equiv_annual_clp: number;
+  included_sms: number;
+  has_intro_promo: boolean;
+  promo_discount_percent: number;
+  promo_duration_months: number;
+  promo_monthly_price_clp: number;
+  regular_monthly_price_clp: number;
+  promo_label: string | null;
+  promo_savings_clp: number;
+  features: string[];
+  cta_label: string;
+  cta_label_regular: string;
+  is_featured: boolean;
+  ribbon: string | null;
+  badge: string | null;
+};
+
+function ctaLabelRegularForPlan(planId: string, label: string): string {
+  if (planId === "sim_starter") return "Suscribirme Starter";
+  if (planId === "sim_pro") return "Suscribirme Pro";
+  return `Suscribirme ${label}`;
+}
+
+export function mapCatalogItemToPublicApi(
+  plan: PublicSimPlanCatalogItem,
+): PublicSimPlanApiItem {
+  return {
+    plan_id: plan.plan_id,
+    label: plan.label,
+    description: plan.description,
+    monthly_price_clp: plan.monthly_price_clp,
+    annual_discount_percent: plan.annual_discount_percent,
+    annual_enabled: plan.annual_enabled,
+    annual_price_clp: plan.annual_price_clp,
+    monthly_equiv_annual_clp: plan.monthly_equiv_annual_clp,
+    included_sms: plan.included_sms,
+    has_intro_promo: plan.has_intro_promo,
+    promo_discount_percent: plan.promo_discount_percent,
+    promo_duration_months: plan.promo_duration_months,
+    promo_monthly_price_clp: plan.promo_monthly_price_clp,
+    regular_monthly_price_clp: plan.regular_monthly_price_clp,
+    promo_label: plan.promo_label,
+    promo_savings_clp: plan.promo_savings_clp,
+    features: plan.features,
+    cta_label: plan.ctaLabel,
+    cta_label_regular: ctaLabelRegularForPlan(plan.plan_id, plan.label),
+    is_featured: plan.featured === true,
+    ribbon: plan.ribbon ?? null,
+    badge: plan.badge ?? null,
+  };
+}
+
+export async function getPublicSimPlansApiCatalog(): Promise<PublicSimPlanApiItem[]> {
+  const catalog = await getPublicSimPlanCatalog();
+  return catalog.map(mapCatalogItemToPublicApi);
+}
+
 export function buildSimPlanDefinitionFromSettings(
   row: SimPlanSettingsRow,
 ): SimPlanDefinition | null {

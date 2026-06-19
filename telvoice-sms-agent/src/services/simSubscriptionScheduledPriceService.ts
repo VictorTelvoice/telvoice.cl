@@ -33,7 +33,7 @@ function addMonthsUtc(date: Date, months: number): Date {
 
 export async function scheduleSimSubscriptionPriceChange(input: {
   orderId: string;
-  companyId: string;
+  companyId?: string | null;
   preapprovalId?: string | null;
   planId: string;
   currentAmountClp: number;
@@ -54,7 +54,7 @@ export async function scheduleSimSubscriptionPriceChange(input: {
     .from("sim_subscription_scheduled_price_changes")
     .insert({
       order_id: input.orderId,
-      company_id: input.companyId,
+      company_id: input.companyId?.trim() || null,
       preapproval_id: input.preapprovalId?.trim() || null,
       plan_id: input.planId,
       current_amount_clp: Math.round(input.currentAmountClp),

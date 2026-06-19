@@ -123,7 +123,7 @@ export function getAppSimPlansStyles(): string {
 
     .tv-sim-plans-page .nsim-billing-switch__button span {
       margin-left: 0.15rem;
-      color: #047857;
+      color: #22c55e;
       font-size: 0.625rem;
     }
 
@@ -240,7 +240,7 @@ export function getAppSimPlansStyles(): string {
     }
 
     .tv-sim-plans-page .nsim-plan-card.has-intro-promo .nsim-plan-price {
-      color: #047857;
+      color: #22c55e;
     }
 
     .tv-sim-plans-page .nsim-plan-price-subnote {

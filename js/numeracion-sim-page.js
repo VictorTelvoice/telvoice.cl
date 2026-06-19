@@ -5,32 +5,17 @@
 (function () {
   "use strict";
 
-  var ANNUAL_DISCOUNT = 20;
-  var PLANS = {
-    sim_starter: {
-      name: "Starter",
-      monthly: 29990,
-      sms: "1.000 SMS salientes incluidos",
-      agent: "agent_start",
-    },
-    sim_pro: {
-      name: "Pro",
-      monthly: 49990,
-      sms: "2.000 SMS salientes incluidos",
-      agent: "agent_pro",
-    },
-  };
-
   var DEFAULT_ERROR =
     "No pudimos iniciar la suscripción. Inténtalo nuevamente o contáctanos.";
-  var ANNUAL_NOT_READY =
-    "La membresía anual estará disponible pronto. Por ahora elige modalidad mensual.";
   var NUMBER_TAKEN =
     "Esta numeración ya no está disponible. Elige otra numeración.";
 
   var state = {
     planId: "sim_starter",
     billing: "monthly",
+    catalog: [],
+    catalogById: {},
+    catalogLoaded: false,
     open: false,
     busy: false,
     numbersLoading: false,
@@ -66,20 +51,48 @@
     }
   }
 
-  function annual(plan) {
-    return Math.round(plan.monthly * 12 * 0.8);
+  function getPlan(planId) {
+    return state.catalogById[planId] || null;
   }
 
-  function annualEq(plan) {
-    return Math.round(plan.monthly * 0.8);
+  function planLabel(plan) {
+    return (plan && (plan.label || plan.plan_id)) || "";
+  }
+
+  function annualTotalFromNode(node) {
+    var annual = node.getAttribute("data-nsim-annual-price");
+    if (annual) return Number(annual);
+    var monthly = node.getAttribute("data-nsim-monthly");
+    var discount = Number(node.getAttribute("data-nsim-annual-discount")) || 20;
+    return Math.round(Number(monthly) * 12 * (1 - discount / 100));
+  }
+
+  function annualEqFromNode(node) {
+    var eq = node.getAttribute("data-nsim-annual-eq");
+    if (eq) return Number(eq);
+    var monthly = node.getAttribute("data-nsim-monthly");
+    var discount = Number(node.getAttribute("data-nsim-annual-discount")) || 20;
+    return Math.round(Number(monthly) * (1 - discount / 100));
+  }
+
+  function discountFromNode(node) {
+    return Number(node.getAttribute("data-nsim-annual-discount")) || 20;
+  }
+
+  function hasPromo(node) {
+    return node.getAttribute("data-nsim-has-promo") === "1";
+  }
+
+  function promoMonthlyFromNode(node) {
+    return Number(node.getAttribute("data-nsim-promo-monthly")) || Number(node.getAttribute("data-nsim-monthly"));
+  }
+
+  function regularMonthlyFromNode(node) {
+    return Number(node.getAttribute("data-nsim-regular-monthly")) || Number(node.getAttribute("data-nsim-monthly"));
   }
 
   function billingLabel() {
     return state.billing === "annual" ? "membresía anual" : "pago mensual";
-  }
-
-  function charge(plan) {
-    return state.billing === "annual" ? annual(plan) : plan.monthly;
   }
 
   function getHumanErrorMessage(dataOrError, fallback) {
@@ -114,6 +127,9 @@
       }
       if (apiErr.code === "SIM_SUBSCRIPTION_NOT_READY" || apiErr.code === "SUBSCRIPTION_NOT_READY") {
         return "La suscripción mensual aún no está disponible para este plan.";
+      }
+      if (apiErr.code === "ANNUAL_NOT_ENABLED") {
+        return "El ciclo anual no está habilitado para este plan. Elige modalidad mensual.";
       }
       if (apiErr.code === "MP_PREAPPROVAL_FAILED") {
         return "No pudimos iniciar la suscripción en MercadoPago. Intenta nuevamente.";
@@ -185,8 +201,16 @@
 
   function submitLabel() {
     if (state.planId === "custom") return "Solicitar evaluación";
-    var plan = PLANS[state.planId];
-    return plan ? "Activar suscripción " + plan.name : "Activar suscripción";
+    var priceNode = document.querySelector('[data-nsim-price="' + state.planId + '"]');
+    var btn = document.querySelector('.nsim-plan-cta[data-nsim-plan="' + state.planId + '"]');
+    if (btn && priceNode) {
+      var promoCta = btn.getAttribute("data-nsim-cta-promo") || "";
+      var regularCta = btn.getAttribute("data-nsim-cta-regular") || promoCta;
+      if (state.billing === "monthly" && hasPromo(priceNode)) return promoCta;
+      return regularCta || "Activar suscripción";
+    }
+    var plan = getPlan(state.planId);
+    return plan ? plan.cta_label_regular || ("Activar suscripción " + planLabel(plan)) : "Activar suscripción";
   }
 
   function clearPersonalFormFields() {
@@ -200,28 +224,258 @@
     if (email) email.value = "";
   }
 
+  function renderFeatureItem(text) {
+    return (
+      '<li><span class="material-symbols-outlined" aria-hidden="true">check</span> ' +
+      text +
+      "</li>"
+    );
+  }
+
+  function renderPlanCard(plan) {
+    var cardClass = "nsim-plan-card";
+    if (plan.is_featured) cardClass += " is-featured";
+    if (plan.has_intro_promo) cardClass += " has-intro-promo";
+    var ribbon = plan.ribbon
+      ? '<span class="nsim-plan-ribbon">' + plan.ribbon + "</span>"
+      : plan.is_featured
+        ? '<span class="nsim-plan-ribbon">Popular</span>'
+        : "";
+    var discountLabel = Math.round(plan.annual_discount_percent || 0);
+    var promoBlock = plan.has_intro_promo
+      ? '<p class="nsim-plan-price-before" data-nsim-price-before="' +
+        plan.plan_id +
+        '">Antes ' +
+        money(plan.regular_monthly_price_clp) +
+        " / mes</p>"
+      : "";
+    var initialPrice = plan.has_intro_promo
+      ? plan.promo_monthly_price_clp
+      : plan.monthly_price_clp;
+    var subnote = plan.has_intro_promo
+      ? Math.round(plan.promo_discount_percent) +
+        "% de descuento por " +
+        plan.promo_duration_months +
+        " meses. Luego " +
+        money(plan.regular_monthly_price_clp) +
+        " / mes."
+      : "Pago recurrente mensual.";
+    var features = (plan.features || [])
+      .map(function (f) {
+        return renderFeatureItem(f);
+      })
+      .join("");
+
+    return (
+      '<article class="' +
+      cardClass +
+      '" data-nsim-plan="' +
+      plan.plan_id +
+      '" tabindex="0">' +
+      ribbon +
+      '<span class="nsim-plan-billing-badge" data-nsim-billing-label="' +
+      plan.plan_id +
+      '">Suscripción mensual</span>' +
+      '<h3 class="nsim-plan-name">' +
+      plan.label +
+      "</h3>" +
+      promoBlock +
+      '<p class="nsim-plan-price" data-nsim-price="' +
+      plan.plan_id +
+      '" data-nsim-monthly="' +
+      plan.monthly_price_clp +
+      '" data-nsim-promo-monthly="' +
+      (plan.has_intro_promo ? plan.promo_monthly_price_clp : plan.monthly_price_clp) +
+      '" data-nsim-regular-monthly="' +
+      plan.regular_monthly_price_clp +
+      '" data-nsim-has-promo="' +
+      (plan.has_intro_promo ? "1" : "0") +
+      '" data-nsim-promo-discount="' +
+      (plan.has_intro_promo ? Math.round(plan.promo_discount_percent) : 0) +
+      '" data-nsim-promo-months="' +
+      (plan.has_intro_promo ? plan.promo_duration_months : 0) +
+      '" data-nsim-annual-price="' +
+      plan.annual_price_clp +
+      '" data-nsim-annual-eq="' +
+      plan.monthly_equiv_annual_clp +
+      '" data-nsim-annual-discount="' +
+      discountLabel +
+      '" data-nsim-annual-enabled="' +
+      (plan.annual_enabled ? "1" : "0") +
+      '">' +
+      money(initialPrice) +
+      " <span>/ mes</span></p>" +
+      '<p class="nsim-plan-price-subnote" data-nsim-price-note="' +
+      plan.plan_id +
+      '">' +
+      subnote +
+      "</p>" +
+      (plan.description
+        ? '<p class="nsim-plan-desc">' + plan.description + "</p>"
+        : "") +
+      '<ul class="nsim-plan-features">' +
+      features +
+      "</ul>" +
+      '<button type="button" class="nsim-btn-primary nsim-plan-cta" data-nsim-plan="' +
+      plan.plan_id +
+      '" data-nsim-cta-promo="' +
+      (plan.cta_label || plan.cta_label_regular) +
+      '" data-nsim-cta-regular="' +
+      plan.cta_label_regular +
+      '">' +
+      (plan.has_intro_promo ? plan.cta_label : plan.cta_label_regular) +
+      "</button></article>"
+    );
+  }
+
+  function bindPlanCtas() {
+    document.querySelectorAll(".nsim-plan-cta").forEach(function (button) {
+      if (button.__nsimBound) return;
+      button.__nsimBound = true;
+      button.addEventListener("click", function () {
+        openModal(button.getAttribute("data-nsim-plan"));
+      });
+    });
+  }
+
+  function renderPlanCards(plans) {
+    var grid = $("nsim-plans-grid");
+    var loading = $("nsim-plans-loading");
+    var customCard = grid && grid.querySelector('[data-nsim-plan="custom"]');
+    if (!grid) return;
+
+    state.catalog = Array.isArray(plans) ? plans : [];
+    state.catalogById = {};
+    state.catalog.forEach(function (plan) {
+      state.catalogById[plan.plan_id] = plan;
+    });
+    state.catalogLoaded = true;
+
+    if (loading) loading.remove();
+
+    grid.querySelectorAll('[data-nsim-plan]:not([data-nsim-plan="custom"])').forEach(function (node) {
+      node.remove();
+    });
+
+    var html = state.catalog
+      .map(function (plan) {
+        return renderPlanCard(plan);
+      })
+      .join("");
+
+    if (customCard) {
+      customCard.insertAdjacentHTML("beforebegin", html);
+    } else {
+      grid.insertAdjacentHTML("afterbegin", html);
+    }
+
+    bindPlanCtas();
+    updatePricing();
+  }
+
+  function fetchCatalog() {
+    return fetch(origin() + "/api/public/sim-plans", {
+      headers: { Accept: "application/json" },
+    })
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data || data.success !== true || !Array.isArray(data.plans)) {
+          throw new Error("Catálogo no disponible");
+        }
+        renderPlanCards(data.plans);
+        var switchDiscount = document.querySelector("[data-nsim-switch-discount]");
+        if (switchDiscount && data.annual_discount_default != null) {
+          switchDiscount.textContent = "-" + Math.round(data.annual_discount_default) + "%";
+        }
+      })
+      .catch(function () {
+        var loading = $("nsim-plans-loading");
+        if (loading) {
+          loading.textContent =
+            "No pudimos cargar los planes. Recarga la página o contáctanos.";
+        }
+      });
+  }
+
   function updatePricing() {
-    Object.keys(PLANS).forEach(function (id) {
-      var plan = PLANS[id];
-      var price = document.querySelector('[data-nsim-price="' + id + '"]');
-      var note = document.querySelector('[data-nsim-price-note="' + id + '"]');
-      var label = document.querySelector('[data-nsim-billing-label="' + id + '"]');
-      if (price) {
-        price.innerHTML =
+    var switchDiscount = 20;
+    document.querySelectorAll("[data-nsim-price]").forEach(function (node) {
+      var annualEnabled = node.getAttribute("data-nsim-annual-enabled") !== "0";
+      switchDiscount = discountFromNode(node);
+      if (state.billing === "annual" && !annualEnabled) return;
+      node.innerHTML =
+        state.billing === "annual"
+          ? money(annualEqFromNode(node)) + " <span>/ mes eq.</span>"
+          : hasPromo(node)
+            ? money(promoMonthlyFromNode(node)) + " <span>/ mes</span>"
+            : money(node.getAttribute("data-nsim-monthly")) + " <span>/ mes</span>";
+    });
+
+    document.querySelectorAll("[data-nsim-price-before]").forEach(function (node) {
+      var planId = node.getAttribute("data-nsim-price-before");
+      var priceNode = document.querySelector('[data-nsim-price="' + planId + '"]');
+      if (!priceNode) return;
+      node.hidden = !(state.billing === "monthly" && hasPromo(priceNode));
+    });
+
+    document.querySelectorAll(".nsim-plan-card .nsim-plan-cta").forEach(function (btn) {
+      var planId = btn.getAttribute("data-nsim-plan");
+      if (planId === "custom") return;
+      var priceNode = document.querySelector('[data-nsim-price="' + planId + '"]');
+      if (!priceNode) return;
+      var promoCta = btn.getAttribute("data-nsim-cta-promo") || "";
+      var regularCta = btn.getAttribute("data-nsim-cta-regular") || promoCta;
+      btn.textContent =
+        state.billing === "monthly" && hasPromo(priceNode) ? promoCta : regularCta;
+    });
+
+    var switchDiscountEl = document.querySelector("[data-nsim-switch-discount]");
+    if (switchDiscountEl) switchDiscountEl.textContent = "-" + Math.round(switchDiscount) + "%";
+
+    document.querySelectorAll("[data-nsim-price-note]").forEach(function (node) {
+      var planId = node.getAttribute("data-nsim-price-note");
+      var monthlyNode = document.querySelector('[data-nsim-price="' + planId + '"]');
+      if (!monthlyNode) return;
+      var discount = discountFromNode(monthlyNode);
+      var annualEnabled = monthlyNode.getAttribute("data-nsim-annual-enabled") !== "0";
+      if (state.billing === "annual" && annualEnabled) {
+        node.textContent =
+          "Pago anual: " +
+          money(annualTotalFromNode(monthlyNode)) +
+          "/año · " +
+          discount +
+          "% de descuento.";
+      } else if (state.billing === "monthly" && hasPromo(monthlyNode)) {
+        var promoDisc = monthlyNode.getAttribute("data-nsim-promo-discount");
+        var promoMonths = monthlyNode.getAttribute("data-nsim-promo-months");
+        node.textContent =
+          promoDisc +
+          "% de descuento por " +
+          promoMonths +
+          " meses. Luego " +
+          money(regularMonthlyFromNode(monthlyNode)) +
+          " / mes.";
+      } else {
+        node.textContent =
           state.billing === "annual"
-            ? money(annualEq(plan)) + " <span>/ mes eq.</span>"
-            : money(plan.monthly) + " <span>/ mes</span>";
-      }
-      if (note) {
-        note.textContent =
-          state.billing === "annual"
-            ? "Pago anual: " + money(annual(plan)) + "/año · 20% de descuento."
+            ? "Suscripción anual recurrente por MercadoPago."
             : "Suscripción mensual recurrente por MercadoPago.";
       }
-      if (label) {
-        label.textContent =
-          state.billing === "annual" ? "Membresía anual -20%" : "Pago mensual";
-      }
+    });
+
+    document.querySelectorAll("[data-nsim-billing-label]").forEach(function (node) {
+      var monthlyNode = document.querySelector(
+        '[data-nsim-price="' + node.getAttribute("data-nsim-billing-label") + '"]'
+      );
+      if (!monthlyNode) return;
+      var discount = discountFromNode(monthlyNode);
+      var annualEnabled = monthlyNode.getAttribute("data-nsim-annual-enabled") !== "0";
+      node.textContent =
+        state.billing === "annual" && annualEnabled
+          ? "Membresía anual -" + discount + "%"
+          : "Suscripción mensual";
     });
 
     document.querySelectorAll("[data-billing-cycle]").forEach(function (button) {
@@ -229,6 +483,11 @@
       button.classList.toggle("is-active", active);
       button.setAttribute("aria-pressed", active ? "true" : "false");
     });
+
+    if (state.open) {
+      var submit = $("nsim-submit");
+      if (submit && state.planId !== "custom") submit.textContent = submitLabel();
+    }
   }
 
   function renderSummary() {
@@ -239,21 +498,76 @@
         '<p class="nsim-modal-summary__plan">Plan a medida</p><p class="nsim-modal-summary__price">Cotización personalizada</p><ul class="nsim-modal-summary__list"><li>Múltiples números SIM</li><li>Volumen SMS personalizado</li><li>API, Webhooks y automatizaciones avanzadas</li></ul>';
       return;
     }
-    var plan = PLANS[state.planId];
-    var priceText =
+
+    var plan = getPlan(state.planId);
+    var priceNode = document.querySelector('[data-nsim-price="' + state.planId + '"]');
+    var planName = plan ? planLabel(plan) : state.planId;
+    var priceHtml = "";
+    var detailLines = [];
+
+    if (state.billing === "annual" && priceNode) {
+      var discount = discountFromNode(priceNode);
+      priceHtml =
+        '<p class="nsim-modal-summary__price">' +
+        money(annualTotalFromNode(priceNode)) +
+        " / año</p>" +
+        '<p class="nsim-modal-summary__note">' +
+        discount +
+        "% de descuento anual</p>";
+      detailLines.push("Modalidad: membresía anual");
+      detailLines.push("1 número SIM real (suscripción anual)");
+    } else if (priceNode && hasPromo(priceNode)) {
+      priceHtml =
+        '<p class="nsim-modal-summary__price-before">Antes ' +
+        money(regularMonthlyFromNode(priceNode)) +
+        " / mes</p>" +
+        '<p class="nsim-modal-summary__price nsim-modal-summary__price--promo">' +
+        money(promoMonthlyFromNode(priceNode)) +
+        " / mes por " +
+        priceNode.getAttribute("data-nsim-promo-months") +
+        " meses</p>" +
+        '<p class="nsim-modal-summary__note">Luego ' +
+        money(regularMonthlyFromNode(priceNode)) +
+        " / mes</p>";
+      detailLines.push("Modalidad: pago mensual con promoción inicial");
+      detailLines.push("1 número SIM real (suscripción mensual)");
+    } else {
+      var monthlyAmount = plan
+        ? plan.monthly_price_clp
+        : priceNode
+          ? Number(priceNode.getAttribute("data-nsim-monthly"))
+          : 0;
+      priceHtml =
+        '<p class="nsim-modal-summary__price">' + money(monthlyAmount) + " / mes</p>";
+      detailLines.push("Modalidad: pago mensual");
+      detailLines.push("1 número SIM real (suscripción mensual)");
+    }
+
+    if (plan && plan.included_sms) {
+      detailLines.push(
+        new Intl.NumberFormat("es-CL").format(plan.included_sms) +
+          " SMS salientes incluidos cada mes"
+      );
+    }
+    detailLines.push("Agente Telvoice incluido");
+    detailLines.push(
       state.billing === "annual"
-        ? money(annual(plan)) + " / año · equivale a " + money(annualEq(plan)) + " / mes"
-        : money(plan.monthly) + " / mes";
+        ? "Cobro anual recurrente por MercadoPago"
+        : "Cobro mensual recurrente por MercadoPago"
+    );
+
     summary.innerHTML =
       '<p class="nsim-modal-summary__plan">' +
-      plan.name +
-      '</p><p class="nsim-modal-summary__price">' +
-      priceText +
-      '</p><ul class="nsim-modal-summary__list"><li>Modalidad: ' +
-      billingLabel() +
-      '</li><li>1 número SIM real (suscripción mensual)</li><li>' +
-      plan.sms +
-      " mensuales incluidos</li><li>Agente Telvoice incluido</li><li>Cobro mensual recurrente por MercadoPago</li></ul>";
+      planName +
+      "</p>" +
+      priceHtml +
+      '<ul class="nsim-modal-summary__list">' +
+      detailLines
+        .map(function (line) {
+          return "<li>" + line + "</li>";
+        })
+        .join("") +
+      "</ul>";
   }
 
   function hidePendingOrder() {
@@ -316,7 +630,7 @@
 
   function updateModal() {
     var custom = state.planId === "custom";
-    var plan = PLANS[state.planId];
+    var plan = getPlan(state.planId);
     var title = $("nsim-modal-title");
     var subtitle = $("nsim-modal-subtitle");
     var stepper = $("nsim-modal-stepper");
@@ -326,19 +640,21 @@
     if (title) {
       title.textContent = custom
         ? "Solicitar plan a medida"
-        : "Suscripción numeración SIM " + plan.name;
+        : "Suscripción numeración SIM " + (plan ? planLabel(plan) : "");
     }
     if (subtitle) {
       subtitle.textContent = custom
         ? "Cuéntanos qué necesitas y nuestro equipo diseñará una solución para tu empresa."
-        : "Completa tus datos para iniciar una suscripción mensual recurrente por MercadoPago.";
+        : state.billing === "annual"
+          ? "Completa tus datos para iniciar una suscripción anual recurrente por MercadoPago."
+          : "Completa tus datos para iniciar una suscripción mensual recurrente por MercadoPago.";
     }
     if (stepper) stepper.hidden = custom;
     if (footnote) {
       footnote.hidden = custom;
       footnote.textContent =
         state.billing === "annual"
-          ? "La membresía anual estará disponible pronto. Por ahora solo suscripción mensual."
+          ? "La numeración se cobra como suscripción anual recurrente."
           : "La numeración se cobra como suscripción mensual recurrente.";
     }
     if (submit) submit.textContent = submitLabel();
@@ -604,7 +920,7 @@
     if (!status) return;
     status.innerHTML =
       '<p class="nsim-modal-status__eyebrow">Demo local</p><h3 class="nsim-modal-status__title">Aquí se crearía la orden y se abriría Mercado Pago.</h3><div class="nsim-modal-status__meta"><p><strong>Plan:</strong> ' +
-      plan.name +
+      planLabel(plan) +
       '</p><p><strong>Modalidad:</strong> ' +
       billingLabel() +
       '</p><p><strong>Email:</strong> ' +
@@ -638,11 +954,7 @@
       return;
     }
 
-    if (state.billing === "annual") {
-      return setError(ANNUAL_NOT_READY);
-    }
-
-    var plan = PLANS[state.planId];
+    var plan = getPlan(state.planId);
     if (!plan) return setError(DEFAULT_ERROR);
 
     if (demo()) return showDemo(v, plan);
@@ -684,6 +996,7 @@
     var payload = {
       product_type: "sim_subscription",
       plan_id: state.planId,
+      billing_cycle: state.billing,
       billing_mode: "subscription",
       recurring: true,
       assignment_mode: assignmentMode,
@@ -744,21 +1057,35 @@
   }
 
   function init() {
-    updatePricing();
+    document.documentElement.setAttribute("data-tv-sim-billing", state.billing);
+
+    fetchCatalog().then(function () {
+      try {
+        var planParam = new URLSearchParams(window.location.search).get("plan");
+        if (planParam && (getPlan(planParam) || planParam === "custom")) {
+          var target = document.querySelector('[data-nsim-plan="' + planParam + '"]');
+          if (target && target.scrollIntoView) {
+            target.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+          if (planParam !== "custom") {
+            setTimeout(function () {
+              openModal(planParam);
+            }, 350);
+          }
+        }
+      } catch (e) {}
+    });
 
     document.querySelectorAll("[data-billing-cycle]").forEach(function (button) {
       button.addEventListener("click", function () {
-        state.billing = button.getAttribute("data-billing-cycle");
+        state.billing = button.getAttribute("data-billing-cycle") === "annual" ? "annual" : "monthly";
+        document.documentElement.setAttribute("data-tv-sim-billing", state.billing);
         updatePricing();
         if (state.open) updateModal();
       });
     });
 
-    document.querySelectorAll(".nsim-plan-cta").forEach(function (button) {
-      button.addEventListener("click", function () {
-        openModal(button.getAttribute("data-nsim-plan"));
-      });
-    });
+    bindPlanCtas();
 
     document.querySelectorAll("[data-scroll-to]").forEach(function (button) {
       button.addEventListener("click", function () {
@@ -804,21 +1131,6 @@
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && state.open) closeModal();
     });
-
-    try {
-      var planParam = new URLSearchParams(window.location.search).get("plan");
-      if (planParam && (PLANS[planParam] || planParam === "custom")) {
-        var target = document.querySelector('[data-nsim-plan="' + planParam + '"]');
-        if (target && target.scrollIntoView) {
-          target.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-        if (planParam !== "custom") {
-          setTimeout(function () {
-            openModal(planParam);
-          }, 350);
-        }
-      }
-    } catch (e) {}
   }
 
   if (document.readyState === "loading") {

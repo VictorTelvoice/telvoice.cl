@@ -165,44 +165,12 @@
         <div class="nsim-billing-card nsim-billing-card--switch-only" aria-label="Modalidad de pago">
           <div class="nsim-billing-switch" role="group" aria-label="Seleccionar modalidad de pago">
             <button type="button" class="nsim-billing-switch__button is-active" data-billing-cycle="monthly" aria-pressed="true">Mensual</button>
-            <button type="button" class="nsim-billing-switch__button" data-billing-cycle="annual" aria-pressed="false">Anual <span>-20%</span></button>
+            <button type="button" class="nsim-billing-switch__button" data-billing-cycle="annual" aria-pressed="false">Anual <span data-nsim-switch-discount>-20%</span></button>
           </div>
         </div>
 
-        <div class="nsim-plans-grid">
-          <article class="nsim-plan-card" data-nsim-plan="sim_starter" tabindex="0">
-            <span class="nsim-plan-billing-badge" data-nsim-billing-label="sim_starter">Suscripción mensual</span>
-            <h3 class="nsim-plan-name">Starter</h3>
-            <p class="nsim-plan-price" data-nsim-price="sim_starter">$29.990 <span>/ mes</span></p>
-            <p class="nsim-plan-price-subnote" data-nsim-price-note="sim_starter">Pago recurrente mensual.</p>
-            <p class="nsim-plan-desc">Activa tu primer número SIM real con recepción SMS.</p>
-            <ul class="nsim-plan-features">
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> 1 número SIM real</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> 1.000 SMS salientes incluidos cada mes</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Recepción SMS</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Panel web Telvoice</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Agente Telvoice incluido</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Activación asistida</li>
-            </ul>
-            <button type="button" class="nsim-btn-primary nsim-plan-cta" data-nsim-plan="sim_starter">Suscribirme Starter</button>
-          </article>
-
-          <article class="nsim-plan-card is-featured" data-nsim-plan="sim_pro" tabindex="0">
-            <span class="nsim-plan-ribbon">Popular</span>
-            <span class="nsim-plan-billing-badge" data-nsim-billing-label="sim_pro">Suscripción mensual</span>
-            <h3 class="nsim-plan-name">Pro</h3>
-            <p class="nsim-plan-price" data-nsim-price="sim_pro">$49.990 <span>/ mes</span></p>
-            <p class="nsim-plan-price-subnote" data-nsim-price-note="sim_pro">Pago recurrente mensual.</p>
-            <p class="nsim-plan-desc">Mayor capacidad operativa, notificaciones por Telegram, webhooks e integraciones.</p>
-            <ul class="nsim-plan-features">
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Todo lo que incluye Starter</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> 2.000 SMS salientes incluidos cada mes</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Bot de Telegram para alertas y operación</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Automatizaciones iniciales</li>
-              <li><span class="material-symbols-outlined" aria-hidden="true">check</span> Webhooks/API para integración</li>
-            </ul>
-            <button type="button" class="nsim-btn-primary nsim-plan-cta" data-nsim-plan="sim_pro">Suscribirme Pro</button>
-          </article>
+        <div class="nsim-plans-grid" id="nsim-plans-grid">
+          <p class="nsim-plans-loading" id="nsim-plans-loading" aria-live="polite">Cargando planes…</p>
 
           <article class="nsim-plan-card nsim-plan-card--custom" data-nsim-plan="custom" tabindex="0">
             <span class="nsim-plan-billing-badge nsim-plan-billing-badge--custom">Contrato comercial</span>
