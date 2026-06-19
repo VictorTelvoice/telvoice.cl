@@ -978,8 +978,12 @@
     return !!document.getElementById("hero-agent-embed");
   }
 
+  function usesPublicLabFloatingUi() {
+    return window.TELVOICE_WEB_AGENT_UI === "lab";
+  }
+
   function usesPanelAgentUi() {
-    return isLabLanding() || hasHeroEmbedSlot();
+    return isLabLanding() || hasHeroEmbedSlot() || usesPublicLabFloatingUi();
   }
 
   function usesAgentAvatarIn(container) {

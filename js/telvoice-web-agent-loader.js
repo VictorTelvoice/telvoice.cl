@@ -44,6 +44,11 @@
     window.TELVOICE_WEB_AGENT_EMBED = embedTarget;
   }
 
+  var uiMode = script.getAttribute("data-ui");
+  if (uiMode === "lab") {
+    window.TELVOICE_WEB_AGENT_UI = "lab";
+  }
+
   var AGENT_JS_VERSION = "20260718";
 
   function injectBootStyles() {

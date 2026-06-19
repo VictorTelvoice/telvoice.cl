@@ -47,6 +47,17 @@
   var HC_GRID_TWO =
     "mx-auto mt-8 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 md:gap-8";
 
+  function renderNavAgentToggle(r) {
+    return (
+      '<button type="button" id="nav-floating-agent-toggle" class="nav-floating-agent-toggle nav-floating-agent-toggle--avatar inline-flex is-agent-live" aria-pressed="true" aria-label="Ocultar agente flotante">' +
+      '<span class="nav-floating-agent-toggle__ring" aria-hidden="true"></span>' +
+      '<img src="' +
+      esc(r) +
+      'assets/telvoice-agent-nav-toggle.png" alt="" class="nav-floating-agent-toggle__avatar" width="44" height="44" decoding="async" />' +
+      "</button>"
+    );
+  }
+
   function renderHeader(active) {
     var r = root();
     return (
@@ -79,6 +90,7 @@
       '#contacto">Contacto</a></li>' +
       "</ul>" +
       '<div class="nav-actions flex items-center gap-2 shrink-0">' +
+      renderNavAgentToggle(r) +
       '<a class="nav-sales-btn hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm font-semibold" href="' +
       esc(HC.portalUrl) +
       '" target="_blank" rel="noopener noreferrer">Ir al portal</a>' +
@@ -251,6 +263,24 @@
     );
   }
 
+  function mountPublicFloatingAgent() {
+    var r = root();
+    function startAgent() {
+      if (window.TELVOICE_PUBLIC_FLOATING_AGENT) {
+        window.TELVOICE_PUBLIC_FLOATING_AGENT.mount({ root: r });
+      }
+    }
+    if (window.TELVOICE_PUBLIC_FLOATING_AGENT) {
+      startAgent();
+      return;
+    }
+    var shared = document.createElement("script");
+    shared.src = r + "js/telvoice-public-floating-agent.js?v=20260620";
+    shared.setAttribute("data-init", "manual");
+    shared.onload = startAgent;
+    document.body.appendChild(shared);
+  }
+
   function bindMobileNav() {
     var toggle = document.getElementById("hc-menu-toggle");
     var panel = document.getElementById("hc-mobile-panel");
@@ -273,13 +303,7 @@
       renderHeader(active) + '<main class="flex-1 w-full" id="hc-main"></main>' + renderFooter()
     );
     bindMobileNav();
-    if (!document.querySelector("script[data-tva-loader]")) {
-      var agentLoader = document.createElement("script");
-      agentLoader.src = root() + "js/telvoice-web-agent-loader.js";
-      agentLoader.setAttribute("data-root", root());
-      agentLoader.setAttribute("data-tva-loader", "1");
-      document.body.appendChild(agentLoader);
-    }
+    mountPublicFloatingAgent();
     var main = document.getElementById("hc-main");
     main.innerHTML = '<div class="' + HC_SHELL + '">';
     return main.firstElementChild;
