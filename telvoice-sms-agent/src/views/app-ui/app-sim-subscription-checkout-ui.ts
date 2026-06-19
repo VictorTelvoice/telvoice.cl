@@ -206,7 +206,33 @@ export function getAppSimSubscriptionCheckoutScript(): string {
     }
 
     function hasEligibleStock() {
-      return state.canAutoAssign || state.available > 0 || state.inStock;
+      return (
+        state.numbers.length > 0 ||
+        state.canAutoAssign ||
+        state.available > 0 ||
+        state.inStock
+      );
+    }
+
+    function hasRealZeroStock() {
+      return (
+        !state.numbersLoading &&
+        state.numbers.length === 0 &&
+        state.available === 0 &&
+        !state.canAutoAssign &&
+        !state.inStock
+      );
+    }
+
+    function syncInventoryFromApi(data) {
+      state.numbers = data.numbers || [];
+      state.available = Number(data.available) || 0;
+      state.canAutoAssign =
+        data.can_auto_assign === true ||
+        state.available > 0 ||
+        state.numbers.length > 0 ||
+        data.in_stock === true;
+      state.inStock = state.canAutoAssign;
     }
 
     function canSubmitCheckout() {
@@ -276,7 +302,7 @@ export function getAppSimSubscriptionCheckoutScript(): string {
     }
 
     function shouldShowRealNoStockBanner() {
-      return !state.numbersLoading && !hasEligibleStock();
+      return hasRealZeroStock();
     }
 
     function shouldShowManualEmptyHint() {
@@ -351,6 +377,18 @@ export function getAppSimSubscriptionCheckoutScript(): string {
         return;
       }
 
+      if (
+        state.assignmentMode === "selected" &&
+        (!state.selectedPublicId ||
+          !state.numbers.some(function (n) {
+            var id = n.inventory_public_id || n.public_id;
+            return id === state.selectedPublicId;
+          }))
+      ) {
+        var first = state.numbers[0];
+        state.selectedPublicId = first.inventory_public_id || first.public_id || null;
+      }
+
       if (hint) hint.textContent = "Elige una numeración (máximo " + state.numbers.length + " visibles):";
       grid.innerHTML = state.numbers.map(function (n) {
         var publicId = n.inventory_public_id || n.public_id;
@@ -390,13 +428,7 @@ export function getAppSimSubscriptionCheckoutScript(): string {
             return;
           }
           state.profile = data.profile || null;
-          state.numbers = data.numbers || [];
-          state.available = Number(data.available) || 0;
-          state.canAutoAssign =
-            data.can_auto_assign === true ||
-            state.available > 0 ||
-            data.in_stock === true;
-          state.inStock = state.canAutoAssign;
+          syncInventoryFromApi(data);
           state.numbersLoading = false;
           renderProfile();
           renderPlanSummary();
@@ -443,10 +475,10 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       state.assignmentMode = "auto";
       state.selectedPublicId = null;
       state.numbers = [];
-      state.numbersLoading = false;
+      state.numbersLoading = true;
       state.available = 0;
       state.canAutoAssign = false;
-      state.inStock = true;
+      state.inStock = false;
       state.profile = null;
       state.pending = null;
       setError("");
@@ -466,6 +498,7 @@ export function getAppSimSubscriptionCheckoutScript(): string {
       modal.setAttribute("aria-hidden", "true");
       document.body.classList.remove("tv-sim-checkout-modal-open");
       setError("");
+      setNoStockBanner(null);
       setBusy(false);
     }
 

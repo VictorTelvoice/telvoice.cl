@@ -178,7 +178,33 @@
   }
 
   function hasEligibleStock() {
-    return state.canAutoAssign || state.availableTotal > 0;
+    return (
+      state.numbers.length > 0 ||
+      state.canAutoAssign ||
+      state.availableTotal > 0
+    );
+  }
+
+  function hasRealZeroStock() {
+    return (
+      !state.numbersLoading &&
+      state.numbers.length === 0 &&
+      state.availableTotal === 0 &&
+      !state.canAutoAssign
+    );
+  }
+
+  function syncInventoryState(numbersPayload) {
+    var payload = numbersPayload || {};
+    state.numbers = Array.isArray(payload.numbers) ? payload.numbers : [];
+    state.availableTotal = Number(payload.available) || 0;
+    state.shownCount =
+      Number(payload.shown) ||
+      (payload.numbers ? payload.numbers.length : 0);
+    state.canAutoAssign =
+      payload.can_auto_assign === true ||
+      state.availableTotal > 0 ||
+      state.numbers.length > 0;
   }
 
   function canSubmitCheckout() {
@@ -776,7 +802,7 @@
       return;
     }
 
-    if (!hasEligibleStock()) {
+    if (hasRealZeroStock()) {
       renderNumberEmpty("real");
       updateSubmitState();
       return;
@@ -920,18 +946,14 @@
         state.canAutoAssign = false;
         state.availableTotal = 0;
         state.shownCount = 0;
+        state.numbers = [];
         renderNumberSectionLoading(false);
         renderNumberEmpty(false);
         updateSubmitState();
         return;
       }
-      state.availableTotal = Number(numbersPayload.available) || 0;
-      state.canAutoAssign =
-        numbersPayload.can_auto_assign === true || state.availableTotal > 0;
-      state.shownCount =
-        Number(numbersPayload.shown) ||
-        (numbersPayload.numbers ? numbersPayload.numbers.length : 0);
-      renderNumbers(numbersPayload.numbers || []);
+      syncInventoryState(numbersPayload);
+      renderNumbers(state.numbers);
     });
   }
 
@@ -950,6 +972,7 @@
     state.inventoryEmpty = false;
     clearPersonalFormFields();
     setError("");
+    renderNumberEmpty(false);
     updateModal();
     var modal = $("nsim-purchase-modal");
     if (modal) modal.removeAttribute("hidden");
@@ -970,6 +993,7 @@
     if (modal) modal.setAttribute("hidden", "");
     document.body.classList.remove("nsim-modal-open");
     setError("");
+    renderNumberEmpty(false);
     setBusy(false);
     hidePendingOrder();
     state.pendingOrder = null;
@@ -1052,7 +1076,7 @@
       return setError("Espera mientras cargamos las numeraciones disponibles.");
     }
 
-    if (!hasEligibleStock()) {
+    if (hasRealZeroStock()) {
       return setError(
         "No hay numeraciones disponibles en este momento. Contacta a Telvoice."
       );
