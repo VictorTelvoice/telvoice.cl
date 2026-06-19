@@ -115,13 +115,13 @@ export const SIM_SUBSCRIPTION_PLAN_CATALOG: Record<
   sim_pro: {
     ...SIM_PLANS.sim_pro,
     description:
-      "Mayor capacidad operativa, notificaciones por Telegram, webhooks e integraciones.",
+      "Para empresas que necesitan mayor capacidad operativa, notificaciones por Telegram, webhooks e integraciones.",
     features: [
       "Todo lo que incluye Starter",
-      "2.000 SMS salientes incluidos cada mes",
       "Bot de Telegram para alertas y operación",
       "Automatizaciones iniciales",
       "Webhooks/API para integración",
+      "Mayor capacidad operativa",
     ],
     ctaLabel: "Suscribirme Pro",
     featured: true,

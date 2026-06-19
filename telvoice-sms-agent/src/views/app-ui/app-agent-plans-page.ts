@@ -12,7 +12,7 @@ import {
   agentPlanDisplayName,
   parseSimSubscriptionPlanId,
 } from "../../utils/agent-plan-intent.js";
-import { escapeHtml, formatDate } from "../../utils/html.js";
+import { escapeHtml, formatDate, embedJsonInScriptTag } from "../../utils/html.js";
 import {
   getPublicSimSubscriptionCatalog,
   type PublicSimSubscriptionPlanId,
@@ -46,26 +46,25 @@ function renderPlanCard(
     .filter(Boolean)
     .join("");
 
-  const badges = [
-    '<span class="tv-sim-plan-card__badge">Suscripción mensual</span>',
-    plan.featured
-      ? '<span class="tv-sim-plan-card__badge tv-sim-plan-card__badge--popular">Popular</span>'
-      : "",
-    isSelected
-      ? '<span class="tv-sim-plan-card__badge tv-sim-plan-card__badge--selected">Seleccionado</span>'
-      : "",
-  ]
-    .filter(Boolean)
-    .join("");
+  const badges = plan.featured
+    ? ""
+    : `<span class="tv-sim-plan-card__billing-badge">Suscripción mensual</span>`;
 
-  const ctaVariant = plan.featured || isSelected ? "primary" : "secondary";
-  const ctaIcon = "shopping_cart";
-  const ctaButton = `<button type="button" class="btn btn-${ctaVariant === "primary" ? "primary" : "secondary"} tv-sim-plan-card__open" data-tv-sim-plan-open="${escapeHtml(plan.plan_id)}">
-      <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">${ctaIcon}</span>${escapeHtml(plan.ctaLabel)}
+  const ribbon = plan.featured
+    ? `<span class="tv-sim-plan-card__ribbon">Popular</span><span class="tv-sim-plan-card__billing-badge">Suscripción mensual</span>`
+    : "";
+
+  const ctaClass =
+    plan.featured || isSelected
+      ? "tv-sim-plan-card__cta-btn tv-sim-plan-card__cta-btn--primary"
+      : "tv-sim-plan-card__cta-btn tv-sim-plan-card__cta-btn--secondary";
+
+  const ctaButton = `<button type="button" class="${ctaClass}" data-tv-sim-plan-open="${escapeHtml(plan.plan_id)}">
+      <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">shopping_cart</span>${escapeHtml(plan.ctaLabel)}
     </button>`;
 
   return `<article class="${cardClass}">
-    <div class="tv-sim-plan-card__badge-row">${badges}</div>
+    ${ribbon || badges}
     <h3 class="tv-sim-plan-card__title">${escapeHtml(plan.sim_label)}</h3>
     <p class="tv-sim-plan-card__price">${escapeHtml(fmtMoney(plan.total_amount))}<span> / mes</span></p>
     <p class="tv-sim-plan-card__price-note">Pago recurrente mensual.</p>
@@ -84,8 +83,7 @@ function renderPlanCard(
   </article>`;
 }
 
-function renderCustomPlanCard(publicSiteUrl: string): string {
-  const checkoutUrl = `${publicSiteUrl.replace(/\/$/, "")}/numeracion-sim.html?plan=custom`;
+function renderCustomPlanCard(): string {
   const features = [
     "Múltiples números SIM reales",
     "Volumen SMS personalizado",
@@ -96,23 +94,18 @@ function renderCustomPlanCard(publicSiteUrl: string): string {
   ];
 
   return `<article class="tv-sim-plan-card tv-sim-plan-card--custom">
-    <div class="tv-sim-plan-card__badge-row">
-      <span class="tv-sim-plan-card__badge tv-sim-plan-card__badge--custom">Contrato comercial</span>
-    </div>
+    <span class="tv-sim-plan-card__billing-badge tv-sim-plan-card__billing-badge--custom">Contrato comercial</span>
     <h3 class="tv-sim-plan-card__title">A medida</h3>
     <p class="tv-sim-plan-card__price tv-sim-plan-card__price--custom">Cotización personalizada</p>
-    <p class="tv-sim-plan-card__description">Para múltiples números, volumen o integraciones especiales.</p>
+    <p class="tv-sim-plan-card__description">Para empresas que necesitan más volumen, múltiples números, integraciones especiales, flujos de respuesta o automatizaciones avanzadas.</p>
     <ul class="tv-sim-plan-card__features">
       ${features.map((f) => renderFeatureItem(f)).join("")}
     </ul>
     <div class="tv-sim-plan-card__cta">
-      ${renderBtn("Solicitar plan a medida", {
-        href: checkoutUrl,
-        variant: "secondary",
-        icon: "support_agent",
-        target: "_blank",
-        rel: "noopener noreferrer",
-      })}
+      <a href="/app/support" class="tv-sim-plan-card__cta-btn tv-sim-plan-card__cta-btn--secondary">
+        <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">support_agent</span>
+        Solicitar plan a medida
+      </a>
     </div>
   </article>`;
 }
@@ -239,14 +232,15 @@ export function renderAppAgentPlansPage(
             }),
           )
           .join("")}
-        ${renderCustomPlanCard(data.publicSiteUrl)}
+        ${renderCustomPlanCard()}
       </div>
       <aside class="tv-sim-plans-note" aria-label="Información de checkout">
         <span class="material-symbols-outlined" aria-hidden="true">info</span>
         <p>Contrata numeración SIM desde este panel con tus datos precargados. Las bolsas SMS para campañas masivas se compran aparte en Comprar SMS.</p>
       </aside>
     </section>
-    ${renderAppSimSubscriptionCheckoutModal(catalog)}
+    ${renderAppSimSubscriptionCheckoutModal()}
+    ${embedJsonInScriptTag("tv-sim-plan-catalog", catalog)}
     <script>${getAppSimSubscriptionCheckoutScript()}</script>`;
 
   return wrapAppPage(ctx, "agent-plans", "Planes de numeración SIM", body);

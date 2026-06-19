@@ -8,6 +8,15 @@ export function escapeHtml(value: unknown): string {
     .replaceAll("'", "&#39;");
 }
 
+/** JSON embebido en `<script type="application/json">` sin romper parse ni HTML. */
+export function embedJsonInScriptTag(id: string, data: unknown): string {
+  const json = JSON.stringify(data)
+    .replace(/</g, "\\u003c")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+  return `<script type="application/json" id="${escapeHtml(id)}">${json}</script>`;
+}
+
 export function formatJson(value: unknown): string {
   try {
     return JSON.stringify(value, null, 2);
