@@ -603,9 +603,12 @@
       return false;
     }
     var id = hash.replace(/^#/, "");
+    if (typeof window.TELVOICE_SCROLL_TO_SECTION === "function") {
+      return window.TELVOICE_SCROLL_TO_SECTION(id, { focus: false });
+    }
     var target = document.getElementById(id);
     if (target) {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      target.scrollIntoView({ behavior: "auto", block: "start" });
       return true;
     }
     return false;

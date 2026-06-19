@@ -143,6 +143,65 @@
     if (trackId) trackEvent(trackId);
   }
 
+  function getSiteNavHeight() {
+    var nav = document.querySelector("body > nav");
+    if (nav) return Math.ceil(nav.getBoundingClientRect().height);
+    return 76;
+  }
+
+  function scrollToSectionEl(el, opts) {
+    opts = opts || {};
+    if (!el) return false;
+    var offset = getSiteNavHeight();
+    var top = el.getBoundingClientRect().top + window.pageYOffset - offset;
+    window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
+    if (opts.focus !== false && el.tabIndex >= 0) {
+      try {
+        el.focus({ preventScroll: true });
+      } catch (_e) {
+        el.focus();
+      }
+    }
+    return true;
+  }
+
+  function scrollToSectionId(id, opts) {
+    return scrollToSectionEl(document.getElementById(id), opts);
+  }
+
+  function bindInstantSectionNav() {
+    document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+      var raw = a.getAttribute("href");
+      if (!raw || raw === "#" || a.hasAttribute("data-scroll-top")) return;
+      var id = raw.slice(1);
+      if (!id) return;
+      a.addEventListener("click", function (e) {
+        var target = document.getElementById(id);
+        if (!target) return;
+        e.preventDefault();
+        closeMobileMenu();
+        if (history.replaceState) {
+          history.replaceState(null, "", "#" + id);
+        } else {
+          window.location.hash = id;
+        }
+        scrollToSectionId(id);
+      });
+    });
+
+    var initialHash = (window.location.hash || "").replace(/^#/, "");
+    if (initialHash && document.getElementById(initialHash)) {
+      requestAnimationFrame(function () {
+        scrollToSectionId(initialHash, { focus: false });
+      });
+    }
+  }
+
+  bindInstantSectionNav();
+
+  window.TELVOICE_SCROLL_TO_SECTION = scrollToSectionId;
+  window.TELVOICE_SCROLL_TO_ELEMENT = scrollToSectionEl;
+
   function bindNavComprarSmsButtons() {
     ["nav-comprar-sms", "nav-comprar-sms-mobile"].forEach(function (sel) {
       var link = qs(sel);
@@ -154,7 +213,7 @@
         closeMobileMenu();
         var el = qs("calculadora");
         if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "start" });
+          scrollToSectionEl(el);
         } else {
           window.location.hash = "calculadora";
         }
@@ -204,7 +263,7 @@
     el.addEventListener("click", function (e) {
       e.preventDefault();
       closeMobileMenu();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({ top: 0, behavior: "auto" });
     });
   });
 
@@ -248,7 +307,7 @@
   function scrollToContact(prefill) {
     closeMobileMenu();
     var el = qs("contacto");
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (el) scrollToSectionEl(el);
     if (prefill) {
       if (prefill.interes) {
         var uso = qs("uso-principal");
@@ -906,7 +965,7 @@
     document.querySelectorAll(".comercial-comprar-cta").forEach(function (b) {
       b.addEventListener("click", function () {
         var el = qs("calculadora");
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (el) scrollToSectionEl(el);
       });
     });
     document.querySelectorAll(".comercial-api-cta").forEach(function (b) {
@@ -1187,7 +1246,7 @@
       var calcSection = qs("calculadora");
       if (!calcSection) return;
       e.preventDefault();
-      calcSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      scrollToSectionEl(calcSection);
       if (setCalcVolume) {
         setTimeout(function () {
           setCalcVolume(targetVol);

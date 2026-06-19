@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 200" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#eef4ff"/>
+      <stop offset="100%" stop-color="#faf8ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0052cc" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+  <rect width="360" height="200" fill="url(#bg)"/>
+  <circle cx="52" cy="40" r="44" fill="#0052cc" opacity="0.06"/>
+
+  <!-- Teléfono / buzón -->
+  <g filter="url(#shadow)" transform="translate(108 24)">
+    <rect width="144" height="152" rx="18" fill="#fff" stroke="#c3d4f0" stroke-width="1.5"/>
+    <rect x="52" y="8" width="40" height="5" rx="2.5" fill="#dbe4f5"/>
+    <rect x="16" y="22" width="112" height="36" rx="10" fill="#f2f3ff" stroke="#0052cc" stroke-width="1" opacity="0.9"/>
+    <circle cx="32" cy="40" r="9" fill="#dcfce7" stroke="#16a34a" stroke-width="1"/>
+    <path d="M28 40 L31 43 L37 37" stroke="#16a34a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <text x="48" y="36" fill="#131b2e" font-family="Inter,sans-serif" font-size="8" font-weight="600">Código 2FA</text>
+    <text x="48" y="50" fill="#0052cc" font-family="ui-monospace,monospace" font-size="14" font-weight="700" letter-spacing="2">482 901</text>
+
+    <rect x="16" y="66" width="112" height="28" rx="8" fill="#fff" stroke="#e2e8f0" stroke-width="1"/>
+    <circle cx="28" cy="80" r="5" fill="#0052cc" opacity="0.15"/>
+    <text x="38" y="77" fill="#525f7a" font-family="Inter,sans-serif" font-size="7.5">SMS entrante</text>
+    <text x="38" y="87" fill="#131b2e" font-family="Inter,sans-serif" font-size="7">Verificación bancaria</text>
+    <text x="120" y="82" text-anchor="end" fill="#94a3b8" font-family="Inter,sans-serif" font-size="6.5">09:41</text>
+
+    <rect x="16" y="100" width="112" height="28" rx="8" fill="#fff" stroke="#e2e8f0" stroke-width="1"/>
+    <circle cx="28" cy="114" r="5" fill="#0052cc" opacity="0.15"/>
+    <text x="38" y="111" fill="#525f7a" font-family="Inter,sans-serif" font-size="7.5">Respuesta cliente</text>
+    <text x="38" y="121" fill="#131b2e" font-family="Inter,sans-serif" font-size="7">Gracias, confirmado.</text>
+    <circle cx="118" cy="114" r="4" fill="#0052cc"/>
+  </g>
+
+  <!-- Badge SMS -->
+  <g transform="translate(36 72)">
+    <circle cx="28" cy="28" r="28" fill="#fff" stroke="#0052cc" stroke-width="1.5" filter="url(#shadow)"/>
+    <text x="28" y="33" text-anchor="middle" fill="#0052cc" font-family="Montserrat,sans-serif" font-size="11" font-weight="700">SMS</text>
+    <path d="M64 80 L108 72" stroke="#0052cc" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.5"/>
+  </g>
+
+  <!-- Chip numeración -->
+  <g transform="translate(268 128)">
+    <rect width="72" height="40" rx="10" fill="#fff" stroke="#0052cc" stroke-width="1.2" filter="url(#shadow)"/>
+    <text x="36" y="18" text-anchor="middle" fill="#525f7a" font-family="Inter,sans-serif" font-size="6.5">Numeración</text>
+    <text x="36" y="32" text-anchor="middle" fill="#0052cc" font-family="Inter,sans-serif" font-size="8" font-weight="700">+56 9 · · ·</text>
+  </g>
+</svg>

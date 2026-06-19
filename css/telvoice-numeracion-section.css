@@ -50,8 +50,8 @@
   flex: 0 0 auto;
   background: linear-gradient(
     180deg,
-    rgba(0, 82, 204, 0.06) 0%,
-    rgba(237, 243, 250, 0.95) 100%
+    rgba(238, 244, 255, 0.95) 0%,
+    rgba(250, 248, 255, 1) 100%
   );
   border-bottom: 1px solid rgba(0, 82, 204, 0.08);
 }
@@ -67,6 +67,8 @@
   min-height: 0;
   border-radius: 0;
   vertical-align: top;
+  object-fit: cover;
+  object-position: center;
 }
 
 .tv-numeracion-section .lab-num-card {

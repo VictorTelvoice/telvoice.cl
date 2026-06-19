@@ -248,7 +248,7 @@
       el.addEventListener("click", function (e) {
         e.preventDefault();
         closeMobileMenu();
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        window.scrollTo({ top: 0, behavior: "auto" });
       });
     });
   }

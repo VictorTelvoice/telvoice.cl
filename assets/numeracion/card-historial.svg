@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 200" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#eef4ff"/>
+      <stop offset="100%" stop-color="#faf8ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0052cc" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+  <rect width="360" height="200" fill="url(#bg)"/>
+
+  <g filter="url(#shadow)" transform="translate(72 20)">
+    <rect width="216" height="160" rx="14" fill="#fff" stroke="#c3d4f0" stroke-width="1.5"/>
+    <rect x="16" y="14" width="72" height="6" rx="3" fill="#0052cc" opacity="0.8"/>
+    <text x="16" y="34" fill="#525f7a" font-family="Inter,sans-serif" font-size="7.5" font-weight="500">Historial de mensajes</text>
+
+    <!-- Timeline -->
+    <line x1="24" y1="48" x2="24" y2="142" stroke="#0052cc" stroke-width="2" opacity="0.2"/>
+    <circle cx="24" cy="56" r="5" fill="#0052cc"/>
+    <circle cx="24" cy="88" r="5" fill="#0052cc" opacity="0.7"/>
+    <circle cx="24" cy="120" r="5" fill="#0052cc" opacity="0.45"/>
+
+    <!-- Rows -->
+    <rect x="36" y="46" width="164" height="22" rx="8" fill="#f8faff" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="44" y="60" fill="#131b2e" font-family="Inter,sans-serif" font-size="7">SMS recibido · +56 9&</text>
+    <text x="188" y="60" text-anchor="end" fill="#94a3b8" font-family="Inter,sans-serif" font-size="6.5">Hoy 10:24</text>
+
+    <rect x="36" y="78" width="164" height="22" rx="8" fill="#f8faff" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="44" y="92" fill="#131b2e" font-family="Inter,sans-serif" font-size="7">2FA · código verificado</text>
+    <text x="188" y="92" text-anchor="end" fill="#94a3b8" font-family="Inter,sans-serif" font-size="6.5">Ayer 18:02</text>
+
+    <rect x="36" y="110" width="164" height="22" rx="8" fill="#f8faff" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="44" y="124" fill="#131b2e" font-family="Inter,sans-serif" font-size="7">Respuesta cliente · OK</text>
+    <text x="188" y="124" text-anchor="end" fill="#94a3b8" font-family="Inter,sans-serif" font-size="6.5">12 mar</text>
+
+    <!-- Audit badge -->
+    <rect x="148" y="138" width="52" height="20" rx="6" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+    <text x="174" y="151" text-anchor="middle" fill="#15803d" font-family="Inter,sans-serif" font-size="7" font-weight="700">Audit</text>
+  </g>
+</svg>
