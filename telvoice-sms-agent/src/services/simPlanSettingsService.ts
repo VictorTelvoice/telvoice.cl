@@ -303,7 +303,7 @@ function ctaLabelForPlan(
 ): string {
   if (introPromo.hasIntroPromo) {
     const pct = Math.round(introPromo.promoDiscountPercent);
-    if (planId === "sim_starter") return `Suscribirme Starter con ${pct}% dto.`;
+    if (planId === "sim_starter") return `Suscribirme Star con ${pct}% dto.`;
     if (planId === "sim_pro") return `Suscribirme Pro con ${pct}% dto.`;
     return `Suscribirme ${label} con ${pct}% dto.`;
   }
