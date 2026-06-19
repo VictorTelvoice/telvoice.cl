@@ -33,8 +33,15 @@ export async function createPendingSimSubscription(input: {
   checkoutEmail: string;
   inventoryNumberId?: string | null;
   monthlyAmount: number;
+  metadata?: Record<string, unknown>;
 }): Promise<SimSubscriptionRow> {
   const sb = getSupabase();
+  const baseMetadata = {
+    source: "landing_sim_checkout",
+    product_type: "sim_subscription",
+    public_checkout_reference: input.order.public_checkout_reference ?? null,
+    ...(input.metadata ?? {}),
+  };
   const row = {
     order_id: input.order.id,
     company_id: input.order.company_id,
@@ -45,11 +52,7 @@ export async function createPendingSimSubscription(input: {
     monthly_amount_clp: Math.round(input.monthlyAmount),
     currency: input.plan.currency,
     status: "pending" as const,
-    metadata: {
-      source: "landing_sim_checkout",
-      product_type: "sim_subscription",
-      public_checkout_reference: input.order.public_checkout_reference ?? null,
-    },
+    metadata: baseMetadata,
   };
 
   const { data, error } = await sb

@@ -29,6 +29,16 @@ export const PUBLIC_SIM_CHECKOUT_METADATA = {
   requires_manual_activation: true,
 } as const;
 
+/** Suscripción SIM desde panel cliente autenticado (/app/planes-agente) */
+export const CLIENT_PANEL_SIM_SUBSCRIPTION_METADATA = {
+  source: "client_panel_sim_subscription",
+  checkout_mode: "mercadopago_subscription",
+  product_type: "sim_subscription",
+  claim_required: false,
+  account_creation_mode: "existing_company",
+  requires_manual_activation: true,
+} as const;
+
 /** Configurador landing — SIM + Agente (post-pago auto-provision) */
 export const PUBLIC_SIM_AGENT_BUNDLE_METADATA = {
   source: "landing_sim_agent_builder",

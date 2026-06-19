@@ -5511,6 +5511,11 @@
       gap: 0.45rem;
     }
 
+    .tv-sim-plan-card__open {
+      display: inline-flex;
+      align-items: center;
+    }
+
     .tv-sim-plans-note {
       display: flex;
       align-items: flex-start;
@@ -5558,6 +5563,276 @@
       margin: 0;
       padding-left: 1.25rem;
       line-height: 1.6;
+    }
+  
+    .tv-sim-checkout-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .tv-sim-checkout-modal[aria-hidden="false"] {
+      display: flex;
+    }
+
+    body.tv-sim-checkout-modal-open {
+      overflow: hidden;
+    }
+
+    .tv-sim-checkout-modal__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(2px);
+    }
+
+    .tv-sim-checkout-modal__panel {
+      position: relative;
+      z-index: 1;
+      width: min(640px, 100%);
+      max-height: min(92vh, 860px);
+      overflow: auto;
+      border-radius: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      background: var(--tv-light-surface, #fff);
+      box-shadow: 0 24px 64px -24px rgba(15, 23, 42, 0.35);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tv-sim-checkout-modal__head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.25rem 1.25rem 0.75rem;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    }
+
+    .tv-sim-checkout-modal__eyebrow {
+      margin: 0 0 0.2rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--tv-light-primary, #0052cc);
+    }
+
+    .tv-sim-checkout-modal__title {
+      margin: 0;
+      font-size: 1.25rem;
+      line-height: 1.3;
+    }
+
+    .tv-sim-checkout-modal__body {
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .tv-sim-checkout-modal__section-title {
+      margin: 0 0 0.65rem;
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+
+    .tv-sim-checkout-modal__alert {
+      padding: 0.75rem 0.85rem;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      line-height: 1.45;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.18);
+      color: #b91c1c;
+    }
+
+    .tv-sim-checkout-modal__alert--info {
+      background: rgba(14, 165, 233, 0.08);
+      border-color: rgba(14, 165, 233, 0.18);
+      color: #0369a1;
+    }
+
+    .tv-sim-checkout-modal__alert--hidden {
+      display: none;
+    }
+
+    .tv-sim-checkout-modal__pending-link {
+      font-weight: 600;
+      color: inherit;
+    }
+
+    .tv-sim-checkout-modal__plan-price {
+      margin: 0;
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+
+    .tv-sim-checkout-modal__plan-meta {
+      margin: 0.35rem 0 0.75rem;
+      color: var(--tv-light-muted, #64748b);
+      font-size: 0.875rem;
+      line-height: 1.45;
+    }
+
+    .tv-sim-checkout-modal__plan-features {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 0.45rem;
+    }
+
+    .tv-sim-checkout-modal__plan-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.45rem;
+      font-size: 0.875rem;
+      line-height: 1.4;
+    }
+
+    .tv-sim-checkout-modal__plan-features .material-symbols-outlined {
+      font-size: 1rem;
+      color: #059669;
+      margin-top: 0.05rem;
+    }
+
+    .tv-sim-checkout-modal__assignment {
+      display: grid;
+      gap: 0.65rem;
+    }
+
+    .tv-sim-checkout-modal__radio {
+      display: flex;
+      gap: 0.65rem;
+      align-items: flex-start;
+      padding: 0.75rem 0.85rem;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      cursor: pointer;
+    }
+
+    .tv-sim-checkout-modal__radio input {
+      margin-top: 0.2rem;
+    }
+
+    .tv-sim-checkout-modal__radio strong {
+      display: block;
+      font-size: 0.9rem;
+    }
+
+    .tv-sim-checkout-modal__radio small {
+      display: block;
+      margin-top: 0.15rem;
+      color: var(--tv-light-muted, #64748b);
+      line-height: 1.35;
+    }
+
+    .tv-sim-checkout-modal__numbers--hidden,
+    .tv-sim-checkout-modal__empty--hidden {
+      display: none;
+    }
+
+    .tv-sim-checkout-modal__numbers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.65rem;
+      margin-top: 0.65rem;
+    }
+
+    .tv-sim-checkout-number {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.15rem;
+      padding: 0.75rem 0.85rem;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .tv-sim-checkout-number--selected {
+      border-color: rgba(0, 82, 204, 0.42);
+      box-shadow: 0 0 0 1px rgba(0, 82, 204, 0.12);
+    }
+
+    .tv-sim-checkout-number__label {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .tv-sim-checkout-number__suffix {
+      font-size: 0.78rem;
+      color: var(--tv-light-muted, #64748b);
+    }
+
+    .tv-sim-checkout-modal__empty {
+      margin-top: 0.75rem;
+      padding: 1rem;
+      border-radius: 14px;
+      border: 1px dashed rgba(148, 163, 184, 0.35);
+      text-align: center;
+      display: grid;
+      gap: 0.5rem;
+      justify-items: center;
+    }
+
+    .tv-sim-checkout-modal__profile {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.35rem 0.85rem;
+      margin: 0;
+      font-size: 0.875rem;
+    }
+
+    .tv-sim-checkout-modal__profile dt {
+      opacity: 0.65;
+    }
+
+    .tv-sim-checkout-modal__profile dd {
+      margin: 0;
+      font-weight: 500;
+    }
+
+    .tv-sim-checkout-modal__foot {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.65rem;
+      padding: 0.85rem 1.25rem 1.15rem;
+      border-top: 1px solid rgba(148, 163, 184, 0.18);
+    }
+
+    .tv-sim-checkout-modal__foot .btn-primary.is-loading {
+      opacity: 0.75;
+      pointer-events: none;
+    }
+
+    @media (max-width: 640px) {
+      .tv-sim-checkout-modal {
+        padding: 0;
+        align-items: stretch;
+      }
+
+      .tv-sim-checkout-modal__panel {
+        width: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+      }
+
+      .tv-sim-checkout-modal__foot {
+        flex-direction: column-reverse;
+      }
+
+      .tv-sim-checkout-modal__foot .btn {
+        width: 100%;
+        justify-content: center;
+      }
     }
   
     /* —— Tokens Lab (panel cliente) —— */

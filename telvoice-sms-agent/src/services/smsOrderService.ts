@@ -10,6 +10,7 @@ import {
   PUBLIC_LANDING_ORDER_METADATA,
   PUBLIC_SIM_AGENT_BUNDLE_METADATA,
   PUBLIC_SIM_CHECKOUT_METADATA,
+  CLIENT_PANEL_SIM_SUBSCRIPTION_METADATA,
   isWalletSmsCreditOrder,
   resolveWalletCreditSmsAmount,
 } from "../utils/order-display.js";
@@ -419,6 +420,82 @@ export async function createPublicSimOrder(input: {
   });
 
   return { order, claimToken };
+}
+
+export async function createClientPanelSimOrder(input: {
+  companyId: string;
+  createdBy?: string | null;
+  plan: SimPlanDefinition;
+  checkoutEmail: string;
+  payerEmail?: string;
+  payerName?: string;
+  companyName?: string;
+  phone?: string;
+  taxId?: string;
+  checkoutTotalAmount?: number;
+  priceMetadata?: Record<string, unknown>;
+}): Promise<SmsOrderRow> {
+  const checkoutEmail = input.checkoutEmail.trim().toLowerCase();
+  const payerEmail = (input.payerEmail ?? checkoutEmail).trim().toLowerCase();
+  if (!checkoutEmail.includes("@")) {
+    throw new AppError("checkout_email inválido.", 400);
+  }
+
+  const orderMetadata = {
+    ...CLIENT_PANEL_SIM_SUBSCRIPTION_METADATA,
+    plan_id: input.plan.plan_id,
+    plan_name: input.plan.name,
+    included_sms_monthly: input.plan.sms_quantity,
+    billing_period: input.plan.billing_period,
+    activation_status: "pending_payment",
+    payer_name: input.payerName?.trim() || null,
+    company_name: input.companyName?.trim() || null,
+    phone: input.phone?.trim() || null,
+    tax_id: input.taxId?.trim() || null,
+    subscription_status: "pending",
+    ...(input.priceMetadata ?? {}),
+  };
+
+  const totalAmount = input.checkoutTotalAmount ?? input.plan.total_amount;
+
+  const { data, error } = await getSupabase()
+    .from("sms_orders")
+    .insert({
+      company_id: input.companyId,
+      package_id: null,
+      sms_quantity: input.plan.sms_quantity,
+      amount: totalAmount,
+      currency: input.plan.currency,
+      payment_provider: "mercadopago",
+      payment_reference: null,
+      payment_status: "pending",
+      credit_status: "pending",
+      created_by: input.createdBy ?? null,
+      checkout_email: checkoutEmail,
+      payer_email: payerEmail,
+      metadata: orderMetadata,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    wrapSupabaseError(error, "createClientPanelSimOrder");
+  }
+
+  const order = data as SmsOrderRow;
+
+  await createSimActivationRequest({
+    orderId: order.id,
+    plan: input.plan,
+    checkoutEmail,
+    payerName: input.payerName,
+    companyName: input.companyName,
+    phone: input.phone,
+    taxId: input.taxId,
+    activationStatus: "pending_payment",
+  });
+
+  return order;
 }
 
 export async function createPublicSimAgentBundleOrder(input: {

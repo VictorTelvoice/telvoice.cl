@@ -14,11 +14,14 @@ import {
 } from "../../utils/agent-plan-intent.js";
 import { escapeHtml, formatDate } from "../../utils/html.js";
 import {
-  buildPublicSimNumeracionUrl,
   getPublicSimSubscriptionCatalog,
   type PublicSimSubscriptionPlanId,
   type SimSubscriptionPlanCatalogEntry,
 } from "../../utils/simPlans.js";
+import {
+  getAppSimSubscriptionCheckoutScript,
+  renderAppSimSubscriptionCheckoutModal,
+} from "./app-sim-subscription-checkout-ui.js";
 import { renderBtn, renderPageHeader, renderNotice } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtMoney, wrapAppPage } from "./app-page-wrap.js";
@@ -30,7 +33,6 @@ function renderFeatureItem(text: string): string {
 function renderPlanCard(
   plan: SimSubscriptionPlanCatalogEntry,
   options: {
-    publicSiteUrl: string;
     selectedPlan?: PublicSimSubscriptionPlanId;
     hasActiveNumbers: boolean;
   },
@@ -42,11 +44,7 @@ function renderPlanCard(
     isSelected ? "tv-sim-plan-card--selected" : "",
   ]
     .filter(Boolean)
-    .join(" ");
-  const checkoutUrl = buildPublicSimNumeracionUrl(
-    plan.plan_id as PublicSimSubscriptionPlanId,
-    options.publicSiteUrl,
-  );
+    .join("");
 
   const badges = [
     '<span class="tv-sim-plan-card__badge">Suscripción mensual</span>',
@@ -60,6 +58,12 @@ function renderPlanCard(
     .filter(Boolean)
     .join("");
 
+  const ctaVariant = plan.featured || isSelected ? "primary" : "secondary";
+  const ctaIcon = "shopping_cart";
+  const ctaButton = `<button type="button" class="btn btn-${ctaVariant === "primary" ? "primary" : "secondary"} tv-sim-plan-card__open" data-tv-sim-plan-open="${escapeHtml(plan.plan_id)}">
+      <span class="material-symbols-outlined" style="font-size:1.1rem" aria-hidden="true">${ctaIcon}</span>${escapeHtml(plan.ctaLabel)}
+    </button>`;
+
   return `<article class="${cardClass}">
     <div class="tv-sim-plan-card__badge-row">${badges}</div>
     <h3 class="tv-sim-plan-card__title">${escapeHtml(plan.sim_label)}</h3>
@@ -71,17 +75,11 @@ function renderPlanCard(
     </ul>
     ${
       options.hasActiveNumbers
-        ? `<p class="tv-sim-plan-card__pending">Puedes contratar otra línea desde el checkout público.</p>`
+        ? `<p class="tv-sim-plan-card__pending">Puedes contratar otra línea con el mismo flujo de checkout del panel.</p>`
         : ""
     }
     <div class="tv-sim-plan-card__cta">
-      ${renderBtn(plan.ctaLabel, {
-        href: checkoutUrl,
-        variant: plan.featured || isSelected ? "primary" : "secondary",
-        icon: "shopping_cart",
-        target: "_blank",
-        rel: "noopener noreferrer",
-      })}
+      ${ctaButton}
     </div>
   </article>`;
 }
@@ -204,7 +202,7 @@ export function renderAppAgentPlansPage(
   const intentBanner =
     data.showIntentBanner && selectedPlan
       ? renderNotice(
-          `Seleccionaste ${catalog.find((p) => p.plan_id === selectedPlan)?.sim_label ?? selectedPlan}. Continúa en el checkout de numeración SIM.`,
+          `Seleccionaste ${catalog.find((p) => p.plan_id === selectedPlan)?.sim_label ?? selectedPlan}. Continúa con el checkout del panel.`,
           "info",
         )
       : "";
@@ -236,7 +234,6 @@ export function renderAppAgentPlansPage(
         ${catalog
           .map((p) =>
             renderPlanCard(p, {
-              publicSiteUrl: data.publicSiteUrl,
               selectedPlan,
               hasActiveNumbers,
             }),
@@ -246,9 +243,11 @@ export function renderAppAgentPlansPage(
       </div>
       <aside class="tv-sim-plans-note" aria-label="Información de checkout">
         <span class="material-symbols-outlined" aria-hidden="true">info</span>
-        <p>El checkout de numeración SIM usa suscripción mensual con inventario público y activación asistida. Las bolsas SMS para campañas masivas se compran aparte.</p>
+        <p>Contrata numeración SIM desde este panel con tus datos precargados. Las bolsas SMS para campañas masivas se compran aparte en Comprar SMS.</p>
       </aside>
-    </section>`;
+    </section>
+    ${renderAppSimSubscriptionCheckoutModal(catalog)}
+    <script>${getAppSimSubscriptionCheckoutScript()}</script>`;
 
   return wrapAppPage(ctx, "agent-plans", "Planes de numeración SIM", body);
 }

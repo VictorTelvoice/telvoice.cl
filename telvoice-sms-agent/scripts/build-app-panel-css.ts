@@ -13,6 +13,7 @@ import { getSmsMpSubscriptionBannerStyles } from "../src/views/app-ui/app-sms-su
 import { getPanelFloatingAgentToggleStyles } from "../src/components/agent/panel-floating-agent-toggle.js";
 import { getSupportTicketConversationStyles } from "../src/views/shared/support-ticket-conversation-ui.js";
 import { getAppSimPlansStyles } from "../src/views/app-ui/app-sim-plans-styles.js";
+import { getAppSimSubscriptionCheckoutModalStyles } from "../src/views/app-ui/app-sim-subscription-checkout-ui.js";
 
 const MATERIAL_SYMBOLS_FIX = `
 .material-symbols-outlined {
@@ -24,7 +25,7 @@ const MATERIAL_SYMBOLS_FIX = `
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outPath = path.join(root, "public", "app-panel.css");
-const css = `${MATERIAL_SYMBOLS_FIX}${getAdminStyles()}${getAppPanelStyles()}${getAppSimPlansStyles()}${getLabPanelThemeStyles()}${getLightPanelThemeStyles()}${getPanelThemeToggleStyles()}${getSmsMpSubscriptionBannerStyles()}${getPanelFloatingAgentToggleStyles()}${getSupportTicketConversationStyles()}`;
+const css = `${MATERIAL_SYMBOLS_FIX}${getAdminStyles()}${getAppPanelStyles()}${getAppSimPlansStyles()}${getAppSimSubscriptionCheckoutModalStyles()}${getLabPanelThemeStyles()}${getLightPanelThemeStyles()}${getPanelThemeToggleStyles()}${getSmsMpSubscriptionBannerStyles()}${getPanelFloatingAgentToggleStyles()}${getSupportTicketConversationStyles()}`;
 
 writeFileSync(outPath, css, "utf8");
 const ver = String(Date.now());

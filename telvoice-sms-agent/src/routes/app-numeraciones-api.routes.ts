@@ -1,6 +1,9 @@
 import { Router } from "express";
 import {
   getApiAgentPlanStatus,
+  getApiSimSubscriptionAvailableNumbers,
+  getApiSimSubscriptionPending,
+  postApiSimSubscriptionCheckout,
   getApiNumeracionById,
   getApiNumeracionSms,
   getApiNumeraciones,
@@ -40,4 +43,19 @@ appNumeracionesApiRouter.get(
   "/agent-plan/status",
   requireClientPanelAgentLineApi,
   getApiAgentPlanStatus,
+);
+appNumeracionesApiRouter.get(
+  "/sim-subscription/available-numbers",
+  requireClientPanelAgentLineApi,
+  getApiSimSubscriptionAvailableNumbers,
+);
+appNumeracionesApiRouter.get(
+  "/sim-subscription/pending",
+  requireClientPanelAgentLineApi,
+  getApiSimSubscriptionPending,
+);
+appNumeracionesApiRouter.post(
+  "/sim-subscription/checkout",
+  requireClientPanelAgentLineApi,
+  postApiSimSubscriptionCheckout,
 );

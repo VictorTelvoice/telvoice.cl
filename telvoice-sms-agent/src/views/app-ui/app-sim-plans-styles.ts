@@ -210,6 +210,11 @@ export function getAppSimPlansStyles(): string {
       gap: 0.45rem;
     }
 
+    .tv-sim-plan-card__open {
+      display: inline-flex;
+      align-items: center;
+    }
+
     .tv-sim-plans-note {
       display: flex;
       align-items: flex-start;

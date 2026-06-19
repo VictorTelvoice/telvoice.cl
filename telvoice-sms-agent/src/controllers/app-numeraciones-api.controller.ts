@@ -26,6 +26,13 @@ import { AppError } from "../utils/errors.js";
 import { isMissingTableError } from "../utils/db-table.js";
 import { validateUuidParam } from "../utils/validation.js";
 import { buildAppContext } from "./app.controller.js";
+import {
+  buildClientSimCheckoutProfilePayload,
+  getClientPendingSimCheckoutForCompany,
+  listClientSimAvailableNumbers,
+  startClientPanelSimSubscriptionCheckout,
+} from "../services/clientSimSubscriptionCheckoutService.js";
+import { isSimPlanId } from "../utils/simPlans.js";
 
 async function requireApiContext(req: Request, res: Response) {
   const ctx = await buildAppContext(req);
@@ -377,5 +384,91 @@ export async function getApiAgentPlanStatus(
     });
   } catch (error) {
     res.status(500).json({ ok: false, error: "Error al obtener plan." });
+  }
+}
+
+export async function getApiSimSubscriptionAvailableNumbers(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireApiContext(req, res);
+    if (!ctx) return;
+
+    const result = await listClientSimAvailableNumbers();
+    res.json({
+      ok: true,
+      ...result,
+      profile: buildClientSimCheckoutProfilePayload(ctx.company, ctx.profile),
+    });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: "Error al listar numeraciones." });
+  }
+}
+
+export async function getApiSimSubscriptionPending(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireApiContext(req, res);
+    if (!ctx) return;
+
+    const pending = await getClientPendingSimCheckoutForCompany(ctx.company.id);
+    res.json({ ok: true, ...pending });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: "Error al consultar checkout pendiente." });
+  }
+}
+
+export async function postApiSimSubscriptionCheckout(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireApiContext(req, res);
+    if (!ctx) return;
+
+    if (!canOperateClientPanel(ctx.profile.role)) {
+      res.status(403).json({ ok: false, error: "Sin permiso para contratar numeración." });
+      return;
+    }
+
+    const planId = String(req.body?.plan_id ?? "").trim();
+    if (!isSimPlanId(planId)) {
+      res.status(400).json({ ok: false, error: "Plan SIM no válido." });
+      return;
+    }
+
+    const assignmentMode =
+      req.body?.assignment_mode === "auto" ? "auto" : "selected";
+    const inventoryPublicId = String(req.body?.inventory_public_id ?? "").trim();
+
+    const result = await startClientPanelSimSubscriptionCheckout({
+      company: ctx.company,
+      profile: ctx.profile,
+      planId,
+      assignmentMode,
+      inventoryPublicId: inventoryPublicId || undefined,
+    });
+
+    res.json({
+      ok: true,
+      order_id: result.orderId,
+      checkout_url: result.checkoutUrl,
+      preapproval_id: result.preferenceId,
+      product_type: result.productType,
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      res.status(error.statusCode).json({
+        ok: false,
+        error: error.message,
+        code: error.code,
+        details: error.details,
+      });
+      return;
+    }
+    res.status(500).json({ ok: false, error: "Error al iniciar checkout SIM." });
   }
 }
