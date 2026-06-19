@@ -17,6 +17,9 @@ export type AuditAction =
   | "api_key.revoke"
   | "order.confirm"
   | "pricing.update"
+  | "pricing.create"
+  | "pricing.deactivate"
+  | "pricing.reactivate"
   | "route.update"
   | "provider.update";
 

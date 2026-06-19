@@ -16,7 +16,7 @@ import {
 import { getCompanyBalance } from "../services/smsWalletService.js";
 import { listTransactionsByCompany } from "../services/walletTransactionService.js";
 import { env, isMercadoPagoConfigured } from "../config/env.js";
-import { getPricingTiersForQuote } from "../services/smsPricingTierService.js";
+import { getPricingTiersForQuote } from "../services/pricing/smsPricingService.js";
 import { getCompanySmsMpSubscription } from "../services/smsMpSubscriptionService.js";
 import { getCompanyPaymentCard, saveCompanyPaymentCardPreferences } from "../services/companyPaymentCardService.js";
 import { startPaymentCardSetupCheckout } from "../services/mercadoPagoClientPanelService.js";

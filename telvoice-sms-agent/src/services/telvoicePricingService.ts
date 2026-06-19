@@ -5,7 +5,7 @@ import {
   getUnitPriceForQuantity,
   SMS_QUANTITY_STEP,
   SMS_MIN_QUANTITY,
-} from "./smsPricingTierService.js";
+} from "./pricing/smsPricingService.js";
 import { createQuickQuote, quoteSmsQuantity } from "./commercialQuoteService.js";
 
 export { SMS_QUANTITY_STEP, SMS_MIN_QUANTITY, HIGH_VOLUME_SMS_THRESHOLD };

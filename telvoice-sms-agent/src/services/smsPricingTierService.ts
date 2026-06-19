@@ -139,9 +139,75 @@ export async function listAllPricingTiers(
   return (data ?? []) as SmsPricingTierRow[];
 }
 
+export async function getPricingTierById(id: string): Promise<SmsPricingTierRow | null> {
+  const { data, error } = await getSupabase()
+    .from("sms_pricing_tiers")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    wrapSupabaseError(error, "getPricingTierById");
+  }
+  return (data as SmsPricingTierRow | null) ?? null;
+}
+
+export async function findActiveTierByMinQuantity(
+  countryCode: string,
+  minQuantity: number,
+  excludeId?: string,
+): Promise<SmsPricingTierRow | null> {
+  let query = getSupabase()
+    .from("sms_pricing_tiers")
+    .select("*")
+    .eq("country_code", countryCode)
+    .eq("min_quantity", minQuantity)
+    .eq("is_active", true);
+
+  if (excludeId) {
+    query = query.neq("id", excludeId);
+  }
+
+  const { data, error } = await query.maybeSingle();
+  if (error) {
+    wrapSupabaseError(error, "findActiveTierByMinQuantity");
+  }
+  return (data as SmsPricingTierRow | null) ?? null;
+}
+
+export async function createPricingTier(input: {
+  country_code?: string;
+  min_quantity: number;
+  unit_price: number;
+  currency?: string;
+  label: string;
+  is_active?: boolean;
+  sort_order?: number;
+}): Promise<SmsPricingTierRow> {
+  const { data, error } = await getSupabase()
+    .from("sms_pricing_tiers")
+    .insert({
+      country_code: input.country_code ?? "CL",
+      min_quantity: input.min_quantity,
+      unit_price: input.unit_price,
+      currency: input.currency ?? "CLP",
+      label: input.label,
+      is_active: input.is_active ?? true,
+      sort_order: input.sort_order ?? input.min_quantity,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    wrapSupabaseError(error, "createPricingTier");
+  }
+  return data as SmsPricingTierRow;
+}
+
 export async function updatePricingTier(
   id: string,
   patch: {
+    min_quantity?: number;
     unit_price?: number;
     label?: string;
     is_active?: boolean;

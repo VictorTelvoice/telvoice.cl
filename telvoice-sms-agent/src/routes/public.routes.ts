@@ -5,6 +5,7 @@ import {
   getPublicSimAvailability,
   getPublicSimAvailableNumbers,
   getPublicSimPlans,
+  getPublicSmsPricingTiersHandler,
   postPublicCheckout,
   postPublicClaim,
   postPublicLead,
@@ -19,6 +20,7 @@ publicRouter.get("/sim-availability", getPublicSimAvailability);
 publicRouter.get("/sim-plans", getPublicSimPlans);
 publicRouter.get("/sim-available-numbers", getPublicSimAvailableNumbers);
 publicRouter.get("/pending-sim-checkout", getPublicPendingSimCheckout);
+publicRouter.get("/sms-pricing-tiers", getPublicSmsPricingTiersHandler);
 publicRouter.post("/quote", postPublicQuote);
 publicRouter.post("/lead", postPublicLead);
 publicRouter.post("/checkout", postPublicCheckout);

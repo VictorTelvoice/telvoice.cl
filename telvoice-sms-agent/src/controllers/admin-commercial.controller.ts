@@ -1,17 +1,10 @@
 import type { NextFunction, Request, Response } from "express";
+import { subjectFromAdmin, requireSuperadmin } from "../auth/authorization.js";
 import { createQuickQuote } from "../services/commercialQuoteService.js";
 import {
-  createSmsProduct,
-  getSmsProductById,
-  listAllSmsProducts,
-  updateSmsProduct,
-} from "../services/smsProductService.js";
-import { listActivePricingTiers } from "../services/smsPricingTierService.js";
-import {
-  listPublicLeads,
-  updatePublicLeadStatus,
-} from "../services/publicLeadService.js";
-import type { PublicLeadStatus } from "../types/commercial.js";
+  getAllSmsPricingTiers,
+  getActiveSmsPricingTiers,
+} from "../services/pricing/smsPricingService.js";
 import { ValidationError } from "../utils/errors.js";
 import { validateUuidParam } from "../utils/validation.js";
 import {
@@ -20,6 +13,17 @@ import {
   renderProductFormPage,
   renderProductsListPage,
 } from "../views/admin-pages.js";
+import {
+  createSmsProduct,
+  getSmsProductById,
+  listAllSmsProducts,
+  updateSmsProduct,
+} from "../services/smsProductService.js";
+import {
+  listPublicLeads,
+  updatePublicLeadStatus,
+} from "../services/publicLeadService.js";
+import type { PublicLeadStatus } from "../types/commercial.js";
 
 function parseProductForm(body: unknown) {
   if (!body || typeof body !== "object") {
@@ -205,7 +209,10 @@ export async function getCalculatorTest(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const tiers = await listActivePricingTiers("CL");
+    const tiers = await getActiveSmsPricingTiers("CL");
+    const allTiers = await getAllSmsPricingTiers("CL");
+    const subject = subjectFromAdmin(req.adminUser!, req.userProfile);
+    const isSuperAdmin = requireSuperadmin(subject);
     const quantityRaw =
       typeof req.query.quantity === "string"
         ? Number(req.query.quantity)
@@ -220,8 +227,12 @@ export async function getCalculatorTest(
       renderCalculatorTestPage({
         admin: req.adminUser!,
         tiers,
+        allTiers,
+        isSuperAdmin,
         quantity: quantityRaw,
         quote,
+        successMessage:
+          typeof req.query.success === "string" ? req.query.success : undefined,
       }),
     );
   } catch (error) {
@@ -239,23 +250,33 @@ export async function postCalculatorTest(
     if (!Number.isFinite(quantity) || quantity < 1) {
       throw new ValidationError("Indica una cantidad válida de SMS.");
     }
-    const tiers = await listActivePricingTiers("CL");
+    const tiers = await getActiveSmsPricingTiers("CL");
+    const allTiers = await getAllSmsPricingTiers("CL");
+    const subject = subjectFromAdmin(req.adminUser!, req.userProfile);
+    const isSuperAdmin = requireSuperadmin(subject);
     const quote = await createQuickQuote(quantity, "CL");
     res.type("html").send(
       renderCalculatorTestPage({
         admin: req.adminUser!,
         tiers,
+        allTiers,
+        isSuperAdmin,
         quantity,
         quote,
       }),
     );
   } catch (error) {
     if (error instanceof ValidationError) {
-      const tiers = await listActivePricingTiers("CL");
+      const tiers = await getActiveSmsPricingTiers("CL");
+      const allTiers = await getAllSmsPricingTiers("CL");
+      const subject = subjectFromAdmin(req.adminUser!, req.userProfile);
+      const isSuperAdmin = requireSuperadmin(subject);
       res.type("html").send(
         renderCalculatorTestPage({
           admin: req.adminUser!,
           tiers,
+          allTiers,
+          isSuperAdmin,
           error: error.message,
         }),
       );

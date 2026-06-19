@@ -1419,15 +1419,24 @@ export function renderLeadsListPage(options: {
 export function renderCalculatorTestPage(options: {
   admin: AdminSessionUser;
   tiers: SmsPricingTierRow[];
+  allTiers?: SmsPricingTierRow[];
+  isSuperAdmin?: boolean;
   quantity?: number;
   quote?: CommercialQuoteResult | null;
   error?: string;
+  successMessage?: string;
 }): string {
   const errorBlock = options.error
     ? `<div class="alert alert-error">${escapeHtml(options.error)}</div>`
     : "";
+  const successBlock = options.successMessage
+    ? `<div class="alert alert-ok">${escapeHtml(options.successMessage)}</div>`
+    : "";
 
-  const tierRows =
+  const displayTiers = options.allTiers ?? options.tiers;
+  const canEdit = options.isSuperAdmin === true;
+
+  const tierRowsReadonly =
     options.tiers.length > 0
       ? options.tiers
           .map(
@@ -1436,33 +1445,182 @@ export function renderCalculatorTestPage(options: {
             <td>${t.min_quantity.toLocaleString("es-CL")}</td>
             <td>$${escapeHtml(String(t.unit_price))} + IVA</td>
             <td>${t.is_active ? statusBadge("active") : statusBadge("inactive")}</td>
+            <td>—</td>
           </tr>`,
           )
           .join("")
-      : `<tr><td colspan="4">Sin tramos en BD — se usa fallback hardcoded (1k→$10 … 100k→$5).</td></tr>`;
+      : `<tr><td colspan="5">Sin tramos activos en BD — se usa fallback temporal.</td></tr>`;
+
+  const tierRowsEditable = displayTiers
+    .map(
+      (t) => `<tr data-tier-id="${escapeHtml(t.id)}">
+        <td><input type="text" class="tier-label" value="${escapeHtml(t.label)}" ${canEdit ? "" : "disabled"} /></td>
+        <td><input type="number" class="tier-min-sms" min="1000" step="1000" value="${t.min_quantity}" ${canEdit ? "" : "disabled"} style="max-width:7rem" /></td>
+        <td><input type="number" class="tier-unit-price" min="0.01" step="0.01" value="${escapeHtml(String(t.unit_price))}" ${canEdit ? "" : "disabled"} style="max-width:5rem" /> <span class="field-hint">+ IVA</span></td>
+        <td>
+          <label><input type="checkbox" class="tier-active" ${t.is_active ? "checked" : ""} ${canEdit ? "" : "disabled"} /> ${t.is_active ? "Activo" : "Inactivo"}</label>
+        </td>
+        <td>${canEdit ? `<button type="button" class="btn btn-secondary btn-sm tier-save-btn" data-tier-id="${escapeHtml(t.id)}">Guardar</button>` : "—"}</td>
+      </tr>`,
+    )
+    .join("");
 
   let resultBlock = "";
   if (options.quote) {
     const q = options.quote;
+    const roundedNote =
+      q.was_rounded && q.requested_quantity !== q.quoted_quantity
+        ? `<div class="meta-item"><dt>Cantidad facturable</dt><dd>${q.quoted_quantity.toLocaleString("es-CL")} SMS</dd></div>`
+        : "";
     resultBlock = `
       <h2>Resultado de cotización</h2>
       <dl class="meta-grid">
         <div class="meta-item"><dt>Cantidad solicitada</dt><dd>${q.requested_quantity.toLocaleString("es-CL")} SMS</dd></div>
-        <div class="meta-item"><dt>Cantidad cotizada</dt><dd>${q.quoted_quantity.toLocaleString("es-CL")} SMS</dd></div>
-        <div class="meta-item"><dt>Tramo</dt><dd>${escapeHtml(q.tier_label)}</dd></div>
+        ${roundedNote}
+        <div class="meta-item"><dt>Tramo aplicado</dt><dd>${escapeHtml(q.tier_label)}</dd></div>
         <div class="meta-item"><dt>Precio unitario</dt><dd>$${q.unit_price} + IVA</dd></div>
-        <div class="meta-item"><dt>Subtotal</dt><dd>${formatClp(q.subtotal)} + IVA</dd></div>
+        <div class="meta-item"><dt>Subtotal neto</dt><dd>${formatClp(q.subtotal)}</dd></div>
         <div class="meta-item"><dt>IVA 19%</dt><dd>${formatClp(q.iva)}</dd></div>
-        <div class="meta-item"><dt>Total IVA incl.</dt><dd>${formatClp(q.total_with_iva)}</dd></div>
-        <div class="meta-item"><dt>Redondeo</dt><dd>${q.was_rounded ? "sí (múltiplos 1.000)" : "no"}</dd></div>
-      </dl>
-      <h3>Mensaje Telegram / API</h3>
-      <div class="message-box">${escapeHtml(q.commercial_message)}</div>`;
+        <div class="meta-item"><dt>Total</dt><dd>${formatClp(q.total_with_iva)}</dd></div>
+      </dl>`;
   }
+
+  const editControls = canEdit
+    ? `<div class="actions-row" style="margin-bottom:1rem">
+        <button type="button" id="pricing-edit-btn" class="btn btn-secondary">Editar precios</button>
+        <button type="button" id="pricing-new-tier-btn" class="btn btn-secondary" hidden>Nuevo tramo</button>
+        <button type="button" id="pricing-save-all-btn" class="btn btn-primary" hidden>Guardar cambios</button>
+        <button type="button" id="pricing-cancel-btn" class="btn btn-secondary" hidden>Cancelar</button>
+      </div>
+      <div id="pricing-edit-alert" class="alert" hidden></div>`
+    : `<p class="field-hint">Solo superadmin puede editar tramos de precio.</p>`;
+
+  const pricingScript = canEdit
+    ? `<script>
+(function () {
+  var editBtn = document.getElementById("pricing-edit-btn");
+  var newBtn = document.getElementById("pricing-new-tier-btn");
+  var saveAllBtn = document.getElementById("pricing-save-all-btn");
+  var cancelBtn = document.getElementById("pricing-cancel-btn");
+  var alertEl = document.getElementById("pricing-edit-alert");
+  var tbody = document.getElementById("pricing-tiers-tbody");
+  var editMode = false;
+  var pendingRows = [];
+
+  function showAlert(msg, ok) {
+    if (!alertEl) return;
+    alertEl.hidden = false;
+    alertEl.className = "alert " + (ok ? "alert-ok" : "alert-error");
+    alertEl.textContent = msg;
+  }
+
+  function setEditMode(on) {
+    editMode = on;
+    if (editBtn) editBtn.hidden = on;
+    if (newBtn) newBtn.hidden = !on;
+    if (saveAllBtn) saveAllBtn.hidden = !on;
+    if (cancelBtn) cancelBtn.hidden = !on;
+    document.querySelectorAll("#pricing-tiers-table .tier-label, #pricing-tiers-table .tier-min-sms, #pricing-tiers-table .tier-unit-price, #pricing-tiers-table .tier-active").forEach(function (el) {
+      el.disabled = !on;
+    });
+    document.querySelectorAll(".tier-save-btn").forEach(function (btn) {
+      btn.hidden = !on;
+    });
+  }
+
+  function rowData(tr) {
+    return {
+      id: tr.getAttribute("data-tier-id") || "",
+      label: tr.querySelector(".tier-label").value.trim(),
+      min_sms: Number(tr.querySelector(".tier-min-sms").value),
+      unit_price: Number(tr.querySelector(".tier-unit-price").value),
+      active: tr.querySelector(".tier-active").checked,
+    };
+  }
+
+  async function saveTier(data, isNew) {
+    var url = isNew ? "/api/admin/sms-pricing-tiers" : "/api/admin/sms-pricing-tiers/" + encodeURIComponent(data.id);
+    var method = isNew ? "POST" : "PATCH";
+    var body = {
+      label: data.label,
+      min_sms: data.min_sms,
+      unit_price: data.unit_price,
+      active: data.active,
+      is_active: data.active,
+    };
+    var res = await fetch(url, {
+      method: method,
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(body),
+    });
+    var json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.error || "Error al guardar tramo.");
+    }
+    return json.tier;
+  }
+
+  if (editBtn) {
+    editBtn.addEventListener("click", function () { setEditMode(true); });
+  }
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", function () { window.location.reload(); });
+  }
+  if (newBtn && tbody) {
+    newBtn.addEventListener("click", function () {
+      var tr = document.createElement("tr");
+      tr.setAttribute("data-tier-id", "new-" + Date.now());
+      tr.innerHTML = '<td><input type="text" class="tier-label" value="Desde X SMS" /></td>' +
+        '<td><input type="number" class="tier-min-sms" min="1000" step="1000" value="1000" style="max-width:7rem" /></td>' +
+        '<td><input type="number" class="tier-unit-price" min="0.01" step="0.01" value="10" style="max-width:5rem" /> <span class="field-hint">+ IVA</span></td>' +
+        '<td><label><input type="checkbox" class="tier-active" checked /> Activo</label></td>' +
+        '<td><button type="button" class="btn btn-secondary btn-sm tier-save-btn">Guardar</button></td>';
+      tbody.appendChild(tr);
+    });
+  }
+  document.querySelectorAll(".tier-save-btn").forEach(function (btn) {
+    btn.addEventListener("click", async function () {
+      var tr = btn.closest("tr");
+      if (!tr) return;
+      if (!confirm("¿Confirmas actualizar los precios SMS? Estos valores impactarán el landing, el panel cliente y las cotizaciones públicas.")) return;
+      try {
+        var data = rowData(tr);
+        var isNew = !data.id || data.id.startsWith("new-");
+        var saved = await saveTier(data, isNew);
+        tr.setAttribute("data-tier-id", saved.id);
+        showAlert("Precios actualizados correctamente. Los cambios ya están disponibles para landing, panel y cotizador público.", true);
+        setTimeout(function () { window.location.reload(); }, 1200);
+      } catch (err) {
+        showAlert(err.message || String(err), false);
+      }
+    });
+  });
+  if (saveAllBtn && tbody) {
+    saveAllBtn.addEventListener("click", async function () {
+      if (!confirm("¿Confirmas actualizar los precios SMS? Estos valores impactarán el landing, el panel cliente y las cotizaciones públicas.")) return;
+      var rows = Array.from(tbody.querySelectorAll("tr"));
+      try {
+        for (var i = 0; i < rows.length; i++) {
+          var data = rowData(rows[i]);
+          var isNew = !data.id || data.id.startsWith("new-");
+          await saveTier(data, isNew);
+        }
+        showAlert("Precios actualizados correctamente. Los cambios ya están disponibles para landing, panel y cotizador público.", true);
+        setTimeout(function () { window.location.reload(); }, 1200);
+      } catch (err) {
+        showAlert(err.message || String(err), false);
+      }
+    });
+  }
+})();
+</script>`
+    : "";
 
   const body = `
     <h1>Calculadora Telvoice.cl</h1>
-    <p class="subtitle">Cotización Chile por tramos — múltiplos de 1.000 SMS. Misma lógica que <code>POST /api/public/quote</code> y el bot.</p>
+    <p class="subtitle">Cotización Chile por tramos — múltiplos de 1.000 SMS. Fuente única: <code>sms_pricing_tiers</code>.</p>
+    ${successBlock}
     ${errorBlock}
     <div class="card" style="margin-bottom:1.25rem">
       <form method="post" action="/admin/calculator" class="actions-row" style="margin:0;align-items:flex-end">
@@ -1472,17 +1630,18 @@ export function renderCalculatorTestPage(options: {
         </div>
         <button type="submit" class="btn btn-primary">Cotizar</button>
       </form>
-      <p class="field-hint">Ejemplos: 30000 → $7/SMS · 70000 → $6/SMS · 12500 → redondea a 13000 → $8/SMS</p>
+      <p class="field-hint">Ejemplos: 30000 → tramo 15k · 12500 → redondea a 13000</p>
     </div>
     ${resultBlock}
-    <h2>Tramos activos (sms_pricing_tiers)</h2>
+    <h2>Tramos (sms_pricing_tiers)</h2>
+    ${editControls}
     <div class="card table-wrap" style="padding:0">
-      <table>
-        <thead><tr><th>Etiqueta</th><th>Desde (SMS)</th><th>Precio unitario</th><th>Estado</th></tr></thead>
-        <tbody>${tierRows}</tbody>
+      <table id="pricing-tiers-table">
+        <thead><tr><th>Etiqueta</th><th>Desde SMS</th><th>Precio unitario</th><th>Estado</th><th>Acción</th></tr></thead>
+        <tbody id="pricing-tiers-tbody">${canEdit ? tierRowsEditable : tierRowsReadonly}</tbody>
       </table>
     </div>
-    <p class="field-hint" style="margin-top:1rem">Productos destacados (Starter/Business/Corporativo) son referencia en landing; la cotización usa siempre la calculadora por tramos.</p>`;
+    ${pricingScript}`;
 
   return renderLayout({
     title: "Calculadora Telvoice.cl",
