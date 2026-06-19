@@ -3,7 +3,8 @@
   --nsim-primary: #0052cc;
   --nsim-cyan: #00daf3;
   --nsim-purple: #6366f1;
-  --nsim-promo-accent: #22c55e;
+  --tv-balance-green: #059669;
+  --nsim-promo-accent: var(--tv-balance-green);
   --nsim-text: #131b2e;
   --nsim-muted: #5c6478;
   --nsim-border: rgba(195, 198, 214, 0.75);

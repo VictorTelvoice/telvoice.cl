@@ -14,6 +14,8 @@ export function getAppSimPlansStyles(): string {
 
     .tv-sim-plans-page {
       --nsim-primary: #0052cc;
+      --tv-balance-green: var(--tv-ok);
+      --nsim-promo-accent: var(--tv-balance-green);
       --nsim-text: #131b2e;
       --nsim-muted: #5c6478;
       --nsim-border: rgba(195, 198, 214, 0.75);
@@ -123,7 +125,7 @@ export function getAppSimPlansStyles(): string {
 
     .tv-sim-plans-page .nsim-billing-switch__button span {
       margin-left: 0.15rem;
-      color: #22c55e;
+      color: var(--nsim-promo-accent);
       font-size: 0.625rem;
     }
 
@@ -240,7 +242,7 @@ export function getAppSimPlansStyles(): string {
     }
 
     .tv-sim-plans-page .nsim-plan-card.has-intro-promo .nsim-plan-price {
-      color: #22c55e;
+      color: var(--nsim-promo-accent);
     }
 
     .tv-sim-plans-page .nsim-plan-price-subnote {
