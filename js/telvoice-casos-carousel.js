@@ -49,6 +49,8 @@
     items: cards,
     dotsWrap: dotsWrap,
     dotClass: "casos-carousel-dot",
+    observeTarget: document.getElementById("casos-uso"),
+    autoplayMs: 4500,
     dotLabel: function (i) {
       return "Ver casos de uso " + (i + 1);
     },

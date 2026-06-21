@@ -22,11 +22,25 @@
     var enabled = options.enabled || function () {
       return true;
     };
+    var observeTarget = options.observeTarget || root;
     var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var autoplayMs = options.autoplayMs;
+    if (autoplayMs === undefined) {
+      autoplayMs = parseInt(root.getAttribute("data-autoplay"), 10);
+    }
+    if (isNaN(autoplayMs)) {
+      autoplayMs = 4500;
+    }
+    if (reduced) {
+      autoplayMs = 0;
+    }
     var currentPage = 0;
     var resizeTimer = null;
     var scrollTimer = null;
+    var autoplayTimer = null;
     var syncing = false;
+    var userPaused = false;
+    var inView = false;
 
     if (!root || !viewport || !track || !items.length) {
       return null;
@@ -116,9 +130,31 @@
       } else {
         viewport.scrollLeft = 0;
         track.style.transform = "";
+        clearAutoplay();
       }
       renderDots();
       updateDots();
+    }
+
+    function clearAutoplay() {
+      if (autoplayTimer) {
+        window.clearInterval(autoplayTimer);
+        autoplayTimer = null;
+      }
+    }
+
+    function resetAutoplay() {
+      clearAutoplay();
+      if (!autoplayMs || userPaused || !inView || !isActive()) {
+        return;
+      }
+      autoplayTimer = window.setInterval(function () {
+        if (currentPage >= maxPage()) {
+          goToPage(0);
+        } else {
+          goToPage(currentPage + 1);
+        }
+      }, autoplayMs);
     }
 
     function scrollViewport(left, behavior) {
@@ -142,11 +178,16 @@
       window.clearTimeout(scrollTimer);
       scrollTimer = window.setTimeout(function () {
         syncing = false;
+        resetAutoplay();
       }, reduced ? 0 : 520);
     }
 
     function nextPage() {
-      goToPage(currentPage + 1);
+      if (currentPage >= maxPage()) {
+        goToPage(0);
+      } else {
+        goToPage(currentPage + 1);
+      }
     }
 
     function prevPage() {
@@ -202,6 +243,64 @@
 
     window.addEventListener("resize", onResize);
 
+    if (autoplayMs && typeof IntersectionObserver === "function" && observeTarget) {
+      var visibilityObserver = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            inView = entry.isIntersecting;
+            if (inView) {
+              resetAutoplay();
+            } else {
+              clearAutoplay();
+            }
+          });
+        },
+        {
+          threshold: 0.35,
+          rootMargin: "0px 0px -6% 0px",
+        }
+      );
+      visibilityObserver.observe(observeTarget);
+    }
+
+    root.addEventListener("mouseenter", function () {
+      userPaused = true;
+      clearAutoplay();
+    });
+    root.addEventListener("mouseleave", function () {
+      userPaused = false;
+      resetAutoplay();
+    });
+    root.addEventListener("focusin", function () {
+      userPaused = true;
+      clearAutoplay();
+    });
+    root.addEventListener("focusout", function (e) {
+      if (root.contains(e.relatedTarget)) {
+        return;
+      }
+      userPaused = false;
+      resetAutoplay();
+    });
+    viewport.addEventListener(
+      "touchstart",
+      function () {
+        userPaused = true;
+        clearAutoplay();
+      },
+      { passive: true }
+    );
+    viewport.addEventListener(
+      "touchend",
+      function () {
+        window.setTimeout(function () {
+          userPaused = false;
+          resetAutoplay();
+        }, 800);
+      },
+      { passive: true }
+    );
+
     applyDesktopState();
     goToPage(0, "auto");
 
@@ -211,6 +310,14 @@
         return currentPage;
       },
       refresh: onResize,
+      pauseAutoplay: function () {
+        userPaused = true;
+        clearAutoplay();
+      },
+      resumeAutoplay: function () {
+        userPaused = false;
+        resetAutoplay();
+      },
     };
   }
 

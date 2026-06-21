@@ -23,6 +23,8 @@
     items: cards,
     dotsWrap: dotsWrap,
     dotClass: "lab-agent-carousel-dot",
+    observeTarget: document.getElementById("agente-telvoice"),
+    autoplayMs: 4500,
     dotLabel: function (i) {
       return "Ver capacidad " + (i + 1) + " de " + cards.length;
     },
