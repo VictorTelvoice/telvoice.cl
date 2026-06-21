@@ -5162,28 +5162,28 @@
       white-space: nowrap;
     }
     .tv-buy-sms-calc .pack-includes-block {
-      margin-top: 1.5rem;
-      max-width: 100%;
+      margin-top: 1.125rem;
+      max-width: 20rem;
       margin-left: auto;
       margin-right: auto;
     }
     .tv-buy-sms-calc .pack-includes-title {
-      font-size: 0.8125rem;
+      font-size: 0.75rem;
       font-weight: 700;
       color: #1a1c20;
       text-align: center;
-      margin: 0 0 0.75rem;
+      margin: 0 0 0.4rem;
     }
     .tv-buy-sms-calc .pack-includes {
       border: 1px solid rgba(0, 82, 204, 0.12);
       background: linear-gradient(180deg, #faf8ff 0%, #f5f7fc 100%);
-      border-radius: 1.25rem;
-      padding: 1rem 0.85rem;
+      border-radius: 0.625rem;
+      padding: 0.45rem 0.55rem;
       overflow: hidden;
     }
-    @media (min-width: 768px) {
+    @media (min-width: 640px) {
       .tv-buy-sms-calc .pack-includes {
-        padding: 1.15rem 1.25rem;
+        padding: 0.5rem 0.65rem;
       }
     }
     .tv-buy-sms-calc .pack-includes-list {
@@ -5195,22 +5195,17 @@
       flex-wrap: nowrap;
       justify-content: center;
       align-items: center;
-      gap: clamp(0.35rem, 1.1vw, 0.85rem);
+      gap: clamp(0.2rem, 0.7vw, 0.45rem);
       width: 100%;
       max-width: 100%;
-    }
-    @media (min-width: 768px) {
-      .tv-buy-sms-calc .pack-includes-list {
-        gap: clamp(0.5rem, 1.4vw, 1.15rem);
-      }
     }
     .tv-buy-sms-calc .pack-includes-item {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.28rem;
-      font-size: clamp(0.625rem, 1.75vw, 0.75rem);
-      line-height: 1.25;
+      gap: 0.18rem;
+      font-size: clamp(0.5625rem, 1.4vw, 0.6875rem);
+      line-height: 1.2;
       color: #43474e;
       white-space: nowrap;
       flex: 0 1 auto;
@@ -5218,7 +5213,7 @@
       text-align: center;
     }
     .tv-buy-sms-calc .pack-includes-item .material-symbols-outlined {
-      font-size: clamp(0.75rem, 2vw, 0.9375rem);
+      font-size: clamp(0.625rem, 1.5vw, 0.75rem);
       color: #0052cc;
       flex-shrink: 0;
     }
