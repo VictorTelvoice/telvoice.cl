@@ -1357,29 +1357,69 @@
         submitBtn.disabled = true;
       }
 
-      fetch("/api/contact/lead", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: nombreEmpresa,
-          email: correo,
-          phone: telefono || null,
-          message: mensaje,
-          nota: nota,
-          page_url: window.location.href,
-        }),
-      })
+      var agentOrigin = (
+        (window.TELVOICE_CONFIG && window.TELVOICE_CONFIG.agentApiOrigin) ||
+        "https://agent.telvoice.cl"
+      ).replace(/\/$/, "");
+      var leadPayload = {
+        name: nombreEmpresa,
+        email: correo,
+        phone: telefono || null,
+        message: mensaje,
+        page_url: window.location.href,
+      };
+
+      function submitContactLead(url, body) {
+        return fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }).then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, data: data };
+          });
+        });
+      }
+
+      function tryAgentContactLead() {
+        return submitContactLead(agentOrigin + "/api/public/contact-lead", leadPayload)
+          .then(function (result) {
+            if (result.ok && result.data && result.data.ok !== false) {
+              return result;
+            }
+            return submitContactLead(agentOrigin + "/api/public/lead", {
+              source: "landing_contact",
+              name: leadPayload.name,
+              email: leadPayload.email,
+              phone: leadPayload.phone,
+              message: leadPayload.message,
+              page_url: leadPayload.page_url,
+            });
+          });
+      }
+
+      tryAgentContactLead()
+        .catch(function () {
+          return submitContactLead("/api/contact/lead", {
+            name: leadPayload.name,
+            email: leadPayload.email,
+            phone: leadPayload.phone,
+            message: leadPayload.message,
+            page_url: leadPayload.page_url,
+          });
+        })
         .then(function (res) {
           return res.json().then(function (data) {
             return { ok: res.ok, data: data };
           });
         })
         .then(function (result) {
-          if (!result.ok || !result.data || result.data.ok === false) {
-            throw new Error(
-              (result.data && result.data.error) ||
-                "No pudimos enviar tu consulta. Intenta nuevamente.",
-            );
+          if (!result.ok || !result.data || result.data.ok === false || result.data.success === false) {
+            var errMsg =
+              (result.data && (result.data.error || result.data.message)) ||
+              "No pudimos enviar tu consulta. Intenta nuevamente.";
+            if (typeof errMsg === "object" && errMsg.message) errMsg = errMsg.message;
+            throw new Error(errMsg);
           }
           trackEvent("submit_lead_empresa", { source: "landing_contact" });
           form.reset();
