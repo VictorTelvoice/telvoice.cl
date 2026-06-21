@@ -1,6 +1,5 @@
 (function () {
   var CFG = window.TELVOICE_CONFIG || {};
-  var SALES_EMAIL = CFG.salesEmail || "ventas@telvoice.net";
   var IVA_RATE = CFG.ivaRate != null ? CFG.ivaRate : 0.19;
   var QUOTE_MIN = CFG.quoteVolumeMin != null ? CFG.quoteVolumeMin : 200000;
   var BAGS = (CFG.bags || []).slice();
@@ -276,48 +275,11 @@
     });
   });
 
-  var USO_PREFILL_MAP = {
-    cotizacion: "",
-    api: "integracion-api",
-    "integracion-api": "integracion-api",
-    "alto-volumen": "campanas-comerciales",
-    marketing: "campanas-comerciales",
-    notificaciones: "notificaciones-alertas",
-    cobranza: "recordatorios-cobranza",
-    otp: "otp-validacion",
-  };
-
-  function mapVolumePrefill(v) {
-    if (v === undefined || v === null || v === "") return "";
-    var n = parseInt(String(v).replace(/\D/g, ""), 10);
-    if (!isNaN(n) && String(v).match(/\d/)) {
-      if (n < 10000) return "menos-10000";
-      if (n <= 50000) return "10000-50000";
-      if (n <= 100000) return "50000-100000";
-      return "mas-100000";
-    }
-    var legacy = {
-      "100000+": "mas-100000",
-      "200000+": "mas-100000",
-      "15000-100000": "50000-100000",
-      "3000-15000": "10000-50000",
-    };
-    return legacy[v] || v;
-  }
-
   function scrollToContact(prefill) {
     closeMobileMenu();
     var el = qs("contacto");
     if (el) scrollToSectionEl(el);
     if (prefill) {
-      if (prefill.interes) {
-        var uso = qs("uso-principal");
-        if (uso) uso.value = USO_PREFILL_MAP[prefill.interes] || prefill.interes;
-      }
-      if (prefill.volumen !== undefined) {
-        var vol = qs("volumen-mensual");
-        if (vol) vol.value = mapVolumePrefill(prefill.volumen);
-      }
       if (typeof prefill.mensaje === "string") {
         var mensajeField = qs("lead-mensaje");
         if (mensajeField) {
@@ -332,15 +294,8 @@
     if (nombre) setTimeout(function () { nombre.focus(); }, 400);
   }
 
-  function selectOptionLabel(id) {
-    var el = qs(id);
-    if (!el || !el.value) return "";
-    var opt = el.options[el.selectedIndex];
-    return opt ? opt.text.trim() : el.value;
-  }
-
   function clearLeadFieldErrors() {
-    ["lead-nombre", "lead-contacto", "volumen-mensual", "uso-principal"].forEach(function (id) {
+    ["lead-nombre", "lead-contacto"].forEach(function (id) {
       var field = qs(id);
       if (field) field.removeAttribute("aria-invalid");
     });
@@ -1024,7 +979,7 @@
   function bindDemoButtons() {
     document.querySelectorAll(".api-request-cta").forEach(function (b) {
       b.addEventListener("click", function () {
-        scrollToContact({ interes: "integracion-api" });
+        scrollToContact({ mensaje: "Solicito información sobre integración vía API." });
       });
     });
     document.querySelectorAll(".empresas-cta").forEach(function (b) {
@@ -1047,7 +1002,7 @@
     });
     document.querySelectorAll(".comercial-api-cta").forEach(function (b) {
       b.addEventListener("click", function () {
-        scrollToContact({ interes: "integracion-api" });
+        scrollToContact({ mensaje: "Solicito información sobre integración vía API." });
       });
     });
   }
@@ -1358,16 +1313,15 @@
 
       var honeypot = qs("website");
       if (honeypot && honeypot.value) {
-        showFormAlert("ok", "Solicitud enviada. Te contactaremos pronto para revisar la mejor opción para tu empresa.");
+        showFormAlert("ok", "Consulta enviada. Te contactaremos pronto para revisar tu requerimiento.");
         return;
       }
 
       var nombreEmpresa = (qs("lead-nombre").value || "").trim();
       var contacto = (qs("lead-contacto").value || "").trim();
-      var volumen = (qs("volumen-mensual") && qs("volumen-mensual").value) || "";
-      var uso = qs("uso-principal") ? qs("uso-principal").value : "";
       var mensaje = qs("lead-mensaje") ? (qs("lead-mensaje").value || "").trim() : "";
       var nota = qs("lead-nota") ? (qs("lead-nota").value || "").trim() : "";
+      var submitBtn = qs("form-submit");
 
       if (nombreEmpresa.length < 2) {
         showFormAlert("error", "Indique su nombre o el nombre de su empresa.");
@@ -1381,49 +1335,55 @@
         qs("lead-contacto").focus();
         return;
       }
-      if (!volumen) {
-        showFormAlert("error", "Seleccione el volumen mensual estimado.");
-        markLeadFieldError("volumen-mensual");
-        qs("volumen-mensual").focus();
-        return;
-      }
-      if (!uso) {
-        showFormAlert("error", "Seleccione el uso principal.");
-        markLeadFieldError("uso-principal");
-        qs("uso-principal").focus();
-        return;
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
       }
 
-      var volumenLabel = selectOptionLabel("volumen-mensual");
-      var usoLabel = selectOptionLabel("uso-principal");
-      var fecha = new Date().toLocaleString("es-CL", { timeZone: "America/Santiago" });
-
-      var lines = [
-        "Solicitud de cotización SMS — Telvoice.cl",
-        "",
-        "Origen: formulario web telvoice.cl",
-        "Fecha de solicitud: " + fecha,
-        "",
-        "Nombre o empresa: " + nombreEmpresa,
-        "WhatsApp o correo: " + contacto,
-        "Volumen mensual estimado: " + volumenLabel,
-        "Uso principal: " + usoLabel,
-      ];
-      if (mensaje) {
-        lines.push("", "Mensaje:", mensaje);
-      }
-      if (nota && nota !== mensaje) {
-        lines.push("", "Contexto:", nota);
-      }
-
-      var subject = encodeURIComponent("[Telvoice] Cotización SMS — " + nombreEmpresa);
-      var body = encodeURIComponent(lines.join("\n"));
-      trackEvent("submit_lead_empresa", { volumen: volumen, uso: uso });
-
-      showFormAlert("ok", "Solicitud enviada. Te contactaremos pronto para revisar la mejor opción para tu empresa.");
-      window.setTimeout(function () {
-        window.location.href = "mailto:" + SALES_EMAIL + "?subject=" + subject + "&body=" + body;
-      }, 400);
+      fetch("/api/contact/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: nombreEmpresa,
+          contact: contacto,
+          message: mensaje,
+          nota: nota,
+          page_url: window.location.href,
+        }),
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, data: data };
+          });
+        })
+        .then(function (result) {
+          if (!result.ok || !result.data || result.data.ok === false) {
+            throw new Error(
+              (result.data && result.data.error) ||
+                "No pudimos enviar tu consulta. Intenta nuevamente.",
+            );
+          }
+          trackEvent("submit_lead_empresa", { source: "landing_contact" });
+          form.reset();
+          showFormAlert(
+            "ok",
+            result.data.message ||
+              "Consulta enviada. Te contactaremos pronto para revisar tu requerimiento.",
+          );
+        })
+        .catch(function (err) {
+          showFormAlert(
+            "error",
+            err && err.message
+              ? err.message
+              : "No pudimos enviar tu consulta. Intenta nuevamente.",
+          );
+        })
+        .finally(function () {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+          }
+        });
     });
   }
 
