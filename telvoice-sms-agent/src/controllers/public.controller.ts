@@ -7,6 +7,7 @@ import {
   getCachedCustomerVisiblePackages,
   getCachedPublicSimAvailability,
 } from "../services/publicCatalogCacheService.js";
+import { handlePublicContactLead } from "../services/landingContactLeadService.js";
 import { ValidationError } from "../utils/errors.js";
 import {
   assertAllowedPublicSmsCheckoutQuantity,
@@ -322,6 +323,40 @@ export async function postPublicLead(
       message:
         "Solicitud registrada. Telvoice te contactará o enviará el link de pago.",
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function postPublicContactLead(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const body = req.body as Record<string, unknown>;
+    const result = await handlePublicContactLead({
+      name: typeof body.name === "string" ? body.name : "",
+      contact:
+        typeof body.contact === "string"
+          ? body.contact
+          : typeof body.contacto === "string"
+            ? body.contacto
+            : "",
+      message:
+        typeof body.message === "string"
+          ? body.message
+          : typeof body.mensaje === "string"
+            ? body.mensaje
+            : "",
+      pageUrl:
+        typeof body.page_url === "string"
+          ? body.page_url
+          : typeof body.current_url === "string"
+            ? body.current_url
+            : null,
+    });
+    res.status(200).json(result);
   } catch (error) {
     next(error);
   }

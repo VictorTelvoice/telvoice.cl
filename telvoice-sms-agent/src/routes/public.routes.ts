@@ -8,6 +8,7 @@ import {
   getPublicSmsPricingTiersHandler,
   postPublicCheckout,
   postPublicClaim,
+  postPublicContactLead,
   postPublicLead,
   postPublicQuote,
 } from "../controllers/public.controller.js";
@@ -22,6 +23,7 @@ publicRouter.get("/sim-available-numbers", getPublicSimAvailableNumbers);
 publicRouter.get("/pending-sim-checkout", getPublicPendingSimCheckout);
 publicRouter.get("/sms-pricing-tiers", getPublicSmsPricingTiersHandler);
 publicRouter.post("/quote", postPublicQuote);
+publicRouter.post("/contact-lead", postPublicContactLead);
 publicRouter.post("/lead", postPublicLead);
 publicRouter.post("/checkout", postPublicCheckout);
 publicRouter.post("/claim", postPublicClaim);
