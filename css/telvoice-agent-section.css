@@ -42,11 +42,13 @@
   border-color: rgba(0, 82, 204, 0.18);
 }
 
-.tv-agent-section .lab-agent-feature-grid .lab-glass-card h3 {
+.tv-agent-section .lab-agent-feature-grid .lab-glass-card h3,
+.tv-agent-section .lab-agent-carousel-track .lab-glass-card h3 {
   color: #131b2e;
 }
 
-.tv-agent-section .lab-agent-feature-grid .lab-glass-card p {
+.tv-agent-section .lab-agent-feature-grid .lab-glass-card p,
+.tv-agent-section .lab-agent-carousel-track .lab-glass-card p {
   color: #525f7a;
 }
 
@@ -62,4 +64,161 @@
 
 .tv-agent-section .lab-btn-primary {
   text-decoration: none;
+}
+
+/* Carrusel móvil de capacidades */
+.tv-agent-section .lab-agent-carousel {
+  width: 100%;
+  min-width: 0;
+}
+
+.tv-agent-section .lab-agent-carousel-viewport {
+  overflow: hidden;
+  width: 100%;
+  touch-action: pan-y;
+}
+
+.tv-agent-section .lab-agent-carousel-track {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  will-change: transform;
+  transition: transform 0.48s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.tv-agent-section .lab-agent-carousel-track .lab-glass-card {
+  flex: 0 0 100%;
+  min-width: 0;
+  height: auto;
+}
+
+.tv-agent-section .lab-agent-carousel-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  margin-top: 1.1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.tv-agent-section .lab-agent-carousel-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(0, 82, 204, 0.22);
+  cursor: pointer;
+  transition:
+    width 0.28s ease,
+    background 0.28s ease,
+    box-shadow 0.28s ease;
+}
+
+.tv-agent-section .lab-agent-carousel-dot.is-active {
+  width: 1.35rem;
+  background: linear-gradient(90deg, #0052cc, #0ea5e9);
+  box-shadow: 0 0 10px rgba(0, 82, 204, 0.24);
+}
+
+.tv-agent-section .lab-agent-carousel-dot:focus-visible {
+  outline: 2px solid #0052cc;
+  outline-offset: 2px;
+}
+
+/* Showcase móvil con CTA en el dedo */
+.tv-agent-section .lab-agent-section-showcase--mobile {
+  position: relative;
+  margin: 0 auto;
+  max-width: 18rem;
+  line-height: 0;
+}
+
+.tv-agent-section .lab-agent-cta-finger {
+  position: absolute;
+  left: 66%;
+  top: 14%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  padding: 0.625rem 1rem;
+  font-size: clamp(0.75rem, 3.2vw, 0.875rem);
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0, 82, 204, 0.35);
+}
+
+@media (min-width: 1024px) {
+  .tv-agent-section .lab-agent-carousel-viewport {
+    overflow: visible;
+  }
+
+  .tv-agent-section .lab-agent-carousel-track {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--lab-gap-grid, 1.125rem);
+    transform: none !important;
+    transition: none;
+  }
+
+  .tv-agent-section .lab-agent-carousel-track .lab-glass-card {
+    flex: initial;
+    width: auto;
+  }
+
+  .tv-agent-section .lab-agent-carousel-dots {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .tv-agent-section .lab-agent-layout--landing {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tv-agent-section .lab-agent-copy {
+    order: 1;
+    max-width: none;
+    text-align: center;
+  }
+
+  .tv-agent-section .lab-agent-copy .lab-eyebrow,
+  .tv-agent-section .lab-agent-copy .lab-section-title,
+  .tv-agent-section .lab-agent-copy .lab-section-intro {
+    text-align: center;
+  }
+
+  .tv-agent-section .lab-agent-copy .lab-section-intro {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .tv-agent-section .lab-agent-carousel {
+    order: 2;
+  }
+
+  .tv-agent-section .lab-agent-showcase-mobile {
+    order: 3;
+    margin-top: 0.25rem;
+  }
+
+  .tv-agent-section .lab-agent-carousel-track .lab-glass-card {
+    text-align: center;
+  }
+
+  .tv-agent-section .lab-agent-carousel-track .lab-icon-wrap {
+    margin-inline: auto;
+  }
+
+  .tv-agent-section .lab-agent-carousel-track .lab-glass-card h3,
+  .tv-agent-section .lab-agent-carousel-track .lab-glass-card p {
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tv-agent-section .lab-agent-carousel-track {
+    transition: none;
+  }
 }

@@ -1854,6 +1854,9 @@
       main #compliance ul li {
         text-align: left;
       }
+      #lead-form label {
+        text-align: left;
+      }
       main .ui-card-benefit,
       main .ui-card-feature,
       main .comercial-card,
@@ -2763,7 +2766,7 @@
   <link rel="stylesheet" href="css/telvoice-hero-slider.css?v=20260616" />
   <link rel="stylesheet" href="css/landing-agent-lab.css?v=20260619" />
   <link rel="stylesheet" href="css/telvoice-numeracion-section.css?v=20260619e" />
-  <link rel="stylesheet" href="css/telvoice-agent-section.css?v=20260529" />
+  <link rel="stylesheet" href="css/telvoice-agent-section.css?v=20260529b" />
   <link rel="stylesheet" href="css/telvoice-web-agent.css?v=20260615" data-tva-css="1" />
   <script type="application/ld+json">
     {
@@ -3551,17 +3554,17 @@
     <!-- Agente Telvoice -->
     <section id="agente-telvoice" class="tv-agent-section section-block section-bg-sky pb-16 md:pb-24 site-scroll-target" aria-labelledby="agente-titulo" tabindex="-1">
       <div class="lab-section-inner">
-        <div class="lab-agent-layout grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
-          <header class="lg:col-span-5 lab-header-left">
+        <div class="lab-agent-layout lab-agent-layout--landing grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+          <header class="lab-agent-copy lg:col-span-5 lab-header-left">
             <span class="lab-eyebrow">Agente Telvoice</span>
             <h2 id="agente-titulo" class="lab-section-title mt-4 text-left lg:text-left">Tu operador SMS dentro del panel Telvoice</h2>
             <p class="lab-section-intro lg:mx-0 lg:text-left mt-4">
               El agente vive conectado a tu cuenta: cotiza, guía compras, prepara campañas CSV, consulta saldo, revisa últimos envíos y explica estados DLR en lenguaje claro.
             </p>
-            <div class="mt-8 flex flex-wrap gap-4">
+            <div class="lab-agent-cta-desktop mt-8 hidden lg:flex flex-wrap gap-4">
               <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_probar_agente_seccion">Probar el agente</a>
             </div>
-            <figure class="lab-agent-section-showcase" aria-hidden="true">
+            <figure class="lab-agent-section-showcase lab-agent-section-showcase--desktop hidden lg:block" aria-hidden="true">
               <picture>
                 <source type="image/webp" srcset="assets/telvoice-agent-section-pointing.webp" />
                 <img
@@ -3577,37 +3580,60 @@
               </picture>
             </figure>
           </header>
-          <div class="lg:col-span-7 lab-agent-feature-grid grid grid-cols-1 sm:grid-cols-2">
-            <article class="lab-glass-card lab-glass-card--glow">
-              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">payments</span></div>
-              <h3>Cotiza y compra saldo</h3>
-              <p>Calcula bolsas SMS según volumen y guía la compra desde el panel con menos fricción operativa.</p>
-            </article>
-            <article class="lab-glass-card">
-              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">upload_file</span></div>
-              <h3>Prepara campañas CSV</h3>
-              <p>Carga contactos, revisa formato y obtén un resumen antes de programar el envío.</p>
-            </article>
-            <article class="lab-glass-card">
-              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">fact_check</span></div>
-              <h3>Valida contactos y segmentos</h3>
-              <p>Detecta duplicados, contactos inválidos y segmentos para reducir errores antes de enviar.</p>
-            </article>
-            <article class="lab-glass-card">
-              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">monitoring</span></div>
-              <h3>Consulta saldo y DLR</h3>
-              <p>Revisa consumo, saldo disponible y estados de entrega explicados en lenguaje operativo.</p>
-            </article>
-            <article class="lab-glass-card lab-glass-card--glow">
-              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">verified</span></div>
-              <h3>Confirma antes de enviar</h3>
-              <p>Las acciones sensibles requieren confirmación explícita. Nada se debita sin tu aprobación.</p>
-            </article>
-            <article class="lab-glass-card">
-              <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">speed</span></div>
-              <h3>Reduce pantallas y errores operativos</h3>
-              <p>Menos pasos manuales entre cotización, preparación y ejecución de campañas SMS.</p>
-            </article>
+          <div class="lab-agent-carousel lg:col-span-7" id="tv-agent-carousel">
+            <div class="lab-agent-carousel-viewport">
+              <div class="lab-agent-carousel-track lab-agent-feature-grid grid grid-cols-1 sm:grid-cols-2">
+                <article class="lab-glass-card lab-glass-card--glow">
+                  <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">payments</span></div>
+                  <h3>Cotiza y compra saldo</h3>
+                  <p>Calcula bolsas SMS según volumen y guía la compra desde el panel con menos fricción operativa.</p>
+                </article>
+                <article class="lab-glass-card">
+                  <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">upload_file</span></div>
+                  <h3>Prepara campañas CSV</h3>
+                  <p>Carga contactos, revisa formato y obtén un resumen antes de programar el envío.</p>
+                </article>
+                <article class="lab-glass-card">
+                  <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">fact_check</span></div>
+                  <h3>Valida contactos y segmentos</h3>
+                  <p>Detecta duplicados, contactos inválidos y segmentos para reducir errores antes de enviar.</p>
+                </article>
+                <article class="lab-glass-card">
+                  <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">monitoring</span></div>
+                  <h3>Consulta saldo y DLR</h3>
+                  <p>Revisa consumo, saldo disponible y estados de entrega explicados en lenguaje operativo.</p>
+                </article>
+                <article class="lab-glass-card lab-glass-card--glow">
+                  <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">verified</span></div>
+                  <h3>Confirma antes de enviar</h3>
+                  <p>Las acciones sensibles requieren confirmación explícita. Nada se debita sin tu aprobación.</p>
+                </article>
+                <article class="lab-glass-card">
+                  <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">speed</span></div>
+                  <h3>Reduce pantallas y errores operativos</h3>
+                  <p>Menos pasos manuales entre cotización, preparación y ejecución de campañas SMS.</p>
+                </article>
+              </div>
+            </div>
+            <nav class="lab-agent-carousel-dots" aria-label="Capacidades del agente Telvoice"></nav>
+          </div>
+          <div class="lab-agent-showcase-mobile lg:hidden">
+            <figure class="lab-agent-section-showcase lab-agent-section-showcase--mobile">
+              <picture>
+                <source type="image/webp" srcset="assets/telvoice-agent-section-pointing.webp" />
+                <img
+                  class="lab-agent-section-showcase__img"
+                  src="assets/telvoice-agent-section-pointing.png"
+                  alt=""
+                  width="420"
+                  height="420"
+                  loading="lazy"
+                  decoding="async"
+                  draggable="false"
+                />
+              </picture>
+              <a href="https://agent.telvoice.cl/login" class="lab-agent-cta-finger lab-btn-primary" data-track="click_probar_agente_seccion_mobile">Probar el agente</a>
+            </figure>
           </div>
         </div>
       </div>
@@ -3996,6 +4022,7 @@
   <script src="js/telvoice-app.js"></script>
   <script src="js/telvoice-touch-swipe.js?v=20260616"></script>
   <script src="js/telvoice-casos-carousel.js?v=20260616"></script>
+  <script src="js/telvoice-agent-carousel.js?v=20260529"></script>
   <script src="js/telvoice-hero-slider.js?v=20260616"></script>
   <script src="js/telvoice-web-agent-loader.js" data-root="" data-embed-target="#hero-agent-embed"></script>
 </body>
