@@ -1,10 +1,11 @@
 import { getSupabase } from "../database/supabaseClient.js";
 import { env } from "../config/env.js";
 import { sendTransactionalEmail } from "./transactionalEmailService.js";
-import { renderLandingContactLeadAdminAlert } from "./transactionalEmailTemplates.js";
+import { renderLandingContactLeadAdminAlert, renderLandingContactLeadClientConfirmation } from "./transactionalEmailTemplates.js";
 import { wrapSupabaseError } from "../utils/supabase-errors.js";
 
-const TEMPLATE_KEY = "landing_contact_lead_admin_alert";
+const TEMPLATE_KEY_ADMIN = "landing_contact_lead_admin_alert";
+const TEMPLATE_KEY_CLIENT = "landing_contact_lead_client_confirmation";
 
 function parseNotifyList(raw: string): string[] {
   return [
@@ -85,12 +86,17 @@ export async function handlePublicContactLead(input: {
     wrapSupabaseError(error, "handlePublicContactLead");
   }
 
-  const rendered = renderLandingContactLeadAdminAlert({
+  const renderedAdmin = renderLandingContactLeadAdminAlert({
     contactName: name,
     contactEmail: email,
     contactPhone: phone,
     message,
     pageUrl: input.pageUrl || null,
+  });
+  const renderedClient = renderLandingContactLeadClientConfirmation({
+    contactName: name,
+    message,
+    siteUrl: env.publicSiteUrl,
   });
 
   const recipients = resolveContactLeadNotifyEmails();
@@ -98,14 +104,14 @@ export async function handlePublicContactLead(input: {
     throw new Error("No hay destinatarios configurados para alertas de contacto.");
   }
 
-  let sent = 0;
+  let sentAdmin = 0;
   for (const recipientEmail of recipients) {
     const result = await sendTransactionalEmail({
-      templateKey: TEMPLATE_KEY,
-      subject: rendered.subject,
+      templateKey: TEMPLATE_KEY_ADMIN,
+      subject: renderedAdmin.subject,
       recipientEmail,
-      html: rendered.html,
-      text: rendered.text,
+      html: renderedAdmin.html,
+      text: renderedAdmin.text,
       skipIdempotency: true,
       metadata: {
         source: "landing_contact",
@@ -114,11 +120,31 @@ export async function handlePublicContactLead(input: {
         lead_phone: phone,
       },
     });
-    if (result.ok && !result.skipped) sent += 1;
+    if (result.ok && !result.skipped) sentAdmin += 1;
   }
 
-  if (sent === 0) {
+  if (sentAdmin === 0) {
     throw new Error("No se pudo enviar la notificación interna del formulario.");
+  }
+
+  const clientResult = await sendTransactionalEmail({
+    templateKey: TEMPLATE_KEY_CLIENT,
+    subject: renderedClient.subject,
+    recipientEmail: email,
+    html: renderedClient.html,
+    text: renderedClient.text,
+    skipIdempotency: true,
+    metadata: {
+      source: "landing_contact",
+      lead_name: name,
+      lead_email: email,
+    },
+  });
+  if (!clientResult.ok || clientResult.skipped) {
+    console.warn(
+      "[landing-contact-lead] client confirmation email failed:",
+      clientResult.error || "skipped",
+    );
   }
 
   return {

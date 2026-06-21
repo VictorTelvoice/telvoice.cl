@@ -1089,3 +1089,47 @@ export function renderLandingContactLeadAdminAlert(
 
   return { subject, html: emailShell("Consulta landing", body), text };
 }
+
+export type LandingContactLeadClientConfirmationData = {
+  contactName: string;
+  message: string;
+  siteUrl: string;
+};
+
+export function renderLandingContactLeadClientConfirmation(
+  data: LandingContactLeadClientConfirmationData,
+): { subject: string; html: string; text: string } {
+  const firstName = data.contactName.split(/\s+/)[0] || data.contactName;
+  const subject = "Recibimos tu consulta — Telvoice";
+  const messageHtml = escapeHtml(data.message).replace(/\n/g, "<br />");
+  const siteUrl = data.siteUrl.replace(/\/$/, "");
+
+  const body = `
+    <p style="margin:0 0 12px;font-family:Segoe UI,system-ui,sans-serif;font-size:20px;font-weight:700;line-height:1.35;color:#0f172a;text-align:center">
+      Hola ${escapeHtml(firstName)},
+    </p>
+    <p style="margin:0 0 24px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55;color:#334155;text-align:center;max-width:520px;margin-left:auto;margin-right:auto">
+      Recibimos tu consulta en Telvoice. Nuestro equipo la revisará y te contactaremos pronto.
+    </p>
+    ${summaryCard(`
+      <div><strong>Resumen de tu mensaje</strong></div>
+      <div style="margin-top:10px;text-align:left">${messageHtml}</div>
+    `)}
+    ${ctaButton(siteUrl, "Visitar telvoice.cl")}
+    <p style="margin:16px 0 0;font-family:Segoe UI,system-ui,sans-serif;font-size:13px;line-height:1.5;color:#64748b;text-align:center">
+      Si necesitas agregar algo más, responde este correo o escríbenos desde el formulario de contacto.
+    </p>`;
+
+  const text = [
+    `Hola ${firstName},`,
+    "",
+    "Recibimos tu consulta en Telvoice. Nuestro equipo la revisará y te contactaremos pronto.",
+    "",
+    "Tu mensaje:",
+    data.message,
+    "",
+    siteUrl,
+  ].join("\n");
+
+  return { subject, html: emailShell("Consulta recibida", body), text };
+}
