@@ -424,6 +424,9 @@
         console.warn("[telvoice] pricing tiers API", err);
       })
       .finally(function () {
+        if (!CALC_TIERS.length && CFG.volumeTiers && CFG.volumeTiers.length) {
+          CALC_TIERS = CFG.volumeTiers.slice();
+        }
         if (typeof done === "function") done();
       });
   }
@@ -468,7 +471,15 @@
         out.push({ vol: tier.min, pxSMS: tier.pxSMS });
       }
     });
-    return out;
+    if (out.length) return out;
+    return [
+      { vol: 1000, pxSMS: 10 },
+      { vol: 5000, pxSMS: 9 },
+      { vol: 10000, pxSMS: 8 },
+      { vol: 15000, pxSMS: 7 },
+      { vol: 50000, pxSMS: 6 },
+      { vol: 100000, pxSMS: 5 },
+    ];
   }
 
   function formatCalcChipVolume(vol) {
