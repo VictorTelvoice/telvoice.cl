@@ -18,10 +18,10 @@ function parseNotifyList(raw: string): string[] {
 
 export function resolveContactLeadNotifyEmails(): string[] {
   const configured =
+    env.admin.superadminEmail?.trim() ||
     process.env.ORDER_NOTIFY_EMAIL?.trim() ||
     process.env.BILLING_NOTIFY_EMAIL?.trim() ||
-    env.admin.superadminEmail?.trim() ||
-    "billing@telvoice.net";
+    "victor@telvoice.net";
   return parseNotifyList(configured);
 }
 
@@ -110,6 +110,9 @@ export async function handlePublicContactLead(input: {
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new Error("Indique un correo válido.");
+  }
+  if (!message) {
+    throw new Error("Indique un mensaje.");
   }
 
   const { error } = await getSupabase().from("web_agent_leads").insert({

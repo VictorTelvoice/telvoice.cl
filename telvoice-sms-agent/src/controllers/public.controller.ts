@@ -296,6 +296,38 @@ export async function postPublicLead(
 ): Promise<void> {
   try {
     const body = req.body as Record<string, unknown>;
+    if (body.source === "landing_contact") {
+      const result = await handlePublicContactLead({
+        name: typeof body.name === "string" ? body.name : "",
+        email:
+          typeof body.email === "string"
+            ? body.email
+            : typeof body.correo === "string"
+              ? body.correo
+              : null,
+        phone:
+          typeof body.phone === "string"
+            ? body.phone
+            : typeof body.telefono === "string"
+              ? body.telefono
+              : null,
+        message:
+          typeof body.message === "string"
+            ? body.message
+            : typeof body.mensaje === "string"
+              ? body.mensaje
+              : "",
+        pageUrl:
+          typeof body.page_url === "string"
+            ? body.page_url
+            : typeof body.current_url === "string"
+              ? body.current_url
+              : null,
+      });
+      res.status(200).json(result);
+      return;
+    }
+
     const email =
       typeof body.email === "string" ? body.email.trim() : undefined;
     const phone =

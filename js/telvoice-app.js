@@ -295,7 +295,7 @@
   }
 
   function clearLeadFieldErrors() {
-    ["lead-nombre", "lead-correo", "lead-telefono"].forEach(function (id) {
+    ["lead-nombre", "lead-correo", "lead-telefono", "lead-mensaje"].forEach(function (id) {
       var field = qs(id);
       if (field) field.removeAttribute("aria-invalid");
     });
@@ -1344,6 +1344,12 @@
         showFormAlert("error", "Indique un correo válido.");
         markLeadFieldError("lead-correo");
         qs("lead-correo").focus();
+        return;
+      }
+      if (!mensaje) {
+        showFormAlert("error", "Indique un mensaje.");
+        markLeadFieldError("lead-mensaje");
+        qs("lead-mensaje").focus();
         return;
       }
 
