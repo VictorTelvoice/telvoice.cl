@@ -1258,10 +1258,6 @@
           fmt(vol) + " SMS · $" + item.pxSMS + " + IVA por SMS"
         );
         btn.appendChild(document.createTextNode(formatCalcChipVolume(vol) + " SMS"));
-        var sub = document.createElement("span");
-        sub.className = "calc-tier-chip-sub";
-        sub.textContent = "$" + item.pxSMS;
-        btn.appendChild(sub);
         btn.addEventListener("click", function () {
           if (setCalcVolume) setCalcVolume(vol);
           else {
