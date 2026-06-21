@@ -2055,7 +2055,6 @@
         padding-top: 7rem;
         padding-bottom: 7rem;
       }
-      #calculadora > .section-header,
       #calculadora .calc-panel {
         max-width: 34.5rem;
       }
@@ -2148,13 +2147,13 @@
     @media (min-width: 768px) {
       .calc-tier-chips {
         display: flex;
-        flex-wrap: nowrap;
-        justify-content: space-between;
-        gap: 0.18rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.35rem 0.25rem;
       }
       .calc-tier-chip {
         display: inline-flex;
-        flex: 1 1 0;
+        flex: 0 1 auto;
         width: auto;
         min-width: 0;
         max-width: none;
@@ -2163,9 +2162,9 @@
         justify-content: center;
         gap: 0.08rem;
         min-height: 1.5rem;
-        padding: 0.2rem 0.22rem;
+        padding: 0.28rem 0.45rem;
         border-radius: 9999px;
-        font-size: 0.625rem;
+        font-size: 0.6875rem;
         white-space: nowrap;
         letter-spacing: -0.02em;
       }
@@ -3565,7 +3564,7 @@
       <div class="section-inner mx-auto max-w-[1100px]">
         <!-- Calculadora bolsas SMS -->
         <div id="calculadora" tabindex="-1">
-          <header class="section-header mx-auto">
+          <header class="section-header mx-auto max-w-3xl">
             <span class="section-eyebrow">Arma tu bolsa</span>
             <h2 id="precios-titulo" class="calc-hero-title mt-3 font-h2 text-h2 text-[clamp(1.35rem,3.5vw,2rem)]">Bolsas SMS para cada etapa de tu empresa.</h2>
             <p class="calc-hero-intro section-intro mt-4 text-on-surface-variant leading-relaxed">Selecciona la cantidad de SMS que necesitas y conoce el valor estimado según el tramo.</p>
@@ -3603,9 +3602,9 @@
               <p class="pack-includes-title">Todas las bolsas incluyen</p>
               <div class="pack-includes">
                 <ul class="pack-includes-list">
-                  <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Plataforma web para gestión de envíos</li>
-                  <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Reportería de campañas</li>
-                  <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Acceso API sujeto a solicitud</li>
+                  <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Plataforma web</li>
+                  <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Reportería</li>
+                  <li class="pack-includes-item"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Acceso API</li>
                 </ul>
               </div>
             </div>
