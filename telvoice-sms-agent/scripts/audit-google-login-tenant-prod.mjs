@@ -7,6 +7,7 @@
  *   node scripts/audit-google-login-tenant-prod.mjs --email=licantravel@gmail.com
  *
  * Solo SELECT. No modifica datos.
+ * Wallets: tabla `company_sms_wallets` (no `sms_wallets`).
  */
 import "dotenv/config";
 import pg from "pg";
@@ -84,10 +85,10 @@ await q(
 
 if (companyIds.length > 0) {
   await q(
-    "sms_wallets Licantravel / GoClub",
+    "company_sms_wallets Licantravel / GoClub",
     `
     SELECT company_id, available_sms, total_purchased_sms, consumed_sms, updated_at
-    FROM sms_wallets
+    FROM company_sms_wallets
     WHERE company_id = ANY($1::uuid[])
     ORDER BY company_id
     `,

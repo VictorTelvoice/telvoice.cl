@@ -114,8 +114,17 @@ Eventos nuevos: `tenant_conflict_detected`, `tenant_resolution_blocked`, `tenant
 | `src/services/googleLoginTenantResolution.ts` | **Nuevo** — reglas puras de resolución tenant + wrapper async |
 | `src/services/googleClientBootstrapService.ts` | Elimina `walletActivityScore` y relink; usa nueva resolución; reconciliación dry-run; bloqueo multi-candidato |
 | `scripts/test-google-login-tenant-isolation.ts` | Tests unitarios casos 1–5 |
-| `scripts/audit-google-login-tenant-prod.mjs` | Auditoría read-only producción |
+| `scripts/audit-google-login-tenant-prod.mjs` | Auditoría read-only producción (Licantravel / GoClub) |
+| `scripts/audit-google-login-tenant-prod-full.mjs` | Auditoría read-only extendida (multi-tenant risk scan) |
 | `package.json` | Scripts `test:google-login-tenant-isolation`, `audit:google-login-tenant-prod` |
+
+### Scripts de auditoría (read-only)
+
+- Ambos scripts ejecutan **solo SELECT**; no UPDATE/DELETE/INSERT/UPSERT.
+- Saldo SMS: tabla **`company_sms_wallets`** (la tabla legacy `sms_wallets` no existe en producción).
+- **`audit-google-login-tenant-prod.mjs`**: foco Licantravel/GoClub + email configurable (`--email=`).
+- **`audit-google-login-tenant-prod-full.mjs`**: auditoría extendida (companies, perfiles, admin_users, wallets, órdenes, emails multi-company, billing duplicado, cruce profile↔billing).
+- No imprimir ni commitear `DATABASE_URL` ni credenciales; pasar vía entorno en VPS.
 
 ### Reglas implementadas
 
@@ -156,6 +165,8 @@ Script de auditoría:
 
 ```bash
 DATABASE_URL=... npm run audit:google-login-tenant-prod
+# Auditoría extendida (read-only):
+DATABASE_URL=... node scripts/audit-google-login-tenant-prod-full.mjs
 ```
 
 ---
