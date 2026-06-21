@@ -34,13 +34,25 @@
     if (reduced) {
       autoplayMs = 0;
     }
+    var introHintMs = options.introHintMs;
+    if (introHintMs === undefined) {
+      introHintMs = parseInt(root.getAttribute("data-intro-hint"), 10);
+    }
+    if (isNaN(introHintMs)) {
+      introHintMs = 320;
+    }
+    if (reduced) {
+      introHintMs = 0;
+    }
     var currentPage = 0;
     var resizeTimer = null;
     var scrollTimer = null;
     var autoplayTimer = null;
+    var introTimer = null;
     var syncing = false;
     var userPaused = false;
     var inView = false;
+    var introPlayed = false;
 
     if (!root || !viewport || !track || !items.length) {
       return null;
@@ -141,6 +153,37 @@
         window.clearInterval(autoplayTimer);
         autoplayTimer = null;
       }
+    }
+
+    function clearIntroHint() {
+      if (introTimer) {
+        window.clearTimeout(introTimer);
+        introTimer = null;
+      }
+    }
+
+    function runIntroHint() {
+      if (introPlayed || !inView || !isActive() || maxPage() < 1 || introHintMs <= 0) {
+        return false;
+      }
+      introPlayed = true;
+      clearAutoplay();
+      introTimer = window.setTimeout(function () {
+        introTimer = null;
+        if (!inView || !isActive()) {
+          resetAutoplay();
+          return;
+        }
+        goToPage(1, "smooth");
+      }, introHintMs);
+      return true;
+    }
+
+    function onEnterView() {
+      if (runIntroHint()) {
+        return;
+      }
+      resetAutoplay();
     }
 
     function resetAutoplay() {
@@ -249,9 +292,10 @@
           entries.forEach(function (entry) {
             inView = entry.isIntersecting;
             if (inView) {
-              resetAutoplay();
+              onEnterView();
             } else {
               clearAutoplay();
+              clearIntroHint();
             }
           });
         },
