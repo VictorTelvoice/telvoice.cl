@@ -18,7 +18,6 @@ function parseNotifyList(raw: string): string[] {
 
 export function resolveContactLeadNotifyEmails(): string[] {
   const configured =
-    process.env.CONTACT_LEAD_NOTIFY_EMAIL?.trim() ||
     process.env.ORDER_NOTIFY_EMAIL?.trim() ||
     process.env.BILLING_NOTIFY_EMAIL?.trim() ||
     env.admin.superadminEmail?.trim() ||
