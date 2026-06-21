@@ -73,9 +73,11 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     @media (min-width: 960px) {
-      .nsim-panel-api-grid,
+      .nsim-panel-api-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
       .nsim-use-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
     }
     @media (max-width: 430px) {
