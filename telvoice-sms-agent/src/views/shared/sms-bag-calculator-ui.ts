@@ -530,7 +530,7 @@ export function renderSmsBagCalculatorPanel(
     : `<p class="calc-readonly-note">Tu rol es solo lectura. Contacta al administrador de la cuenta para comprar SMS.</p>`;
 
   const mpNote = mpAvailable
-    ? `<p class="calc-cta-note">Pago con Mercado Pago. El saldo se acredita cuando el webhook confirma el cargo aprobado.</p>`
+    ? ""
     : `<p class="calc-cta-note">Mercado Pago no está configurado. Contacta a soporte para completar tu compra.</p>`;
 
   return `<section class="tv-buy-sms-calc" aria-labelledby="tv-buy-calc-title">
