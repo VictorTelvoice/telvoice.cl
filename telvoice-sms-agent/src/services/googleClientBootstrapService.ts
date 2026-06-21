@@ -13,65 +13,7 @@ import {
 import type { AdminSessionUser } from "../types/admin.js";
 import { AppError } from "../utils/errors.js";
 import { getOrCreateCompanyWallet } from "./smsWalletService.js";
-import { findCompanyCandidatesByEmail } from "./billingPurchaseReconciliationService.js";
-
-async function walletActivityScore(companyId: string): Promise<number> {
-  const wallet = await getOrCreateCompanyWallet(companyId, "CL");
-  return (
-    Number(wallet.available_sms ?? 0) +
-    Number(wallet.total_purchased_sms ?? 0) +
-    Number(wallet.consumed_sms ?? 0)
-  );
-}
-
-/** Vincula login a la empresa que ya recibió checkout/MP (evita duplicar company vacía). */
-async function resolveCompanyForClientLogin(
-  email: string,
-  currentCompanyId: string | null,
-): Promise<string | null> {
-  const candidates = await findCompanyCandidatesByEmail(email);
-  let bestCandidateId: string | null = null;
-  let bestScore = -1;
-
-  for (const candidate of candidates) {
-    const score = await walletActivityScore(candidate.id);
-    if (score > bestScore) {
-      bestScore = score;
-      bestCandidateId = candidate.id;
-    }
-  }
-
-  if (currentCompanyId) {
-    const currentScore = await walletActivityScore(currentCompanyId);
-    if (currentScore > 0) {
-      return currentCompanyId;
-    }
-    if (bestCandidateId && bestCandidateId !== currentCompanyId && bestScore > 0) {
-      console.info(
-        "[bootstrap] relink client to company with purchase history",
-        email,
-        { from: currentCompanyId, to: bestCandidateId, bestScore },
-      );
-      return bestCandidateId;
-    }
-    return currentCompanyId;
-  }
-
-  if (bestCandidateId && bestScore > 0) {
-    console.info(
-      "[bootstrap] link new login to existing company from checkout",
-      email,
-      bestCandidateId,
-    );
-    return bestCandidateId;
-  }
-
-  if (bestCandidateId) {
-    return bestCandidateId;
-  }
-
-  return null;
-}
+import { resolveCompanyForClientLogin } from "./googleLoginTenantResolution.js";
 
 export async function bootstrapClientFromGoogle(input: {
   supabaseUserId: string;
@@ -121,9 +63,18 @@ export async function bootstrapClientFromGoogle(input: {
   const isNewAccount = !hadAdmin || !hadCompany;
 
   let companyId: string | null = existingProfile?.company_id ?? null;
-  const resolvedCompanyId = await resolveCompanyForClientLogin(email, companyId);
-  if (resolvedCompanyId) {
-    companyId = resolvedCompanyId;
+  const tenantResolution = await resolveCompanyForClientLogin(email, companyId);
+
+  if (tenantResolution.action === "blocked_multiple_candidates") {
+    throw new AppError(
+      "Tu cuenta requiere revisión manual para vincular la empresa correcta. Contacta a soporte@telvoice.cl.",
+      409,
+      "TENANT_MANUAL_REVIEW_REQUIRED",
+    );
+  }
+
+  if (tenantResolution.companyId) {
+    companyId = tenantResolution.companyId;
   }
 
   if (!companyId) {
@@ -178,13 +129,14 @@ export async function bootstrapClientFromGoogle(input: {
       const { reconcilePaidPurchasesForEmail } = await import(
         "./billingPurchaseReconciliationService.js"
       );
+      // Solo evaluación en login: no acreditar ni re-vincular órdenes automáticamente.
       await reconcilePaidPurchasesForEmail(email, {
-        dryRun: false,
+        dryRun: true,
         actorUserId: admin.id,
-        source: "google_bootstrap",
+        source: "google_bootstrap_deferred",
       });
     } catch (reconcileErr) {
-      console.error("[bootstrap] paid purchase reconcile failed", email, reconcileErr);
+      console.error("[bootstrap] paid purchase reconcile assessment failed", email, reconcileErr);
     }
   }
 
@@ -192,4 +144,3 @@ export async function bootstrapClientFromGoogle(input: {
 }
 
 export { getAdminJwtCookieName, getClientJwtCookieName, getJwtCookieOptions };
-
