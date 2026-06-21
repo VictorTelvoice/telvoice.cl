@@ -71,28 +71,41 @@
 }
 
 .tv-agent-section .lab-agent-carousel-viewport {
-  overflow: hidden;
+  container-type: inline-size;
+  container-name: agent-carousel;
+  overflow-x: auto;
+  overflow-y: hidden;
   width: 100%;
-  touch-action: manipulation;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
+}
+
+.tv-agent-section .lab-agent-carousel-viewport::-webkit-scrollbar {
+  display: none;
 }
 
 .tv-agent-section .lab-agent-carousel-track {
   display: flex;
   flex-wrap: nowrap;
   gap: 1rem;
-  width: 100%;
-  will-change: transform;
-  transition: transform 0.48s cubic-bezier(0.2, 0.8, 0.2, 1);
+  width: max-content;
+  min-width: 100%;
 }
 
 .tv-agent-section .lab-agent-carousel-track .lab-glass-card {
-  flex: 0 0 100%;
-  width: 100%;
+  flex: 0 0 100cqw;
+  width: 100cqw;
   max-width: 100%;
-  min-width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   height: auto;
   padding: 1.25rem;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 
 .tv-agent-section .lab-agent-carousel-dots {
@@ -146,14 +159,14 @@
 @media (min-width: 1024px) {
   .tv-agent-section .lab-agent-carousel-viewport {
     overflow: visible;
+    scroll-snap-type: none;
   }
 
   .tv-agent-section .lab-agent-carousel-track {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--lab-gap-grid, 1.125rem);
-    transform: none !important;
-    transition: none;
+    width: 100%;
   }
 
   .tv-agent-section .lab-agent-carousel-track .lab-glass-card {
@@ -222,7 +235,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tv-agent-section .lab-agent-carousel-track {
-    transition: none;
+  .tv-agent-section .lab-agent-carousel-viewport {
+    scroll-behavior: auto;
   }
 }

@@ -1946,7 +1946,6 @@
       .ui-card,
       .pack-card,
       .comercial-card,
-      .caso-card,
       .calc-panel,
       .pack-includes,
       .contact-form-card,
@@ -1957,6 +1956,12 @@
         max-width: 22.5rem;
         margin-left: auto;
         margin-right: auto;
+      }
+      #casos-uso .casos-carousel-track .caso-card,
+      .tv-agent-section .lab-agent-carousel-track .lab-glass-card {
+        max-width: none;
+        margin-left: 0;
+        margin-right: 0;
       }
       #api .section-inner.grid {
         justify-items: center;
@@ -2762,11 +2767,11 @@
   <link rel="stylesheet" href="css/telvoice-public-nav.css?v=20260619" />
   <link rel="stylesheet" href="css/telvoice-scroll-reveal.css?v=20260619" />
   <link rel="stylesheet" href="css/telvoice-type-lab.css?v=20260615" />
-  <link rel="stylesheet" href="css/telvoice-casos-carousel.css?v=20260616" />
+  <link rel="stylesheet" href="css/telvoice-casos-carousel.css?v=20260529d" />
   <link rel="stylesheet" href="css/telvoice-hero-slider.css?v=20260616" />
   <link rel="stylesheet" href="css/landing-agent-lab.css?v=20260619" />
   <link rel="stylesheet" href="css/telvoice-numeracion-section.css?v=20260619e" />
-  <link rel="stylesheet" href="css/telvoice-agent-section.css?v=20260529c" />
+  <link rel="stylesheet" href="css/telvoice-agent-section.css?v=20260529d" />
   <link rel="stylesheet" href="css/telvoice-web-agent.css?v=20260615" data-tva-css="1" />
   <script type="application/ld+json">
     {
@@ -3432,7 +3437,7 @@
       </header>
       <div class="casos-carousel mt-10" id="casos-carousel">
         <div class="casos-carousel-viewport">
-          <div class="casos-carousel-track casos-grid">
+          <div class="casos-carousel-track">
         <article id="caso-promociones" class="caso-card scroll-mt-[4.75rem]" tabindex="-1">
           <figure class="caso-visual">
             <img src="assets/casos-uso/casos-uso-retail.png" alt="Retail: promociones y seguimiento de compra por SMS" width="640" height="480" loading="lazy" decoding="async" />
@@ -4023,8 +4028,9 @@
   <script src="js/telvoice-floating-agent-toggle.js?v=20260619"></script>
   <script src="js/telvoice-app.js"></script>
   <script src="js/telvoice-touch-swipe.js?v=20260616"></script>
-  <script src="js/telvoice-casos-carousel.js?v=20260616"></script>
-  <script src="js/telvoice-agent-carousel.js?v=20260529b"></script>
+  <script src="js/telvoice-carousel-core.js?v=20260529d"></script>
+  <script src="js/telvoice-casos-carousel.js?v=20260529d"></script>
+  <script src="js/telvoice-agent-carousel.js?v=20260529d"></script>
   <script src="js/telvoice-hero-slider.js?v=20260616"></script>
   <script src="js/telvoice-web-agent-loader.js" data-root="" data-embed-target="#hero-agent-embed"></script>
 </body>

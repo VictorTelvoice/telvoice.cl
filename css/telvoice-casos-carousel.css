@@ -8,24 +8,49 @@
 }
 
 #casos-uso .casos-carousel-viewport {
-  overflow: hidden;
+  container-type: inline-size;
+  container-name: casos-carousel;
+  overflow-x: auto;
+  overflow-y: hidden;
   width: 100%;
-  touch-action: pan-y;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
+}
+
+#casos-uso .casos-carousel-viewport::-webkit-scrollbar {
+  display: none;
 }
 
 #casos-uso .casos-carousel-track {
   display: flex;
+  flex-wrap: nowrap;
   gap: 1.5rem;
-  width: 100%;
-  will-change: transform;
-  transition: transform 0.48s cubic-bezier(0.2, 0.8, 0.2, 1);
+  width: max-content;
+  min-width: 100%;
 }
 
 #casos-uso .casos-carousel-track .caso-card {
-  flex: 0 0 100%;
-  min-width: 0;
+  flex: 0 0 100cqw;
+  width: 100cqw;
   max-width: none;
+  min-width: 0;
   margin: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+#casos-uso .section-inner {
+  --section-inline-pad: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  #casos-uso .section-inner {
+    --section-inline-pad: 1.5rem;
+  }
 }
 
 @media (min-width: 768px) {
@@ -34,7 +59,8 @@
   }
 
   #casos-uso .casos-carousel-track .caso-card {
-    flex-basis: calc((100% - 4rem) / 3);
+    flex-basis: calc((100cqw - 4rem) / 3);
+    width: calc((100cqw - 4rem) / 3);
   }
 }
 
@@ -74,7 +100,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #casos-uso .casos-carousel-track {
-    transition: none;
+  #casos-uso .casos-carousel-viewport {
+    scroll-behavior: auto;
   }
 }
