@@ -38,11 +38,17 @@
   }
 
   function cardStepPx() {
+    var gap = parseFloat(getComputedStyle(track).gap) || 0;
+    if (viewport) {
+      var viewportWidth = viewport.getBoundingClientRect().width;
+      if (viewportWidth > 0) {
+        return viewportWidth + gap;
+      }
+    }
     var first = cards[0];
     if (!first) {
       return 0;
     }
-    var gap = parseFloat(getComputedStyle(track).gap) || 0;
     return first.getBoundingClientRect().width + gap;
   }
 
@@ -153,4 +159,8 @@
 
   renderDots();
   goToPage(0);
+
+  window.addEventListener("load", function () {
+    goToPage(currentPage);
+  });
 })();

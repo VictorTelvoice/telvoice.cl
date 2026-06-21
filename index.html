@@ -2766,7 +2766,7 @@
   <link rel="stylesheet" href="css/telvoice-hero-slider.css?v=20260616" />
   <link rel="stylesheet" href="css/landing-agent-lab.css?v=20260619" />
   <link rel="stylesheet" href="css/telvoice-numeracion-section.css?v=20260619e" />
-  <link rel="stylesheet" href="css/telvoice-agent-section.css?v=20260529b" />
+  <link rel="stylesheet" href="css/telvoice-agent-section.css?v=20260529c" />
   <link rel="stylesheet" href="css/telvoice-web-agent.css?v=20260615" data-tva-css="1" />
   <script type="application/ld+json">
     {
@@ -3562,7 +3562,7 @@
               El agente vive conectado a tu cuenta: cotiza, guía compras, prepara campañas CSV, consulta saldo, revisa últimos envíos y explica estados DLR en lenguaje claro.
             </p>
             <div class="lab-agent-cta-desktop mt-8 hidden lg:flex flex-wrap gap-4">
-              <a href="https://agent.telvoice.cl/login" class="lab-btn-primary" data-track="click_probar_agente_seccion">Probar el agente</a>
+              <a href="#calculadora" class="lab-btn-primary" data-track="click_probar_agente_seccion">Probar el agente</a>
             </div>
             <figure class="lab-agent-section-showcase lab-agent-section-showcase--desktop hidden lg:block" aria-hidden="true">
               <picture>
@@ -3582,7 +3582,7 @@
           </header>
           <div class="lab-agent-carousel lg:col-span-7" id="tv-agent-carousel">
             <div class="lab-agent-carousel-viewport">
-              <div class="lab-agent-carousel-track lab-agent-feature-grid grid grid-cols-1 sm:grid-cols-2">
+              <div class="lab-agent-carousel-track">
                 <article class="lab-glass-card lab-glass-card--glow">
                   <div class="lab-icon-wrap"><span class="material-symbols-outlined" aria-hidden="true">payments</span></div>
                   <h3>Cotiza y compra saldo</h3>
@@ -3618,7 +3618,7 @@
             <nav class="lab-agent-carousel-dots" aria-label="Capacidades del agente Telvoice"></nav>
           </div>
           <div class="lab-agent-showcase-mobile lg:hidden">
-            <figure class="lab-agent-section-showcase lab-agent-section-showcase--mobile">
+            <figure class="lab-agent-section-showcase lab-agent-section-showcase--mobile" aria-hidden="true">
               <picture>
                 <source type="image/webp" srcset="assets/telvoice-agent-section-pointing.webp" />
                 <img
@@ -3632,8 +3632,10 @@
                   draggable="false"
                 />
               </picture>
-              <a href="https://agent.telvoice.cl/login" class="lab-agent-cta-finger lab-btn-primary" data-track="click_probar_agente_seccion_mobile">Probar el agente</a>
             </figure>
+            <div class="lab-agent-cta-mobile">
+              <a href="#calculadora" class="lab-btn-primary" data-track="click_probar_agente_seccion_mobile">Probar el agente</a>
+            </div>
           </div>
         </div>
       </div>
@@ -4022,7 +4024,7 @@
   <script src="js/telvoice-app.js"></script>
   <script src="js/telvoice-touch-swipe.js?v=20260616"></script>
   <script src="js/telvoice-casos-carousel.js?v=20260616"></script>
-  <script src="js/telvoice-agent-carousel.js?v=20260529"></script>
+  <script src="js/telvoice-agent-carousel.js?v=20260529b"></script>
   <script src="js/telvoice-hero-slider.js?v=20260616"></script>
   <script src="js/telvoice-web-agent-loader.js" data-root="" data-embed-target="#hero-agent-embed"></script>
 </body>
