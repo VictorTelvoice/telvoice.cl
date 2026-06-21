@@ -1026,3 +1026,66 @@ export function renderNewCustomerPurchaseInternalAlert(
     text,
   };
 }
+
+export type LandingContactLeadAdminAlertData = {
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string | null;
+  message: string;
+  pageUrl: string | null;
+};
+
+export function renderLandingContactLeadAdminAlert(
+  data: LandingContactLeadAdminAlertData,
+): { subject: string; html: string; text: string } {
+  const subject = `[Telvoice] Consulta landing — ${data.contactName}`;
+  const summaryRows = `
+    <div><strong>Nombre o empresa:</strong> ${escapeHtml(data.contactName)}</div>
+    <div><strong>Correo:</strong> ${escapeHtml(data.contactEmail)}</div>
+    <div><strong>Teléfono:</strong> ${escapeHtml(data.contactPhone || "—")}</div>
+    <div><strong>Origen:</strong> Formulario contacto — telvoice.cl</div>
+    ${data.pageUrl ? `<div><strong>Página:</strong> ${escapeHtml(data.pageUrl)}</div>` : ""}
+  `;
+  const messageHtml = escapeHtml(data.message).replace(/\n/g, "<br />");
+  const replyUrl = `mailto:${encodeURIComponent(data.contactEmail)}?subject=${encodeURIComponent("Re: tu consulta en Telvoice")}`;
+
+  const body = `
+    <p style="margin:0 0 16px;text-align:center">
+      <span style="display:inline-block;padding:6px 14px;border-radius:999px;background:#e0f2fe;color:#0369a1;font-family:Segoe UI,system-ui,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.02em">Formulario contacto</span>
+    </p>
+    <p style="margin:0 0 12px;font-family:Segoe UI,system-ui,sans-serif;font-size:20px;font-weight:700;line-height:1.35;color:#0f172a;text-align:center">
+      Nueva consulta desde telvoice.cl
+    </p>
+    <p style="margin:0 0 24px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55;color:#334155;text-align:center;max-width:520px;margin-left:auto;margin-right:auto">
+      ${escapeHtml(data.contactName)} envió una solicitud desde el formulario de contacto del landing.
+    </p>
+    ${summaryCard(summaryRows)}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:520px;margin:0 auto 24px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px">
+      <tr>
+        <td style="padding:18px 20px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.6;color:#0f172a;text-align:left">
+          <div style="font-size:12px;font-weight:700;color:#0052cc;margin-bottom:8px">Mensaje</div>
+          <div>${messageHtml}</div>
+        </td>
+      </tr>
+    </table>
+    ${ctaButton(replyUrl, "Responder por correo")}`;
+
+  const text = [
+    subject,
+    "",
+    "Nueva consulta desde telvoice.cl",
+    "",
+    `Nombre o empresa: ${data.contactName}`,
+    `Correo: ${data.contactEmail}`,
+    `Teléfono: ${data.contactPhone || "—"}`,
+    "Origen: Formulario contacto — telvoice.cl",
+    data.pageUrl ? `Página: ${data.pageUrl}` : null,
+    "",
+    "Mensaje:",
+    data.message,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return { subject, html: emailShell("Consulta landing", body), text };
+}
