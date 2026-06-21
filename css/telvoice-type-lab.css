@@ -213,10 +213,9 @@
   margin-right: auto;
 }
 
-/* Cards beneficio / camino comercial */
+/* Cards beneficio */
 .tv-type-lab .ui-card-benefit .font-h3.text-h3,
-.tv-type-lab .ui-card-feature .font-h3.text-h3,
-.tv-type-lab #camino-comercial .font-h3.text-h3 {
+.tv-type-lab .ui-card-feature .font-h3.text-h3 {
   font-family: Montserrat, sans-serif;
   font-size: 1.0625rem;
   font-weight: 700;

@@ -1,0 +1,65 @@
+/* Sección Agente Telvoice — tema claro landing (section-bg-sky) */
+
+.tv-agent-section {
+  position: relative;
+  color: inherit;
+}
+
+.tv-agent-section .lab-section-inner {
+  position: relative;
+  z-index: 1;
+}
+
+.tv-agent-section .lab-eyebrow {
+  color: #0052cc;
+}
+
+.tv-agent-section .lab-section-title {
+  color: #131b2e;
+}
+
+.tv-agent-section .lab-section-intro {
+  color: #525f7a;
+}
+
+.tv-agent-section .lab-glass-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 82, 204, 0.1);
+  box-shadow: 0 4px 24px rgba(0, 82, 204, 0.06);
+  backdrop-filter: none;
+}
+
+.tv-agent-section .lab-glass-card:hover {
+  border-color: rgba(0, 82, 204, 0.22);
+  box-shadow: 0 8px 32px rgba(0, 82, 204, 0.1);
+  transform: none;
+}
+
+.tv-agent-section .lab-glass-card--glow {
+  box-shadow:
+    0 4px 24px rgba(0, 82, 204, 0.08),
+    0 0 0 1px rgba(0, 82, 204, 0.06) inset;
+  border-color: rgba(0, 82, 204, 0.18);
+}
+
+.tv-agent-section .lab-agent-feature-grid .lab-glass-card h3 {
+  color: #131b2e;
+}
+
+.tv-agent-section .lab-agent-feature-grid .lab-glass-card p {
+  color: #525f7a;
+}
+
+.tv-agent-section .lab-icon-wrap {
+  background: rgba(0, 82, 204, 0.1);
+  border-color: rgba(0, 82, 204, 0.14);
+  color: #0052cc;
+}
+
+.tv-agent-section .lab-agent-section-showcase__img {
+  filter: drop-shadow(0 14px 32px rgba(0, 82, 204, 0.18));
+}
+
+.tv-agent-section .lab-btn-primary {
+  text-decoration: none;
+}
