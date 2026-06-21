@@ -295,10 +295,14 @@
   }
 
   function clearLeadFieldErrors() {
-    ["lead-nombre", "lead-contacto"].forEach(function (id) {
+    ["lead-nombre", "lead-correo", "lead-telefono"].forEach(function (id) {
       var field = qs(id);
       if (field) field.removeAttribute("aria-invalid");
     });
+  }
+
+  function isValidLeadEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
   }
 
   function markLeadFieldError(id) {
@@ -1318,7 +1322,8 @@
       }
 
       var nombreEmpresa = (qs("lead-nombre").value || "").trim();
-      var contacto = (qs("lead-contacto").value || "").trim();
+      var correo = (qs("lead-correo").value || "").trim();
+      var telefono = qs("lead-telefono") ? (qs("lead-telefono").value || "").trim() : "";
       var mensaje = qs("lead-mensaje") ? (qs("lead-mensaje").value || "").trim() : "";
       var nota = qs("lead-nota") ? (qs("lead-nota").value || "").trim() : "";
       var submitBtn = qs("form-submit");
@@ -1329,10 +1334,16 @@
         qs("lead-nombre").focus();
         return;
       }
-      if (!contacto) {
-        showFormAlert("error", "Indique un WhatsApp o correo de contacto.");
-        markLeadFieldError("lead-contacto");
-        qs("lead-contacto").focus();
+      if (!correo) {
+        showFormAlert("error", "Indique un correo de contacto.");
+        markLeadFieldError("lead-correo");
+        qs("lead-correo").focus();
+        return;
+      }
+      if (!isValidLeadEmail(correo)) {
+        showFormAlert("error", "Indique un correo válido.");
+        markLeadFieldError("lead-correo");
+        qs("lead-correo").focus();
         return;
       }
 
@@ -1345,7 +1356,8 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: nombreEmpresa,
-          contact: contacto,
+          email: correo,
+          phone: telefono || null,
           message: mensaje,
           nota: nota,
           page_url: window.location.href,

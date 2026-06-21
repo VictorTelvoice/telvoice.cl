@@ -22,7 +22,7 @@ export function resolveContactLeadNotifyEmails(): string[] {
     process.env.ORDER_NOTIFY_EMAIL?.trim() ||
     process.env.BILLING_NOTIFY_EMAIL?.trim() ||
     env.admin.superadminEmail?.trim() ||
-    "victor@telvoice.net";
+    "billing@telvoice.net";
   return parseNotifyList(configured);
 }
 
@@ -59,7 +59,7 @@ function renderAlert(input: {
     "",
     `Nombre o empresa: ${input.name}`,
     `Correo: ${input.email || "—"}`,
-    `WhatsApp / teléfono: ${input.phone || "—"}`,
+    `Teléfono: ${input.phone || "—"}`,
     input.pageUrl ? `Página: ${input.pageUrl}` : null,
     "",
     "Mensaje:",
@@ -73,7 +73,7 @@ function renderAlert(input: {
     <ul>
       <li><strong>Nombre o empresa:</strong> ${escapeHtml(input.name)}</li>
       <li><strong>Correo:</strong> ${escapeHtml(input.email || "—")}</li>
-      <li><strong>WhatsApp / teléfono:</strong> ${escapeHtml(input.phone || "—")}</li>
+      <li><strong>Teléfono:</strong> ${escapeHtml(input.phone || "—")}</li>
       ${input.pageUrl ? `<li><strong>Página:</strong> ${escapeHtml(input.pageUrl)}</li>` : ""}
     </ul>
     <p><strong>Mensaje</strong></p>
@@ -85,31 +85,39 @@ function renderAlert(input: {
 
 export async function handlePublicContactLead(input: {
   name: string;
-  contact: string;
+  email?: string | null;
+  phone?: string | null;
+  contact?: string;
   message?: string;
   pageUrl?: string | null;
 }): Promise<{ ok: true; message: string }> {
   const name = input.name.trim();
-  const contactRaw = input.contact.trim();
   const message = String(input.message || "").trim();
+  const phoneRaw = String(input.phone || "").trim();
+  let email = String(input.email || "").trim().toLowerCase();
+  let phone = phoneRaw || null;
+
+  if (!email && input.contact) {
+    const legacy = splitContactValue(input.contact);
+    email = legacy.email || "";
+    if (!phone) phone = legacy.phone;
+  }
 
   if (name.length < 2) {
     throw new Error("Indique su nombre o el nombre de su empresa.");
   }
-  if (!contactRaw) {
-    throw new Error("Indique un WhatsApp o correo de contacto.");
+  if (!email) {
+    throw new Error("Indique un correo de contacto.");
   }
-
-  const { email, phone } = splitContactValue(contactRaw);
-  if (!email && !phone) {
-    throw new Error("Indique un WhatsApp o correo de contacto válido.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("Indique un correo válido.");
   }
 
   const { error } = await getSupabase().from("web_agent_leads").insert({
     name,
     company: name,
     email,
-    phone: phone || contactRaw,
+    phone,
     message: message || null,
     source: "landing_contact",
     status: "new",
@@ -122,7 +130,7 @@ export async function handlePublicContactLead(input: {
   const rendered = renderAlert({
     name,
     email,
-    phone: phone || contactRaw,
+    phone,
     message,
     pageUrl: input.pageUrl || null,
   });
@@ -145,7 +153,7 @@ export async function handlePublicContactLead(input: {
         source: "landing_contact",
         lead_name: name,
         lead_email: email,
-        lead_phone: phone || contactRaw,
+        lead_phone: phone,
       },
     });
     if (result.ok && !result.skipped) sent += 1;

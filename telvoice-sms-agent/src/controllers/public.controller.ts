@@ -337,12 +337,24 @@ export async function postPublicContactLead(
     const body = req.body as Record<string, unknown>;
     const result = await handlePublicContactLead({
       name: typeof body.name === "string" ? body.name : "",
+      email:
+        typeof body.email === "string"
+          ? body.email
+          : typeof body.correo === "string"
+            ? body.correo
+            : null,
+      phone:
+        typeof body.phone === "string"
+          ? body.phone
+          : typeof body.telefono === "string"
+            ? body.telefono
+            : null,
       contact:
         typeof body.contact === "string"
           ? body.contact
           : typeof body.contacto === "string"
             ? body.contacto
-            : "",
+            : undefined,
       message:
         typeof body.message === "string"
           ? body.message

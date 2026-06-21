@@ -3802,8 +3802,12 @@
             <input id="lead-nombre" name="nombre_empresa" type="text" autocomplete="name" required maxlength="120" class="lead-field" placeholder="Ej: Juan Pérez / Mi Empresa SpA" />
           </div>
           <div>
-            <label for="lead-contacto" class="mb-1 block font-body-sm text-body-sm font-medium text-on-background">WhatsApp o correo</label>
-            <input id="lead-contacto" name="contacto" type="text" autocomplete="email" inputmode="email" required maxlength="120" class="lead-field" placeholder="Ej: +56 9 1234 5678 o nombre@empresa.cl" />
+            <label for="lead-correo" class="mb-1 block font-body-sm text-body-sm font-medium text-on-background">Correo</label>
+            <input id="lead-correo" name="correo" type="email" autocomplete="email" inputmode="email" required maxlength="120" class="lead-field" placeholder="Ej: nombre@empresa.cl" />
+          </div>
+          <div>
+            <label for="lead-telefono" class="mb-1 block font-body-sm text-body-sm font-medium text-on-background">Teléfono <span class="font-normal text-on-surface-variant">(opcional)</span></label>
+            <input id="lead-telefono" name="telefono" type="tel" autocomplete="tel" inputmode="tel" maxlength="40" class="lead-field" placeholder="Ej: +56 9 1234 5678" />
           </div>
           <div>
             <label for="lead-mensaje" class="mb-1 block font-body-sm text-body-sm font-medium text-on-background">Mensaje <span class="font-normal text-on-surface-variant">(opcional)</span></label>
