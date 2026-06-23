@@ -12,4 +12,5 @@ data/orders/*.json
 **/.backup-*
 **/scripts/.backup-*
 .vercel
+qa-reports/
 .pydeps/
