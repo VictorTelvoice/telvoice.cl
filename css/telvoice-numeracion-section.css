@@ -86,6 +86,125 @@
   justify-content: center;
 }
 
+/* Carrusel móvil — patrón alineado con Casos de uso */
+.tv-numeracion-section .lab-num-carousel {
+  position: relative;
+  width: 100%;
+  max-width: 76rem;
+  margin-inline: auto;
+  min-width: 0;
+}
+
+.tv-numeracion-section .lab-num-carousel-viewport {
+  container-type: inline-size;
+  container-name: numeracion-carousel;
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
+}
+
+.tv-numeracion-section .lab-num-carousel-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.tv-numeracion-section .lab-num-carousel-track {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 1rem;
+  width: max-content;
+  min-width: 100%;
+  margin-top: 0;
+}
+
+.tv-numeracion-section .lab-num-carousel-track .lab-num-card {
+  flex: 0 0 100cqw;
+  width: 100cqw;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  scroll-snap-align: start;
+  align-self: stretch;
+}
+
+.tv-numeracion-section .lab-num-carousel-track .lab-num-card:hover {
+  transform: none;
+}
+
+.tv-numeracion-section .lab-num-carousel-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  margin-top: 1.35rem;
+  padding: 0;
+  list-style: none;
+}
+
+.tv-numeracion-section .lab-num-carousel-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(0, 82, 204, 0.22);
+  cursor: pointer;
+  transition:
+    width 0.28s ease,
+    background 0.28s ease,
+    box-shadow 0.28s ease;
+}
+
+.tv-numeracion-section .lab-num-carousel-dot.is-active {
+  width: 1.35rem;
+  background: linear-gradient(90deg, #0052cc, #0ea5e9);
+  box-shadow: 0 0 10px rgba(0, 82, 204, 0.24);
+}
+
+.tv-numeracion-section .lab-num-carousel-dot:focus-visible {
+  outline: 2px solid #0052cc;
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .tv-numeracion-section .lab-num-carousel-viewport {
+    overflow: visible;
+    scroll-snap-type: none;
+    min-height: 0 !important;
+  }
+
+  .tv-numeracion-section .lab-num-carousel-track {
+    display: grid;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .tv-numeracion-section .lab-num-carousel-track .lab-num-card {
+    flex: initial;
+    width: auto;
+    max-width: none;
+  }
+
+  .tv-numeracion-section .lab-num-carousel-track .lab-num-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .tv-numeracion-section .lab-num-carousel-dots {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tv-numeracion-section .lab-num-carousel-viewport {
+    scroll-behavior: auto;
+  }
+}
+
 .tv-numeracion-section .lab-num-card__body {
   text-align: center;
 }
