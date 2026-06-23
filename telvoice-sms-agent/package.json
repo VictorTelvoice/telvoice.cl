@@ -18,6 +18,7 @@
     "verify:setup": "tsx scripts/verify-setup.ts",
     "verify:agent-core": "tsx scripts/verify-agent-core.ts",
     "verify:agent-deploy": "node scripts/verify-agent-deploy-artifacts.mjs",
+    "verify:agent-operational-lock-prod": "node scripts/verify-agent-operational-lock-prod.mjs",
     "verify:admin-subdomain": "node scripts/verify-admin-subdomain-routing.mjs",
     "verify:auth-role-priority": "node scripts/verify-auth-role-priority.mjs",
     "test:agent-feedback": "node scripts/verify-agent-feedback-admin.mjs",
