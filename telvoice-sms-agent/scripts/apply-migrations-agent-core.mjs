@@ -108,6 +108,13 @@ const MIGRATIONS = [
     check: `SELECT 1 FROM information_schema.tables
       WHERE table_schema = 'public' AND table_name = 'agent_sales_events'`,
   },
+  {
+    id: "068",
+    file: "068_agent_knowledge_operational_lock.sql",
+    check: `SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'knowledge_articles'
+        AND column_name = 'blocked_when_flow_active'`,
+  },
 ];
 
 const connectionString = process.env.DATABASE_URL?.trim();
