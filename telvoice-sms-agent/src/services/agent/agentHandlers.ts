@@ -27,6 +27,11 @@ import {
 } from "./agentCommercialText.js";
 import type { CommercialQuoteResult } from "../../types/commercial.js";
 import { buildTechnicalDoubtReply } from "./agentTechnicalReplies.js";
+import {
+  canUseKnowledgeSearch,
+  shouldSuppressKnowledgeIntent,
+} from "./agentOperationalState.js";
+import { getConversationMemory } from "./agentConversationMemory.js";
 
 function toolCtx(ctx: AgentExecutionContext): AgentToolContext {
   return {
@@ -415,7 +420,19 @@ export async function dispatchRoutedIntent(
           sessionId,
         });
       }
-      const k = await searchKnowledgeForChannel(message, ctx.channel);
+      const mem = await getConversationMemory(sessionId, ctx.channel);
+      if (!canUseKnowledgeSearch(ctx.channel, mem, "technical_doubt")) {
+        return baseResponse({
+          reply:
+            "Consulta técnica: revisa API y documentación en el panel o pide whitelist IP en soporte.",
+          intent: "technical_doubt",
+          confidence: route.confidence,
+          sessionId,
+        });
+      }
+      const k = await searchKnowledgeForChannel(message, ctx.channel, {
+        operationalMode: false,
+      });
       return baseResponse({
         reply: k.matched
           ? k.reply
@@ -423,17 +440,40 @@ export async function dispatchRoutedIntent(
         intent: k.matched ? "knowledge" : "technical_doubt",
         confidence: k.confidence || route.confidence,
         sessionId,
+        showFeedback: true,
       });
     }
 
     case "inbound_sms_knowledge":
     case "knowledge": {
-      const k = await searchKnowledgeForChannel(message, ctx.channel);
+      const mem = await getConversationMemory(sessionId, ctx.channel);
+      if (shouldSuppressKnowledgeIntent(mem, intent)) {
+        return handleSendSmsFlow(
+          { ...route, intent: "send_sms_flow" },
+          message,
+          ctx,
+          sessionId,
+          ctx.metadata,
+        );
+      }
+      if (!canUseKnowledgeSearch(ctx.channel, mem, intent)) {
+        return baseResponse({
+          reply: "",
+          intent: "unknown",
+          confidence: 0.35,
+          sessionId,
+          safeToExecute: false,
+        });
+      }
+      const k = await searchKnowledgeForChannel(message, ctx.channel, {
+        operationalMode: false,
+      });
       return baseResponse({
         reply: k.reply,
         intent,
         confidence: k.confidence,
         sessionId,
+        showFeedback: true,
       });
     }
 

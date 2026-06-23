@@ -57,6 +57,14 @@ import {
   handlePureGreetingReset,
   isPureGreeting,
 } from "./agentGreetingReset.js";
+import {
+  buildRouterDecision,
+  canUseKnowledgeSearch,
+  logRouterDecision,
+  resolveAgentMode,
+  shouldShowFeedbackButtons,
+  shouldTreatUserTextAsSmsMessage,
+} from "./agentOperationalState.js";
 import type {
   AgentCoreRequest,
   AgentCoreResponse,
@@ -388,6 +396,25 @@ async function finalizeResponse(
   return response;
 }
 
+function enrichPanelMeta(
+  response: AgentCoreResponse,
+  memory: Awaited<ReturnType<typeof getConversationMemory>>,
+): AgentCoreResponse {
+  const agentMode = resolveAgentMode(memory);
+  const showFeedback =
+    response.showFeedback ??
+    shouldShowFeedbackButtons(
+      memory,
+      String(response.intent),
+      response.sendSmsFlowStep ?? memory.sendSmsFlowStep,
+    );
+  return {
+    ...response,
+    agentMode,
+    showFeedback,
+  };
+}
+
 export async function runAgentCore(
   request: AgentCoreRequest,
 ): Promise<AgentCoreResponse> {
@@ -461,15 +488,74 @@ export async function runAgentCore(
       companyId,
       metadata,
     });
+    const enriched = enrichPanelMeta(greetingOut, await getConversationMemory(sessionId, channel));
+    logRouterDecision(
+      buildRouterDecision({
+        user_text: message,
+        current_flow_step: null,
+        detected_intent: "greeting",
+        selected_handler: "handlePureGreetingReset",
+        knowledge_allowed: false,
+        reason: "pure_greeting_reset",
+        response_type: "greeting",
+        agent_mode: "idle",
+      }),
+    );
     sessionId = await persistTurn(
       channel,
       companyId,
       request.userId,
       sessionId,
       message,
-      greetingOut,
+      enriched,
     );
-    return { ...greetingOut, sessionId };
+    return { ...enriched, sessionId };
+  }
+
+  if (
+    channel === "web_client" &&
+    companyId &&
+    shouldTreatUserTextAsSmsMessage(memory, message)
+  ) {
+    execCtx.companyId = companyId;
+    const smsCapture = await tryActiveSendSmsFlowFirst(
+      message,
+      execCtx,
+      sessionId,
+      memory,
+      metadata,
+    );
+    if (smsCapture) {
+      let flowOut = await finalizeResponse(
+        request,
+        sessionId,
+        companyId,
+        smsCapture,
+        message,
+      );
+      flowOut = enrichPanelMeta(flowOut, await getConversationMemory(sessionId, channel));
+      logRouterDecision(
+        buildRouterDecision({
+          user_text: message,
+          current_flow_step: memory.sendSmsFlowStep ?? "need_message",
+          detected_intent: "send_sms_flow",
+          selected_handler: "tryActiveSendSmsFlowFirst",
+          knowledge_allowed: false,
+          reason: "waiting_for_message_treat_as_sms_body",
+          response_type: "operational",
+          agent_mode: "operational",
+        }),
+      );
+      sessionId = await persistTurn(
+        channel,
+        companyId,
+        request.userId,
+        sessionId,
+        message,
+        flowOut,
+      );
+      return { ...flowOut, sessionId };
+    }
   }
 
   const route = routeAgentIntent(message, channel, {
@@ -551,6 +637,10 @@ export async function runAgentCore(
         companyId,
         flowFirst,
         message,
+      );
+      flowOut = enrichPanelMeta(
+        flowOut,
+        await getConversationMemory(sessionId, channel),
       );
       sessionId = await persistTurn(
         channel,
@@ -725,8 +815,14 @@ export async function runAgentCore(
   }
 
   const memoryBeforeKnowledge = await getConversationMemory(sessionId, channel);
+  const knowledgeAllowed = canUseKnowledgeSearch(
+    channel,
+    memoryBeforeKnowledge,
+    String(response.intent),
+  );
 
   if (
+    knowledgeAllowed &&
     !shouldSkipKnowledgeForSendFlow(memoryBeforeKnowledge, String(response.intent)) &&
     response.confidence < 0.45 &&
     response.intent !== "commercial" &&
@@ -737,15 +833,19 @@ export async function runAgentCore(
     response.intent !== "campaign_draft" &&
     response.intent !== "technical_doubt" &&
     !matchesSendSmsFlowIntent(message) &&
-    !/\b(ayudame a crear|ayúdame a crear|crear\s+(?:una\s+)?campana)\b/i.test(message)
+    !/\b(ayudame a crear|ayúdame a crear|crear\s+(?:una\s+)?campana|preparar\s+(?:una\s+)?campana)\b/i.test(message)
   ) {
-    const k = await searchKnowledgeForChannel(message, channel);
+    const k = await searchKnowledgeForChannel(message, channel, {
+      operationalMode: false,
+      flowActive: false,
+    });
     if (k.matched && k.confidence > response.confidence) {
       response = {
         ...response,
         reply: k.reply,
         intent: "knowledge",
         confidence: k.confidence,
+        showFeedback: true,
       };
     } else if (!isLikelyCommercialPhrase(message)) {
       await recordUnansweredQuestion({
@@ -764,7 +864,31 @@ export async function runAgentCore(
         confidence: 0.35,
       };
     }
+  } else if (!knowledgeAllowed && response.intent === "unknown") {
+    response = {
+      ...response,
+      reply:
+        "Sigamos con el paso actual. Si quieres cancelar, escribe Cancelar.",
+      confidence: 0.5,
+      intent: "send_sms_flow",
+    };
   }
+
+  logRouterDecision(
+    buildRouterDecision({
+      user_text: message,
+      current_flow_step:
+        memoryBeforeKnowledge.sendSmsFlowStep ??
+        memoryBeforeKnowledge.purchaseFlowStep ??
+        null,
+      detected_intent: String(route.intent),
+      selected_handler: String(response.intent),
+      knowledge_allowed: knowledgeAllowed,
+      reason: knowledgeAllowed ? "knowledge_gate_open" : "operational_flow_lock",
+      response_type: String(response.intent),
+      agent_mode: resolveAgentMode(memoryBeforeKnowledge),
+    }),
+  );
 
   if (route.intent === "negative_feedback") {
     await updateConversationMemory(
@@ -788,6 +912,11 @@ export async function runAgentCore(
     companyId,
     response,
     message,
+  );
+
+  response = enrichPanelMeta(
+    response,
+    await getConversationMemory(sessionId, channel),
   );
 
   sessionId = await persistTurn(

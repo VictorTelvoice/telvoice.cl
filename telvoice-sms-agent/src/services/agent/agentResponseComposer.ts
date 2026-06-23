@@ -2,6 +2,7 @@ import type { CommercialQuoteResult } from "../../types/commercial.js";
 import type { AgentPersona } from "./agentPersona.js";
 import type { ConversationMemory } from "./agentConversationMemory.js";
 import type { AgentChannel, AgentIntent } from "./types.js";
+import { resolveAgentMode } from "./agentOperationalState.js";
 
 export type ComposeInput = {
   persona: AgentPersona;
@@ -14,6 +15,14 @@ export type ComposeInput = {
   userName?: string | null;
   acknowledgment?: string;
 };
+
+function trimOperationalReply(text: string, maxLines = 6): string {
+  const lines = text.split("\n").filter((l) => l.trim().length > 0);
+  if (lines.length <= maxLines) {
+    return text.trim();
+  }
+  return lines.slice(0, maxLines).join("\n");
+}
 
 function trimParagraphs(text: string, maxLines = 12): string {
   const lines = text.split("\n").filter((l) => l.trim().length > 0);
@@ -146,10 +155,18 @@ export function composeAgentResponse(input: ComposeInput): string {
 
   const body = rawReply.trim();
   if (body) {
-    if (channel === "telegram" && body.length > 600) {
+    const mode = resolveAgentMode(memory);
+    if (channel === "web_client" && mode === "operational") {
+      parts.push(trimOperationalReply(body, 6));
+    } else if (channel === "telegram" && body.length > 600) {
       parts.push(trimParagraphs(body, 8));
     } else if (body.length > 1200) {
       parts.push(trimParagraphs(body, 10));
+    } else if (
+      channel === "web_client" &&
+      (intent === "knowledge" || intent === "inbound_sms_knowledge")
+    ) {
+      parts.push(trimOperationalReply(body, 6));
     } else {
       parts.push(body);
     }

@@ -176,7 +176,11 @@ export function getPanelAgentWidgetScript(): string {
       el.appendChild(bubble);
     }
     wrap.appendChild(el);
-    if (role !== "user" && sessionId) {
+    var showFb = role !== "user" && sessionId;
+    if (showFb && turnCtx && turnCtx.showFeedback === false) {
+      showFb = false;
+    }
+    if (showFb) {
       var ctx = turnCtx || {
         user: lastUserMessage,
         agent: lastAgentReply,
@@ -352,7 +356,8 @@ export function getPanelAgentWidgetScript(): string {
       user: lastUserMessage,
       agent: lastAgentReply,
       intent: lastIntent,
-      confidence: lastConfidence
+      confidence: lastConfidence,
+      showFeedback: data.showFeedback !== false
     });
     if (data.suggestedActions && data.suggestedActions.length) {
       var fromApi = data.suggestedActions.slice(0, 8);

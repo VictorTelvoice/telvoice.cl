@@ -82,6 +82,10 @@ export type AgentCoreResponse = {
   showPaymentButton?: boolean;
   /** Panel: reiniciar flujo local (pending action, CSV) tras saludo puro */
   resetFlow?: boolean;
+  /** Panel: ocultar botones 👍/👎 durante flujos operativos */
+  showFeedback?: boolean;
+  /** Modo del agente para UI/composer */
+  agentMode?: "operational" | "commercial" | "support" | "training" | "idle";
 };
 
 export type PendingActionType =

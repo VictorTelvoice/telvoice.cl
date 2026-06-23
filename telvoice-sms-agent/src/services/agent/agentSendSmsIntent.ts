@@ -12,7 +12,7 @@ const SEND_SMS_MASS_RE =
   /\b(sms\s+masivo|envio\s+masivo|envío\s+masivo|varios\s+contactos|lista\s+de\s+contactos|planilla|csv)\b|\b(enviar|mandar).*(campana|campaña|masivo|promocion|promoción|varios)\b|\b(campana|campaña).*(enviar|mandar)\b/;
 
 const CAMPAIGN_GUIDED_RE =
-  /\b(ayudame a crear|ayúdame a crear|armar\s+(?:una\s+)?campana|armar\s+(?:una\s+)?campaña|nueva campaña|nueva campana|quiero\s+(?:una\s+)?campana|quiero\s+(?:una\s+)?campaña|crear\s+(?:una\s+)?campana|crear\s+(?:una\s+)?campaña)\b/;
+  /\b(ayudame a crear|ayúdame a crear|armar\s+(?:una\s+)?campana|armar\s+(?:una\s+)?campaña|preparar\s+(?:una\s+)?campana|preparar\s+(?:una\s+)?campaña|nueva campaña|nueva campana|quiero\s+(?:una\s+)?campana|quiero\s+(?:una\s+)?campaña|crear\s+(?:una\s+)?campaña|crear\s+(?:una\s+)?campana)\b/;
 
 /** Flujo guiado de campaña (mensaje → destinos → confirmación), sin borrador automático. */
 export function matchesCampaignGuidedIntent(text: string): boolean {

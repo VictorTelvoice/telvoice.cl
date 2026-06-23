@@ -4,6 +4,7 @@ import {
   searchKnowledgeRaw,
 } from "../../knowledgeService.js";
 import { KNOWLEDGE_NOT_FOUND_MSG } from "../../telegramKnowledge.js";
+import type { KnowledgeArticleRow } from "../../../types/knowledge.js";
 import type { AgentChannel } from "../types.js";
 import type { AgentToolContext, AgentToolResult } from "./types.js";
 
@@ -12,6 +13,20 @@ const CHANNEL_CATEGORY_HINTS: Record<AgentChannel, string[]> = {
   web_client: ["panel_cliente", "dlr", "estrategia", "soporte", "sms", "saldo"],
   telegram: ["dlr", "sms", "saldo", "telegram", "comercial", "soporte"],
   admin: ["errores", "seguridad", "smpp", "api", "telvoice"],
+};
+
+const PANEL_MAX_CHARS = 500;
+const PANEL_MAX_LINES = 6;
+
+type KnowledgeArticleExtended = {
+  title?: string | null;
+  content: string;
+  category: string;
+  allowed_channels?: string[] | null;
+  content_short?: string | null;
+  answer_style?: string | null;
+  blocked_when_flow_active?: boolean | null;
+  metadata?: Record<string, unknown> | null;
 };
 
 function articleBlockedOnChannel(
@@ -40,25 +55,138 @@ function articleAllowsChannel(
   return hints.includes(article.category) || article.category === "comercial";
 }
 
+function resolveArticleMeta(article: KnowledgeArticleExtended): Record<string, unknown> {
+  const row = article as KnowledgeArticleRow & { metadata?: Record<string, unknown> };
+  return (row.metadata ?? {}) as Record<string, unknown>;
+}
+
+function articleContentShort(article: KnowledgeArticleExtended): string | null {
+  const meta = resolveArticleMeta(article);
+  if (typeof article.content_short === "string" && article.content_short.trim()) {
+    return article.content_short.trim();
+  }
+  if (typeof meta.content_short === "string" && meta.content_short.trim()) {
+    return meta.content_short.trim();
+  }
+  return null;
+}
+
+function articleBlockedWhenFlowActive(article: KnowledgeArticleExtended): boolean {
+  if (article.blocked_when_flow_active === false) {
+    return false;
+  }
+  const meta = resolveArticleMeta(article);
+  if (meta.blocked_when_flow_active === false) {
+    return false;
+  }
+  return true;
+}
+
+function resolveShortContent(article: KnowledgeArticleExtended): string {
+  const short = articleContentShort(article);
+  if (short) {
+    return short;
+  }
+  return summarizeContent(article.content, PANEL_MAX_CHARS);
+}
+
+function summarizeContent(full: string, maxChars: number): string {
+  const trimmed = full.trim();
+  if (trimmed.length <= maxChars) {
+    return trimmed;
+  }
+  const sentences = trimmed.split(/(?<=[.!?])\s+/).filter(Boolean);
+  let out = "";
+  for (const s of sentences.slice(0, 3)) {
+    const next = out ? `${out} ${s}` : s;
+    if (next.length > maxChars) {
+      break;
+    }
+    out = next;
+  }
+  if (!out) {
+    out = trimmed.slice(0, maxChars - 1).trimEnd() + "…";
+  }
+  return out;
+}
+
+function trimPanelLines(text: string): string {
+  const lines = text.split("\n").filter((l) => l.trim().length > 0);
+  if (lines.length <= PANEL_MAX_LINES) {
+    return text.trim();
+  }
+  return lines.slice(0, PANEL_MAX_LINES).join("\n");
+}
+
+function formatKnowledgeReply(
+  article: KnowledgeArticleExtended,
+  channel: AgentChannel,
+  relatedTitles: string[],
+  options?: { operationalMode?: boolean },
+): string {
+  const operational = options?.operationalMode === true;
+  const style = article.answer_style ?? "short";
+  let body: string;
+
+  if (channel === "web_client" && !operational && style !== "detailed") {
+    body = resolveShortContent(article);
+    body = trimPanelLines(body);
+    if (article.content.length > body.length + 40) {
+      body += "\n\n¿Quieres que te muestre el detalle completo?";
+    }
+  } else if (channel === "telegram" && article.content.length > 600) {
+    body = summarizeContent(article.content, 600);
+  } else {
+    body = article.content.trim();
+  }
+
+  let reply = `${article.title ?? "Información"}\n\n${body}`;
+
+  if (
+    !operational &&
+    relatedTitles.length > 0 &&
+    channel !== "web_client"
+  ) {
+    reply += `\n\n—\nRelacionado:\n${relatedTitles.map((t) => `• ${t}`).join("\n")}`;
+  }
+
+  return reply;
+}
+
+export type KnowledgeSearchOptions = {
+  operationalMode?: boolean;
+  flowActive?: boolean;
+};
+
 export async function searchKnowledgeForChannel(
   query: string,
   channel: AgentChannel,
+  options?: KnowledgeSearchOptions,
 ): Promise<{ reply: string; confidence: number; matched: boolean }> {
   const raw = await searchKnowledgeRaw(query, 12);
+  const flowActive = options?.flowActive === true;
+
   const filtered = filterKnowledgeSearchResults(
-    raw.filter((r) => articleAllowsChannel(r.article as { allowed_channels?: string[]; category: string }, channel)),
+    raw.filter((r) => {
+      const art = r.article as KnowledgeArticleExtended;
+      if (!articleAllowsChannel(art, channel)) {
+        return false;
+      }
+      if (flowActive && articleBlockedWhenFlowActive(art)) {
+        return false;
+      }
+      return true;
+    }),
   );
 
   if (filtered.length > 0 && filtered[0]!.score >= KNOWLEDGE_MIN_SCORE) {
-    const best = filtered[0]!.article;
+    const best = filtered[0]!.article as KnowledgeArticleExtended;
     const conf = Math.min(0.95, 0.5 + filtered[0]!.score / 80);
-    let reply = `${best.title}\n\n${best.content}`;
-    if (filtered.length > 1) {
-      reply += `\n\n—\nRelacionado:\n${filtered
-        .slice(1, 3)
-        .map((r) => `• ${r.article.title}`)
-        .join("\n")}`;
-    }
+    const related = filtered
+      .slice(1, 3)
+      .map((r) => String(r.article.title ?? ""))
+      .filter(Boolean);
+    const reply = formatKnowledgeReply(best, channel, related, options);
     return { reply, confidence: conf, matched: true };
   }
 

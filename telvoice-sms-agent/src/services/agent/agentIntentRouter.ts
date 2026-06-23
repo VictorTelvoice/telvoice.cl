@@ -20,6 +20,11 @@ import {
 import { matchesInboundSmsKnowledgeIntent } from "./agentInboundSmsIntent.js";
 import type { ConversationMemory } from "./agentConversationMemory.js";
 import type { AgentChannel, AgentIntent } from "./types.js";
+import {
+  isOperationalFlowActive,
+  shouldTreatUserTextAsSmsMessage,
+} from "./agentOperationalState.js";
+import { SEND_SMS_FLOW_STEP } from "./agentSendSmsFlowUi.js";
 
 export type RoutedIntent = {
   intent: AgentIntent;
@@ -115,6 +120,37 @@ export function routeAgentIntent(
   }
   if (CANCEL_RE.test(normalized)) {
     return { intent: "cancel", confidence: 0.99, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
+  }
+
+  if (shouldTreatUserTextAsSmsMessage(memory, text)) {
+    return {
+      intent: "send_sms_flow",
+      confidence: 0.98,
+      commercialQuantity: null,
+      requiresAuth: true,
+      operationalCommand: null,
+    };
+  }
+
+  if (isOperationalFlowActive(memory)) {
+    const step = memory.sendSmsFlowStep;
+    if (
+      step === SEND_SMS_FLOW_STEP.NEED_RECIPIENT_OR_CSV ||
+      step === SEND_SMS_FLOW_STEP.NEED_CSV_FILE ||
+      memory.waitingForRecipient ||
+      memory.waitingForCsv
+    ) {
+      const followPhone = text.match(/^(?:al\s+)?(\+?56[\s-]?9[\d\s-]{8,}|9[\d\s-]{8,})\s*$/i);
+      if (followPhone || /^(adjuntar|csv|planilla)\b/i.test(normalized)) {
+        return {
+          intent: "send_sms_flow",
+          confidence: 0.9,
+          commercialQuantity: null,
+          requiresAuth: true,
+          operationalCommand: null,
+        };
+      }
+    }
   }
 
   if (
@@ -298,6 +334,15 @@ export function routeAgentIntent(
   }
 
   if (matchesInboundSmsKnowledgeIntent(normalized)) {
+    if (isOperationalFlowActive(memory)) {
+      return {
+        intent: "send_sms_flow",
+        confidence: 0.85,
+        commercialQuantity: null,
+        requiresAuth: true,
+        operationalCommand: null,
+      };
+    }
     return {
       intent: "inbound_sms_knowledge",
       confidence: 0.9,
@@ -346,6 +391,15 @@ export function routeAgentIntent(
       normalized,
     )
   ) {
+    if (isOperationalFlowActive(memory)) {
+      return {
+        intent: "send_sms_flow",
+        confidence: 0.82,
+        commercialQuantity: null,
+        requiresAuth: true,
+        operationalCommand: null,
+      };
+    }
     return { intent: "dlr_help", confidence: 0.82, commercialQuantity: null, requiresAuth: false, operationalCommand: null };
   }
 
@@ -400,6 +454,15 @@ export function routeAgentIntent(
   }
 
   if (isExplicitKnowledgeQuestion(normalized) || tg?.route === "knowledge") {
+    if (isOperationalFlowActive(memory)) {
+      return {
+        intent: "send_sms_flow",
+        confidence: 0.85,
+        commercialQuantity: null,
+        requiresAuth: true,
+        operationalCommand: null,
+      };
+    }
     if (commercialBuy || /\b(comprar|cotizar|precio|bolsa)\b/.test(normalized)) {
       return {
         intent: "commercial",

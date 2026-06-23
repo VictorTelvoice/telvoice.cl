@@ -37,6 +37,7 @@ import {
   shouldForceSendSmsFlow,
 } from "./agentSendSmsFlowUi.js";
 import { handleInsufficientBalanceOffer } from "./agentPurchaseFlow.js";
+import { shouldTreatUserTextAsSmsMessage } from "./agentOperationalState.js";
 
 const FLOW_INTENT = "send_sms_flow";
 
@@ -462,12 +463,21 @@ export async function handleSendSmsFlow(
     throw new AppError("Sesión de empresa requerida para enviar SMS.", 403);
   }
 
-  const company = await findCompanyById(ctx.companyId);
-  const companyLabel = company?.name?.trim() || "tu cuenta";
-  const senderId = await resolveCompanySenderId(ctx.companyId);
   let memory = await getConversationMemory(sessionId, ctx.channel);
 
+  async function loadSendContext(): Promise<{
+    companyLabel: string;
+    senderId: string;
+  }> {
+    const company = await findCompanyById(ctx.companyId);
+    return {
+      companyLabel: company?.name?.trim() || "tu cuenta",
+      senderId: await resolveCompanySenderId(ctx.companyId),
+    };
+  }
+
   if (ctx.channel === "telegram") {
+    const { companyLabel, senderId } = await loadSendContext();
     const tgDraft = parseSendSmsDraft(message);
     let tgMsg =
       tgDraft.message ?? sanitizePendingSmsMessage(memory.pendingSmsMessage) ?? null;
@@ -508,6 +518,34 @@ export async function handleSendSmsFlow(
       sanitizePendingSmsMessage(memory.pendingSmsMessage) ?? undefined,
   };
 
+  if (shouldTreatUserTextAsSmsMessage(memory, message)) {
+    const msgBody = message.trim();
+    const destMem = await setFlowMemory(sessionId, ctx.channel, ctx.companyId, {
+      pendingSmsMessage: msgBody,
+      sendSmsFlowStep: SEND_SMS_FLOW_STEP.NEED_RECIPIENT_OR_CSV,
+      waitingForMessage: false,
+      waitingForRecipient: true,
+      waitingForCsv: true,
+    });
+    const destIntro =
+      "Perfecto, ya tengo el mensaje.\n\n" +
+      "Ahora dime a quién quieres enviarlo.\n\n" +
+      "Puedes:\n\n" +
+      "1. Escribir un número en formato internacional, por ejemplo 569XXXXXXXX.\n" +
+      "2. Adjuntar una planilla CSV con los números de teléfono.";
+
+    return baseResponse(
+      {
+        reply: destIntro,
+        confidence: route.confidence,
+        sessionId,
+        safeToExecute: false,
+        suggestedActions: destChoiceActions(),
+      },
+      destMem,
+    );
+  }
+
   if (isSendSmsIntentOnly(message) || matchesCampaignGuidedIntent(message)) {
     return replyAskMessageFirst({
       sessionId,
@@ -543,6 +581,7 @@ export async function handleSendSmsFlow(
   }
 
   if (csvUploadId && msgBody && !isConfirmOrCancelCommand(message)) {
+    const { companyLabel, senderId } = await loadSendContext();
     memory = await setFlowMemory(sessionId, ctx.channel, ctx.companyId, {
       pendingSmsMessage: msgBody,
       pendingCsvUploadId: csvUploadId,
@@ -629,6 +668,7 @@ export async function handleSendSmsFlow(
   }
 
   if (msgBody && phone) {
+    const { companyLabel, senderId } = await loadSendContext();
     return buildSingleSummaryResponse({
       ctx,
       sessionId,
@@ -641,6 +681,7 @@ export async function handleSendSmsFlow(
   }
 
   if (msgBody && csvUploadId) {
+    const { companyLabel, senderId } = await loadSendContext();
     return buildCsvSummaryResponse({
       ctx,
       sessionId,

@@ -38,6 +38,7 @@
     "test:sms-api-dlr-sync": "tsx scripts/test-sms-api-dlr-sync.ts",
     "test:agent-sales": "tsx scripts/test-agent-sales-metrics.ts",
     "test:agent-greeting-reset": "tsx scripts/test-agent-greeting-reset.ts",
+    "test:agent-operational-state-lock": "tsx scripts/test-agent-operational-state-lock.ts",
     "test:billing-email-idempotency": "tsx scripts/test-billing-email-idempotency.ts",
     "test:google-login-tenant-isolation": "tsx scripts/test-google-login-tenant-isolation.ts",
     "audit:google-login-tenant-prod": "node scripts/audit-google-login-tenant-prod.mjs",
