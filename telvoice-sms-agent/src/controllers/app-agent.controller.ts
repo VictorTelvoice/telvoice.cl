@@ -104,6 +104,8 @@ export async function postAppAgentChat(
       closeWidget: result.closeWidget === true,
       showAttachButton: result.showAttachButton === true,
       sendSmsFlowStep: result.sendSmsFlowStep ?? null,
+      showFeedback: result.showFeedback !== false,
+      agentMode: result.agentMode ?? null,
       paymentUrl: result.paymentUrl ?? null,
       orderId: result.orderId ?? null,
       showPaymentButton: result.showPaymentButton === true,

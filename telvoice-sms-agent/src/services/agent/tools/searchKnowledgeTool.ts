@@ -142,6 +142,10 @@ function formatKnowledgeReply(
 
   let reply = `${article.title ?? "Información"}\n\n${body}`;
 
+  if (channel === "web_client" && !operational) {
+    reply = trimPanelLines(reply);
+  }
+
   if (
     !operational &&
     relatedTitles.length > 0 &&
