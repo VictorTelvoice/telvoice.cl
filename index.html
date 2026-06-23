@@ -2773,7 +2773,7 @@
   <link rel="stylesheet" href="css/telvoice-hero-agent-embed.css?v=20260616" />
   <link rel="stylesheet" href="css/telvoice-scroll-performance.css?v=20260530" />
   <link rel="stylesheet" href="css/landing-agent-lab.css?v=20260619" />
-  <link rel="stylesheet" href="css/telvoice-numeracion-section.css?v=20260619e" />
+  <link rel="stylesheet" href="css/telvoice-numeracion-section.css?v=20260623" />
   <link rel="stylesheet" href="css/telvoice-agent-section.css?v=20260529d" />
   <link rel="stylesheet" href="css/telvoice-web-agent.css?v=20260615" data-tva-css="1" />
   <script type="application/ld+json">
@@ -3386,7 +3386,9 @@
                   Recibe SMS, códigos 2FA y respuestas de clientes desde un número empresarial, gestionado en tu panel, Telegram o vía API.
                 </p>
               </header>
-              <div class="lab-num-grid mt-10">
+              <div class="lab-num-carousel mt-10" id="numeracion-carousel" data-autoplay="4500">
+                <div class="lab-num-carousel-viewport">
+                  <div class="lab-num-carousel-track lab-num-grid">
                 <article class="lab-num-card lab-glass-card">
                   <div class="lab-num-card__visual" aria-hidden="true">
                     <img src="/assets/numeracion/card-sim-real.svg?v=20260619f" class="lab-num-scene" alt="" width="360" height="200" loading="lazy" decoding="async" />
@@ -3423,6 +3425,9 @@
                     <p class="lab-num-card__text">Mantén registro de mensajes recibidos, fechas, números y eventos importantes para controlar comunicaciones sensibles.</p>
                   </div>
                 </article>
+                  </div>
+                </div>
+                <nav class="lab-num-carousel-dots" aria-label="Paginación numeración Telvoice"></nav>
               </div>
               <div class="lab-num-cta mt-10 flex justify-center">
                 <a href="/numeracion-sim.html" class="lab-btn-primary" data-track="click_solicitar_numero_numeracion">Solicitar número Telvoice</a>
@@ -4033,6 +4038,7 @@
   <script src="js/telvoice-touch-swipe.js?v=20260616"></script>
   <script src="js/telvoice-carousel-core.js?v=20260529f"></script>
   <script src="js/telvoice-casos-carousel.js?v=20260529f"></script>
+  <script src="js/telvoice-numeracion-carousel.js?v=20260623"></script>
   <script src="js/telvoice-agent-carousel.js?v=20260529f"></script>
   <script src="js/telvoice-hero-slider.js?v=20260530"></script>
   <script src="js/telvoice-web-agent-loader.js?v=20260530" data-root="" data-embed-target="#hero-agent-embed"></script>
