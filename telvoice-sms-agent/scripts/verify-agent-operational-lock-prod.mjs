@@ -56,8 +56,10 @@ async function main() {
   assert.equal(health.status, "ok");
   const build = health.build ?? "";
   assert.ok(
-    build.startsWith("8d3e3e9") || build.startsWith("832c85f"),
-    `build esperado 832c85f/8d3e3e9*, recibido: ${build}`,
+    build.startsWith("98b3d89") ||
+      build.startsWith("8d3e3e9") ||
+      build.startsWith("832c85f"),
+    `build esperado hotfix operacional, recibido: ${build}`,
   );
   record("health", true, `build=${build}`);
 
@@ -174,6 +176,9 @@ async function main() {
     b1.intent === "send_sms_flow" &&
     /mensaje/i.test(b1.reply) &&
     !/Respuestas a campañas/i.test(b1.reply);
+  if (!bOk) {
+    console.log("DEBUG B reply:", b1.reply?.slice(0, 300));
+  }
   record("B_preparar_campana", bOk, `intent=${b1.intent}`);
 
   console.log("\n=== Caso C: título knowledge como mensaje ===");
