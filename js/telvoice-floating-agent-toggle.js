@@ -339,7 +339,14 @@
     resolveAvatarSrc();
     applyState(readState());
     bindButtons();
-    window.setTimeout(runEntryAnimation, 180);
+    var runEntry = function () {
+      runEntryAnimation();
+    };
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(runEntry, { timeout: 5000 });
+    } else {
+      window.setTimeout(runEntry, 2200);
+    }
   }
 
   window.TelvoiceFloatingAgent = {

@@ -2315,29 +2315,21 @@
     }
   }
 
-  function markAgentUiReady() {
-    var floatRoot = document.getElementById("telvoice-web-agent");
+  function markEmbedReady() {
     var embedRoot = document.getElementById("telvoice-web-agent-embed");
+    if (!embedRoot) {
+      return;
+    }
     window.requestAnimationFrame(function () {
-      window.requestAnimationFrame(function () {
-        if (floatRoot) {
-          floatRoot.classList.add("tva-root--ready");
-        }
-        if (embedRoot) {
-          embedRoot.classList.add("tva-root--ready");
-        }
-      });
+      embedRoot.classList.add("tva-root--ready");
     });
   }
 
-  function init() {
+  function initFloatingAgent() {
     try {
       if (!document.getElementById("telvoice-web-agent")) {
         buildUi();
       }
-      initEmbedOnly();
-      initLabHeroConnection();
-      initLabAgentIsotipos();
       var heroEmbedActive = embedEnabled();
       if (!heroEmbedActive) {
         if (state.messages.length === 0) {
@@ -2356,11 +2348,38 @@
           applyResumeData(data);
         }
       });
+      var floatRoot = document.getElementById("telvoice-web-agent");
+      if (floatRoot) {
+        floatRoot.classList.add("tva-root--ready");
+      }
+    } catch (floatErr) {
+      console.warn("[Telvoice agent] floating init failed:", floatErr);
+    }
+  }
+
+  function scheduleFloatingInit() {
+    var run = function () {
+      initFloatingAgent();
+    };
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(run, { timeout: 3200 });
+    } else {
+      window.setTimeout(run, 1800);
+    }
+  }
+
+  function init() {
+    try {
+      initEmbedOnly();
+      initLabHeroConnection();
+      initLabAgentIsotipos();
       initPendingCheckoutOnLanding();
+      markEmbedReady();
+      scheduleFloatingInit();
     } catch (err) {
       console.warn("[Telvoice agent] init failed:", err);
-    } finally {
-      markAgentUiReady();
+      markEmbedReady();
+      scheduleFloatingInit();
     }
   }
 

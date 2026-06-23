@@ -25,30 +25,7 @@
       return;
     }
 
-    items.forEach(function (item) {
-      item.classList.remove("is-revealed");
-    });
-
-    observer = new IntersectionObserver(
-      function (entries) {
-        entries.forEach(function (entry) {
-          if (!entry.isIntersecting) {
-            return;
-          }
-          entry.target.classList.add("is-revealed");
-          observer.unobserve(entry.target);
-        });
-      },
-      {
-        root: null,
-        rootMargin: "0px 0px -6% 0px",
-        threshold: 0.18,
-      }
-    );
-
-    items.forEach(function (item) {
-      observer.observe(item);
-    });
+    revealAll(items);
   }
 
   function init() {

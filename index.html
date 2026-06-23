@@ -155,10 +155,7 @@
     }
     main > section.site-scroll-target {
       scroll-snap-align: start;
-      scroll-snap-stop: always;
       scroll-margin-top: var(--site-nav-height, 4.75rem);
-      min-height: calc(100svh - var(--site-nav-height, 4.75rem));
-      min-height: calc(100dvh - var(--site-nav-height, 4.75rem));
     }
     body {
       overflow-x: clip;
@@ -312,7 +309,6 @@
       position: absolute;
       border-radius: 50%;
       pointer-events: none;
-      will-change: transform;
       animation-name: heroCloudWindLeft;
       animation-timing-function: linear;
       animation-iteration-count: infinite;
@@ -325,6 +321,11 @@
       );
       filter: blur(36px);
       opacity: 0.62;
+    }
+    @media (max-width: 767px) {
+      .hero-cloud-soft {
+        filter: none;
+      }
     }
     .hero-cloud-soft--1 {
       width: clamp(300px, 48vw, 560px);
@@ -2768,7 +2769,9 @@
   <link rel="stylesheet" href="css/telvoice-scroll-reveal.css?v=20260619" />
   <link rel="stylesheet" href="css/telvoice-type-lab.css?v=20260615" />
   <link rel="stylesheet" href="css/telvoice-casos-carousel.css?v=20260529d" />
-  <link rel="stylesheet" href="css/telvoice-hero-slider.css?v=20260616" />
+  <link rel="stylesheet" href="css/telvoice-hero-slider.css?v=20260530" />
+  <link rel="stylesheet" href="css/telvoice-hero-agent-embed.css?v=20260616" />
+  <link rel="stylesheet" href="css/telvoice-scroll-performance.css?v=20260530" />
   <link rel="stylesheet" href="css/landing-agent-lab.css?v=20260619" />
   <link rel="stylesheet" href="css/telvoice-numeracion-section.css?v=20260619e" />
   <link rel="stylesheet" href="css/telvoice-agent-section.css?v=20260529d" />
@@ -3386,7 +3389,7 @@
               <div class="lab-num-grid mt-10">
                 <article class="lab-num-card lab-glass-card">
                   <div class="lab-num-card__visual" aria-hidden="true">
-                    <img src="/assets/numeracion/card-sim-real.svg?v=20260619f" class="lab-num-scene" alt="" width="360" height="200" decoding="async" />
+                    <img src="/assets/numeracion/card-sim-real.svg?v=20260619f" class="lab-num-scene" alt="" width="360" height="200" loading="lazy" decoding="async" />
                   </div>
                   <div class="lab-num-card__body">
                     <h3 class="lab-num-card__title">Número SIM real</h3>
@@ -3395,7 +3398,7 @@
                 </article>
                 <article class="lab-num-card lab-glass-card">
                   <div class="lab-num-card__visual" aria-hidden="true">
-                    <img src="/assets/numeracion/card-2fa.svg?v=20260619f" class="lab-num-scene" alt="" width="360" height="200" decoding="async" />
+                    <img src="/assets/numeracion/card-2fa.svg?v=20260619f" class="lab-num-scene" alt="" width="360" height="200" loading="lazy" decoding="async" />
                   </div>
                   <div class="lab-num-card__body">
                     <h3 class="lab-num-card__title">SMS y 2FA autorizados</h3>
@@ -3404,7 +3407,7 @@
                 </article>
                 <article class="lab-num-card lab-glass-card">
                   <div class="lab-num-card__visual" aria-hidden="true">
-                    <img src="/assets/numeracion/card-equipo.svg?v=20260619f" class="lab-num-scene" alt="" width="360" height="200" decoding="async" />
+                    <img src="/assets/numeracion/card-equipo.svg?v=20260619f" class="lab-num-scene" alt="" width="360" height="200" loading="lazy" decoding="async" />
                   </div>
                   <div class="lab-num-card__body">
                     <h3 class="lab-num-card__title">Acceso para tu equipo</h3>
@@ -3413,7 +3416,7 @@
                 </article>
                 <article class="lab-num-card lab-glass-card lab-glass-card--glow">
                   <div class="lab-num-card__visual" aria-hidden="true">
-                    <img src="/assets/numeracion/card-historial.svg?v=20260619f" class="lab-num-scene" alt="" width="360" height="200" decoding="async" />
+                    <img src="/assets/numeracion/card-historial.svg?v=20260619f" class="lab-num-scene" alt="" width="360" height="200" loading="lazy" decoding="async" />
                   </div>
                   <div class="lab-num-card__body">
                     <h3 class="lab-num-card__title">Historial y trazabilidad</h3>
@@ -4024,14 +4027,14 @@
   </div>
 
   <script src="js/telvoice-config.js"></script>
-  <script src="js/telvoice-scroll-reveal.js?v=20260619"></script>
-  <script src="js/telvoice-floating-agent-toggle.js?v=20260619"></script>
+  <script src="js/telvoice-scroll-reveal.js?v=20260530"></script>
+  <script src="js/telvoice-floating-agent-toggle.js?v=20260530"></script>
   <script src="js/telvoice-app.js"></script>
   <script src="js/telvoice-touch-swipe.js?v=20260616"></script>
   <script src="js/telvoice-carousel-core.js?v=20260529f"></script>
   <script src="js/telvoice-casos-carousel.js?v=20260529f"></script>
   <script src="js/telvoice-agent-carousel.js?v=20260529f"></script>
-  <script src="js/telvoice-hero-slider.js?v=20260616"></script>
-  <script src="js/telvoice-web-agent-loader.js" data-root="" data-embed-target="#hero-agent-embed"></script>
+  <script src="js/telvoice-hero-slider.js?v=20260530"></script>
+  <script src="js/telvoice-web-agent-loader.js?v=20260530" data-root="" data-embed-target="#hero-agent-embed"></script>
 </body>
 </html>

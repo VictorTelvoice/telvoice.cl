@@ -1,0 +1,110 @@
+/* Scroll / paint — landing telvoice.cl (sin tocar checkout ni panel) */
+
+/* Scroll snap suave: sin “pegado” forzado ni secciones altas artificiales */
+@media (max-width: 767px) {
+  html.site-scroll-snap {
+    scroll-snap-type: none;
+  }
+
+  main > section.site-scroll-target {
+    scroll-snap-align: none;
+    scroll-snap-stop: normal;
+    min-height: 0;
+  }
+}
+
+@media (min-width: 768px) {
+  html.site-scroll-snap {
+    scroll-snap-type: y proximity;
+  }
+
+  main > section.site-scroll-target {
+    scroll-snap-align: start;
+    scroll-snap-stop: normal;
+    min-height: 0;
+  }
+}
+
+/* Hero decorativo estático en móvil */
+@media (max-width: 767px) {
+  .hero-sky-glow {
+    animation: none !important;
+    opacity: 0.88;
+  }
+
+  .hero-connect-wrap {
+    display: none;
+  }
+
+  .hero-cloud-soft {
+    filter: none !important;
+    opacity: 0.35;
+  }
+
+  .hero-atmosphere {
+    contain: strict;
+  }
+}
+
+/* Teléfono/agente embebido fijo en desktop mientras el slider cambia a la izquierda */
+@media (min-width: 768px) {
+  .hero-main-row {
+    align-items: flex-start;
+  }
+
+  .hero-phone-slot--agent {
+    position: sticky;
+    top: calc(var(--site-nav-height, 5rem) + 0.75rem);
+    flex-shrink: 0;
+    align-self: flex-start;
+    contain: layout style;
+  }
+}
+
+/* Nav sin blur en móvil (repaint costoso durante scroll) */
+@media (max-width: 767px) {
+  nav.sticky.top-0 {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(255, 255, 255, 0.97) !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .empresas-inner-card {
+    backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* Revelado inmediato en móvil — evita animaciones durante scroll */
+@media (max-width: 767px) {
+  .tv-scroll-reveal-stack .tv-scroll-reveal-item {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    will-change: auto;
+  }
+}
+
+/* Agente flotante: no interceptar scroll ni clics del documento */
+body.tva-floating-agent-hidden #telvoice-web-agent,
+body.tva-floating-agent-minimized #telvoice-web-agent .tva-panel:not(.is-open) {
+  pointer-events: none !important;
+}
+
+#telvoice-web-agent .tva-launcher,
+#telvoice-web-agent .tva-panel.is-open {
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-sky-glow,
+  .hero-cloud-soft,
+  .hero-flow,
+  .hero-flow-2,
+  .hero-node,
+  .hero-node-2 {
+    animation: none !important;
+  }
+}

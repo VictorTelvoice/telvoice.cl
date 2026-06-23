@@ -49,7 +49,7 @@
     window.TELVOICE_WEB_AGENT_UI = "lab";
   }
 
-  var AGENT_JS_VERSION = "20260718";
+  var AGENT_JS_VERSION = "20260530";
 
   function injectBootStyles() {
     if (document.getElementById("tva-boot-style")) {
@@ -162,7 +162,16 @@
   injectBootStyles();
   loadCss(root + "css/telvoice-web-agent.css", function () {
     ensureConfig(function () {
-      loadJs(root + "js/telvoice-web-agent.js");
+      var loadAgent = function () {
+        loadJs(root + "js/telvoice-web-agent.js");
+      };
+      if (embedTarget && typeof window.requestIdleCallback === "function") {
+        window.requestIdleCallback(loadAgent, { timeout: 1200 });
+      } else if (embedTarget) {
+        window.setTimeout(loadAgent, 400);
+      } else {
+        loadAgent();
+      }
     });
   });
 })();

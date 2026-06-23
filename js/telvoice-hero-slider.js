@@ -10,17 +10,28 @@
   var ctaSlides = slider.querySelectorAll(".tv-hero-cta-slide");
   var dots = heroSection.querySelectorAll(".tv-hero-dot");
   var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var autoplayMs = reduced ? 0 : Number(slider.getAttribute("data-autoplay")) || 7000;
-  var transitionMs = reduced ? 0 : 620;
+  var mobileMq = window.matchMedia("(max-width: 767px)");
+  var defaultAutoplay = Number(slider.getAttribute("data-autoplay")) || 7000;
+  var autoplayMs = reduced ? 0 : defaultAutoplay;
   var current = 0;
   var timer = null;
   var hoverPaused = false;
+  var inView = true;
+
+  function resolveAutoplayMs() {
+    if (reduced) {
+      return 0;
+    }
+    if (mobileMq.matches) {
+      return Math.max(defaultAutoplay, 9000);
+    }
+    return defaultAutoplay;
+  }
 
   function setActiveGroup(nodes, index) {
     nodes.forEach(function (node, i) {
       var active = i === index;
       node.classList.toggle("is-active", active);
-      node.classList.remove("is-exiting");
       node.setAttribute("aria-hidden", active ? "false" : "true");
     });
   }
@@ -45,31 +56,7 @@
     }
     index = ((index % slides.length) + slides.length) % slides.length;
 
-    var outgoing = slides[current];
-    var incoming = slides[index];
-
-    if (outgoing && outgoing !== incoming) {
-      outgoing.classList.remove("is-active");
-      outgoing.classList.add("is-exiting");
-      outgoing.setAttribute("aria-hidden", "true");
-      window.setTimeout(function () {
-        outgoing.classList.remove("is-exiting");
-      }, transitionMs);
-    }
-
-    if (incoming) {
-      incoming.classList.add("is-active");
-      incoming.classList.remove("is-exiting");
-      incoming.setAttribute("aria-hidden", "false");
-    }
-
-    slides.forEach(function (slide, i) {
-      if (i !== index) {
-        slide.classList.remove("is-active");
-        slide.setAttribute("aria-hidden", "true");
-      }
-    });
-
+    setActiveGroup(slides, index);
     setActiveGroup(capSlides, index);
     setActiveGroup(ctaSlides, index);
     updateDots(index);
@@ -94,13 +81,14 @@
 
   function resetAutoplay() {
     clearAutoplay();
-    if (autoplayMs <= 0 || hoverPaused) {
+    autoplayMs = resolveAutoplayMs();
+    if (autoplayMs <= 0 || hoverPaused || !inView) {
       return;
     }
     timer = window.setInterval(nextSlide, autoplayMs);
   }
 
-  heroSection.addEventListener("click", function (e) {
+  slider.addEventListener("click", function (e) {
     var dot = e.target.closest(".tv-hero-dot");
     if (dot) {
       e.preventDefault();
@@ -115,25 +103,48 @@
     });
   }
 
-  heroSection.addEventListener("mouseenter", function () {
+  slider.addEventListener("mouseenter", function () {
     hoverPaused = true;
     clearAutoplay();
   });
-  heroSection.addEventListener("mouseleave", function () {
+  slider.addEventListener("mouseleave", function () {
     hoverPaused = false;
     resetAutoplay();
   });
-  heroSection.addEventListener("focusin", function () {
+  slider.addEventListener("focusin", function () {
     hoverPaused = true;
     clearAutoplay();
   });
-  heroSection.addEventListener("focusout", function (e) {
-    if (heroSection.contains(e.relatedTarget)) {
+  slider.addEventListener("focusout", function (e) {
+    if (slider.contains(e.relatedTarget)) {
       return;
     }
     hoverPaused = false;
     resetAutoplay();
   });
+
+  if (typeof IntersectionObserver === "function") {
+    var visibilityObserver = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          inView = entry.isIntersecting;
+          if (inView) {
+            resetAutoplay();
+          } else {
+            clearAutoplay();
+          }
+        });
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -8% 0px" }
+    );
+    visibilityObserver.observe(slider);
+  }
+
+  if (typeof mobileMq.addEventListener === "function") {
+    mobileMq.addEventListener("change", resetAutoplay);
+  } else if (typeof mobileMq.addListener === "function") {
+    mobileMq.addListener(resetAutoplay);
+  }
 
   goTo(0);
 })();
