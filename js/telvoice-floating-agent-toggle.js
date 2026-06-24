@@ -76,22 +76,20 @@
   }
 
   function syncButtonState(btn, state) {
-    var visible = state !== "hidden";
-    var minimized = state === "minimized";
-    btn.setAttribute("aria-pressed", visible && !minimized ? "true" : "false");
-    if (!visible) {
-      btn.setAttribute("aria-label", "Mostrar agente");
-      btn.setAttribute("title", "Mostrar agente");
-    } else if (minimized) {
-      btn.setAttribute("aria-label", "Abrir agente Telvoice");
-      btn.setAttribute("title", "Abrir agente Telvoice");
-    } else {
-      btn.setAttribute("aria-label", "Minimizar agente al menú");
-      btn.setAttribute("title", "Minimizar al menú");
+    var visible = state === "open";
+    var label = visible ? "Ocultar agente" : "Mostrar agente";
+    btn.setAttribute("aria-pressed", visible ? "true" : "false");
+    btn.setAttribute("aria-label", label);
+    btn.setAttribute("title", label);
+    var labelEl = btn.querySelector(".nav-floating-agent-toggle__label");
+    if (labelEl) {
+      labelEl.textContent = label;
     }
-    btn.classList.toggle("is-agent-live", visible && !minimized);
+    btn.classList.toggle("is-agent-visible", visible);
+    btn.classList.toggle("is-agent-hidden", !visible);
+    btn.classList.toggle("is-agent-live", visible);
     btn.classList.toggle("is-agent-dormant", !visible);
-    btn.classList.toggle("is-agent-minimized", minimized);
+    btn.classList.toggle("is-agent-minimized", state === "minimized");
   }
 
   function syncButtons(state) {
@@ -283,10 +281,10 @@
       btn.addEventListener("click", function (e) {
         e.preventDefault();
         var state = readState();
-        if (state === "hidden" || state === "minimized") {
-          setAgentState("open", { animate: true, sourceButton: btn });
+        if (state === "open") {
+          setAgentState("hidden", { animate: true, sourceButton: btn });
         } else {
-          dockMinimizeToMenu();
+          setAgentState("open", { animate: true, sourceButton: btn });
         }
       });
     });

@@ -1,5 +1,64 @@
 /* Control manual del launcher flotante (#telvoice-web-agent) — no afecta el embed del Hero */
 
+.nav-floating-agent-toggle--labeled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-height: 2.5rem;
+  max-width: 100%;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid rgba(0, 82, 204, 0.22);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #0052cc;
+  font-family: Montserrat, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.nav-floating-agent-toggle--labeled:hover {
+  background: rgba(0, 82, 204, 0.06);
+  border-color: rgba(0, 82, 204, 0.35);
+}
+
+.nav-floating-agent-toggle--labeled:active {
+  transform: scale(0.98);
+}
+
+.nav-floating-agent-toggle--labeled:focus-visible {
+  outline: 2px solid #0052cc;
+  outline-offset: 2px;
+}
+
+.nav-floating-agent-toggle--labeled.is-agent-hidden {
+  background: rgba(0, 82, 204, 0.08);
+  border-color: rgba(0, 82, 204, 0.28);
+}
+
+.nav-floating-agent-toggle__label {
+  display: block;
+  min-width: 0;
+}
+
+@media (max-width: 639px) {
+  .nav-floating-agent-toggle--labeled {
+    min-height: 2.35rem;
+    padding: 0.4rem 0.62rem;
+    font-size: 0.6875rem;
+  }
+}
+
 body.tva-floating-agent-hidden #telvoice-web-agent,
 html.tva-floating-agent-prehidden #telvoice-web-agent,
 body.tva-floating-agent-minimized #telvoice-web-agent {

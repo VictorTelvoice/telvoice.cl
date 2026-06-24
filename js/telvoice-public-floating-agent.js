@@ -12,7 +12,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "20260620";
+  var VERSION = "20260624";
   var booted = false;
 
   function escAttr(s) {
@@ -92,7 +92,7 @@
     loadScript(root + "js/telvoice-floating-agent-state.js?v=20260617", "telvoice-floating-agent-state", function () {
       loadScript(root + "js/telvoice-floating-agent-pref.js?v=20260617", "telvoice-floating-agent-pref", function () {
         function loadToggleAndAgent() {
-          loadScript(root + "js/telvoice-floating-agent-toggle.js?v=20260619", "telvoice-floating-agent-toggle", function () {
+          loadScript(root + "js/telvoice-floating-agent-toggle.js?v=20260624", "telvoice-floating-agent-toggle", function () {
             loadAgentLoader(root, embedTarget);
           });
         }
@@ -107,11 +107,8 @@
 
   function navToggleHtml(root) {
     return (
-      '<button type="button" id="nav-floating-agent-toggle" class="nav-floating-agent-toggle nav-floating-agent-toggle--avatar inline-flex is-agent-live" aria-pressed="true" aria-label="Ocultar agente flotante">' +
-      '<span class="nav-floating-agent-toggle__ring" aria-hidden="true"></span>' +
-      '<img src="' +
-      escAttr(root) +
-      'assets/telvoice-agent-nav-toggle.png" alt="" class="nav-floating-agent-toggle__avatar" width="44" height="44" decoding="async" />' +
+      '<button type="button" id="nav-floating-agent-toggle" class="nav-floating-agent-toggle nav-floating-agent-toggle--labeled is-agent-visible" aria-pressed="true" aria-label="Ocultar agente" data-track="click_toggle_floating_agent">' +
+      '<span class="nav-floating-agent-toggle__label">Ocultar agente</span>' +
       "</button>"
     );
   }
