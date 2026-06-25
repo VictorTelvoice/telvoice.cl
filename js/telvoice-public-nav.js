@@ -51,7 +51,6 @@
     var numeracionHref = anchor("#numeracion", mode, r);
     var apiHref = anchor("#api", mode, r);
     var contactoHref = anchor("#contacto", mode, r);
-    var ayudaHref = r + "ayuda/";
     var portalHref = "https://agent.telvoice.cl/login";
 
     return (
