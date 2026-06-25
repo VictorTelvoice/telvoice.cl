@@ -72,11 +72,25 @@
   }
 }
 
-.tv-hero-slide .tv-hero-eyebrow,
 .tv-hero-slide .tv-hero-title,
 .tv-hero-slide .tv-hero-subtitle {
   flex-shrink: 0;
   width: 100%;
+}
+
+.tv-hero-slide .tv-hero-eyebrow {
+  flex-shrink: 0;
+  display: inline-flex;
+  width: fit-content;
+  max-width: max-content;
+  white-space: nowrap;
+  align-self: center;
+}
+
+@media (min-width: 768px) {
+  .tv-hero-slide .tv-hero-eyebrow {
+    align-self: flex-start;
+  }
 }
 
 .tv-hero-slide .tv-hero-title {

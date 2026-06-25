@@ -97,17 +97,6 @@
     );
   }
 
-  function renderNavAgentToggle(r) {
-    return (
-      '<button type="button" id="nav-floating-agent-toggle" class="nav-floating-agent-toggle nav-floating-agent-toggle--avatar inline-flex is-agent-live" aria-pressed="true" aria-label="Ocultar agente flotante">' +
-      '<span class="nav-floating-agent-toggle__ring" aria-hidden="true"></span>' +
-      '<img src="' +
-      esc(r) +
-      'assets/telvoice-agent-nav-toggle.png" alt="" class="nav-floating-agent-toggle__avatar" width="44" height="44" decoding="async" />' +
-      "</button>"
-    );
-  }
-
   function renderHeader(active) {
     var r = root();
     return (
@@ -138,7 +127,6 @@
       '#contacto">Contacto</a></li>' +
       "</ul>" +
       '<div class="nav-actions flex items-center gap-2 shrink-0">' +
-      renderNavAgentToggle(r) +
       '<a class="nav-sales-btn hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm font-semibold" href="' +
       esc(HC.portalUrl) +
       '" target="_blank" rel="noopener noreferrer">Ir al portal</a>' +

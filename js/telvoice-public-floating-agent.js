@@ -12,7 +12,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "20260620";
+  var VERSION = "20260625";
   var booted = false;
 
   function escAttr(s) {
@@ -105,20 +105,8 @@
     });
   }
 
-  function navToggleHtml(root) {
-    return (
-      '<button type="button" id="nav-floating-agent-toggle" class="nav-floating-agent-toggle nav-floating-agent-toggle--avatar inline-flex is-agent-live" aria-pressed="true" aria-label="Ocultar agente flotante">' +
-      '<span class="nav-floating-agent-toggle__ring" aria-hidden="true"></span>' +
-      '<img src="' +
-      escAttr(root) +
-      'assets/telvoice-agent-nav-toggle.png" alt="" class="nav-floating-agent-toggle__avatar" width="44" height="44" decoding="async" />' +
-      "</button>"
-    );
-  }
-
   window.TELVOICE_PUBLIC_FLOATING_AGENT = {
     mount: mount,
-    navToggleHtml: navToggleHtml,
     version: VERSION,
   };
 
