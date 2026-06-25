@@ -455,7 +455,7 @@
       var btn = document.createElement("button");
       btn.type = "button";
       btn.textContent = cta.label || "Continuar";
-      if (cta.type === "register" || cta.type === "advisor") {
+      if (cta.type === "register" || cta.type === "advisor" || cta.type === "message") {
         btn.className = "tva-cta--secondary";
       }
       btn.addEventListener("click", function () {
@@ -656,6 +656,12 @@
         return;
       }
       window.location.href = (API_BASE || "/") + (cta.hash || "#calculadora");
+      return;
+    }
+    if (cta.type === "message" && cta.message) {
+      appendMessageAll("user", cta.message);
+      pushStoredMessage("user", cta.message);
+      sendToApi({ message: cta.message });
       return;
     }
     if (cta.type === "lead") {
