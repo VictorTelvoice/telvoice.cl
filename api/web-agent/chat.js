@@ -28,6 +28,9 @@ export default async function handler(req, res) {
       pageUrl: body.current_url || body.page_url || body.pageUrl || null,
       landingPage: body.landing_page || body.landingPage || null,
       quickAction: body.quick_action || body.quickAction || null,
+      clientLeadCaptureStep:
+        body.client_lead_capture_step || body.clientLeadCaptureStep || null,
+      clientLeadData: body.client_lead_data || body.clientLeadData || null,
     });
 
     return json(req, res, 200, { ok: true, ...result });

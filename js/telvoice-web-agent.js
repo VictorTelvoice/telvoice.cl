@@ -64,6 +64,36 @@
     }
   }
 
+  function buildWebAgentApiPayload(payload, leadCaptureStep, leadData) {
+    return {
+      session_token: getVisitorKey(),
+      visitor_key: getVisitorKey(),
+      session_id: getSessionId(),
+      client_lead_capture_step: leadCaptureStep || null,
+      client_lead_data: leadData || null,
+      current_url: window.location.href,
+      page_url: window.location.href,
+      landing_page: window.location.pathname,
+      message: payload.message || "",
+      quick_action: payload.quick_action || null,
+    };
+  }
+
+  function applyLeadCaptureFromResponse(data, target) {
+    if (!target || !data) {
+      return;
+    }
+    if (data.lead_capture_step !== undefined) {
+      target.leadCaptureStep = data.lead_capture_step;
+    } else if (!data.lead_required) {
+      target.leadCaptureStep = null;
+      target.leadData = null;
+    }
+    if (data.lead_data) {
+      target.leadData = data.lead_data;
+    }
+  }
+
   function persistChatState() {
     try {
       localStorage.setItem(
@@ -74,6 +104,8 @@
           messages: state.messages,
           drawerQuick: state.drawerQuick,
           drawerCtas: state.drawerCtas,
+          leadCaptureStep: state.leadCaptureStep,
+          leadData: state.leadData,
         }),
       );
     } catch (e) {
@@ -102,6 +134,12 @@
       }
       if (saved.drawerCtas) {
         state.drawerCtas = saved.drawerCtas;
+      }
+      if (saved.leadCaptureStep) {
+        state.leadCaptureStep = saved.leadCaptureStep;
+      }
+      if (saved.leadData) {
+        state.leadData = saved.leadData;
       }
       return state.messages.length > 0;
     } catch (e) {
@@ -133,6 +171,8 @@
           messages: heroEmbedState.messages,
           drawerQuick: heroEmbedState.drawerQuick,
           drawerCtas: heroEmbedState.drawerCtas,
+          leadCaptureStep: heroEmbedState.leadCaptureStep,
+          leadData: heroEmbedState.leadData,
           lastIntent: heroEmbedState.lastIntent,
           presentationDone: heroEmbedState.presentationDone,
           mode: heroEmbedState.mode,
@@ -430,7 +470,7 @@
     });
   }
 
-  var DRAWER_CTA_TYPES = { register: true, advisor: true };
+  var DRAWER_CTA_TYPES = {};
 
   function splitCtas(ctas) {
     var drawer = [];
@@ -455,7 +495,7 @@
       var btn = document.createElement("button");
       btn.type = "button";
       btn.textContent = cta.label || "Continuar";
-      if (cta.type === "register" || cta.type === "advisor" || cta.type === "message") {
+      if (cta.type === "advisor" || cta.type === "message") {
         btn.className = "tva-cta--secondary";
       }
       btn.addEventListener("click", function () {
@@ -750,6 +790,8 @@
     messages: [],
     drawerQuick: [],
     drawerCtas: [],
+    leadCaptureStep: null,
+    leadData: null,
     lastIntent: null,
     presentationDone: false,
     mode: "presentation",
@@ -766,6 +808,8 @@
     messages: [],
     drawerQuick: [],
     drawerCtas: [],
+    leadCaptureStep: null,
+    leadData: null,
   };
 
   var els = {};
@@ -1304,7 +1348,8 @@
   function syncHeroEmbedDrawer(quickActions, ctas) {
     heroEmbedState.drawerQuick =
       quickActions && quickActions.length ? quickActions : getHeroEmbedQuickDefaults();
-    heroEmbedState.drawerCtas = filterRegisterAdvisorCtas(ctas);
+    var split = splitCtas(ctas);
+    heroEmbedState.drawerCtas = split.conversation;
     if (!elsEmbed.quick) {
       return;
     }
@@ -1312,14 +1357,12 @@
       handleHeroEmbedQuick(id, label);
     });
     if (elsEmbed.drawerCtas) {
-      renderCtaButtons(elsEmbed.drawerCtas, heroEmbedState.drawerCtas, {
-        collapseDrawer: true,
-      });
+      elsEmbed.drawerCtas.innerHTML = "";
     }
     if (elsEmbed.conversationActions) {
       var embedConvCount = renderCtaButtons(
         elsEmbed.conversationActions,
-        heroEmbedState.drawerCtas,
+        split.conversation,
         { collapseDrawer: false },
       );
       elsEmbed.conversationActions.hidden = embedConvCount === 0;
@@ -1397,16 +1440,13 @@
     fetch(apiUrl("/api/web-agent/chat"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        session_token: getVisitorKey(),
-        visitor_key: getVisitorKey(),
-        session_id: getSessionId(),
-        current_url: window.location.href,
-        page_url: window.location.href,
-        landing_page: window.location.pathname,
-        message: payload.message || "",
-        quick_action: payload.quick_action || null,
-      }),
+      body: JSON.stringify(
+        buildWebAgentApiPayload(
+          payload,
+          heroEmbedState.leadCaptureStep,
+          heroEmbedState.leadData,
+        ),
+      ),
     })
       .then(function (res) {
         return res.text().then(function (text) {
@@ -1428,6 +1468,7 @@
         if (data.session_id || data.session_token) {
           setSessionId(data.session_id || data.session_token);
         }
+        applyLeadCaptureFromResponse(data, heroEmbedState);
         if (data.reply) {
           appendHeroEmbedBot(data.reply, true);
         }
@@ -1435,7 +1476,7 @@
           data.quick_actions || heroEmbedState.drawerQuick,
           data.ctas || heroEmbedState.drawerCtas,
         );
-        expandEmbedSuggestions();
+        persistHeroEmbedState();
       })
       .catch(function () {
         hideEmbedTyping();
@@ -1768,16 +1809,9 @@
     fetch(apiUrl("/api/web-agent/chat"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        session_token: getVisitorKey(),
-        visitor_key: getVisitorKey(),
-        session_id: getSessionId(),
-        current_url: window.location.href,
-        page_url: window.location.href,
-        landing_page: window.location.pathname,
-        message: payload.message || "",
-        quick_action: payload.quick_action || null,
-      }),
+      body: JSON.stringify(
+        buildWebAgentApiPayload(payload, state.leadCaptureStep, state.leadData),
+      ),
     })
       .then(function (res) {
         return res.text().then(function (text) {
@@ -1795,6 +1829,9 @@
       })
       .then(function (data) {
         hideFloatTyping();
+        if (data.session_id || data.session_token) {
+          setSessionId(data.session_id || data.session_token);
+        }
         if (data.reply) {
           appendFloatMessage("bot", data.reply, true);
         }
@@ -1804,6 +1841,7 @@
         if (data.ctas !== undefined) {
           state.drawerCtas = data.ctas;
         }
+        applyLeadCaptureFromResponse(data, state);
         syncActionDrawer(state.drawerQuick, state.drawerCtas);
         persistChatState();
         scrollFloatToBottom();
@@ -2187,6 +2225,7 @@
     if (data.ctas !== undefined) {
       state.drawerCtas = data.ctas;
     }
+    applyLeadCaptureFromResponse(data, state);
     syncActionDrawer(state.drawerQuick, state.drawerCtas);
     persistChatState();
     scrollMessagesToBottom();
@@ -2211,16 +2250,9 @@
     fetch(apiUrl("/api/web-agent/chat"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        session_token: getVisitorKey(),
-        visitor_key: getVisitorKey(),
-        session_id: getSessionId(),
-        current_url: window.location.href,
-        page_url: window.location.href,
-        landing_page: window.location.pathname,
-        message: payload.message || "",
-        quick_action: payload.quick_action || null,
-      }),
+      body: JSON.stringify(
+        buildWebAgentApiPayload(payload, state.leadCaptureStep, state.leadData),
+      ),
     })
       .then(function (res) {
         return res.text().then(function (text) {
