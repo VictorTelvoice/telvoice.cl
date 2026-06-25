@@ -14,6 +14,7 @@ import { buildCtas } from "../lib/web-agent/conversation.js";
 const FORBIDDEN = [
   "¿Quieres registrarte para comprar o dejar tus datos para que Telvoice te contacte?",
   "Tramo aplicado:",
+  "Cotización Telvoice.cl para Chile",
   "Puedes cotizar cualquier volumen en múltiplos de 1.000 SMS",
   "múltiplos de 1.000 SMS (si pides otro número",
 ];

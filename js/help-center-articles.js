@@ -75,7 +75,7 @@ window.HELP_CENTER = {
         {
           question: "¿Qué operadores móviles incluyen?",
           answer:
-            "Cubrimos los cuatro operadores principales de Chile: Entel, Movistar, Claro y WOM, con rutas orientadas a maximizar la entrega hacia sus redes móviles.",
+            "Cubrimos todos los operadores móviles a nivel nacional en Chile. Los principales son Entel, Movistar, Claro y WOM.",
         },
         {
           question: "¿Los SMS vencen?",
