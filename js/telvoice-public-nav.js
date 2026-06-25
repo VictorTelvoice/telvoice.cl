@@ -93,9 +93,6 @@
       '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
       esc(contactoHref) +
       '">Contacto</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
-      esc(ayudaHref) +
-      '">Centro de ayuda</a></li>' +
       "</ul>" +
       '<div class="nav-actions flex items-center gap-2 shrink-0">' +
       '<a href="' +
@@ -136,9 +133,6 @@
       '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
       esc(contactoHref) +
       '">Contacto</a></li>' +
-      '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
-      esc(ayudaHref) +
-      '">Centro de ayuda</a></li>' +
       "</ul>" +
       '<div class="mt-4 flex flex-col gap-3 sm:hidden">' +
       '<a href="' +

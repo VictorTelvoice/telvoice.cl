@@ -1570,7 +1570,7 @@
     });
     document.dispatchEvent(new CustomEvent("telvoice:agent-panel-close"));
     if (window.TelvoiceFloatingAgent) {
-      window.TelvoiceFloatingAgent.setState("hidden", { animate: false });
+      window.TelvoiceFloatingAgent.setState("open", { animate: false });
     }
   }
 

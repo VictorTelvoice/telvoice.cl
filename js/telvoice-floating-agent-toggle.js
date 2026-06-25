@@ -296,18 +296,6 @@
     });
   }
 
-  function hasLandingHeroEmbed() {
-    return !!document.getElementById("hero-agent-embed") && !!document.getElementById("inicio");
-  }
-
-  function shouldResetLandingHeroView() {
-    if (!hasLandingHeroEmbed()) {
-      return false;
-    }
-    var hash = (window.location.hash || "").replace(/^#/, "");
-    return !hash;
-  }
-
   function runEntryAnimation() {
     var state = normalizeState(readState());
     if (state !== "open") {
@@ -349,10 +337,6 @@
     }
 
     var state = normalizeState(readState());
-    if (shouldResetLandingHeroView()) {
-      state = "hidden";
-      writeState("hidden");
-    }
     if (readState() === "minimized") {
       writeState("hidden");
     }
