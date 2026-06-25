@@ -16,6 +16,8 @@ const cases = [
   { text: "hola", intent: "greeting", commercial: false },
   { text: "buenas", intent: "greeting", commercial: false },
   { text: "hola, qué tal", intent: "greeting", commercial: false },
+  { text: "portal", intent: "portal", commercial: false },
+  { text: "ir al portal", intent: "portal", commercial: false },
 ];
 
 let failed = 0;

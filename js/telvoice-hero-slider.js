@@ -88,13 +88,17 @@
     timer = window.setInterval(nextSlide, autoplayMs);
   }
 
-  slider.addEventListener("click", function (e) {
+  function handleDotClick(e) {
     var dot = e.target.closest(".tv-hero-dot");
-    if (dot) {
-      e.preventDefault();
-      goTo(dot.getAttribute("data-slide-to"));
+    if (!dot) {
+      return;
     }
-  });
+    e.preventDefault();
+    goTo(dot.getAttribute("data-slide-to"));
+  }
+
+  slider.addEventListener("click", handleDotClick);
+  heroSection.addEventListener("click", handleDotClick);
 
   if (typeof window.TelvoiceBindSwipe === "function") {
     window.TelvoiceBindSwipe(slider, {
@@ -147,4 +151,8 @@
   }
 
   goTo(0);
+
+  window.TelvoiceHeroSlider = {
+    goTo: goTo,
+  };
 })();

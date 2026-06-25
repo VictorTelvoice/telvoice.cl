@@ -103,7 +103,7 @@
       '" id="nav-comprar-sms" class="nav-sales-btn hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm no-underline" data-track="click_comprar_sms_nav">Comprar SMS</a>' +
       '<a href="' +
       esc(portalHref) +
-      '" class="nav-login-btn hidden sm:inline-flex border-2 border-primary/25 text-primary font-body-md px-5 py-2.5 rounded-full hover:bg-primary/5 transition-colors no-underline font-semibold" data-track="click_login_nav">Iniciar sesión</a>' +
+      '" class="nav-login-btn hidden sm:inline-flex items-center justify-center border-2 border-primary/25 text-primary rounded-full hover:bg-primary/5 transition-colors no-underline" aria-label="Iniciar sesión" title="Iniciar sesión" data-track="click_login_nav"><span class="material-symbols-outlined" aria-hidden="true">login</span></a>' +
       '<button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant/60 text-on-background" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">' +
       '<span class="material-symbols-outlined" id="menu-icon-open">menu</span>' +
       '<span class="material-symbols-outlined hidden" id="menu-icon-close">close</span>' +

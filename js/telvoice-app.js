@@ -1551,5 +1551,35 @@
   initCompraModal();
   bindWhatsappLinks();
 
+  function normalizeLandingHeroOnReload() {
+    if (!document.getElementById("hero-agent-embed") || !document.getElementById("inicio")) {
+      return;
+    }
+    var hash = (window.location.hash || "").replace(/^#/, "");
+    if (hash) {
+      return;
+    }
+    if ("scrollRestoration" in history) {
+      history.scrollRestoration = "manual";
+    }
+    requestAnimationFrame(function () {
+      scrollToSectionId("inicio", { focus: false });
+      if (window.TelvoiceHeroSlider) {
+        window.TelvoiceHeroSlider.goTo(0);
+      }
+    });
+    document.dispatchEvent(new CustomEvent("telvoice:agent-panel-close"));
+    if (window.TelvoiceFloatingAgent) {
+      window.TelvoiceFloatingAgent.setState("hidden", { animate: false });
+    }
+  }
+
+  window.addEventListener("pageshow", normalizeLandingHeroOnReload);
+  if (document.readyState !== "loading") {
+    normalizeLandingHeroOnReload();
+  } else {
+    document.addEventListener("DOMContentLoaded", normalizeLandingHeroOnReload, { once: true });
+  }
+
   window.TELVOICE_OPEN_CHECKOUT = openCompraModal;
 })();

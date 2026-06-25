@@ -1154,6 +1154,9 @@
     if (/numero|exclusiv|propio|dedicado|linea|sim/.test(t)) {
       return "numero_exclusivo";
     }
+    if (/^portal$|\bportal\b/.test(t) || /ir al portal|acceder al portal|ingresar al portal/.test(t)) {
+      return "portal";
+    }
     if (/agente/.test(t)) {
       return "probar_agente";
     }
@@ -1316,6 +1319,21 @@
           { id: "try_agent", label: "Probar el agente" },
         ],
         ctas: [],
+      };
+    }
+    if (intent === "portal") {
+      return {
+        replies: [
+          "Accede al portal cliente de Telvoice para gestionar tu cuenta, bolsas SMS y envíos.",
+        ],
+        quick: getHeroEmbedQuickDefaults(),
+        ctas: [
+          {
+            type: "register",
+            label: "Ir al portal",
+            url: "https://portal.telvoice.net/",
+          },
+        ],
       };
     }
     return {

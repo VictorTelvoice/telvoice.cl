@@ -2,6 +2,18 @@
 .nav-sales-btn {
   flex-shrink: 0;
 }
+
+.nav-login-btn {
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+}
+
+.nav-login-btn .material-symbols-outlined {
+  font-size: 1.35rem;
+  line-height: 1;
+}
 .site-nav-dropdown {
   position: relative;
 }
