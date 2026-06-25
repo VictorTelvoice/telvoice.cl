@@ -360,9 +360,12 @@
 }
 
 .hero-phone-agent-embed .tva-conversation-actions {
+  flex-shrink: 0;
   width: 100%;
   box-sizing: border-box;
-  padding: 0 0.65rem 0.35rem;
+  padding: 0.35rem 0.65rem 0.35rem;
+  background: #fff;
+  border-top: 1px solid rgba(203, 213, 225, 0.95);
 }
 
 .hero-phone-agent-embed .tva-form input {

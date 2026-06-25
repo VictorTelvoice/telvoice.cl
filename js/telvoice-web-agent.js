@@ -564,6 +564,7 @@
       );
       elsEmbed.conversationActions.hidden = embedConvCount === 0;
     }
+    scrollChatToLatest();
 
     var hasQuick = quickActions && quickActions.length > 0;
     var hasDrawer = hasQuick || split.drawer.length > 0;
@@ -858,8 +859,52 @@
   }
 
   function scrollMessagesToBottom() {
-    messageContainers().forEach(function (container) {
-      container.scrollTop = container.scrollHeight;
+    scrollChatToLatest();
+  }
+
+  function scrollChatToLatest() {
+    function scrollContainers() {
+      messageContainers().forEach(function (container) {
+        if (!container) {
+          return;
+        }
+        var items = container.querySelectorAll(".tva-msg:not(.tva-msg--typing)");
+        var last = items[items.length - 1];
+        if (last && typeof last.scrollIntoView === "function") {
+          last.scrollIntoView({ block: "nearest", behavior: "auto" });
+        }
+        container.scrollTop = container.scrollHeight;
+      });
+    }
+    scrollContainers();
+    window.requestAnimationFrame(function () {
+      scrollContainers();
+      window.requestAnimationFrame(scrollContainers);
+    });
+  }
+
+  function restoreChatInputFocus() {
+    var target = null;
+    var embedRoot = document.getElementById("hero-agent-embed");
+    if (
+      elsEmbed.input &&
+      embedRoot &&
+      embedRoot.contains(elsEmbed.input) &&
+      embedRoot.offsetParent !== null
+    ) {
+      target = elsEmbed.input;
+    } else if (els.input && state.open) {
+      target = els.input;
+    }
+    if (!target || target.disabled) {
+      return;
+    }
+    window.requestAnimationFrame(function () {
+      try {
+        target.focus({ preventScroll: true });
+      } catch (e) {
+        target.focus();
+      }
     });
   }
 
@@ -1300,9 +1345,7 @@
   }
 
   function scrollHeroEmbedToBottom() {
-    if (elsEmbed.messages) {
-      elsEmbed.messages.scrollTop = elsEmbed.messages.scrollHeight;
-    }
+    scrollChatToLatest();
   }
 
   function appendHeroEmbedUser(text) {
@@ -1333,9 +1376,6 @@
     var btn = elsEmbed.form.querySelector('button[type="submit"]');
     if (btn) {
       btn.disabled = disabled;
-    }
-    if (elsEmbed.input) {
-      elsEmbed.input.disabled = disabled;
     }
   }
 
@@ -1372,6 +1412,7 @@
       updateEmbedActionDrawerHint();
     }
     persistHeroEmbedState();
+    scrollChatToLatest();
   }
 
   function deliverHeroEmbedReplies(replies, quick, ctas, index) {
@@ -1380,6 +1421,8 @@
       syncHeroEmbedDrawer(quick || getHeroEmbedQuickDefaults(), ctas || []);
       expandEmbedSuggestions();
       persistHeroEmbedState();
+      scrollChatToLatest();
+      restoreChatInputFocus();
       return;
     }
     var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1399,6 +1442,8 @@
           syncHeroEmbedDrawer(quick || getHeroEmbedQuickDefaults(), ctas || []);
           expandEmbedSuggestions();
           persistHeroEmbedState();
+          scrollChatToLatest();
+          restoreChatInputFocus();
         }
       }, typingMs);
     }, gapMs);
@@ -1433,6 +1478,8 @@
         respondHeroEmbedLocally(intent, payload.message || "");
         heroEmbedLoading = false;
         setHeroEmbedSubmitDisabled(false);
+        scrollChatToLatest();
+        restoreChatInputFocus();
       }, 420);
       return;
     }
@@ -1477,6 +1524,7 @@
           data.ctas || heroEmbedState.drawerCtas,
         );
         persistHeroEmbedState();
+        scrollChatToLatest();
       })
       .catch(function () {
         hideEmbedTyping();
@@ -1489,6 +1537,7 @@
       .finally(function () {
         heroEmbedLoading = false;
         setHeroEmbedSubmitDisabled(false);
+        restoreChatInputFocus();
       });
   }
   function showEmbedTyping() {
@@ -1682,9 +1731,7 @@
   }
 
   function scrollFloatToBottom() {
-    if (els.messages) {
-      els.messages.scrollTop = els.messages.scrollHeight;
-    }
+    scrollChatToLatest();
   }
 
   function showFloatTyping() {
@@ -1718,6 +1765,8 @@
         updateActionDrawerHint();
       }
       persistChatState();
+      scrollChatToLatest();
+      restoreChatInputFocus();
       return;
     }
     var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1777,9 +1826,6 @@
     if (btn) {
       btn.disabled = disabled;
     }
-    if (els.input) {
-      els.input.disabled = disabled;
-    }
   }
 
   function sendToApiLab(payload) {
@@ -1795,6 +1841,7 @@
       respondLabFloatLocally(intent, payload.message || "");
       state.loading = false;
       setFloatSubmitDisabled(false);
+      restoreChatInputFocus();
     }
 
     if (isLocalDevHost()) {
@@ -1844,7 +1891,7 @@
         applyLeadCaptureFromResponse(data, state);
         syncActionDrawer(state.drawerQuick, state.drawerCtas);
         persistChatState();
-        scrollFloatToBottom();
+        scrollChatToLatest();
       })
       .catch(function () {
         finishLocal(
@@ -1854,6 +1901,7 @@
       .finally(function () {
         state.loading = false;
         setFloatSubmitDisabled(false);
+        restoreChatInputFocus();
       });
   }
 
@@ -2228,7 +2276,8 @@
     applyLeadCaptureFromResponse(data, state);
     syncActionDrawer(state.drawerQuick, state.drawerCtas);
     persistChatState();
-    scrollMessagesToBottom();
+    scrollChatToLatest();
+    restoreChatInputFocus();
   }
 
   function sendToApi(payload) {
@@ -2288,6 +2337,7 @@
       .finally(function () {
         state.loading = false;
         setSubmitDisabled(false);
+        restoreChatInputFocus();
       });
   }
 
