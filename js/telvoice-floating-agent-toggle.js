@@ -335,8 +335,8 @@
       return;
     }
     resolveAvatarSrc();
-    applyState(readState());
     bindButtons();
+    applyState(readState());
     var runEntry = function () {
       runEntryAnimation();
     };
