@@ -1,64 +1,5 @@
 /* Control manual del launcher flotante (#telvoice-web-agent) — no afecta el embed del Hero */
 
-.nav-floating-agent-toggle--labeled {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  min-height: 2.5rem;
-  max-width: 100%;
-  padding: 0.45rem 0.8rem;
-  border: 1px solid rgba(0, 82, 204, 0.22);
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.96);
-  color: #0052cc;
-  font-family: Montserrat, sans-serif;
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease;
-}
-
-.nav-floating-agent-toggle--labeled:hover {
-  background: rgba(0, 82, 204, 0.06);
-  border-color: rgba(0, 82, 204, 0.35);
-}
-
-.nav-floating-agent-toggle--labeled:active {
-  transform: scale(0.98);
-}
-
-.nav-floating-agent-toggle--labeled:focus-visible {
-  outline: 2px solid #0052cc;
-  outline-offset: 2px;
-}
-
-.nav-floating-agent-toggle--labeled.is-agent-hidden {
-  background: rgba(0, 82, 204, 0.08);
-  border-color: rgba(0, 82, 204, 0.28);
-}
-
-.nav-floating-agent-toggle__label {
-  display: block;
-  min-width: 0;
-}
-
-@media (max-width: 639px) {
-  .nav-floating-agent-toggle--labeled {
-    min-height: 2.35rem;
-    padding: 0.4rem 0.62rem;
-    font-size: 0.6875rem;
-  }
-}
-
 body.tva-floating-agent-hidden #telvoice-web-agent,
 html.tva-floating-agent-prehidden #telvoice-web-agent,
 body.tva-floating-agent-minimized #telvoice-web-agent {
@@ -90,106 +31,75 @@ body.tva-floating-agent-animating #telvoice-web-agent {
   }
 }
 
-.nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__ring {
-  opacity: 1;
-  animation: tva-toggle-glow 2.2s ease-in-out infinite;
-}
-
-.nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__avatar {
-  opacity: 1;
-  filter: saturate(1.08) brightness(1.06);
-  box-shadow:
-    0 0 0 1px rgba(220, 231, 245, 0.95),
-    0 0 18px rgba(11, 92, 255, 0.35),
-    0 0 28px rgba(72, 255, 220, 0.22);
-}
-
-.nav-floating-agent-toggle--avatar {
-  position: relative;
+.tva-floating-agent-restore {
+  position: fixed;
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  right: 1rem;
+  z-index: 99989;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 2.75rem;
-  height: 2.75rem;
-  padding: 0;
-  border: none;
+  gap: 0.45rem;
+  padding: 0.4rem 0.75rem 0.4rem 0.4rem;
+  border: 1px solid rgba(0, 82, 204, 0.22);
   border-radius: 9999px;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.96);
+  color: #434654;
+  font-family: Inter, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
   cursor: pointer;
+  box-shadow:
+    0 4px 16px rgba(11, 92, 255, 0.12),
+    0 0 0 1px rgba(220, 231, 245, 0.9);
+  backdrop-filter: blur(8px);
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.25s ease;
 }
 
-.nav-floating-agent-toggle--avatar:hover {
-  transform: scale(1.04);
+.tva-floating-agent-restore:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 20px rgba(11, 92, 255, 0.18),
+    0 0 0 1px rgba(220, 231, 245, 0.95);
 }
 
-.nav-floating-agent-toggle--avatar:active {
-  transform: scale(0.96);
+.tva-floating-agent-restore:active {
+  transform: translateY(0);
 }
 
-.nav-floating-agent-toggle--avatar:focus-visible {
+.tva-floating-agent-restore:focus-visible {
   outline: 2px solid #0b5cff;
   outline-offset: 3px;
 }
 
-.nav-floating-agent-toggle__ring {
-  position: absolute;
-  inset: -0.35rem;
-  border-radius: 9999px;
-  background: radial-gradient(
-    circle,
-    rgba(72, 255, 220, 0.55) 0%,
-    rgba(11, 92, 255, 0.28) 42%,
-    transparent 72%
-  );
-  opacity: 0;
-  pointer-events: none;
-  transform: scale(0.92);
-  transition: opacity 0.35s ease;
+.tva-floating-agent-restore[hidden] {
+  display: none !important;
 }
 
-.nav-floating-agent-toggle__avatar {
-  position: relative;
-  z-index: 1;
+.tva-floating-agent-restore.is-measuring {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.tva-floating-agent-restore__avatar {
   display: block;
-  width: 100%;
-  height: 100%;
+  width: 2rem;
+  height: 2rem;
   border-radius: 9999px;
   object-fit: cover;
-  transition:
-    opacity 0.4s ease,
-    filter 0.4s ease,
-    box-shadow 0.4s ease;
-}
-
-/* Agente apagado (oculto): brilla */
-.nav-floating-agent-toggle.is-agent-dormant .nav-floating-agent-toggle__ring {
-  opacity: 1;
-  animation: tva-toggle-glow 2.2s ease-in-out infinite;
-}
-
-.nav-floating-agent-toggle.is-agent-dormant .nav-floating-agent-toggle__avatar {
-  opacity: 1;
-  filter: saturate(1.08) brightness(1.06);
+  flex-shrink: 0;
   box-shadow:
     0 0 0 1px rgba(220, 231, 245, 0.95),
-    0 0 18px rgba(11, 92, 255, 0.35),
-    0 0 28px rgba(72, 255, 220, 0.22);
+    0 0 12px rgba(11, 92, 255, 0.25);
 }
 
-/* Agente encendido (visible): opaco */
-.nav-floating-agent-toggle.is-agent-live .nav-floating-agent-toggle__avatar {
-  opacity: 0.42;
-  filter: saturate(0.65) brightness(0.88);
-  box-shadow: 0 0 0 1px rgba(220, 231, 245, 0.75);
-}
-
-.nav-floating-agent-toggle--mobile {
-  width: 3rem;
-  height: 3rem;
-  margin-inline: auto;
+.tva-floating-agent-restore__label {
+  white-space: nowrap;
+  padding-right: 0.15rem;
 }
 
 .tva-floating-agent-traveler {
@@ -223,28 +133,19 @@ body.tva-floating-agent-animating #telvoice-web-agent {
   filter: saturate(0.9) brightness(0.98);
 }
 
-@keyframes tva-toggle-glow {
-  0%,
-  100% {
-    transform: scale(0.92);
-    opacity: 0.72;
+@media (max-width: 480px) {
+  .tva-floating-agent-restore__label {
+    display: none;
   }
 
-  50% {
-    transform: scale(1.08);
-    opacity: 1;
+  .tva-floating-agent-restore {
+    padding: 0.35rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nav-floating-agent-toggle.is-agent-dormant .nav-floating-agent-toggle__ring,
-  .nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__ring {
-    animation: none;
-    opacity: 0.85;
-  }
-
-  .nav-floating-agent-toggle--avatar:hover,
-  .nav-floating-agent-toggle--avatar:active {
+  .tva-floating-agent-restore:hover,
+  .tva-floating-agent-restore:active {
     transform: none;
   }
 

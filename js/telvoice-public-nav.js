@@ -98,9 +98,6 @@
       '">Centro de ayuda</a></li>' +
       "</ul>" +
       '<div class="nav-actions flex items-center gap-2 shrink-0">' +
-      '<button type="button" id="nav-floating-agent-toggle" class="nav-floating-agent-toggle nav-floating-agent-toggle--labeled is-agent-visible" aria-pressed="true" aria-label="Ocultar agente" data-track="click_toggle_floating_agent">' +
-      '<span class="nav-floating-agent-toggle__label">Ocultar agente</span>' +
-      "</button>" +
       '<a href="' +
       esc(calcHref) +
       '" id="nav-comprar-sms" class="nav-sales-btn hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm no-underline" data-track="click_comprar_sms_nav">Comprar SMS</a>' +
