@@ -1637,19 +1637,36 @@
     if (window.TelvoiceHeroSlider) {
       window.TelvoiceHeroSlider.goTo(0);
     }
-    document.dispatchEvent(new CustomEvent("telvoice:agent-panel-close"));
-    document.body.classList.remove("tva-floating-agent-hidden");
-    document.documentElement.classList.remove("tva-floating-agent-prehidden");
     try {
       var stored = localStorage.getItem("telvoice:floating-agent-state:public");
-      if (!stored || stored === "open") {
+      if (stored === "hidden" || stored === "minimized") {
+        if (
+          window.TelvoiceFloatingAgent &&
+          typeof window.TelvoiceFloatingAgent.syncNavAgentToggleState === "function"
+        ) {
+          window.TelvoiceFloatingAgent.syncNavAgentToggleState();
+        }
+        return;
+      }
+    } catch (e) {
+      /* ignore */
+    }
+    document.dispatchEvent(new CustomEvent("telvoice:agent-panel-close"));
+    document.body.classList.remove("tva-floating-agent-hidden");
+    document.body.classList.remove("tva-floating-agent-minimized");
+    document.documentElement.classList.remove("tva-floating-agent-prehidden");
+    try {
+      var storedOpen = localStorage.getItem("telvoice:floating-agent-state:public");
+      if (!storedOpen || storedOpen === "open") {
         localStorage.setItem("telvoice:floating-agent-state:public", "open");
         localStorage.setItem("telvoice:floating-agent-visible", "true");
       }
     } catch (e) {
       /* ignore */
     }
-    if (window.TelvoiceFloatingAgent && window.TelvoiceFloatingAgent.readState() !== "hidden") {
+    if (window.TelvoiceFloatingAgent && typeof window.TelvoiceFloatingAgent.syncNavAgentToggleState === "function") {
+      window.TelvoiceFloatingAgent.syncNavAgentToggleState();
+    } else if (window.TelvoiceFloatingAgent && window.TelvoiceFloatingAgent.readState() !== "hidden") {
       window.TelvoiceFloatingAgent.setState("open", { animate: false });
     }
   }

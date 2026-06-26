@@ -123,7 +123,17 @@ async function runScenario(page, { name, url, viewport, clip, steps }) {
         localStorage.setItem("telvoice:floating-agent-visible", state === "open" ? "true" : "false");
       }, step.state);
       await page.reload({ waitUntil: "networkidle" });
-      await waitForAgent(page);
+      if (step.state === "hidden") {
+        await page.waitForFunction(
+          () => document.getElementById("nav-floating-agent-toggle")?.classList.contains("is-agent-dormant"),
+          { timeout: 30000 },
+        );
+      } else if (step.state === "minimized") {
+        await page.waitForSelector("#tva-floating-agent-restore:not([hidden])", { timeout: 15000 }).catch(() => {});
+      } else {
+        await waitForAgent(page);
+      }
+      await page.waitForTimeout(step.wait || 1200);
     }
 
     const audit = await page.evaluate(auditConsistencyScript());

@@ -154,7 +154,10 @@
   function syncNavAgentToggleState(options) {
     options = options || {};
     if (animating && !options.force) {
-      syncNavToggle(readState());
+      var chipVisibleNow = isRestoreChipVisible();
+      var floatVisibleNow = isFloatUiVisible();
+      var paused = chipVisibleNow ? "minimized" : floatVisibleNow ? "open" : readState();
+      syncNavToggle(paused);
       return readState();
     }
 
@@ -167,6 +170,19 @@
     var root = floatRoot();
     var agentReady = !!(root && root.classList.contains("tva-root--ready"));
     var effective = stored;
+
+    var navState = chipVisible
+      ? "minimized"
+      : floatVisible
+        ? "open"
+        : stored === "hidden"
+          ? "hidden"
+          : stored === "minimized"
+            ? "minimized"
+            : stored === "open" && !agentReady
+              ? "open"
+              : "hidden";
+    syncNavToggle(navState);
 
     if (chipVisible) {
       effective = "minimized";
@@ -186,10 +202,7 @@
       if (stored !== "open") {
         writeState("open");
       }
-      if (
-        document.body.classList.contains("tva-floating-agent-hidden") ||
-        document.body.classList.contains("tva-floating-agent-minimized")
-      ) {
+      if (isBodyHidingFloat()) {
         document.body.classList.remove("tva-floating-agent-hidden");
         document.body.classList.remove("tva-floating-agent-minimized");
         document.documentElement.classList.remove("tva-floating-agent-prehidden");
@@ -199,18 +212,15 @@
       effective = "hidden";
       applyState("hidden", { skipNavSync: true, skipEmit: true });
     } else if (stored === "minimized") {
+      effective = "minimized";
+      applyState("minimized", { skipNavSync: true, skipEmit: true });
+    } else if (stored === "open" && agentReady) {
       effective = "hidden";
       writeState("hidden");
       applyState("hidden", { skipNavSync: true, skipEmit: true });
-    } else if (stored === "open" && !floatVisible && agentReady) {
-      effective = "hidden";
-      writeState("hidden");
-      applyState("hidden", { skipNavSync: true, skipEmit: true });
-    } else if (stored === "open" && !agentReady) {
-      effective = "open";
+      syncNavToggle("hidden");
     }
 
-    syncNavToggle(effective);
     if (!options.skipEmit) {
       emitStateChange(effective);
     }
