@@ -1472,11 +1472,6 @@
             page_url: leadPayload.page_url,
           });
         })
-        .then(function (res) {
-          return res.json().then(function (data) {
-            return { ok: res.ok, data: data };
-          });
-        })
         .then(function (result) {
           if (!result.ok || !result.data || result.data.ok === false || result.data.success === false) {
             var errMsg =
@@ -1490,7 +1485,7 @@
           showFormAlert(
             "ok",
             result.data.message ||
-              "Consulta enviada. Te contactaremos pronto para revisar tu requerimiento.",
+              "Consulta enviada correctamente. Te contactaremos pronto.",
           );
         })
         .catch(function (err) {
