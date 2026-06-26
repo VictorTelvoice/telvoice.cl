@@ -217,7 +217,7 @@
   function bindInstantSectionNav() {
     document.querySelectorAll('a[href^="#"]').forEach(function (a) {
       var raw = a.getAttribute("href");
-      if (!raw || raw === "#" || a.hasAttribute("data-scroll-top")) return;
+      if (!raw || raw === "#" || a.hasAttribute("data-scroll-top") || a.hasAttribute("data-telvoice-home")) return;
       var id = raw.slice(1);
       if (!id) return;
       a.addEventListener("click", function (e) {

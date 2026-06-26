@@ -41,9 +41,7 @@
       '<div class="tv-site-footer__inner">' +
       '<div class="tv-site-footer__grid">' +
       '<div class="tv-site-footer__brand">' +
-      '<a href="' +
-      esc(r) +
-      'index.html" class="tv-site-footer__logo" aria-label="Telvoice, ir al inicio">' +
+      '<a href="https://www.telvoice.cl/" class="tv-site-footer__logo" data-telvoice-home aria-label="Ir al inicio de Telvoice">' +
       '<img src="' +
       esc(r) +
       'assets/telvoice-isotipo.png" alt="" width="40" height="40" decoding="async" aria-hidden="true" />' +

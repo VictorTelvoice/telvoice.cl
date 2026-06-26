@@ -39,11 +39,11 @@
     var mode = opts.mode;
     var active = opts.active;
     var B = window.TELVOICE_PUBLIC_BRAND;
-    var homeHref = mode === "home" ? "#" : r + "index.html";
+    var HOME_URL = "https://www.telvoice.cl/";
     var homeAttrs =
-      mode === "home"
-        ? ' href="#" data-scroll-top'
-        : ' href="' + esc(homeHref) + '"';
+      ' href="' +
+      esc(HOME_URL) +
+      '" data-telvoice-home aria-label="Ir al inicio de Telvoice"';
     var simHref = mode === "home" ? "/numeracion-sim.html" : r + "numeracion-sim.html";
     var simCurrent = active === "numeracion-sim" ? ' aria-current="page"' : "";
     var calcHref = anchor("#calculadora", mode, r);
@@ -59,10 +59,15 @@
       (B ? B.navInnerClass : "flex justify-between items-center gap-4 py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 lg:pl-28 lg:pr-10 max-w-container-max mx-auto") +
       '">' +
       (B
-        ? B.renderNavBrandLink(r, { extraAttrs: homeAttrs + ' class="flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" aria-label="Telvoice, ir al inicio"' })
+        ? B.renderNavBrandLink(r, {
+            href: "https://www.telvoice.cl/",
+            extraAttrs:
+              homeAttrs +
+              ' class="flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"',
+          })
         : '<a' +
           homeAttrs +
-          ' class="flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" aria-label="Telvoice, ir al inicio">' +
+          ' class="flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">' +
           '<img src="' +
           esc(r) +
           'assets/telvoice-isotipo.png" alt="Telvoice Chile — SMS masivos" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" />' +
