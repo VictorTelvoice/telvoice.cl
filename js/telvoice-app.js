@@ -1659,12 +1659,19 @@
   });
 
   document.addEventListener("telvoice:floating-agent-ready", function () {
-    document.body.classList.remove("tva-floating-agent-hidden");
-    document.documentElement.classList.remove("tva-floating-agent-prehidden");
     var hash = getLandingHashId();
     if (hash && hash !== "inicio") {
       scheduleLandingHashScroll();
     }
+    if (
+      window.TelvoiceFloatingAgent &&
+      typeof window.TelvoiceFloatingAgent.syncNavAgentToggleState === "function"
+    ) {
+      window.TelvoiceFloatingAgent.syncNavAgentToggleState();
+      return;
+    }
+    document.body.classList.remove("tva-floating-agent-hidden");
+    document.documentElement.classList.remove("tva-floating-agent-prehidden");
     if (window.TelvoiceFloatingAgent && window.TelvoiceFloatingAgent.readState() !== "hidden") {
       window.TelvoiceFloatingAgent.setState("open", { animate: false });
     }

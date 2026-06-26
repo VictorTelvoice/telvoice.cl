@@ -78,14 +78,143 @@
     if (!btn) {
       return;
     }
-    var isLive = state === "open";
-    btn.classList.toggle("is-agent-live", isLive);
-    btn.classList.toggle("is-agent-dormant", !isLive && state === "hidden");
-    btn.classList.toggle("is-agent-minimized", state === "minimized");
-    btn.setAttribute("aria-pressed", isLive ? "true" : "false");
-    var label = isLive ? "Ocultar agente" : "Mostrar agente";
+    var showGray = state === "open" || state === "minimized";
+    btn.classList.toggle("is-agent-live", showGray);
+    btn.classList.toggle("is-agent-dormant", state === "hidden");
+    btn.classList.toggle("is-agent-minimized", false);
+    btn.setAttribute("aria-pressed", showGray ? "true" : "false");
+    var label = showGray ? "Ocultar agente" : "Mostrar agente";
     btn.setAttribute("aria-label", label);
     btn.setAttribute("title", label);
+  }
+
+  function isElementVisuallyPresent(el) {
+    if (!el || el.hidden) {
+      return false;
+    }
+    var rect = el.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) {
+      return false;
+    }
+    var style = getComputedStyle(el);
+    return (
+      style.display !== "none" &&
+      style.visibility !== "hidden" &&
+      parseFloat(style.opacity || "1") > 0.05
+    );
+  }
+
+  function isRestoreChipVisible() {
+    return isElementVisuallyPresent(document.getElementById("tva-floating-agent-restore"));
+  }
+
+  function isBodyHidingFloat() {
+    if (!document.body) {
+      return true;
+    }
+    return (
+      document.body.classList.contains("tva-floating-agent-hidden") ||
+      document.body.classList.contains("tva-floating-agent-minimized") ||
+      document.body.classList.contains("tva-floating-agent-animating") ||
+      document.documentElement.classList.contains("tva-floating-agent-prehidden")
+    );
+  }
+
+  function isFloatUiVisible() {
+    if (isBodyHidingFloat()) {
+      return false;
+    }
+    var root = floatRoot();
+    if (!root || !root.classList.contains("tva-root--ready")) {
+      return false;
+    }
+    var panel = root.querySelector(".tva-panel");
+    if (panel && panel.classList.contains("is-open") && isElementVisuallyPresent(panel)) {
+      return true;
+    }
+    var launcher = root.querySelector(".tva-launcher") || root.querySelector(".tva-launcher-wrap");
+    if (launcher && isElementVisuallyPresent(launcher)) {
+      return true;
+    }
+    return isElementVisuallyPresent(root);
+  }
+
+  function isAgentActiveInUi() {
+    return isRestoreChipVisible() || isFloatUiVisible();
+  }
+
+  function emitStateChange(state) {
+    document.dispatchEvent(
+      new CustomEvent("telvoice:floating-agent-state-change", {
+        detail: { state: state, surface: SURFACE },
+      }),
+    );
+  }
+
+  function syncNavAgentToggleState(options) {
+    options = options || {};
+    if (animating && !options.force) {
+      syncNavToggle(readState());
+      return readState();
+    }
+
+    ensureNavToggle();
+    bindNavToggle();
+
+    var stored = readState();
+    var chipVisible = isRestoreChipVisible();
+    var floatVisible = isFloatUiVisible();
+    var root = floatRoot();
+    var agentReady = !!(root && root.classList.contains("tva-root--ready"));
+    var effective = stored;
+
+    if (chipVisible) {
+      effective = "minimized";
+      if (stored !== "minimized") {
+        writeState("minimized");
+      }
+      if (
+        !document.body.classList.contains("tva-floating-agent-minimized") ||
+        document.body.classList.contains("tva-floating-agent-hidden")
+      ) {
+        applyState("minimized", { skipNavSync: true, skipEmit: true });
+      } else {
+        syncRestoreChip("minimized");
+      }
+    } else if (floatVisible) {
+      effective = "open";
+      if (stored !== "open") {
+        writeState("open");
+      }
+      if (
+        document.body.classList.contains("tva-floating-agent-hidden") ||
+        document.body.classList.contains("tva-floating-agent-minimized")
+      ) {
+        document.body.classList.remove("tva-floating-agent-hidden");
+        document.body.classList.remove("tva-floating-agent-minimized");
+        document.documentElement.classList.remove("tva-floating-agent-prehidden");
+        syncRestoreChip("open");
+      }
+    } else if (stored === "hidden") {
+      effective = "hidden";
+      applyState("hidden", { skipNavSync: true, skipEmit: true });
+    } else if (stored === "minimized") {
+      effective = "hidden";
+      writeState("hidden");
+      applyState("hidden", { skipNavSync: true, skipEmit: true });
+    } else if (stored === "open" && !floatVisible && agentReady) {
+      effective = "hidden";
+      writeState("hidden");
+      applyState("hidden", { skipNavSync: true, skipEmit: true });
+    } else if (stored === "open" && !agentReady) {
+      effective = "open";
+    }
+
+    syncNavToggle(effective);
+    if (!options.skipEmit) {
+      emitStateChange(effective);
+    }
+    return effective;
   }
 
   function ensureRestoreChip() {
@@ -123,7 +252,9 @@
     chip.setAttribute("aria-hidden", show ? "false" : "true");
   }
 
-  function applyState(state) {
+  function applyState(state, options) {
+    options = options || {};
+
     if (window.TelvoiceFloatingAgentState) {
       window.TelvoiceFloatingAgentState.applyDomState(state, floatRoot());
     } else if (document.body) {
@@ -133,10 +264,17 @@
     }
 
     syncRestoreChip(state);
-    syncNavToggle(state);
+
+    if (!options.skipNavSync) {
+      syncNavToggle(state);
+    }
 
     if (isFloatHidden(state)) {
       document.dispatchEvent(new CustomEvent("telvoice:agent-panel-close"));
+    }
+
+    if (!options.skipEmit) {
+      emitStateChange(state);
     }
   }
 
@@ -300,7 +438,8 @@
     writeState(nextState);
 
     if (!opts.animate || prefersReducedMotion()) {
-      applyState(nextState);
+      applyState(nextState, { skipEmit: true });
+      syncNavAgentToggleState({ force: true });
       return nextState;
     }
 
@@ -314,15 +453,17 @@
 
     if (isFloatHidden(nextState)) {
       runTravelAnimation(launcherRect, targetRect, "hide", function () {
-        applyState(nextState);
+        applyState(nextState, { skipEmit: true });
         animating = false;
+        syncNavAgentToggleState({ force: true });
       });
     } else {
       syncRestoreChip("open");
-      applyState("open");
+      applyState("open", { skipEmit: true });
       runTravelAnimation(targetRect, launcherRect, "show", function () {
-        applyState("open");
+        applyState("open", { skipEmit: true });
         animating = false;
+        syncNavAgentToggleState({ force: true });
       });
     }
 
@@ -345,19 +486,17 @@
     btn.dataset.bound = "1";
     btn.addEventListener("click", function (e) {
       e.preventDefault();
-      var state = readState();
-      if (state === "open") {
-        setAgentState("hidden", { animate: true, sourceButton: btn });
-      } else {
+      var effective = syncNavAgentToggleState({ force: true });
+      if (effective === "hidden") {
         setAgentState("open", { animate: true, sourceButton: btn });
+      } else {
+        setAgentState("hidden", { animate: true, sourceButton: btn });
       }
     });
   }
 
   function refreshNavToggle() {
-    ensureNavToggle();
-    bindNavToggle();
-    syncNavToggle(readState());
+    return syncNavAgentToggleState();
   }
 
   function runEntryAnimation() {
@@ -422,8 +561,28 @@
 
     ensureRestoreChip();
     bindRestoreChip();
-    refreshNavToggle();
-    applyState(state);
+    bindNavToggle();
+    applyState(state, { skipEmit: true });
+    syncNavAgentToggleState({ fromInit: true });
+
+    var resync = function () {
+      syncNavAgentToggleState();
+    };
+    window.addEventListener("load", resync);
+    window.addEventListener("pageshow", resync);
+    document.addEventListener("telvoice:floating-agent-ready", resync);
+    document.addEventListener("telvoice:floating-agent-state-change", function () {
+      window.setTimeout(resync, 0);
+    });
+    document.addEventListener("click", function (ev) {
+      if (
+        ev.target.closest("#telvoice-web-agent .tva-launcher") ||
+        ev.target.closest("#telvoice-web-agent .tva-minimize") ||
+        ev.target.closest("#tva-floating-agent-restore")
+      ) {
+        window.setTimeout(resync, 80);
+      }
+    });
 
     var runEntry = function () {
       runEntryAnimation();
@@ -435,11 +594,13 @@
     }
   }
 
-  document.addEventListener("telvoice:public-nav-mounted", refreshNavToggle);
+  document.addEventListener("telvoice:public-nav-mounted", function () {
+    syncNavAgentToggleState();
+  });
 
   window.TelvoiceFloatingAgent = {
     isVisible: function () {
-      return readState() === "open";
+      return isAgentActiveInUi();
     },
     readState: function () {
       return readState();
@@ -449,6 +610,8 @@
       return setAgentState(visible ? "open" : "hidden", options);
     },
     refreshNavToggle: refreshNavToggle,
+    syncNavAgentToggleState: syncNavAgentToggleState,
+    isAgentActiveInUi: isAgentActiveInUi,
   };
 
   if (document.body) {

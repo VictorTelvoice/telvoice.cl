@@ -16,7 +16,7 @@
       if (state === "open") {
         return false;
       }
-      if (state === "hidden") {
+      if (state === "hidden" || state === "minimized") {
         return true;
       }
       return localStorage.getItem(LEGACY_KEY) === "false";

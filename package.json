@@ -12,7 +12,8 @@
     "test:web-agent-intent": "node scripts/verify-web-agent-intent.mjs",
     "test:landing-scroll-agent-qa": "node scripts/qa-landing-scroll-agent-validation.mjs",
     "test:nav-agent-toggle-qa": "node scripts/qa-nav-agent-toggle-production.mjs",
-    "test:nav-agent-toggle-public-qa": "node scripts/qa-nav-agent-toggle-public-pages.mjs"
+    "test:nav-agent-toggle-public-qa": "node scripts/qa-nav-agent-toggle-public-pages.mjs",
+    "test:nav-agent-toggle-sync-qa": "node scripts/qa-nav-agent-toggle-sync.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^2.4.0"

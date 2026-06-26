@@ -47,7 +47,9 @@
 
   function notifyNavToggleReady() {
     document.dispatchEvent(new CustomEvent("telvoice:public-nav-mounted"));
-    if (window.TelvoiceFloatingAgent && typeof window.TelvoiceFloatingAgent.refreshNavToggle === "function") {
+    if (window.TelvoiceFloatingAgent && typeof window.TelvoiceFloatingAgent.syncNavAgentToggleState === "function") {
+      window.TelvoiceFloatingAgent.syncNavAgentToggleState();
+    } else if (window.TelvoiceFloatingAgent && typeof window.TelvoiceFloatingAgent.refreshNavToggle === "function") {
       window.TelvoiceFloatingAgent.refreshNavToggle();
     }
   }
