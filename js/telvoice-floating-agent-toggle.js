@@ -171,11 +171,36 @@
     var agentReady = !!(root && root.classList.contains("tva-root--ready"));
     var effective = stored;
 
+    if (stored === "hidden") {
+      if (chipVisible || floatVisible || !isBodyHidingFloat()) {
+        applyState("hidden", { skipNavSync: true, skipEmit: true });
+      }
+      syncNavToggle("hidden");
+      if (!options.skipEmit) {
+        emitStateChange("hidden");
+      }
+      return "hidden";
+    }
+
+    if (stored === "minimized") {
+      if (
+        !chipVisible ||
+        floatVisible ||
+        !document.body.classList.contains("tva-floating-agent-minimized") ||
+        document.body.classList.contains("tva-floating-agent-hidden")
+      ) {
+        applyState("minimized", { skipNavSync: true, skipEmit: true });
+      }
+      syncNavToggle("minimized");
+      if (!options.skipEmit) {
+        emitStateChange("minimized");
+      }
+      return "minimized";
+    }
+
     var navState;
     if (chipVisible) {
       navState = "minimized";
-    } else if (stored === "hidden" && (isBodyHidingFloat() || !floatVisible)) {
-      navState = "hidden";
     } else if (floatVisible) {
       navState = "open";
     } else if (stored === "minimized") {
@@ -211,9 +236,6 @@
         document.documentElement.classList.remove("tva-floating-agent-prehidden");
         syncRestoreChip("open");
       }
-    } else if (stored === "hidden") {
-      effective = "hidden";
-      applyState("hidden", { skipNavSync: true, skipEmit: true });
     } else if (stored === "minimized") {
       effective = "minimized";
       applyState("minimized", { skipNavSync: true, skipEmit: true });

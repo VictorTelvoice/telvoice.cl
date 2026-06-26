@@ -25,11 +25,31 @@
     }
   }
 
+  function readPersistedState() {
+    try {
+      if (window.TelvoiceFloatingAgentState) {
+        return window.TelvoiceFloatingAgentState.readState("public");
+      }
+      var state = localStorage.getItem(STATE_KEY);
+      if (state === "open" || state === "minimized" || state === "hidden") {
+        return state;
+      }
+      if (localStorage.getItem(LEGACY_KEY) === "false") {
+        return "hidden";
+      }
+    } catch (e) {
+      /* ignore */
+    }
+    return "open";
+  }
+
   function applyHiddenToBody() {
     if (!document.body) {
       return;
     }
-    document.body.classList.add("tva-floating-agent-hidden");
+    var state = readPersistedState();
+    document.body.classList.toggle("tva-floating-agent-hidden", state === "hidden");
+    document.body.classList.toggle("tva-floating-agent-minimized", state === "minimized");
     document.documentElement.classList.remove("tva-floating-agent-prehidden");
   }
 

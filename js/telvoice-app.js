@@ -1645,6 +1645,11 @@
           typeof window.TelvoiceFloatingAgent.syncNavAgentToggleState === "function"
         ) {
           window.TelvoiceFloatingAgent.syncNavAgentToggleState();
+        } else if (
+          window.TelvoiceFloatingAgentState &&
+          typeof window.TelvoiceFloatingAgentState.applyDomState === "function"
+        ) {
+          window.TelvoiceFloatingAgentState.applyDomState(stored);
         }
         return;
       }
