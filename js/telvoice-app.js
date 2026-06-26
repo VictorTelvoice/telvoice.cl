@@ -152,6 +152,10 @@
   function scrollToSectionEl(el, opts) {
     opts = opts || {};
     if (!el) return false;
+    if (el.id === "inicio") {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      return true;
+    }
     var offset = getSiteNavHeight();
     var top = el.getBoundingClientRect().top + window.pageYOffset - offset;
     window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
@@ -1562,24 +1566,38 @@
     if ("scrollRestoration" in history) {
       history.scrollRestoration = "manual";
     }
-    requestAnimationFrame(function () {
-      scrollToSectionId("inicio", { focus: false });
-      if (window.TelvoiceHeroSlider) {
-        window.TelvoiceHeroSlider.goTo(0);
-      }
-    });
+    window.scrollTo(0, 0);
+    if (window.TelvoiceHeroSlider) {
+      window.TelvoiceHeroSlider.goTo(0);
+    }
     document.dispatchEvent(new CustomEvent("telvoice:agent-panel-close"));
-    if (window.TelvoiceFloatingAgent) {
+    document.body.classList.remove("tva-floating-agent-hidden");
+    document.documentElement.classList.remove("tva-floating-agent-prehidden");
+    try {
+      var stored = localStorage.getItem("telvoice:floating-agent-state:public");
+      if (!stored || stored === "open") {
+        localStorage.setItem("telvoice:floating-agent-state:public", "open");
+        localStorage.setItem("telvoice:floating-agent-visible", "true");
+      }
+    } catch (e) {
+      /* ignore */
+    }
+    if (window.TelvoiceFloatingAgent && window.TelvoiceFloatingAgent.readState() !== "hidden") {
       window.TelvoiceFloatingAgent.setState("open", { animate: false });
     }
   }
 
-  window.addEventListener("pageshow", normalizeLandingHeroOnReload);
-  if (document.readyState !== "loading") {
+  window.addEventListener("pageshow", function () {
     normalizeLandingHeroOnReload();
-  } else {
-    document.addEventListener("DOMContentLoaded", normalizeLandingHeroOnReload, { once: true });
-  }
+  });
+
+  document.addEventListener("telvoice:floating-agent-ready", function () {
+    document.body.classList.remove("tva-floating-agent-hidden");
+    document.documentElement.classList.remove("tva-floating-agent-prehidden");
+    if (window.TelvoiceFloatingAgent && window.TelvoiceFloatingAgent.readState() !== "hidden") {
+      window.TelvoiceFloatingAgent.setState("open", { animate: false });
+    }
+  });
 
   window.TELVOICE_OPEN_CHECKOUT = openCompraModal;
 })();

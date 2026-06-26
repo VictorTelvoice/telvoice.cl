@@ -2457,6 +2457,11 @@
       var floatRoot = document.getElementById("telvoice-web-agent");
       if (floatRoot) {
         floatRoot.classList.add("tva-root--ready");
+        try {
+          document.dispatchEvent(new CustomEvent("telvoice:floating-agent-ready"));
+        } catch (e) {
+          /* ignore */
+        }
       }
     } catch (floatErr) {
       console.warn("[Telvoice agent] floating init failed:", floatErr);

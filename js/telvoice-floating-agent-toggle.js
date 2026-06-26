@@ -331,11 +331,28 @@
     }
   });
 
+  function reconcileStorageDesync() {
+    try {
+      var state = localStorage.getItem(STORAGE_KEY);
+      var legacy = localStorage.getItem(LEGACY_KEY);
+      if (state === "open" && legacy === "false") {
+        localStorage.setItem(LEGACY_KEY, "true");
+        if (document.body) {
+          document.body.classList.remove("tva-floating-agent-hidden");
+        }
+        document.documentElement.classList.remove("tva-floating-agent-prehidden");
+      }
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
   function initToggleUi() {
     if (!document.body) {
       return;
     }
 
+    reconcileStorageDesync();
     var state = normalizeState(readState());
     if (readState() === "minimized") {
       writeState("hidden");

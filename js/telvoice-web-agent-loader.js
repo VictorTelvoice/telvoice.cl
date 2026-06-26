@@ -4,7 +4,26 @@
  * data-root: prefijo hasta la raíz del sitio ("" en home, "../" en ayuda/, etc.)
  */
 (function () {
-  var STORAGE_KEY = "telvoice:floating-agent-visible";
+  var LEGACY_KEY = "telvoice:floating-agent-visible";
+  var STATE_KEY = "telvoice:floating-agent-state:public";
+
+  function shouldPrehideFloatingAgent() {
+    try {
+      if (window.TelvoiceFloatingAgentState) {
+        return window.TelvoiceFloatingAgentState.readState("public") === "hidden";
+      }
+      var state = localStorage.getItem(STATE_KEY);
+      if (state === "open") {
+        return false;
+      }
+      if (state === "hidden") {
+        return true;
+      }
+      return localStorage.getItem(LEGACY_KEY) === "false";
+    } catch (e) {
+      return false;
+    }
+  }
 
   function applyHiddenToBody() {
     if (!document.body) {
@@ -15,7 +34,7 @@
   }
 
   try {
-    if (localStorage.getItem(STORAGE_KEY) === "false") {
+    if (shouldPrehideFloatingAgent()) {
       if (document.body) {
         applyHiddenToBody();
       } else {
@@ -49,7 +68,7 @@
     window.TELVOICE_WEB_AGENT_UI = "lab";
   }
 
-  var AGENT_JS_VERSION = "20260530";
+  var AGENT_JS_VERSION = "20260626";
 
   function injectBootStyles() {
     if (document.getElementById("tva-boot-style")) {

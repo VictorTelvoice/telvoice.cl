@@ -21,6 +21,22 @@
     return "open";
   }
 
+  function reconcileStorageDesync() {
+    try {
+      var state = localStorage.getItem(storageKey());
+      var legacy = localStorage.getItem(LEGACY_KEY);
+      if (state === "open" && legacy === "false") {
+        localStorage.setItem(LEGACY_KEY, "true");
+        if (document.body) {
+          document.body.classList.remove("tva-floating-agent-hidden");
+        }
+        document.documentElement.classList.remove("tva-floating-agent-prehidden");
+      }
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
   function applyState(state) {
     if (!document.body) {
       return;
@@ -31,6 +47,8 @@
   }
 
   var state = readState();
+  reconcileStorageDesync();
+  state = readState();
   if (state === "hidden" || state === "minimized") {
     if (document.body) {
       applyState(state);
