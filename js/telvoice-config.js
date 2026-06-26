@@ -10,7 +10,7 @@ window.TELVOICE_CONFIG = {
   customerPortalUrl: "https://agent.telvoice.cl/app/dashboard",
   helpCenterUrl: "/ayuda/",
   /** Google Tag Manager — también vía __TELVOICE_PUBLIC_ENV__.GTM_CONTAINER_ID */
-  gtmContainerId: "GTM-PWG2W28",
+  gtmContainerId: "GTM-PWGG2W28",
   /** GA4 directo (opcional si no usas GTM). También vía __TELVOICE_PUBLIC_ENV__.GTAG_MEASUREMENT_ID */
   gtagMeasurementId: null,
   /** Muestra ayuda de pago sandbox en el modal (true solo en pruebas locales). */
