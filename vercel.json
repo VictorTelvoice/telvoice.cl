@@ -8,7 +8,11 @@
     { "source": "/pago-error", "destination": "/pago-error/index.html" },
     { "source": "/pago-pendiente", "destination": "/pago-pendiente/index.html" },
     { "source": "/pago-fallido", "destination": "/pago-fallido/index.html" },
-    { "source": "/pago-exitoso", "destination": "/pago-exitoso/index.html" }
+    { "source": "/pago-exitoso", "destination": "/pago-exitoso/index.html" },
+    { "source": "/sms-masivos-chile", "destination": "/sms-masivos-chile/index.html" },
+    { "source": "/comprar-sms-online-chile", "destination": "/comprar-sms-online-chile/index.html" },
+    { "source": "/api-sms-chile", "destination": "/api-sms-chile/index.html" },
+    { "source": "/sms-otp-chile", "destination": "/sms-otp-chile/index.html" }
   ],
   "redirects": [
     {

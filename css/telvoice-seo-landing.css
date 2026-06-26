@@ -1,0 +1,94 @@
+/* Landings SEO Telvoice.cl */
+.seo-page {
+  background: #faf8ff;
+  color: #131b2e;
+  min-height: 100vh;
+}
+.seo-main {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+}
+@media (min-width: 640px) {
+  .seo-main {
+    padding: 3rem 1.5rem 5rem;
+  }
+}
+.seo-eyebrow {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0052cc;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.75rem;
+}
+.seo-main h1 {
+  font-family: Montserrat, sans-serif;
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+.seo-lead {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: #434654;
+  margin-bottom: 2rem;
+}
+.seo-section {
+  margin-bottom: 2rem;
+}
+.seo-section h2 {
+  font-family: Montserrat, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+.seo-section p,
+.seo-section li {
+  line-height: 1.65;
+  color: #434654;
+}
+.seo-section ul {
+  padding-left: 1.25rem;
+  margin: 0.75rem 0;
+}
+.seo-faq dt {
+  font-weight: 600;
+  margin-top: 1rem;
+}
+.seo-faq dd {
+  margin: 0.35rem 0 0;
+  color: #434654;
+  line-height: 1.6;
+}
+.seo-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+.seo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.seo-btn--primary {
+  background: #0052cc;
+  color: #fff;
+}
+.seo-btn--primary:hover {
+  background: #0c56d0;
+}
+.seo-btn--secondary {
+  border: 2px solid rgba(0, 82, 204, 0.25);
+  color: #0052cc;
+}
+.seo-btn--secondary:hover {
+  background: rgba(0, 82, 204, 0.05);
+}

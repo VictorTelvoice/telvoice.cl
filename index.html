@@ -34,6 +34,8 @@
   <meta name="msapplication-TileImage" content="https://www.telvoice.cl/assets/telvoice-isotipo.png" />
   <!-- Tras crear la propiedad en Search Console, descomenta y pega tu código:
   <meta name="google-site-verification" content="TU_CODIGO" /> -->
+  <script src="js/telvoice-config.js"></script>
+  <script src="js/telvoice-analytics.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com" rel="preconnect" />
@@ -1497,16 +1499,6 @@
       line-height: 1.4;
     }
     .checkout-error[hidden] {
-      display: none !important;
-    }
-    .checkout-sandbox-hint {
-      padding: 0.75rem 1rem;
-      border-radius: 0.75rem;
-      background: #e8f0ff;
-      border: 1px solid rgba(0, 82, 204, 0.2);
-      line-height: 1.45;
-    }
-    .checkout-sandbox-hint.hidden {
       display: none !important;
     }
     .checkout-submit[disabled] {
@@ -4003,9 +3995,6 @@
       <div class="px-5 py-5 sm:px-6 sm:py-6">
         <div id="checkout-summary" class="checkout-summary" aria-live="polite"></div>
         <p class="mt-3 font-body-sm text-body-sm text-on-surface-variant">Completa tus datos y serás redirigido a Mercado Pago para pagar en pesos chilenos (CLP).</p>
-        <p id="compra-sandbox-hint" class="checkout-sandbox-hint mt-3 hidden font-body-sm text-on-surface-variant" role="note">
-          <strong>Modo prueba:</strong> email del <strong>Comprador</strong> (Cuentas de prueba → Comprador). Chrome incógnito, <strong>sin iniciar sesión</strong> en MP. Tarjeta: 4168 8188 4444 7115, CVV 123, venc. 11/30, titular <strong>APRO</strong>, documento <strong>Otro 123456789</strong>.
-        </p>
         <form id="compra-form" class="mt-5 space-y-4" novalidate data-checkout-form onsubmit="event.preventDefault(); return false;">
           <input type="hidden" id="compra-plan-id" value="" aria-hidden="true" />
           <input type="text" id="compra-website" class="hidden" tabindex="-1" autocomplete="off" aria-hidden="true" />
@@ -4038,7 +4027,6 @@
     </div>
   </div>
 
-  <script src="js/telvoice-config.js"></script>
   <script src="js/telvoice-scroll-reveal.js?v=20260530"></script>
   <script src="js/telvoice-floating-agent-toggle.js?v=20260626"></script>
   <script src="js/telvoice-app.js?v=20260626"></script>

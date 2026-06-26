@@ -19,6 +19,36 @@
   var tutorialBtn = document.getElementById("payment-tutorial-btn");
 
   var isApproved = collectionStatus === "approved";
+  var purchaseTracked = false;
+
+  function trackPurchase(order) {
+    if (purchaseTracked || !isApproved) return;
+    purchaseTracked = true;
+
+    var mp = (order && order.mercadopago) || {};
+    var customer = (order && order.customer) || {};
+    var transactionId =
+      mp.payment_id || paymentId || (order && order.order_id) || orderRef || preferenceId;
+
+    var payload = {
+      transaction_id: transactionId ? String(transactionId) : null,
+      value: order && order.total_amount != null ? order.total_amount : null,
+      currency: (order && order.currency) || "CLP",
+      sms_quantity: order && order.sms_quantity != null ? order.sms_quantity : null,
+    };
+
+    if (customer.email) {
+      payload.buyer_email = customer.email;
+      payload.user_data = { email: customer.email };
+    }
+
+    if (typeof window.TelvoiceTrack === "function") {
+      window.TelvoiceTrack("purchase_success", payload);
+    } else {
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push(Object.assign({ event: "purchase_success" }, payload));
+    }
+  }
 
   function setMeta(parts) {
     if (!metaEl || !parts.length) return;
@@ -131,6 +161,7 @@
 
     if (isApproved) {
       showAccountProvisioning(customerEmail);
+      trackPurchase(order);
     } else if (emailNoteEl && customerEmail) {
       emailNoteEl.textContent =
         "Te enviaremos novedades a " +
@@ -140,7 +171,12 @@
     }
   }
 
-  if (!orderRef) return;
+  if (!orderRef) {
+    if (isApproved && paymentId) {
+      trackPurchase(null);
+    }
+    return;
+  }
 
   var apiBase = window.location.origin;
   fetch(
@@ -152,9 +188,11 @@
     .then(function (data) {
       if (data && data.ok && data.order) {
         renderSummary(data.order);
+      } else if (isApproved) {
+        trackPurchase(null);
       }
     })
     .catch(function () {
-      /* resumen opcional */
+      if (isApproved) trackPurchase(null);
     });
 })();

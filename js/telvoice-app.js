@@ -104,6 +104,7 @@
   function openWhatsapp(message) {
     var url = whatsappUrl(message);
     if (!url) return false;
+    trackEvent("whatsapp_click", { source: "telvoice_app" });
     window.open(url, "_blank", "noopener,noreferrer");
     return true;
   }
@@ -116,6 +117,12 @@
         el.target = "_blank";
         el.rel = "noopener noreferrer";
         el.classList.remove("hidden");
+        if (!el.dataset.waTrackBound) {
+          el.dataset.waTrackBound = "1";
+          el.addEventListener("click", function () {
+            trackEvent("whatsapp_click", { source: el.dataset.trackSource || "inline_cta" });
+          });
+        }
       } else {
         el.classList.add("hidden");
       }
@@ -130,7 +137,7 @@
       var launcher = document.querySelector(".tva-launcher");
       if (launcher) launcher.click();
     }
-    if (trackId) trackEvent(trackId);
+    if (trackId) trackEvent("high_volume_quote", { source: trackId });
   }
 
   function openSalesAgent(trackId) {
@@ -598,13 +605,10 @@
 
   function resolveCheckoutUrl(data) {
     if (!data) return null;
-    return (
-      data.checkout_url ||
-      data.init_point ||
-      data.sandbox_init_point ||
-      data.url ||
-      null
-    );
+    if (CFG.mercadoPagoSandbox && data.sandbox_init_point) {
+      return data.sandbox_init_point;
+    }
+    return data.checkout_url || data.init_point || data.url || null;
   }
 
   function parseApiJson(res) {
@@ -655,12 +659,6 @@
 
     setCompraError("");
     setCompraLoading(false);
-
-    var sandboxHint = qs("compra-sandbox-hint");
-    if (sandboxHint) {
-      if (CFG.mercadoPagoSandbox) sandboxHint.classList.remove("hidden");
-      else sandboxHint.classList.add("hidden");
-    }
 
     var submitBtn = qs("compra-submit");
     if (submitBtn && !submitBtn.dataset.mpBound) {
@@ -742,6 +740,14 @@
     setCompraError("");
     compraSubmitting = true;
     setCompraLoading(true);
+
+    trackEvent("checkout_start", {
+      plan_id: planId,
+      sms_quantity: compraState.sms,
+      value: compraState.total,
+      currency: "CLP",
+      source: compraState.source || "web",
+    });
 
     var agentOrigin = "https://agent.telvoice.cl";
     var agentCheckoutEndpoint = agentOrigin + "/api/public/checkout";
@@ -996,8 +1002,9 @@
   });
 
   function bindDemoButtons() {
-    document.querySelectorAll(".api-request-cta").forEach(function (b) {
+    document.querySelectorAll(".api-request-cta, .comercial-api-cta").forEach(function (b) {
       b.addEventListener("click", function () {
+        trackEvent("api_interest_click", { source: b.dataset.trackSource || "api_cta" });
         scrollToContact({ mensaje: "Solicito información sobre integración vía API." });
       });
     });
@@ -1017,11 +1024,6 @@
       b.addEventListener("click", function () {
         var el = qs("calculadora");
         if (el) scrollToSectionEl(el);
-      });
-    });
-    document.querySelectorAll(".comercial-api-cta").forEach(function (b) {
-      b.addEventListener("click", function () {
-        scrollToContact({ mensaje: "Solicito información sobre integración vía API." });
       });
     });
   }
@@ -1432,6 +1434,7 @@
             if (typeof errMsg === "object" && errMsg.message) errMsg = errMsg.message;
             throw new Error(errMsg);
           }
+          trackEvent("lead_contact_form", { source: "landing_contact" });
           trackEvent("submit_lead_empresa", { source: "landing_contact" });
           form.reset();
           showFormAlert(

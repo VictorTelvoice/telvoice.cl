@@ -14,6 +14,10 @@ export default async function handler(req, res) {
     return json(res, 405, { ok: false, error: "Método no permitido." });
   }
 
+  if (process.env.MERCADOPAGO_SANDBOX !== "true") {
+    return json(res, 404, { ok: false, error: "No disponible." });
+  }
+
   try {
     const account = await getAccountInfo();
     const sandboxEnv = isSandbox();
