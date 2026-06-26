@@ -171,17 +171,20 @@
     var agentReady = !!(root && root.classList.contains("tva-root--ready"));
     var effective = stored;
 
-    var navState = chipVisible
-      ? "minimized"
-      : floatVisible
-        ? "open"
-        : stored === "hidden"
-          ? "hidden"
-          : stored === "minimized"
-            ? "minimized"
-            : stored === "open" && !agentReady
-              ? "open"
-              : "hidden";
+    var navState;
+    if (chipVisible) {
+      navState = "minimized";
+    } else if (stored === "hidden" && (isBodyHidingFloat() || !floatVisible)) {
+      navState = "hidden";
+    } else if (floatVisible) {
+      navState = "open";
+    } else if (stored === "minimized") {
+      navState = "minimized";
+    } else if (stored === "open" && !agentReady) {
+      navState = "open";
+    } else {
+      navState = "hidden";
+    }
     syncNavToggle(navState);
 
     if (chipVisible) {
