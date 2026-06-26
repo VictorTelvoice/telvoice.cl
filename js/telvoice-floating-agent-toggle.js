@@ -54,7 +54,22 @@
     return state === "hidden" || state === "minimized";
   }
 
+  function getPublicAssetRoot() {
+    var fa = document.querySelector('script[src*="telvoice-public-floating-agent"]');
+    if (fa) {
+      return fa.getAttribute("data-root") || "";
+    }
+    var navMount = document.getElementById("telvoice-public-nav");
+    if (navMount) {
+      return navMount.getAttribute("data-root") || "";
+    }
+    return "";
+  }
+
   function ensureNavToggle() {
+    if (window.TelvoicePublicNav && typeof window.TelvoicePublicNav.ensureFloatingAgentToggle === "function") {
+      return window.TelvoicePublicNav.ensureFloatingAgentToggle(getPublicAssetRoot());
+    }
     return document.getElementById("nav-floating-agent-toggle");
   }
 
@@ -339,6 +354,12 @@
     });
   }
 
+  function refreshNavToggle() {
+    ensureNavToggle();
+    bindNavToggle();
+    syncNavToggle(readState());
+  }
+
   function runEntryAnimation() {
     var state = readState();
     if (state !== "open") {
@@ -401,7 +422,7 @@
 
     ensureRestoreChip();
     bindRestoreChip();
-    bindNavToggle();
+    refreshNavToggle();
     applyState(state);
 
     var runEntry = function () {
@@ -414,6 +435,8 @@
     }
   }
 
+  document.addEventListener("telvoice:public-nav-mounted", refreshNavToggle);
+
   window.TelvoiceFloatingAgent = {
     isVisible: function () {
       return readState() === "open";
@@ -425,6 +448,7 @@
     setVisible: function (visible, options) {
       return setAgentState(visible ? "open" : "hidden", options);
     },
+    refreshNavToggle: refreshNavToggle,
   };
 
   if (document.body) {

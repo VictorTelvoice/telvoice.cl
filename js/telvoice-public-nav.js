@@ -34,6 +34,41 @@
     return root + href;
   }
 
+  function renderFloatingAgentToggleMarkup(root) {
+    return (
+      '<button type="button" id="nav-floating-agent-toggle" data-floating-agent-toggle="1" class="nav-floating-agent-toggle nav-floating-agent-toggle--avatar is-agent-live inline-flex" aria-pressed="true" aria-label="Ocultar agente" title="Ocultar agente">' +
+      '<span class="nav-floating-agent-toggle__ring" aria-hidden="true"></span>' +
+      '<img src="' +
+      esc((root || "") + "assets/telvoice-agent-nav-toggle.png") +
+      '" alt="" class="nav-floating-agent-toggle__avatar" width="44" height="44" decoding="async" />' +
+      "</button>"
+    );
+  }
+
+  function notifyNavToggleReady() {
+    document.dispatchEvent(new CustomEvent("telvoice:public-nav-mounted"));
+    if (window.TelvoiceFloatingAgent && typeof window.TelvoiceFloatingAgent.refreshNavToggle === "function") {
+      window.TelvoiceFloatingAgent.refreshNavToggle();
+    }
+  }
+
+  function ensureFloatingAgentToggle(root) {
+    var existing = document.getElementById("nav-floating-agent-toggle");
+    if (existing) {
+      return existing;
+    }
+    var comprar = document.getElementById("nav-comprar-sms");
+    if (!comprar || !comprar.parentElement) {
+      return null;
+    }
+    var wrap = document.createElement("div");
+    wrap.innerHTML = renderFloatingAgentToggleMarkup(root || "");
+    var btn = wrap.firstElementChild;
+    comprar.parentElement.insertBefore(btn, comprar);
+    notifyNavToggleReady();
+    return btn;
+  }
+
   function renderNav(opts) {
     var r = opts.root;
     var mode = opts.mode;
@@ -99,12 +134,7 @@
       '">Contacto</a></li>' +
       "</ul>" +
       '<div class="nav-actions flex items-center gap-2 shrink-0">' +
-      '<button type="button" id="nav-floating-agent-toggle" class="nav-floating-agent-toggle nav-floating-agent-toggle--avatar is-agent-live inline-flex" aria-pressed="true" aria-label="Ocultar agente" title="Ocultar agente">' +
-      '<span class="nav-floating-agent-toggle__ring" aria-hidden="true"></span>' +
-      '<img src="' +
-      esc(r + "assets/telvoice-agent-nav-toggle.png") +
-      '" alt="" class="nav-floating-agent-toggle__avatar" width="44" height="44" decoding="async" />' +
-      "</button>" +
+      renderFloatingAgentToggleMarkup(r) +
       '<a href="' +
       esc(calcHref) +
       '" id="nav-comprar-sms" class="nav-sales-btn hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm no-underline" data-track="click_comprar_sms_nav">Comprar SMS</a>' +
@@ -264,6 +294,7 @@
     if (!opts) return;
     opts.el.outerHTML = renderNav(opts);
     initPublicNav();
+    notifyNavToggleReady();
   }
 
   if (document.getElementById("telvoice-public-nav")) {
@@ -273,5 +304,7 @@
   window.TelvoicePublicNav = {
     init: initPublicNav,
     mount: mount,
+    ensureFloatingAgentToggle: ensureFloatingAgentToggle,
+    renderFloatingAgentToggleMarkup: renderFloatingAgentToggleMarkup,
   };
 })();

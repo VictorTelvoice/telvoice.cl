@@ -318,7 +318,7 @@
       return;
     }
     var shared = document.createElement("script");
-    shared.src = r + "js/telvoice-public-floating-agent.js?v=20260620";
+    shared.src = r + "js/telvoice-public-floating-agent.js?v=20260629";
     shared.setAttribute("data-init", "manual");
     shared.onload = startAgent;
     document.body.appendChild(shared);
