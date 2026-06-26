@@ -9,6 +9,8 @@ window.TELVOICE_CONFIG = {
   /** Portal cliente SMS (enlaces «Ir al portal»). */
   customerPortalUrl: "https://agent.telvoice.cl/app/dashboard",
   helpCenterUrl: "/ayuda/",
+  /** Google Tag Manager — también vía __TELVOICE_PUBLIC_ENV__.GTM_CONTAINER_ID */
+  gtmContainerId: "GTM-PWGG2W28",
   /** Muestra ayuda de pago sandbox en el modal (true solo en pruebas). */
   mercadoPagoSandbox: false,
   salesEmail: "ventas@telvoice.net",
