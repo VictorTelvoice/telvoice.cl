@@ -2431,6 +2431,16 @@
       if (!document.getElementById("telvoice-web-agent")) {
         buildUi();
       }
+      if (usesPanelAgentUi()) {
+        mountLabAgentIsotipo(
+          document.querySelector("#telvoice-web-agent .tva-launcher-iso"),
+          { context: "launcher" },
+        );
+        mountLabAgentIsotipo(
+          document.querySelector("#telvoice-web-agent .tva-header-iso"),
+          { context: "header" },
+        );
+      }
       var heroEmbedActive = embedEnabled();
       if (!heroEmbedActive) {
         if (state.messages.length === 0) {
