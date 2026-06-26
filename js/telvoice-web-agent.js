@@ -868,11 +868,6 @@
         if (!container) {
           return;
         }
-        var items = container.querySelectorAll(".tva-msg:not(.tva-msg--typing)");
-        var last = items[items.length - 1];
-        if (last && typeof last.scrollIntoView === "function") {
-          last.scrollIntoView({ block: "nearest", behavior: "auto" });
-        }
         container.scrollTop = container.scrollHeight;
       });
     }

@@ -1,3 +1,8 @@
+/* Evita que el scroll del chat embebido en el hero mueva la página */
+html {
+  overflow-anchor: none;
+}
+
 /* Scroll / paint — landing telvoice.cl (sin tocar checkout ni panel) */
 
 /* Scroll snap suave: sin “pegado” forzado ni secciones altas artificiales */

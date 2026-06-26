@@ -173,6 +173,47 @@
     return scrollToSectionEl(document.getElementById(id), opts);
   }
 
+  function getLandingHashId() {
+    var hash = (window.location.hash || "").replace(/^#/, "");
+    if (!hash) {
+      return "";
+    }
+    return document.getElementById(hash) ? hash : "";
+  }
+
+  function syncScrollSnapForHash() {
+    var html = document.documentElement;
+    if (!html) {
+      return;
+    }
+    var id = getLandingHashId();
+    if (id && id !== "inicio") {
+      html.classList.remove("site-scroll-snap");
+      return;
+    }
+    if (!html.classList.contains("site-scroll-snap")) {
+      html.classList.add("site-scroll-snap");
+    }
+  }
+
+  function scheduleLandingHashScroll() {
+    var id = getLandingHashId();
+    syncScrollSnapForHash();
+    if (!id || id === "inicio") {
+      return;
+    }
+    function apply() {
+      scrollToSectionId(id, { focus: false });
+    }
+    apply();
+    requestAnimationFrame(function () {
+      requestAnimationFrame(apply);
+    });
+    [50, 300, 800, 1600, 2600, 4000].forEach(function (delay) {
+      window.setTimeout(apply, delay);
+    });
+  }
+
   function bindInstantSectionNav() {
     document.querySelectorAll('a[href^="#"]').forEach(function (a) {
       var raw = a.getAttribute("href");
@@ -189,16 +230,24 @@
         } else {
           window.location.hash = id;
         }
+        syncScrollSnapForHash();
         scrollToSectionId(id);
       });
     });
 
-    var initialHash = (window.location.hash || "").replace(/^#/, "");
-    if (initialHash && document.getElementById(initialHash)) {
-      requestAnimationFrame(function () {
-        scrollToSectionId(initialHash, { focus: false });
-      });
+    if (getLandingHashId()) {
+      scheduleLandingHashScroll();
     }
+
+    window.addEventListener("hashchange", function () {
+      var id = getLandingHashId();
+      syncScrollSnapForHash();
+      if (!id || id === "inicio") {
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        return;
+      }
+      scheduleLandingHashScroll();
+    });
   }
 
   bindInstantSectionNav();
@@ -216,10 +265,14 @@
         e.preventDefault();
         closeMobileMenu();
         var el = qs("calculadora");
-        if (el) {
-          scrollToSectionEl(el);
+        if (history.replaceState) {
+          history.replaceState(null, "", "#calculadora");
         } else {
           window.location.hash = "calculadora";
+        }
+        syncScrollSnapForHash();
+        if (el) {
+          scrollToSectionEl(el);
         }
         trackEvent("click_comprar_sms_nav");
       });
@@ -1559,12 +1612,17 @@
     if (!document.getElementById("hero-agent-embed") || !document.getElementById("inicio")) {
       return;
     }
-    var hash = (window.location.hash || "").replace(/^#/, "");
-    if (hash) {
-      return;
-    }
     if ("scrollRestoration" in history) {
       history.scrollRestoration = "manual";
+    }
+    var hash = getLandingHashId();
+    if (hash) {
+      if (hash === "inicio") {
+        window.scrollTo(0, 0);
+      } else {
+        scheduleLandingHashScroll();
+      }
+      return;
     }
     window.scrollTo(0, 0);
     if (window.TelvoiceHeroSlider) {
@@ -1594,6 +1652,10 @@
   document.addEventListener("telvoice:floating-agent-ready", function () {
     document.body.classList.remove("tva-floating-agent-hidden");
     document.documentElement.classList.remove("tva-floating-agent-prehidden");
+    var hash = getLandingHashId();
+    if (hash && hash !== "inicio") {
+      scheduleLandingHashScroll();
+    }
     if (window.TelvoiceFloatingAgent && window.TelvoiceFloatingAgent.readState() !== "hidden") {
       window.TelvoiceFloatingAgent.setState("open", { animate: false });
     }
