@@ -1445,11 +1445,22 @@
         });
       }
 
+      function leadApiErrorMessage(data) {
+        if (!data) return null;
+        if (typeof data.error === "string" && data.error.trim()) return data.error.trim();
+        if (typeof data.message === "string" && data.message.trim()) return data.message.trim();
+        return null;
+      }
+
       function tryAgentContactLead() {
         return submitContactLead(agentOrigin + "/api/public/contact-lead", leadPayload)
           .then(function (result) {
             if (result.ok && result.data && result.data.ok !== false) {
               return result;
+            }
+            var apiErr = leadApiErrorMessage(result.data);
+            if (apiErr) {
+              throw new Error(apiErr);
             }
             return submitContactLead(agentOrigin + "/api/public/lead", {
               source: "landing_contact",
@@ -1463,7 +1474,10 @@
       }
 
       tryAgentContactLead()
-        .catch(function () {
+        .catch(function (err) {
+          if (err instanceof Error && err.message && err.message !== "Failed to fetch") {
+            throw err;
+          }
           return submitContactLead("/api/contact/lead", {
             name: leadPayload.name,
             email: leadPayload.email,
