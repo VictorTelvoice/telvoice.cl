@@ -99,6 +99,12 @@
       '">Contacto</a></li>' +
       "</ul>" +
       '<div class="nav-actions flex items-center gap-2 shrink-0">' +
+      '<button type="button" id="nav-floating-agent-toggle" class="nav-floating-agent-toggle nav-floating-agent-toggle--avatar is-agent-live inline-flex" aria-pressed="true" aria-label="Ocultar agente" title="Ocultar agente">' +
+      '<span class="nav-floating-agent-toggle__ring" aria-hidden="true"></span>' +
+      '<img src="' +
+      esc(r + "assets/telvoice-agent-nav-toggle.png") +
+      '" alt="" class="nav-floating-agent-toggle__avatar" width="44" height="44" decoding="async" />' +
+      "</button>" +
       '<a href="' +
       esc(calcHref) +
       '" id="nav-comprar-sms" class="nav-sales-btn hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm no-underline" data-track="click_comprar_sms_nav">Comprar SMS</a>' +

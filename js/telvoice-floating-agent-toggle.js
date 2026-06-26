@@ -36,7 +36,7 @@
     }
     try {
       localStorage.setItem(STORAGE_KEY, state);
-      if (state === "hidden") {
+      if (state === "hidden" || state === "minimized") {
         localStorage.setItem(LEGACY_KEY, "false");
       } else if (state === "open") {
         localStorage.setItem(LEGACY_KEY, "true");
@@ -50,8 +50,27 @@
     return document.getElementById("telvoice-web-agent");
   }
 
-  function normalizeState(state) {
-    return state === "minimized" ? "hidden" : state;
+  function isFloatHidden(state) {
+    return state === "hidden" || state === "minimized";
+  }
+
+  function ensureNavToggle() {
+    return document.getElementById("nav-floating-agent-toggle");
+  }
+
+  function syncNavToggle(state) {
+    var btn = ensureNavToggle();
+    if (!btn) {
+      return;
+    }
+    var isLive = state === "open";
+    btn.classList.toggle("is-agent-live", isLive);
+    btn.classList.toggle("is-agent-dormant", !isLive && state === "hidden");
+    btn.classList.toggle("is-agent-minimized", state === "minimized");
+    btn.setAttribute("aria-pressed", isLive ? "true" : "false");
+    var label = isLive ? "Ocultar agente" : "Mostrar agente";
+    btn.setAttribute("aria-label", label);
+    btn.setAttribute("title", label);
   }
 
   function ensureRestoreChip() {
@@ -84,25 +103,24 @@
 
   function syncRestoreChip(state) {
     var chip = ensureRestoreChip();
-    var show = state === "hidden" || state === "minimized";
+    var show = state === "minimized";
     chip.hidden = !show;
     chip.setAttribute("aria-hidden", show ? "false" : "true");
   }
 
   function applyState(state) {
-    state = normalizeState(state);
-
     if (window.TelvoiceFloatingAgentState) {
       window.TelvoiceFloatingAgentState.applyDomState(state, floatRoot());
     } else if (document.body) {
       document.body.classList.toggle("tva-floating-agent-hidden", state === "hidden");
-      document.body.classList.toggle("tva-floating-agent-minimized", false);
+      document.body.classList.toggle("tva-floating-agent-minimized", state === "minimized");
       document.documentElement.classList.remove("tva-floating-agent-prehidden");
     }
 
     syncRestoreChip(state);
+    syncNavToggle(state);
 
-    if (state === "hidden") {
+    if (isFloatHidden(state)) {
       document.dispatchEvent(new CustomEvent("telvoice:agent-panel-close"));
     }
   }
@@ -118,6 +136,14 @@
       chip.hidden = true;
     }
     return rect;
+  }
+
+  function getNavToggleRect() {
+    var btn = ensureNavToggle();
+    if (btn) {
+      return btn.getBoundingClientRect();
+    }
+    return getRestoreChipRect();
   }
 
   function getFloatingLauncherRect() {
@@ -231,19 +257,22 @@
     if (animating) {
       return;
     }
-    var state = normalizeState(readState());
+    var state = readState();
+    if (state === "minimized") {
+      applyState("minimized");
+      return;
+    }
     if (state === "hidden") {
       applyState("hidden");
       return;
     }
     var chip = ensureRestoreChip();
-    setAgentState("hidden", { animate: true, sourceButton: chip });
+    setAgentState("minimized", { animate: true, sourceButton: chip });
   }
 
   function setAgentState(nextState, options) {
     var opts = options || {};
-    nextState = normalizeState(nextState);
-    var current = normalizeState(readState());
+    var current = readState();
 
     if (current === nextState) {
       applyState(nextState);
@@ -251,11 +280,6 @@
     }
     if (animating) {
       return current;
-    }
-
-    if (nextState === "minimized") {
-      dockHideToCorner();
-      return "hidden";
     }
 
     writeState(nextState);
@@ -269,11 +293,13 @@
     var launcherRect = getFloatingLauncherRect();
     var targetRect = opts.sourceButton
       ? opts.sourceButton.getBoundingClientRect()
-      : getRestoreChipRect();
+      : isFloatHidden(nextState)
+        ? getNavToggleRect()
+        : getRestoreChipRect();
 
-    if (nextState === "hidden") {
+    if (isFloatHidden(nextState)) {
       runTravelAnimation(launcherRect, targetRect, "hide", function () {
-        applyState("hidden");
+        applyState(nextState);
         animating = false;
       });
     } else {
@@ -296,8 +322,25 @@
     });
   }
 
+  function bindNavToggle() {
+    var btn = ensureNavToggle();
+    if (!btn || btn.dataset.bound === "1") {
+      return;
+    }
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", function (e) {
+      e.preventDefault();
+      var state = readState();
+      if (state === "open") {
+        setAgentState("hidden", { animate: true, sourceButton: btn });
+      } else {
+        setAgentState("open", { animate: true, sourceButton: btn });
+      }
+    });
+  }
+
   function runEntryAnimation() {
-    var state = normalizeState(readState());
+    var state = readState();
     if (state !== "open") {
       return;
     }
@@ -339,6 +382,7 @@
         localStorage.setItem(LEGACY_KEY, "true");
         if (document.body) {
           document.body.classList.remove("tva-floating-agent-hidden");
+          document.body.classList.remove("tva-floating-agent-minimized");
         }
         document.documentElement.classList.remove("tva-floating-agent-prehidden");
       }
@@ -353,13 +397,11 @@
     }
 
     reconcileStorageDesync();
-    var state = normalizeState(readState());
-    if (readState() === "minimized") {
-      writeState("hidden");
-    }
+    var state = readState();
 
     ensureRestoreChip();
     bindRestoreChip();
+    bindNavToggle();
     applyState(state);
 
     var runEntry = function () {
@@ -374,10 +416,10 @@
 
   window.TelvoiceFloatingAgent = {
     isVisible: function () {
-      return normalizeState(readState()) !== "hidden";
+      return readState() === "open";
     },
     readState: function () {
-      return normalizeState(readState());
+      return readState();
     },
     setState: setAgentState,
     setVisible: function (visible, options) {

@@ -253,13 +253,14 @@ async function auditMinimized(page) {
     const chipAvatarRect = chipAvatar?.getBoundingClientRect();
     return {
       ok:
-        document.body.classList.contains("tva-floating-agent-hidden") &&
+        document.body.classList.contains("tva-floating-agent-minimized") &&
         !!chipRect &&
         chipRect.width > 40 &&
         chipRect.height > 24 &&
         chipStyle?.visibility !== "hidden" &&
         parseFloat(chipStyle?.opacity || "1") >= 0.9,
       bodyHidden: document.body.classList.contains("tva-floating-agent-hidden"),
+      bodyMinimized: document.body.classList.contains("tva-floating-agent-minimized"),
       floatDisplay: floatStyle?.display ?? null,
       chipVisible: !!chipRect && chipRect.width > 40,
       chipStyles: chipStyle

@@ -2780,8 +2780,8 @@
       document.documentElement.classList.remove("site-scroll-snap");
     })();
   </script>
-  <link rel="stylesheet" href="css/telvoice-floating-agent-toggle.css?v=20260625" />
-  <link rel="stylesheet" href="css/telvoice-public-nav.css?v=20260619" />
+  <link rel="stylesheet" href="css/telvoice-floating-agent-toggle.css?v=20260628" />
+  <link rel="stylesheet" href="css/telvoice-public-nav.css?v=20260628" />
   <link rel="stylesheet" href="css/telvoice-scroll-reveal.css?v=20260619" />
   <link rel="stylesheet" href="css/telvoice-type-lab.css?v=20260625" />
   <link rel="stylesheet" href="css/telvoice-casos-carousel.css?v=20260529d" />
@@ -3035,6 +3035,10 @@
         <li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="#contacto">Contacto</a></li>
       </ul>
       <div class="nav-actions flex items-center gap-2 shrink-0">
+        <button type="button" id="nav-floating-agent-toggle" class="nav-floating-agent-toggle nav-floating-agent-toggle--avatar is-agent-live inline-flex" aria-pressed="true" aria-label="Ocultar agente" title="Ocultar agente">
+          <span class="nav-floating-agent-toggle__ring" aria-hidden="true"></span>
+          <img src="assets/telvoice-agent-nav-toggle.png" alt="" class="nav-floating-agent-toggle__avatar" width="44" height="44" decoding="async" />
+        </button>
         <a href="#calculadora" id="nav-comprar-sms" class="nav-sales-btn hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm no-underline" data-track="click_comprar_sms_nav">Comprar SMS</a>
         <a href="https://agent.telvoice.cl/login" class="nav-login-btn hidden sm:inline-flex items-center justify-center border-2 border-primary/25 text-primary rounded-full hover:bg-primary/5 transition-colors no-underline" aria-label="Iniciar sesión" title="Iniciar sesión" data-track="click_login_nav"><span class="material-symbols-outlined" aria-hidden="true">login</span></a>
         <button type="button" id="menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant/60 text-on-background" aria-expanded="false" aria-controls="mobile-panel" aria-label="Abrir menú">
@@ -4043,7 +4047,7 @@
   </div>
 
   <script src="js/telvoice-scroll-reveal.js?v=20260530"></script>
-  <script src="js/telvoice-floating-agent-toggle.js?v=20260626"></script>
+  <script src="js/telvoice-floating-agent-toggle.js?v=20260628"></script>
   <script src="js/telvoice-app.js?v=20260629"></script>
   <script src="js/telvoice-touch-swipe.js?v=20260616"></script>
   <script src="js/telvoice-carousel-core.js?v=20260529f"></script>

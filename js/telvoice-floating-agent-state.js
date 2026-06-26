@@ -40,7 +40,7 @@
   function writeState(surface, state) {
     try {
       localStorage.setItem(storageKey(surface), state);
-      if (state === "hidden") {
+      if (state === "hidden" || state === "minimized") {
         localStorage.setItem(LEGACY_KEY, "false");
       } else if (state === "open") {
         localStorage.setItem(LEGACY_KEY, "true");

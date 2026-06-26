@@ -12,7 +12,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "20260625";
+  var VERSION = "20260628";
   var booted = false;
 
   function escAttr(s) {
@@ -92,7 +92,7 @@
     loadScript(root + "js/telvoice-floating-agent-state.js?v=20260617", "telvoice-floating-agent-state", function () {
       loadScript(root + "js/telvoice-floating-agent-pref.js?v=20260617", "telvoice-floating-agent-pref", function () {
         function loadToggleAndAgent() {
-          loadScript(root + "js/telvoice-floating-agent-toggle.js?v=20260625", "telvoice-floating-agent-toggle", function () {
+          loadScript(root + "js/telvoice-floating-agent-toggle.js?v=20260628", "telvoice-floating-agent-toggle", function () {
             loadAgentLoader(root, embedTarget);
           });
         }

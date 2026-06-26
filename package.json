@@ -10,7 +10,8 @@
     "clean:caso-ia-hero": "python3 scripts/clean-agent-caso-ia.py",
     "clean:caso-fintech-hero": "python3 scripts/clean-agent-caso-fintech.py",
     "test:web-agent-intent": "node scripts/verify-web-agent-intent.mjs",
-    "test:landing-scroll-agent-qa": "node scripts/qa-landing-scroll-agent-validation.mjs"
+    "test:landing-scroll-agent-qa": "node scripts/qa-landing-scroll-agent-validation.mjs",
+    "test:nav-agent-toggle-qa": "node scripts/qa-nav-agent-toggle-production.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^2.4.0"

@@ -14,6 +14,105 @@
   font-size: 1.35rem;
   line-height: 1;
 }
+
+.nav-floating-agent-toggle--avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s ease;
+}
+
+.nav-floating-agent-toggle--avatar:hover {
+  transform: scale(1.04);
+}
+
+.nav-floating-agent-toggle--avatar:active {
+  transform: scale(0.96);
+}
+
+.nav-floating-agent-toggle--avatar:focus-visible {
+  outline: 2px solid #0b5cff;
+  outline-offset: 3px;
+}
+
+.nav-floating-agent-toggle__ring {
+  position: absolute;
+  inset: -0.35rem;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    rgba(72, 255, 220, 0.55) 0%,
+    rgba(11, 92, 255, 0.28) 42%,
+    transparent 72%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.92);
+  transition: opacity 0.35s ease;
+}
+
+.nav-floating-agent-toggle__avatar {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  object-fit: cover;
+  transition:
+    opacity 0.4s ease,
+    filter 0.4s ease,
+    box-shadow 0.4s ease;
+}
+
+.nav-floating-agent-toggle.is-agent-dormant .nav-floating-agent-toggle__ring,
+.nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__ring {
+  opacity: 1;
+  animation: tva-nav-toggle-glow 2.2s ease-in-out infinite;
+}
+
+.nav-floating-agent-toggle.is-agent-dormant .nav-floating-agent-toggle__avatar,
+.nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__avatar {
+  opacity: 1;
+  filter: saturate(1.08) brightness(1.06);
+  box-shadow:
+    0 0 0 1px rgba(220, 231, 245, 0.95),
+    0 0 18px rgba(11, 92, 255, 0.35),
+    0 0 28px rgba(72, 255, 220, 0.22);
+}
+
+.nav-floating-agent-toggle.is-agent-live .nav-floating-agent-toggle__avatar {
+  opacity: 0.42;
+  filter: saturate(0.65) brightness(0.88);
+  box-shadow: 0 0 0 1px rgba(220, 231, 245, 0.75);
+}
+
+@keyframes tva-nav-toggle-glow {
+  0%, 100% { transform: scale(0.92); opacity: 0.72; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-floating-agent-toggle.is-agent-dormant .nav-floating-agent-toggle__ring,
+  .nav-floating-agent-toggle.is-agent-minimized .nav-floating-agent-toggle__ring {
+    animation: none;
+  }
+
+  .nav-floating-agent-toggle--avatar:hover,
+  .nav-floating-agent-toggle--avatar:active {
+    transform: none;
+  }
+}
 .site-nav-dropdown {
   position: relative;
 }
