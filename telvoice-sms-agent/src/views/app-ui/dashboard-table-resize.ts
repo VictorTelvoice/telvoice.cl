@@ -86,6 +86,9 @@ export function getDashboardTableColumnResizeScriptBody(): string {
     if (tableId === "app-dlr-report" && colCount === 15) {
       return [120, 88, 92, 108, 240, 108, 52, 52, 76, 68, 76, 52, 108, 76, 144];
     }
+    if (tableId === "app-wallet" && colCount === 6) {
+      return [120, 120, 100, 100, 100, 220];
+    }
     if (colCount === 4) {
       return [110, 180, 90, 120];
     }

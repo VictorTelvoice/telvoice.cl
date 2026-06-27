@@ -356,10 +356,11 @@ export function parseDlrReportFilters(
     mcc: str("mcc") || undefined,
     mnc: str("mnc") || undefined,
     page: Math.max(1, Number.parseInt(str("page") || "1", 10) || 1),
-    pageSize: Math.min(
-      100,
-      Math.max(10, Number.parseInt(str("page_size") || "25", 10) || 25),
-    ),
+    pageSize: (() => {
+      const n = Number.parseInt(str("page_size") || "20", 10);
+      if (n === 20 || n === 50 || n === 100) return n;
+      return 20;
+    })(),
   };
 }
 
@@ -369,7 +370,7 @@ export async function queryDlrReport(
   filters: DlrReportFilters,
 ): Promise<DlrReportResult> {
   const page = filters.page ?? 1;
-  const pageSize = filters.pageSize ?? 25;
+  const pageSize = filters.pageSize ?? 20;
 
   let q = getSupabase()
     .from("panel_sms_messages")

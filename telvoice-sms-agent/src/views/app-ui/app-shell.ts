@@ -23,6 +23,7 @@ import {
   renderPanelFloatingAgentToggleButton,
 } from "../../components/agent/panel-floating-agent-toggle.js";
 import { getDashboardTableColumnResizeScriptBody } from "./dashboard-table-resize.js";
+import { getClientTableLimitScriptBody } from "./client-table-kit.js";
 import {
   getAppNavAgentLine,
   APP_NAV_PRIMARY,
@@ -196,6 +197,7 @@ const USER_MENU_SCRIPT = `<script>
 </script>`;
 
 const DASH_TABLE_RESIZE_SCRIPT = `<script>${getDashboardTableColumnResizeScriptBody()}</script>`;
+const CLIENT_TABLE_LIMIT_SCRIPT = `<script>${getClientTableLimitScriptBody()}</script>`;
 
 export function renderAppLayout(options: AppLayoutOptions): string {
   const bodyClass = options.bodyClass
@@ -234,6 +236,7 @@ export function renderAppLayout(options: AppLayoutOptions): string {
   ${USER_MENU_SCRIPT}
   ${renderPanelThemeToggleScript()}
   ${DASH_TABLE_RESIZE_SCRIPT}
+  ${CLIENT_TABLE_LIMIT_SCRIPT}
   <script>${getPanelFloatingAgentToggleScript({ buttonIds: ["nav-floating-agent-toggle"], floatingRootId: "tv-panel-agent", surface: "panel" })}</script>
   <script>${getPanelAgentWidgetScript()}</script>
 </body>

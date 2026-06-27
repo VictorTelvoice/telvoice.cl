@@ -1657,6 +1657,97 @@ export function getAppPanelStyles(): string {
       overflow-x: auto;
       max-height: 58vh;
     }
+    .tv-client-data-table-panel .tv-client-data-table__inner {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .tv-client-data-table__scroll {
+      overflow: auto;
+      max-height: 58vh;
+      -webkit-overflow-scrolling: touch;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    .tv-inbox-report .tv-client-data-table__scroll {
+      max-height: 62vh;
+    }
+    .tv-client-data-table__scroll .tv-table thead th,
+    .tv-client-dash-tables .tv-table--col-resize thead th,
+    .tv-dlr-report__table-wrap .tv-table--col-resize thead th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      background: var(--tv-table-head-bg, #f8fafc);
+      box-shadow: inset 0 -1px 0 var(--tv-border, #dbe3ef);
+    }
+    .tv-client-data-table__footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      padding: 0.75rem 1rem;
+      border-top: 1px solid var(--tv-border, #e2e8f0);
+      background: var(--tv-surface);
+    }
+    .tv-client-data-table__footer-meta {
+      margin: 0;
+      font-size: 0.8125rem;
+      color: var(--tv-muted);
+    }
+    .tv-client-data-table__footer-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-left: auto;
+    }
+    .tv-client-data-table__footer-limit {
+      display: flex;
+      align-items: center;
+      margin: 0;
+    }
+    .tv-client-data-table__footer-limit-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin: 0;
+      font-size: 0.8125rem;
+      color: var(--tv-muted);
+    }
+    .tv-client-data-table__limit-select {
+      min-width: 7.5rem;
+      padding: 0.35rem 0.55rem;
+      font-size: 0.8125rem;
+    }
+    .tv-client-data-table__pager {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+    .tv-client-data-table__pager-page {
+      font-size: 0.8125rem;
+      color: var(--tv-muted);
+      padding: 0 0.25rem;
+    }
+    @media (max-width: 640px) {
+      .tv-client-data-table__footer {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .tv-client-data-table__footer-actions {
+        width: 100%;
+        margin-left: 0;
+        justify-content: space-between;
+      }
+      .tv-client-data-table__limit-select {
+        width: 100%;
+        min-width: 0;
+      }
+    }
     .tv-dlr-report__table { min-width: 1560px; }
     .tv-dlr-report__th-nowrap { white-space: nowrap; }
     .tv-dlr-report__error-desc {

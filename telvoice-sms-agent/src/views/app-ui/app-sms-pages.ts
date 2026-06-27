@@ -25,6 +25,11 @@ import {
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
 import {
+  type ClientTableLimit,
+  renderClientDataTablePanel,
+  renderClientTableFooter,
+} from "./client-table-kit.js";
+import {
   renderCampaignsTableRows,
   renderInboxTableRows,
   renderPanelMessageStatusBadge,
@@ -1184,6 +1189,7 @@ export type AppInboxPageFilters = {
   senderId?: string;
   recipient?: string;
   reference?: string;
+  limit?: ClientTableLimit;
 };
 
 export function renderAppInboxPage(
@@ -1244,12 +1250,9 @@ export function renderAppInboxPage(
       <div class="tv-dash-block tv-dlr-report__table-block">
         <div class="tv-dash-block__head">
           <h2 class="tv-dash-block__title">Mensajes</h2>
-          <p class="tv-dash-block__sub">${fmtSms(messages.length)} registro(s) con filtros aplicados</p>
         </div>
-        <section class="tv-panel tv-client-dash-table-panel tv-dlr-report__table-panel">
-          <div class="tv-client-dash-table-inner tv-dlr-report__table-inner">
-            <div class="table-wrap tv-dlr-report__table-wrap">
-              <table class="tv-table tv-table--dash tv-table--col-resize" data-table-id="app-inbox">
+        ${renderClientDataTablePanel(
+          `<table class="tv-table tv-table--dash tv-table--col-resize" data-table-id="app-inbox">
                 <colgroup>
                   <col><col><col><col><col><col><col><col><col>
                 </colgroup>
@@ -1258,10 +1261,23 @@ export function renderAppInboxPage(
                   <th>Seg.</th><th>Estado</th><th>Modo</th><th>Referencia</th><th>Error</th>
                 </tr></thead>
                 <tbody>${renderInboxTableRows(messages)}</tbody>
-              </table>
-            </div>
-          </div>
-        </section>
+              </table>`,
+          renderClientTableFooter({
+            tableKey: "app_inbox",
+            count: messages.length,
+            limit: f.limit ?? 20,
+            basePath: "/app/inbox",
+            countHint: "con filtros aplicados",
+            hiddenFields: {
+              start_date: f.startDate,
+              end_date: f.endDate,
+              status: f.status,
+              sender_id: f.senderId,
+              recipient: f.recipient,
+              reference: f.reference,
+            },
+          }),
+        )}
       </div>
     </div>`;
   return wrapAppPage(ctx, "inbox", "Bandeja", body);
@@ -1276,6 +1292,7 @@ export function renderAppCampaignsPage(
     senderId?: string;
     startDate?: string;
     endDate?: string;
+    limit?: ClientTableLimit;
   },
 ): string {
   const f = filters ?? {};
@@ -1353,10 +1370,8 @@ export function renderAppCampaignsPage(
         <div class="tv-dash-block__head">
           <h2 class="tv-dash-block__title">Últimas campañas</h2>
         </div>
-        <section class="tv-panel tv-client-dash-table-panel tv-dlr-report__table-panel">
-          <div class="tv-client-dash-table-inner tv-dlr-report__table-inner">
-            <div class="table-wrap tv-dlr-report__table-wrap">
-              <table class="tv-table tv-table--dash tv-table--col-resize" data-table-id="app-campaigns">
+        ${renderClientDataTablePanel(
+          `<table class="tv-table tv-table--dash tv-table--col-resize" data-table-id="app-campaigns">
                 <colgroup>
                   <col><col><col><col><col><col><col><col>
                 </colgroup>
@@ -1365,10 +1380,22 @@ export function renderAppCampaignsPage(
                   <th>SMS</th><th>Estado</th><th>Modo</th><th>Acciones</th>
                 </tr></thead>
                 <tbody>${renderCampaignsTableRows(campaigns)}</tbody>
-              </table>
-            </div>
-          </div>
-        </section>
+              </table>`,
+          renderClientTableFooter({
+            tableKey: "app_campaigns",
+            count: campaigns.length,
+            limit: f.limit ?? 20,
+            basePath: "/app/campaigns",
+            countHint: "con filtros aplicados",
+            hiddenFields: {
+              q: f.q,
+              status: f.status,
+              sender_id: f.senderId,
+              start_date: f.startDate,
+              end_date: f.endDate,
+            },
+          }),
+        )}
       </div>
     </div>`;
   return wrapAppPage(ctx, "campaigns", "Campañas", body);

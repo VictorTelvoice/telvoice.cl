@@ -4,6 +4,11 @@ import { renderBtn, renderFilterField, renderPageHeader } from "../admin-ui/page
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
 import {
+  renderClientDataTablePanel,
+  renderClientTableFooter,
+  type ClientTableLimit,
+} from "./client-table-kit.js";
+import {
   renderTxQaBadgeIfNeeded,
   renderWalletTxTypeBadge,
 } from "./app-order-ui.js";
@@ -12,6 +17,7 @@ export type WalletPageFilters = {
   type?: string;
   startDate?: string;
   endDate?: string;
+  limit?: ClientTableLimit;
 };
 
 const WALLET_TYPE_OPTIONS: { value: string; label: string }[] = [
@@ -138,22 +144,33 @@ export function renderAppWalletPage(
         <h2 class="tv-dash-block__title">Movimientos de saldo</h2>
         <span class="tv-wallet-report__filter-hint">${escapeHtml(typeLabel)}</span>
       </div>
-      <section class="tv-panel tv-client-dash-table-panel tv-dlr-report__table-panel">
-        <div class="tv-client-dash-table-inner tv-dlr-report__table-inner">
-          <div class="table-wrap tv-dlr-report__table-wrap tv-wallet-report__table-wrap">
-            <table class="tv-table tv-table--dash tv-wallet-report__table">
+      ${renderClientDataTablePanel(
+        `<table class="tv-table tv-table--dash tv-wallet-report__table tv-table--col-resize" data-table-id="app-wallet">
+              <colgroup>
+                <col><col><col><col><col><col>
+              </colgroup>
               <thead><tr>
                 <th>Fecha</th><th>Tipo</th><th>Cantidad SMS</th><th>Saldo antes</th><th>Saldo después</th><th>Descripción</th>
               </tr></thead>
               <tbody>${renderWalletTableRows(transactions)}</tbody>
-            </table>
-          </div>
-          <div class="tv-dlr-report__pager">
-            <span class="field-hint">${transactions.length} movimiento${transactions.length === 1 ? "" : "s"} mostrados (máx. 200)</span>
-            ${filterQs ? `<a class="btn btn-ghost btn-sm" href="/app/wallet">Quitar filtros</a>` : ""}
-          </div>
-        </div>
-      </section>
+            </table>`,
+        renderClientTableFooter({
+          tableKey: "app_wallet",
+          count: transactions.length,
+          limit: filters.limit ?? 20,
+          basePath: "/app/wallet",
+          noun: "movimientos",
+          countHint: "con filtros aplicados",
+          hiddenFields: {
+            type: filters.type,
+            start_date: filters.startDate,
+            end_date: filters.endDate,
+          },
+          extraHtml: filterQs
+            ? `<a class="btn btn-ghost btn-sm" href="/app/wallet">Quitar filtros</a>`
+            : "",
+        }),
+      )}
     </div>
     </div>`;
 

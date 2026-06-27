@@ -138,6 +138,7 @@ import {
   dlrReportRowsToCsv,
 } from "../services/smsDlrReportService.js";
 import { renderAppReportsPage } from "../views/app-ui/app-reports-page.js";
+import { parseClientTableLimit } from "../views/app-ui/client-table-kit.js";
 import { generateClientPanelManualPdf } from "../services/clientPanelManualPdfService.js";
 import { renderAppManualPage } from "../views/app-ui/app-manual-page.js";
 import {
@@ -561,14 +562,17 @@ export async function getAppWallet(
     const filters = parseWalletPageFilters(
       req.query as Record<string, string | string[] | undefined>,
     );
+    const limit = parseClientTableLimit(
+      req.query as Record<string, string | string[] | undefined>,
+    );
     const transactions = (
-      await listTransactionsByCompany(ctx.company.id, 200, {
+      await listTransactionsByCompany(ctx.company.id, limit, {
         type: filters.type,
         startDate: filters.startDate,
         endDate: filters.endDate,
       })
     ).filter((t) => !isQaTransaction(t));
-    return renderAppWalletPage(ctx, transactions, filters);
+    return renderAppWalletPage(ctx, transactions, { ...filters, limit });
   });
 }
 
@@ -1216,7 +1220,11 @@ export async function getAppCampaigns(
     ]);
     const safeStatus = allowed.has(status) ? (status as any) : undefined;
 
-    const campaigns = await listCampaignsByCompany(ctx.company.id, 100, {
+    const limit = parseClientTableLimit(
+      req.query as Record<string, string | string[] | undefined>,
+    );
+
+    const campaigns = await listCampaignsByCompany(ctx.company.id, limit, {
       q: q || undefined,
       status: safeStatus,
       senderId: senderId || undefined,
@@ -1230,6 +1238,7 @@ export async function getAppCampaigns(
       senderId: senderId || undefined,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
+      limit,
     });
   });
 }
@@ -1275,9 +1284,13 @@ export async function getAppInbox(
       endDate: endDate || undefined,
     };
 
+    const limit = parseClientTableLimit(
+      req.query as Record<string, string | string[] | undefined>,
+    );
+
     const messages = await listPanelMessagesByCompany(
       ctx.company.id,
-      200,
+      limit,
       filterInput,
     );
 
@@ -1288,6 +1301,7 @@ export async function getAppInbox(
       recipient: recipient || undefined,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
+      limit,
     });
   });
 }

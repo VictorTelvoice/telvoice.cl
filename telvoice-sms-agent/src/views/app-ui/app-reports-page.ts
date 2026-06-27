@@ -8,6 +8,10 @@ import { renderKpiCard } from "../admin-ui/components.js";
 import { renderFilterField, renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtSms, wrapAppPage } from "./app-page-wrap.js";
+import {
+  renderClientDataTablePanel,
+  renderClientTableCountText,
+} from "./client-table-kit.js";
 
 const DLR_STATUS_OPTIONS = [
   "Delivered",
@@ -52,6 +56,9 @@ function queryStringFromFilters(
   }
   if (filters.page && filters.page > 1) {
     p.set("page", String(filters.page));
+  }
+  if (filters.pageSize && filters.pageSize !== 20) {
+    p.set("page_size", String(filters.pageSize));
   }
   if (extra) {
     for (const [k, v] of Object.entries(extra)) {
@@ -127,14 +134,12 @@ function renderDlrTableRows(result: DlrReportResult): string {
     .join("");
 }
 
-function renderPagination(
+function renderPaginationControls(
   result: DlrReportResult,
   filters: DlrReportFilters,
 ): string {
   const totalPages = Math.max(1, Math.ceil(result.total / result.pageSize));
   const page = result.page;
-  const from = result.total === 0 ? 0 : (page - 1) * result.pageSize + 1;
-  const to = Math.min(page * result.pageSize, result.total);
 
   const prev =
     page > 1
@@ -145,10 +150,59 @@ function renderPagination(
       ? `<a class="btn btn-ghost btn-sm" href="/app/reports${queryStringFromFilters({ ...filters, page: page + 1 })}">Siguiente</a>`
       : `<span class="btn btn-ghost btn-sm" aria-disabled="true">Siguiente</span>`;
 
-  return `<div class="tv-dlr-report__pager">
-    <div class="tv-dlr-report__pager-actions">${prev} <span class="tv-dlr-report__pager-page">${page} / ${totalPages}</span> ${next}</div>
-    <span class="field-hint">${from} – ${to} de ${result.total} registros</span>
-  </div>`;
+  return `<div class="tv-client-data-table__pager">${prev}<span class="tv-client-data-table__pager-page">${page} / ${totalPages}</span>${next}</div>`;
+}
+
+function renderDlrTableFooter(
+  result: DlrReportResult,
+  filters: DlrReportFilters,
+): string {
+  const page = result.page;
+  const from = result.total === 0 ? 0 : (page - 1) * result.pageSize + 1;
+  const to = Math.min(page * result.pageSize, result.total);
+  const countText =
+    result.total === 0
+      ? "Mostrando 0 registros con filtros aplicados"
+      : result.total === result.rows.length && page === 1
+        ? renderClientTableCountText(result.rows.length, {
+            hint: "con filtros aplicados",
+          })
+        : `Mostrando ${from}–${to} de ${result.total} registros con filtros aplicados`;
+
+  return `<footer class="tv-client-data-table__footer">
+    <p class="tv-client-data-table__footer-meta">${escapeHtml(countText)}</p>
+    <div class="tv-client-data-table__footer-actions">
+      ${renderPaginationControls(result, filters)}
+      <form method="get" action="/app/reports" class="tv-client-data-table__footer-limit">
+        ${[
+          filters.startDate ? `<input type="hidden" name="start_date" value="${escapeHtml(filters.startDate)}" />` : "",
+          filters.endDate ? `<input type="hidden" name="end_date" value="${escapeHtml(filters.endDate)}" />` : "",
+          filters.senderId ? `<input type="hidden" name="sender_id" value="${escapeHtml(filters.senderId)}" />` : "",
+          filters.phoneNumber ? `<input type="hidden" name="phone" value="${escapeHtml(filters.phoneNumber)}" />` : "",
+          filters.jobId ? `<input type="hidden" name="job_id" value="${escapeHtml(filters.jobId)}" />` : "",
+          filters.dlrStatuses?.length
+            ? `<input type="hidden" name="status" value="${escapeHtml(filters.dlrStatuses.join(","))}" />`
+            : "",
+          filters.country && filters.country !== "all"
+            ? `<input type="hidden" name="country" value="${escapeHtml(filters.country)}" />`
+            : "",
+          filters.mcc ? `<input type="hidden" name="mcc" value="${escapeHtml(filters.mcc)}" />` : "",
+          filters.mnc ? `<input type="hidden" name="mnc" value="${escapeHtml(filters.mnc)}" />` : "",
+        ].join("")}
+        <label class="tv-client-data-table__footer-limit-label">
+          <span class="tv-client-data-table__footer-limit-text">Ver</span>
+          <select name="page_size" class="tv-filter-input tv-client-data-table__limit-select" data-tv-table-limit-select data-storage-key="telvoice_table_limit_app_dlr_report" aria-label="Cantidad de filas por página">
+            ${([20, 50, 100] as const)
+              .map((n) => {
+                const on = n === (filters.pageSize ?? 20);
+                return `<option value="${n}"${on ? " selected" : ""}>Últimos ${n}</option>`;
+              })
+              .join("")}
+          </select>
+        </label>
+      </form>
+    </div>
+  </footer>`;
 }
 
 function deliveryRatePercent(summary: DlrReportResult["summary"]): string {
@@ -276,10 +330,8 @@ export function renderAppReportsPage(
       <div class="tv-dash-block__head">
         <h2 class="tv-dash-block__title">DLR Report</h2>
       </div>
-      <section class="tv-panel tv-client-dash-table-panel tv-dlr-report__table-panel">
-        <div class="tv-client-dash-table-inner tv-dlr-report__table-inner">
-          <div class="table-wrap tv-dlr-report__table-wrap">
-            <table class="tv-table tv-table--dash tv-dlr-report__table tv-table--col-resize" data-table-id="app-dlr-report">
+      ${renderClientDataTablePanel(
+        `<table class="tv-table tv-table--dash tv-dlr-report__table tv-table--col-resize" data-table-id="app-dlr-report">
               <colgroup>
                 <col><col><col><col><col><col><col><col><col><col><col><col><col><col><col>
               </colgroup>
@@ -289,11 +341,9 @@ export function renderAppReportsPage(
                 <th class="tv-dlr-report__th-nowrap">Error Code</th><th class="tv-dlr-report__th-nowrap">Error / Motivo</th>
               </tr></thead>
               <tbody>${renderDlrTableRows(result)}</tbody>
-            </table>
-          </div>
-          ${renderPagination(result, filters)}
-        </div>
-      </section>
+            </table>`,
+        renderDlrTableFooter(result, filters),
+      )}
     </div>
     </div>`;
 
