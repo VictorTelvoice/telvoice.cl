@@ -279,7 +279,10 @@ export function renderAppReportsPage(
       <section class="tv-panel tv-client-dash-table-panel tv-dlr-report__table-panel">
         <div class="tv-client-dash-table-inner tv-dlr-report__table-inner">
           <div class="table-wrap tv-dlr-report__table-wrap">
-            <table class="tv-table tv-table--dash tv-dlr-report__table">
+            <table class="tv-table tv-table--dash tv-dlr-report__table tv-table--col-resize" data-table-id="app-dlr-report">
+              <colgroup>
+                <col><col><col><col><col><col><col><col><col><col><col><col><col><col><col>
+              </colgroup>
               <thead><tr>
                 <th>SMS ID</th><th>Sender ID</th><th>DLR Status</th><th>Sent Date</th><th>Message</th><th>Number</th>
                 <th>MCC</th><th>MNC</th><th>País</th><th>Type</th><th>SMS Type</th><th>Parts</th><th>DLR Date</th>

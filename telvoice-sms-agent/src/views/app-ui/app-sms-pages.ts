@@ -1249,7 +1249,10 @@ export function renderAppInboxPage(
         <section class="tv-panel tv-client-dash-table-panel tv-dlr-report__table-panel">
           <div class="tv-client-dash-table-inner tv-dlr-report__table-inner">
             <div class="table-wrap tv-dlr-report__table-wrap">
-              <table class="tv-table tv-table--dash">
+              <table class="tv-table tv-table--dash tv-table--col-resize" data-table-id="app-inbox">
+                <colgroup>
+                  <col><col><col><col><col><col><col><col><col>
+                </colgroup>
                 <thead><tr>
                   <th>Fecha</th><th>Destinatario</th><th>Remitente</th><th>Mensaje</th>
                   <th>Seg.</th><th>Estado</th><th>Modo</th><th>Referencia</th><th>Error</th>
@@ -1353,7 +1356,10 @@ export function renderAppCampaignsPage(
         <section class="tv-panel tv-client-dash-table-panel tv-dlr-report__table-panel">
           <div class="tv-client-dash-table-inner tv-dlr-report__table-inner">
             <div class="table-wrap tv-dlr-report__table-wrap">
-              <table class="tv-table tv-table--dash">
+              <table class="tv-table tv-table--dash tv-table--col-resize" data-table-id="app-campaigns">
+                <colgroup>
+                  <col><col><col><col><col><col><col><col>
+                </colgroup>
                 <thead><tr>
                   <th>Fecha</th><th>Nombre</th><th>Remitente</th><th>Destinatarios</th>
                   <th>SMS</th><th>Estado</th><th>Modo</th><th>Acciones</th>

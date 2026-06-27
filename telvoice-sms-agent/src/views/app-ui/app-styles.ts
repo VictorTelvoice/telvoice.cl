@@ -1432,7 +1432,8 @@ export function getAppPanelStyles(): string {
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .tv-client-dash-tables .tv-table--col-resize thead th {
+    .tv-client-dash-tables .tv-table--col-resize thead th,
+    .tv-dlr-report__table-wrap .tv-table--col-resize thead th {
       position: relative;
       overflow: visible;
       padding-right: 0.85rem;
@@ -1513,7 +1514,8 @@ export function getAppPanelStyles(): string {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
-    .tv-client-dash-tables .tv-table--col-resize {
+    .tv-client-dash-tables .tv-table--col-resize,
+    .tv-dlr-report__table-wrap .tv-table--col-resize {
       width: max(100%, 520px);
     }
     .tv-client-dash-tables .tv-table--dash {
