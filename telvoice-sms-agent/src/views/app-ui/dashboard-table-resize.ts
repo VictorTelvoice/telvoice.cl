@@ -89,6 +89,18 @@ export function getDashboardTableColumnResizeScriptBody(): string {
     if (tableId === "app-wallet" && colCount === 6) {
       return [120, 120, 100, 100, 100, 220];
     }
+    if (tableId === "app-invoices" && colCount === 7) {
+      return [100, 140, 110, 130, 100, 100, 220];
+    }
+    if (tableId === "app-templates" && colCount === 8) {
+      return [150, 110, 280, 88, 88, 100, 120, 130];
+    }
+    if (tableId === "app-contacts" && colCount === 4) {
+      return [180, 130, 180, 200];
+    }
+    if (tableId === "app-orders" && colCount === 7) {
+      return [110, 170, 80, 100, 120, 120, 150];
+    }
     if (colCount === 4) {
       return [110, 180, 90, 120];
     }

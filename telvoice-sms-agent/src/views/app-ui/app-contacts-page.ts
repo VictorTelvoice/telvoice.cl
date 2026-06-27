@@ -12,6 +12,11 @@ import { escapeHtml } from "../../utils/html.js";
 import { renderBtn, renderFilterField, renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
+import {
+  renderClientDataTablePanel,
+  renderClientTableFooter,
+  type ClientTableLimit,
+} from "./client-table-kit.js";
 
 export type ContactsPageFilters = {
   q?: string;
@@ -45,6 +50,7 @@ export type AppContactsPageData = {
   contacts: ContactWithListsAndTags[];
   lists: ContactListWithCount[];
   summary: ContactSummary;
+  limit?: ClientTableLimit;
   wizardState?: ContactsWizardState;
   importPreview?: ContactImportPreview;
   editContact?: ContactWithListsAndTags;
@@ -853,6 +859,7 @@ function contactRowActions(
 function contactsTable(
   rows: ContactWithListsAndTags[],
   filters: ContactsPageFilters,
+  limit: ClientTableLimit,
 ): string {
   const empty =
     rows.length === 0
@@ -869,20 +876,16 @@ function contactsTable(
           .join("");
 
   const anyFilter = Boolean((filters.q ?? "").trim() || (filters.agenda ?? "").trim());
-  const qs = queryStringFromFilters(filters);
 
   return `<div class="tv-dash-block tv-contacts-table-block" id="tv-contacts-table">
     <div class="tv-dash-block__head">
       <h2 class="tv-dash-block__title">Contactos</h2>
-      <span class="tv-contacts-table-block__meta">
-        ${rows.length} registro${rows.length === 1 ? "" : "s"} ·
-        ${anyFilter ? `<a href="/app/contacts" class="tv-dash-block__link">Quitar filtros</a>` : `<a href="/app/contacts${qs}" class="tv-dash-block__link">Actualizar</a>`}
-      </span>
     </div>
-    <section class="tv-panel tv-client-dash-table-panel">
-      <div class="tv-client-dash-table-inner">
-        <div class="table-wrap tv-contacts-table-wrap">
-          <table class="tv-table tv-table--dash tv-contacts-table">
+    ${renderClientDataTablePanel(
+      `<table class="tv-table tv-table--dash tv-contacts-table tv-table--col-resize" data-table-id="app-contacts">
+            <colgroup>
+              <col><col><col><col>
+            </colgroup>
             <thead><tr>
               <th>Nombre</th>
               <th>Teléfono</th>
@@ -890,10 +893,28 @@ function contactsTable(
               <th>Acciones</th>
             </tr></thead>
             <tbody>${empty}</tbody>
-          </table>
-        </div>
-      </div>
-    </section>
+          </table>`,
+      renderClientTableFooter({
+        tableKey: "app_contacts",
+        count: rows.length,
+        limit,
+        basePath: "/app/contacts",
+        noun: "contactos",
+        countHint: anyFilter ? "con filtros aplicados" : undefined,
+        hiddenFields: {
+          q: filters.q,
+          agenda: filters.agenda,
+          tag: filters.tag || undefined,
+          status: filters.status || undefined,
+          source: filters.source || undefined,
+          start_date: filters.startDate,
+          end_date: filters.endDate,
+        },
+        extraHtml: anyFilter
+          ? `<a class="btn btn-ghost btn-sm" href="/app/contacts">Quitar filtros</a>`
+          : "",
+      }),
+    )}
   </div>`;
 }
 
@@ -938,6 +959,7 @@ export function renderAppContactsPage(
     assignContact,
     postCreateListId,
     showPostCreateActions,
+    limit = 20,
   } = data;
   const wizard = data.wizardState;
   const wizardStep = wizard?.step ?? "agenda";
@@ -990,7 +1012,7 @@ export function renderAppContactsPage(
     <div>
       ${showEmptyReal ? emptyStateReal() : ""}
       ${showNoResults ? noResultsState() : ""}
-      ${showTable ? contactsTable(contacts, filters) : ""}
+      ${showTable ? contactsTable(contacts, filters, limit) : ""}
     </div>
     </div>
     ${module.available ? contactsWizardModal(lists, wizard, data.importPreview, editContact, assignContact, filters) : ""}

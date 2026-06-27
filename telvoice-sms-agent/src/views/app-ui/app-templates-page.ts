@@ -14,6 +14,11 @@ import { renderSmsTemplateVariablesPreviewScript } from "../../utils/smsTemplate
 import { renderFilterField, renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
+import {
+  renderClientDataTablePanel,
+  renderClientTableFooter,
+  type ClientTableLimit,
+} from "./client-table-kit.js";
 
 export type SmsTemplateCategory = ClientSmsTemplateCategory;
 export type SmsTemplateStatus = ClientSmsTemplateStatus;
@@ -376,6 +381,7 @@ function renderTemplatesScript(
   const listSubtitle = dbAvailable
     ? "Plantillas sincronizadas con tu empresa."
     : "Los cambios se guardan en este navegador hasta conectar Supabase.";
+  const tableLimit = pageData.limit ?? 20;
 
   return `<script>
 ${renderSmsTemplateVariablesPreviewScript()}
@@ -388,6 +394,9 @@ ${renderSmsTemplateVariablesPreviewScript()}
   var DB_AVAILABLE = ${dbAvailable ? "true" : "false"};
   var LIST_SUBTITLE = ${JSON.stringify(listSubtitle)};
   var CATEGORIES = ${categoriesJson};
+  var TABLE_LIMIT = ${tableLimit};
+  var footerMetaEl = document.getElementById("tv-client-table-footer-meta-app_templates");
+  var limitSelectEl = document.querySelector('[data-storage-key="telvoice_table_limit_app_templates"]');
   var toast = document.getElementById("tv-templates-toast");
 
   var GSM_BASIC = /^[@£$¥èéùìòÇ\\nØø\\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&'()*+,\\-./0-9:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà^{}\\\\\\[\\~\\]|€]*$/;
@@ -525,20 +534,50 @@ ${renderSmsTemplateVariablesPreviewScript()}
     });
   }
 
+  function readTableLimit() {
+    var p = new URLSearchParams(window.location.search);
+    var l = parseInt(p.get("limit") || "", 10);
+    if (l === 20 || l === 50 || l === 100) return l;
+    return TABLE_LIMIT;
+  }
+
+  function updateFooterMeta(visibleCount) {
+    if (!footerMetaEl) return;
+    var hasFilter = Boolean(
+      (state.filter.q || "").trim() ||
+      state.filter.category ||
+      state.filter.status
+    );
+    var hint = hasFilter ? " con filtros aplicados" : "";
+    var noun = visibleCount === 1 ? "plantilla" : "plantillas";
+    footerMetaEl.textContent =
+      visibleCount === 1
+        ? "Mostrando 1 " + noun + hint
+        : "Mostrando " + visibleCount + " " + noun + hint;
+  }
+
   function renderTable() {
     var rows = filtered();
+    var limit = readTableLimit();
+    var visible = rows.slice(0, limit);
     var hasAny = state.templates.length > 0;
     emptyEl.hidden = hasAny;
     tableBlock.hidden = !hasAny;
+    if (limitSelectEl && limitSelectEl.value !== String(limit)) {
+      limitSelectEl.value = String(limit);
+    }
     if (!hasAny) {
       tableBody.innerHTML = "";
+      updateFooterMeta(0);
       return;
     }
-    if (!rows.length) {
+    if (!visible.length) {
       tableBody.innerHTML = '<tr><td colspan="8" class="tv-table-empty">No hay plantillas con los filtros aplicados.</td></tr>';
+      updateFooterMeta(0);
       return;
     }
-    tableBody.innerHTML = rows.map(function (t) {
+    updateFooterMeta(visible.length);
+    tableBody.innerHTML = visible.map(function (t) {
       var seg = calcSegments(t.message);
       return "<tr data-id=\\"" + escapeHtml(t.id) + "\\">" +
         "<td><strong>" + escapeHtml(t.name) + "</strong></td>" +
@@ -794,8 +833,11 @@ ${renderSmsTemplateVariablesPreviewScript()}
 </script>`;
 }
 
-function renderInitialTableRows(templates: ClientSmsTemplate[]): string {
-  return templates.map((t) => {
+function renderInitialTableRows(
+  templates: ClientSmsTemplate[],
+  limit: ClientTableLimit = 20,
+): string {
+  return templates.slice(0, limit).map((t) => {
     const previewMessage = resolveSmsTemplateVariables(t.message, {}, {
       preview: true,
     });
@@ -835,6 +877,7 @@ export function renderAppTemplatesPage(
       ? []
       : DEFAULT_CLIENT_SMS_TEMPLATES;
   const showTableInitially = seedTemplates.length > 0;
+  const tableLimit: ClientTableLimit = data.limit ?? 20;
 
   const categoryFilterOpts = [
     `<option value="">Todas las categorías</option>`,
@@ -890,17 +933,20 @@ export function renderAppTemplatesPage(
       </p>
       <button type="button" class="btn btn-primary" id="tv-tpl-empty-create">Crear plantilla</button>
     </div>
-    <section class="tv-panel tv-templates-table-panel" id="tv-templates-table-block"${showTableInitially ? "" : " hidden"}>
-      <header class="tv-section-head">
-        <h2 class="tv-section-head__title">Tus plantillas</h2>
-        <p class="tv-section-head__sub" id="tv-templates-list-sub">${
+    <div class="tv-dash-block tv-templates-table-block" id="tv-templates-table-block"${showTableInitially ? "" : " hidden"}>
+      <div class="tv-dash-block__head">
+        <h2 class="tv-dash-block__title">Tus plantillas</h2>
+        <p class="field-hint tv-section-head__sub" id="tv-templates-list-sub" style="margin:0">${
           dbAvailable
             ? "Plantillas sincronizadas con tu empresa."
             : "Los cambios se guardan en este navegador hasta conectar Supabase."
         }</p>
-      </header>
-      <div class="tv-templates-table-wrap">
-        <table class="tv-table tv-table--dense tv-templates-table">
+      </div>
+      ${renderClientDataTablePanel(
+        `<table class="tv-table tv-table--dash tv-table--dense tv-templates-table tv-table--col-resize" data-table-id="app-templates">
+          <colgroup>
+            <col><col><col><col><col><col><col><col>
+          </colgroup>
           <thead>
             <tr>
               <th>Nombre</th>
@@ -913,10 +959,19 @@ export function renderAppTemplatesPage(
               <th style="text-align:right">Acciones</th>
             </tr>
           </thead>
-          <tbody id="tv-templates-tbody">${renderInitialTableRows(seedTemplates)}</tbody>
-        </table>
-      </div>
-    </section>
+          <tbody id="tv-templates-tbody">${renderInitialTableRows(seedTemplates, tableLimit)}</tbody>
+        </table>`,
+        renderClientTableFooter({
+          tableKey: "app_templates",
+          count: Math.min(seedTemplates.length, tableLimit),
+          limit: tableLimit,
+          basePath: "/app/templates",
+          noun: "plantillas",
+          hiddenFields: {},
+          clientSideLimit: true,
+        }),
+      )}
+    </div>
     </div>
     ${renderModalShell()}
     ${renderTemplatesScript(companyId, data)}`;

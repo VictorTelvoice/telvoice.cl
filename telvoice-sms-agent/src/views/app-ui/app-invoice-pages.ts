@@ -14,6 +14,11 @@ import { renderBtn, renderFilterField, renderPageHeader } from "../admin-ui/page
 import type { AppPageContext } from "./app-page-wrap.js";
 import { fmtMoney, wrapAppPage } from "./app-page-wrap.js";
 import { renderOrderShortIdCell } from "./app-order-ui.js";
+import {
+  renderClientDataTablePanel,
+  renderClientTableFooter,
+  type ClientTableLimit,
+} from "./client-table-kit.js";
 
 export type AppInvoicePageFilters = {
   search?: string;
@@ -27,6 +32,7 @@ export type AppInvoicePageFilters = {
 export type AppInvoiceListContext = {
   invoices: BillingInvoice[];
   filters: AppInvoicePageFilters;
+  limit?: ClientTableLimit;
   summary: {
     totalAmount: number;
     count: number;
@@ -292,13 +298,22 @@ function renderInvoiceAction(
   </a>`;
 }
 
-function renderInvoiceTable(invoices: BillingInvoice[]): string {
+function renderInvoiceTable(
+  invoices: BillingInvoice[],
+  filters: AppInvoicePageFilters,
+  limit: ClientTableLimit,
+): string {
   if (!invoices.length) {
-    return `<section class="tv-panel">
-      <div class="tv-panel__body">
-        <p class="tv-table-empty" style="margin:0">No hay documentos con los filtros aplicados.</p>
+    return `<div class="tv-dash-block tv-dlr-report__table-block">
+      <div class="tv-dash-block__head">
+        <h2 class="tv-dash-block__title">Documentos</h2>
       </div>
-    </section>`;
+      <section class="tv-panel">
+        <div class="tv-panel__body">
+          <p class="tv-table-empty" style="margin:0">No hay documentos con los filtros aplicados.</p>
+        </div>
+      </section>
+    </div>`;
   }
 
   const rows = invoices
@@ -328,24 +343,51 @@ function renderInvoiceTable(invoices: BillingInvoice[]): string {
     })
     .join("");
 
+  const fromVal = filters.fromDate?.slice(0, 10) ?? "";
+  const toVal = filters.toDate?.slice(0, 10) ?? "";
+  const hasFilters = Boolean(
+    filters.search ||
+      filters.status ||
+      filters.documentType ||
+      filters.fromDate ||
+      filters.toDate ||
+      filters.paymentProvider,
+  );
+
   return `<div class="tv-dash-block tv-dlr-report__table-block">
     <div class="tv-dash-block__head">
       <h2 class="tv-dash-block__title">Documentos</h2>
-      <p class="field-hint" style="margin:0">${invoices.length} registro(s)</p>
     </div>
-    <section class="tv-panel tv-client-dash-table-panel tv-dlr-report__table-panel">
-      <div class="tv-client-dash-table-inner tv-dlr-report__table-inner">
-        <div class="table-wrap tv-dlr-report__table-wrap">
-          <table class="tv-table tv-table--dash">
-            <thead><tr>
-              <th>Fecha</th><th>Documento</th><th>Orden</th><th>Tipo</th><th>Monto</th>
-              <th>Estado</th><th>Acciones</th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
-      </div>
-    </section>
+    ${renderClientDataTablePanel(
+      `<table class="tv-table tv-table--dash tv-table--col-resize" data-table-id="app-invoices">
+              <colgroup>
+                <col><col><col><col><col><col><col>
+              </colgroup>
+              <thead><tr>
+                <th>Fecha</th><th>Documento</th><th>Orden</th><th>Tipo</th><th>Monto</th>
+                <th>Estado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody>${rows}</tbody>
+            </table>`,
+      renderClientTableFooter({
+        tableKey: "app_invoices",
+        count: invoices.length,
+        limit,
+        basePath: "/app/invoices",
+        countHint: "con filtros aplicados",
+        hiddenFields: {
+          q: filters.search,
+          status: filters.status,
+          document_type: filters.documentType,
+          from_date: fromVal || undefined,
+          to_date: toVal || undefined,
+          payment_provider: filters.paymentProvider,
+        },
+        extraHtml: hasFilters
+          ? `<a class="btn btn-ghost btn-sm" href="/app/invoices">Limpiar filtros</a>`
+          : "",
+      }),
+    )}
   </div>`;
 }
 
@@ -358,6 +400,8 @@ export function renderAppInvoicesPage(
     listCtx.filters,
     listCtx.orderById,
   );
+  const limit = listCtx.limit ?? 20;
+  const tableRows = displayed.slice(0, limit);
 
   const body = `
     <div class="tv-dlr-report tv-client-dashboard tv-invoice-page">
@@ -369,7 +413,7 @@ export function renderAppInvoicesPage(
     ${
       listCtx.invoices.length === 0
         ? renderEmptyState()
-        : renderInvoiceTable(displayed)
+        : renderInvoiceTable(tableRows, listCtx.filters, limit)
     }
     </div>`;
 

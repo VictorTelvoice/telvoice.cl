@@ -702,7 +702,10 @@ export async function getAppOrders(
     const filters = parseAppOrdersPageFilters(
       req.query as Record<string, string | string[] | undefined>,
     );
-    return renderAppOrdersPage(ctx, orders, filters);
+    const limit = parseClientTableLimit(
+      req.query as Record<string, string | string[] | undefined>,
+    );
+    return renderAppOrdersPage(ctx, orders, filters, limit);
   });
 }
 
@@ -1371,6 +1374,9 @@ export async function getAppContacts(
     const filters = parseContactsPageFilters(
       req.query as Record<string, string | string[] | undefined>,
     );
+    const limit = parseClientTableLimit(
+      req.query as Record<string, string | string[] | undefined>,
+    );
     const wizardState = parseContactsWizardState(
       req.query as Record<string, string | string[] | undefined>,
     );
@@ -1385,6 +1391,7 @@ export async function getAppContacts(
         contacts: [],
         lists: [],
         summary: EMPTY_CONTACT_SUMMARY,
+        limit,
       });
     }
 
@@ -1397,6 +1404,7 @@ export async function getAppContacts(
     const serviceFilters = {
       q: filters.q,
       listId: filters.agenda,
+      limit,
     };
 
     const [contacts, lists, summary] = await Promise.all([
@@ -1449,6 +1457,7 @@ export async function getAppContacts(
       contacts,
       lists,
       summary,
+      limit,
       wizardState,
       importPreview,
       editContact,
@@ -2005,6 +2014,9 @@ export async function getAppInvoices(
     const filters = parseAppInvoiceFilters(
       req.query as Record<string, string | string[] | undefined>,
     );
+    const limit = parseClientTableLimit(
+      req.query as Record<string, string | string[] | undefined>,
+    );
 
     const missingInvoices = await findPaidCreditedOrdersWithoutInvoice({
       companyId: ctx.company.id,
@@ -2041,6 +2053,7 @@ export async function getAppInvoices(
     return renderAppInvoicesPage(ctx, {
       invoices,
       filters,
+      limit,
       summary,
       orderById,
     });

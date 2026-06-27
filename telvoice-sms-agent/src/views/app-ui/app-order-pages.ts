@@ -20,6 +20,11 @@ import {
   renderOrderTimeline,
 } from "./app-order-ui.js";
 import {
+  renderClientDataTablePanel,
+  renderClientTableFooter,
+  type ClientTableLimit,
+} from "./client-table-kit.js";
+import {
   renderSmsBagCalculatorPanel,
   type SmsBagCalculatorPanelConfig,
 } from "../shared/sms-bag-calculator-ui.js";
@@ -186,14 +191,17 @@ export function renderAppOrdersPage(
   ctx: AppPageContext,
   orders: SmsOrderWithDetails[],
   filters: AppOrdersPageFilters,
+  limit: ClientTableLimit = 20,
 ): string {
   const filtered = filterOrdersForDisplay(orders, filters);
+  const visible = filtered.slice(0, limit);
+  const hasFilters = Boolean(filters.search || filters.status !== "all");
 
   const emptyMsg =
     '<tr><td colspan="7" class="tv-table-empty">No hay órdenes con estos filtros. <a href="/app/buy-sms">Comprar SMS</a></td></tr>';
 
-  const rows = filtered.length
-    ? filtered
+  const rows = visible.length
+    ? visible
         .map((o) => {
           const qa = renderOrderQaBadgeIfNeeded(o);
           const detailHref = `/app/orders/${escapeHtml(o.id)}`;
@@ -210,8 +218,8 @@ export function renderAppOrdersPage(
         .join("")
     : emptyMsg;
 
-  const orderCards = filtered.length
-    ? filtered
+  const orderCards = visible.length
+    ? visible
         .map((o) => {
           const qa = renderOrderQaBadgeIfNeeded(o);
           const detailHref = `/app/orders/${escapeHtml(o.id)}`;
@@ -236,11 +244,33 @@ export function renderAppOrdersPage(
       subtitle: "Historial de compras de bolsas SMS.",
     })}
     ${renderOrdersFiltersPanel(filters)}
-    <p class="field-hint tv-orders__count">${filtered.length} de ${orders.length} órdenes</p>
-    <div class="tv-panel tv-orders-table-wrap">
-      <table class="tv-table tv-table--dense"><thead><tr>
-      <th>Fecha</th><th>Bolsa</th><th>SMS</th><th>Monto</th><th>Estado pago</th><th>Acreditación</th><th>Referencia</th>
-    </tr></thead><tbody>${rows}</tbody></table>
+    <div class="tv-dash-block tv-orders-table-block">
+      <div class="tv-dash-block__head">
+        <h2 class="tv-dash-block__title">Órdenes</h2>
+      </div>
+      ${renderClientDataTablePanel(
+        `<table class="tv-table tv-table--dash tv-table--dense tv-table--col-resize tv-orders-table" data-table-id="app-orders">
+          <colgroup>
+            <col><col><col><col><col><col><col>
+          </colgroup>
+          <thead><tr>
+            <th>Fecha</th><th>Bolsa</th><th>SMS</th><th>Monto</th><th>Estado pago</th><th>Acreditación</th><th>Referencia</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`,
+        renderClientTableFooter({
+          tableKey: "app_orders",
+          count: visible.length,
+          limit,
+          basePath: "/app/orders",
+          noun: "órdenes",
+          countHint: hasFilters ? "con filtros aplicados" : undefined,
+          hiddenFields: {
+            filter: filters.status !== "all" ? filters.status : undefined,
+            q: filters.search,
+          },
+        }),
+      )}
     </div>
     <div class="tv-orders-cards">${orderCards}</div>
     </div>

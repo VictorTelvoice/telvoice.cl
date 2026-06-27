@@ -7,13 +7,21 @@ export type ClientTableStorageKey =
   | "app_inbox"
   | "app_campaigns"
   | "app_dlr_report"
-  | "app_wallet";
+  | "app_wallet"
+  | "app_invoices"
+  | "app_templates"
+  | "app_contacts"
+  | "app_orders";
 
 export const CLIENT_TABLE_LIMIT_STORAGE: Record<ClientTableStorageKey, string> = {
   app_inbox: "telvoice_table_limit_app_inbox",
   app_campaigns: "telvoice_table_limit_app_campaigns",
   app_dlr_report: "telvoice_table_limit_app_dlr_report",
   app_wallet: "telvoice_table_limit_app_wallet",
+  app_invoices: "telvoice_table_limit_app_invoices",
+  app_templates: "telvoice_table_limit_app_templates",
+  app_contacts: "telvoice_table_limit_app_contacts",
+  app_orders: "telvoice_table_limit_app_orders",
 };
 
 export function parseClientTableLimit(
@@ -53,6 +61,8 @@ export type ClientTableFooterOptions = {
   noun?: string;
   countHint?: string;
   extraHtml?: string;
+  /** Selector de límite sin submit (p. ej. Plantillas con filtros en cliente). */
+  clientSideLimit?: boolean;
 };
 
 function renderHiddenFields(fields: Record<string, string | undefined>): string {
@@ -93,19 +103,25 @@ export function renderClientTableFooter(opts: ClientTableFooterOptions): string 
     return `<option value="${n}"${on ? " selected" : ""}>Últimos ${n}</option>`;
   }).join("");
 
-  return `<footer class="tv-client-data-table__footer">
-    <p class="tv-client-data-table__footer-meta">${escapeHtml(countText)}</p>
-    <div class="tv-client-data-table__footer-actions">
-      ${opts.extraHtml ?? ""}
-      <form method="get" action="${escapeHtml(opts.basePath)}" class="tv-client-data-table__footer-limit">
-        ${renderHiddenFields(opts.hiddenFields)}
-        <label class="tv-client-data-table__footer-limit-label">
+  const limitSelect = `<label class="tv-client-data-table__footer-limit-label">
           <span class="tv-client-data-table__footer-limit-text">Ver</span>
-          <select name="${limitParam}" class="tv-filter-input tv-client-data-table__limit-select" data-tv-table-limit-select data-storage-key="${escapeHtml(storageKey)}" aria-label="Cantidad de filas">
+          <select name="${limitParam}" class="tv-filter-input tv-client-data-table__limit-select"${opts.clientSideLimit ? ` data-tv-client-table-limit data-base-path="${escapeHtml(opts.basePath)}"` : " data-tv-table-limit-select"} data-storage-key="${escapeHtml(storageKey)}" aria-label="Cantidad de filas">
             ${limitOpts}
           </select>
-        </label>
-      </form>
+        </label>`;
+
+  const limitControl = opts.clientSideLimit
+    ? `<div class="tv-client-data-table__footer-limit">${limitSelect}</div>`
+    : `<form method="get" action="${escapeHtml(opts.basePath)}" class="tv-client-data-table__footer-limit">
+        ${renderHiddenFields(opts.hiddenFields)}
+        ${limitSelect}
+      </form>`;
+
+  return `<footer class="tv-client-data-table__footer">
+    <p class="tv-client-data-table__footer-meta"${opts.clientSideLimit ? ` id="tv-client-table-footer-meta-${escapeHtml(opts.tableKey)}"` : ""}>${escapeHtml(countText)}</p>
+    <div class="tv-client-data-table__footer-actions">
+      ${opts.extraHtml ?? ""}
+      ${limitControl}
     </div>
   </footer>`;
 }
@@ -131,6 +147,19 @@ export function getClientTableLimitScriptBody(): string {
       }
       var form = sel.closest("form");
       if (form) form.submit();
+    });
+  });
+
+  document.querySelectorAll("[data-tv-client-table-limit]").forEach(function (sel) {
+    sel.addEventListener("change", function () {
+      var key = sel.getAttribute("data-storage-key");
+      if (key) {
+        try { localStorage.setItem(key, sel.value); } catch (_err) { /* ignore */ }
+      }
+      var base = sel.getAttribute("data-base-path") || window.location.pathname;
+      var params = new URLSearchParams(window.location.search);
+      params.set(sel.getAttribute("name") || "limit", sel.value);
+      window.location.assign(base + "?" + params.toString());
     });
   });
 

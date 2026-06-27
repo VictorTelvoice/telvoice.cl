@@ -67,4 +67,5 @@ export type SmsTemplateServiceResult<T> =
 export type AppTemplatesPageData = {
   module: SmsTemplatesModuleState;
   templates: ClientSmsTemplate[];
+  limit?: 20 | 50 | 100;
 };

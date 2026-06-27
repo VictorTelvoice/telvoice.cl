@@ -16,6 +16,7 @@ import { SMS_TEMPLATE_CATEGORIES } from "../types/sms-templates.js";
 import { canOperateClientPanel } from "../types/roles.js";
 import { validateUuidParam } from "../utils/validation.js";
 import { renderAppTemplatesPage } from "../views/app-ui/app-templates-page.js";
+import { parseClientTableLimit } from "../views/app-ui/client-table-kit.js";
 import { buildAppContext } from "./app.controller.js";
 import type { AppPageContext } from "../views/app-ui/app-page-wrap.js";
 
@@ -55,6 +56,9 @@ export async function getAppTemplates(
     }
 
     const module = await getSmsTemplatesModuleState();
+    const limit = parseClientTableLimit(
+      req.query as Record<string, string | string[] | undefined>,
+    );
     let templates: ClientSmsTemplate[] = [];
 
     if (module.available && ctx.company.id) {
@@ -68,6 +72,7 @@ export async function getAppTemplates(
       renderAppTemplatesPage(ctx, {
         module,
         templates,
+        limit,
       }),
     );
   } catch (error) {
