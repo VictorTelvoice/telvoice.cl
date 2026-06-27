@@ -23,7 +23,15 @@
     if (!el) return null;
     var root = el.getAttribute("data-root") || "";
     var active = el.getAttribute("data-active") || "";
-    var mode = el.getAttribute("data-mode") || (root ? "subpage" : "home");
+    var explicitMode = el.getAttribute("data-mode");
+    var mode;
+    if (explicitMode) {
+      mode = explicitMode;
+    } else if (root || active) {
+      mode = "subpage";
+    } else {
+      mode = "home";
+    }
     return { el: el, root: root, active: active, mode: mode };
   }
 

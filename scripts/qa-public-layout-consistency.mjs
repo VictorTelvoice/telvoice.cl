@@ -123,16 +123,13 @@ async function testPage(browserPage, spec, outDir) {
   await browserPage.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
   await browserPage.waitForTimeout(400);
 
-  const pageHeight = await browserPage.evaluate(() => document.documentElement.scrollHeight);
-  const footerClipY = Math.max(0, pageHeight - 240);
-
   await browserPage.screenshot({
     path: join(outDir, `${spec.id}-footer.png`),
     clip: {
       x: 0,
-      y: footerClipY,
+      y: Math.max(0, spec.viewport.height - 220),
       width: spec.viewport.width,
-      height: Math.min(240, pageHeight),
+      height: Math.min(220, spec.viewport.height),
     },
   });
 
