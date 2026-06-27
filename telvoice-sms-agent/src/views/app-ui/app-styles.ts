@@ -2091,26 +2091,22 @@ export function getAppPanelStyles(): string {
       min-width: 0;
       color: inherit;
       text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.35rem;
     }
     .tv-contacts-agenda__main:hover { text-decoration: none; }
+    .tv-contacts-agenda__count { align-self: flex-start; }
     .tv-contacts-agenda__actions {
       display: flex;
       flex-direction: row;
       align-items: center;
       gap: 0.15rem;
       flex-shrink: 0;
+      align-self: center;
     }
-    .tv-contacts-agenda__actions form { margin: 0; }
-    .tv-contacts-agenda__icon-btn {
-      padding: 0.35rem;
-      min-width: 2rem;
-      line-height: 1;
-    }
-    .tv-contacts-agenda__icon-btn .material-symbols-outlined {
-      font-size: 1.1rem;
-    }
-    .tv-contacts-agenda__icon-btn--danger { color: var(--tv-danger); }
-    .tv-contacts-agenda__icon-btn--danger:hover { color: var(--tv-danger); background: rgba(220, 38, 38, 0.06); }
+    .tv-contacts-agenda__actions form { margin: 0; display: inline-flex; }
     .tv-contacts-agenda__link {
       display: block;
       color: inherit;
@@ -2135,7 +2131,7 @@ export function getAppPanelStyles(): string {
       gap: 0.5rem;
       margin-bottom: 0.25rem;
     }
-    .tv-contacts-agenda__name { font-size: 0.92rem; }
+    .tv-contacts-agenda__name { font-size: 0.92rem; line-height: 1.35; word-break: break-word; }
     .tv-contacts-agenda__desc {
       margin: 0;
       font-size: 0.78rem;
@@ -2199,6 +2195,19 @@ export function getAppPanelStyles(): string {
     }
     @media (max-width: 640px) {
       .tv-contacts-quick-grid { grid-template-columns: 1fr; }
+      .tv-contacts-agenda {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.85rem;
+        padding: 1rem;
+      }
+      .tv-contacts-agenda__actions {
+        width: 100%;
+        align-self: stretch;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 0.5rem;
+      }
     }
     .tv-templates-page,
     .tv-api-page,

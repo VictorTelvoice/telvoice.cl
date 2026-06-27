@@ -197,6 +197,34 @@ function qaContactsEnvironmentBadge(): string {
   return `<p class="tv-qa-env-badge" role="status">Entorno QA · build ${escapeHtml(build)}</p>`;
 }
 
+type ContactsIconActionOpts = {
+  icon: string;
+  label: string;
+  href?: string;
+  danger?: boolean;
+  primary?: boolean;
+  buttonType?: "button" | "submit";
+  extraAttrs?: string;
+};
+
+/** Botón o enlace compacto con ícono Material + tooltip (patrón tv-invoice-action). */
+function renderContactsIconAction(opts: ContactsIconActionOpts): string {
+  const tip = escapeHtml(opts.label);
+  const dangerCls = opts.danger ? " tv-contacts-action--danger" : "";
+  const primaryCls = opts.primary ? " tv-invoice-action--primary" : "";
+  const inner =
+    `<span class="material-symbols-outlined" aria-hidden="true">${escapeHtml(opts.icon)}</span>` +
+    `<span class="tv-invoice-action__tip">${tip}</span>`;
+  const cls = `tv-invoice-action tv-contacts-action${dangerCls}${primaryCls}`;
+  const attrs = ` class="${cls}" title="${tip}" aria-label="${tip}"${opts.extraAttrs ?? ""}`;
+
+  if (opts.href) {
+    return `<a href="${escapeHtml(opts.href)}"${attrs}>${inner}</a>`;
+  }
+  const type = opts.buttonType ?? "button";
+  return `<button type="${type}"${attrs}>${inner}</button>`;
+}
+
 function contactsPageStyles(): string {
   return `<style>
     .tv-qa-env-badge {
@@ -358,33 +386,84 @@ function contactsPageStyles(): string {
       gap: 0.5rem;
       margin-top: 0.65rem;
     }
-    .tv-contacts-agenda__toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.35rem;
-      margin-top: 0.55rem;
-      padding-top: 0.55rem;
-      border-top: 1px solid var(--tv-border);
+    .tv-contacts-agenda__actions {
+      align-self: center;
+      flex-shrink: 0;
     }
-    .tv-contacts-agenda__toolbar .btn { font-size: 0.72rem; padding: 0.28rem 0.55rem; }
-    .tv-contacts-row-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.25rem;
+    .tv-contacts .tv-page-actions .btn {
+      display: inline-flex;
       align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
     }
-    .tv-contacts-row-actions form { margin: 0; display: inline; }
-    .tv-contacts-row-actions .btn-link {
-      background: none;
-      border: none;
-      padding: 0;
-      color: var(--tv-primary);
-      font: inherit;
-      font-size: 0.78rem;
-      cursor: pointer;
-      text-decoration: underline;
+    .tv-contacts-row-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-wrap: nowrap;
+      justify-content: flex-end;
+      white-space: nowrap;
     }
-    .tv-contacts-row-actions .btn-link--danger { color: var(--tv-danger); }
+    .tv-contacts-row-actions form { margin: 0; display: inline-flex; }
+    .tv-contacts-action--danger {
+      color: var(--tv-danger);
+      border-color: rgba(220, 38, 38, 0.28);
+    }
+    .tv-contacts-action--danger:hover:not(:disabled) {
+      color: #b91c1c;
+      border-color: rgba(185, 28, 28, 0.35);
+      background: rgba(185, 28, 28, 0.08);
+    }
+    @media (max-width: 640px) {
+      .tv-contacts .tv-page-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        width: 100%;
+      }
+      .tv-contacts .tv-page-actions .btn {
+        width: 100%;
+        min-width: 0;
+        padding-left: 0.45rem;
+        padding-right: 0.45rem;
+        font-size: 0.8125rem;
+      }
+      .tv-contacts .tv-page-actions .btn .material-symbols-outlined {
+        font-size: 1.05rem;
+      }
+      .tv-contacts-agenda {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.85rem;
+        padding: 1rem;
+      }
+      .tv-contacts-agenda__main {
+        min-width: 0;
+        width: 100%;
+      }
+      .tv-contacts-agenda__head {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.4rem;
+      }
+      .tv-contacts-agenda__name {
+        word-break: break-word;
+        line-height: 1.35;
+      }
+      .tv-contacts-agenda__actions {
+        width: 100%;
+        align-self: stretch;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 0.5rem;
+        margin-top: 0;
+      }
+      .tv-contacts-row-actions {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 0.35rem;
+      }
+    }
     .tv-contacts-empty-agenda {
       display: flex;
       flex-wrap: wrap;
@@ -676,21 +755,41 @@ function agendaPanel(lists: ContactListWithCount[], selectedAgenda?: string): st
       const href = `/app/contacts?agenda=${encodeURIComponent(a.id)}`;
       return `<div class="tv-contacts-agenda${active ? " tv-contacts-agenda--active" : ""}">
         <a href="${href}" class="tv-contacts-agenda__main">
-          <div class="tv-contacts-agenda__head">
-            <strong class="tv-contacts-agenda__name">${escapeHtml(a.name)}</strong>
-            <span class="badge badge-muted">${a.contacts_count} contacto${a.contacts_count === 1 ? "" : "s"}</span>
-          </div>
+          <strong class="tv-contacts-agenda__name tv-contacts-agenda__title">${escapeHtml(a.name)}</strong>
+          <span class="badge badge-muted tv-contacts-agenda__count">${a.contacts_count} contacto${a.contacts_count === 1 ? "" : "s"}</span>
           ${a.description ? `<p class="tv-contacts-agenda__desc">${escapeHtml(a.description)}</p>` : ""}
         </a>
-        <div class="tv-contacts-agenda__toolbar">
-          <button type="button" class="btn btn-secondary btn-sm" data-tv-wizard-go="contact" data-tv-list-id="${escapeHtml(a.id)}">+ Contacto</button>
-          <button type="button" class="btn btn-secondary btn-sm" data-tv-wizard-go="import" data-tv-list-id="${escapeHtml(a.id)}">CSV</button>
-          <button type="button" class="btn btn-ghost btn-sm" data-tv-wizard-go="edit_list" data-tv-list-id="${escapeHtml(a.id)}">Editar</button>
-          <form method="post" action="/app/contacts/lists/${escapeHtml(a.id)}/duplicate" style="margin:0;display:inline">
-            <button type="submit" class="btn btn-ghost btn-sm" title="Duplicar">Duplicar</button>
+        <div class="tv-contacts-agenda__actions tv-invoice-actions__group" role="group" aria-label="Acciones de ${escapeHtml(a.name)}">
+          ${renderContactsIconAction({
+            icon: "person_add",
+            label: "Agregar contacto",
+            primary: true,
+            extraAttrs: ` data-tv-wizard-go="contact" data-tv-list-id="${escapeHtml(a.id)}"`,
+          })}
+          ${renderContactsIconAction({
+            icon: "upload_file",
+            label: "Importar CSV",
+            extraAttrs: ` data-tv-wizard-go="import" data-tv-list-id="${escapeHtml(a.id)}"`,
+          })}
+          ${renderContactsIconAction({
+            icon: "edit",
+            label: "Editar agenda",
+            extraAttrs: ` data-tv-wizard-go="edit_list" data-tv-list-id="${escapeHtml(a.id)}"`,
+          })}
+          <form method="post" action="/app/contacts/lists/${escapeHtml(a.id)}/duplicate" style="margin:0;display:inline-flex">
+            ${renderContactsIconAction({
+              icon: "content_copy",
+              label: "Duplicar agenda",
+              buttonType: "submit",
+            })}
           </form>
-          <form method="post" action="/app/contacts/lists/${escapeHtml(a.id)}/delete" style="margin:0;display:inline" onsubmit="return confirm('¿Eliminar esta agenda? Los contactos no se borran.');">
-            <button type="submit" class="btn btn-ghost btn-sm tv-contacts-agenda__icon-btn--danger" title="Eliminar">Eliminar</button>
+          <form method="post" action="/app/contacts/lists/${escapeHtml(a.id)}/delete" style="margin:0;display:inline-flex" onsubmit="return confirm('¿Eliminar esta agenda? Los contactos no se borran.');">
+            ${renderContactsIconAction({
+              icon: "delete",
+              label: "Eliminar agenda",
+              danger: true,
+              buttonType: "submit",
+            })}
           </form>
         </div>
       </div>`;
@@ -736,12 +835,17 @@ function contactRowActions(
   const qs = queryStringFromFilters(filters);
   const editHref = `/app/contacts?edit_contact=${encodeURIComponent(c.id)}${qs ? qs.replace("?", "&") : ""}`;
   const assignHref = `/app/contacts?assign_contact=${encodeURIComponent(c.id)}${qs ? qs.replace("?", "&") : ""}`;
-  return `<div class="tv-contacts-row-actions">
-    <a class="btn-link" href="${editHref}">Editar</a>
-    <a class="btn-link" href="${assignHref}">Agenda</a>
+  return `<div class="tv-contacts-row-actions tv-invoice-actions__group" role="group" aria-label="Acciones de ${escapeHtml(c.display_name)}">
+    ${renderContactsIconAction({ href: editHref, icon: "edit", label: "Editar contacto" })}
+    ${renderContactsIconAction({ href: assignHref, icon: "folder_shared", label: "Cambiar agenda" })}
     <form method="post" action="/app/contacts/${escapeHtml(c.id)}/delete" onsubmit="return confirm('¿Eliminar este contacto? Esta acción no se puede deshacer.');">
       ${filterHiddenFields(filters)}
-      <button type="submit" class="btn-link btn-link--danger">Eliminar</button>
+      ${renderContactsIconAction({
+        icon: "delete",
+        label: "Eliminar contacto",
+        danger: true,
+        buttonType: "submit",
+      })}
     </form>
   </div>`;
 }
@@ -801,8 +905,7 @@ function emptyStateReal(): string {
       <p class="tv-page-sub">Crea tu primer contacto o agenda para comenzar a preparar campañas SMS.</p>
       <div class="tv-quick-actions">
         <button type="button" class="btn btn-primary" data-tv-contacts-open data-tv-wizard-step="contact">Nuevo contacto</button>
-        <button type="button" class="btn btn-secondary" data-tv-contacts-open data-tv-wizard-step="agenda">Nueva agenda</button>
-        <button type="button" class="btn btn-ghost" data-tv-contacts-open data-tv-wizard-step="import">Importar planilla</button>
+        <button type="button" class="btn btn-secondary" data-tv-contacts-open data-tv-wizard-step="import">Importar CSV</button>
       </div>
     </div>
   </section>`;
@@ -858,10 +961,6 @@ export function renderAppContactsPage(
         <button type="button" class="btn btn-secondary btn-sm" data-tv-contacts-open data-tv-wizard-step="import">
           <span class="material-symbols-outlined" aria-hidden="true">upload_file</span>
           Importar CSV
-        </button>
-        <button type="button" class="btn btn-ghost btn-sm" data-tv-contacts-open data-tv-wizard-step="agenda">
-          <span class="material-symbols-outlined" aria-hidden="true">create_new_folder</span>
-          Nueva agenda
         </button>`
     : "";
 
