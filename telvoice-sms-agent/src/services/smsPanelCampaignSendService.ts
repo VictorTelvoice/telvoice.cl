@@ -46,6 +46,7 @@ import {
 } from "./smsSendIdempotencyService.js";
 import { buildCampaignTpsMetadataFields } from "../utils/campaignTpsMetadata.js";
 import { resolveTrafficPolicy } from "./smsTrafficPolicyService.js";
+import { resolveSmsTemplateVariables } from "../utils/smsTemplateVariables.js";
 
 export type MassCampaignSendRow = {
   phone: string;
@@ -99,7 +100,8 @@ async function resolveCampaignItems(input: SendPanelCampaignInput): Promise<{
   const byPhone = new Map<string, ResolvedCampaignItem>();
 
   for (const row of rawRows) {
-    const messageText = (row.message?.trim() || defaultMessage).trim();
+    const rawMessage = (row.message?.trim() || defaultMessage).trim();
+    const messageText = resolveSmsTemplateVariables(rawMessage);
     if (!messageText) {
       invalid += 1;
       continue;

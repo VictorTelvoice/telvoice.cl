@@ -33,6 +33,7 @@ import {
   isPostgresUniqueViolation,
   mockSmsSendResultFromIdempotentCampaign,
 } from "./smsSendIdempotencyService.js";
+import { resolveSmsTemplateVariables } from "../utils/smsTemplateVariables.js";
 
 export type SendMockSmsInput = {
   companyId: string;
@@ -58,7 +59,9 @@ async function validateSendBasics(input: SendMockSmsInput): Promise<{
   wallet: Awaited<ReturnType<typeof getOrCreateCompanyWallet>>;
   balanceBefore: number;
 }> {
-  const messageText = String(input.message ?? "").trim();
+  const messageText = resolveSmsTemplateVariables(
+    String(input.message ?? "").trim(),
+  );
   if (!messageText) {
     throw new AppError("El mensaje no puede estar vacío.", 400);
   }

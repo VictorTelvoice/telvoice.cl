@@ -38,6 +38,7 @@ import {
   APP_SCHEDULE_TIMEZONE,
   formatScheduleInTimeZone,
 } from "../../utils/scheduleTime.js";
+import { renderSmsTemplateVariablesPreviewScript } from "../../utils/smsTemplateVariables.js";
 
 function renderSendMessageValidationChips(): string {
   return `<div class="tv-stat-chips tv-stat-chips--send-aside tv-validation-chips">
@@ -601,6 +602,9 @@ export function renderAppSendSmsPage(
     })();
     </script>
     <script>
+    ${renderSmsTemplateVariablesPreviewScript()}
+    </script>
+    <script>
     (function(){
       var ta = document.getElementById('tv-sms-message');
       var senderInput = document.getElementById('sender_id');
@@ -642,7 +646,14 @@ export function renderAppSendSmsPage(
         return st || '';
       }
       function messageHasUnresolvedVars(text){
-        return /\\{\\{[^}]+\\}\\}|\\{[a-zA-Z_][a-zA-Z0-9_]*\\}/.test(text || '');
+        return typeof messageHasUnresolvedNonCodeVars === 'function'
+          ? messageHasUnresolvedNonCodeVars(text)
+          : /\\{\\{[^}]+\\}\\}|\\{[a-zA-Z_][a-zA-Z0-9_]*\\}/.test(text || '');
+      }
+      function resolvePreviewMessage(text){
+        return typeof resolveSmsTemplatePreview === 'function'
+          ? resolveSmsTemplatePreview(text || '')
+          : (text || '');
       }
       function clearCsvSelection(){
         csvParsedRows = [];
@@ -737,13 +748,15 @@ export function renderAppSendSmsPage(
           if(!key || seen[key]) return;
           seen[key] = true;
           var msg = (r.message || fallback).trim();
+          var previewMsg = msg ? resolvePreviewMessage(msg) : '';
           var valid = isValidClMobile(key);
-          var seg = msg ? calc(msg) : { seg: 0, cost: 0 };
+          var seg = previewMsg ? calc(previewMsg) : { seg: 0, cost: 0 };
           var hasMsg = !!msg;
           var rowOk = valid && hasMsg;
           massPreviewRows.push({
             phone: r.phone,
-            message: msg || '—',
+            rawMessage: msg,
+            message: previewMsg || '—',
             valid: valid,
             ok: rowOk,
             seg: seg.seg,
@@ -757,7 +770,7 @@ export function renderAppSendSmsPage(
         massPreviewRows.forEach(function(r){
           if(r.ok){ valid++; totalSms += r.cost; }
           else invalid++;
-          if(csvParsedRows.length && r.message && r.message !== '—') withCsvMsg = true;
+          if(csvParsedRows.length && r.rawMessage && r.rawMessage !== '—') withCsvMsg = true;
         });
         if(csvParsedRows.length){
           withCsvMsg = csvParsedRows.some(function(r){ return !!(r.message && r.message.trim()); });
@@ -777,7 +790,7 @@ export function renderAppSendSmsPage(
         if(bulkHidden) bulkHidden.value = massPreviewRows.map(function(r){ return r.phone; }).join('\\n');
         if(bulkRowsJson){
           var payload = massPreviewRows.filter(function(r){ return r.ok; }).map(function(r){
-            return { phone: r.phone, message: r.message === '—' ? '' : r.message };
+            return { phone: r.phone, message: (r.rawMessage || (r.message === '—' ? '' : r.message)) };
           });
           bulkRowsJson.value = JSON.stringify(payload);
         }
@@ -848,7 +861,7 @@ export function renderAppSendSmsPage(
           var msg = ta ? (ta.value || '').trim() : '';
           if(mode === 'template' && stats.total > 0 && messageHasUnresolvedVars(msg)){
             templateVarWarn.hidden = false;
-            templateVarWarn.textContent = 'La plantilla incluye variables ({nombre}, {codigo}, etc.). Se enviará el mismo texto a todos los destinatarios hasta que definas valores por contacto.';
+            templateVarWarn.textContent = 'La plantilla incluye variables ({nombre}, {empresa}, etc.) sin valor por contacto. {codigo} se genera automáticamente por destinatario.';
           } else {
             templateVarWarn.hidden = true;
           }
@@ -976,7 +989,8 @@ export function renderAppSendSmsPage(
         if(!ta) return;
         var mode = getSendMode();
         var t = ta.value || '';
-        var c = calc(t);
+        var previewText = resolvePreviewMessage(t);
+        var c = calc(previewText);
         var massStats = null;
         if(isBulkMode(mode) || templateUsesBulkRecipients(mode)){
           massStats = renderMassPreview();
@@ -994,7 +1008,7 @@ export function renderAppSendSmsPage(
         var bubble = document.getElementById('tv-send-preview-bubble');
         var phoneTitle = document.querySelector('#tv-send-preview-phone .tv-hero-phone__app-title');
         var phoneAvatar = document.querySelector('#tv-send-preview-phone .tv-hero-phone__avatar');
-        if(!isBulkMode(mode) && !templateUsesBulkRecipients(mode) && bubble) bubble.textContent = t || 'Hola, tu mensaje aparecerá aquí.';
+        if(!isBulkMode(mode) && !templateUsesBulkRecipients(mode) && bubble) bubble.textContent = previewText || 'Hola, tu mensaje aparecerá aquí.';
         if(senderInput) {
           var sid = (senderInput.value || '').trim() || suggestedSenderId;
           if(phoneTitle) phoneTitle.textContent = sid;

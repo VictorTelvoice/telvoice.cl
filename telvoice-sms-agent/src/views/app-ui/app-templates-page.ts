@@ -1,4 +1,7 @@
 import { calculateSmsSegments } from "../../services/smsSegmentService.js";
+import {
+  resolveSmsTemplateVariables,
+} from "../../utils/smsTemplateVariables.js";
 import type {
   AppTemplatesPageData,
   ClientSmsTemplate,
@@ -7,6 +10,7 @@ import type {
 } from "../../types/sms-templates.js";
 import { SMS_TEMPLATE_CATEGORIES } from "../../types/sms-templates.js";
 import { escapeHtml, formatDateShort } from "../../utils/html.js";
+import { renderSmsTemplateVariablesPreviewScript } from "../../utils/smsTemplateVariables.js";
 import { renderFilterField, renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
@@ -374,6 +378,9 @@ function renderTemplatesScript(
     : "Los cambios se guardan en este navegador hasta conectar Supabase.";
 
   return `<script>
+${renderSmsTemplateVariablesPreviewScript()}
+</script>
+<script>
 (function () {
   var STORAGE_KEY = "telvoice_client_sms_templates_${escapeHtml(companyId)}";
   var INITIAL = ${initialJson};
@@ -385,8 +392,13 @@ function renderTemplatesScript(
 
   var GSM_BASIC = /^[@£$¥èéùìòÇ\\nØø\\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&'()*+,\\-./0-9:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà^{}\\\\\\[\\~\\]|€]*$/;
   function isGsm7(text) { return GSM_BASIC.test(text || ""); }
+  function resolvePreviewMessage(text) {
+    return typeof resolveSmsTemplatePreview === "function"
+      ? resolveSmsTemplatePreview(text || "")
+      : (text || "");
+  }
   function calcSegments(message) {
-    var text = message || "";
+    var text = resolvePreviewMessage(message || "");
     var chars = Array.from(text).length;
     if (!chars) return { characters: 0, encoding: "GSM-7", segments: 0 };
     if (isGsm7(text)) {
@@ -784,7 +796,10 @@ function renderTemplatesScript(
 
 function renderInitialTableRows(templates: ClientSmsTemplate[]): string {
   return templates.map((t) => {
-    const seg = calculateSmsSegments(t.message);
+    const previewMessage = resolveSmsTemplateVariables(t.message, {}, {
+      preview: true,
+    });
+    const seg = calculateSmsSegments(previewMessage);
     const statusHtml =
       t.status === "active"
         ? `<span class="badge badge-ok">Activa</span>`
