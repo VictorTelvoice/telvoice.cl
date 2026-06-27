@@ -154,6 +154,20 @@ export type CreateContactListInput = {
   color?: string | null;
 };
 
+export type UpdateContactInput = {
+  display_name?: string;
+  phone?: string;
+  email?: string | null;
+  notes?: string | null;
+  list_id?: string | null;
+};
+
+export type UpdateContactListInput = {
+  name?: string;
+  description?: string | null;
+  color?: string | null;
+};
+
 export type CreateContactTagInput = {
   name: string;
   color?: string | null;
@@ -204,6 +218,7 @@ export type ContactImportResult = {
   job: ContactImportJobRow;
   imported: number;
   skipped: number;
+  associated: number;
   errors: string[];
 };
 

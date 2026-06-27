@@ -15,6 +15,7 @@ import {
   createContact,
   findContactByPhone,
   listContactLists,
+  setContactAgendaMembership,
   validateContactPhone,
 } from "./contactService.js";
 import { findOrCreateContactTagByName } from "./contactTagService.js";
@@ -273,6 +274,7 @@ export type CreateContactImportJobInput = {
   filename?: string;
   create_tags?: boolean;
   default_list_name?: string;
+  default_list_id?: string;
 };
 
 export async function createContactImportJob(
@@ -307,7 +309,10 @@ export async function createContactImportJob(
       invalid_rows: invalid,
       duplicate_rows: duplicate,
       imported_rows: 0,
-      metadata: { create_tags: Boolean(input.create_tags) },
+      metadata: {
+        create_tags: Boolean(input.create_tags),
+        default_list_id: input.default_list_id?.trim() || null,
+      },
     })
     .select("*")
     .single();
@@ -453,6 +458,10 @@ export async function importValidatedContacts(
   }
 
   const createTags = Boolean(preview.job.metadata?.create_tags);
+  const defaultListId =
+    typeof preview.job.metadata?.default_list_id === "string"
+      ? preview.job.metadata.default_list_id.trim()
+      : "";
   const lists = await listContactLists(companyId);
   const listsByName = new Map(
     lists.map((l) => [l.name.trim().toLowerCase(), l]),
@@ -460,13 +469,44 @@ export async function importValidatedContacts(
 
   let imported = 0;
   let skipped = 0;
+  let associated = 0;
   const errors: string[] = [];
 
   const validRows = preview.rows.filter((r) => r.status === "valid");
+  const duplicateRows = preview.rows.filter(
+    (r) => r.status === "duplicate" && r.duplicate_contact_id,
+  );
+
+  for (const row of duplicateRows) {
+    try {
+      const listId =
+        defaultListId ||
+        (await resolveListByName(row.list_name, listsByName)) ||
+        null;
+      if (!listId || !row.duplicate_contact_id) {
+        skipped += 1;
+        continue;
+      }
+      await setContactAgendaMembership(companyId, row.duplicate_contact_id, listId);
+      associated += 1;
+      await getSupabase()
+        .from("contact_import_rows")
+        .update({ status: "imported", error_message: "Asociado a agenda existente." })
+        .eq("job_id", jobId)
+        .eq("row_number", row.row_number);
+    } catch (e) {
+      skipped += 1;
+      const msg = e instanceof AppError ? e.message : "Error al asociar duplicado";
+      errors.push(`Fila ${row.row_number}: ${msg}`);
+    }
+  }
 
   for (const row of validRows) {
     try {
-      const listId = await resolveListByName(row.list_name, listsByName);
+      const listId =
+        defaultListId ||
+        (await resolveListByName(row.list_name, listsByName)) ||
+        null;
       if (row.list_name?.trim() && !listId) {
         errors.push(
           `Fila ${row.row_number}: agenda «${row.list_name}» no existe (omitida agenda).`,
@@ -537,6 +577,7 @@ export async function importValidatedContacts(
     job: updatedJob as ContactImportJobRow,
     imported,
     skipped,
+    associated,
     errors,
   };
 }

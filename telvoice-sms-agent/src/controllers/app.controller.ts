@@ -72,12 +72,17 @@ import {
   bulkUpdateContactStatus,
   createContact,
   createContactList,
+  deleteContact,
   duplicateContactList,
   archiveContactList,
   getContactSummary,
   getContactsModuleState,
+  getContactById,
   listContactLists,
   listContacts,
+  setContactAgendaMembership,
+  updateContact,
+  updateContactList,
 } from "../services/contactService.js";
 import {
   createContactImportJob,
@@ -1315,6 +1320,34 @@ async function requireContactsWriteContext(
   return ctx;
 }
 
+function contactsRedirectPath(
+  params: Record<string, string | undefined>,
+  filters?: ReturnType<typeof parseContactsPageFilters>,
+): string {
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value) qs.set(key, value);
+  }
+  if (filters?.q) qs.set("q", filters.q);
+  if (filters?.agenda) qs.set("agenda", filters.agenda);
+  const s = qs.toString();
+  return `/app/contacts${s ? `?${s}` : ""}`;
+}
+
+function parseContactsFiltersFromBody(
+  body: Record<string, string | undefined>,
+): ReturnType<typeof parseContactsPageFilters> {
+  return {
+    q: body.filter_q?.trim() || undefined,
+    agenda: body.filter_agenda?.trim() || undefined,
+    tag: "",
+    status: "",
+    source: "",
+    startDate: undefined,
+    endDate: undefined,
+  };
+}
+
 export async function getAppContacts(
   req: Request,
   res: Response,
@@ -1358,6 +1391,44 @@ export async function getAppContacts(
       getContactSummary(ctx.company.id),
     ]);
 
+    const q = req.query as Record<string, string | string[] | undefined>;
+    const editContactId =
+      typeof q.edit_contact === "string" ? q.edit_contact.trim() : "";
+    const assignContactId =
+      typeof q.assign_contact === "string" ? q.assign_contact.trim() : "";
+    let editContact =
+      editContactId ? contacts.find((c) => c.id === editContactId) : undefined;
+    let assignContact =
+      assignContactId ? contacts.find((c) => c.id === assignContactId) : undefined;
+    if (editContactId && !editContact) {
+      const row = await getContactById(ctx.company.id, editContactId);
+      if (row) {
+        editContact = {
+          ...row,
+          list_ids: [],
+          list_names: [],
+          tag_ids: [],
+          tag_names: [],
+        };
+      }
+    }
+    if (assignContactId && !assignContact) {
+      const row = await getContactById(ctx.company.id, assignContactId);
+      if (row) {
+        assignContact = {
+          ...row,
+          list_ids: [],
+          list_names: [],
+          tag_ids: [],
+          tag_names: [],
+        };
+      }
+    }
+
+    const postCreateListId =
+      typeof q.list_id === "string" && q.created === "1" ? q.list_id.trim() : "";
+    const showPostCreateActions = q.created === "1";
+
     return renderAppContactsPage(ctx, {
       module,
       filters,
@@ -1366,6 +1437,10 @@ export async function getAppContacts(
       summary,
       wizardState,
       importPreview,
+      editContact,
+      assignContact,
+      postCreateListId: postCreateListId || undefined,
+      showPostCreateActions,
     });
   });
 }
@@ -1417,6 +1492,7 @@ export async function postAppContactsImportPreview(
       filename: body.filename,
       create_tags: body.create_tags === "1",
       default_list_name: body.default_list_name,
+      default_list_id: wizardListId || undefined,
     });
     const qs = new URLSearchParams({
       import_job: preview.job.id,
@@ -1448,13 +1524,20 @@ export async function postAppContactsImportConfirm(
     }
     const jobId = (req.body as Record<string, string>).job_id ?? "";
     const result = await importValidatedContacts(ctx.company.id, jobId);
+    const parts = [`${result.imported} contacto(s) importado(s).`];
+    if (result.associated > 0) {
+      parts.push(`${result.associated} duplicado(s) asociado(s) a la agenda.`);
+    }
+    if (result.skipped > 0) {
+      parts.push(`${result.skipped} fila(s) omitida(s).`);
+    }
     const extra =
       result.errors.length > 0
-        ? ` Algunas filas fueron omitidas por errores.`
+        ? ` Algunas filas tuvieron errores.`
         : "";
     res.redirect(
       303,
-      `/app/contacts?ok=${encodeURIComponent(`${result.imported} contacto(s) importado(s).${extra}`)}`,
+      `/app/contacts?ok=${encodeURIComponent(parts.join(" ") + extra)}`,
     );
   } catch (error) {
     const msg =
@@ -1564,6 +1647,8 @@ export async function postAppCreateContact(
   req: Request,
   res: Response,
 ): Promise<void> {
+  const body = req.body as Record<string, string | undefined>;
+  const filters = parseContactsFiltersFromBody(body);
   try {
     const ctx = await buildAppContext(req);
     if (!ctx) {
@@ -1577,7 +1662,6 @@ export async function postAppCreateContact(
       return;
     }
 
-    const body = req.body as Record<string, string | undefined>;
     await createContact(ctx.company.id, {
       display_name: body.display_name,
       phone: body.phone ?? "",
@@ -1587,7 +1671,14 @@ export async function postAppCreateContact(
       source: "manual",
     });
 
-    res.redirect(303, "/app/contacts?ok=Contacto%20creado%20correctamente");
+    const qs: Record<string, string | undefined> = {
+      ok: "Contacto creado correctamente",
+      created: "1",
+    };
+    if (body.list_id?.trim()) qs.list_id = body.list_id.trim();
+    if (filters.q) qs.q = filters.q;
+    if (filters.agenda) qs.agenda = filters.agenda;
+    res.redirect(303, contactsRedirectPath(qs));
   } catch (error) {
     const msg =
       error instanceof AppError
@@ -1595,7 +1686,14 @@ export async function postAppCreateContact(
         : "No se pudo crear el contacto";
     res.redirect(
       303,
-      `/app/contacts?error=${encodeURIComponent(msg)}&new=contact`,
+      contactsRedirectPath(
+        {
+          error: msg,
+          quick_wizard: "contact",
+          ...(body.list_id?.trim() ? { list_id: body.list_id.trim() } : {}),
+        },
+        filters,
+      ),
     );
   }
 }
@@ -1682,6 +1780,153 @@ export async function postAppDeleteContactList(
     const msg =
       error instanceof AppError ? error.message : "No se pudo eliminar la agenda";
     res.redirect(303, `/app/contacts?error=${encodeURIComponent(msg)}`);
+  }
+}
+
+export async function postAppUpdateContactList(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireContactsWriteContext(req);
+    if (!ctx) {
+      res.redirect("/app/contacts?error=Sin%20permiso");
+      return;
+    }
+    const listId = validateUuidParam(String(req.params.id), "id");
+    const body = req.body as Record<string, string | undefined>;
+    const filters = parseContactsFiltersFromBody(body);
+    await updateContactList(ctx.company.id, listId, {
+      name: body.name,
+      description: body.description,
+      color: body.color,
+    });
+    res.redirect(
+      303,
+      contactsRedirectPath(
+        { ok: "Agenda actualizada correctamente", agenda: listId },
+        filters,
+      ),
+    );
+  } catch (error) {
+    const msg =
+      error instanceof AppError ? error.message : "No se pudo actualizar la agenda";
+    const body = req.body as Record<string, string | undefined>;
+    const listId = String(req.params.id ?? "");
+    res.redirect(
+      303,
+      contactsRedirectPath(
+        {
+          error: msg,
+          quick_wizard: "edit_list",
+          list_id: listId,
+        },
+        parseContactsFiltersFromBody(body),
+      ),
+    );
+  }
+}
+
+export async function postAppUpdateContact(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireContactsWriteContext(req);
+    if (!ctx) {
+      res.redirect("/app/contacts?error=Sin%20permiso");
+      return;
+    }
+    const contactId = validateUuidParam(String(req.params.id), "id");
+    const body = req.body as Record<string, string | undefined>;
+    const filters = parseContactsFiltersFromBody(body);
+    await updateContact(ctx.company.id, contactId, {
+      display_name: body.display_name,
+      phone: body.phone,
+      email: body.email,
+      notes: body.notes,
+      list_id: body.list_id?.trim() ? body.list_id : null,
+    });
+    res.redirect(
+      303,
+      contactsRedirectPath({ ok: "Contacto actualizado correctamente" }, filters),
+    );
+  } catch (error) {
+    const msg =
+      error instanceof AppError ? error.message : "No se pudo actualizar el contacto";
+    const body = req.body as Record<string, string | undefined>;
+    const contactId = String(req.params.id ?? "");
+    res.redirect(
+      303,
+      contactsRedirectPath(
+        { error: msg, edit_contact: contactId },
+        parseContactsFiltersFromBody(body),
+      ),
+    );
+  }
+}
+
+export async function postAppDeleteContact(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireContactsWriteContext(req);
+    if (!ctx) {
+      res.redirect("/app/contacts?error=Sin%20permiso");
+      return;
+    }
+    const contactId = validateUuidParam(String(req.params.id), "id");
+    const body = req.body as Record<string, string | undefined>;
+    const filters = parseContactsFiltersFromBody(body);
+    await deleteContact(ctx.company.id, contactId);
+    res.redirect(
+      303,
+      contactsRedirectPath({ ok: "Contacto eliminado correctamente" }, filters),
+    );
+  } catch (error) {
+    const msg =
+      error instanceof AppError ? error.message : "No se pudo eliminar el contacto";
+    res.redirect(303, `/app/contacts?error=${encodeURIComponent(msg)}`);
+  }
+}
+
+export async function postAppAssignContactList(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const ctx = await requireContactsWriteContext(req);
+    if (!ctx) {
+      res.redirect("/app/contacts?error=Sin%20permiso");
+      return;
+    }
+    const contactId = validateUuidParam(String(req.params.id), "id");
+    const body = req.body as Record<string, string | undefined>;
+    const filters = parseContactsFiltersFromBody(body);
+    const listId = (body.list_id ?? "").trim();
+    if (!listId) {
+      throw new AppError("Selecciona una agenda.", 400);
+    }
+    await setContactAgendaMembership(ctx.company.id, contactId, listId, {
+      replaceOthers: body.replace_lists === "1",
+    });
+    res.redirect(
+      303,
+      contactsRedirectPath({ ok: "Agenda del contacto actualizada" }, filters),
+    );
+  } catch (error) {
+    const msg =
+      error instanceof AppError ? error.message : "No se pudo asignar la agenda";
+    const body = req.body as Record<string, string | undefined>;
+    const contactId = String(req.params.id ?? "");
+    res.redirect(
+      303,
+      contactsRedirectPath(
+        { error: msg, assign_contact: contactId },
+        parseContactsFiltersFromBody(body),
+      ),
+    );
   }
 }
 

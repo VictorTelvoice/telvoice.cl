@@ -23,11 +23,19 @@ export type ContactsPageFilters = {
 };
 
 export type ContactsQuickModalTab = "contact" | "agenda" | "import";
-export type ContactsWizardStep = "agenda" | "choose" | "contact" | "import";
+export type ContactsWizardStep =
+  | "agenda"
+  | "choose"
+  | "contact"
+  | "import"
+  | "edit"
+  | "edit_list"
+  | "assign_list";
 
 export type ContactsWizardState = {
   step: ContactsWizardStep;
   listId?: string;
+  contactId?: string;
 };
 
 export type AppContactsPageData = {
@@ -38,6 +46,10 @@ export type AppContactsPageData = {
   summary: ContactSummary;
   wizardState?: ContactsWizardState;
   importPreview?: ContactImportPreview;
+  editContact?: ContactWithListsAndTags;
+  assignContact?: ContactWithListsAndTags;
+  postCreateListId?: string;
+  showPostCreateActions?: boolean;
 };
 
 
@@ -69,12 +81,27 @@ export function parseContactsWizardState(
     stepRaw === "agenda" ||
     stepRaw === "choose" ||
     stepRaw === "contact" ||
-    stepRaw === "import"
+    stepRaw === "import" ||
+    stepRaw === "edit" ||
+    stepRaw === "edit_list" ||
+    stepRaw === "assign_list"
   ) {
-    return { step: stepRaw, listId };
+    const contactId =
+      typeof query.edit_contact === "string"
+        ? query.edit_contact.trim()
+        : typeof query.assign_contact === "string"
+          ? query.assign_contact.trim()
+          : undefined;
+    return { step: stepRaw, listId, contactId };
   }
   if (typeof query.import_job === "string" && query.import_job.trim()) {
     return { step: "import", listId };
+  }
+  if (typeof query.edit_contact === "string" && query.edit_contact.trim()) {
+    return { step: "edit", contactId: query.edit_contact.trim(), listId };
+  }
+  if (typeof query.assign_contact === "string" && query.assign_contact.trim()) {
+    return { step: "assign_list", contactId: query.assign_contact.trim(), listId };
   }
   const legacy = parseContactsQuickModalTab(query);
   if (legacy === "agenda") return { step: "agenda" };
@@ -131,6 +158,26 @@ function queryStringFromFilters(filters: ContactsPageFilters): string {
   return s ? `?${s}` : "";
 }
 
+
+function filterHiddenFields(filters: ContactsPageFilters): string {
+  let out = "";
+  if (filters.q) {
+    out += `<input type="hidden" name="filter_q" value="${escapeHtml(filters.q)}" />`;
+  }
+  if (filters.agenda) {
+    out += `<input type="hidden" name="filter_agenda" value="${escapeHtml(filters.agenda)}" />`;
+  }
+  return out;
+}
+
+function postCreateSuccessActions(listId?: string): string {
+  const listAttr = listId ? ` data-tv-preserve-list="${escapeHtml(listId)}"` : "";
+  return `<div class="tv-contacts-success-actions" role="group" aria-label="Acciones después de crear contacto">
+    <button type="button" class="btn btn-primary btn-sm" data-tv-contacts-open data-tv-wizard-step="contact"${listAttr}>+ Agregar otro contacto</button>
+    <button type="button" class="btn btn-secondary btn-sm" data-tv-contacts-open data-tv-wizard-step="import"${listAttr}>Importar CSV</button>
+    <a class="btn btn-ghost btn-sm" href="#tv-contacts-table">Ver contactos</a>
+  </div>`;
+}
 
 function migrationBanner(): string {
   return `<div class="alert alert-warn" role="status">
@@ -284,6 +331,45 @@ function contactsPageStyles(): string {
     @media (max-width: 720px) {
       .tv-contacts-search__form { grid-template-columns: 1fr; }
     }
+    .tv-contacts-success-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.65rem;
+    }
+    .tv-contacts-agenda__toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.55rem;
+      padding-top: 0.55rem;
+      border-top: 1px solid var(--tv-border);
+    }
+    .tv-contacts-agenda__toolbar .btn { font-size: 0.72rem; padding: 0.28rem 0.55rem; }
+    .tv-contacts-row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      align-items: center;
+    }
+    .tv-contacts-row-actions form { margin: 0; display: inline; }
+    .tv-contacts-row-actions .btn-link {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--tv-primary);
+      font: inherit;
+      font-size: 0.78rem;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .tv-contacts-row-actions .btn-link--danger { color: var(--tv-danger); }
+    .tv-contacts-empty-agenda {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.65rem;
+    }
   </style>`;
 }
 
@@ -352,6 +438,12 @@ function wizardStepSubtitle(step: ContactsWizardStep, listName?: string): string
       return listName
         ? `Paso 3 · Importar contactos a ${listName}`
         : "Paso 3 · Importar contactos desde planilla";
+    case "edit":
+      return "Editar contacto";
+    case "edit_list":
+      return listName ? `Editar agenda ${listName}` : "Editar agenda";
+    case "assign_list":
+      return "Asignar contacto a agenda";
   }
 }
 
@@ -359,11 +451,15 @@ function contactsWizardModal(
   lists: ContactListWithCount[],
   wizard: ContactsWizardState | undefined,
   importPreview?: ContactImportPreview,
+  editContact?: ContactWithListsAndTags,
+  assignContact?: ContactWithListsAndTags,
+  filters?: ContactsPageFilters,
 ): string {
   const step = wizard?.step ?? "agenda";
   const listId = wizard?.listId ?? "";
   const selectedList = listId ? lists.find((l) => l.id === listId) : undefined;
   const listName = selectedList?.name;
+  const filterFields = filters ? filterHiddenFields(filters) : "";
 
   const listOpts = [
     `<option value="">Sin agenda (opcional)</option>`,
@@ -389,6 +485,7 @@ function contactsWizardModal(
           <input type="file" id="tv-contacts-import-file" accept=".csv,.txt,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
         </div>
         <p class="field-hint" id="tv-contacts-import-filename" style="margin:0.5rem 0 0.75rem" hidden></p>
+        <p class="field-hint" style="margin:0 0 0.75rem">Formato esperado: <code>nombre,telefono</code> (opcional: email, etiquetas, notas). Teléfonos móviles Chile <code>+569XXXXXXXX</code>.</p>
         <div class="form-group" style="margin-top:0.75rem">
           ${renderFilterField(
             "Contenido",
@@ -400,6 +497,12 @@ function contactsWizardModal(
           <button type="submit" class="btn btn-primary btn-sm">Previsualizar importación</button>
         </div>
       </form>`;
+
+  const editListTarget =
+    step === "edit_list" && listId ? lists.find((l) => l.id === listId) : selectedList;
+
+  const assignTarget = assignContact;
+  const assignListId = assignTarget?.list_ids[0] ?? "";
 
   return `<div class="tv-contacts-modal" id="tv-contacts-quick-modal" role="dialog" aria-modal="true" aria-labelledby="tv-contacts-modal-title" aria-hidden="true">
     <div class="tv-contacts-modal__backdrop" data-tv-contacts-close tabindex="-1"></div>
@@ -437,17 +540,79 @@ function contactsWizardModal(
         </div>
         <div class="tv-contacts-modal__pane" id="tv-contacts-pane-contact" role="region"${step === "contact" ? "" : " hidden"}>
           <form method="post" action="/app/contacts" id="tv-contacts-form-contact">
-            ${renderFilterField("Nombre visible", `<input type="text" name="display_name" class="tv-filter-input" placeholder="Ej. Juan Pérez" required />`)}
-            ${renderFilterField("Teléfono", `<input type="tel" name="phone" class="tv-filter-input" placeholder="+56912345678" required />`)}
-            ${renderFilterField("Email", `<input type="email" name="email" class="tv-filter-input" placeholder="opcional" />`)}
+            ${filterFields}
+            ${renderFilterField("Nombre visible", `<input type="text" name="display_name" class="tv-filter-input" placeholder="Ej. Juan Pérez" required autocomplete="off" />`)}
+            ${renderFilterField("Teléfono", `<input type="tel" name="phone" class="tv-filter-input" placeholder="+56912345678" required autocomplete="off" />`)}
+            ${renderFilterField("Email", `<input type="email" name="email" class="tv-filter-input" placeholder="opcional" autocomplete="off" />`)}
             ${listId
               ? `<input type="hidden" name="list_id" value="${escapeHtml(listId)}" />`
               : renderFilterField("Agenda", `<select name="list_id" class="tv-filter-input">${listOpts}</select>`)}
-            ${renderFilterField("Notas", `<input type="text" name="notes" class="tv-filter-input" placeholder="opcional" />`)}
+            ${renderFilterField("Notas", `<input type="text" name="notes" class="tv-filter-input" placeholder="opcional" autocomplete="off" />`)}
             <div class="tv-contacts-wizard-actions">
-              <button type="submit" class="btn btn-primary">Finalizar</button>
+              <button type="submit" class="btn btn-primary">Guardar contacto</button>
             </div>
           </form>
+        </div>
+        <div class="tv-contacts-modal__pane" id="tv-contacts-pane-edit" role="region"${step === "edit" && editContact ? "" : " hidden"}>
+          ${editContact
+            ? `<form method="post" action="/app/contacts/${escapeHtml(editContact.id)}/update" id="tv-contacts-form-edit">
+            ${filterFields}
+            ${renderFilterField("Nombre visible", `<input type="text" name="display_name" class="tv-filter-input" value="${escapeHtml(editContact.display_name)}" required />`)}
+            ${renderFilterField("Teléfono", `<input type="tel" name="phone" class="tv-filter-input" value="${escapeHtml(editContact.phone)}" required />`)}
+            ${renderFilterField("Email", `<input type="email" name="email" class="tv-filter-input" value="${escapeHtml(editContact.email ?? "")}" placeholder="opcional" />`)}
+            ${renderFilterField(
+              "Agenda",
+              `<select name="list_id" class="tv-filter-input">${[
+                `<option value="">Sin agenda</option>`,
+                ...lists.map((a) => {
+                  const sel = editContact.list_ids.includes(a.id) ? " selected" : "";
+                  return `<option value="${escapeHtml(a.id)}"${sel}>${escapeHtml(a.name)}</option>`;
+                }),
+              ].join("")}</select>`,
+            )}
+            ${renderFilterField("Notas", `<input type="text" name="notes" class="tv-filter-input" value="${escapeHtml(editContact.notes ?? "")}" placeholder="opcional" />`)}
+            <div class="tv-contacts-wizard-actions">
+              <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            </div>
+          </form>`
+            : ""}
+        </div>
+        <div class="tv-contacts-modal__pane" id="tv-contacts-pane-edit-list" role="region"${step === "edit_list" && editListTarget ? "" : " hidden"}>
+          ${editListTarget
+            ? `<form method="post" action="/app/contacts/lists/${escapeHtml(editListTarget.id)}/update">
+            ${filterFields}
+            ${renderFilterField("Nombre", `<input type="text" name="name" class="tv-filter-input" value="${escapeHtml(editListTarget.name)}" required />`)}
+            ${renderFilterField("Descripción", `<input type="text" name="description" class="tv-filter-input" value="${escapeHtml(editListTarget.description ?? "")}" placeholder="opcional" />`)}
+            ${renderFilterField("Color", `<input type="text" name="color" class="tv-filter-input" value="${escapeHtml(editListTarget.color ?? "")}" placeholder="#0052CC opcional" />`)}
+            <div class="tv-contacts-wizard-actions">
+              <button type="submit" class="btn btn-primary">Guardar agenda</button>
+            </div>
+          </form>`
+            : ""}
+        </div>
+        <div class="tv-contacts-modal__pane" id="tv-contacts-pane-assign-list" role="region"${step === "assign_list" && assignTarget ? "" : " hidden"}>
+          ${assignTarget
+            ? `<form method="post" action="/app/contacts/${escapeHtml(assignTarget.id)}/assign-list">
+            ${filterFields}
+            <p class="field-hint" style="margin:0 0 0.75rem">Contacto: <strong>${escapeHtml(assignTarget.display_name)}</strong> · <code>${escapeHtml(assignTarget.phone)}</code></p>
+            ${renderFilterField(
+              "Agenda",
+              `<select name="list_id" class="tv-filter-input" required>${lists
+                .map((a) => {
+                  const sel = assignListId === a.id ? " selected" : "";
+                  return `<option value="${escapeHtml(a.id)}"${sel}>${escapeHtml(a.name)}</option>`;
+                })
+                .join("")}</select>`,
+            )}
+            <label class="field-hint" style="display:flex;gap:0.35rem;align-items:center;margin:0.5rem 0 0.75rem">
+              <input type="checkbox" name="replace_lists" value="1" checked />
+              Reemplazar otras agendas de este contacto
+            </label>
+            <div class="tv-contacts-wizard-actions">
+              <button type="submit" class="btn btn-primary">Asignar agenda</button>
+            </div>
+          </form>`
+            : ""}
         </div>
         <div class="tv-contacts-modal__pane" id="tv-contacts-pane-import" role="region"${step === "import" ? "" : " hidden"}>
           ${importPane}
@@ -496,16 +661,15 @@ function agendaPanel(lists: ContactListWithCount[], selectedAgenda?: string): st
           </div>
           ${a.description ? `<p class="tv-contacts-agenda__desc">${escapeHtml(a.description)}</p>` : ""}
         </a>
-        <div class="tv-contacts-agenda__actions">
-          <form method="post" action="/app/contacts/lists/${escapeHtml(a.id)}/duplicate">
-            <button type="submit" class="btn btn-ghost btn-sm tv-contacts-agenda__icon-btn" aria-label="Duplicar agenda" title="Duplicar">
-              <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
-            </button>
+        <div class="tv-contacts-agenda__toolbar">
+          <button type="button" class="btn btn-secondary btn-sm" data-tv-wizard-go="contact" data-tv-list-id="${escapeHtml(a.id)}">+ Contacto</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-tv-wizard-go="import" data-tv-list-id="${escapeHtml(a.id)}">CSV</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-tv-wizard-go="edit_list" data-tv-list-id="${escapeHtml(a.id)}">Editar</button>
+          <form method="post" action="/app/contacts/lists/${escapeHtml(a.id)}/duplicate" style="margin:0;display:inline">
+            <button type="submit" class="btn btn-ghost btn-sm" title="Duplicar">Duplicar</button>
           </form>
-          <form method="post" action="/app/contacts/lists/${escapeHtml(a.id)}/delete" onsubmit="return confirm('¿Eliminar esta agenda? Los contactos no se borran.');">
-            <button type="submit" class="btn btn-ghost btn-sm tv-contacts-agenda__icon-btn tv-contacts-agenda__icon-btn--danger" aria-label="Eliminar agenda" title="Eliminar">
-              <span class="material-symbols-outlined" aria-hidden="true">delete</span>
-            </button>
+          <form method="post" action="/app/contacts/lists/${escapeHtml(a.id)}/delete" style="margin:0;display:inline" onsubmit="return confirm('¿Eliminar esta agenda? Los contactos no se borran.');">
+            <button type="submit" class="btn btn-ghost btn-sm tv-contacts-agenda__icon-btn--danger" title="Eliminar">Eliminar</button>
           </form>
         </div>
       </div>`;
@@ -514,7 +678,11 @@ function agendaPanel(lists: ContactListWithCount[], selectedAgenda?: string): st
 
   const emptyLists =
     lists.length === 0
-      ? `<p class="field-hint" style="margin:0 0 0.75rem">Crea tu primera agenda para organizar contactos.</p>`
+      ? `<div class="tv-contacts-empty-agenda">
+          <button type="button" class="btn btn-primary btn-sm" data-tv-contacts-open data-tv-wizard-step="agenda">Crear nueva agenda</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-tv-contacts-open data-tv-wizard-step="import">Importar CSV</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-tv-contacts-open data-tv-wizard-step="contact">Agregar contacto manual</button>
+        </div>`
       : "";
 
   return `<section class="tv-panel tv-contacts-agendas">
@@ -540,19 +708,37 @@ function listsCell(listNames: string[]): string {
   return escapeHtml(listNames.join(", "));
 }
 
+function contactRowActions(
+  c: ContactWithListsAndTags,
+  filters: ContactsPageFilters,
+): string {
+  const qs = queryStringFromFilters(filters);
+  const editHref = `/app/contacts?edit_contact=${encodeURIComponent(c.id)}${qs ? qs.replace("?", "&") : ""}`;
+  const assignHref = `/app/contacts?assign_contact=${encodeURIComponent(c.id)}${qs ? qs.replace("?", "&") : ""}`;
+  return `<div class="tv-contacts-row-actions">
+    <a class="btn-link" href="${editHref}">Editar</a>
+    <a class="btn-link" href="${assignHref}">Agenda</a>
+    <form method="post" action="/app/contacts/${escapeHtml(c.id)}/delete" onsubmit="return confirm('¿Eliminar este contacto? Esta acción no se puede deshacer.');">
+      ${filterHiddenFields(filters)}
+      <button type="submit" class="btn-link btn-link--danger">Eliminar</button>
+    </form>
+  </div>`;
+}
+
 function contactsTable(
   rows: ContactWithListsAndTags[],
   filters: ContactsPageFilters,
 ): string {
   const empty =
     rows.length === 0
-      ? `<tr><td colspan="3" class="tv-table-empty">No hay contactos con los filtros aplicados.</td></tr>`
+      ? `<tr><td colspan="4" class="tv-table-empty">No hay contactos con los filtros aplicados.</td></tr>`
       : rows
           .map((c) => {
             return `<tr>
               <td><strong>${escapeHtml(c.display_name)}</strong></td>
               <td><code>${escapeHtml(c.phone)}</code></td>
               <td>${listsCell(c.list_names)}</td>
+              <td>${contactRowActions(c, filters)}</td>
             </tr>`;
           })
           .join("");
@@ -560,7 +746,7 @@ function contactsTable(
   const anyFilter = Boolean((filters.q ?? "").trim() || (filters.agenda ?? "").trim());
   const qs = queryStringFromFilters(filters);
 
-  return `<div class="tv-dash-block tv-contacts-table-block">
+  return `<div class="tv-dash-block tv-contacts-table-block" id="tv-contacts-table">
     <div class="tv-dash-block__head">
       <h2 class="tv-dash-block__title">Contactos</h2>
       <span class="tv-contacts-table-block__meta">
@@ -576,6 +762,7 @@ function contactsTable(
               <th>Nombre</th>
               <th>Teléfono</th>
               <th>Agenda</th>
+              <th>Acciones</th>
             </tr></thead>
             <tbody>${empty}</tbody>
           </table>
@@ -617,10 +804,20 @@ export function renderAppContactsPage(
   ctx: AppPageContext,
   data: AppContactsPageData,
 ): string {
-  const { module, filters, contacts, lists, summary } = data;
+  const {
+    module,
+    filters,
+    contacts,
+    lists,
+    summary,
+    editContact,
+    assignContact,
+    postCreateListId,
+    showPostCreateActions,
+  } = data;
   const wizard = data.wizardState;
   const wizardStep = wizard?.step ?? "agenda";
-  const wizardListId = wizard?.listId ?? "";
+  const wizardListId = wizard?.listId ?? postCreateListId ?? "";
   const defaultOpenListId =
     wizardListId || filters.agenda || (lists[0]?.id ?? "");
 
@@ -632,20 +829,41 @@ export function renderAppContactsPage(
   const showNoResults =
     module.available && summary.totalContacts > 0 && contacts.length === 0 && anyFilter;
 
+  const headerActions = module.available
+    ? `<button type="button" class="btn btn-primary btn-sm" data-tv-contacts-open data-tv-wizard-step="contact">
+          <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+          Nuevo contacto
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" data-tv-contacts-open data-tv-wizard-step="import">
+          <span class="material-symbols-outlined" aria-hidden="true">upload_file</span>
+          Importar CSV
+        </button>
+        <button type="button" class="btn btn-ghost btn-sm" data-tv-contacts-open data-tv-wizard-step="agenda">
+          <span class="material-symbols-outlined" aria-hidden="true">create_new_folder</span>
+          Nueva agenda
+        </button>`
+    : "";
+
+  const postCreateBar =
+    showPostCreateActions && ctx.flash
+      ? `<section class="tv-panel" style="margin-bottom:1rem">
+          <div class="tv-panel__body">
+            <p style="margin:0"><strong>${escapeHtml(ctx.flash)}</strong></p>
+            ${postCreateSuccessActions(postCreateListId)}
+          </div>
+        </section>`
+      : "";
+
   const body = `
     ${contactsPageStyles()}
     <div class="tv-contacts tv-client-dashboard tv-dlr-report">
     ${module.migrationPending ? migrationBanner() : ""}
     ${renderPageHeader({
       title: "Contactos",
-      subtitle: "Crea agendas y agrega contactos de forma simple y rápida.",
-      actions: module.available
-        ? `<button type="button" class="btn btn-primary" data-tv-contacts-open data-tv-wizard-step="agenda">
-            <span class="material-symbols-outlined" aria-hidden="true">bolt</span>
-            Gestión rápida
-          </button>`
-        : "",
+      subtitle: "Crea agendas, agrega contactos manualmente o importa CSV.",
+      actions: headerActions,
     })}
+    ${postCreateBar}
     ${module.available ? agendaPanel(lists, filters.agenda) : ""}
     ${module.available ? simpleSearchBar(lists, filters) : ""}
     <div>
@@ -654,7 +872,7 @@ export function renderAppContactsPage(
       ${showTable ? contactsTable(contacts, filters) : ""}
     </div>
     </div>
-    ${module.available ? contactsWizardModal(lists, wizard, data.importPreview) : ""}
+    ${module.available ? contactsWizardModal(lists, wizard, data.importPreview, editContact, assignContact, filters) : ""}
     <script>
       (function(){
         var modal = document.getElementById("tv-contacts-quick-modal");
@@ -662,20 +880,37 @@ export function renderAppContactsPage(
           agenda: document.getElementById("tv-contacts-pane-agenda"),
           choose: document.getElementById("tv-contacts-pane-choose"),
           contact: document.getElementById("tv-contacts-pane-contact"),
-          import: document.getElementById("tv-contacts-pane-import")
+          import: document.getElementById("tv-contacts-pane-import"),
+          edit: document.getElementById("tv-contacts-pane-edit"),
+          edit_list: document.getElementById("tv-contacts-pane-edit-list"),
+          assign_list: document.getElementById("tv-contacts-pane-assign-list")
         };
         var modalSub = document.getElementById("tv-contacts-modal-sub");
         var activeStep = ${JSON.stringify(wizardStep)};
         var wizardListId = ${JSON.stringify(wizardListId)};
         var defaultListId = ${JSON.stringify(defaultOpenListId)};
         var hasLists = ${JSON.stringify(lists.length > 0)};
+        var postCreateListId = ${JSON.stringify(postCreateListId ?? "")};
+        var showPostCreate = ${JSON.stringify(Boolean(showPostCreateActions))};
 
         var stepSubtitles = {
           agenda: "Paso 1 · Crea la agenda para organizar tus contactos",
           choose: "Paso 2 · Agrega contactos a tu agenda",
           contact: "Paso 3 · Contacto manual",
-          import: "Paso 3 · Importar contactos desde planilla"
+          import: "Paso 3 · Importar contactos desde planilla",
+          edit: "Editar contacto",
+          edit_list: "Editar agenda",
+          assign_list: "Asignar contacto a agenda"
         };
+
+        function clearContactForm(){
+          var form = document.getElementById("tv-contacts-form-contact");
+          if(!form) return;
+          ["display_name","phone","email","notes"].forEach(function(name){
+            var el = form.querySelector('[name="'+name+'"]');
+            if(el) el.value = "";
+          });
+        }
 
         function switchStep(name){
           activeStep = name;
@@ -685,15 +920,19 @@ export function renderAppContactsPage(
           if(modalSub && stepSubtitles[name]) modalSub.textContent = stepSubtitles[name];
         }
 
-        function openModal(step){
+        function openModal(step, listId){
           if(!modal) return;
           var resolved = step || "agenda";
-          if(resolved === "contact" && !wizardListId && defaultListId) {
-            goWizard("contact", defaultListId);
-            return;
+          var targetList = listId || wizardListId || defaultListId;
+          if(resolved === "contact") {
+            clearContactForm();
+            if(targetList) {
+              goWizard("contact", targetList, true);
+              return;
+            }
           }
-          if(resolved === "import" && !wizardListId && defaultListId && hasLists) {
-            goWizard("import", defaultListId);
+          if(resolved === "import" && targetList && hasLists) {
+            goWizard("import", targetList, true);
             return;
           }
           switchStep(resolved);
@@ -707,16 +946,41 @@ export function renderAppContactsPage(
           document.body.style.overflow = "";
         }
 
-        function goWizard(step, listId){
-          var qs = new URLSearchParams();
+        function goWizard(step, listId, skipNav){
+          if(skipNav) {
+            wizardListId = listId || wizardListId;
+            switchStep(step);
+            if(modal) {
+              modal.setAttribute("aria-hidden", "false");
+              document.body.style.overflow = "hidden";
+            }
+            return;
+          }
+          var qs = new URLSearchParams(window.location.search);
           qs.set("quick_wizard", step);
           if(listId) qs.set("list_id", listId);
+          else qs.delete("list_id");
+          qs.delete("edit_contact");
+          qs.delete("assign_contact");
           window.location.href = "/app/contacts?" + qs.toString();
         }
 
         document.querySelectorAll("[data-tv-contacts-open]").forEach(function(btn){
           btn.addEventListener("click", function(){
-            openModal(btn.getAttribute("data-tv-wizard-step") || "agenda");
+            var step = btn.getAttribute("data-tv-wizard-step") || "agenda";
+            var preserve = btn.getAttribute("data-tv-preserve-list") || postCreateListId || "";
+            openModal(step, preserve || undefined);
+          });
+        });
+        document.querySelectorAll("[data-tv-wizard-go]").forEach(function(btn){
+          btn.addEventListener("click", function(){
+            var target = btn.getAttribute("data-tv-wizard-go") || "contact";
+            var listId = btn.getAttribute("data-tv-list-id") || wizardListId || defaultListId;
+            if(target === "edit_list") {
+              goWizard("edit_list", listId);
+              return;
+            }
+            goWizard(target, listId);
           });
         });
         modal && modal.querySelectorAll("[data-tv-contacts-close]").forEach(function(btn){
@@ -817,18 +1081,40 @@ export function renderAppContactsPage(
         }
 
         var params = new URLSearchParams(window.location.search);
-        if(params.get("quick_wizard") || params.get("import_job")) openModal(activeStep);
-        else switchStep(activeStep);
+        if(params.get("quick_wizard") || params.get("import_job") || params.get("edit_contact") || params.get("assign_contact")) {
+          openModal(activeStep, wizardListId || undefined);
+        } else if(showPostCreate) {
+          openModal("contact", postCreateListId || undefined);
+        } else {
+          switchStep(activeStep);
+        }
 
         if(params.get("quick_wizard") || params.get("import_job")){
           params.delete("quick_wizard");
           params.delete("import_job");
           params.delete("list_id");
+        }
+        if(params.get("edit_contact") || params.get("assign_contact")) {
+          params.delete("edit_contact");
+          params.delete("assign_contact");
+        }
+        if(params.get("quick_wizard") || params.get("import_job") || params.get("edit_contact") || params.get("assign_contact")) {
           var qs = params.toString();
           history.replaceState({}, "", "/app/contacts" + (qs ? "?" + qs : ""));
+        }
+        if(params.get("created") === "1") {
+          params.delete("created");
+          if(postCreateListId) params.set("list_id", postCreateListId);
+          var qs2 = params.toString();
+          history.replaceState({}, "", "/app/contacts" + (qs2 ? "?" + qs2 : ""));
         }
       })();
     </script>`;
 
-  return wrapAppPage(ctx, "contacts", "Contactos", body);
+  return wrapAppPage(
+    showPostCreateActions && ctx.flash ? { ...ctx, flash: undefined } : ctx,
+    "contacts",
+    "Contactos",
+    body,
+  );
 }

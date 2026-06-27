@@ -12,6 +12,8 @@ import type {
   ContactWithListsAndTags,
   CreateContactInput,
   CreateContactListInput,
+  UpdateContactInput,
+  UpdateContactListInput,
 } from "../types/contacts.js";
 import { isMissingTableError } from "../utils/db-table.js";
 import { AppError } from "../utils/errors.js";
@@ -322,6 +324,191 @@ export async function createContact(
   }
 
   return contact;
+}
+
+export async function updateContactList(
+  companyId: string,
+  listId: string,
+  input: UpdateContactListInput,
+): Promise<ContactListRow> {
+  const existing = await assertListBelongsToCompany(companyId, listId);
+  const name = input.name !== undefined ? input.name.trim() : existing.name;
+  if (!name) {
+    throw new AppError("El nombre de la agenda es obligatorio.", 400);
+  }
+
+  const patch: Record<string, unknown> = { name };
+  if (input.description !== undefined) {
+    patch.description = input.description?.trim() || null;
+  }
+  if (input.color !== undefined) {
+    patch.color = input.color?.trim() || null;
+  }
+
+  const { data, error } = await getSupabase()
+    .from("contact_lists")
+    .update(patch)
+    .eq("company_id", companyId)
+    .eq("id", listId)
+    .select("*")
+    .single();
+
+  if (error) {
+    if (isDuplicateKeyError(error)) {
+      throw new AppError("Ya existe una agenda con ese nombre en tu empresa.", 409);
+    }
+    wrapSupabaseError(error, "updateContactList");
+  }
+
+  return data as ContactListRow;
+}
+
+export async function updateContact(
+  companyId: string,
+  contactId: string,
+  input: UpdateContactInput,
+): Promise<ContactRow> {
+  const existing = await getContactById(companyId, contactId);
+  if (!existing) {
+    throw new AppError("Contacto no encontrado.", 404);
+  }
+
+  const patch: Record<string, unknown> = {};
+
+  if (input.display_name !== undefined) {
+    const displayName = input.display_name.trim();
+    if (!displayName) {
+      throw new AppError("El nombre del contacto es obligatorio.", 400);
+    }
+    patch.display_name = displayName;
+  }
+
+  if (input.phone !== undefined) {
+    const phoneNormalized = normalizeContactPhone(input.phone);
+    if (phoneNormalized !== existing.phone_normalized) {
+      const dup = await findContactByPhone(companyId, phoneNormalized);
+      if (dup && dup.id !== contactId) {
+        throw new AppError(
+          "Ya existe un contacto con ese teléfono en tu empresa.",
+          409,
+        );
+      }
+      patch.phone = phoneNormalized;
+      patch.phone_normalized = phoneNormalized;
+    }
+  }
+
+  if (input.email !== undefined) {
+    patch.email = input.email?.trim() || null;
+  }
+  if (input.notes !== undefined) {
+    patch.notes = input.notes?.trim() || null;
+  }
+
+  let updated = existing;
+  if (Object.keys(patch).length) {
+    const { data, error } = await getSupabase()
+      .from("contacts")
+      .update(patch)
+      .eq("company_id", companyId)
+      .eq("id", contactId)
+      .select("*")
+      .single();
+
+    if (error) {
+      if (isDuplicateKeyError(error)) {
+        throw new AppError(
+          "Ya existe un contacto con ese teléfono en tu empresa.",
+          409,
+        );
+      }
+      wrapSupabaseError(error, "updateContact");
+    }
+    updated = data as ContactRow;
+  }
+
+  if (input.list_id !== undefined) {
+    const targetList = input.list_id?.trim() || null;
+    if (targetList) {
+      await setContactAgendaMembership(companyId, contactId, targetList, {
+        replaceOthers: true,
+      });
+    } else {
+      const { error: delErr } = await getSupabase()
+        .from("contact_list_members")
+        .delete()
+        .eq("company_id", companyId)
+        .eq("contact_id", contactId);
+      if (delErr) {
+        wrapSupabaseError(delErr, "updateContact.clearLists");
+      }
+    }
+  }
+
+  return updated;
+}
+
+export async function setContactAgendaMembership(
+  companyId: string,
+  contactId: string,
+  listId: string | null,
+  options?: { replaceOthers?: boolean },
+): Promise<void> {
+  const existing = await getContactById(companyId, contactId);
+  if (!existing) {
+    throw new AppError("Contacto no encontrado.", 404);
+  }
+
+  if (options?.replaceOthers) {
+    const { error: delErr } = await getSupabase()
+      .from("contact_list_members")
+      .delete()
+      .eq("company_id", companyId)
+      .eq("contact_id", contactId);
+    if (delErr) {
+      wrapSupabaseError(delErr, "setContactAgendaMembership.clear");
+    }
+  }
+
+  if (!listId) {
+    return;
+  }
+
+  await assertListBelongsToCompany(companyId, listId);
+  const { error: memberErr } = await getSupabase()
+    .from("contact_list_members")
+    .upsert(
+      {
+        company_id: companyId,
+        contact_id: contactId,
+        list_id: listId,
+        metadata: {},
+      },
+      { onConflict: "list_id,contact_id", ignoreDuplicates: false },
+    );
+  if (memberErr && !isDuplicateKeyError(memberErr)) {
+    wrapSupabaseError(memberErr, "setContactAgendaMembership.member");
+  }
+}
+
+export async function deleteContact(
+  companyId: string,
+  contactId: string,
+): Promise<void> {
+  const existing = await getContactById(companyId, contactId);
+  if (!existing) {
+    throw new AppError("Contacto no encontrado.", 404);
+  }
+
+  const { error } = await getSupabase()
+    .from("contacts")
+    .delete()
+    .eq("company_id", companyId)
+    .eq("id", contactId);
+
+  if (error) {
+    wrapSupabaseError(error, "deleteContact");
+  }
 }
 
 export async function listContactLists(

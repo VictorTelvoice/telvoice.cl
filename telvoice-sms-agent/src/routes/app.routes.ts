@@ -20,6 +20,10 @@ import {
   postAppCreateContactList,
   postAppDuplicateContactList,
   postAppDeleteContactList,
+  postAppUpdateContactList,
+  postAppUpdateContact,
+  postAppDeleteContact,
+  postAppAssignContactList,
   getAppDashboard,
   getAppInbox,
   getAppInvoices,
@@ -194,7 +198,27 @@ appRouter.post(
 );
 appRouter.get("/contacts", requireClientPanelPage, getAppContacts);
 appRouter.post("/contacts", requireClientPanelPage, postAppCreateContact);
+appRouter.post(
+  "/contacts/:id/update",
+  requireClientPanelPage,
+  postAppUpdateContact,
+);
+appRouter.post(
+  "/contacts/:id/delete",
+  requireClientPanelPage,
+  postAppDeleteContact,
+);
+appRouter.post(
+  "/contacts/:id/assign-list",
+  requireClientPanelPage,
+  postAppAssignContactList,
+);
 appRouter.post("/contacts/lists", requireClientPanelPage, postAppCreateContactList);
+appRouter.post(
+  "/contacts/lists/:id/update",
+  requireClientPanelPage,
+  postAppUpdateContactList,
+);
 appRouter.post(
   "/contacts/lists/:id/duplicate",
   requireClientPanelPage,
