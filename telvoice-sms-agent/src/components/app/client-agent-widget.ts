@@ -438,7 +438,11 @@ export function getPanelAgentWidgetScript(): string {
             try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { return undefined; }
           })(),
           userLocalHour: new Date().getHours(),
-          metadata: { page: window.location.pathname }
+          metadata: {
+            page: window.location.pathname,
+            currentPath: window.location.pathname,
+            pageTitle: document.title || undefined
+          }
         })
       });
       var data = await res.json();

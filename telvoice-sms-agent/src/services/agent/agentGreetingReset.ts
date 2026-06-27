@@ -3,6 +3,7 @@ import {
   cancelAllPendingForSessionDb,
 } from "./agentPendingActionsService.js";
 import { clearSendSmsFlowMemory } from "./agentSendSmsFlow.js";
+import { clearSupportTicketFlowMemory } from "./agentSupportTicketFlow.js";
 import { updateConversationMemory } from "./agentConversationMemory.js";
 import type {
   AgentChannel,
@@ -136,6 +137,7 @@ export async function resetAgentConversationStateForGreeting(
   companyId: string,
 ): Promise<void> {
   await clearSendSmsFlowMemory(sessionId, channel, companyId);
+  await clearSupportTicketFlowMemory(sessionId, channel, companyId);
   await updateConversationMemory(
     sessionId,
     channel,
@@ -163,6 +165,13 @@ export async function resetAgentConversationStateForGreeting(
       leadPartial: undefined,
       lastIntent: "greeting",
       lastTopic: "greeting",
+      supportTicketFlowStep: undefined,
+      pendingSupportTicketSubject: undefined,
+      pendingSupportTicketCategory: undefined,
+      pendingSupportTicketPriority: undefined,
+      pendingSupportTicketMessage: undefined,
+      pendingSupportTicketSource: undefined,
+      pendingSupportTicketContext: undefined,
     },
     companyId,
   );

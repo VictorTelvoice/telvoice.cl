@@ -620,7 +620,8 @@ export async function createSupportTicket(
         message,
         replies: [] as SupportTicketReply[],
         related_order_id: input.relatedOrderId ?? null,
-        source: "client_panel",
+        source: input.source ?? "client_panel",
+        metadata: input.metadata ?? {},
       };
 
       const result = await getSupabase()

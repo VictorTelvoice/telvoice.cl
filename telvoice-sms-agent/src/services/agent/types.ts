@@ -37,6 +37,7 @@ export type AgentIntent =
   | "negative_feedback"
   | "commercial_doubt"
   | "technical_doubt"
+  | "support_ticket"
   | "unknown";
 
 export type AgentSuggestedAction = {

@@ -47,6 +47,17 @@ export type ConversationMemory = {
     csvUploadId?: string;
     senderId?: string;
   };
+  /** Flujo ticket soporte desde chat agente */
+  supportTicketFlowStep?: string;
+  pendingSupportTicketSubject?: string;
+  pendingSupportTicketCategory?: string;
+  pendingSupportTicketPriority?: string;
+  pendingSupportTicketMessage?: string;
+  pendingSupportTicketSource?: string;
+  pendingSupportTicketContext?: Record<string, unknown>;
+  lastCreatedSupportTicketCode?: string;
+  lastCreatedSupportTicketMessage?: string;
+  lastCreatedSupportTicketAt?: number;
   updatedAt?: string;
 };
 

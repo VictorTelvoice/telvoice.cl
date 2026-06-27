@@ -65,6 +65,11 @@ import {
   shouldShowFeedbackButtons,
   shouldTreatUserTextAsSmsMessage,
 } from "./agentOperationalState.js";
+import {
+  tryActiveSupportTicketFlowFirst,
+  clearSupportTicketFlowMemory,
+  isSupportTicketFlowActive,
+} from "./agentSupportTicketFlow.js";
 import type {
   AgentCoreRequest,
   AgentCoreResponse,
@@ -103,17 +108,21 @@ async function handleConfirmCancel(
 
   if (isCancel) {
     const memory = await getConversationMemory(sessionId, ctx.channel);
-    const flowActive =
-      Boolean(pending) ||
-      memory.sendSmsFlowActive === true ||
-      Boolean(memory.sendSmsFlowStep) ||
-      Boolean(memory.pendingSmsMessage) ||
-      Boolean(memory.pendingCsvUploadId);
+    const ticketFlowBefore = isSupportTicketFlowActive(memory);
 
     if (pending) {
       await clearPendingActionDb(pending.id, "cancelled");
     }
     await clearSendSmsFlowMemory(sessionId, ctx.channel, ctx.companyId);
+    await clearSupportTicketFlowMemory(sessionId, ctx.channel, ctx.companyId);
+
+    const flowActive =
+      Boolean(pending) ||
+      memory.sendSmsFlowActive === true ||
+      Boolean(memory.sendSmsFlowStep) ||
+      Boolean(memory.pendingSmsMessage) ||
+      Boolean(memory.pendingCsvUploadId) ||
+      ticketFlowBefore;
 
     const rawReply = flowActive
       ? "Listo, cancelé este flujo. Puedes pedirme enviar un SMS, crear una campaña o revisar tu saldo cuando quieras."
@@ -510,6 +519,52 @@ export async function runAgentCore(
       enriched,
     );
     return { ...enriched, sessionId };
+  }
+
+  if (channel === "web_client" && companyId) {
+    const ticketOut = await tryActiveSupportTicketFlowFirst(
+      message,
+      execCtx,
+      sessionId,
+      memory,
+    );
+    if (ticketOut) {
+      let flowOut = await finalizeResponse(
+        request,
+        sessionId,
+        companyId,
+        ticketOut,
+        message,
+      );
+      flowOut = enrichPanelMeta(
+        flowOut,
+        await getConversationMemory(sessionId, channel),
+      );
+      logRouterDecision(
+        buildRouterDecision({
+          user_text: message,
+          current_flow_step: memory.supportTicketFlowStep ?? null,
+          detected_intent: "support_ticket",
+          selected_handler: "tryActiveSupportTicketFlowFirst",
+          knowledge_allowed: false,
+          reason: isSupportTicketFlowActive(memory)
+            ? "active_support_ticket_flow"
+            : "support_ticket_global_command",
+          response_type: "support",
+          agent_mode: "support",
+        }),
+      );
+      sessionId = await persistTurn(
+        channel,
+        companyId,
+        request.userId,
+        sessionId,
+        message,
+        flowOut,
+      );
+      return { ...flowOut, sessionId };
+    }
+    memory = await getConversationMemory(sessionId, channel);
   }
 
   if (

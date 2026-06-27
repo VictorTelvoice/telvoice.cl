@@ -71,6 +71,8 @@ export type CreateSupportTicketInput = {
   priority: SupportTicketPriority;
   message: string;
   relatedOrderId?: string | null;
+  source?: string;
+  metadata?: Record<string, unknown> | null;
 };
 
 export type SupportTicketServiceResult<T> =

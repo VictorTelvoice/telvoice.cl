@@ -2,6 +2,8 @@ import { isPureGreeting } from "./agentGreetingReset.js";
 import { isFlowExitCommand } from "./agentSendSmsFlowUi.js";
 import { SEND_SMS_FLOW_STEP } from "./agentSendSmsFlowUi.js";
 import { PURCHASE_FLOW_STEP } from "./agentPurchaseFlow.js";
+import { isSupportTicketIntent } from "./agentSupportTicketIntent.js";
+import { isSupportTicketFlowActive } from "./agentSupportTicketFlow.js";
 import type { ConversationMemory } from "./agentConversationMemory.js";
 import type { AgentChannel, AgentIntent } from "./types.js";
 
@@ -51,6 +53,9 @@ const FEEDBACK_SUPPRESSED_STEPS = new Set<string>([
   PURCHASE_FLOW_STEP.NEED_QUANTITY,
   PURCHASE_FLOW_STEP.REVIEW_QUOTE,
   PURCHASE_FLOW_STEP.PAYMENT_READY,
+  "need_issue",
+  "need_category_optional",
+  "review_ticket",
 ]);
 
 function normalizeText(text: string): string {
@@ -86,6 +91,9 @@ export function isOperationalFlowActive(memory: ConversationMemory): boolean {
 }
 
 export function resolveAgentMode(memory: ConversationMemory): AgentMode {
+  if (isSupportTicketFlowActive(memory)) {
+    return "support";
+  }
   if (
     memory.sendSmsFlowActive ||
     memory.waitingForMessage ||
@@ -130,6 +138,9 @@ export function shouldTreatUserTextAsSmsMessage(
   if (isPureGreeting(trimmed)) {
     return false;
   }
+  if (isSupportTicketIntent(trimmed)) {
+    return false;
+  }
   return true;
 }
 
@@ -140,6 +151,9 @@ export function canUseKnowledgeSearch(
 ): boolean {
   if (channel === "admin") {
     return true;
+  }
+  if (isSupportTicketFlowActive(memory)) {
+    return false;
   }
   if (memory.waitingForMessage === true) {
     return false;
@@ -203,8 +217,11 @@ export function shouldShowFeedbackButtons(
   intent: AgentIntent | string,
   flowStep?: string | null,
 ): boolean {
-  const step = flowStep ?? memory.sendSmsFlowStep ?? memory.purchaseFlowStep ?? null;
+  const step = flowStep ?? memory.sendSmsFlowStep ?? memory.purchaseFlowStep ?? memory.supportTicketFlowStep ?? null;
   if (step && FEEDBACK_SUPPRESSED_STEPS.has(step)) {
+    return false;
+  }
+  if (isSupportTicketFlowActive(memory)) {
     return false;
   }
   if (
