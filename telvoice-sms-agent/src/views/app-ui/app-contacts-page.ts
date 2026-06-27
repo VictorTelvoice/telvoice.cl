@@ -7,6 +7,7 @@ import type {
   ContactWithListsAndTags,
   ContactsModuleState,
 } from "../../types/contacts.js";
+import { env } from "../../config/env.js";
 import { escapeHtml } from "../../utils/html.js";
 import { renderBtn, renderFilterField, renderPageHeader } from "../admin-ui/page-kit.js";
 import type { AppPageContext } from "./app-page-wrap.js";
@@ -186,8 +187,28 @@ function migrationBanner(): string {
   </div>`;
 }
 
+/** Solo agent-qa: ayuda a distinguir QA de producción durante validación manual. */
+function qaContactsEnvironmentBadge(): string {
+  if (!env.publicAppUrl.includes("agent-qa")) {
+    return "";
+  }
+  const sha = (env.deploy.gitSha || "").trim();
+  const build = sha ? sha.slice(0, 7) : "qa";
+  return `<p class="tv-qa-env-badge" role="status">Entorno QA · build ${escapeHtml(build)}</p>`;
+}
+
 function contactsPageStyles(): string {
   return `<style>
+    .tv-qa-env-badge {
+      margin: -0.25rem 0 1rem;
+      font-size: 0.8125rem;
+      color: #6b4c12;
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      border-radius: 6px;
+      padding: 0.35rem 0.65rem;
+      display: inline-block;
+    }
     .tv-contacts-modal {
       position: fixed;
       inset: 0;
@@ -863,6 +884,7 @@ export function renderAppContactsPage(
       subtitle: "Crea agendas, agrega contactos manualmente o importa CSV.",
       actions: headerActions,
     })}
+    ${qaContactsEnvironmentBadge()}
     ${postCreateBar}
     ${module.available ? agendaPanel(lists, filters.agenda) : ""}
     ${module.available ? simpleSearchBar(lists, filters) : ""}
