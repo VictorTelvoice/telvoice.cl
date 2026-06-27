@@ -35,11 +35,13 @@ async function auditPage(page) {
       url: location.href,
       toggleCount: toggles.length,
       togglePresent: toggles.length === 1,
+      comprarVisible: !!comprarRect && comprarRect.width > 8,
       toggleBeforeComprar:
         !!navToggle &&
         !!comprar &&
         toggleRect &&
         comprarRect &&
+        comprarRect.width > 8 &&
         toggleRect.right <= comprarRect.left + 2,
       toggleLive: navToggle?.classList.contains("is-agent-live") ?? false,
       toggleDormant: navToggle?.classList.contains("is-agent-dormant") ?? false,
@@ -59,7 +61,7 @@ async function shot(page, name, clip) {
   return path;
 }
 
-async function runCase(page, { name, url, viewport, headerClip, hideRestore }) {
+async function runCase(page, { name, url, viewport, headerClip, hideRestore, mobile }) {
   await page.setViewportSize(viewport);
   await page.goto(url, { waitUntil: "domcontentloaded" });
   await page.evaluate(() => {
@@ -86,7 +88,17 @@ async function runCase(page, { name, url, viewport, headerClip, hideRestore }) {
     await shot(page, `${name}-restored.png`, headerClip);
   }
 
-  return { visible, hidden, restored };
+  return { visible, hidden, restored, mobile: !!mobile };
+}
+
+function pagePass(audit, isMobile) {
+  if (!audit || audit.toggleCount !== 1 || !audit.togglePresent || !audit.hasDataAttr) {
+    return false;
+  }
+  if (!isMobile && audit.comprarVisible && !audit.toggleBeforeComprar) {
+    return false;
+  }
+  return true;
 }
 
 async function main() {
@@ -108,6 +120,7 @@ async function main() {
     viewport: { width: 1440, height: 900 },
     headerClip: desktopHeader,
     hideRestore: false,
+    mobile: false,
   });
 
   const homeMobile = await runCase(page, {
@@ -116,6 +129,7 @@ async function main() {
     viewport: { width: 390, height: 844 },
     headerClip: mobileHeader,
     hideRestore: false,
+    mobile: true,
   });
 
   const numeracionHash = await runCase(page, {
@@ -124,6 +138,7 @@ async function main() {
     viewport: { width: 1440, height: 900 },
     headerClip: desktopHeader,
     hideRestore: false,
+    mobile: false,
   });
 
   const simDesktop = await runCase(page, {
@@ -132,6 +147,7 @@ async function main() {
     viewport: { width: 1440, height: 900 },
     headerClip: desktopHeader,
     hideRestore: true,
+    mobile: false,
   });
 
   const simMobile = await runCase(page, {
@@ -140,6 +156,7 @@ async function main() {
     viewport: { width: 390, height: 844 },
     headerClip: mobileHeader,
     hideRestore: false,
+    mobile: true,
   });
 
   const subpage = await runCase(page, {
@@ -148,29 +165,24 @@ async function main() {
     viewport: { width: 1440, height: 900 },
     headerClip: desktopHeader,
     hideRestore: false,
+    mobile: false,
   });
 
   await browser.close();
 
-  const checks = [
-    homeDesktop.visible,
-    homeMobile.visible,
-    numeracionHash.visible,
-    simDesktop.visible,
-    simDesktop.hidden,
-    simDesktop.restored,
-    simMobile.visible,
-    subpage.visible,
-  ];
-
-  const allPass = checks.every(
-    (c) =>
-      c &&
-      c.toggleCount === 1 &&
-      c.togglePresent &&
-      c.toggleBeforeComprar &&
-      c.hasDataAttr,
-  );
+  const allPass =
+    pagePass(homeDesktop.visible, false) &&
+    pagePass(homeMobile.visible, true) &&
+    pagePass(numeracionHash.visible, false) &&
+    pagePass(simDesktop.visible, false) &&
+    simDesktop.hidden &&
+    simDesktop.hidden.toggleDormant &&
+    !simDesktop.hidden.floatVisible &&
+    pagePass(simDesktop.restored, false) &&
+    simDesktop.restored.toggleLive &&
+    simDesktop.restored.floatVisible &&
+    pagePass(simMobile.visible, true) &&
+    pagePass(subpage.visible, false);
 
   const report = {
     baseUrl: BASE,

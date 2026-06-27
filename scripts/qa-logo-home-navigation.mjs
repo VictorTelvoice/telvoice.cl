@@ -28,7 +28,8 @@ async function main() {
     }));
     await page.locator('nav a[data-telvoice-home], nav a[href="https://www.telvoice.cl/"]').first().click();
     await page.waitForLoadState("domcontentloaded");
-    await page.waitForTimeout(2000);
+    await page.waitForSelector("#telvoice-web-agent.tva-root--ready", { timeout: 60000 }).catch(() => {});
+    await page.waitForTimeout(3500);
     const after = await page.evaluate(() => {
       const hero = document.getElementById("hero-title");
       const heroRect = hero?.getBoundingClientRect();

@@ -47,7 +47,7 @@
   var HC_GRID_TWO =
     "mx-auto mt-8 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 md:gap-8";
 
-  var LAYOUT_VER = "20260703";
+  var LAYOUT_VER = "20260704";
 
   function ensureStylesheet(href) {
     if (document.querySelector('link[href="' + href + '"]')) return;
