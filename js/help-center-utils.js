@@ -47,185 +47,47 @@
   var HC_GRID_TWO =
     "mx-auto mt-8 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 md:gap-8";
 
-  function brandModule() {
-    return window.TELVOICE_PUBLIC_BRAND;
+  var LAYOUT_VER = "20260703";
+
+  function ensureStylesheet(href) {
+    if (document.querySelector('link[href="' + href + '"]')) return;
+    var link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    document.head.appendChild(link);
   }
 
-  function navInnerClass() {
-    var B = brandModule();
-    return B
-      ? B.navInnerClass
-      : "flex justify-between items-center gap-4 py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 lg:pl-28 lg:pr-10 max-w-container-max mx-auto";
+  function loadScriptOnce(src, attrs) {
+    return new Promise(function (resolve, reject) {
+      if (document.querySelector('script[src="' + src + '"]')) {
+        resolve();
+        return;
+      }
+      var script = document.createElement("script");
+      script.src = src;
+      if (attrs) {
+        Object.keys(attrs).forEach(function (key) {
+          script.setAttribute(key, attrs[key]);
+        });
+      }
+      script.onload = function () {
+        resolve();
+      };
+      script.onerror = reject;
+      document.body.appendChild(script);
+    });
   }
 
-  function navMobilePanelClass() {
-    var B = brandModule();
-    return B
-      ? B.navMobilePanelClass
-      : "hidden lg:hidden border-t border-outline-variant/30 bg-surface/95 backdrop-blur-md py-4 pl-4 pr-4 sm:pl-12 sm:pr-6 md:pl-20 md:pr-8 max-w-container-max mx-auto";
+  function ensureSharedLayoutStyles(r) {
+    ensureStylesheet(r + "css/telvoice-public-nav.css?v=" + LAYOUT_VER);
+    ensureStylesheet(r + "css/telvoice-floating-agent-toggle.css?v=" + LAYOUT_VER);
+    ensureStylesheet(r + "css/telvoice-site-footer.css?v=" + LAYOUT_VER);
   }
 
-  function renderNavBrand(r) {
-    var B = brandModule();
-    if (B) {
-      return B.renderNavBrandLink(r, { href: r });
-    }
-    return (
-      '<a href="' +
-      r +
-      '" class="flex items-center gap-2 shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" aria-label="Telvoice, ir al inicio">' +
-      '<img src="' +
-      r +
-      'assets/telvoice-isotipo.png" alt="Telvoice Chile — SMS masivos" width="36" height="36" class="h-9 w-9 object-contain" decoding="async" />' +
-      '<span class="font-h3 text-h3 font-bold tracking-tight lowercase text-black">telvoice</span></a>'
-    );
-  }
-
-  function renderFooterBrand(r) {
-    var B = brandModule();
-    if (B) {
-      return B.renderFooterBrandLink(r, { href: r });
-    }
-    return (
-      '<a href="' +
-      r +
-      '" class="inline-flex items-center gap-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-on-primary focus-visible:ring-offset-2 focus-visible:ring-offset-primary" aria-label="Telvoice, ir al inicio">' +
-      '<img src="' +
-      r +
-      'assets/telvoice-isotipo.png" alt="" width="40" height="40" class="h-10 w-10 object-contain" aria-hidden="true" decoding="async" />' +
-      '<span class="font-h3 text-h3 font-bold tracking-tight lowercase text-on-primary">telvoice</span></a>'
-    );
-  }
-
-  function renderHeader(active) {
-    var r = root();
-    return (
-      '<nav class="bg-surface/90 backdrop-blur-md sticky top-0 z-50 border-b border-outline-variant/30 w-full">' +
-      '<div class="' +
-      navInnerClass() +
-      '">' +
-      renderNavBrand(r) +
-      '<ul class="hidden lg:flex gap-1 items-center">' +
-      '<li><a class="font-body-md text-body-md rounded-full px-4 py-2 transition-colors ' +
-      (active === "home"
-        ? "text-primary bg-surface-container-low"
-        : "text-on-surface-variant hover:text-primary hover:bg-surface-container-low") +
-      '" href="' +
-      r +
-      'ayuda/">Centro de ayuda</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
-      r +
-      '#precios">Precios</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
-      r +
-      '#casos-uso">Casos de uso</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
-      r +
-      'index.html#numeracion">Numeración</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low rounded-full px-4 py-2" href="' +
-      r +
-      '#contacto">Contacto</a></li>' +
-      "</ul>" +
-      '<div class="nav-actions flex items-center gap-2 shrink-0">' +
-      '<a class="nav-sales-btn hidden sm:inline-flex bg-primary text-on-primary font-body-md px-5 py-2.5 rounded-full hover:bg-surface-tint transition-colors shadow-sm font-semibold" href="' +
-      esc(HC.portalUrl) +
-      '" target="_blank" rel="noopener noreferrer">Ir al portal</a>' +
-      '<button type="button" id="hc-menu-toggle" class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-outline-variant/60 text-on-background" aria-expanded="false" aria-controls="hc-mobile-panel" aria-label="Abrir menú">' +
-      '<span class="material-symbols-outlined" id="hc-menu-open">menu</span>' +
-      '<span class="material-symbols-outlined hidden" id="hc-menu-close">close</span></button>' +
-      "</div></div>" +
-      '<div id="hc-mobile-panel" class="' +
-      navMobilePanelClass() +
-      '">' +
-      '<ul class="flex flex-col gap-1">' +
-      '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
-      r +
-      'ayuda/">Centro de ayuda</a></li>' +
-      '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
-      r +
-      '#precios">Precios</a></li>' +
-      '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
-      r +
-      'index.html#numeracion">Numeración</a></li>' +
-      '<li><a class="block font-body-md py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-primary" href="' +
-      r +
-      '#contacto">Contacto</a></li>' +
-      "</ul>" +
-      '<a class="mt-2 block w-full rounded-full bg-primary py-3 text-center font-body-md font-semibold text-on-primary hover:bg-surface-tint" href="' +
-      esc(HC.portalUrl) +
-      '" target="_blank" rel="noopener noreferrer">Ir al portal</a>' +
-      "</div></nav>"
-    );
-  }
-
-  function renderFooter() {
-    var r = root();
-    return (
-      '<footer class="bg-primary text-on-primary" role="contentinfo">' +
-      '<div class="max-w-container-max mx-auto px-4 sm:px-margin-page pt-14 pb-6">' +
-      '<div class="grid grid-cols-1 gap-12 border-b border-on-primary/20 pb-12 md:grid-cols-2 lg:grid-cols-12 lg:gap-10">' +
-      '<div class="lg:col-span-4">' +
-      renderFooterBrand(r) +
-      '<p class="mt-4 max-w-sm font-body-md text-body-md leading-relaxed text-on-primary/85">SMS masivos para empresas en Chile: bolsas prepago, precios por volumen, pago online y API.</p>' +
-      '<div class="mt-6 flex flex-wrap gap-3">' +
-      '<a href="' +
-      r +
-      '#calculadora" class="inline-flex items-center justify-center rounded-full bg-on-primary px-5 py-2.5 font-body-md text-body-md font-semibold text-primary shadow-sm transition hover:bg-primary-fixed hover:text-on-primary-fixed">Calcular precio</a>' +
-      '<a href="' +
-      esc(HC.portalUrl) +
-      '" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-full border-2 border-on-primary/50 bg-transparent px-5 py-2.5 font-body-md text-body-md font-semibold text-on-primary transition hover:border-on-primary hover:bg-on-primary/10">Ir al portal</a>' +
-      "</div></div>" +
-      '<div class="grid grid-cols-2 gap-10 sm:grid-cols-3 md:col-span-2 lg:col-span-8 lg:grid-cols-3">' +
-      '<div><p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Telvoice</p><ul class="mt-4 space-y-3">' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      '#inicio">SMS masivos Chile</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      '#precios">Bolsas SMS</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      'index.html#numeracion">Numeración</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      'numeracion-sim.html">Numeración SIM</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      '#api">API SMS</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      '#contacto">Contacto</a></li></ul></div>' +
-      '<div><p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Recursos</p><ul class="mt-4 space-y-3">' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      '#calculadora">Calculadora</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      'index.html#numeracion">Numeración</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      '#casos-uso">Casos de uso</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      'ayuda/">Centro de ayuda</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      esc(HC.portalUrl) +
-      '" target="_blank" rel="noopener noreferrer">Portal cliente</a></li></ul></div>' +
-      '<div class="col-span-2 sm:col-span-1"><p class="font-label-caps text-label-caps uppercase tracking-wider text-on-primary/55">Legal</p><ul class="mt-4 space-y-3">' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      'terminos-y-condiciones/">Términos y condiciones</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      'politica-de-privacidad/">Política de privacidad</a></li>' +
-      '<li><a class="font-body-md text-body-md text-on-primary/90 transition hover:text-on-primary" href="' +
-      r +
-      'uso-responsable/">Uso responsable</a></li></ul></div></div></div>' +
-      '<div class="flex flex-col gap-4 pt-8 sm:flex-row sm:items-center sm:justify-between">' +
-      '<p class="font-body-sm text-body-sm text-on-primary/65">© 2026 Telvoice.cl. Todos los derechos reservados.</p>' +
-      '<p class="font-body-sm text-body-sm text-on-primary/55">Mensajería empresarial · Chile</p>' +
-      "</div></div></footer>"
-    );
+  function loadSharedLayoutScripts(r) {
+    return loadScriptOnce(r + "js/telvoice-public-nav.js?v=" + LAYOUT_VER).then(function () {
+      return loadScriptOnce(r + "js/telvoice-site-footer.js?v=" + LAYOUT_VER);
+    });
   }
 
   function faqCount() {
@@ -318,35 +180,35 @@
       return;
     }
     var shared = document.createElement("script");
-    shared.src = r + "js/telvoice-public-floating-agent.js?v=20260629";
+    shared.src = r + "js/telvoice-public-floating-agent.js?v=" + LAYOUT_VER;
     shared.setAttribute("data-init", "manual");
     shared.onload = startAgent;
     document.body.appendChild(shared);
   }
 
-  function bindMobileNav() {
-    var toggle = document.getElementById("hc-menu-toggle");
-    var panel = document.getElementById("hc-mobile-panel");
-    var openIcon = document.getElementById("hc-menu-open");
-    var closeIcon = document.getElementById("hc-menu-close");
-    if (!toggle || !panel) return;
-    toggle.addEventListener("click", function () {
-      var open = panel.classList.toggle("hidden");
-      toggle.setAttribute("aria-expanded", open ? "false" : "true");
-      if (openIcon) openIcon.classList.toggle("hidden", !open);
-      if (closeIcon) closeIcon.classList.toggle("hidden", open);
-    });
-  }
-
   function mountShell(active) {
+    var r = root();
     document.body.className =
       "bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col";
+    ensureSharedLayoutStyles(r);
     document.body.insertAdjacentHTML(
       "afterbegin",
-      renderHeader(active) + '<main class="flex-1 w-full" id="hc-main"></main>' + renderFooter()
+      '<div id="telvoice-public-nav" data-root="' +
+        esc(r) +
+        '"></div>' +
+        '<main class="flex-1 w-full" id="hc-main"></main>' +
+        '<div id="telvoice-site-footer" data-root="' +
+        esc(r) +
+        '"></div>'
     );
-    bindMobileNav();
-    mountPublicFloatingAgent();
+    loadSharedLayoutScripts(r)
+      .then(function () {
+        if (window.TelvoicePublicNav && typeof window.TelvoicePublicNav.mount === "function") {
+          window.TelvoicePublicNav.mount();
+        }
+        mountPublicFloatingAgent();
+      })
+      .catch(function () {});
     var main = document.getElementById("hc-main");
     main.innerHTML = '<div class="' + HC_SHELL + '">';
     return main.firstElementChild;

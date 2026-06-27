@@ -14,7 +14,8 @@
     "test:nav-agent-toggle-qa": "node scripts/qa-nav-agent-toggle-production.mjs",
     "test:nav-agent-toggle-public-qa": "node scripts/qa-nav-agent-toggle-public-pages.mjs",
     "test:nav-agent-toggle-sync-qa": "node scripts/qa-nav-agent-toggle-sync.mjs",
-    "test:public-nav-anchors-qa": "node scripts/qa-public-nav-anchors.mjs"
+    "test:public-nav-anchors-qa": "node scripts/qa-public-nav-anchors.mjs",
+    "test:public-layout-consistency-qa": "node scripts/qa-public-layout-consistency.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^2.4.0"

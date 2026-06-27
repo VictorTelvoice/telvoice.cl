@@ -304,7 +304,7 @@
   }
 
   var menuToggle = qs("menu-toggle");
-  if (menuToggle) {
+  if (menuToggle && !window.TelvoicePublicNav) {
     menuToggle.addEventListener("click", function () {
       var expanded = menuToggle.getAttribute("aria-expanded") === "true";
       if (expanded) closeMobileMenu();
@@ -1572,7 +1572,9 @@
     });
   }
 
-  initSiteNavDropdowns();
+  if (!window.TelvoicePublicNav) {
+    initSiteNavDropdowns();
+  }
 
   function initPreciosTabs() {
     function normalizePreciosHash() {

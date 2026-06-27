@@ -14,7 +14,8 @@ const SUBPAGES = [
   { name: "numeracion-sim-mobile", url: `${BASE}numeracion-sim.html`, viewport: { width: 390, height: 844 } },
   { name: "pago-pendiente", url: `${BASE}pago-pendiente/`, viewport: { width: 1440, height: 900 } },
   { name: "pago-fallido", url: `${BASE}pago-fallido/`, viewport: { width: 1440, height: 900 } },
-  { name: "pago-error", url: `${BASE}pago-error/`, viewport: { width: 1440, height: 900 } },
+  { name: "terminos-desktop", url: `${BASE}terminos-y-condiciones/`, viewport: { width: 1440, height: 900 } },
+  { name: "privacidad-desktop", url: `${BASE}politica-de-privacidad/`, viewport: { width: 1440, height: 900 } },
 ];
 
 const HOME = LANDING_HOME;
@@ -52,6 +53,8 @@ const INVALID_PATTERNS = [
   /pago-pendiente\/#/,
   /pago-fallido\/#/,
   /pago-error\/#/,
+  /terminos-y-condiciones\/#/,
+  /politica-de-privacidad\/#/,
 ];
 
 function normalizeUrl(url) {

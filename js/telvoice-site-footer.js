@@ -18,6 +18,14 @@
     return el && el.getAttribute("data-root") ? el.getAttribute("data-root") : "";
   }
 
+  function pageHref(r, target) {
+    if (!target) return r;
+    if (target.charAt(0) === "#") {
+      return r ? r + "index.html" + target : target;
+    }
+    return r + target;
+  }
+
   function linkList(items) {
     return items
       .map(function (item) {
@@ -49,8 +57,8 @@
       "<p>SMS masivos para empresas en Chile: bolsas prepago, precios por volumen, pago online y API.</p>" +
       '<div class="tv-site-footer__ctas">' +
       '<a href="' +
-      esc(r) +
-      'index.html#calculadora" class="tv-site-footer__cta tv-site-footer__cta--primary">Calcular precio</a>' +
+      esc(pageHref(r, "#calculadora")) +
+      '" class="tv-site-footer__cta tv-site-footer__cta--primary">Calcular precio</a>' +
       '<a href="' +
       esc(portal) +
       '" class="tv-site-footer__cta tv-site-footer__cta--ghost" target="_blank" rel="noopener noreferrer">Ir al portal</a>' +
@@ -58,21 +66,21 @@
       '<div class="tv-site-footer__cols">' +
       "<div><p class=\"tv-site-footer__heading\">Telvoice</p><ul class=\"tv-site-footer__links\">" +
       linkList([
-        { href: r + "index.html#inicio", label: "SMS masivos Chile" },
-        { href: r + "index.html#precios", label: "Precios" },
-        { href: r + "index.html#calculadora", label: "Bolsas SMS" },
-        { href: r + "index.html#numeracion", label: "Numeración" },
+        { href: pageHref(r, "#inicio"), label: "SMS masivos Chile" },
+        { href: pageHref(r, "#precios"), label: "Precios" },
+        { href: pageHref(r, "#calculadora"), label: "Bolsas SMS" },
+        { href: pageHref(r, "#numeracion"), label: "Numeración" },
         { href: r + "numeracion-sim.html", label: "Numeración SIM" },
-        { href: r + "index.html#api", label: "API SMS" },
-        { href: r + "index.html#contacto", label: "Contacto" },
+        { href: pageHref(r, "#api"), label: "API SMS" },
+        { href: pageHref(r, "#contacto"), label: "Contacto" },
       ]) +
       "</ul></div>" +
       "<div><p class=\"tv-site-footer__heading\">Recursos</p><ul class=\"tv-site-footer__links\">" +
       linkList([
-        { href: r + "index.html#precios", label: "Precios y bolsas SMS" },
-        { href: r + "index.html#numeracion", label: "Numeración" },
+        { href: pageHref(r, "#precios"), label: "Precios y bolsas SMS" },
+        { href: pageHref(r, "#numeracion"), label: "Numeración" },
         { href: r + "numeracion-sim.html", label: "Numeración SIM" },
-        { href: r + "index.html#casos-uso", label: "Casos de uso" },
+        { href: pageHref(r, "#casos-uso"), label: "Casos de uso" },
         { href: r + "ayuda/", label: "Centro de ayuda" },
         { href: portal, label: "Portal cliente", external: true },
       ]) +

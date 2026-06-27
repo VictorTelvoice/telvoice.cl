@@ -27,8 +27,11 @@
     return { el: el, root: root, active: active, mode: mode };
   }
 
-  function landingSectionHref(fragment) {
+  function landingSectionHref(fragment, mode) {
     if (!fragment || fragment.charAt(0) !== "#") {
+      return fragment;
+    }
+    if (mode === "home") {
       return fragment;
     }
     return "https://www.telvoice.cl/" + fragment;
@@ -83,11 +86,11 @@
       '" data-telvoice-home aria-label="Ir al inicio de Telvoice"';
     var simHref = mode === "home" ? "/numeracion-sim.html" : r + "numeracion-sim.html";
     var simCurrent = active === "numeracion-sim" ? ' aria-current="page"' : "";
-    var calcHref = landingSectionHref("#calculadora");
-    var casosHref = landingSectionHref("#casos-uso");
-    var numeracionHref = landingSectionHref("#numeracion");
-    var apiHref = landingSectionHref("#api");
-    var contactoHref = landingSectionHref("#contacto");
+    var calcHref = landingSectionHref("#calculadora", mode);
+    var casosHref = landingSectionHref("#casos-uso", mode);
+    var numeracionHref = landingSectionHref("#numeracion", mode);
+    var apiHref = landingSectionHref("#api", mode);
+    var contactoHref = landingSectionHref("#contacto", mode);
     var portalHref = "https://agent.telvoice.cl/login";
 
     return (
