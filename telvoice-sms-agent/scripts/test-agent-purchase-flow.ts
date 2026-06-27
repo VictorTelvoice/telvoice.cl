@@ -9,6 +9,8 @@ import {
   recommendBagQuantityForShortfall,
   roundSmsQuantityToThousand,
 } from "../src/services/telvoicePricingService.js";
+import { routeAgentIntent } from "../src/services/agent/agentIntentRouter.js";
+import { extractCommercialQuantity } from "../src/services/agent/agentCommercialText.js";
 import {
   detectPurchaseIntent,
   handleBuySmsFlow,
@@ -16,8 +18,6 @@ import {
   isPurchasePaymentConfirmation,
   PURCHASE_FLOW_STEP,
 } from "../src/services/agent/agentPurchaseFlow.js";
-import { extractCommercialQuantity } from "../src/services/agent/agentCommercialText.js";
-import { routeAgentIntent } from "../src/services/agent/agentIntentRouter.js";
 import {
   getConversationMemory,
   updateConversationMemory,
@@ -66,6 +66,9 @@ function testShortfallBag(): void {
 function testPurchaseIntent(): void {
   assert.ok(detectPurchaseIntent("quiero comprar sms", {}));
   assert.ok(detectPurchaseIntent("cargar saldo", {}));
+  assert.ok(!detectPurchaseIntent("quiero soporte", {}));
+  assert.ok(!detectPurchaseIntent("necesito soporte", {}));
+  assert.ok(!detectPurchaseIntent("quiero ayuda", {}));
   assert.ok(
     detectPurchaseIntent("generar link de pago", {
       purchaseFlowStep: PURCHASE_FLOW_STEP.REVIEW_QUOTE,

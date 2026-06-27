@@ -1,3 +1,5 @@
+import { isSupportTicketIntent } from "./agentSupportTicketIntent.js";
+
 function baseNormalize(text: string): string {
   return text
     .toLowerCase()
@@ -16,8 +18,8 @@ Telvoice.cl vende bolsas en múltiplos de 1.000 SMS y el precio baja según volu
 ¿Cuántos SMS quieres comprar?
 Por ejemplo: 5.000, 15.000, 30.000, 50.000 o 100.000 SMS.`;
 
-const COMMERCIAL_TOKEN_HINTS =
-  /\b(comprar|necesito|quiero|cotizar|cotiza|cuesta|precio|bolsa|paquete|sms|saldo|recargar|recarga|mensaje|mensajes|campana|campaña|masivos)\b/;
+const COMMERCIAL_SIGNAL_RE =
+  /\b(comprar|cotizar|cotiza|cuesta|precio|bolsa|paquete|bolsas|recargar|recarga|mercadopago|pago|sms|mensajes|masivos|saldo)\b/;
 
 /**
  * Normaliza lenguaje comercial chileno: mensajes → sms, bolsa/paquete, recargar, etc.
@@ -89,30 +91,45 @@ export function extractCommercialQuantity(text: string): number | null {
 
 /** Indica compra/cotización aunque no matchee knowledge. */
 export function isLikelyCommercialPhrase(text: string): boolean {
+  if (isSupportTicketIntent(text)) {
+    return false;
+  }
   const n = normalizeCommercialText(text);
   if (!n) {
     return false;
   }
 
-  if (COMMERCIAL_TOKEN_HINTS.test(n)) {
-    if (/\b(comprar|necesito|quiero|cotizar|cotiza|cuanto cuesta|cuesta|recargar|cargar saldo)\b/.test(n)) {
-      return true;
-    }
-    if (/\b(bolsa|paquete|bolsas)\b/.test(n) && /\b(sms|saldo|comprar|necesito|quiero)\b/.test(n)) {
-      return true;
-    }
-    if (/\b\d+[\d\s]*\s*sms\b/.test(n)) {
-      return true;
-    }
-    if (/\bnecesito sms\b/.test(n) || /\bquiero sms\b/.test(n)) {
-      return true;
-    }
+  if (
+    /\b(ver mi saldo|cuanto saldo|cuanto tengo|mi saldo|sms disponibles|revisar saldo)\b/.test(n) &&
+    !/\b(comprar|cargar|cotizar|recargar|bolsa)\b/.test(n)
+  ) {
+    return false;
+  }
+
+  if (!COMMERCIAL_SIGNAL_RE.test(n)) {
+    return false;
+  }
+
+  if (/\b(comprar|necesito|quiero|cotizar|cotiza|cuanto cuesta|cuesta|recargar|cargar saldo)\b/.test(n)) {
+    return true;
+  }
+  if (/\b(bolsa|paquete|bolsas)\b/.test(n) && /\b(sms|saldo|comprar|necesito|quiero)\b/.test(n)) {
+    return true;
+  }
+  if (/\b\d+[\d\s]*\s*sms\b/.test(n)) {
+    return true;
+  }
+  if (/\bnecesito sms\b/.test(n) || /\bquiero sms\b/.test(n)) {
+    return true;
   }
 
   return false;
 }
 
 export function matchesCommercialBuyIntentNormalized(text: string): boolean {
+  if (isSupportTicketIntent(text)) {
+    return false;
+  }
   const normalized = normalizeCommercialText(text);
   if (!normalized) {
     return false;

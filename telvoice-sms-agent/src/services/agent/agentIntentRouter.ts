@@ -24,6 +24,7 @@ import {
   isOperationalFlowActive,
   shouldTreatUserTextAsSmsMessage,
 } from "./agentOperationalState.js";
+import { isSupportTicketIntent } from "./agentSupportTicketIntent.js";
 import { SEND_SMS_FLOW_STEP } from "./agentSendSmsFlowUi.js";
 
 export type RoutedIntent = {
@@ -299,6 +300,16 @@ export function routeAgentIntent(
   }
   if (op === "planes" || op === "precios" || op === "bolsas") {
     return { intent: "commercial", confidence: 0.88, commercialQuantity: extractSmsQuantityFromText(text), requiresAuth: false, operationalCommand: op };
+  }
+
+  if (channel === "web_client" && isSupportTicketIntent(text)) {
+    return {
+      intent: "support_ticket",
+      confidence: 0.95,
+      commercialQuantity: null,
+      requiresAuth: true,
+      operationalCommand: null,
+    };
   }
 
   const commercial = detectCommercialIntent(text);

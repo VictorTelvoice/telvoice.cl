@@ -10,11 +10,26 @@ const EXACT_SUPPORT_COMMANDS = new Set([
   "crear solicitud",
   "contactar soporte",
   "necesito soporte",
+  "requiero soporte",
+  "quiero soporte",
   "necesito ayuda",
+  "requiero ayuda",
+  "quiero ayuda",
+  "ayuda soporte",
+  "hablar con soporte",
+  "quiero hablar con soporte",
+  "abrir soporte",
+  "quiero abrir un ticket",
+  "quiero crear un ticket",
+  "tengo un problema",
+  "tengo problemas",
 ]);
 
 const SUPPORT_PHRASE_RE =
-  /\b(crear ticket|abrir ticket|levantar ticket|abrir solicitud|crear solicitud|contactar soporte|necesito soporte|necesito ayuda|problema con|tengo un problema|problema en|problema de)\b/;
+  /\b(crear ticket|abrir ticket|levantar ticket|abrir solicitud|crear solicitud|contactar soporte|necesito soporte|requiero soporte|quiero soporte|necesito ayuda|requiero ayuda|quiero ayuda|hablar con soporte|abrir soporte|quiero abrir|quiero crear|problema con|tengo un problema|tengo problemas|tengo problema|problema en|problema de|no se acredito|no acredito|no puedo enviar)\b/;
+
+const BALANCE_NOT_SUPPORT_RE =
+  /\b(ver mi saldo|cuanto saldo|cuanto tengo|cuánto tengo|mi saldo|sms disponibles|revisar saldo|consultar saldo)\b/;
 
 /** Frases que contienen "ticket" pero son cuerpo SMS, no intención de soporte. */
 export function isSmsTicketBodyPhrase(text: string): boolean {
@@ -27,6 +42,9 @@ export function isSmsTicketBodyPhrase(text: string): boolean {
     /^presenta\s+tu\s+ticket/i.test(t) ||
     /^muestra\s+tu\s+ticket/i.test(t)
   ) {
+    return true;
+  }
+  if (/^(codigo|código)\s+de\s+soporte\s+\d/i.test(t)) {
     return true;
   }
   if (
@@ -57,10 +75,19 @@ export function isSupportTicketIntent(text: string): boolean {
     return false;
   }
   const n = normalizeIntentText(trimmed);
+  if (BALANCE_NOT_SUPPORT_RE.test(n) && !/\b(problema|soporte|ticket|acredit|ayuda)\b/.test(n)) {
+    return false;
+  }
   if (EXACT_SUPPORT_COMMANDS.has(n)) {
     return true;
   }
   if (SUPPORT_PHRASE_RE.test(n)) {
+    return true;
+  }
+  if (/\b(quiero|necesito|requiero)\s+ayuda\b/.test(n) && !/\b(comprar|cotizar|sms|mensajes|bolsa)\b/.test(n)) {
+    return true;
+  }
+  if (/\b(quiero|necesito|requiero)\s+soporte\b/.test(n)) {
     return true;
   }
   return false;

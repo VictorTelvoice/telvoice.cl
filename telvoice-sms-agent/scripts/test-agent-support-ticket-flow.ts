@@ -20,6 +20,9 @@ import {
   inferSupportTicketPriority,
 } from "../src/services/agent/supportTicketAgentService.js";
 import { SEND_SMS_FLOW_STEP } from "../src/services/agent/agentSendSmsFlowUi.js";
+import { isLikelyCommercialPhrase } from "../src/services/agent/agentCommercialText.js";
+import { detectPurchaseIntent } from "../src/services/agent/agentPurchaseFlow.js";
+import { routeAgentIntent } from "../src/services/agent/agentIntentRouter.js";
 import { getSupabase } from "../src/database/supabaseClient.js";
 
 const COMPANY_ID =
@@ -29,10 +32,17 @@ function testIntentHelper(): void {
   assert.ok(isSupportTicketIntent("ticket"));
   assert.ok(isSupportTicketIntent("crear ticket"));
   assert.ok(isSupportTicketIntent("necesito soporte"));
+  assert.ok(isSupportTicketIntent("quiero soporte"));
+  assert.ok(isSupportTicketIntent("requiero soporte"));
+  assert.ok(isSupportTicketIntent("quiero ayuda"));
+  assert.ok(isSupportTicketIntent("quiero ayuda con mi saldo"));
   assert.ok(isSupportTicketIntent("tengo un problema con mi saldo"));
+  assert.ok(!isSupportTicketIntent("quiero ver mi saldo"));
   assert.ok(!isSupportTicketIntent("tu ticket es 1234"));
   assert.ok(!isSupportTicketIntent("ticket de descuento para clientes"));
+  assert.ok(!isSupportTicketIntent("quiero comprar 5000 sms"));
   assert.ok(isSmsTicketBodyPhrase("tu ticket es 1234"));
+  assert.ok(isSmsTicketBodyPhrase("codigo de soporte 1234"));
   console.log("✓ isSupportTicketIntent / isSmsTicketBodyPhrase");
 }
 
@@ -58,6 +68,46 @@ function testTicketNotSmsBodyDuringWait(): void {
   assert.ok(!shouldTreatUserTextAsSmsMessage(mem, "ticket"));
   assert.ok(shouldTreatUserTextAsSmsMessage(mem, "tu ticket es 1234"));
   console.log("✓ ticket vs cuerpo SMS en waitingForMessage");
+}
+
+async function assertSupportTicketStart(message: string, label: string): Promise<void> {
+  const sessionId = randomUUID();
+  const r = await runAgentCore({
+    channel: "web_client",
+    message,
+    sessionId,
+    companyId: COMPANY_ID,
+    userId: null,
+    metadata: { page: "/app/contacts" },
+  });
+  assert.equal(r.intent, "support_ticket", `${label} intent`);
+  assert.match(r.reply, /puedo crear un ticket/i, `${label} reply`);
+  assert.equal(r.showFeedback, false, `${label} feedback`);
+  assert.ok(!/comprar una bolsa/i.test(r.reply), `${label} no compra`);
+  assert.ok(!/Cuántos SMS quieres comprar/i.test(r.reply), `${label} no cantidad SMS`);
+  const actions = (r.suggestedActions ?? []).map((a) => a.label);
+  assert.ok(actions.includes("Problema con compra o saldo"), `${label} quick actions`);
+  const mem = await getConversationMemory(sessionId, "web_client");
+  assert.equal(mem.supportTicketFlowStep, "need_issue", `${label} step`);
+  console.log(`✓ ${label}`);
+}
+
+async function testQuieroSoporteNotPurchase(): Promise<void> {
+  assert.ok(isSupportTicketIntent("quiero soporte"));
+  assert.ok(!isLikelyCommercialPhrase("quiero soporte"));
+  await assertSupportTicketStart("quiero soporte", "quiero soporte");
+  await assertSupportTicketStart("necesito soporte", "necesito soporte");
+  await assertSupportTicketStart("quiero ayuda con mi saldo", "quiero ayuda con mi saldo");
+}
+
+async function testPurchaseStillWorks(): Promise<void> {
+  const message = "quiero comprar 5000 sms";
+  assert.ok(detectPurchaseIntent(message, {}), "detectPurchaseIntent");
+  assert.ok(!isSupportTicketIntent(message));
+  const route = routeAgentIntent(message, "web_client", { memory: {} });
+  assert.equal(route.intent, "commercial", "route intent");
+  assert.ok(!/puedo crear un ticket/i.test(message));
+  console.log("✓ quiero comprar 5000 sms sigue cotizando");
 }
 
 async function testTicketFromIdle(): Promise<void> {
@@ -297,6 +347,8 @@ async function main(): Promise<void> {
   testInference();
   testKnowledgeGateDuringTicket();
   testTicketNotSmsBodyDuringWait();
+  await testQuieroSoporteNotPurchase();
+  await testPurchaseStillWorks();
   await testTicketFromIdle();
   await testTicketInterruptsSmsFlow();
   await testDescriptionToReview();

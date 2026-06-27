@@ -10,6 +10,7 @@ import {
   extractCommercialQuantity,
   matchesCommercialBuyIntentNormalized,
 } from "./agentCommercialText.js";
+import { isSupportTicketIntent } from "./agentSupportTicketIntent.js";
 import { extractSmsQuantityFromText } from "../commercialQuoteService.js";
 import {
   createSmsPurchaseOrderForCompany,
@@ -134,6 +135,9 @@ export function detectPurchaseIntent(
   message: string,
   memory: ConversationMemory,
 ): boolean {
+  if (isSupportTicketIntent(message)) {
+    return false;
+  }
   if (memory.purchaseFlowStep) {
     return true;
   }
