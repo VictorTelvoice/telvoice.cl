@@ -343,6 +343,15 @@ export function routeAgentIntent(
         operationalCommand: null,
       };
     }
+    if (matchesSendSmsFlowIntent(text)) {
+      return {
+        intent: "send_sms_flow",
+        confidence: 0.9,
+        commercialQuantity: null,
+        requiresAuth: true,
+        operationalCommand: null,
+      };
+    }
     return {
       intent: "inbound_sms_knowledge",
       confidence: 0.9,

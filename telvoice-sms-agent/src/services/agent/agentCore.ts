@@ -18,7 +18,7 @@ import {
 } from "./agentPendingActionsService.js";
 import { executePendingAction } from "./executePendingAction.js";
 import { recordUnansweredQuestion } from "./agentUnansweredService.js";
-import { searchKnowledgeForChannel } from "./tools/searchKnowledgeTool.js";
+import { searchKnowledgeForChannel, truncatePanelKnowledgeReply } from "./tools/searchKnowledgeTool.js";
 import { matchesSendSmsFlowIntent } from "./agentSendSmsIntent.js";
 import {
   clearSendSmsFlowMemory,
@@ -410,18 +410,32 @@ function enrichPanelMeta(
   memory: Awaited<ReturnType<typeof getConversationMemory>>,
 ): AgentCoreResponse {
   const agentMode = resolveAgentMode(memory);
-  const showFeedback =
-    response.showFeedback ??
-    shouldShowFeedbackButtons(
-      memory,
-      String(response.intent),
-      response.sendSmsFlowStep ?? memory.sendSmsFlowStep,
-    );
+  const showFeedback: boolean =
+    typeof response.showFeedback === "boolean"
+      ? response.showFeedback
+      : shouldShowFeedbackButtons(
+          memory,
+          String(response.intent),
+          response.sendSmsFlowStep ?? memory.sendSmsFlowStep,
+        );
   return {
     ...response,
     agentMode,
     showFeedback,
   };
+}
+
+async function attachPanelMeta(
+  response: AgentCoreResponse,
+  channel: AgentCoreRequest["channel"],
+  sessionId: string,
+  companyId: string | null,
+): Promise<AgentCoreResponse> {
+  if (channel !== "web_client" || !companyId) {
+    return response;
+  }
+  const memory = await getConversationMemory(sessionId, channel);
+  return enrichPanelMeta(response, memory);
 }
 
 export async function runAgentCore(
@@ -479,7 +493,13 @@ export async function runAgentCore(
       confidence: 0.9,
       sessionId,
     });
-    return { reply: fbReply, intent: "negative_feedback", confidence: 0.9, sessionId };
+    const fbOut = await attachPanelMeta(
+      { reply: fbReply, intent: "negative_feedback", confidence: 0.9, sessionId },
+      channel,
+      sessionId,
+      companyId,
+    );
+    return { ...fbOut, sessionId };
   }
 
   const execCtx: AgentExecutionContext = {
@@ -647,7 +667,13 @@ export async function runAgentCore(
       message,
       result,
     );
-    return { ...result, sessionId };
+    const confirmed = await attachPanelMeta(
+      { ...result, sessionId },
+      channel,
+      sessionId,
+      companyId,
+    );
+    return { ...confirmed, sessionId };
   }
 
   if (channel === "web_client" && companyId) {
@@ -674,7 +700,13 @@ export async function runAgentCore(
           message,
           payOut,
         );
-        return { ...payOut, sessionId };
+        const payPanel = await attachPanelMeta(
+          { ...payOut, sessionId },
+          channel,
+          sessionId,
+          companyId,
+        );
+        return { ...payPanel, sessionId };
       }
     }
 
@@ -732,7 +764,13 @@ export async function runAgentCore(
         message,
         purchaseOut,
       );
-      return { ...purchaseOut, sessionId };
+      const purchasePanel = await attachPanelMeta(
+        { ...purchaseOut, sessionId },
+        channel,
+        sessionId,
+        companyId,
+      );
+      return { ...purchasePanel, sessionId };
     }
 
     if (detectPurchaseIntent(message, memory)) {
@@ -760,7 +798,13 @@ export async function runAgentCore(
           message,
           buyOut,
         );
-        return { ...buyOut, sessionId };
+        const buyPanel = await attachPanelMeta(
+          { ...buyOut, sessionId },
+          channel,
+          sessionId,
+          companyId,
+        );
+        return { ...buyPanel, sessionId };
       }
     }
   }
@@ -887,8 +931,7 @@ export async function runAgentCore(
     response.intent !== "send_sms_flow" &&
     response.intent !== "campaign_draft" &&
     response.intent !== "technical_doubt" &&
-    !matchesSendSmsFlowIntent(message) &&
-    !/\b(ayudame a crear|ayúdame a crear|crear\s+(?:una\s+)?campana|preparar\s+(?:una\s+)?campana)\b/i.test(message)
+    !matchesSendSmsFlowIntent(message)
   ) {
     const k = await searchKnowledgeForChannel(message, channel, {
       operationalMode: false,
@@ -897,7 +940,7 @@ export async function runAgentCore(
     if (k.matched && k.confidence > response.confidence) {
       response = {
         ...response,
-        reply: k.reply,
+        reply: truncatePanelKnowledgeReply(k.reply),
         intent: "knowledge",
         confidence: k.confidence,
         showFeedback: true,

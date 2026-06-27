@@ -15,8 +15,10 @@ const CHANNEL_CATEGORY_HINTS: Record<AgentChannel, string[]> = {
   admin: ["errores", "seguridad", "smpp", "api", "telvoice"],
 };
 
-const PANEL_MAX_CHARS = 500;
-const PANEL_MAX_LINES = 6;
+const PANEL_MAX_CHARS = 680;
+const PANEL_MAX_LINES = 7;
+const PANEL_KNOWLEDGE_CLOSER =
+  "Puedo ayudarte a hacerlo paso a paso desde el panel.";
 
 type KnowledgeArticleExtended = {
   title?: string | null;
@@ -110,12 +112,32 @@ function summarizeContent(full: string, maxChars: number): string {
   return out;
 }
 
-function trimPanelLines(text: string): string {
+function trimPanelLines(text: string, maxLines = PANEL_MAX_LINES): string {
   const lines = text.split("\n").filter((l) => l.trim().length > 0);
-  if (lines.length <= PANEL_MAX_LINES) {
+  if (lines.length <= maxLines) {
     return text.trim();
   }
-  return lines.slice(0, PANEL_MAX_LINES).join("\n");
+  return lines.slice(0, maxLines).join("\n");
+}
+
+/** Truncado runtime para respuestas knowledge del panel (título + cuerpo). */
+export function truncatePanelKnowledgeReply(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+  let body = trimPanelLines(trimmed);
+  if (body.length > PANEL_MAX_CHARS) {
+    body = summarizeContent(body, PANEL_MAX_CHARS - PANEL_KNOWLEDGE_CLOSER.length - 4);
+  }
+  const truncated =
+    trimmed.length > body.length + 20 ||
+    trimmed.split("\n").filter((l) => l.trim()).length >
+      body.split("\n").filter((l) => l.trim()).length;
+  if (truncated && !body.includes(PANEL_KNOWLEDGE_CLOSER)) {
+    body = `${body}\n\n${PANEL_KNOWLEDGE_CLOSER}`;
+  }
+  return body.trim();
 }
 
 function formatKnowledgeReply(
@@ -131,9 +153,6 @@ function formatKnowledgeReply(
   if (channel === "web_client" && !operational && style !== "detailed") {
     body = resolveShortContent(article);
     body = trimPanelLines(body);
-    if (article.content.length > body.length + 40) {
-      body += "\n\n¿Quieres que te muestre el detalle completo?";
-    }
   } else if (channel === "telegram" && article.content.length > 600) {
     body = summarizeContent(article.content, 600);
   } else {
@@ -143,7 +162,7 @@ function formatKnowledgeReply(
   let reply = `${article.title ?? "Información"}\n\n${body}`;
 
   if (channel === "web_client" && !operational) {
-    reply = trimPanelLines(reply);
+    reply = truncatePanelKnowledgeReply(reply);
   }
 
   if (

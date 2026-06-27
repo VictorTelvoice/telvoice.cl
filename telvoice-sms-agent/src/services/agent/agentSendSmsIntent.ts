@@ -14,6 +14,18 @@ const SEND_SMS_MASS_RE =
 const CAMPAIGN_GUIDED_RE =
   /\b(ayudame a crear|ayúdame a crear|armar\s+(?:una\s+)?campana|armar\s+(?:una\s+)?campaña|preparar\s+(?:una\s+)?campana|preparar\s+(?:una\s+)?campaña|nueva campaña|nueva campana|quiero\s+(?:una\s+)?campana|quiero\s+(?:una\s+)?campaña|crear\s+(?:una\s+)?campaña|crear\s+(?:una\s+)?campana)\b/;
 
+/** Frases operativas de envío/campaña (no preguntas informativas). */
+const OPERATIONAL_SEND_RE =
+  /\b(preparar|crear|enviar|mandar|lanzar|armar|hacer|iniciar|montar)\b.*\b(campana|campana|envio|envío|sms|mensaje|mensajes)\b|\b(campana|campana)\b.*\b(preparar|crear|enviar|mandar|lanzar|armar|hacer|iniciar|montar)\b|\bpreparar\s+envio\b|\bpreparar\s+envío\b|\bmandar\s+sms\b|\benviar\s+sms\b|\benviar\s+campana\b|\benviar\s+campana\b|\bcrear\s+campana\b|\bcrear\s+campana\b/;
+
+const INFORMATIONAL_CAMPAIGN_RE =
+  /\b(que es|qué es|que son|qué son|como funciona|cómo funciona|para que sirve|para qué sirve|diferencia entre|explicame|explícame|informacion|información|significa)\b.*\b(campana|campana|sms masivo|envio masivo|envío masivo)\b|\b(campana|campana|sms masivo)\b.*\b(que es|qué es|como funciona|cómo funciona|para que sirve|para qué sirve)\b/;
+
+/** Pregunta informativa — no debe iniciar flujo operativo de envío. */
+export function isInformationalCampaignQuestion(text: string): boolean {
+  return INFORMATIONAL_CAMPAIGN_RE.test(normalizeIntentText(text));
+}
+
 /** Flujo guiado de campaña (mensaje → destinos → confirmación), sin borrador automático. */
 export function matchesCampaignGuidedIntent(text: string): boolean {
   const n = normalizeIntentText(text);
@@ -40,7 +52,13 @@ export function matchesSendSmsFlowIntent(text: string): boolean {
   if (/\b(crear\s+borrador|borrador\s+de\s+campana)\b/.test(n)) {
     return false;
   }
+  if (isInformationalCampaignQuestion(text)) {
+    return false;
+  }
   if (matchesCampaignGuidedIntent(text)) {
+    return true;
+  }
+  if (OPERATIONAL_SEND_RE.test(n)) {
     return true;
   }
   if (SEND_SMS_MASS_RE.test(n)) {

@@ -13,6 +13,7 @@ import {
   quoteSmsBundleTool,
   analyzeSmsTextTool,
   searchKnowledgeForChannel,
+  truncatePanelKnowledgeReply,
 } from "./tools/index.js";
 import type {
   AgentCoreResponse,
@@ -435,7 +436,7 @@ export async function dispatchRoutedIntent(
       });
       return baseResponse({
         reply: k.matched
-          ? k.reply
+          ? truncatePanelKnowledgeReply(k.reply)
           : "Consulta técnica: revisa API y documentación en el panel o pide whitelist IP en soporte.",
         intent: k.matched ? "knowledge" : "technical_doubt",
         confidence: k.confidence || route.confidence,
@@ -469,7 +470,7 @@ export async function dispatchRoutedIntent(
         operationalMode: false,
       });
       return baseResponse({
-        reply: k.reply,
+        reply: truncatePanelKnowledgeReply(k.reply),
         intent,
         confidence: k.confidence,
         sessionId,
