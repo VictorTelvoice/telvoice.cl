@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Auditoría P0 — compra SIM fermiranda9303@gmail.com / op MP 164839622838
+ * Auditoría P0 — compra SIM fermiranda9303@gmail.com / pago MP 164841006974
  */
 import "dotenv/config";
 import pg from "pg";
 
 const EMAIL = "fermiranda9303@gmail.com";
-const OPERATION_ID = "164839622838";
+const OPERATION_ID = "164841006974";
 
 const cs = process.env.DATABASE_URL?.trim();
 if (!cs) {
