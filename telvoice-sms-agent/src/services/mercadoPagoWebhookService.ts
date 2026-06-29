@@ -508,9 +508,7 @@ export async function processPublicCheckoutMercadoPagoWebhook(
 
         try {
           await sendSimAgentBundlePaymentEmails(orderId);
-          if (provision.isNewCompany) {
-            await sendCheckoutPanelAccessEmail(orderId, checkoutEmail);
-          }
+          await sendCheckoutPanelAccessEmail(orderId, checkoutEmail);
           const postPay = await processSimPostPaymentActivation(orderId);
           console.log(
             "[mp-webhook] sim post-payment",
@@ -589,9 +587,7 @@ export async function processPublicCheckoutMercadoPagoWebhook(
                 ? refreshed.metadata.mercadopago_preapproval_id
                 : refreshed.payment_reference,
           });
-          if (provision.isNewCompany) {
-            await sendCheckoutPanelAccessEmail(orderId, checkoutEmail);
-          }
+          await sendCheckoutPanelAccessEmail(orderId, checkoutEmail);
           const postPay = await processSimPostPaymentActivation(orderId);
           console.log(
             "[mp-webhook] sim subscription post-payment",
@@ -610,7 +606,13 @@ export async function processPublicCheckoutMercadoPagoWebhook(
       }
 
       try {
+        const checkoutEmail =
+          refreshed?.checkout_email ??
+          String(refreshed?.metadata?.checkout_email ?? "");
         await sendSimPaymentReceivedEmails(orderId);
+        if (checkoutEmail) {
+          await sendCheckoutPanelAccessEmail(orderId, checkoutEmail);
+        }
       } catch (err) {
         console.error("[mp-webhook] sim payment email failed", orderId, err);
       }

@@ -1,77 +1,17 @@
 import type { Request, Response } from "express";
 import {
-  processMercadoPagoPreapprovalWebhook,
-  processMercadoPagoAuthorizedPaymentWebhook,
-  routeMercadoPagoWebhook,
-} from "../services/mercadoPagoWebhookService.js";
+  finalizeMercadoPagoWebhookLog,
+  recordMercadoPagoWebhookReceived,
+} from "../services/mercadoPagoWebhookAuditService.js";
+import { dispatchMercadoPagoWebhook } from "../services/mercadoPagoWebhookDispatchService.js";
+import { parseMercadoPagoWebhookRequest } from "../utils/mercadoPagoWebhookRequest.js";
 
-function extractPaymentId(req: Request): string | null {
-  const q = req.query as Record<string, string | undefined>;
-  if (q.topic === "payment" && q.id) {
-    return String(q.id);
-  }
-  const body = (req.body ?? {}) as Record<string, unknown>;
-  if (body.type === "payment" && body.data && typeof body.data === "object") {
-    const id = (body.data as { id?: string | number }).id;
-    if (id != null) {
-      return String(id);
-    }
-  }
-  if (body.topic === "payment" && body.id) {
-    return String(body.id);
-  }
-  return null;
-}
-
-function extractPreapprovalId(req: Request): string | null {
-  const q = req.query as Record<string, string | undefined>;
-  if (
-    (q.topic === "subscription_preapproval" || q.type === "subscription_preapproval") &&
-    q.id
-  ) {
-    return String(q.id);
-  }
-  const body = (req.body ?? {}) as Record<string, unknown>;
-  if (
-    body.type === "subscription_preapproval" &&
-    body.data &&
-    typeof body.data === "object"
-  ) {
-    const id = (body.data as { id?: string | number }).id;
-    if (id != null) {
-      return String(id);
-    }
-  }
-  if (body.topic === "subscription_preapproval" && body.id) {
-    return String(body.id);
-  }
-  return null;
-}
-
-function extractAuthorizedPaymentId(req: Request): string | null {
-  const q = req.query as Record<string, string | undefined>;
-  if (
-    (q.topic === "subscription_authorized_payment" ||
-      q.type === "subscription_authorized_payment") &&
-    q.id
-  ) {
-    return String(q.id);
-  }
-  const body = (req.body ?? {}) as Record<string, unknown>;
-  if (
-    body.type === "subscription_authorized_payment" &&
-    body.data &&
-    typeof body.data === "object"
-  ) {
-    const id = (body.data as { id?: string | number }).id;
-    if (id != null) {
-      return String(id);
-    }
-  }
-  if (body.topic === "subscription_authorized_payment" && body.id) {
-    return String(body.id);
-  }
-  return null;
+function logStatusFromOutcome(
+  outcome: Record<string, unknown>,
+): "processed" | "failed" | "skipped" {
+  if (outcome.skipped) return "skipped";
+  if (outcome.ok === false) return "failed";
+  return "processed";
 }
 
 export async function mercadoPagoWebhookHandler(
@@ -83,46 +23,36 @@ export async function mercadoPagoWebhookHandler(
     return;
   }
 
-  const authorizedPaymentId = extractAuthorizedPaymentId(req);
-  if (authorizedPaymentId) {
-    try {
-      const outcome = await processMercadoPagoAuthorizedPaymentWebhook(authorizedPaymentId);
-      res.status(200).json(outcome);
-    } catch (error) {
-      console.error("[mp-webhook] authorized_payment error", error);
-      res.status(200).json({ ok: true, error: "logged" });
-    }
-    return;
-  }
-
-  const preapprovalId = extractPreapprovalId(req);
-  if (preapprovalId) {
-    try {
-      const outcome = await processMercadoPagoPreapprovalWebhook(preapprovalId);
-      res.status(200).json(outcome);
-    } catch (error) {
-      console.error("[mp-webhook] preapproval error", error);
-      res.status(200).json({ ok: true, error: "logged" });
-    }
-    return;
-  }
-
-  const paymentId = extractPaymentId(req);
-  if (!paymentId) {
-    res.status(200).json({ ok: true, skipped: "no_payment_id" });
-    return;
-  }
+  const parsed = parseMercadoPagoWebhookRequest(req);
+  const logId = await recordMercadoPagoWebhookReceived(parsed).catch((error) => {
+    console.error("[mp-webhook] audit insert failed", error);
+    return null;
+  });
 
   try {
-    const outcome = await routeMercadoPagoWebhook(paymentId);
+    const outcome = await dispatchMercadoPagoWebhook(parsed);
+    await finalizeMercadoPagoWebhookLog(logId, {
+      status: logStatusFromOutcome(outcome),
+      outcome,
+      orderId: outcome.orderId != null ? String(outcome.orderId) : null,
+    }).catch((error) => {
+      console.error("[mp-webhook] audit finalize failed", error);
+    });
     res.status(200).json(outcome);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (!message.includes("duplicate key")) {
       console.error("[mp-webhook] error", error);
     } else {
-      console.log("[mp-webhook] duplicate ignored (idempotente)", paymentId);
+      console.log("[mp-webhook] duplicate ignored (idempotente)", parsed.resourceId);
     }
+    await finalizeMercadoPagoWebhookLog(logId, {
+      status: message.includes("duplicate key") ? "skipped" : "failed",
+      outcome: { ok: true, skipped: "duplicate_or_error", error: "logged" },
+      error: message,
+    }).catch((auditErr) => {
+      console.error("[mp-webhook] audit finalize failed", auditErr);
+    });
     res.status(200).json({ ok: true, error: "logged" });
   }
 }

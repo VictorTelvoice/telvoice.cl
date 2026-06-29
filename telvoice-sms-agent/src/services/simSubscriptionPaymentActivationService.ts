@@ -26,7 +26,7 @@ import {
   getSimSubscriptionByPreapprovalId,
   syncSimSubscriptionAfterOrderFirstPayment,
 } from "./simSubscriptionService.js";
-import { sendSimSubscriptionPaymentConfirmedEmails } from "./transactionalEmailService.js";
+import { sendSimSubscriptionPaymentConfirmedEmails, sendCheckoutPanelAccessEmail } from "./transactionalEmailService.js";
 import { getInventoryById } from "./realNumberInventoryService.js";
 import type { MercadoPagoPaymentRecord } from "./mercadoPagoService.js";
 
@@ -424,6 +424,15 @@ export async function applySimSubscriptionApprovedPayment(input: {
   } catch (err) {
     console.error("[sim-subscription-activation] confirmation email failed", order.id, err);
     risks.push("confirmation_email_failed");
+  }
+
+  if (checkoutEmail) {
+    try {
+      await sendCheckoutPanelAccessEmail(order.id, checkoutEmail);
+    } catch (err) {
+      console.error("[sim-subscription-activation] panel access email failed", order.id, err);
+      risks.push("panel_access_email_failed");
+    }
   }
 
   return {

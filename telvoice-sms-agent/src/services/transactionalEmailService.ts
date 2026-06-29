@@ -32,6 +32,7 @@ import {
   renderWelcomeSmsCredited,
 } from "./transactionalEmailTemplates.js";
 import { buildPanelLoginUrl, resolvePanelAccessLink } from "./checkoutAccessEmailService.js";
+import { getSimActivationByOrderId } from "./simActivationService.js";
 import { isSimAgentBundleOrder } from "../utils/order-display.js";
 import {
   buildInvoiceEmailSubject,
@@ -720,16 +721,33 @@ export async function sendCheckoutPanelAccessEmail(
   });
 }
 
+function parseNotifyEmailList(raw: string): string[] {
+  return [
+    ...new Set(
+      raw
+        .split(/[,;]/)
+        .map((email) => email.trim().toLowerCase())
+        .filter((email) => email.includes("@")),
+    ),
+  ];
+}
+
+/** Destinatarios internos SIM: SIM_SUBSCRIPTION_NOTIFY → ORDER → BILLING → SUPERADMIN (todos los configurados). */
+export function resolveSimSubscriptionNotifyEmails(): string[] {
+  const configured = [
+    process.env.SIM_SUBSCRIPTION_NOTIFY_EMAIL?.trim(),
+    process.env.ORDER_NOTIFY_EMAIL?.trim(),
+    process.env.BILLING_NOTIFY_EMAIL?.trim(),
+    env.admin.superadminEmail?.trim(),
+  ].filter(Boolean) as string[];
+
+  const merged = configured.flatMap((raw) => parseNotifyEmailList(raw));
+  if (merged.length > 0) return merged;
+  return parseNotifyEmailList("victor@telvoice.net");
+}
+
 function simSubscriptionNotifyEmails(): string[] {
-  const raw =
-    process.env.SUPERADMIN_EMAIL?.trim() ||
-    process.env.ORDER_NOTIFY_EMAIL?.trim() ||
-    process.env.BILLING_NOTIFY_EMAIL?.trim() ||
-    "victor@telvoice.net";
-  return raw
-    .split(",")
-    .map((e) => e.trim())
-    .filter(Boolean);
+  return resolveSimSubscriptionNotifyEmails();
 }
 
 function formatBillingCycleLabel(raw: unknown): string {
@@ -786,16 +804,33 @@ export async function sendSimSubscriptionPaymentConfirmedEmails(
     error: "missing_recipient",
   };
 
+  const activationRow = await getSimActivationByOrderId(orderId);
+  const activationStatus =
+    activationRow?.activation_status ??
+    (typeof meta.activation_status === "string" ? meta.activation_status : "paid_pending_activation");
+  const paymentId =
+    typeof meta.mercadopago_payment_id === "string" ? meta.mercadopago_payment_id : null;
+  const phone = typeof meta.phone === "string" ? meta.phone : null;
+
   if (recipient) {
     const contactName =
       typeof meta.payer_name === "string" && meta.payer_name.trim()
         ? meta.payer_name.trim()
         : recipient.split("@")[0] ?? "Cliente";
 
+    let panelAccessUrl: string | null = null;
+    try {
+      const access = await resolvePanelAccessLink(recipient);
+      panelAccessUrl = access.magicLinkUrl ?? access.panelUrl ?? null;
+    } catch {
+      panelAccessUrl = numeracionesUrl;
+    }
+
     const rendered = renderSimSubscriptionPaymentConfirmed({
       contactName,
       planName,
       assignedNumber: options?.assignedNumber ?? null,
+      activationStatus,
       includedSmsMonthly: order.sms_quantity,
       includesOutboundSms: meta.includes_outbound_sms !== false && Number(order.sms_quantity) > 0,
       amount: Number(order.amount),
@@ -803,6 +838,7 @@ export async function sendSimSubscriptionPaymentConfirmedEmails(
       billingCycle,
       nextRenewal: formatNextRenewal(subscription?.next_billing_date ?? null),
       numeracionesUrl,
+      panelAccessUrl,
     });
 
     customerResult = await sendTransactionalEmail({
@@ -825,15 +861,18 @@ export async function sendSimSubscriptionPaymentConfirmedEmails(
   const opsRendered = renderSimSubscriptionInternalAlert({
     companyName,
     checkoutEmail: recipient ?? order.checkout_email ?? "—",
+    phone,
     planName,
     assignedNumber: options?.assignedNumber ?? null,
     amount: Number(order.amount),
     currency: order.currency,
+    paymentId,
     preapprovalId:
       options?.preapprovalId ??
       (typeof meta.mercadopago_preapproval_id === "string"
         ? meta.mercadopago_preapproval_id
         : order.payment_reference),
+    activationStatus,
     orderId: order.id,
     adminUrl,
   });
