@@ -591,6 +591,7 @@ export type SimSubscriptionPaymentConfirmedTemplateData = {
   contactName: string;
   planName: string;
   assignedNumber: string | null;
+  activationStatus: string;
   includedSmsMonthly: number;
   includesOutboundSms?: boolean;
   amount: number;
@@ -598,12 +599,14 @@ export type SimSubscriptionPaymentConfirmedTemplateData = {
   billingCycle: string;
   nextRenewal: string | null;
   numeracionesUrl: string;
+  panelAccessUrl?: string | null;
 };
 
 export function renderSimSubscriptionPaymentConfirmed(
   data: SimSubscriptionPaymentConfirmedTemplateData,
 ): { subject: string; html: string; text: string } {
-  const subject = "Tu numeración SIM Telvoice fue activada";
+  const subject = "Recibimos tu compra de numeración SIM real en Telvoice";
+  const isActive = data.activationStatus === "active";
   const includesSms =
     data.includesOutboundSms !== false && Math.round(Number(data.includedSmsMonthly) || 0) > 0;
   const sms = fmtSms(data.includedSmsMonthly);
@@ -616,14 +619,20 @@ export function renderSimSubscriptionPaymentConfirmed(
   const total = fmtMoney(data.amount, data.currency);
   const numberLine = data.assignedNumber
     ? `<div><strong>Numeración asignada:</strong> ${escapeHtml(data.assignedNumber)}</div>`
-    : `<div><strong>Numeración:</strong> en activación — revisa el panel en unos minutos</div>`;
+    : `<div><strong>Numeración:</strong> pendiente de activación por Telvoice</div>`;
+  const nextSteps = isActive
+    ? "Tu numeración ya está activa. Puedes revisar SMS entrantes y configurar integraciones desde el panel."
+    : "Recibimos tu pago. Telvoice activará tu numeración en un plazo habitual de 24 a 48 horas hábiles. Te avisaremos por correo cuando esté lista. Si falta información, te contactaremos.";
+  const panelCta = data.panelAccessUrl
+    ? ctaButton(data.panelAccessUrl, "Acceder al panel Telvoice")
+    : ctaButton(data.numeracionesUrl, "Ir a Mis numeraciones");
 
   const body = `
     <p style="margin:0 0 12px;font-family:Segoe UI,system-ui,sans-serif;font-size:20px;font-weight:700;line-height:1.35;color:#0f172a;text-align:center">
       Hola ${escapeHtml(data.contactName)},
     </p>
     <p style="margin:0 0 24px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55;color:#334155;text-align:center;max-width:520px;margin-left:auto;margin-right:auto">
-      Tu suscripción <strong>${escapeHtml(data.planName)}</strong> fue confirmada.
+      Confirmamos que recibimos tu pago por <strong>${escapeHtml(data.planName)}</strong>.
     </p>
     ${summaryCard(`
       <div><strong>Plan:</strong> ${escapeHtml(data.planName)}</div>
@@ -633,7 +642,10 @@ export function renderSimSubscriptionPaymentConfirmed(
       <div><strong>Ciclo:</strong> ${escapeHtml(data.billingCycle)}</div>
       ${data.nextRenewal ? `<div><strong>Próxima renovación:</strong> ${escapeHtml(data.nextRenewal)}</div>` : ""}
     `)}
-    ${ctaButton(data.numeracionesUrl, "Ir a Mis numeraciones")}
+    <p style="margin:0 0 16px;font-family:Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55;color:#334155;text-align:center;max-width:520px;margin-left:auto;margin-right:auto">
+      ${escapeHtml(nextSteps)}
+    </p>
+    ${panelCta}
     <p style="margin:16px 0 0;font-family:Segoe UI,system-ui,sans-serif;font-size:13px;line-height:1.5;color:#64748b;text-align:center">
       Si necesitas ayuda, responde este correo o contacta soporte.
     </p>`;
@@ -641,31 +653,36 @@ export function renderSimSubscriptionPaymentConfirmed(
   const text = [
     `Hola ${data.contactName},`,
     "",
-    `Tu suscripción ${data.planName} fue confirmada.`,
+    `Confirmamos que recibimos tu pago por ${data.planName}.`,
+    "",
+    nextSteps,
     "",
     `Plan: ${data.planName}`,
-    data.assignedNumber ? `Numeración asignada: ${data.assignedNumber}` : "Numeración: en activación",
+    data.assignedNumber ? `Numeración asignada: ${data.assignedNumber}` : "Numeración: pendiente de activación",
     smsText,
     `Monto: ${total}`,
     `Ciclo: ${data.billingCycle}`,
     data.nextRenewal ? `Próxima renovación: ${data.nextRenewal}` : "",
     "",
-    `Panel: ${data.numeracionesUrl}`,
+    `Panel: ${data.panelAccessUrl ?? data.numeracionesUrl}`,
   ]
     .filter(Boolean)
     .join("\n");
 
-  return { subject, html: emailShell("Numeración SIM activada", body), text };
+  return { subject, html: emailShell("Compra numeración SIM", body), text };
 }
 
 export type SimSubscriptionInternalAlertTemplateData = {
   companyName: string | null;
   checkoutEmail: string;
+  phone: string | null;
   planName: string;
   assignedNumber: string | null;
   amount: number;
   currency: string;
+  paymentId: string | null;
   preapprovalId: string | null;
+  activationStatus: string;
   orderId: string;
   adminUrl: string;
 };
@@ -673,14 +690,17 @@ export type SimSubscriptionInternalAlertTemplateData = {
 export function renderSimSubscriptionInternalAlert(
   data: SimSubscriptionInternalAlertTemplateData,
 ): { subject: string; html: string; text: string } {
-  const subject = `[Telvoice] Suscripción SIM activada — ${data.checkoutEmail}`;
+  const subject = "Nueva compra de numeración SIM real — Telvoice";
   const total = fmtMoney(data.amount, data.currency);
   const rowsHtml = [
     ["Empresa", data.companyName ?? "—"],
     ["Email", data.checkoutEmail],
+    ["Teléfono", data.phone ?? "—"],
     ["Plan", data.planName],
     ["Número", data.assignedNumber ?? "pendiente"],
     ["Monto", total],
+    ["Estado activación", data.activationStatus],
+    ["MP pago", data.paymentId ?? "—"],
     ["MP preapproval", data.preapprovalId ?? "—"],
     ["Order ID", data.orderId],
   ]
@@ -692,20 +712,23 @@ export function renderSimSubscriptionInternalAlert(
 
   const body = `
     <p style="margin:0 0 16px;font-family:Segoe UI,system-ui,sans-serif;font-size:15px;line-height:1.55;color:#334155">
-      Se confirmó y activó una suscripción de numeración SIM (panel cliente).
+      Nueva compra de numeración SIM real desde Telvoice.cl. Revisa y activa o confirma la asignación en admin.
     </p>
     ${summaryCard(rowsHtml)}
     ${ctaButton(data.adminUrl, "Ver en admin")}`;
 
   const text = [
-    "Suscripción SIM activada",
+    "Nueva compra de numeración SIM real — Telvoice",
     "",
     ...[
       ["Empresa", data.companyName ?? "—"],
       ["Email", data.checkoutEmail],
+      ["Teléfono", data.phone ?? "—"],
       ["Plan", data.planName],
       ["Número", data.assignedNumber ?? "pendiente"],
       ["Monto", total],
+      ["Estado activación", data.activationStatus],
+      ["MP pago", data.paymentId ?? "—"],
       ["MP preapproval", data.preapprovalId ?? "—"],
       ["Order ID", data.orderId],
     ].map(([k, v]) => `${k}: ${v}`),

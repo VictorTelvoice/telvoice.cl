@@ -7,6 +7,10 @@ import {
 } from "../../lib/orders.js";
 import { getPayment } from "../../lib/mercadopago.js";
 import { sendOrderConfirmationEmails } from "../../lib/email.js";
+import {
+  extractMercadoPagoSubscriptionWebhookEvent,
+  forwardSubscriptionWebhookToAgent,
+} from "../../lib/mercadopago-webhook-forward.js";
 
 async function maybeSendConfirmationEmails(order) {
   if (order.confirmation_emails_sent_at) return;
@@ -185,6 +189,57 @@ async function processPayment(paymentId, rawWebhook) {
 export default async function handler(req, res) {
   if (req.method !== "POST" && req.method !== "GET") {
     return json(res, 405, { error: "Método no permitido." });
+  }
+
+  const subscriptionEvent = extractMercadoPagoSubscriptionWebhookEvent(req);
+  if (subscriptionEvent) {
+    try {
+      const forward = await forwardSubscriptionWebhookToAgent(req);
+      if (!forward.ok) {
+        console.error(
+          "[webhook-forward] agent responded with error",
+          subscriptionEvent.topic,
+          subscriptionEvent.resourceId,
+          forward.status,
+          forward.body,
+        );
+        return json(res, 200, {
+          ok: true,
+          forwarded: false,
+          topic: subscriptionEvent.topic,
+          resource_id: subscriptionEvent.resourceId,
+          agent_status: forward.status,
+          error: "agent_forward_failed",
+        });
+      }
+      console.log(
+        "[webhook-forward] subscription forwarded to agent",
+        subscriptionEvent.topic,
+        subscriptionEvent.resourceId,
+        forward.target,
+      );
+      return json(res, 200, {
+        ok: true,
+        forwarded: true,
+        topic: subscriptionEvent.topic,
+        resource_id: subscriptionEvent.resourceId,
+        agent: forward.body,
+      });
+    } catch (err) {
+      console.error(
+        "[webhook-forward] failed",
+        subscriptionEvent.topic,
+        subscriptionEvent.resourceId,
+        err,
+      );
+      return json(res, 200, {
+        ok: true,
+        forwarded: false,
+        topic: subscriptionEvent.topic,
+        resource_id: subscriptionEvent.resourceId,
+        error: "logged",
+      });
+    }
   }
 
   const paymentId = extractPaymentId(req);

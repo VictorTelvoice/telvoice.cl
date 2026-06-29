@@ -226,27 +226,45 @@ let transactionAmount = mpTransactionAmount;
 
 if (!paymentId && preId) {
   console.log("\n--- Buscando primer cobro autorizado por preapproval ---");
-  if (dryRun) {
-    try {
-      const pre = await getMercadoPagoPreapproval(preId);
-      console.log(
-        JSON.stringify(
-          {
-            preapproval_id: preId,
-            preapproval_status: pre.status,
-            external_reference: pre.external_reference,
-            payer_email: pre.payer_email,
-            transaction_amount: pre.auto_recurring?.transaction_amount,
-          },
-          null,
-          2,
-        ),
-      );
-    } catch (e) {
-      console.warn("preapproval fetch failed:", e.message);
+  const { searchMercadoPagoAuthorizedPaymentsByPreapproval } = await import(
+    "../dist/services/mercadoPagoService.js"
+  );
+  try {
+    const pre = await getMercadoPagoPreapproval(preId);
+    const authorized = await searchMercadoPagoAuthorizedPaymentsByPreapproval(preId);
+    const approved = authorized.find((row) => row.payment?.status === "approved");
+    console.log(
+      JSON.stringify(
+        {
+          preapproval_id: preId,
+          preapproval_status: pre.status,
+          external_reference: pre.external_reference,
+          payer_email: pre.payer_email,
+          transaction_amount: pre.auto_recurring?.transaction_amount,
+          authorized_payments: authorized.map((row) => ({
+            id: row.id,
+            status: row.status,
+            payment_id: row.payment?.id ?? null,
+            payment_status: row.payment?.status ?? null,
+            transaction_amount: row.transaction_amount,
+          })),
+        },
+        null,
+        2,
+      ),
+    );
+    if (approved?.payment?.id) {
+      paymentId = String(approved.payment.id);
+      paymentStatus = String(approved.payment.status ?? "approved");
+      transactionAmount = Number(approved.transaction_amount ?? transactionAmount);
+      console.log("\n(dry-run) primer cobro aprobado detectado:", paymentId);
+    } else if (dryRun) {
+      console.log("\n(dry-run) sin cobro aprobado en authorized_payments — no apply");
     }
-    console.log("(dry-run) no se invoca tryReconcile...FromPreapproval con side effects");
-  } else {
+  } catch (e) {
+    console.warn("preapproval/authorized fetch failed:", e.message);
+  }
+  if (!dryRun && !paymentId) {
     const fromPre = await tryReconcileSimSubscriptionFirstPaymentFromPreapproval(preId);
     if (fromPre) {
       console.log(JSON.stringify(fromPre, null, 2));
