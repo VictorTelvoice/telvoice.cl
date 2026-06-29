@@ -675,6 +675,26 @@
     });
   }
 
+  function syncSandboxCheckoutHint() {
+    var existing = qs("compra-sandbox-hint");
+    if (!CFG.mercadoPagoSandbox) {
+      if (existing) existing.remove();
+      return;
+    }
+    if (existing) return;
+    var form = qs("compra-form");
+    if (!form || !form.parentNode) return;
+    var hint = document.createElement("p");
+    hint.id = "compra-sandbox-hint";
+    hint.className = "checkout-sandbox-hint mt-3 font-body-sm text-on-surface-variant";
+    hint.setAttribute("role", "note");
+    hint.innerHTML =
+      "<strong>Modo prueba:</strong> email del <strong>Comprador</strong> (Cuentas de prueba → Comprador). " +
+      "Chrome incógnito, <strong>sin iniciar sesión</strong> en MP. Tarjeta: 4168 8188 4444 7115, CVV 123, " +
+      "venc. 11/30, titular <strong>APRO</strong>, documento <strong>Otro 123456789</strong>.";
+    form.parentNode.insertBefore(hint, form);
+  }
+
   function openCompraModal(payload) {
     var modal = qs("compra-modal");
     if (!modal || !payload) return;
@@ -709,11 +729,7 @@
     setCompraError("");
     setCompraLoading(false);
 
-    var sandboxHint = qs("compra-sandbox-hint");
-    if (sandboxHint) {
-      if (CFG.mercadoPagoSandbox) sandboxHint.classList.remove("hidden");
-      else sandboxHint.classList.add("hidden");
-    }
+    syncSandboxCheckoutHint();
 
     var submitBtn = qs("compra-submit");
     if (submitBtn && !submitBtn.dataset.mpBound) {
