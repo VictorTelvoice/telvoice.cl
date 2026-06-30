@@ -465,17 +465,180 @@ export function renderAgentModuleStyles(): string {
       }
     }
 
-    .tv-numeraciones-table .tv-table-actions { white-space: nowrap; }
-    .tv-numeraciones-caps { font-size: 0.85rem; line-height: 1.45; }
+    .tv-numeraciones-intro {
+      margin: 0 0 1.25rem;
+      padding: 1rem 1.15rem;
+      border-radius: 10px;
+      border: 1px solid var(--tv-border, rgba(15,23,42,0.08));
+      background: linear-gradient(135deg, rgba(59,130,246,0.05), rgba(15,23,42,0.02));
+      font-size: 0.925rem;
+      line-height: 1.55;
+      opacity: 0.92;
+    }
+    .tv-numeraciones-kpis { margin-bottom: 1.25rem; }
+    .tv-num-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+      gap: 1rem;
+    }
+    .tv-num-card {
+      display: flex;
+      flex-direction: column;
+      border-radius: 12px;
+      border: 1px solid var(--tv-border, rgba(15,23,42,0.1));
+      background: var(--tv-panel-bg, #fff);
+      box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+      overflow: hidden;
+    }
+    .tv-num-card__head {
+      padding: 1.1rem 1.15rem 0.85rem;
+      border-bottom: 1px solid var(--tv-border, rgba(15,23,42,0.06));
+      background: linear-gradient(180deg, rgba(59,130,246,0.04), transparent);
+    }
+    .tv-num-card__number {
+      margin: 0 0 0.65rem;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      font-variant-numeric: tabular-nums;
+    }
+    .tv-num-card__badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      align-items: center;
+    }
+    .tv-num-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.22rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      line-height: 1.2;
+    }
+    .tv-num-chip--type-sim {
+      background: rgba(59,130,246,0.12);
+      color: #1d4ed8;
+    }
+    .tv-num-chip--type-line {
+      background: rgba(100,116,139,0.12);
+      color: #475569;
+    }
+    .tv-num-chip--country {
+      background: rgba(14,165,233,0.1);
+      color: #0369a1;
+    }
+    .tv-num-chip--cap {
+      background: rgba(15,23,42,0.05);
+      color: #334155;
+    }
+    .tv-num-chip--cap-api {
+      background: rgba(6,182,212,0.12);
+      color: #0e7490;
+    }
+    .tv-num-chip--cap-otp {
+      background: rgba(168,85,247,0.1);
+      color: #7e22ce;
+    }
+    .tv-num-chip--agent-yes {
+      background: rgba(34,197,94,0.12);
+      color: #047857;
+    }
+    .tv-num-chip--agent-no {
+      background: rgba(100,116,139,0.1);
+      color: #64748b;
+    }
+    .tv-num-chip--plan-none {
+      background: rgba(245,158,11,0.14);
+      color: #b45309;
+    }
+    .tv-num-card__body { padding: 0.95rem 1.15rem; flex: 1; }
+    .tv-num-card__meta {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.45rem 0.85rem;
+      margin: 0 0 0.85rem;
+      font-size: 0.875rem;
+    }
+    .tv-num-card__meta dt {
+      margin: 0;
+      opacity: 0.62;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .tv-num-card__meta dd {
+      margin: 0;
+      font-weight: 500;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .tv-num-card__meta dd small {
+      display: block;
+      margin-top: 0.15rem;
+      font-size: 0.78rem;
+      font-weight: 400;
+      opacity: 0.75;
+    }
+    .tv-num-card__caps {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+    .tv-num-card__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      padding: 0.85rem 1.15rem 1rem;
+      border-top: 1px solid var(--tv-border, rgba(15,23,42,0.06));
+      background: rgba(15,23,42,0.015);
+    }
+    .tv-num-card__actions .btn { flex: 0 1 auto; }
+    .tv-num-card__actions .btn-primary { flex: 1 1 auto; min-width: 8.5rem; }
     .tv-numeraciones-empty {
       text-align: center;
       padding: 3rem 2rem;
-      border-radius: 10px;
+      border-radius: 12px;
+      border: 1px dashed var(--tv-border, rgba(15,23,42,0.12));
     }
     .tv-numeraciones-empty__icon .material-symbols-outlined { font-size: 3rem; opacity: 0.45; }
     .tv-numeraciones-empty__title { margin: 1rem 0 0.5rem; font-size: 1.2rem; }
     .tv-numeraciones-empty__text { max-width: 36rem; margin: 0 auto 1.5rem; line-height: 1.55; opacity: 0.85; }
     .tv-numeraciones-empty__actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+    @media (max-width: 640px) {
+      .tv-page-head--numeraciones.tv-page-head--row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.65rem;
+      }
+      .tv-page-head--numeraciones .tv-page-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        width: 100%;
+      }
+      .tv-page-head--numeraciones .tv-page-actions .btn {
+        min-width: 0;
+        justify-content: center;
+        font-size: 0.8125rem;
+      }
+      .tv-num-cards { grid-template-columns: 1fr; }
+      .tv-num-card__number { font-size: 1.2rem; }
+      .tv-num-card__actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .tv-num-card__actions .btn-primary { grid-column: 1 / -1; }
+      .tv-numeraciones-empty__actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        max-width: 22rem;
+        margin: 0 auto;
+      }
+    }
 
     .tv-agent-plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
     .tv-agent-plan-card {
