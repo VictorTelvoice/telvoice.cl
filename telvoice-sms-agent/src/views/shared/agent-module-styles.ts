@@ -555,6 +555,16 @@ export function renderAgentModuleStyles(): string {
       background: rgba(245,158,11,0.14);
       color: #b45309;
     }
+    .tv-num-card__plan-hint {
+      margin: 0 0 0.85rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 0.55rem;
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.18);
+      color: #92400e;
+      font-size: 0.8125rem;
+      line-height: 1.45;
+    }
     .tv-num-card__body { padding: 0.95rem 1.15rem; flex: 1; }
     .tv-num-card__meta {
       display: grid;

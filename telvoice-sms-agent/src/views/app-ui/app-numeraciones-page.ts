@@ -29,8 +29,12 @@ function countryLabel(code: string | null | undefined): string {
   return COUNTRY_LABELS[c] ?? c;
 }
 
+const NO_COMMERCIAL_PLAN_LABEL = "Sin plan comercial";
+const NO_COMMERCIAL_PLAN_HINT =
+  "Esta numeración está activa técnicamente, pero aún no tiene un plan comercial asociado.";
+
 function displayPlanLabel(n: ClientNumberListItem): string {
-  return n.plan_code ? n.plan_label : "Sin plan activo";
+  return n.plan_code ? n.plan_label : NO_COMMERCIAL_PLAN_LABEL;
 }
 
 function displayAgentLabel(n: ClientNumberListItem): string {
@@ -195,8 +199,12 @@ function renderNumberActions(n: ClientNumberListItem): string {
 function renderNumberCard(n: ClientNumberListItem): string {
   const planLabel = displayPlanLabel(n);
   const agentLabel = displayAgentLabel(n);
-  const planChipCls = n.plan_code ? "" : " tv-num-chip--plan-none";
+  const hasPlan = n.plan_code != null;
+  const planChipCls = hasPlan ? "" : " tv-num-chip--plan-none";
   const agentChipCls = n.has_agent ? " tv-num-chip--agent-yes" : " tv-num-chip--agent-no";
+  const planHint = hasPlan
+    ? ""
+    : `<p class="tv-num-card__plan-hint">${escapeHtml(NO_COMMERCIAL_PLAN_HINT)}</p>`;
 
   return `<article class="tv-num-card">
     <header class="tv-num-card__head">
@@ -208,6 +216,7 @@ function renderNumberCard(n: ClientNumberListItem): string {
       </div>
     </header>
     <div class="tv-num-card__body">
+      ${planHint}
       <dl class="tv-num-card__meta">
         <dt>Plan</dt>
         <dd><span class="tv-num-chip${planChipCls}">${escapeHtml(planLabel)}</span></dd>
