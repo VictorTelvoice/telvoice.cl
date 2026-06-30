@@ -3,10 +3,39 @@ import {
   clientNumberTypeLabel,
 } from "../../services/clientNumberService.js";
 import type { ClientNumberListItem, ClientNumbersModuleState } from "../../types/client-numbers.js";
-import { escapeHtml, formatDate } from "../../utils/html.js";
+import { renderKpiCard } from "../admin-ui/components.js";
 import { renderBtn, renderPageHeader } from "../admin-ui/page-kit.js";
+import { renderAgentModuleStyles } from "../shared/agent-module-styles.js";
+import {
+  escapeHtml,
+  formatDate,
+  formatDateShort,
+  formatPhoneDisplay,
+  formatRelativeTime,
+} from "../../utils/html.js";
 import type { AppPageContext } from "./app-page-wrap.js";
 import { wrapAppPage } from "./app-page-wrap.js";
+
+const COUNTRY_LABELS: Record<string, string> = {
+  CL: "Chile",
+  AR: "Argentina",
+  PE: "Perú",
+  CO: "Colombia",
+  MX: "México",
+};
+
+function countryLabel(code: string | null | undefined): string {
+  const c = (code ?? "CL").trim().toUpperCase();
+  return COUNTRY_LABELS[c] ?? c;
+}
+
+function displayPlanLabel(n: ClientNumberListItem): string {
+  return n.plan_code ? n.plan_label : "Sin plan activo";
+}
+
+function displayAgentLabel(n: ClientNumberListItem): string {
+  return n.has_agent ? "Agente asignado" : "Agente no asignado";
+}
 
 function renderStatusBadge(status: string): string {
   const clsMap: Record<string, string> = {
@@ -22,13 +51,183 @@ function renderStatusBadge(status: string): string {
   return `<span class="badge badge-${cls}">${escapeHtml(label)}</span>`;
 }
 
-function renderCapabilities(caps: ClientNumberListItem["capabilities"]): string {
-  const items: string[] = [];
-  if (caps.receive_sms) items.push("Recibir SMS");
-  if (caps.send_sms) items.push("Enviar SMS");
-  if (caps.otp_authorized) items.push("OTP autorizado");
-  if (caps.api_webhook) items.push("API/webhook");
-  return items.length ? items.map((i) => escapeHtml(i)).join(" · ") : "—";
+function renderTypeChip(type: ClientNumberListItem["type"]): string {
+  const label = clientNumberTypeLabel(type);
+  const cls = type === "sim_real" ? "tv-num-chip--type-sim" : "tv-num-chip--type-line";
+  return `<span class="tv-num-chip ${cls}">${escapeHtml(label)}</span>`;
+}
+
+function renderCountryChip(code: string | null | undefined): string {
+  return `<span class="tv-num-chip tv-num-chip--country">${escapeHtml(countryLabel(code))}</span>`;
+}
+
+function renderCapabilityChips(caps: ClientNumberListItem["capabilities"]): string {
+  const items: { label: string; cls: string }[] = [];
+  if (caps.receive_sms) items.push({ label: "Recibir SMS", cls: "tv-num-chip--cap" });
+  if (caps.send_sms) items.push({ label: "Enviar SMS", cls: "tv-num-chip--cap" });
+  if (caps.otp_authorized) items.push({ label: "OTP autorizado", cls: "tv-num-chip--cap-otp" });
+  if (caps.api_webhook) items.push({ label: "API/Webhook", cls: "tv-num-chip--cap-api" });
+  if (!items.length) {
+    return `<span class="tv-num-chip tv-num-chip--cap">Sin capacidades activas</span>`;
+  }
+  return items
+    .map((i) => `<span class="tv-num-chip ${i.cls}">${escapeHtml(i.label)}</span>`)
+    .join("");
+}
+
+function renderLastSmsCell(n: ClientNumberListItem): string {
+  if (!n.last_sms_at) return "Sin mensajes recibidos";
+  const when = formatRelativeTime(n.last_sms_at);
+  const detail = n.last_sms_from
+    ? `<small>Desde ${escapeHtml(n.last_sms_from)}</small>`
+    : "";
+  return `${escapeHtml(when)}${detail}`;
+}
+
+function computeKpis(numbers: ClientNumberListItem[]): {
+  active: number;
+  simReal: number;
+  withPlan: number;
+  lastSmsLabel: string;
+  lastSmsHint: string;
+} {
+  const active = numbers.filter((n) => n.status === "active").length;
+  const simReal = numbers.filter((n) => n.type === "sim_real").length;
+  const withPlan = numbers.filter((n) => n.plan_code != null).length;
+
+  let latest: string | null = null;
+  for (const n of numbers) {
+    if (n.last_sms_at && (!latest || n.last_sms_at > latest)) {
+      latest = n.last_sms_at;
+    }
+  }
+
+  let lastSmsLabel = "Sin actividad";
+  let lastSmsHint = "Aún no hay SMS entrantes";
+  if (latest) {
+    const rel = formatRelativeTime(latest);
+    const isRelative = rel.startsWith("hace");
+    lastSmsLabel = isRelative ? rel : formatDateShort(latest);
+    lastSmsHint = isRelative ? formatDateShort(latest) : "Último mensaje recibido";
+  }
+
+  return { active, simReal, withPlan, lastSmsLabel, lastSmsHint };
+}
+
+function renderKpiGrid(numbers: ClientNumberListItem[]): string {
+  const k = computeKpis(numbers);
+  return `<div class="tv-kpi-grid tv-kpi-grid--client tv-numeraciones-kpis">
+    ${renderKpiCard({
+      label: "Numeraciones activas",
+      value: String(k.active),
+      hint: `${numbers.length} en total`,
+      icon: "sim_card",
+      variant: "success",
+    })}
+    ${renderKpiCard({
+      label: "SIM reales",
+      value: String(k.simReal),
+      hint: "Líneas móviles Chile",
+      icon: "phonelink_ring",
+      variant: "primary",
+    })}
+    ${renderKpiCard({
+      label: "Con plan activo",
+      value: String(k.withPlan),
+      hint: "Agente y funciones comerciales",
+      icon: "verified",
+      variant: k.withPlan > 0 ? "success" : "warn",
+    })}
+    ${renderKpiCard({
+      label: "Último SMS recibido",
+      value: k.lastSmsLabel,
+      hint: k.lastSmsHint,
+      icon: "sms",
+      variant: "default",
+    })}
+  </div>`;
+}
+
+function renderNumberActions(n: ClientNumberListItem): string {
+  const id = encodeURIComponent(n.id);
+  const integraciones = `/app/numeraciones/${id}/integraciones`;
+  const bandeja = `/app/sms-inbox?number=${id}`;
+  const planes = "/app/planes-agente";
+  const agente = "/app/agente";
+  const hasPlan = n.plan_code != null;
+  const buttons: string[] = [];
+
+  if (hasPlan) {
+    if (n.capabilities.receive_sms || n.last_sms_at) {
+      buttons.push(renderBtn("Bandeja", { href: bandeja, size: "sm", variant: "ghost", icon: "inbox" }));
+    }
+    buttons.push(
+      renderBtn("Configurar", { href: integraciones, size: "sm", variant: "ghost", icon: "settings" }),
+    );
+    if (n.capabilities.api_webhook) {
+      buttons.push(
+        renderBtn("Integración", { href: integraciones, size: "sm", variant: "ghost", icon: "webhook" }),
+      );
+    }
+    buttons.push(
+      renderBtn("Asignar agente", { href: agente, size: "sm", variant: "ghost", icon: "smart_toy" }),
+    );
+    if (n.last_sms_at) {
+      buttons.push(
+        renderBtn("Ver actividad", { href: bandeja, size: "sm", variant: "ghost", icon: "history" }),
+      );
+    }
+  } else {
+    buttons.push(
+      renderBtn("Activar plan", { href: planes, size: "sm", variant: "primary", icon: "bolt" }),
+    );
+    buttons.push(
+      renderBtn("Configurar", { href: integraciones, size: "sm", variant: "ghost", icon: "settings" }),
+    );
+    buttons.push(
+      renderBtn("Ver planes", { href: planes, size: "sm", variant: "secondary", icon: "sim_card" }),
+    );
+  }
+
+  return buttons.join("\n");
+}
+
+function renderNumberCard(n: ClientNumberListItem): string {
+  const planLabel = displayPlanLabel(n);
+  const agentLabel = displayAgentLabel(n);
+  const planChipCls = n.plan_code ? "" : " tv-num-chip--plan-none";
+  const agentChipCls = n.has_agent ? " tv-num-chip--agent-yes" : " tv-num-chip--agent-no";
+
+  return `<article class="tv-num-card">
+    <header class="tv-num-card__head">
+      <h2 class="tv-num-card__number">${escapeHtml(formatPhoneDisplay(n.number))}</h2>
+      <div class="tv-num-card__badges">
+        ${renderStatusBadge(n.status)}
+        ${renderTypeChip(n.type)}
+        ${renderCountryChip(n.country_code)}
+      </div>
+    </header>
+    <div class="tv-num-card__body">
+      <dl class="tv-num-card__meta">
+        <dt>Plan</dt>
+        <dd><span class="tv-num-chip${planChipCls}">${escapeHtml(planLabel)}</span></dd>
+        <dt>Agente</dt>
+        <dd><span class="tv-num-chip${agentChipCls}">${escapeHtml(agentLabel)}</span></dd>
+        <dt>Último SMS</dt>
+        <dd>${renderLastSmsCell(n)}</dd>
+        <dt>Activación</dt>
+        <dd>${n.activated_at ? escapeHtml(formatDate(n.activated_at)) : "Pendiente"}</dd>
+        <dt>Renovación</dt>
+        <dd>${n.expires_at ? escapeHtml(formatDate(n.expires_at)) : "—"}</dd>
+      </dl>
+      <div class="tv-num-card__caps" aria-label="Capacidades">
+        ${renderCapabilityChips(n.capabilities)}
+      </div>
+    </div>
+    <footer class="tv-num-card__actions">
+      ${renderNumberActions(n)}
+    </footer>
+  </article>`;
 }
 
 function renderEmptyState(): string {
@@ -36,64 +235,22 @@ function renderEmptyState(): string {
     <div class="tv-numeraciones-empty__icon" aria-hidden="true">
       <span class="material-symbols-outlined">sim_card</span>
     </div>
-    <h2 class="tv-numeraciones-empty__title">Aún no tienes numeraciones Telvoice</h2>
+    <h2 class="tv-numeraciones-empty__title">Todavía no tienes numeraciones contratadas.</h2>
     <p class="tv-numeraciones-empty__text">
-      Contrata un número real o de red fija para recibir SMS, validar cuentas autorizadas
-      y operar comunicaciones empresariales sin depender de un teléfono físico.
+      Solicita una SIM real o numeración SMS para recibir mensajes, validar servicios
+      y conectar webhooks.
     </p>
     <div class="tv-numeraciones-empty__actions">
-      ${renderBtn("Ver planes", { href: "/app/planes-agente", variant: "primary", icon: "sim_card" })}
-      ${renderBtn("Solicitar Número", { href: "/app/planes-agente?action=request", variant: "secondary", icon: "add_call" })}
+      ${renderBtn("Solicitar número", { href: "/app/planes-agente?action=request", variant: "primary", icon: "add_call" })}
+      ${renderBtn("Ver planes", { href: "/app/planes-agente", variant: "secondary", icon: "sim_card" })}
     </div>
   </section>`;
 }
 
-function renderNumbersTable(numbers: ClientNumberListItem[]): string {
+function renderNumbersGrid(numbers: ClientNumberListItem[]): string {
   if (!numbers.length) return renderEmptyState();
-
-  const rows = numbers
-    .map((n) => {
-      const actions = `
-        ${renderBtn("Bandeja", { href: `/app/sms-inbox?number=${encodeURIComponent(n.id)}`, size: "sm", variant: "ghost" })}
-        ${renderBtn("Configurar", { href: `/app/numeraciones/${encodeURIComponent(n.id)}/integraciones`, size: "sm", variant: "ghost" })}
-        ${renderBtn("Integraciones", { href: `/app/numeraciones/${encodeURIComponent(n.id)}/integraciones`, size: "sm", variant: "ghost" })}
-      `;
-      return `<tr>
-        <td><strong>${escapeHtml(n.number)}</strong></td>
-        <td>${escapeHtml(clientNumberTypeLabel(n.type))}</td>
-        <td>${escapeHtml(n.country_code ?? "CL")}</td>
-        <td>${renderStatusBadge(n.status)}</td>
-        <td>${escapeHtml(n.plan_label)}</td>
-        <td>${n.has_agent ? "Sí" : "No"}</td>
-        <td class="tv-numeraciones-caps">${renderCapabilities(n.capabilities)}</td>
-        <td>${n.last_sms_at ? `${formatDate(n.last_sms_at)}${n.last_sms_from ? `<br><small>${escapeHtml(n.last_sms_from)}</small>` : ""}` : "—"}</td>
-        <td>${n.activated_at ? formatDate(n.activated_at) : "—"}</td>
-        <td>${n.expires_at ? formatDate(n.expires_at) : "—"}</td>
-        <td class="tv-table-actions">${actions}</td>
-      </tr>`;
-    })
-    .join("");
-
-  return `<div class="tv-numeraciones-table-wrap tv-table-wrap">
-    <table class="tv-table tv-numeraciones-table">
-      <thead>
-        <tr>
-          <th>Número</th>
-          <th>Tipo</th>
-          <th>País</th>
-          <th>Estado</th>
-          <th>Plan</th>
-          <th>Agente</th>
-          <th>Capacidad</th>
-          <th>Último SMS</th>
-          <th>Activación</th>
-          <th>Renovación</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
-  </div>`;
+  const cards = numbers.map(renderNumberCard).join("");
+  return `${renderKpiGrid(numbers)}<div class="tv-num-cards">${cards}</div>`;
 }
 
 export type AppNumeracionesPageData = {
@@ -111,63 +268,21 @@ export function renderAppNumeracionesPage(
 
   const body = `
     ${renderPageHeader({
-      title: "Mis números",
-      subtitle: "Numeraciones Telvoice contratadas por tu empresa.",
+      title: "Mis numeraciones",
+      subtitle: "Gestiona tus líneas SMS, recepción, envío, webhooks y agentes asociados.",
       headClass: "tv-page-head--numeraciones",
       actions: `
-        ${renderBtn("Solicitar Número", { href: "/app/planes-agente?action=request", variant: "primary", icon: "add_call" })}
+        ${renderBtn("Solicitar número", { href: "/app/planes-agente?action=request", variant: "primary", icon: "add_call" })}
         ${renderBtn("Ver planes", { href: "/app/planes-agente", variant: "secondary", icon: "sim_card" })}
       `,
     })}
+    <p class="tv-numeraciones-intro">
+      Tus numeraciones Telvoice centralizan recepción, envío, validaciones OTP e integraciones
+      API/Webhook para tu empresa.
+    </p>
     ${migrationNotice}
-    <section class="tv-panel">
-      ${renderNumbersTable(data.numbers)}
-    </section>
-    <style>
-      .tv-numeraciones-empty { text-align: center; padding: 3rem 2rem; }
-      .tv-numeraciones-empty__icon .material-symbols-outlined { font-size: 3rem; opacity: 0.5; }
-      .tv-numeraciones-empty__title { margin: 1rem 0 0.5rem; font-size: 1.25rem; }
-      .tv-numeraciones-empty__text { max-width: 36rem; margin: 0 auto 1.5rem; opacity: 0.85; }
-      .tv-numeraciones-empty__actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
-      .tv-numeraciones-caps { font-size: 0.85rem; }
-      .tv-table-actions { white-space: nowrap; }
-      .tv-numeraciones-table-wrap {
-        overflow-x: auto;
-        max-width: 100%;
-        -webkit-overflow-scrolling: touch;
-      }
-      .tv-numeraciones-table { min-width: 52rem; }
-      @media (max-width: 640px) {
-        .tv-page-head--numeraciones.tv-page-head--row {
-          flex-direction: column;
-          align-items: stretch;
-          gap: 0.65rem;
-        }
-        .tv-page-head--numeraciones .tv-page-actions {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.5rem;
-          width: 100%;
-        }
-        .tv-page-head--numeraciones .tv-page-actions .btn {
-          flex: 1 1 auto;
-          min-width: 0;
-          justify-content: center;
-          padding-left: 0.45rem;
-          padding-right: 0.45rem;
-          font-size: 0.8125rem;
-          white-space: nowrap;
-        }
-        .tv-numeraciones-empty__actions {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.5rem;
-          width: 100%;
-          max-width: 22rem;
-          margin: 0 auto;
-        }
-      }
-    </style>`;
+    ${renderNumbersGrid(data.numbers)}
+    ${renderAgentModuleStyles()}`;
 
-  return wrapAppPage(ctx, "numeraciones", "Mis números", body);
+  return wrapAppPage(ctx, "numeraciones", "Mis numeraciones", body);
 }
