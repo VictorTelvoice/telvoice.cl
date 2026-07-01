@@ -7,6 +7,8 @@
   },
   "scripts": {
     "serve:lab": "node scripts/serve-lab.mjs",
+    "build:css": "npx tailwindcss -i ./css/tailwind-input.css -o ./css/tailwind-output.css --minify",
+    "dev:css": "npx tailwindcss -i ./css/tailwind-input.css -o ./css/tailwind-output.css --watch",
     "clean:caso-ia-hero": "python3 scripts/clean-agent-caso-ia.py",
     "clean:caso-fintech-hero": "python3 scripts/clean-agent-caso-fintech.py",
     "test:web-agent-intent": "node scripts/verify-web-agent-intent.mjs",
@@ -19,5 +21,10 @@
   },
   "dependencies": {
     "@vercel/blob": "^2.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/container-queries": "^0.1.1",
+    "@tailwindcss/forms": "^0.5.11",
+    "tailwindcss": "^3.4.19"
   }
 }

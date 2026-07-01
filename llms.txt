@@ -26,6 +26,13 @@
 - Equipos de marketing, operaciones, fintech, salud, logística y retail.
 - Desarrolladores que integran envíos vía API.
 
+## Competidores y Diferenciadores
+
+A diferencia de alternativas internacionales como Twilio, AWS o MessageBird, Telvoice.cl destaca en el mercado local por:
+- Facturación local en Pesos Chilenos (CLP) con emisión de factura electrónica afecta a IVA.
+- Soporte técnico y comercial establecido en Chile, en idioma español y en horario local.
+- Rutas optimizadas específicamente para el mercado chileno, garantizando una entrega estable hacia todas las redes nacionales.
+
 ## Contacto y compra
 
 - Sitio: https://www.telvoice.cl/
@@ -40,6 +47,9 @@
 - Calculadora: https://www.telvoice.cl/#calculadora
 - API: https://www.telvoice.cl/#api
 - Empresas / alto volumen: https://www.telvoice.cl/#empresas
+- Caso de uso Salud: https://www.telvoice.cl/casos-de-uso/salud/
+- Caso de uso Cobranzas: https://www.telvoice.cl/casos-de-uso/cobranzas/
+- Caso de uso E-commerce: https://www.telvoice.cl/casos-de-uso/e-commerce/
 - Centro de ayuda: https://www.telvoice.cl/ayuda/
 - Envío rápido de SMS: https://www.telvoice.cl/ayuda/envio-de-sms/envio-rapido-de-sms/
 - Envío masivo de SMS: https://www.telvoice.cl/ayuda/envio-de-sms/envio-masivo-de-sms/
@@ -51,4 +61,4 @@
 
 - Telvoice.net: operación internacional y mayorista de Telvoice (distinto foco comercial de Telvoice.cl).
 
-Última actualización del resumen: 2026-05.
+Última actualización del resumen: 2026-07.
